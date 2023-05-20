@@ -13,7 +13,8 @@
 1. Установите Python 3.8+.
 2. Установите компилятор C и другие необходимые инструменты, выполнив команду `sudo apt-get install build-essential`.
 3. Установите утилиту trans `sudo apt-get install trans translate-shell`
-4. Склонируйте репозиторий с помощью команды:
+4. Установите утилиту tesseract `sudo apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd`
+5. Склонируйте репозиторий с помощью команды:
 
    ```
    git clone https://github.com/theurs/tb1.git

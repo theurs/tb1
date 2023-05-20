@@ -47,7 +47,6 @@ async def handle_photo(message: types.Message):
             await my_log.log(message, text)
         else:
             await my_log.log(message, '')
-
         return
 
     # распознаем текст только если есть команда для этого

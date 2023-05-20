@@ -16,13 +16,13 @@
 4. Склонируйте репозиторий с помощью команды:
 
    ```
-   git clone https://github.com/your_username/your_project.git
+   git clone https://github.com/theurs/tb1.git
    ```
    
 4. Перейдите в директорию проекта:
 
    ```
-   cd your_project
+   cd tb1
    ```
    
 5. Установите зависимости, выполнив команду:

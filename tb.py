@@ -21,17 +21,11 @@ async def send_welcome(message: types.Message):
 
 @dp.message_handler()
 async def echo(message: types.Message):
-    # Выводим текст сообщения на экран
-    #print(message.text)
-    # Отправляем ответное сообщение
-    #await message.answer("Вы отправили сообщение: " + message.text)
     if message.entities:
         if message.entities[0]['type'] in ('code', 'spoiler'):
             await my_log.log(message, 'code or spoiler in message')
             return
     text = my_trans.translate(message.text)
-    #print(message.text)
-    #print(text)
     if text:
         await message.answer(text)
         await my_log.log(message, text)
@@ -41,6 +35,22 @@ async def echo(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentType.PHOTO)
 async def handle_photo(message: types.Message):
+    # пересланные сообщения пытаемся перевести даже если в них картинка
+    if "forward_from_chat" in message:
+        if message.entities:
+            if message.entities[0]['type'] in ('code', 'spoiler'):
+                await my_log.log(message, 'code or spoiler in message')
+                return
+        text = my_trans.translate(message.caption)
+        if text:
+            await message.answer(text)
+            await my_log.log(message, text)
+        else:
+            await my_log.log(message, '')
+
+        return
+
+    # распознаем текст только если есть команда для этого
     if not message.caption: return
     
     keywords = (
@@ -52,7 +62,7 @@ async def handle_photo(message: types.Message):
     'translate text from image', 'write text from picture', 'get text from photo', 'extract text from screenshot', 'OCR from image'
     )
     if not any(fuzz.ratio(message.caption.lower(), keyword) > 70 for keyword in keywords): return
-    
+
     #chat_type = message.chat.type
     #if chat_type != types.ChatType.PRIVATE: return
     # получаем самую большую фотографию из списка
@@ -101,7 +111,6 @@ async def handle_document(message: types.Message):
                 await message.reply_document(f)
         else:
             await message.reply(text)
-            
 
 
 if __name__ == '__main__':

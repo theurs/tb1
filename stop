@@ -1,0 +1,3 @@
+sudo systemctl stop telegram-bot
+#sudo systemctl status telegram-bot
+

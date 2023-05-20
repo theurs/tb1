@@ -1,0 +1,9 @@
+aiogram
+fuzzywuzzy
+python-Levenshtein
+pytesseract
+Pillow
+pyenchant
+PyMuPDF
+py_trans
+langdetect

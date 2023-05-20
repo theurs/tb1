@@ -52,6 +52,7 @@ def translate(text):
     d = detect_lang(text)
     # переводим если язык не русский но определился успешно
     if d and d != 'ru':
+        # этот вариант почему то заметно хуже работает, хотя вроде бы тот же самый гугл переводчик
         #return translate_text(text)
         return translate_text2(text)
     return None
@@ -63,4 +64,5 @@ if __name__ == "__main__":
 Warum können Skelette nicht lügen?
 Weil sie immer die Wahrheit sagen."""
     #print(detect_lang('пато hello how are you going'))
-    print(translate(text_de))
+    print(translate_text(text_de))
+    print(translate_text2(text_de))

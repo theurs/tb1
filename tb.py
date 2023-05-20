@@ -41,6 +41,7 @@ async def handle_photo(message: types.Message):
             if message.entities[0]['type'] in ('code', 'spoiler'):
                 await my_log.log(message, 'code or spoiler in message')
                 return
+        # у фотографий нет текста но есть заголовок caption. его и будем переводить
         text = my_trans.translate(message.caption)
         if text:
             await message.answer(text)

@@ -8,3 +8,4 @@ PyMuPDF
 py_trans
 langdetect
 fake_useragent
+openai

@@ -9,8 +9,12 @@ import gpt_basic
 
 def detect_lang(text):
     """ Возвращает None если не удалось определить, 2 буквенное определение языка если получилось 'en', 'ru' итп """
+    # минимальное количество слов для определения языка = 8. на коротких текстах детектор сильно врёт, возможно 8 это тоже мало
+    if sum(1 for word in text.split() if len(word) >= 2) < 8:
+        return None
+
     # смотрим список вероятностей, и если в списке есть русский то возвращаем None (с русского на русский не переводим)
-    print(detect_langs(text))
+    #print(detect_langs(text))
     try:
         for i in detect_langs(text):
             if i.lang == 'ru':
@@ -18,9 +22,7 @@ def detect_lang(text):
     except Exception as e:
         print(e)
         return None
-    # минимальное количество слов для определения языка = 8. на коротких текстах детектор сильно врёт, возможно 8 это тоже мало
-    if sum(1 for word in text.split() if len(word) >= 2) < 8:
-        return None
+
     try:
         language = detect(text)
     except Exception as e:

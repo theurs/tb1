@@ -14,7 +14,8 @@
 2. Установите компилятор C и другие необходимые инструменты, выполнив команду `sudo apt-get install build-essential git python3-pip`.
 3. Установите утилиту trans `sudo apt-get install translate-shell`
 4. Установите утилиту tesseract `sudo apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd`
-5. Склонируйте репозиторий с помощью команды:
+5. Установите словари `sudo apt install aspell aspell-en aspell-ru aspell-uk`
+6. Склонируйте репозиторий с помощью команды:
 
    ```
    git clone https://github.com/theurs/tb1.git

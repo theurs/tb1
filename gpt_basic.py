@@ -64,8 +64,31 @@ def translate_text(text, fr = 'autodetect', to = 'ru'):
     return r
 
 
+def clear_after_ocr(text):
+    """Получает текст после распознавания с картинки, пытается его восстановить, исправить ошибки распознавания"""
+    # если нет ключа то сразу отбой
+    if not openai.api_key: return text
+    
+    prompt = f'Исправь явные ошибки и опечатки в тексте которые там могли появиться после плохого OCR. \
+То что совсем плохо распозналось, бессмысленные символы, надо убрать. \
+Важна точность, лучше оставить ошибку неисправленной если нет уверенности в том что это ошибка и её надо исправить именно так. \
+Важно сохранить оригинальное разбиение на строки и абзацы. \
+Покажи результат без оформления и отладочной информации. Текст:'
+    prompt += text
+    try:
+        r = ai(prompt)
+    except Exception as e:
+        print(e)
+        return text
+    return r
+
+
 if __name__ == '__main__':
     pass
+
+#    print(clear_after_ocr("""Your PCis perlectly stable and is running with absolutely no problems whatsoever.
+#
+#You can search for this status code onl1ne if you'd like: ALL SYSTEMS. GO"""))
     
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом."""))
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))

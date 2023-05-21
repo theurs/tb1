@@ -7,6 +7,7 @@ import fitz
 import pytesseract
 from PIL import Image
 import enchant
+import gpt_basic
 
 
 def replace_non_letters_with_spaces(text):
@@ -52,7 +53,8 @@ def get_text_from_image(b):
         result += i + ' '
     result = result[:-1]
     if find_words(result) < 5: return ''
-    return result
+    result_cleared = gpt_basic.clear_after_ocr(result)
+    return result_cleared
 
 
 # Определяем функцию для извлечения текста из PDF-файла

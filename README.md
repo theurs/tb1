@@ -59,16 +59,10 @@ docker build --no-cache -t tb1 . &> build.log
 docker run -d --env TOKEN='xxx' --name tb1 --restart unless-stopped tb1
 или
 docker run --env TOKEN='xxx' --name tb1 --restart unless-stopped tb1
+или
+docker run -d --env TOKEN='xxx' --env OPENAI_KEY='yyy' -e TZ=Asia/Vladivostok --name tb1 --restart unless-stopped tb1
 ```
 
-ps у докер-версии что то не так с локалями или библиотеками, перевод с украинского на русский не работает. Не знаю как пофиксить.
-Похоже что там в консоли кодировка cp1251 или типа того вместо utf8. Можно подправить код в
-```
-my_trans.py:translate_text2
-
-r = output.decode('utf-8').strip() ->
-r = output.decode('cp1251').strip()
-```
 
 ## Использование
 

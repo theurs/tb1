@@ -1,17 +1,14 @@
-FROM python:3.9-slim-buster
+FROM ubuntu:latest
 
 WORKDIR /app
 
-COPY my_ocr.py my_log.py my_trans.py requirements.txt tb.py /app/
-
-
-RUN echo "deb http://deb.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian-security/ buster/updates main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian buster-updates main contrib non-free" >> /etc/apt/sources.list
+COPY my_ocr.py my_log.py my_trans.py requirements.txt gpt_basic.py tb.py /app/
 
 
 RUN apt-get update && apt-get install -y \
-    locales \
+    python3 \
+    python3-pip \
+    bsdmainutils \
     translate-shell \
     tesseract-ocr \
     tesseract-ocr-eng \
@@ -22,17 +19,18 @@ RUN apt-get update && apt-get install -y \
     aspell-en \
     aspell-uk \
     aspell-ru \
-    enchant \
-    && rm -rf /var/lib/apt/lists/*
+    enchant-2 \
+    locales && rm -rf /var/lib/apt/lists/* \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 
+ENV LANG=en_US.utf8
 # передача токена через переменную окружения
 ENV TOKEN=${TOKEN}
 ENV OPENAI_KEY=${OPENAI_KEY}
 
 
-CMD ["python", "tb.py"]
-
+CMD ["python3", "tb.py"]

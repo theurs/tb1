@@ -43,6 +43,8 @@
 docker build  -t tb1 .
 или
 docker build --no-cache -t tb1 .
+или
+docker build --no-cache -t theurs_tb1 . &> build.log
 
 docker run -d --env TOKEN='xxx' --name tb1 --restart unless-stopped tb1
 или

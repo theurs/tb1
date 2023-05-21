@@ -10,6 +10,7 @@ except Exception as e:
     print(e)
 
 
+# Пробуем получить апи ключ из конфига или переменной окружения
 openai.api_key = None
 try:
     openai.api_key = cfg.key

@@ -39,9 +39,11 @@
 
 Можно собрать и запустить докер образ.
 
-```docker build  -t tb1 .
+```
+docker build  -t tb1 .
 
-docker run -d --env TOKEN='xxx' --name tb1 --restart unless-stopped tb1```
+docker run -d --env TOKEN='xxx' --name tb1 --restart unless-stopped tb1
+```
 
 ## Использование
 

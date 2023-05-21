@@ -2,11 +2,23 @@
 
 
 import requests
-import cfg
 import openai
+import os
+try:
+    import cfg
+except Exception as e:
+    print(e)
 
 
-openai.api_key = cfg.key
+openai.api_key = None
+try:
+    openai.api_key = cfg.key
+except Exception as e:
+    print(e)
+    try:
+        openai.api_key = os.getenv('OPENAI_KEY')
+    except Exception as e:
+        print(e)
 
 
 def ai(prompt):
@@ -34,10 +46,14 @@ def ai(prompt):
 
 def translate_text(text, fr = 'autodetect', to = 'ru'):
     """переводит текст с помощью GPT-чата, возвращает None при ошибке"""
+
+    # если нет ключа то сразу отбой
+    if not openai.api_key: return None
     
     prompt = f'Исправь явные опечатки в тексте и разорванные строки которые там могли появиться после плохого OCR, переведи текст с языка ({fr}) на язык ({to}), \
 разбей переведенный текст на абзацы для удобного чтения по возможности сохранив оригинальное разбиение на строки и абзацы. \
-Ссылки и другие непереводимые элементы из текста надо сохранить в переводе. Покажи только перевод без оформления и отладочной информации. Текст: '
+Ссылки и другие непереводимые элементы из текста надо сохранить в переводе. Текст это всё (до конца) что идет после двоеточия. \
+Покажи только перевод без оформления и отладочной информации. Текст:'
     prompt += text
 
     try:

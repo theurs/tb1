@@ -31,6 +31,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # передача токена через переменную окружения
 ENV TOKEN=${TOKEN}
+ENV OPENAI_KEY=${OPENAI_KEY}
 
 
 CMD ["python", "tb.py"]

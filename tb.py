@@ -2,13 +2,17 @@
 
 
 from aiogram import Bot, Dispatcher, types, executor
-import cfg
-import io
+import io, os
 import my_ocr, my_trans, my_log
 from fuzzywuzzy import fuzz
 
+if os.path.exists('cfg.py'):
+    from cfg import token
+else:
+    token = os.getenv('TOKEN')
 
-bot = Bot(token=cfg.token)
+
+bot = Bot(token=token)
 dp = Dispatcher(bot)
 
 

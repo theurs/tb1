@@ -11,11 +11,10 @@
 Для установки проекта выполните следующие шаги:
 
 1. Установите Python 3.8+.
-2. Установите компилятор C и другие необходимые инструменты, выполнив команду `sudo apt-get install build-essential git python3-pip`.
-3. Установите утилиту trans `sudo apt-get install translate-shell`
-4. Установите утилиту tesseract `sudo apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd`
-5. Установите словари `sudo apt install aspell aspell-en aspell-ru aspell-uk`
-6. Склонируйте репозиторий с помощью команды:
+2. Установите утилиту trans `sudo apt-get install translate-shell`
+3. Установите утилиту tesseract `sudo apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd`
+4. Установите словари `sudo apt install aspell aspell-en aspell-ru aspell-uk enchant`
+5. Склонируйте репозиторий с помощью команды:
 
    ```
    git clone https://github.com/theurs/tb1.git
@@ -33,7 +32,7 @@
    pip install -r requirements.txt
    ```
 
-6. Создайте файл cfg.py и добавьте в него строку token = 'токен телеграм бота'
+6. Создайте файл cfg.py и добавьте в него строку token = 'токен телеграм бота', вместо этого можно передавать токен через переменную окружения `export TOKEN='токен телеграм бота'`
 
 ## Использование
 

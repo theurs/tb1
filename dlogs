@@ -1,0 +1,1 @@
+docker exec tb1 cat /app/log.txt|less

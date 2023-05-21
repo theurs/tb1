@@ -5,11 +5,13 @@ WORKDIR /app
 COPY my_ocr.py my_log.py my_trans.py requirements.txt tb.py /app/
 
 
-RUN echo "deb http://deb.debian.org/debian buster main contrib non-free" >> /etc/apt/sources.list \
+RUN echo "deb http://deb.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list \
     && echo "deb http://deb.debian.org/debian-security/ buster/updates main contrib non-free" >> /etc/apt/sources.list \
     && echo "deb http://deb.debian.org/debian buster-updates main contrib non-free" >> /etc/apt/sources.list
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+
+RUN apt-get update && apt-get install -y \
+    locales \
     translate-shell \
     tesseract-ocr \
     tesseract-ocr-eng \
@@ -23,9 +25,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     enchant \
     && rm -rf /var/lib/apt/lists/*
 
+
 RUN pip install --no-cache-dir -r requirements.txt
+
 
 # передача токена через переменную окружения
 ENV TOKEN=${TOKEN}
 
+
 CMD ["python", "tb.py"]
+

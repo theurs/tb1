@@ -2,7 +2,7 @@
 
 from py_trans import PyTranslator
 from langdetect import detect, detect_langs
-import subprocess
+import subprocess, os
 
 
 def detect_lang(text):
@@ -38,7 +38,12 @@ def translate_text(text, lang = 'ru'):
 
 def translate_text2(text):
     """ Возвращает None если не удалось перевести и текст перевода если удалось """
-    process = subprocess.Popen(['trans', ':ru', '-b', text], stdout = subprocess.PIPE)
+    lang = "ru_RU.UTF-8" # установка кодировки UTF-8 в виде параметра
+    env = os.environ.copy() # копирование текущих переменных окружения
+    env['LANG'] = lang # установка переменной окружения LANG
+    
+    process = subprocess.Popen(['trans', ':ru', '-b', text], stdout = subprocess.PIPE, env=env)
+    
     output, error = process.communicate()
     r = output.decode('utf-8').strip()
     if error != None:
@@ -59,10 +64,7 @@ def translate(text):
     
 
 if __name__ == "__main__":
-    text_de="""Natürlich, hier ist ein kurzer Witz auf Deutsch:
-
-Warum können Skelette nicht lügen?
-Weil sie immer die Wahrheit sagen."""
+    text_de="""Звичайно, я можу написати два речення на українській мові."""
     #print(detect_lang('пато hello how are you going'))
     print(translate_text(text_de))
     print(translate_text2(text_de))

@@ -26,16 +26,30 @@ def ai(prompt):
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ"""
     
     messages = [    {"role": "system",
-                    "content": 'Ты информационная система отвечающая на запросы юзера.'
+                    "content": """Ты информационная система отвечающая на запросы юзера."""
                     # в роли интерпретатра бейсика он говорит много лишнего и странного
                     #"content": 'Ты интерпретатор вымышленного языка программирования "GPT-BASIC 3000". Тебе дают программы на естественном языке, ты даешь самый очевидный и скучный результат.'
                     },
+
+                    #{"role": "assistant",
+                    # "content": "history messages from assistant for more context"
+                    #},
                 
+                    #{"role": "user",
+                    # "content": "history messages from user for more context"
+                    #},
+
+                    #{"role": "assistant",
+                    # "content": "history messages from assistant for more context"
+                    #},
+
+
                     {"role": "user",
                      "content": prompt
                     }
                 ]
 
+    # тут можно добавить степерь творчества(бреда) от 0 до 1 дефолт - temperature=0.5
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=messages
@@ -93,7 +107,3 @@ if __name__ == '__main__':
     
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом."""))
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))
-    
-    #print(ai("сгенерируй список реалистичных турецких имен на русском, 10шт, отсортируй по фамилии по возрастанию, покажи строку содержащую сериализованный питон список"))
-    
-    #print(ai('2+2*2'))

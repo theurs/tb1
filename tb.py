@@ -37,6 +37,24 @@ async def echo(message: types.Message):
         await my_log.log(message, '')
 
 
+@dp.message_handler(content_types=types.ContentType.VIDEO)
+async def handle_video(message: types.Message):
+    # пересланные сообщения пытаемся перевести даже если в них видео
+    if "forward_from_chat" in message:
+        if message.entities:
+            if message.entities[0]['type'] in ('code', 'spoiler'):
+                await my_log.log(message, 'code or spoiler in message')
+                return
+        # у видео нет текста но есть заголовок caption. его и будем переводить
+        text = my_trans.translate(message.caption)
+        if text:
+            await message.answer(text)
+            await my_log.log(message, text)
+        else:
+            await my_log.log(message, '')
+        return
+
+
 @dp.message_handler(content_types=types.ContentType.PHOTO)
 async def handle_photo(message: types.Message):
     # пересланные сообщения пытаемся перевести даже если в них картинка

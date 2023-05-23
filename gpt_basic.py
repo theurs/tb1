@@ -62,7 +62,8 @@ def ai(prompt):
     # тут можно добавить степерь творчества(бреда) от 0 до 1 дефолт - temperature=0.5
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=messages
+        messages=messages,
+        max_tokens=2000
     )
 
     response = completion.choices[0].message.content

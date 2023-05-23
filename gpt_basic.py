@@ -10,6 +10,16 @@ except Exception as e:
     print(e)
 
 
+# используем другой сервер, openai нас не пускает и ключей не продает, приходится заходить черз задний вход
+# бесплатные ключи у дискорд бота https://github.com/PawanOsman/ChatGPT#use-our-hosted-api-reverse-proxy
+# To use our hosted ChatGPT API, you can use the following steps:
+# * Join our Discord server.
+# * Get your API key from the #Bot channel by sending /key command.
+# * Use the API Key in your requests to the following endpoints.
+
+openai.api_base = 'https://api.pawan.krd/v1'
+
+
 # Пробуем получить апи ключ из конфига или переменной окружения
 openai.api_key = None
 try:
@@ -106,4 +116,4 @@ if __name__ == '__main__':
 #You can search for this status code onl1ne if you'd like: ALL SYSTEMS. GO"""))
     
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом."""))
-    #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))
+    print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))

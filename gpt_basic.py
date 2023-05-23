@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+from fuzzywuzzy import fuzz
 import requests
 import openai
 import os
@@ -32,9 +33,8 @@ except Exception as e:
         print(e)
 
 
-def ai(prompt):
+def ai(prompt, temp = 0.5, max_tok = 2000, timeou = 15):
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ"""
-    
     messages = [    {"role": "system",
                     "content": """Ты информационная система отвечающая на запросы юзера."""
                     # в роли интерпретатра бейсика он говорит много лишнего и странного
@@ -63,9 +63,9 @@ def ai(prompt):
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=messages,
-        max_tokens=2000,
-        temperature=0.5,
-        timeout=15
+        max_tokens=max_tok,
+        temperature=temp,
+        timeout=timeou
     )
 
     response = completion.choices[0].message.content
@@ -111,6 +111,38 @@ def clear_after_ocr(text):
     return r
 
 
+def detect_ocr_command(text):
+    """пытается понять является ли text командой распознать текст с картинки
+    возвращает True, False
+    """
+    keywords = (
+    'прочитай', 'читай', 'распознай', 'отсканируй', 'текст с картинки', 'текст с изображения', 'текст с фотографии', 'текст с скриншота',
+    'розпізнай', 'скануй', 'extract', 'identify', 'detect', 'ocr', 'text from image', 'text from picture', 'text from photo', 'text from screenshot',
+    'переведи текст с картинки', 'напиши текст с изображения', 'вытащи текст с фотографии', 'получи текст с скриншота', 'OCR с изображения',
+    'прочитати', 'читай', 'розпізнай', 'скануй', 'текст з зображенняня', 'текст з фотографії', 'текст зі скріншоту',
+    'read', 'recognize', 'scan', 'extract', 'identify', 'detect', 'ocr', 'текст з зображення', 'текст з картинки', 'текст з фотографії', 'текст зі скріншоту',
+    'translate text from image', 'write text from picture', 'get text from photo', 'extract text from screenshot', 'OCR from image'
+    )
+
+    # если нет ключа то попытка понять без GPT
+    if not openai.api_key:
+        if any(fuzz.ratio(message.caption.lower(), keyword) > 70 for keyword in keywords): return True
+        return False
+    
+    k = ', '.join(keywords)
+    p = f'Пользователь телеграм чата прислал картинку с подписью caption=({text}). Тебе надо определить хочет ли он что бы с этой картинки был \
+распознан текст с помощью OCR или подпись на это не указывает. Ответь одним словом без оформления - да или нет или непонятно. Вот примеры слов которые точно \
+указывают на желание пользователя распознать текст ({k})'
+    r = ai(p).lower().strip(' .')
+    #print(r)
+    if r == 'да': return True
+    #elif r == 'нет': return False
+    return False
+
+
+
+
+
 if __name__ == '__main__':
     pass
 
@@ -119,4 +151,7 @@ if __name__ == '__main__':
 #You can search for this status code onl1ne if you'd like: ALL SYSTEMS. GO"""))
     
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом."""))
-    print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))
+    #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))
+
+    print(detect_ocr_command('читай нечитай'))
+    

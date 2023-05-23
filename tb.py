@@ -4,7 +4,7 @@
 from aiogram import Bot, Dispatcher, types, executor
 import io, os
 import my_ocr, my_trans, my_log
-from fuzzywuzzy import fuzz
+import gpt_basic
 
 if os.path.exists('cfg.py'):
     from cfg import token
@@ -74,16 +74,7 @@ async def handle_photo(message: types.Message):
 
     # распознаем текст только если есть команда для этого
     if not message.caption: return
-    
-    keywords = (
-    'прочитай', 'читай', 'распознай', 'отсканируй', 'текст с картинки', 'текст с изображения', 'текст с фотографии', 'текст с скриншота', 
-    'розпізнай', 'скануй', 'extract', 'identify', 'detect', 'ocr', 'text from image', 'text from picture', 'text from photo', 'text from screenshot',
-    'переведи текст с картинки', 'напиши текст с изображения', 'вытащи текст с фотографии', 'получи текст с скриншота', 'OCR с изображения',
-    'прочитати', 'читай', 'розпізнай', 'скануй', 'текст з зображенняня', 'текст з фотографії', 'текст зі скріншоту',
-    'read', 'recognize', 'scan', 'extract', 'identify', 'detect', 'ocr', 'текст з зображення', 'текст з картинки', 'текст з фотографії', 'текст зі скріншоту',
-    'translate text from image', 'write text from picture', 'get text from photo', 'extract text from screenshot', 'OCR from image'
-    )
-    if not any(fuzz.ratio(message.caption.lower(), keyword) > 70 for keyword in keywords): return
+    if not gpt_basic.detect_ocr_command(message.caption.lower()): return
 
     #chat_type = message.chat.type
     #if chat_type != types.ChatType.PRIVATE: return

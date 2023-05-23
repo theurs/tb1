@@ -124,17 +124,17 @@ def detect_ocr_command(text):
     'translate text from image', 'write text from picture', 'get text from photo', 'extract text from screenshot', 'OCR from image'
     )
 
-    # если нет ключа то попытка понять без GPT
-    if not openai.api_key:
-        if any(fuzz.ratio(message.caption.lower(), keyword) > 70 for keyword in keywords): return True
-        return False
+    # сначала пытаемся понять по нечеткому совпадению слов
+    if any(fuzz.ratio(text, keyword) > 70 for keyword in keywords): return True
+
+    if not openai.api_key: return False
     
     k = ', '.join(keywords)
-    p = f'Пользователь телеграм чата прислал картинку с подписью caption=({text}). Тебе надо определить хочет ли он что бы с этой картинки был \
-распознан текст с помощью OCR или подпись на это не указывает. Ответь одним словом без оформления - да или нет или непонятно. Вот примеры слов которые точно \
-указывают на желание пользователя распознать текст ({k})'
+    p = f'Пользователь прислал в телеграм чат картинку с подписью ({text}). В чате есть бот которые распознает текст с картинок по просьбе пользователей. \
+Тебе надо определить по подписи хочет ли пользователь что бы с этой картинки был распознан текст с помощью OCR или подпись на это совсем не указывает. \
+Ответь одним словом без оформления - да или нет или непонятно.'
     r = ai(p).lower().strip(' .')
-    #print(r)
+    print(r)
     if r == 'да': return True
     #elif r == 'нет': return False
     return False
@@ -153,5 +153,5 @@ if __name__ == '__main__':
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом."""))
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))
 
-    print(detect_ocr_command('читай нечитай'))
+    print(detect_ocr_command('детект'))
     

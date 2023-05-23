@@ -63,7 +63,9 @@ def ai(prompt):
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=messages,
-        max_tokens=2000
+        max_tokens=2000,
+        temperature=0.5,
+        timeout=15
     )
 
     response = completion.choices[0].message.content

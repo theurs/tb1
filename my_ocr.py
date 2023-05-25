@@ -68,14 +68,6 @@ def get_text(fileobj):
     return text
 
 
-def detect_image_lang(img_path):
-    try:
-        osd = pytesseract.image_to_osd(img_path)
-        print(osd)
-    except Exception as e:
-        print(e)
-
-
 if __name__ == '__main__':
     pass
 

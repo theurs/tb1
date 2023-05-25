@@ -68,13 +68,22 @@ def get_text(fileobj):
     return text
 
 
+def detect_image_lang(img_path):
+    try:
+        osd = pytesseract.image_to_osd(img_path)
+        print(osd)
+    except Exception as e:
+        print(e)
+
+
 if __name__ == '__main__':
     pass
-    
-    text = replace_non_letters_with_spaces("""one two три
-                                           раз два опять
-                                           Что не так""")
-    print(text)
+
+
+    #text = replace_non_letters_with_spaces("""one two три
+    #                                       раз два опять
+    #                                       Что не так""")
+    #print(text)
     
     #fo = io.BytesIO(open('1.pdf', 'rb').read())
     #t = get_text(fo)
@@ -86,4 +95,3 @@ if __name__ == '__main__':
     #    print(sentence)
     #print()"""
     #print(find_words(text))
-    

@@ -27,6 +27,7 @@ trans - Переводит текст на другой язык (/trans en пр
 1. Установите Python 3.8+.
 2. Установите утилиту trans `sudo apt-get install translate-shell`
 3. Установите утилиту tesseract `sudo apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd`
+    В убунте 22.04.х (и дебиане 11) в репах очень старая версия тессеракта, надо подключать репозиторий с новыми версиями или ставить из бекпортов
 4. Установите словари `sudo apt install aspell aspell-en aspell-ru aspell-uk enchant`
 5. Клонируйте репозиторий с помощью команды:
 

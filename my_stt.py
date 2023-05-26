@@ -4,6 +4,7 @@
 import subprocess
 import tempfile
 import os
+import gpt_basic
 
 
 vosk_cmd = "/home/ubuntu/.local/bin/vosk-transcriber"
@@ -18,7 +19,8 @@ def stt(input_file):
         text = f.read()
     # Удаление временного файла
     os.remove(output_file)
-    return text
+    cleared = gpt_basic.clear_after_stt(text)
+    return cleared
 
 
 if __name__ == "__main__":

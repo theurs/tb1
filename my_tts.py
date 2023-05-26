@@ -40,7 +40,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+50%') -> bytes:
         edge_tts_cmd,     # Исполняемый файл 
         "--rate="+rate, # Скорость речи
         "--text",       # Входной текст 
-        text,          
+        text,
         "-v",           # Голос
         voice,
         "--write-media",# Записать аудио в файл

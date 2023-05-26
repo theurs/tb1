@@ -3,7 +3,8 @@
 
 from aiogram import Bot, Dispatcher, types, executor
 import io, os
-import my_ocr, my_trans, my_log, my_tts
+import tempfile
+import my_ocr, my_trans, my_log, my_tts, my_stt
 import chardet
 import gpt_basic
 
@@ -38,7 +39,8 @@ async def on_startup(dp):
 async def send_welcome(message: types.Message):
     # Отправляем приветственное сообщение
     await message.answer("""Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
-Озвучить текст, надо прислать тексотвый файл .txt с кодировкой UTF8\n\n""" + open('commands.txt').read())
+Озвучить текст, надо прислать тексотвый файл .txt с кодировкой UTF8\n\nСообщения на иностранном языке автоматически переводятся на русский\n\n\
+Голосовые сообщения автоматически переводятся в текст\n\n""" + open('commands.txt').read())
     await my_log.log(message)
 
 
@@ -209,6 +211,29 @@ async def handle_document(message: types.Message):
                 await message.reply_document(f)
         else:
             await message.reply(text)
+
+
+@dp.message_handler(content_types=types.ContentType.VOICE)
+async def handle_voice(message: types.Message): 
+    # Создание временного файла 
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        file_path = temp_file.name
+    
+    # Скачиваем аудиофайл во временный файл
+    file_id = message.voice.file_id
+    await bot.download_file_by_id(file_id, file_path)
+    
+    # Распознаем текст из аудио 
+    text = my_stt.stt(file_path)
+    
+    os.remove(file_path)
+    
+    # Отправляем распознанный текст 
+    if text.strip() != '':
+        await message.reply(text)
+        await my_log.log(message, f'[ASR] {text}')
+    else:
+        await my_log.log(message, '[ASR] no results')
 
 
 if __name__ == '__main__':

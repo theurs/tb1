@@ -10,4 +10,5 @@ langdetect
 fake_useragent
 openai
 edge_tts
+vosk
 

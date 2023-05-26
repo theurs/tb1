@@ -2,7 +2,7 @@ FROM ubuntu:latest
 
 WORKDIR /app
 
-COPY my_tts.py my_ocr.py my_log.py my_trans.py requirements.txt gpt_basic.py tb.py /app/
+COPY my_tts.py my_stt.py my_ocr.py my_log.py my_trans.py requirements.txt gpt_basic.py tb.py /app/
 
 
 RUN apt-get update && apt-get install -y \

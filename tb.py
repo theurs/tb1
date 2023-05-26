@@ -4,6 +4,7 @@
 from aiogram import Bot, Dispatcher, types, executor
 import io, os
 import my_ocr, my_trans, my_log, my_tts
+import chardet
 import gpt_basic
 
 if os.path.exists('cfg.py'):
@@ -152,8 +153,24 @@ async def handle_photo(message: types.Message):
     
 @dp.message_handler(content_types=types.ContentType.DOCUMENT)
 async def handle_document(message: types.Message):
+
+    if message.document.mime_type == 'text/plain':
+
+        file_id = message.document.file_id
+        file_info = await bot.get_file(file_id)
+        file = await bot.download_file_by_id(file_id)
+        text = file.read().decode('utf-8').strip()
+        #print(text)
+        
+        # Озвучиваем текст
+        audio = my_tts.tts(text)
+        await message.reply_voice(audio)
+        return
+
+
     #отключено пока. слишком долго выполняется
     return
+    
     # получаем самый большой документ из списка
     document = message.document
     # если документ не является PDF-файлом, отправляем сообщение об ошибке

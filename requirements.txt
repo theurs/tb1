@@ -9,3 +9,5 @@ py_trans
 langdetect
 fake_useragent
 openai
+edge_tts
+

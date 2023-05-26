@@ -3,7 +3,7 @@
 
 from aiogram import Bot, Dispatcher, types, executor
 import io, os
-import my_ocr, my_trans, my_log
+import my_ocr, my_trans, my_log, my_tts
 import gpt_basic
 
 if os.path.exists('cfg.py'):
@@ -21,6 +21,31 @@ async def send_welcome(message: types.Message):
     # Отправляем приветственное сообщение
     await message.reply("Привет!")
     await my_log.log(message)
+
+
+@dp.message_handler(commands=['trans'])
+async def trans(message: types.Message):
+    args = message.text.split(' ', 2)[1:]
+    if len(args) != 2:
+        await message.reply('Использование: /trans <язык en|ru|...> <текст>')
+        return
+    lang, text = args
+    translated = my_trans.translate_text2(text, lang)
+    if translated:
+        await message.reply(translated)
+    else:
+        await message.reply('Ошибка перевода')
+
+
+@dp.message_handler(commands=['tts']) 
+async def tts(message: types.Message):
+    args = message.get_args().split()
+    if not args:
+        await message.reply('Использование: /tts <текст>')
+        return
+    text = ' '.join(args)
+    audio = my_tts.tts(text)
+    await message.reply_voice(audio)
 
 
 @dp.message_handler()

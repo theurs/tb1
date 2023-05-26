@@ -40,9 +40,9 @@ def translate_text(text, lang = 'ru'):
     return None
     
 
-def translate_text2(text):
-    """ Возвращает None если не удалось перевести и текст перевода если удалось """
-    process = subprocess.Popen(['trans', ':ru', '-b', text], stdout = subprocess.PIPE)
+def translate_text2(text, lang = 'ru'):
+    """ Переводит text на язык lang с помощью утилиты trans. Возвращает None если не удалось перевести и текст перевода если удалось """
+    process = subprocess.Popen(['trans', f':{lang}', '-b', text], stdout = subprocess.PIPE)
     output, error = process.communicate()
     r = output.decode('utf-8').strip()
     if error != None:
@@ -83,7 +83,7 @@ F-16 – багатоцільовий літак, який може працюв
 надiслати новину @novosti_kieva_bot
 👉ПІДПИСАТИСЬ (https://t.me/+YjYxxNba5fYyN2Ni)"""
     
-    print(detect_lang('Єто он при дочке сделал'))
+    print(translate_text2(text, 'en'))
     
     #print(translate_text(text))
     #print(translate_text2(text))

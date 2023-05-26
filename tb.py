@@ -37,7 +37,7 @@ async def on_startup(dp):
 @dp.message_handler(commands=['start', 'help'])
 async def send_welcome(message: types.Message):
     # Отправляем приветственное сообщение
-    await message.reply("""Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
+    await message.answer("""Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
 Озвучить текст, надо прислать тексотвый файл .txt с кодировкой UTF8\n\n""" + open('commands.txt').read())
     await my_log.log(message)
 

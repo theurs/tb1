@@ -17,10 +17,28 @@ bot = Bot(token=token)
 dp = Dispatcher(bot)
 
 
-@dp.message_handler(commands=['start'])
+async def set_default_commands(dp):
+    commands = []
+    with open('commands.txt') as f:
+        for line in f:
+            try:
+                command, description = line[1:].strip().split(' - ', 1)
+                if command and description:
+                    commands.append(types.BotCommand(command, description))
+            except Exception as e:
+                print(e)
+    await dp.bot.set_my_commands(commands)
+
+
+async def on_startup(dp):
+    await set_default_commands(dp)
+
+
+@dp.message_handler(commands=['start', 'help'])
 async def send_welcome(message: types.Message):
     # Отправляем приветственное сообщение
-    await message.reply("Привет!")
+    await message.reply("""Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
+Озвучить текст, надо прислать тексотвый файл .txt с кодировкой UTF8\n\n""" + open('commands.txt').read())
     await my_log.log(message)
 
 
@@ -194,4 +212,4 @@ async def handle_document(message: types.Message):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)

@@ -48,6 +48,31 @@ async def tts(message: types.Message):
     await message.reply_voice(audio)
 
 
+@dp.message_handler(commands=['tts2']) 
+async def tts2(message: types.Message):
+    args = message.get_args().split()
+    if not args:
+        await message.reply('Использование: /tts ru|en|uk|... <текст>')
+        return
+    text = ' '.join(args[1:])
+    lang = args[0]
+    audio = my_tts.tts(text, lang)
+    await message.reply_voice(audio)
+
+
+@dp.message_handler(commands=['tts3']) 
+async def tts3(message: types.Message):
+    args = message.get_args().split()
+    if not args:
+        await message.reply('Использование: /tts ru|en|uk|... +-xx% <текст>')
+        return
+    text = ' '.join(args[2:])
+    lang = args[0]
+    rate = args[1]
+    audio = my_tts.tts(text, lang, rate)
+    await message.reply_voice(audio)
+
+
 @dp.message_handler()
 async def echo(message: types.Message):
     if message.entities:

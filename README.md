@@ -23,7 +23,7 @@
 2. Установите утилиту trans `sudo apt-get install translate-shell`
 3. Установите утилиту tesseract `sudo apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd`
 4. Установите словари `sudo apt install aspell aspell-en aspell-ru aspell-uk enchant`
-5. Склонируйте репозиторий с помощью команды:
+5. Клонируйте репозиторий с помощью команды:
 
    ```
    git clone https://github.com/theurs/tb1.git
@@ -47,11 +47,15 @@ token = 'токен телеграм бота'
 key = 'openai api key'
 ```
 вместо этого можно передавать токен через переменную окружения
-
 ```
 export TOKEN='токен телеграм бота'
 export OPENAI_KEY='openai api key'
 ```
+
+Путь до утилиты edge-tts записан прямо в коде в my_tts.py. Его надо изменить на ваш.
+`/home/ubuntu/.local/bin/edge-tts`
+
+
 7. Запустить ./tb.py
 
 Можно собрать и запустить докер образ.

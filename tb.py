@@ -4,7 +4,7 @@
 from aiogram import Bot, Dispatcher, types, executor
 import io, os
 import tempfile
-import my_ocr, my_trans, my_log, my_tts, my_stt
+import my_dic, my_ocr, my_trans, my_log, my_tts, my_stt
 import chardet
 import gpt_basic
 import string
@@ -23,7 +23,7 @@ dp = Dispatcher(bot)
 
 
 # история диалогов для GPT chat
-dp.dialogs = {}
+dp.dialogs = my_dic.PersistentDict('dialogs.pkl')
 dialogs = dp.dialogs
 # диалог всегда начинается одинаково
 gpt_start_message = [{"role":    "system",
@@ -155,7 +155,7 @@ async def send_welcome(message: types.Message):
     # Отправляем приветственное сообщение
     await message.answer("""Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
 Озвучить текст, надо прислать текстовый файл .txt с кодировкой UTF8\n\nСообщения на иностранном языке автоматически переводятся на русский\n\n\
-Голосовые сообщения автоматически переводятся в текст\n\n""" + open('commands.txt').read())
+Голосовые сообщения автоматически переводятся в текст\n\nGPT chat активируется словом бот - бот, привет\n\n""" + open('commands.txt').read())
     await my_log.log(message)
 
 

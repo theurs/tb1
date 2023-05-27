@@ -4,3 +4,4 @@ cfg.py
 sync
 __pycache__
 build.log
+dialogs.pkl

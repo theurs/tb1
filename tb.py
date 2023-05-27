@@ -11,6 +11,7 @@ import string
 import openai
 import enchant
 import re
+import subprocess
 
 if os.path.exists('cfg.py'):
     from cfg import token
@@ -65,6 +66,65 @@ def count_tokens(messages):
     return 0
 
 
+
+def dialog_add_user_request_bing(chat_id, text):
+    """добавляет в историю переписки с юзером его новый запрос и ответ от Bing
+    делает запрос и возвращает ответ"""
+    
+    global dialogs
+    
+    # что делать с слишком длинными запросами? пока будем просто игнорить
+    #if len(text) > 2000: ''
+    
+    # создаем новую историю диалогов с юзером из старой если есть
+    try:
+        new_messages = dialogs[chat_id]
+    except Exception as e:
+        print('New dialog with: ' + str(e))
+        new_messages = []
+    # теперь ее надо почистить что бы влезла в запрос к GPT
+    # просто удаляем все кроме 10 последний
+    if len(new_messages) > 10:
+        new_messages = new_messages[10:]
+    # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше 2000
+    while (count_tokens(new_messages) > 2000):
+        new_messages = new_messages[1:]
+    
+    # добавляем в историю новый запрос и отправляем в bing
+    new_messages = new_messages + [{"role":    "user",
+                                    "content": text}]
+                                    
+    # для бинга надо сконвертировать историю по другому
+    # в строчку с разделением на строки с помощью \n
+    # user - hello
+    # bing - hi
+    # user - 2+2?
+    # bing - 4
+    # user - who was first on the moon:
+    
+    bing_prompt = ''.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages)
+    
+    resp = subprocess.run(['/usr/bin/python3', '/home/ubuntu/tb/bingai.py', bing_prompt], stdout=subprocess.PIPE)
+    resp = resp.stdout.decode('utf-8')
+    if resp.startswith('Bing: '):
+        resp = resp[6:]
+    if resp.startswith('Привет, это Bing.'):
+        resp = resp[18:]
+    if resp:
+        resp = check_and_fix_text(resp)
+        new_messages = new_messages + [{"role":    "assistant",
+                                         "content": resp}]
+        # сохраняем диалог
+        dialogs[chat_id] = new_messages or []
+        for i in dialogs[chat_id]:
+            print(i)
+        print('\n\n')
+    else:
+        new_messages = new_messages[:-1]
+        return ''
+    return resp
+
+
 def dialog_add_user_request(chat_id, text):
     """добавляет в историю переписки с юзером его новый запрос и ответ от GPT
     делает запрос и возвращает ответ"""
@@ -85,7 +145,7 @@ def dialog_add_user_request(chat_id, text):
     # просто удаляем все кроме 10 последний
     if len(new_messages) > 10:
         new_messages = new_messages[10:]
-    # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше 1000
+    # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше 2000
     while (count_tokens(new_messages) > 2000):
         new_messages = new_messages[1:]
     
@@ -255,11 +315,23 @@ async def echo(message: types.Message):
 
     # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
     # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
-    if message.text.lower().startswith('бот ') or message.text.lower().startswith('бот,') or is_reply or is_private:  
+    if msg.startswith('бот ') or msg.startswith('бот,') or is_reply or is_private:
         await bot.send_chat_action(chat_id, 'typing')
-        #await bot.send_message(chat_id, message.text)
         # добавляем новый запрос пользователя в историю диалога пользователя
         resp = dialog_add_user_request(chat_id, message.text)
+        if resp:
+            if is_private:
+                await bot.send_message(chat_id, resp, parse_mode='Markdown')
+                await my_log.log(message, resp)
+            else:
+                await message.reply(resp, parse_mode='Markdown')
+                await my_log.log(message, resp)
+    # можно перенаправить запрос к бингу, но он долго отвечает
+    elif msg.startswith('бинг ') or msg.startswith('бинг,') or is_reply or is_private:
+
+        await bot.send_chat_action(chat_id, 'typing')
+        # добавляем новый запрос пользователя в историю диалога пользователя
+        resp = dialog_add_user_request_bing(chat_id, message.text)
         if resp:
             if is_private:
                 await bot.send_message(chat_id, resp, parse_mode='Markdown')

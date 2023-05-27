@@ -155,7 +155,7 @@ async def send_welcome(message: types.Message):
     # Отправляем приветственное сообщение
     await message.answer("""Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
 Озвучить текст, надо прислать текстовый файл .txt с кодировкой UTF8\n\nСообщения на иностранном языке автоматически переводятся на русский\n\n\
-Голосовые сообщения автоматически переводятся в текст\n\nGPT chat активируется словом бот - бот, привет\n\n""" + open('commands.txt').read())
+Голосовые сообщения автоматически переводятся в текст\n\nGPT chat активируется словом бот - бот, привет. Что бы отчистить историю напишите забудь.\n\n""" + open('commands.txt').read())
     await my_log.log(message)
 
 
@@ -223,6 +223,15 @@ async def echo(message: types.Message):
     # id куда писать ответ
     chat_id = message.chat.id  
 
+    # если сообщение начинается на 'забудь' то стираем историю общения GPT
+    if (message.text.lower().startswith('забудь') and (is_private or is_reply)) or (message.text.lower().startswith('бот забудь') or message.text.lower().startswith('бот, забудь')):
+        global dialogs
+        dialogs[chat_id] = []
+        await bot.send_message(chat_id, 'Ок', parse_mode='Markdown')
+        await my_log.log(message, 'История GPT принудительно отчищена')
+        return
+
+    
     # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
     # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
     if message.text.lower().startswith('бот ') or message.text.lower().startswith('бот,') or is_reply or is_private:  

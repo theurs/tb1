@@ -11,3 +11,4 @@ fake_useragent
 openai
 edge_tts
 vosk
+EdgeGPT

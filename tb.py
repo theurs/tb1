@@ -24,7 +24,11 @@ dp = Dispatcher(bot)
 
 # история диалогов для GPT chat
 dp.dialogs = my_dic.PersistentDict('dialogs.pkl')
+dp.blocks = my_dic.PersistentDict('blocks.pkl')
+# словарь с диалогами юзеров с чатботом
 dialogs = dp.dialogs
+# словарь с номерами каналов в которых заблокирован автоперевод
+blocks = dp.blocks
 # диалог всегда начинается одинаково
 gpt_start_message = [{"role":    "system",
                       "content": "Ты информационная система отвечающая на запросы юзера."}]
@@ -223,15 +227,34 @@ async def echo(message: types.Message):
     # id куда писать ответ
     chat_id = message.chat.id  
 
+
+    msg = message.text.lower()
+    global blocks
+    
+    
+    # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
+    if ((msg.startswith('замолчи') or msg.startswith('заткнись')) and (is_private or is_reply)) or msg.startswith('бот замолчи') or msg.startswith('бот, замолчи') or msg.startswith('бот, заткнись') or msg.startswith('бот заткнись'):
+        blocks[chat_id] = 1
+        await my_log.log(message, 'Включена блокировка автопереводов в чате')
+        await bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown')
+        return
+    # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
+    if ((msg.startswith('вернись')) and (is_private or is_reply)) or (msg.startswith('бот вернись') or msg.startswith('бот, вернись')):
+        blocks[chat_id] = 0
+        await my_log.log(message, 'Выключена блокировка автопереводов в чате')
+        await bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown')
+        return
+
+
     # если сообщение начинается на 'забудь' то стираем историю общения GPT
-    if (message.text.lower().startswith('забудь') and (is_private or is_reply)) or (message.text.lower().startswith('бот забудь') or message.text.lower().startswith('бот, забудь')):
+    if (msg.startswith('забудь') and (is_private or is_reply)) or (msg.startswith('бот забудь') or msg.startswith('бот, забудь')):
         global dialogs
         dialogs[chat_id] = []
         await bot.send_message(chat_id, 'Ок', parse_mode='Markdown')
         await my_log.log(message, 'История GPT принудительно отчищена')
         return
 
-    
+
     # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
     # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
     if message.text.lower().startswith('бот ') or message.text.lower().startswith('бот,') or is_reply or is_private:  
@@ -247,6 +270,8 @@ async def echo(message: types.Message):
                 await message.reply(resp, parse_mode='Markdown')
                 await my_log.log(message, resp)
     else: # смотрим надо ли переводить текст
+        if chat_id in blocks and blocks[chat_id] == 1:
+            return
         if message.entities: # не надо если там спойлеры
             if message.entities[0]['type'] in ('code', 'spoiler'):
                 await my_log.log(message, 'code or spoiler in message')

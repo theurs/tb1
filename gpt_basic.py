@@ -145,6 +145,9 @@ def detect_ocr_command(text):
 
     # сначала пытаемся понять по нечеткому совпадению слов
     if any(fuzz.ratio(text, keyword) > 70 for keyword in keywords): return True
+    
+    # пока что без GPT - ложные срабатывания ни к чему
+    return False
 
     if not openai.api_key: return False
     
@@ -192,8 +195,8 @@ if __name__ == '__main__':
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом."""))
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))
 
-    #print(detect_ocr_command('детект'))
+    print(detect_ocr_command('Шарлотка с яблоками на скорую руку, например. Остывает.'))
     
     #print(clear_after_stt('Ну и что это значит блять. Да ебаный ж ты нахуй.'))
     #print(clear_after_stt('пошёл нахуй блять'))
-    print(clear_after_stt("""Чтоб я тебя здесь больше не видел пидарас!"""))
+    #print(clear_after_stt("""Чтоб я тебя здесь больше не видел пидарас!"""))

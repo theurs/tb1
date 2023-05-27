@@ -38,19 +38,17 @@ def check_and_fix_text(text):
     """пытаемся исправить странную особенность пиратского GPT сервера, он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
     ru = enchant.Dict("ru_RU")
 
-    # убираем из текста всё кроме русских букв
+    # убираем из текста всё кроме русских букв, 2 странных символа меняем на 1 что бы упростить регулярку
     text = text.replace('��', '⁂')
     russian_letters = re.compile('[^⁂а-яА-ЯёЁ\s]')
     text2 = russian_letters.sub(' ', text)
     
     words = text2.split()
-    for i, word in enumerate(words):
+    for word in words:
         if '⁂' in word:
             suggestions = ru.suggest(word)
             if len(suggestions) > 0:
                 text = text.replace(word, suggestions[0])
-            print(word)
-            print(suggestions)
     return text
 
 

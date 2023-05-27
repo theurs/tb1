@@ -5,3 +5,4 @@ sync
 __pycache__
 build.log
 dialogs.pkl
+blocks.pkl

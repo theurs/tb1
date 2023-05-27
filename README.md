@@ -63,6 +63,9 @@ export OPENAI_KEY='openai api key'
 
 Путь до утилиты edge-tts записан прямо в коде в my_tts.py. Его надо изменить на ваш.
 `/home/ubuntu/.local/bin/edge-tts`
+И так же в my_ocr.py
+И в my_stt.py
+И в tb.py :) искать строку с '/home/ubuntu/tb/bingai.py'
 
 
 7. Запустить ./tb.py

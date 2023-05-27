@@ -58,7 +58,7 @@ def get_text_from_image(b):
             continue
         result += i + ' '
     result = result[:-1]
-    #if find_words(result) < 5: return ''
+    if find_words(result) < 4: return ''
     result_cleared = gpt_basic.clear_after_ocr(result)
     return result_cleared
 

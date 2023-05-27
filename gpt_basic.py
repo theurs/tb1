@@ -95,6 +95,10 @@ def translate_text(text, fr = 'autodetect', to = 'ru'):
 
 def clear_after_ocr(text):
     """Получает текст после распознавания с картинки, пытается его восстановить, исправить ошибки распознавания"""
+
+    # не работает пока что нормально
+    # return text
+
     # если нет ключа то сразу отбой
     if not openai.api_key: return text
     

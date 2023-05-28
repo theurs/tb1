@@ -402,11 +402,11 @@ async def echo(message: types.Message):
 
 
     # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
-    # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
-    if msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
+    # можно перенаправить запрос к бингу, но он долго отвечает
+    if msg.startswith('бинг ') or msg.startswith('бинг,'):
         await bot.send_chat_action(chat_id, 'typing')
         # добавляем новый запрос пользователя в историю диалога пользователя
-        resp = dialog_add_user_request(chat_id, message.text)
+        resp = dialog_add_user_request_bing(chat_id, message.text)
         if resp:
             if is_private:
                 await bot.send_message(chat_id, resp, parse_mode='Markdown')
@@ -414,12 +414,11 @@ async def echo(message: types.Message):
             else:
                 await message.reply(resp, parse_mode='Markdown')
                 await my_log.log(message, resp)
-    # можно перенаправить запрос к бингу, но он долго отвечает
-    elif msg.startswith('бинг ') or msg.startswith('бинг,') or is_reply or is_private:
-
+    # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
+    elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
         await bot.send_chat_action(chat_id, 'typing')
         # добавляем новый запрос пользователя в историю диалога пользователя
-        resp = dialog_add_user_request_bing(chat_id, message.text)
+        resp = dialog_add_user_request(chat_id, message.text)
         if resp:
             if is_private:
                 await bot.send_message(chat_id, resp, parse_mode='Markdown')

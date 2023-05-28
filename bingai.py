@@ -12,15 +12,29 @@ async def main(prompt):
     bot = await Chatbot.create(cookies=cookies)
     r = await bot.ask(prompt=prompt, conversation_style=ConversationStyle.creative)
     await bot.close()
+    
+    text = r['item']['messages'][1]['text']
+    links_raw = r['item']['messages'][1]['adaptiveCards'][0]['body'][0]['text']
+    
+    links = []
+    for i in links_raw.split('\n'):
+        s = i.strip()
+        if len(s) > 2:
+            if s[0] == '[' and s[1].isnumeric():
+                link = s.split(']: ')[1].split(' "')[0]
+                links.append(link)
+            else:
+                break
+        else:
+            break
 
-
-    #print('\n\n\n')
-    #print(r['item']['messages'])
-    #print('\n\n\n')
-
-
-    r = r['item']['messages'][1]['text']
-    return r
+    n = 1
+    for i in links:
+        fr = f'[^{n}^]'
+        to = f'[ <{n}> ]({links[n - 1]})'
+        text = text.replace(fr, to)
+        n += 1
+    return text
 
 
 if __name__ == "__main__":

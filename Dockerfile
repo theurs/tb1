@@ -2,10 +2,15 @@ FROM ubuntu:latest
 
 WORKDIR /app
 
-COPY bingai.py my_dic.py my_tts.py my_stt.py my_ocr.py my_log.py my_trans.py requirements.txt gpt_basic.py tb.py /app/
+COPY requirements.txt commands.txt cookies.json  /app/
+COPY bingai.py gpt_basic.py  my_dic.py  my_log.py  my_ocr.py  my_stt.py  my_trans.py  my_tts.py  tb.py /app/
 
+RUN apt-get update && apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:alex-p/tesseract-ocr5 && \
+    apt-get update && \
+    apt-get -y upgrade
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get install -y \
     python3 \
     python3-pip \
     bsdmainutils \

@@ -578,5 +578,33 @@ async def handle_voice(message: types.Message):
         await my_log.log(message, '[ASR] no results')
 
 
+@dp.message_handler(content_types=types.ContentType.AUDIO)
+async def handle_audio(message: types.Message): 
+    """Распознавание текст из аудио файлов"""
+    caption = message.caption or ''
+    if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй']):
+        return
+
+    # Создание временного файла 
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        file_path = temp_file.name
+    
+    # Скачиваем аудиофайл во временный файл
+    file_id = message.audio.file_id
+    await bot.download_file_by_id(file_id, file_path)
+    
+    # Распознаем текст из аудио 
+    text = my_stt.stt(file_path)
+    
+    os.remove(file_path)
+    
+    # Отправляем распознанный текст 
+    if text.strip() != '':
+        await message.reply(text)
+        await my_log.log(message, f'[ASR] {text}')
+    else:
+        await my_log.log(message, '[ASR] no results')
+
+
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True, on_startup=on_startup)

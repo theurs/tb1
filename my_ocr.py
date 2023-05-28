@@ -27,7 +27,7 @@ def find_words(text):
     # Создаем объект словаря для нужного языка
     en = enchant.Dict("en_US")  # для английского языка
     ru = enchant.Dict("ru_RU")  # для русского языка
-    uk = enchant.Dict("uk_UA")  # для украинского языка
+    #uk = enchant.Dict("uk_UA")  # для украинского языка
     
     r = e = u = 0
     for i in text.split():
@@ -35,17 +35,18 @@ def find_words(text):
             r += 1
         elif en.check(i):
             e += 1
-        elif uk.check(i):
-            u += 1
+        #elif uk.check(i):
+        #    u += 1
         else:
             pass
-            #print(i)
+
     return r + e + u
 
 
 #распознаем  текст с картинки из байтовой строки
 def get_text_from_image(b):
-    language = 'rus+eng+ukr'
+    #language = 'rus+eng+ukr'
+    language = 'rus+eng'
     f = io.BytesIO(b)
     r1 = pytesseract.image_to_string(Image.open(f), lang=language)
     # склеиваем разорванные предложения

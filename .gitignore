@@ -1,10 +1,8 @@
-log.txt
 cfg.py
-1.pdf
 sync
 __pycache__
-build.log
 dialogs.pkl
 blocks.pkl
 cookies.json
 names.pkl
+*.log

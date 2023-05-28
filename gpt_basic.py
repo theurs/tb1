@@ -139,12 +139,8 @@ def detect_ocr_command(text):
     возвращает True, False
     """
     keywords = (
-    'прочитай', 'читай', 'распознай', 'отсканируй', 'текст с картинки', 'текст с изображения', 'текст с фотографии', 'текст с скриншота',
-    'розпізнай', 'скануй', 'extract', 'identify', 'detect', 'ocr', 'text from image', 'text from picture', 'text from photo', 'text from screenshot',
-    'переведи текст с картинки', 'напиши текст с изображения', 'вытащи текст с фотографии', 'получи текст с скриншота', 'OCR с изображения',
-    'прочитати', 'читай', 'розпізнай', 'скануй', 'текст з зображенняня', 'текст з фотографії', 'текст зі скріншоту',
-    'read', 'recognize', 'scan', 'extract', 'identify', 'detect', 'ocr', 'текст з зображення', 'текст з картинки', 'текст з фотографії', 'текст зі скріншоту',
-    'translate text from image', 'write text from picture', 'get text from photo', 'extract text from screenshot', 'OCR from image'
+    'прочитай', 'читай', 'распознай', 'отсканируй', 'розпізнай', 'скануй', 'extract', 'identify', 'detect', 'ocr',
+     'read', 'recognize', 'scan'
     )
 
     # сначала пытаемся понять по нечеткому совпадению слов

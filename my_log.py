@@ -8,7 +8,7 @@ import datetime
 
 
 async def log(message: Message, reply_from_bot: str = '') -> None:
-    log_file_path = os.path.join(os.getcwd(), f'{message.chat.id}.log')
+    log_file_path = os.path.join(os.getcwd(), f'logs_{message.chat.id}.log')
     async with asyncio.Lock():
         with open(log_file_path, 'a') as log_file:
             time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')

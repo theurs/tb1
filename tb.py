@@ -25,11 +25,22 @@ dp = Dispatcher(bot)
 
 # история диалогов для GPT chat
 dp.dialogs = my_dic.PersistentDict('dialogs.pkl')
+
+# в каких чатах выключены автопереводы
 dp.blocks = my_dic.PersistentDict('blocks.pkl')
+
+# в каких чатах какое у бота кодовое слово для обращения к боту
+dp.bot_names = my_dic.PersistentDict('names.pkl')
+# имя бота по умолчанию, в нижнем регистре без пробелов и символов
+bot_name_default = 'бот'
+
 # словарь с диалогами юзеров с чатботом
 dialogs = dp.dialogs
 # словарь с номерами каналов в которых заблокирован автоперевод
 blocks = dp.blocks
+# словарь с именами ботов разными в разных чатах
+bot_names = dp.bot_names
+
 # диалог всегда начинается одинаково
 gpt_start_message = [{"role":    "system",
                       "content": "Ты информационная система отвечающая на запросы юзера."}]
@@ -212,6 +223,26 @@ async def on_startup(dp):
     await set_default_commands(dp)
 
 
+
+@dp.message_handler(commands=['name',])
+async def send_welcome(message: types.Message):
+    """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
+    
+    args = message.text.split()
+    if len(args) > 1:
+        new_name = args[1]
+        
+        # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
+        regex = r'^[a-zA-Zа-яА-Я][a-zA-Zа-яА-Я0-9]*$'
+        if re.match(regex, new_name) and len(new_name) <= 10:
+            await message.answer(f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
+            await my_log.log(message, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
+            global bot_names
+            bot_names[message.chat.id] = new_name
+        else:
+            await message.reply("Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.")
+
+
 @dp.message_handler(commands=['start', 'help'])
 async def send_welcome(message: types.Message):
     # Отправляем приветственное сообщение
@@ -332,21 +363,29 @@ async def echo(message: types.Message):
     is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.id
 
     # id куда писать ответ
-    chat_id = message.chat.id  
+    chat_id = message.chat.id
 
 
     msg = message.text.lower()
-    global blocks
+    global blocks, bot_names
+    
+    
+    # определяем какое имя у бота в этом чате, на какое слово он отзывается
+    if chat_id in bot_names:
+        bot_name = bot_names[chat_id]
+    else:
+        bot_name = bot_name_default
+        bot_names[chat_id] = bot_name
     
     
     # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
-    if ((msg.startswith('замолчи') or msg.startswith('заткнись')) and (is_private or is_reply)) or msg.startswith('бот замолчи') or msg.startswith('бот, замолчи') or msg.startswith('бот, заткнись') or msg.startswith('бот заткнись'):
+    if ((msg.startswith('замолчи') or msg.startswith('заткнись')) and (is_private or is_reply)) or msg.startswith(f'{bot_name} замолчи') or msg.startswith(f'{bot_name}, замолчи') or msg.startswith(f'{bot_name}, заткнись') or msg.startswith(f'{bot_name} заткнись'):
         blocks[chat_id] = 1
         await my_log.log(message, 'Включена блокировка автопереводов в чате')
         await bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown')
         return
     # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
-    if ((msg.startswith('вернись')) and (is_private or is_reply)) or (msg.startswith('бот вернись') or msg.startswith('бот, вернись')):
+    if ((msg.startswith('вернись')) and (is_private or is_reply)) or (msg.startswith(f'{bot_name} вернись') or msg.startswith(f'{bot_name}, вернись')):
         blocks[chat_id] = 0
         await my_log.log(message, 'Выключена блокировка автопереводов в чате')
         await bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown')
@@ -354,7 +393,7 @@ async def echo(message: types.Message):
 
 
     # если сообщение начинается на 'забудь' то стираем историю общения GPT
-    if (msg.startswith('забудь') and (is_private or is_reply)) or (msg.startswith('бот забудь') or msg.startswith('бот, забудь')):
+    if (msg.startswith('забудь') and (is_private or is_reply)) or (msg.startswith(f'{bot_name} забудь') or msg.startswith(f'{bot_name}, забудь')):
         global dialogs
         dialogs[chat_id] = []
         await bot.send_message(chat_id, 'Ок', parse_mode='Markdown')
@@ -364,7 +403,7 @@ async def echo(message: types.Message):
 
     # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
     # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
-    if msg.startswith('бот ') or msg.startswith('бот,') or is_reply or is_private:
+    if msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
         await bot.send_chat_action(chat_id, 'typing')
         # добавляем новый запрос пользователя в историю диалога пользователя
         resp = dialog_add_user_request(chat_id, message.text)

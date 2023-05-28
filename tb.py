@@ -372,7 +372,7 @@ async def echo(message: types.Message):
     
     # определяем какое имя у бота в этом чате, на какое слово он отзывается
     if chat_id in bot_names:
-        bot_name = bot_names[chat_id]
+        bot_name = bot_names[chat_id].lower()
     else:
         bot_name = bot_name_default
         bot_names[chat_id] = bot_name

@@ -24,5 +24,6 @@ async def main(prompt):
 
 
 if __name__ == "__main__":
+    """Usage ./bingai.py 'list 10 japanese dishes'"""
     prompt = sys.argv[1]
     print(asyncio.run(main(prompt)))

@@ -223,11 +223,60 @@ async def send_welcome(message: types.Message):
 
 @dp.message_handler(commands=['trans'])
 async def trans(message: types.Message):
+    supported_langs = [
+    'af', 'am', 'ar', 'as', 'ay', 'az', 'ba', 'be', 'bg', 'bho', 'bm', 'bn', 
+    'bo', 'bs', 'ca', 'ceb', 'ckb', 'co', 'cs', 'cv', 'cy', 'da', 'de', 'doi', 
+    'dv', 'ee', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fj', 'fo', 
+    'fr', 'fr-CA', 'fy', 'ga', 'gd', 'gl', 'gn', 'gom', 'gu', 'ha', 'haw', 
+    'he', 'hi', 'hmn', 'hr', 'hsb', 'ht', 'hu', 'hy', 'id', 'ig', 'ikt', 'ilo',
+    'is', 'it', 'iu', 'iu-Latn', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 
+    'kri', 'ku', 'ky', 'la', 'lb', 'lg', 'ln', 'lo', 'lt', 'lus', 'lv', 'lzh',
+    'mai', 'mg', 'mhr', 'mi', 'mk', 'ml', 'mn', 'mn-Mong', 'mni-Mtei', 'mr', 
+    'mrj', 'ms', 'mt', 'my', 'ne', 'nl', 'no', 'nso', 'ny', 'om', 'or', 'otq', 
+    'pa', 'pap', 'pl', 'prs', 'ps', 'pt-BR', 'pt-PT', 'qu', 'ro', 'ru', 'rw', 
+    'sa', 'sah', 'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl', 
+    'sr-Latn', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'ti', 'tk', 'tl',
+    'tlh-Latn', 'to', 'tr', 'ts', 'tt', 'tw', 'ty', 'udm', 'ug', 'uk', 'ur', 
+    'uz', 'vi', 'xh', 'yi', 'yo', 'yua', 'yue', 'zh-CN', 'zh-TW', 'zu']
+    
+    help_codes = """ar Арабский
+bn Бенгальский
+de Немецкий
+en Английский
+es Испанский
+fr Французский
+hi Хинди
+id Индонезийский
+it Итальянский
+ja Японский
+ko Корейский
+ms Малайский
+nl Голландский
+pa Пенджаби
+pl Польский
+pt-BR Португальский (Бразилия)
+pt-PT Португальский (Португалия)
+ru Русский
+sv Шведский
+ta Тамильский
+te Телугу
+th Тайский
+tr Турецкий
+vi Вьетнамский
+zh-CN Китайский (упрощенный)
+zh-TW Китайский (традиционный)
+
+И многие другие
+"""
     args = message.text.split(' ', 2)[1:]
     if len(args) != 2:
-        await message.reply('Использование: /trans <язык en|ru|...> <текст>')
+        await message.reply('Использование: /trans <язык en|ru|...> <текст>\n\n' + help_codes)
         return
     lang, text = args
+    # если язык не указан то это русский
+    if lang not in supported_langs:
+        text = lang + ' ' + text
+        lang = 'ru'
     translated = my_trans.translate_text2(text, lang)
     if translated:
         await message.reply(translated)

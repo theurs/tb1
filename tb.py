@@ -127,9 +127,9 @@ def dialog_add_user_request_bing(chat_id, text):
                                          "content": resp}]
         # сохраняем диалог
         dialogs[chat_id] = new_messages or []
-        for i in dialogs[chat_id]:
-            print(i)
-        print('\n\n')
+        #for i in dialogs[chat_id]:
+        #    print(i)
+        #print('\n\n')
     else:
         new_messages = new_messages[:-1]
         return ''
@@ -200,9 +200,9 @@ def dialog_add_user_request(chat_id, text):
     
     # сохраняем диалог
     dialogs[chat_id] = new_messages or []
-    for i in dialogs[chat_id]:
-        print(i)
-    print('\n\n')
+    #for i in dialogs[chat_id]:
+    #    print(i)
+    #print('\n\n')
     return resp
 
 
@@ -443,6 +443,7 @@ async def echo(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentType.VIDEO)
 async def handle_video(message: types.Message):
+    """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
     # пересланные сообщения пытаемся перевести даже если в них видео
     if "forward_from_chat" in message:
         if message.entities:
@@ -461,7 +462,9 @@ async def handle_video(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentType.PHOTO)
 async def handle_photo(message: types.Message):
+    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
     # пересланные сообщения пытаемся перевести даже если в них картинка
+    # новости в телеграме часто делают как картинка + длинная подпись к ней
     if "forward_from_chat" in message:
         if message.entities:
             if message.entities[0]['type'] in ('code', 'spoiler'):
@@ -506,14 +509,13 @@ async def handle_photo(message: types.Message):
     
 @dp.message_handler(content_types=types.ContentType.DOCUMENT)
 async def handle_document(message: types.Message):
-
+    """Обработчик документов"""
+    # если текстовый файл то пытаемся озвучить как книгу. русский голос, скорость +50%
     if message.document.mime_type == 'text/plain':
-
         file_id = message.document.file_id
         file_info = await bot.get_file(file_id)
         file = await bot.download_file_by_id(file_id)
         text = file.read().decode('utf-8').strip()
-        #print(text)
         
         # Озвучиваем текст
         audio = my_tts.tts(text)
@@ -521,6 +523,7 @@ async def handle_document(message: types.Message):
         return
 
 
+    # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
     #отключено пока. слишком долго выполняется
     return
     
@@ -548,6 +551,7 @@ async def handle_document(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentType.VOICE)
 async def handle_voice(message: types.Message): 
+    """Автоматическое распознавание текст из голосовых сообщений"""
     # Создание временного файла 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         file_path = temp_file.name

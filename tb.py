@@ -233,12 +233,12 @@ async def send_welcome(message: types.Message):
         new_name = args[1]
         
         # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
-        regex = r'^[a-zA-Zа-яА-Я][a-zA-Zа-яА-Я0-9]*$'
+        regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
         if re.match(regex, new_name) and len(new_name) <= 10:
             await message.answer(f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
             await my_log.log(message, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
             global bot_names
-            bot_names[message.chat.id] = new_name
+            bot_names[message.chat.id] = new_name.lower()
         else:
             await message.reply("Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.")
 
@@ -372,7 +372,7 @@ async def echo(message: types.Message):
     
     # определяем какое имя у бота в этом чате, на какое слово он отзывается
     if chat_id in bot_names:
-        bot_name = bot_names[chat_id].lower()
+        bot_name = bot_names[chat_id]
     else:
         bot_name = bot_name_default
         bot_names[chat_id] = bot_name

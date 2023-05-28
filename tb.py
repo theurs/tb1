@@ -510,17 +510,20 @@ async def handle_photo(message: types.Message):
 @dp.message_handler(content_types=types.ContentType.DOCUMENT)
 async def handle_document(message: types.Message):
     """Обработчик документов"""
-    # если текстовый файл то пытаемся озвучить как книгу. русский голос, скорость +50%
-    if message.document.mime_type == 'text/plain':
-        file_id = message.document.file_id
-        file_info = await bot.get_file(file_id)
-        file = await bot.download_file_by_id(file_id)
-        text = file.read().decode('utf-8').strip()
+    # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
+    caption = message.caption or ''
+    if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
+        # если текстовый файл то пытаемся озвучить как книгу. русский голос, скорость +50%
+        if message.document.mime_type == 'text/plain':
+            file_id = message.document.file_id
+            file_info = await bot.get_file(file_id)
+            file = await bot.download_file_by_id(file_id)
+            text = file.read().decode('utf-8').strip()
         
-        # Озвучиваем текст
-        audio = my_tts.tts(text)
-        await message.reply_voice(audio)
-        return
+            # Озвучиваем текст
+            audio = my_tts.tts(text)
+            await message.reply_voice(audio)
+            return
 
 
     # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений

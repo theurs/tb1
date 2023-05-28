@@ -46,7 +46,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+50%') -> bytes:
         "--write-media",# Записать аудио в файл
         filename        # Имя выходного файла
     ]
-    subprocess.run(command)
+    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
     # Читаем аудио из временного файла 
     with open(filename, "rb") as f: 

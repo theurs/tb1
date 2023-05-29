@@ -360,7 +360,11 @@ async def send_debug_history(message: types.Message):
     else:
         new_messages = gpt_start_message
     prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages)
-    await message.answer(prompt)
+    try:
+        await message.answer(prompt, disable_web_page_preview = True)
+    except Exception as e:
+        print(e)
+        await message.answer(md.quote_html(prompt), disable_web_page_preview = True)
 
 
 @dp.message_handler()

@@ -45,7 +45,7 @@ bot_names = dp.bot_names
 
 # диалог всегда начинается одинаково
 gpt_start_message = [{"role":    "system",
-                      "content": "Ты информационная система отвечающая на запросы юзера. Используй оформление маркдаун для телеграма."}]
+                      "content": "Ты информационная система отвечающая на запросы юзера. Используй оформление маркдаун для телеграм бота aiogram types.ParseMode.MARKDOWN."}]
 
 
 def check_and_fix_text(text):
@@ -63,11 +63,13 @@ def check_and_fix_text(text):
             suggestions = ru.suggest(word)
             if len(suggestions) > 0:
                 text = text.replace(word, suggestions[0])
+    # если не удалось подобрать слово из словаря то просто убираем этот символ, пусть лучше будет оопечатка чем мусор
     return text.replace('⁂', '')
 
 
 def count_tokens(messages):
-    """пытаемся посчитать количество токенов в диалоге юзера с ботом"""
+    """пытаемся посчитать количество токенов в диалоге юзера с ботом
+    хз что такое токены считаем просто символы"""
     if messages:
         messages = gpt_start_message + messages
         text = ''.join([msg['content'] + ' ' for msg in messages])
@@ -77,7 +79,6 @@ def count_tokens(messages):
         words_and_chars = len(text)
         return words_and_chars
     return 0
-
 
 
 def dialog_add_user_request_bing(chat_id, text):

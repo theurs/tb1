@@ -359,7 +359,7 @@ async def send_debug_history(message: types.Message):
         new_messages = dialogs[chat_id]
     else:
         new_messages = gpt_start_message
-    prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages)
+    prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
     try:
         await message.answer(prompt, disable_web_page_preview = True)
     except Exception as e:

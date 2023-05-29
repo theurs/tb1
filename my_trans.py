@@ -53,7 +53,10 @@ def translate_text2(text, lang = 'ru'):
 def translate(text):
     """ Проверяем надо ли переводить на русский и переводим если надо.
     Возвращает None если не удалось перевести и текст перевода если удалось """
-    d = detect_lang(text)
+    if text:
+        d = detect_lang(text)
+    else:
+        return None
     # переводим если язык не русский но определился успешно
     if d and d != 'ru':
         # этот вариант почему то заметно хуже работает, хотя вроде бы тот же самый гугл переводчик
@@ -62,7 +65,9 @@ def translate(text):
         #у этого варианта есть проблемы с кодировками в докере Ж)
         #return translate_text2(text)
         
-        return gpt_basic.translate_text(text) or translate_text2(text) or None
+        #return gpt_basic.translate_text(text) or translate_text2(text) or None
+        # отключил ГПТ, он часто включает цензуру
+        return translate_text2(text) or None
     return None
     
 

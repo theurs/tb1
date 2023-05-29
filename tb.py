@@ -2,6 +2,7 @@
 
 
 from aiogram import Bot, Dispatcher, types, executor
+from aiogram import md
 import io, os
 import tempfile
 import my_dic, my_ocr, my_trans, my_log, my_tts, my_stt
@@ -188,7 +189,7 @@ def dialog_add_user_request(chat_id, text):
             while (count_tokens(new_messages) > 1000):
                 new_messages = new_messages[1:]
             new_messages = new_messages[:-2]
-            try:
+            try:   
                 resp = gpt_basic.ai(prompt = text, messages = gpt_start_message + new_messages)
             except Exception as e:
                 print(e)
@@ -197,16 +198,16 @@ def dialog_add_user_request(chat_id, text):
                 resp = check_and_fix_text(resp)
                 new_messages = new_messages + [{"role":    "assistant",
                                                 "content": resp}]
+            else:
+                new_messages = new_messages[:-1]
+                return ''
         else:
             print(e)
-        new_messages = new_messages[:-1]
-        return ''
+            new_messages = new_messages[:-1]
+            return ''
     
     # сохраняем диалог
     dialogs[chat_id] = new_messages or []
-    #for i in dialogs[chat_id]:
-    #    print(i)
-    #print('\n\n')
     return resp
 
 
@@ -427,11 +428,18 @@ async def echo(message: types.Message):
         resp = dialog_add_user_request(chat_id, message.text)
         if resp:
             if is_private:
-                await bot.send_message(chat_id, resp, parse_mode='Markdown')
-                await my_log.log(message, resp)
+                try:
+                    await bot.send_message(chat_id, resp, parse_mode='Markdown')
+                except Exceptaion as e:
+                    print(e)
+                    await bot.send_message(chat_id, md.quote_html(resp), parse_mode='Markdown')
             else:
-                await message.reply(resp, parse_mode='Markdown')
-                await my_log.log(message, resp)
+                try:
+                    await message.reply(resp, parse_mode='Markdown')
+                except Exception as e:
+                    print(e)
+                    await message.reply(md.quote_html(resp), parse_mode='Markdown')
+            await my_log.log(message, resp)
     else: # смотрим надо ли переводить текст
         if chat_id in blocks and blocks[chat_id] == 1:
             return

@@ -3,6 +3,7 @@
 
 from aiogram import Bot, Dispatcher, types, executor
 from aiogram import md
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import io, os
 import tempfile
 import my_dic, my_ocr, my_trans, my_log, my_tts, my_stt
@@ -350,6 +351,19 @@ async def tts3(message: types.Message):
     await message.reply_voice(audio)
 
 
+# кнопка для отчистки памяти
+keyboard_mem = InlineKeyboardMarkup()
+button_clear_history = InlineKeyboardButton('Очистить', callback_data='clear_history')
+keyboard_mem.add(button_clear_history)
+@dp.callback_query_handler(lambda c: c.data == 'clear_history')
+async def process_callback_clear_history(callback_query: types.CallbackQuery):
+    # Здесь можно обработать нажатие на кнопку "Очистить"
+    await bot.answer_callback_query(callback_query.id)
+    await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id, reply_markup=None)
+    global dialogs
+    dialogs[callback_query.message.chat.id] = gpt_start_message
+
+
 @dp.message_handler(commands=['mem',])
 async def send_debug_history(message: types.Message):
     # Отправляем текущую историю сообщений
@@ -363,10 +377,10 @@ async def send_debug_history(message: types.Message):
         new_messages = gpt_start_message
     prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
     try:
-        await message.answer(prompt, disable_web_page_preview = True)
+        await message.answer(prompt, disable_web_page_preview = True, reply_markup=keyboard_mem)
     except Exception as e:
         print(e)
-        await message.answer(md.quote_html(prompt), disable_web_page_preview = True)
+        await message.answer(md.quote_html(prompt), disable_web_page_preview = True, reply_markup=keyboard_mem)
 
 
 @dp.message_handler()

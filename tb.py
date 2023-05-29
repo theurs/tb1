@@ -434,16 +434,16 @@ async def echo(message: types.Message):
         if resp:
             if is_private:
                 try:
-                    await bot.send_message(chat_id, resp, parse_mode='Markdown')
+                    await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True)
                 except Exception as e:
                     print(e)
-                    await bot.send_message(chat_id, md.quote_html(resp), parse_mode='Markdown')
+                    await bot.send_message(chat_id, md.quote_html(resp), parse_mode='Markdown', disable_web_page_preview = True)
             else:
                 try:
-                    await message.reply(resp, parse_mode='Markdown')
+                    await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True)
                 except Exception as e:
                     print(e)
-                    await message.reply(md.quote_html(resp), parse_mode='Markdown')
+                    await message.reply(md.quote_html(resp), parse_mode='Markdown', disable_web_page_preview = True)
             await my_log.log(message, resp)
     else: # смотрим надо ли переводить текст
         if chat_id in blocks and blocks[chat_id] == 1:

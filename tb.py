@@ -383,6 +383,45 @@ async def send_debug_history(message: types.Message):
         await message.answer(md.quote_html(prompt), disable_web_page_preview = True, reply_markup=keyboard_mem)
 
 
+# кнопки для сообщений от бота - продолжай и забудь
+keyboard_chatbot = InlineKeyboardMarkup()
+button_more = InlineKeyboardButton('Продолжай', callback_data='tell_more')
+# эта кнопка реализована рядом с обработчиком этой команды а не здесь
+button_clear = InlineKeyboardButton('Забудь', callback_data='clear_history')
+keyboard_chatbot.add(button_more, button_clear)
+@dp.callback_query_handler(lambda c: c.data == 'tell_more')
+async def process_callback_tell_more(callback_query: types.CallbackQuery):
+    # Команда продолжить боту
+    await bot.answer_callback_query(callback_query.id)
+    #await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id, reply_markup=None)
+    #global dialogs
+    #dialogs[callback_query.message.chat.id] = gpt_start_message
+
+    chat_id = callback_query.message.chat.id
+    is_private = callback_query.message.chat.type == 'private'
+    message = callback_query.message
+    
+    await bot.send_chat_action(chat_id, 'typing')
+    
+    resp = dialog_add_user_request(chat_id, 'Продолжай')
+    if resp:
+        if is_private:
+            try:
+                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            except Exception as e:
+                print(e)
+                clean_text = html.escape(resp)
+                await bot.send_message(chat_id, clean_text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+        else:
+            try:
+                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            except Exception as e:
+                print(e)
+                clean_text = html.escape(resp)
+                await message.reply(clean_text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+        await my_log.log(message, resp)
+
+
 @dp.message_handler()
 async def echo(message: types.Message):
     """Обработчик текстовых сообщений"""
@@ -441,10 +480,10 @@ async def echo(message: types.Message):
         resp = dialog_add_user_request_bing(chat_id, message.text)
         if resp:
             if is_private:
-                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True)
+                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
                 await my_log.log(message, resp)
             else:
-                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True)
+                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
                 await my_log.log(message, resp)
     # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
     elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
@@ -454,18 +493,18 @@ async def echo(message: types.Message):
         if resp:
             if is_private:
                 try:
-                    await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True)
+                    await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
                 except Exception as e:
                     print(e)
                     clean_text = html.escape(resp)
-                    await bot.send_message(chat_id, clean_text, parse_mode='Markdown', disable_web_page_preview = True)
+                    await bot.send_message(chat_id, clean_text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
             else:
                 try:
-                    await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True)
+                    await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
                 except Exception as e:
                     print(e)
                     clean_text = html.escape(resp)
-                    await message.reply(clean_text, parse_mode='Markdown', disable_web_page_preview = True)
+                    await message.reply(clean_text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
             await my_log.log(message, resp)
     else: # смотрим надо ли переводить текст
         if chat_id in blocks and blocks[chat_id] == 1:

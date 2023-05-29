@@ -61,7 +61,7 @@ def check_and_fix_text(text):
             suggestions = ru.suggest(word)
             if len(suggestions) > 0:
                 text = text.replace(word, suggestions[0])
-    return text.replace('��', '')
+    return text.replace('⁂', '')
 
 
 def count_tokens(messages):
@@ -185,10 +185,13 @@ def dialog_add_user_request(chat_id, text):
     except openai.error.InvalidRequestError as e:
         if """This model's maximum context length is 4097 tokens. However, you requested""" in str(e):
             # чистим историю, повторяем запрос
-            #while (count_tokens(new_messages) > 1000):
-            #    new_messages = new_messages[1:]
+            while (count_tokens(new_messages) > 1000):
+                new_messages = new_messages[1:]
             new_messages = new_messages[:-2]
-            resp = gpt_basic.ai(prompt = text, messages = gpt_start_message + new_messages)
+            try:
+                resp = gpt_basic.ai(prompt = text, messages = gpt_start_message + new_messages)
+            except Exception as e:
+                print(e)
             # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
             if resp:
                 resp = check_and_fix_text(resp)
@@ -196,6 +199,7 @@ def dialog_add_user_request(chat_id, text):
                                                 "content": resp}]
         else:
             print(e)
+        new_messages = new_messages[:-1]
         return ''
     
     # сохраняем диалог

@@ -421,10 +421,10 @@ async def echo(message: types.Message):
         resp = dialog_add_user_request_bing(chat_id, message.text)
         if resp:
             if is_private:
-                await bot.send_message(chat_id, resp, parse_mode='Markdown')
+                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True)
                 await my_log.log(message, resp)
             else:
-                await message.reply(resp, parse_mode='Markdown')
+                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True)
                 await my_log.log(message, resp)
     # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
     elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:

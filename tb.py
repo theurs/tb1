@@ -89,18 +89,18 @@ def dialog_add_user_request_bing(chat_id, text):
     #if len(text) > 2000: ''
     
     # создаем новую историю диалогов с юзером из старой если есть
-    try:
+    if chat_id in dialogs:
         new_messages = dialogs[chat_id]
-    except Exception as e:
-        print('New dialog with: ' + str(e))
-        new_messages = []
+    else:
+        new_messages = gpt_start_message
     # теперь ее надо почистить что бы влезла в запрос к GPT
     # просто удаляем все кроме 10 последний
     if len(new_messages) > 10:
-        new_messages = new_messages[10:]
+        new_messages = gpt_start_message + new_messages[10:]
     # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше 2000
+    # удаляем по 2 сразу так как первая - промпт для бота
     while (count_tokens(new_messages) > 2000):
-        new_messages = new_messages[1:]
+        new_messages = gpt_start_message + new_messages[2:]
     
     # добавляем в историю новый запрос и отправляем в bing
     new_messages = new_messages + [{"role":    "user",
@@ -128,9 +128,6 @@ def dialog_add_user_request_bing(chat_id, text):
                                          "content": resp}]
         # сохраняем диалог
         dialogs[chat_id] = new_messages or []
-        #for i in dialogs[chat_id]:
-        #    print(i)
-        #print('\n\n')
     else:
         new_messages = new_messages[:-1]
         return ''
@@ -147,26 +144,24 @@ def dialog_add_user_request(chat_id, text):
     #if len(text) > 2000: ''
     
     # создаем новую историю диалогов с юзером из старой если есть
-    try:
+    if chat_id in dialogs:
         new_messages = dialogs[chat_id]
-    except Exception as e:
-        print('New dialog with: ' + str(e))
-        new_messages = []
-    
+    else:
+        new_messages = gpt_start_message
     # теперь ее надо почистить что бы влезла в запрос к GPT
     # просто удаляем все кроме 10 последний
     if len(new_messages) > 10:
-        new_messages = new_messages[10:]
+        new_messages = gpt_start_message + new_messages[10:]
     # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше 2000
+    # удаляем по 2 сразу так как первая - промпт для бота
     while (count_tokens(new_messages) > 2000):
-        new_messages = new_messages[1:]
-    
+        new_messages = gpt_start_message + new_messages[2:]
+
     # добавляем в историю новый запрос и отправляем в GPT
     new_messages = new_messages + [{"role":    "user",
                                     "content": text}]
     try:
-        resp = gpt_basic.ai(prompt = text, messages = gpt_start_message + new_messages)
-        # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
+        resp = gpt_basic.ai(prompt = text, messages = new_messages)
         if resp:
             resp = check_and_fix_text(resp)
             new_messages = new_messages + [{"role":    "assistant",
@@ -178,19 +173,14 @@ def dialog_add_user_request(chat_id, text):
         # чистим историю, повторяем запрос
         new_messages = new_messages[:-2]
         resp = 'Не хочу говорить об этом.'
-        # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
-        # if resp:
-        #     resp = check_and_fix_text(resp)
-        #     new_messages = new_messages + [{"role":    "assistant",
-        #                                      "content": resp}]
     except openai.error.InvalidRequestError as e:
         if """This model's maximum context length is 4097 tokens. However, you requested""" in str(e):
             # чистим историю, повторяем запрос
             while (count_tokens(new_messages) > 1000):
-                new_messages = new_messages[1:]
-            new_messages = new_messages[:-2]
+                new_messages = gpt_start_message + new_messages[2:]
+            new_messages = gpt_start_message + new_messages[:-2]
             try:   
-                resp = gpt_basic.ai(prompt = text, messages = gpt_start_message + new_messages)
+                resp = gpt_basic.ai(prompt = text, messages = new_messages)
             except Exception as e:
                 print(e)
             # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
@@ -358,6 +348,21 @@ async def tts3(message: types.Message):
     await message.reply_voice(audio)
 
 
+@dp.message_handler(commands=['mem',])
+async def send_debug_history(message: types.Message):
+    # Отправляем текущую историю сообщений
+    global dialogs
+    
+    chat_id = message.chat.id
+    # создаем новую историю диалогов с юзером из старой если есть
+    if chat_id in dialogs:
+        new_messages = dialogs[chat_id]
+    else:
+        new_messages = gpt_start_message
+    prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages)
+    await message.answer(prompt)
+
+
 @dp.message_handler()
 async def echo(message: types.Message):
     """Обработчик текстовых сообщений"""
@@ -430,7 +435,7 @@ async def echo(message: types.Message):
             if is_private:
                 try:
                     await bot.send_message(chat_id, resp, parse_mode='Markdown')
-                except Exceptaion as e:
+                except Exception as e:
                     print(e)
                     await bot.send_message(chat_id, md.quote_html(resp), parse_mode='Markdown')
             else:

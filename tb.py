@@ -45,8 +45,10 @@ blocks = dp.blocks
 bot_names = dp.bot_names
 
 # диалог всегда начинается одинаково
+#gpt_start_message = [{"role":    "system",
+#                      "content": "Ты информационная система отвечающая на запросы юзера. Используй оформление маркдаун для телеграм бота aiogram types.ParseMode.MARKDOWN. В твоих ответах не должно быть символов и сочетаний символов которые не получится преобразовать парсеру."}]
 gpt_start_message = [{"role":    "system",
-                      "content": "Ты информационная система отвечающая на запросы юзера. Используй оформление маркдаун для телеграм бота aiogram types.ParseMode.MARKDOWN. В твоих ответах не должно быть символов и сочетаний символов которые не получится преобразовать парсеру."}]
+                      "content": "Ты информационная система отвечающая на запросы юзера."}]
 
 
 def check_and_fix_text(text):
@@ -380,7 +382,7 @@ async def send_debug_history(message: types.Message):
         await message.answer(prompt, disable_web_page_preview = True, reply_markup=keyboard_mem)
     except Exception as e:
         print(e)
-        await message.answer(md.quote_html(prompt), disable_web_page_preview = True, reply_markup=keyboard_mem)
+        await message.answer(prompt, disable_web_page_preview = True, reply_markup=keyboard_mem)
 
 
 # кнопки для сообщений от бота - продолжай и забудь
@@ -406,19 +408,9 @@ async def process_callback_tell_more(callback_query: types.CallbackQuery):
     resp = dialog_add_user_request(chat_id, 'Продолжай')
     if resp:
         if is_private:
-            try:
-                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            except Exception as e:
-                print(e)
-                clean_text = html.escape(resp)
-                await bot.send_message(chat_id, clean_text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
         else:
-            try:
-                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            except Exception as e:
-                print(e)
-                clean_text = html.escape(resp)
-                await message.reply(clean_text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
         await my_log.log(message, resp)
 
 
@@ -492,19 +484,9 @@ async def echo(message: types.Message):
         resp = dialog_add_user_request(chat_id, message.text)
         if resp:
             if is_private:
-                try:
-                    await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-                except Exception as e:
-                    print(e)
-                    clean_text = html.escape(resp)
-                    await bot.send_message(chat_id, clean_text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
             else:
-                try:
-                    await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-                except Exception as e:
-                    print(e)
-                    clean_text = html.escape(resp)
-                    await message.reply(clean_text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
             await my_log.log(message, resp)
     else: # смотрим надо ли переводить текст
         if chat_id in blocks and blocks[chat_id] == 1:

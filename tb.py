@@ -395,9 +395,11 @@ async def send_debug_history(message: types.Message):
 keyboard_chatbot = InlineKeyboardMarkup()
 button_more = InlineKeyboardButton('Продолжай GPT', callback_data='tell_more')
 button_more_bing = InlineKeyboardButton('Продолжай Бинг', callback_data='tell_more_bing')
+button_remove_answer = InlineKeyboardButton('Стереть ответ', callback_data='tell_remove_answer')
 # эта кнопка реализована рядом с обработчиком этой команды а не здесь
-button_clear = InlineKeyboardButton('Забудь', callback_data='clear_history')
-keyboard_chatbot.add(button_more, button_more_bing, button_clear)
+button_clear = InlineKeyboardButton('Забудь всё', callback_data='clear_history')
+keyboard_chatbot.row_width = 2
+keyboard_chatbot.add(button_more, button_more_bing, button_clear, button_remove_answer)
 @dp.callback_query_handler(lambda c: c.data == 'tell_more')
 async def process_callback_tell_more_gpt(callback_query: types.CallbackQuery):
     # Команда продолжить боту GPT
@@ -450,6 +452,14 @@ async def process_callback_tell_more_bing(callback_query: types.CallbackQuery):
                 print(e)
                 await message.reply(escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
         await my_log.log(message, resp)
+@dp.callback_query_handler(lambda c: c.data == 'tell_remove_answer')
+async def process_callback_tell_remove_answer(callback_query: types.CallbackQuery):
+    """команда удалить это сообщение от бота"""
+    # получаем id чата и id сообщения с ответом
+    chat_id = callback_query.message.chat.id
+    message_id = callback_query.message.message_id
+    # удаляем сообщение с ответом
+    await bot.delete_message(chat_id, message_id)
 
 
 @dp.message_handler()

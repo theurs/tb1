@@ -28,21 +28,17 @@ dp = Dispatcher(bot)
 
 # история диалогов для GPT chat
 dp.dialogs = my_dic.PersistentDict('dialogs.pkl')
-
 # в каких чатах выключены автопереводы
 dp.blocks = my_dic.PersistentDict('blocks.pkl')
-
 # в каких чатах какое у бота кодовое слово для обращения к боту
 dp.bot_names = my_dic.PersistentDict('names.pkl')
+
+dialogs = dp.dialogs
+blocks = dp.blocks
+bot_names = dp.bot_names
+
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 bot_name_default = 'бот'
-
-# словарь с диалогами юзеров с чатботом
-dialogs = dp.dialogs
-# словарь с номерами каналов в которых заблокирован автоперевод
-blocks = dp.blocks
-# словарь с именами ботов разными в разных чатах
-bot_names = dp.bot_names
 
 # диалог всегда начинается одинаково
 #gpt_start_message = [{"role":    "system",
@@ -365,7 +361,7 @@ button_clear_history = InlineKeyboardButton('Очистить', callback_data='c
 keyboard_mem.add(button_clear_history)
 @dp.callback_query_handler(lambda c: c.data == 'clear_history')
 async def process_callback_clear_history(callback_query: types.CallbackQuery):
-    # Здесь можно обработать нажатие на кнопку "Очистить"
+    """Здесь можно обработать нажатие на кнопку 'Очистить'"""
     await bot.answer_callback_query(callback_query.id)
     await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id, reply_markup=None)
     global dialogs
@@ -402,14 +398,13 @@ keyboard_chatbot.row_width = 2
 keyboard_chatbot.add(button_more, button_more_bing, button_clear, button_remove_answer)
 @dp.callback_query_handler(lambda c: c.data == 'tell_more')
 async def process_callback_tell_more_gpt(callback_query: types.CallbackQuery):
-    # Команда продолжить боту GPT
-    await bot.answer_callback_query(callback_query.id)
-
+    """ Команда продолжить боту GPT"""
     chat_id = callback_query.message.chat.id
     is_private = callback_query.message.chat.type == 'private'
     message = callback_query.message
     
     await bot.send_chat_action(chat_id, 'typing')
+    await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id, reply_markup=None)
     
     resp = dialog_add_user_request(chat_id, 'Продолжай')
     if resp:
@@ -428,14 +423,13 @@ async def process_callback_tell_more_gpt(callback_query: types.CallbackQuery):
         await my_log.log(message, resp)
 @dp.callback_query_handler(lambda c: c.data == 'tell_more_bing')
 async def process_callback_tell_more_bing(callback_query: types.CallbackQuery):
-    # Команда продолжить боту Бинг
-    await bot.answer_callback_query(callback_query.id)
-
+    """Команда продолжить боту Бинг"""
     chat_id = callback_query.message.chat.id
     is_private = callback_query.message.chat.type == 'private'
     message = callback_query.message
     
     await bot.send_chat_action(chat_id, 'typing')
+    await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id, reply_markup=None)
     
     resp = dialog_add_user_request_bing(chat_id, 'Продолжай')
     if resp:
@@ -465,7 +459,6 @@ async def process_callback_tell_remove_answer(callback_query: types.CallbackQuer
 @dp.message_handler()
 async def echo(message: types.Message):
     """Обработчик текстовых сообщений"""
-    
     # определяем откуда пришло сообщение  
     is_private = message.chat.type == 'private'
     #is_chat_or_superchat = message.chat.type in ['group', 'supergroup'] 
@@ -475,7 +468,6 @@ async def echo(message: types.Message):
 
     # id куда писать ответ
     chat_id = message.chat.id
-
 
     msg = message.text.lower()
     global blocks, bot_names

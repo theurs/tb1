@@ -2,7 +2,6 @@
 
 
 from aiogram import Bot, Dispatcher, types, executor
-from aiogram import md
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import io, os
 import tempfile
@@ -14,7 +13,6 @@ import openai
 import enchant
 import re
 import subprocess
-import html
 
 if os.path.exists('cfg.py'):
     from cfg import token

@@ -11,10 +11,11 @@ async def main(prompt):
     cookies = json.loads(open("cookies.json", encoding="utf-8").read())
     bot = await Chatbot.create(cookies=cookies)
     r = await bot.ask(prompt=prompt, conversation_style=ConversationStyle.creative)
-    await bot.close()
-    
+
     text = r['item']['messages'][1]['text']
     links_raw = r['item']['messages'][1]['adaptiveCards'][0]['body'][0]['text']
+    
+    await bot.close()
     
     links = []
     for i in links_raw.split('\n'):

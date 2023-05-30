@@ -51,6 +51,12 @@ gpt_start_message = [{"role":    "system",
                       "content": "Ты информационная система отвечающая на запросы юзера."}]
 
 
+def escape_markdown(text):
+    """функция для экранирования символов перед отправкой в маркдауне телеграма"""
+    pattern = r"([_*\[\]()~|`])"
+    return re.sub(pattern, r"\\\1", text)
+
+
 def check_and_fix_text(text):
     """пытаемся исправить странную особенность пиратского GPT сервера, он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
     ru = enchant.Dict("ru_RU")
@@ -387,17 +393,15 @@ async def send_debug_history(message: types.Message):
 
 # кнопки для сообщений от бота - продолжай и забудь
 keyboard_chatbot = InlineKeyboardMarkup()
-button_more = InlineKeyboardButton('Продолжай', callback_data='tell_more')
+button_more = InlineKeyboardButton('Продолжай GPT', callback_data='tell_more')
+button_more_bing = InlineKeyboardButton('Продолжай Бинг', callback_data='tell_more_bing')
 # эта кнопка реализована рядом с обработчиком этой команды а не здесь
 button_clear = InlineKeyboardButton('Забудь', callback_data='clear_history')
-keyboard_chatbot.add(button_more, button_clear)
+keyboard_chatbot.add(button_more, button_more_bing, button_clear)
 @dp.callback_query_handler(lambda c: c.data == 'tell_more')
-async def process_callback_tell_more(callback_query: types.CallbackQuery):
-    # Команда продолжить боту
+async def process_callback_tell_more_gpt(callback_query: types.CallbackQuery):
+    # Команда продолжить боту GPT
     await bot.answer_callback_query(callback_query.id)
-    #await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id, reply_markup=None)
-    #global dialogs
-    #dialogs[callback_query.message.chat.id] = gpt_start_message
 
     chat_id = callback_query.message.chat.id
     is_private = callback_query.message.chat.type == 'private'
@@ -408,9 +412,43 @@ async def process_callback_tell_more(callback_query: types.CallbackQuery):
     resp = dialog_add_user_request(chat_id, 'Продолжай')
     if resp:
         if is_private:
-            await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            try:
+                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            except Exception as e:
+                print(e)
+                await bot.send_message(chat_id, escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
         else:
-            await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            try:
+                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            except Exception as e:
+                print(e)
+                await message.reply(escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+        await my_log.log(message, resp)
+@dp.callback_query_handler(lambda c: c.data == 'tell_more_bing')
+async def process_callback_tell_more_bing(callback_query: types.CallbackQuery):
+    # Команда продолжить боту Бинг
+    await bot.answer_callback_query(callback_query.id)
+
+    chat_id = callback_query.message.chat.id
+    is_private = callback_query.message.chat.type == 'private'
+    message = callback_query.message
+    
+    await bot.send_chat_action(chat_id, 'typing')
+    
+    resp = dialog_add_user_request_bing(chat_id, 'Продолжай')
+    if resp:
+        if is_private:
+            try:
+                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            except Exception as e:
+                print(e)
+                await bot.send_message(chat_id, escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+        else:
+            try:
+                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            except Exception as e:
+                print(e)
+                await message.reply(escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
         await my_log.log(message, resp)
 
 
@@ -472,11 +510,18 @@ async def echo(message: types.Message):
         resp = dialog_add_user_request_bing(chat_id, message.text)
         if resp:
             if is_private:
-                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-                await my_log.log(message, resp)
+                try:
+                    await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+                except Exception as e:    
+                    print(e)
+                    await bot.send_message(escape_markdown(chat_id), resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
             else:
-                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-                await my_log.log(message, resp)
+                try:
+                    await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+                except Exception as e:    
+                    print(e)
+                    await message.reply(escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+            await my_log.log(message, resp)
     # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
     elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
         await bot.send_chat_action(chat_id, 'typing')
@@ -484,9 +529,17 @@ async def echo(message: types.Message):
         resp = dialog_add_user_request(chat_id, message.text)
         if resp:
             if is_private:
-                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+                try:
+                    await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+                except Exception as e:    
+                    print(e)
+                    await bot.send_message(chat_id, escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
             else:
-                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+                try:
+                    await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+                except Exception as e:    
+                    print(e)
+                    await message.reply(escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
             await my_log.log(message, resp)
     else: # смотрим надо ли переводить текст
         if chat_id in blocks and blocks[chat_id] == 1:

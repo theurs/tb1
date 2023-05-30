@@ -11,7 +11,7 @@ import os  # Библиотека для работы с файловой сис
 edge_tts_cmd = "/home/ubuntu/.local/bin/edge-tts"
 
 
-def tts(text: str, voice: str = 'ru', rate: str = '+50%') -> bytes: 
+def tts(text: str, voice: str = 'ru', rate: str = '+0%') -> bytes: 
     """Генерирует аудио из текста с помощью edge-tts и возвращает байтовый поток
 
     Эта функция принимает:
@@ -141,6 +141,6 @@ def get_voice(language_code):
 
 if __name__ == "__main__":
     #with open('test.mp3', 'wb') as f:
-    #    f.write(tts('Привет, как дела!', 'uk'))
+    #    f.write(tts('Привет, как дела!', 'ru'))
     
-    print(get_voice('uk'))
+    print(get_voice('ru'))

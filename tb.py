@@ -514,7 +514,7 @@ async def echo(message: types.Message):
                     await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
                 except Exception as e:    
                     print(e)
-                    await bot.send_message(escape_markdown(chat_id), resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
+                    await bot.send_message(chat_id, escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
             else:
                 try:
                     await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)

@@ -1,0 +1,14 @@
+aiogram
+fuzzywuzzy
+python-Levenshtein
+pytesseract
+Pillow
+pyenchant
+PyMuPDF
+py_trans
+langdetect
+fake_useragent
+openai
+edge_tts
+vosk
+EdgeGPT

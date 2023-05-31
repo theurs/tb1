@@ -1,0 +1,14 @@
+[Unit]
+Description=Telegram Bot Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/tb
+ExecStart=/home/ubuntu/tb/tb.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

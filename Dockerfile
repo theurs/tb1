@@ -3,7 +3,7 @@ FROM ubuntu:latest
 WORKDIR /app
 
 COPY requirements.txt commands.txt cookies.json  /app/
-COPY bingai.py gpt_basic.py  my_dic.py  my_log.py  my_ocr.py  my_stt.py  my_trans.py  my_tts.py  tb.py /app/
+COPY utils.py bingai.py gpt_basic.py  my_dic.py  my_log.py  my_ocr.py  my_stt.py  my_trans.py  my_tts.py  tb.py /app/
 
 RUN apt-get update && apt-get install -y software-properties-common && \
     add-apt-repository -y ppa:alex-p/tesseract-ocr5 && \

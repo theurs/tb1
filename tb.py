@@ -19,6 +19,7 @@ import my_log
 import cfg
 import my_dic
 import utils
+from langdetect import detect_langs
 
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
@@ -376,39 +377,44 @@ def handle_document(message: telebot.types.Message):
             file_info = bot.get_file(file_id)
             file = bot.download_file(file_info.file_path)
             text = file.decode('utf-8')
+            try:
+                lang = detect_langs(text)[0].lang
+            except Exception as error:
+                lang = 'ru'
+                print(error)
             # Озвучиваем текст
-            audio = my_tts.tts(text)
-            bot.send_audio(message.chat.id, audio)
+            audio = my_tts.tts(text, lang)
+            bot.send_voice(message.chat.id, audio)
             my_log.log(message, f'tts file {text}')
             return
 
     # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
+    if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
+        # получаем самый большой документ из списка
+        document = message.document
+        # если документ не является PDF-файлом, отправляем сообщение об ошибке
+        if document.mime_type != 'application/pdf':
+            bot.reply_to(message, 'Это не PDF-файл.')
+            return
+        # скачиваем документ в байтовый поток
+        file_id = message.document.file_id
+        file_info = bot.get_file(file_id)
+        file = bot.download_file(file_info.file_path)
+        fp = io.BytesIO(file)
 
-    # получаем самый большой документ из списка
-    document = message.document
-    # если документ не является PDF-файлом, отправляем сообщение об ошибке
-    if document.mime_type != 'application/pdf':
-        bot.reply_to(message, 'Это не PDF-файл.')
-        return
-    # скачиваем документ в байтовый поток
-    file_id = message.document.file_id
-    file_info = bot.get_file(file_id)
-    file = bot.download_file(file_info.file_path)
-    fp = io.BytesIO(file)
-
-    # распознаем текст в документе с помощью функции get_text
-    text = my_ocr.get_text(fp)
-    # отправляем распознанный текст пользователю
-    if text.strip() != '':
-        # если текст слишком длинный, отправляем его в виде текстового файла
-        if len(text) > 4096:
-            with io.StringIO(text) as f:
-                if message.reply_to_message:
-                    bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt', reply_to_message_id = message.reply_to_message.id)
-                else:
-                    bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt')
-        else:
-            bot.reply_to(message, text)
+        # распознаем текст в документе с помощью функции get_text
+        text = my_ocr.get_text(fp)
+        # отправляем распознанный текст пользователю
+        if text.strip() != '':
+            # если текст слишком длинный, отправляем его в виде текстового файла
+            if len(text) > 4096:
+                with io.StringIO(text) as f:
+                    if message.reply_to_message:
+                        bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt', reply_to_message_id = message.reply_to_message.id)
+                    else:
+                        bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt')
+            else:
+                bot.reply_to(message, text)
 
 
 @bot.message_handler(content_types = ['photo'])
@@ -491,7 +497,7 @@ def send_debug_history(message: telebot.types.Message):
         if chat_id in dialogs:
             new_messages = dialogs[chat_id]
         else:
-            new_messages = gpt_start_message
+            new_messages = utils.gpt_start_message
         prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
         try:
             bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=markup)
@@ -510,7 +516,7 @@ def tts3(message: telebot.types.Message):
     lang = args[0]
     rate = args[1]
     audio = my_tts.tts(text, lang, rate)
-    bot.send_audio(message.chat.id, audio)
+    bot.send_voice(message.chat.id, audio)
 
 
 @bot.message_handler(commands=['tts2']) 
@@ -522,7 +528,7 @@ def tts2(message: telebot.types.Message):
     text = ' '.join(args[1:])
     lang = args[0]
     audio = my_tts.tts(text, lang)
-    bot.send_audio(message.chat.id, audio)
+    bot.send_voice(message.chat.id, audio)
 
 
 @bot.message_handler(commands=['tts']) 
@@ -533,7 +539,7 @@ def tts(message: telebot.types.Message):
         return
     text = ' '.join(args)
     audio = my_tts.tts(text)
-    bot.send_audio(message.chat.id, audio)
+    bot.send_voice(message.chat.id, audio)
 
 
 @bot.message_handler(commands=['trans'])

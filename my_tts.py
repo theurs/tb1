@@ -12,7 +12,7 @@ edge_tts_cmd = "/home/ubuntu/.local/bin/edge-tts"
 #edge_tts_cmd = "/home/user/.local/bin/edge-tts"
 
 
-def tts(text: str, voice: str = 'ru', rate: str = '+0%') -> bytes: 
+def tts(text: str, voice: str = 'ru', rate: str = '+0%') -> bytes:
     """Генерирует аудио из текста с помощью edge-tts и возвращает байтовый поток
 
     Эта функция принимает:

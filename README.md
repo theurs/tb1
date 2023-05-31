@@ -70,12 +70,18 @@ export OPENAI_KEY='openai api key'
 И в my_stt.py
 И в tb.py :) искать строку с '/home/ubuntu/tb/bingai.py'
 
-Для работы распознавания голосовых сообщений надо установить vosk сервер. В докере.
+Для работы распознавания голосовых сообщений надо установить vosk сервер.
+
+`https://github.com/alphacep/vosk-server`
+
+В докере.
 
 `docker run -d -p 2700:2700 --name kaldi-ru --restart always -v /home/ubuntu/vosk/vosk-model-small-ru-0.22:/opt/vosk-model-en/model alphacep/kaldi-en:latest` тут путь заменить и модель скачать в эту папку
 
 Eсли на сервере много оперативки то можно по другому
+
 `docker run -d -p 2700:2700 --name kaldi-ru --restart always  alphacep/kaldi-ru:latest`
+
 Надо несколько 4+ гигабайт на диске и несколько гигабайт оперативной памяти (не знаю сколько но много).
 
 Что бы работал бинг аи надо сохранить свои куки с сайта bing.com раздел чат, попасть туда можно только с ип приличных стран и с аккаунтом в микрософте.

@@ -5,6 +5,36 @@ from py_trans import PyTranslator
 from langdetect import detect, detect_langs
 import subprocess
 import gpt_basic
+import re
+import enchant
+
+
+def count_russian_words_not_in_ukrainian_dict(text):
+    """Считаем количество русских слов в тексте, эти слова не должны быть в украинском"""
+    d_ru = enchant.Dict("ru_RU")
+    d_uk = enchant.Dict("uk_UA")
+    russian_words = []
+    # Заменяем все символы, которых нет в алфавитах, на пробелы
+    text = re.sub(r"[^а-яА-ЯіІїЇєЄёЁ]+", " ", text)
+    for word in text.split():
+        # Проверяем, является ли слово русским
+        if d_ru.check(word) and not d_uk.check(word):
+            russian_words.append(word)
+    return len(russian_words)
+
+
+def count_ukr_words(text):
+    """Считаем количество украинских слов не пересекающихся с русскими"""
+    d_uk = enchant.Dict("uk_UA")
+    d_ru = enchant.Dict("ru_RU")
+    words = []
+    # Заменяем все символы, которых нет в алфавитах, на пробелы
+    text = re.sub(r"[^а-яА-ЯіІїЇєЄёЁ]+", " ", text)
+    for word in text.split():
+        # Проверяем, является ли слово русским
+        if d_uk.check(word) and not d_ru.check(word):
+            words.append(word)
+    return len(words)
 
 
 def detect_lang(text):
@@ -12,9 +42,17 @@ def detect_lang(text):
     # минимальное количество слов для определения языка = 8. на коротких текстах детектор сильно врёт, возможно 8 это тоже мало
     if sum(1 for word in text.split() if len(word) >= 2) < 8:
         return None
+    
+    # если в тексте больше 2 русских слов возвращаем None
+    if count_russian_words_not_in_ukrainian_dict(text) > 2:
+        return None
+
+    # если в тексте больше 2 чисто украинских слов возвращаем 'uk'
+    if count_ukr_words(text) > 2:
+        return 'uk'
 
     # смотрим список вероятностей, и если в списке есть русский то возвращаем None (с русского на русский не переводим)
-    #print(detect_langs(text))
+    print(detect_langs(text))
     try:
         for i in detect_langs(text):
             if i.lang == 'ru':
@@ -88,9 +126,11 @@ F-16 – багатоцільовий літак, який може працюв
 надiслати новину @novosti_kieva_bot
 👉ПІДПИСАТИСЬ (https://t.me/+YjYxxNba5fYyN2Ni)"""
     
-    print(translate_text2(text, 'en'))
+    #print(translate_text2(text, 'en'))
     
     #print(translate_text(text))
     #print(translate_text2(text))
 
     #print(translate(text))
+
+    print(detect_lang('історією та культурою. Только не говори что надо'))

@@ -643,8 +643,10 @@ async def handle_document(message: types.Message):
 
     # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
     #отключено пока. слишком долго выполняется
-    return
-    
+    #return
+    is_private = message.chat.type == 'private'    
+    if not is_private:
+        return
     # получаем самый большой документ из списка
     document = message.document
     # если документ не является PDF-файлом, отправляем сообщение об ошибке

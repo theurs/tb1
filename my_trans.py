@@ -99,13 +99,10 @@ def translate(text):
     if d and d != 'ru':
         # этот вариант почему то заметно хуже работает, хотя вроде бы тот же самый гугл переводчик
         #return translate_text(text)
-
-        #у этого варианта есть проблемы с кодировками в докере Ж)
-        #return translate_text2(text)
         
         #return gpt_basic.translate_text(text) or translate_text2(text) or None
         # отключил ГПТ, он часто включает цензуру
-        return translate_text2(text) or None
+        return translate_text2(text) or translate_text2(text) or None
     return None
     
 
@@ -133,4 +130,5 @@ F-16 – багатоцільовий літак, який може працюв
 
     #print(translate(text))
 
-    print(detect_lang('історією та культурою. Только не говори что надо'))
+    #print(detect_lang('історією та культурою. Только не говори что надо'))
+    print(detect_lang(text))

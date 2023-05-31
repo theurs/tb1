@@ -9,6 +9,7 @@ import os  # Библиотека для работы с файловой сис
 
 
 edge_tts_cmd = "/home/ubuntu/.local/bin/edge-tts"
+#edge_tts_cmd = "/home/user/.local/bin/edge-tts"
 
 
 def tts(text: str, voice: str = 'ru', rate: str = '+0%') -> bytes: 

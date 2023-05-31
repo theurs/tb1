@@ -8,6 +8,7 @@ import gpt_basic
 
 
 vosk_cmd = "/home/ubuntu/.local/bin/vosk-transcriber"
+#vosk_cmd = "/home/user/.local/bin/vosk-transcriber"
 
 
 def stt(input_file):

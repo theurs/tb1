@@ -5,6 +5,7 @@ import pickle
 
 
 class PersistentDict(dict):
+    """Словарь который хранит состояние в файле на диске, данные сохраняются между перезапусками программы"""
     def __init__(self, file_path):
         self.file_path = file_path
         try:

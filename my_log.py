@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 
 
-from aiogram.types import Message
-import asyncio
 import os
 import datetime
+import telebot
+import threading
 
 
-async def log(message: Message, reply_from_bot: str = '') -> None:
+lock = threading.Lock()
+
+
+def log(message: telebot.types.Message, reply_from_bot: str = '') -> None:
+    global lock
     log_file_path = os.path.join(os.getcwd(), f'logs_{message.chat.id}.log')
-    async with asyncio.Lock():
+    with lock:
         with open(log_file_path, 'a') as log_file:
             time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
             log_file.write(f"[{time_now}] [{message.chat.type}] [{('user' if message.chat.type == 'private' else 'chat')} \

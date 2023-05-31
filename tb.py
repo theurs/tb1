@@ -1,261 +1,543 @@
 #!/usr/bin/env python3
 
-
-from aiogram import Bot, Dispatcher, types, executor
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import io, os
-import tempfile
-import my_dic, my_ocr, my_trans, my_log, my_tts, my_stt
-import chardet
-import gpt_basic
-import string
-import openai
-import enchant
+import io
+import os
+import random
 import re
 import subprocess
+import time
+import tempfile
+import threading
+import telebot
+import my_trans
+import my_ocr
+import my_tts
+import my_stt
+import openai
+import gpt_basic
+import my_log
+import cfg
+import my_dic
+import utils
 
-if os.path.exists('cfg.py'):
-    from cfg import token
-else:
-    token = os.getenv('TOKEN')
+
+bot = telebot.TeleBot(cfg.token, skip_pending=True)
+#telebot.apihelper.proxy = cfg.proxy_settings
 
 
-bot = Bot(token=token)
-dp = Dispatcher(bot)
+# до 20 одновременных потоков для чата с гпт и бингом
+semaphore_talks = threading.Semaphore(20)
 
-
+# замок для блокировки постоянных словарей
+lock_dicts = threading.Lock()
 # история диалогов для GPT chat
-dp.dialogs = my_dic.PersistentDict('dialogs.pkl')
+dialogs = my_dic.PersistentDict('dialogs.pkl')
 # в каких чатах выключены автопереводы
-dp.blocks = my_dic.PersistentDict('blocks.pkl')
+blocks = my_dic.PersistentDict('blocks.pkl')
 # в каких чатах какое у бота кодовое слово для обращения к боту
-dp.bot_names = my_dic.PersistentDict('names.pkl')
-
-dialogs = dp.dialogs
-blocks = dp.blocks
-bot_names = dp.bot_names
-
+bot_names = my_dic.PersistentDict('names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 bot_name_default = 'бот'
 
-# диалог всегда начинается одинаково
-#gpt_start_message = [{"role":    "system",
-#                      "content": "Ты информационная система отвечающая на запросы юзера. Используй оформление маркдаун для телеграм бота aiogram types.ParseMode.MARKDOWN. В твоих ответах не должно быть символов и сочетаний символов которые не получится преобразовать парсеру."}]
-gpt_start_message = [{"role":    "system",
-                      "content": "Ты информационная система отвечающая на запросы юзера."}]
 
+def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str:
+    """добавляет в историю переписки с юзером его новый запрос и ответ от чатбота
+    делает запрос и возвращает ответ
 
-def escape_markdown(text):
-    """функция для экранирования символов перед отправкой в маркдауне телеграма"""
-    pattern = r"([_*\[\]()~|`])"
-    return re.sub(pattern, r"\\\1", text)
+    Args:
+        chat_id (int): номер чата или юзера, нужен для хранения истории переписки
+        text (str): новый запрос от юзера
+        engine (str, optional): 'gpt' или 'bing'. Defaults to 'gpt'.
 
-
-def check_and_fix_text(text):
-    """пытаемся исправить странную особенность пиратского GPT сервера, он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
-    ru = enchant.Dict("ru_RU")
-
-    # убираем из текста всё кроме русских букв, 2 странных символа меняем на 1 что бы упростить регулярку
-    text = text.replace('��', '⁂')
-    russian_letters = re.compile('[^⁂а-яА-ЯёЁ\s]')
-    text2 = russian_letters.sub(' ', text)
-    
-    words = text2.split()
-    for word in words:
-        if '⁂' in word:
-            suggestions = ru.suggest(word)
-            if len(suggestions) > 0:
-                text = text.replace(word, suggestions[0])
-    # если не удалось подобрать слово из словаря то просто убираем этот символ, пусть лучше будет оопечатка чем мусор
-    return text.replace('⁂', '')
-
-
-def count_tokens(messages):
-    """пытаемся посчитать количество токенов в диалоге юзера с ботом
-    хз что такое токены считаем просто символы"""
-    if messages:
-        messages = gpt_start_message + messages
-        text = ''.join([msg['content'] + ' ' for msg in messages])
-        #words_and_chars = len(text.split())
-        #symbols = sum(text.count(x) for x in string.punctuation)
-        #words_and_chars += symbols
-        words_and_chars = len(text)
-        return words_and_chars
-    return 0
-
-
-def dialog_add_user_request_bing(chat_id, text):
-    """добавляет в историю переписки с юзером его новый запрос и ответ от Bing
-    делает запрос и возвращает ответ"""
-    
+    Returns:
+        str: возвращает ответ который бот может показать, возможно '' или None
+    """
     global dialogs
     
-    # что делать с слишком длинными запросами? пока будем просто игнорить
+    # что делать с слишком длинными запросами? пока будем просто игнорировать
     #if len(text) > 2000: ''
     
     # создаем новую историю диалогов с юзером из старой если есть
+    # в истории диалогов не храним системный промпт
     if chat_id in dialogs:
-        new_messages = dialogs[chat_id]
+        with lock_dicts:
+            new_messages = dialogs[chat_id]
     else:
-        new_messages = gpt_start_message
+        new_messages = []
     # теперь ее надо почистить что бы влезла в запрос к GPT
     # просто удаляем все кроме 10 последний
     if len(new_messages) > 10:
-        new_messages = gpt_start_message + new_messages[10:]
+        new_messages = new_messages[10:]
     # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше 2000
     # удаляем по 2 сразу так как первая - промпт для бота
-    while (count_tokens(new_messages) > 2000):
-        new_messages = gpt_start_message + new_messages[2:]
+    while (utils.count_tokens(new_messages) > 2000):
+        new_messages = new_messages[2:]
     
-    # добавляем в историю новый запрос и отправляем в bing
+    # добавляем в историю новый запрос и отправляем
     new_messages = new_messages + [{"role":    "user",
                                     "content": text}]
-                                    
-    # для бинга надо сконвертировать историю по другому
-    # в строчку с разделением на строки с помощью \n
-    # user - hello
-    # bing - hi
-    # user - 2+2?
-    # bing - 4
-    # user - who was first on the moon:
-    
-    bing_prompt = ''.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages)
-    
-    resp = subprocess.run(['/usr/bin/python3', '/home/ubuntu/tb/bingai.py', bing_prompt], stdout=subprocess.PIPE)
-    resp = resp.stdout.decode('utf-8')
-    if resp.startswith('Bing: '):
-        resp = resp[6:]
-    if resp.startswith('Привет, это Bing.'):
-        resp = resp[18:]
-    if resp:
-        resp = check_and_fix_text(resp)
-        new_messages = new_messages + [{"role":    "assistant",
-                                         "content": resp}]
-        # сохраняем диалог
-        dialogs[chat_id] = new_messages or []
-    else:
-        new_messages = new_messages[:-1]
-        return ''
-    return resp
 
-
-def dialog_add_user_request(chat_id, text):
-    """добавляет в историю переписки с юзером его новый запрос и ответ от GPT
-    делает запрос и возвращает ответ"""
-    
-    global dialogs
-    
-    # что делать с слишком длинными запросами? пока будем просто игнорить
-    #if len(text) > 2000: ''
-    
-    # создаем новую историю диалогов с юзером из старой если есть
-    if chat_id in dialogs:
-        new_messages = dialogs[chat_id]
-    else:
-        new_messages = gpt_start_message
-    # теперь ее надо почистить что бы влезла в запрос к GPT
-    # просто удаляем все кроме 10 последний
-    if len(new_messages) > 10:
-        new_messages = gpt_start_message + new_messages[10:]
-    # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше 2000
-    # удаляем по 2 сразу так как первая - промпт для бота
-    while (count_tokens(new_messages) > 2000):
-        new_messages = gpt_start_message + new_messages[2:]
-
-    # добавляем в историю новый запрос и отправляем в GPT
-    new_messages = new_messages + [{"role":    "user",
-                                    "content": text}]
-    try:
-        resp = gpt_basic.ai(prompt = text, messages = new_messages)
-        if resp:
-            resp = check_and_fix_text(resp)
-            new_messages = new_messages + [{"role":    "assistant",
-                                                "content": resp}]
-        else:
-            new_messages = new_messages[:-1]
-    # бот не ответил и обиделся
-    except AttributeError:
-        # чистим историю, повторяем запрос
-        new_messages = new_messages[:-2]
-        resp = 'Не хочу говорить об этом.'
-    except openai.error.InvalidRequestError as e:
-        if """This model's maximum context length is 4097 tokens. However, you requested""" in str(e):
-            # чистим историю, повторяем запрос
-            while (count_tokens(new_messages) > 1000):
-                new_messages = gpt_start_message + new_messages[2:]
-            new_messages = gpt_start_message + new_messages[:-2]
-            try:   
-                resp = gpt_basic.ai(prompt = text, messages = new_messages)
-            except Exception as e:
-                print(e)
-            # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
+    if engine == 'gpt':
+        # пытаемся получить ответ
+        try:
+            resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
             if resp:
-                resp = check_and_fix_text(resp)
+                resp = utils.check_and_fix_text(resp)
                 new_messages = new_messages + [{"role":    "assistant",
-                                                "content": resp}]
+                                                    "content": resp}]
             else:
-                new_messages = new_messages[:-1]
-                return ''
+                # не сохраняем диалог, нет ответа
+                return 'GPT не ответил.'
+        # бот не ответил или обиделся
+        except AttributeError:
+            # не сохраняем диалог, нет ответа
+            return 'Не хочу говорить об этом. Или не могу.'
+        # произошла ошибка переполнения ответа
+        except openai.error.InvalidRequestError as error:
+            if """This model's maximum context length is 4097 tokens. However, you requested""" in str(error):
+                # чистим историю, повторяем запрос
+                while (utils.count_tokens(new_messages) > 1000):
+                    new_messages = new_messages[2:]
+                new_messages = new_messages[:-2]
+                try:
+                    resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
+                except Exception as error2:
+                    print(error2)
+                    return 'GPT не ответил.'
+                # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
+                if resp:
+                    resp = check_and_fix_text(resp)
+                    new_messages = new_messages + [{"role":    "assistant",
+                                                    "content": resp}]
+                else:
+                    return 'GPT не ответил.'
+            else:
+                print(error)
+                return 'GPT не ответил.'
+    else:
+        # для бинга надо сконвертировать историю по другому
+        # в строчку с разделением на строки с помощью \n
+        # user - hello
+        # bing - hi
+        # user - 2+2?
+        # bing - 4
+        # user - who was first on the moon:
+        
+        bing_prompt = ''.join(f'{i["role"]} - {i["content"]}\n' for i in utils.gpt_start_message + new_messages)
+        resp = subprocess.run(['/usr/bin/python3', '/home/ubuntu/tb/bingai.py', bing_prompt], stdout=subprocess.PIPE)
+        #resp = subprocess.run(['/usr/bin/python3', '/home/user/V/4 python/2 telegram bot tesseract/test/bingai.py', bing_prompt], stdout=subprocess.PIPE)
+        resp = resp.stdout.decode('utf-8')
+        if resp:
+            new_messages = new_messages + [{"role":    "assistant",
+                                            "content": resp}]
         else:
-            print(e)
-            new_messages = new_messages[:-1]
-            return ''
-    
+            # не сохраняем диалог, нет ответа
+            return 'Бинг не ответил.'
+
     # сохраняем диалог
-    dialogs[chat_id] = new_messages or []
+    with lock_dicts:
+        dialogs[chat_id] = new_messages or utils.gpt_start_message
     return resp
 
 
-async def set_default_commands(dp):
-    commands = []
-    with open('commands.txt') as f:
-        for line in f:
-            try:
-                command, description = line[1:].strip().split(' - ', 1)
-                if command and description:
-                    commands.append(types.BotCommand(command, description))
-            except Exception as e:
-                print(e)
-    await dp.bot.set_my_commands(commands)
+@bot.callback_query_handler(func=lambda call: True)
+def callback_inline(call: telebot.types.CallbackQuery):
+    """Обработчик клавиатуры"""
+    message = call.message
+    is_private = message.chat.type == 'private'
+    is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
+    chat_id = message.chat.id
+    global dialogs
+
+    # клавиатура
+    markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
+    button1 = telebot.types.InlineKeyboardButton("Продолжай GPT", callback_data='continue_gpt')
+    button2 = telebot.types.InlineKeyboardButton("Продолжай Бинг", callback_data='continue_bing')
+    button3 = telebot.types.InlineKeyboardButton("Забудь всё", callback_data='forget_all')
+    button4 = telebot.types.InlineKeyboardButton("Стереть ответ", callback_data='erase_answer')
+    markup.add(button1, button2, button3, button4)
+
+    if call.data == 'clear_history':
+        # обработка нажатия кнопки "Стереть историю"
+        bot.edit_message_reply_markup(message.chat.id, message.message_id)
+        with lock_dicts:
+            dialogs[chat_id] = []
+        bot.delete_message(message.chat.id, message.message_id)
+    elif call.data == 'continue_gpt':
+        # обработка нажатия кнопки "Продолжай GPT"
+        bot.edit_message_reply_markup(message.chat.id, message.message_id)
+        bot.send_chat_action(chat_id, 'typing')
+        # добавляем новый запрос пользователя в историю диалога пользователя
+        resp = dialog_add_user_request(chat_id, 'Продолжай', 'gpt')
+        if resp:
+            if is_private:
+                try:
+                    bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                except Exception as error:    
+                    print(error)
+                    bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+            else:
+                try:
+                    bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                except Exception as error:    
+                    print(error)
+                    bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+            my_log.log(message, resp)
+    elif call.data == 'continue_bing':
+        # обработка нажатия кнопки "Продолжай Бинг"
+        bot.edit_message_reply_markup(message.chat.id, message.message_id)
+        bot.send_chat_action(chat_id, 'typing')
+        # добавляем новый запрос пользователя в историю диалога пользователя
+        resp = dialog_add_user_request(chat_id, 'Продолжай', 'bing')
+        if resp:
+            if is_private:
+                try:
+                    bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                except Exception as error:
+                    print(error)
+                    bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+            else:
+                try:
+                    bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                except Exception as error:
+                    print(error)
+                    bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+            my_log.log(message, resp)
+    elif call.data == 'forget_all':
+        # обработка нажатия кнопки "Забудь всё"
+        bot.edit_message_reply_markup(message.chat.id, message.message_id)
+        with lock_dicts:
+            dialogs[chat_id] = []
+    elif call.data == 'erase_answer':
+        # обработка нажатия кнопки "Стереть ответ"
+        bot.edit_message_reply_markup(message.chat.id, message.message_id)
+        bot.delete_message(message.chat.id, message.message_id)
 
 
-async def on_startup(dp):
-    await set_default_commands(dp)
+def do_task(message):
+    """функция обработчик сообщений работающая в отдельном потоке"""
 
+    with semaphore_talks:
+        # определяем откуда пришло сообщение  
+        is_private = message.chat.type == 'private'
+        # является ли это ответом на наше сообщение
+        is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
+        # id куда писать ответ
+        chat_id = message.chat.id
 
+        msg = message.text.lower()
+        global blocks, bot_names, dialogs
 
-@dp.message_handler(commands=['name',])
-async def send_welcome(message: types.Message):
-    """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
-    
-    args = message.text.split()
-    if len(args) > 1:
-        new_name = args[1]
+        with lock_dicts:
+            # определяем какое имя у бота в этом чате, на какое слово он отзывается
+            if chat_id in bot_names:
+                bot_name = bot_names[chat_id]
+            else:
+                bot_name = bot_name_default
+                bot_names[chat_id] = bot_name 
+            # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
+            if ((msg.startswith('замолчи') or msg.startswith('заткнись')) and (is_private or is_reply)) or msg.startswith(f'{bot_name} замолчи') or msg.startswith(f'{bot_name}, замолчи') or msg.startswith(f'{bot_name}, заткнись') or msg.startswith(f'{bot_name} заткнись'):
+                blocks[chat_id] = 1
+                my_log.log(message, 'Включена блокировка автопереводов в чате')
+                bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown')
+                return
+            # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
+            if ((msg.startswith('вернись')) and (is_private or is_reply)) or (msg.startswith(f'{bot_name} вернись') or msg.startswith(f'{bot_name}, вернись')):
+                blocks[chat_id] = 0
+                my_log.log(message, 'Выключена блокировка автопереводов в чате')
+                bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown')
+                return
+            # если сообщение начинается на 'забудь' то стираем историю общения GPT
+            if (msg.startswith('забудь') and (is_private or is_reply)) or (msg.startswith(f'{bot_name} забудь') or msg.startswith(f'{bot_name}, забудь')):
+                dialogs[chat_id] = []
+                bot.send_message(chat_id, 'Ок', parse_mode='Markdown')
+                my_log.log(message, 'История GPT принудительно отчищена')
+                return
+
+        # клавиатура
+        markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
+        button1 = telebot.types.InlineKeyboardButton("Продолжай GPT", callback_data='continue_gpt')
+        button2 = telebot.types.InlineKeyboardButton("Продолжай Бинг", callback_data='continue_bing')
+        button3 = telebot.types.InlineKeyboardButton("Забудь всё", callback_data='forget_all')
+        button4 = telebot.types.InlineKeyboardButton("Стереть ответ", callback_data='erase_answer')
+        markup.add(button1, button2, button3, button4)
         
-        # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
-        regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
-        if re.match(regex, new_name) and len(new_name) <= 10:
-            await message.answer(f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
-            await my_log.log(message, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
-            global bot_names
-            bot_names[message.chat.id] = new_name.lower()
+        # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
+        # можно перенаправить запрос к бингу, но он долго отвечает
+        if msg.startswith('бинг ') or msg.startswith('бинг,'):
+            bot.send_chat_action(chat_id, 'typing')
+            # добавляем новый запрос пользователя в историю диалога пользователя
+            resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
+            if resp:
+                if is_private:
+                    try:
+                        bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    except Exception as error:
+                        print(error)
+                        bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                else:
+                    try:
+                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    except Exception as error:
+                        print(error)
+                        bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                my_log.log(message, resp)
+        # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
+        elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
+            bot.send_chat_action(chat_id, 'typing')
+            # добавляем новый запрос пользователя в историю диалога пользователя
+            resp = dialog_add_user_request(chat_id, message.text, 'gpt')
+            if resp:
+                if is_private:
+                    try:
+                        bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    except Exception as error:    
+                        print(error)
+                        bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                else:
+                    try:
+                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    except Exception as error:    
+                        print(error)
+                        bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                my_log.log(message, resp)
+        else: # смотрим надо ли переводить текст
+            with lock_dicts:
+                if chat_id in blocks and blocks[chat_id] == 1:
+                    return
+            # if message.entities: # не надо если там спойлеры
+            #     if message.entities[0]['type'] in ('code', 'spoiler'):
+            #         my_log.log(message, 'code or spoiler in message')
+            #         return
+            text = my_trans.translate(message.text)
+            if text:
+                bot.send_message(chat_id, text, parse_mode='Markdown')
+                my_log.log(message, text)
+            else:
+                my_log.log(message, '')
+
+
+@bot.message_handler(content_types = ['audio'])
+def handle_audio(message: telebot.types.Message):
+    """Распознавание текст из аудио файлов"""
+    caption = message.caption
+    if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй']):
+        return
+    # Создание временного файла 
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        file_path = temp_file.name
+    # Скачиваем аудиофайл во временный файл
+    file_info = bot.get_file(message.audio.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    with open(file_path, 'wb') as new_file:
+        new_file.write(downloaded_file)
+    # Распознаем текст из аудио 
+    text = my_stt.stt(file_path)
+    os.remove(file_path)
+    # Отправляем распознанный текст 
+    if text.strip() != '':
+        bot.reply_to(message, text)
+        my_log.log(message, f'[ASR] {text}')
+    else:
+        my_log.log(message, '[ASR] no results')
+
+
+@bot.message_handler(content_types = ['voice'])
+def handle_voice(message: telebot.types.Message): 
+    """Автоматическое распознавание текст из голосовых сообщений"""
+    # Создание временного файла 
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        file_path = temp_file.name
+    # Скачиваем аудиофайл во временный файл
+    file_info = bot.get_file(message.voice.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    with open(file_path, 'wb') as new_file:
+        new_file.write(downloaded_file)
+    # Распознаем текст из аудио 
+    text = my_stt.stt(file_path)
+    os.remove(file_path)
+    # Отправляем распознанный текст 
+    if text.strip() != '':
+        bot.reply_to(message, text)
+        my_log.log(message, f'[ASR] {text}')
+    else:
+        my_log.log(message, '[ASR] no results')
+
+
+@bot.message_handler(content_types = ['document'])
+def handle_document(message: telebot.types.Message):
+    """Обработчик документов"""
+    # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
+    caption = message.caption or ''
+    if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
+        # если текстовый файл то пытаемся озвучить как книгу. русский голос
+        if message.document.mime_type == 'text/plain':
+            file_id = message.document.file_id
+            file_info = bot.get_file(file_id)
+            file = bot.download_file(file_info.file_path)
+            text = file.decode('utf-8')
+            # Озвучиваем текст
+            audio = my_tts.tts(text)
+            bot.send_audio(message.chat.id, audio)
+            my_log.log(message, f'tts file {text}')
+            return
+
+    # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
+
+    # получаем самый большой документ из списка
+    document = message.document
+    # если документ не является PDF-файлом, отправляем сообщение об ошибке
+    if document.mime_type != 'application/pdf':
+        bot.reply_to(message, 'Это не PDF-файл.')
+        return
+    # скачиваем документ в байтовый поток
+    file_id = message.document.file_id
+    file_info = bot.get_file(file_id)
+    file = bot.download_file(file_info.file_path)
+    fp = io.BytesIO(file)
+
+    # распознаем текст в документе с помощью функции get_text
+    text = my_ocr.get_text(fp)
+    # отправляем распознанный текст пользователю
+    if text.strip() != '':
+        # если текст слишком длинный, отправляем его в виде текстового файла
+        if len(text) > 4096:
+            with io.StringIO(text) as f:
+                if message.reply_to_message:
+                    bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt', reply_to_message_id = message.reply_to_message.id)
+                else:
+                    bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt')
         else:
-            await message.reply("Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.")
+            bot.reply_to(message, text)
 
 
-@dp.message_handler(commands=['start', 'help'])
-async def send_welcome(message: types.Message):
-    # Отправляем приветственное сообщение
-    await message.answer("""Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
-Озвучить текст, надо прислать текстовый файл .txt с кодировкой UTF8 в приват или с подписью прочитай\n\n\
-Сообщения на иностранном языке автоматически переводятся на русский, это можно включить|выключить командой замолчи|вернись\n\n\
-Голосовые сообщения автоматически переводятся в текст\n\n\
-GPT chat активируется словом бот - бот, привет. Что бы отчистить историю напишите забудь.\n\n""" + open('commands.txt').read())
-    await my_log.log(message)
+@bot.message_handler(content_types = ['photo'])
+def handle_photo(message: telebot.types.Message):
+    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
+    # пересланные сообщения пытаемся перевести даже если в них картинка
+    # новости в телеграме часто делают как картинка + длинная подпись к ней
+    if message.forward_from_chat:
+        # у фотографий нет текста но есть заголовок caption. его и будем переводить
+        text = my_trans.translate(message.caption)
+        if text:
+            bot.send_message(message.chat.id, text)
+            my_log.log(message, text)
+        else:
+            my_log.log(message, '')
+        return
+
+    # распознаем текст только если есть команда для этого
+    if not message.caption: return
+    if not gpt_basic.detect_ocr_command(message.caption.lower()): return
+
+    # распознаем текст только если есть команда для этого
+    if not message.caption: return
+    if not gpt_basic.detect_ocr_command(message.caption.lower()): return
+
+    # получаем самую большую фотографию из списка
+    photo = message.photo[-1]
+    fp = io.BytesIO()
+    # скачиваем фотографию в байтовый поток
+    file_info = bot.get_file(photo.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    fp.write(downloaded_file)
+    fp.seek(0)
+    # распознаем текст на фотографии с помощью pytesseract
+    text = my_ocr.get_text_from_image(fp.read())
+    # отправляем распознанный текст пользователю
+    if text.strip() != '':
+        # если текст слишком длинный, отправляем его в виде текстового файла
+        if len(text) > 4096:
+            with io.StringIO(text) as f:
+                f.name = 'text.txt'
+                bot.send_document(message.chat.id, f)
+                my_log.log(message, '[OCR] Sent as file: ' + text)
+        else:
+            bot.send_message(message.chat.id, text)
+            my_log.log(message, '[OCR] ' + text)
+    else:
+        my_log.log(message, '[OCR] no results')
 
 
-@dp.message_handler(commands=['trans'])
-async def trans(message: types.Message):
+@bot.message_handler(content_types = ['video'])
+def handle_video(message: telebot.types.Message):
+    """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
+    # пересланные сообщения пытаемся перевести даже если в них видео
+    if message.forward_from_chat:
+        # у видео нет текста но есть заголовок caption. его и будем переводить
+        text = my_trans.translate(message.caption)
+        if text:
+            bot.send_message(message.chat.id, text)
+            my_log.log(message, text)
+        else:
+            my_log.log(message, "")
+
+
+@bot.message_handler(commands=['mem'])
+def send_debug_history(message: telebot.types.Message):
+    # Отправляем текущую историю сообщений
+    with lock_dicts:
+        global dialogs
+        
+        chat_id = message.chat.id
+        
+        # клавиатура
+        markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
+        button1 = telebot.types.InlineKeyboardButton("Стереть историю", callback_data='clear_history')
+        button2 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
+        markup.add(button1, button2)
+
+        # создаем новую историю диалогов с юзером из старой если есть
+        if chat_id in dialogs:
+            new_messages = dialogs[chat_id]
+        else:
+            new_messages = gpt_start_message
+        prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
+        try:
+            bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=markup)
+        except Exception as error:
+            print(error)
+            bot.send_message(chat_id, utils.escape_markdown(prompt), disable_web_page_preview = True, reply_markup=markup)
+
+
+@bot.message_handler(commands=['tts3']) 
+def tts3(message: telebot.types.Message):
+    args = message.text.split()[1:]
+    if not args:
+        bot.reply_to(message, 'Использование: /tts ru|en|uk|... +-xx% <текст>')
+        return
+    text = ' '.join(args[2:])
+    lang = args[0]
+    rate = args[1]
+    audio = my_tts.tts(text, lang, rate)
+    bot.send_audio(message.chat.id, audio)
+
+
+@bot.message_handler(commands=['tts2']) 
+def tts2(message: telebot.types.Message):
+    args = message.text.split()[1:]
+    if not args:
+        bot.reply_to(message, 'Использование: /tts ru|en|uk|... <текст>')
+        return
+    text = ' '.join(args[1:])
+    lang = args[0]
+    audio = my_tts.tts(text, lang)
+    bot.send_audio(message.chat.id, audio)
+
+
+@bot.message_handler(commands=['tts']) 
+def tts(message: telebot.types.Message):
+    args = message.text.split()[1:]
+    if not args:
+        bot.reply_to(message, 'Использование: /tts <текст>')
+        return
+    text = ' '.join(args)
+    audio = my_tts.tts(text)
+    bot.send_audio(message.chat.id, audio)
+
+
+@bot.message_handler(commands=['trans'])
+def trans(message: telebot.types.Message):
     supported_langs = [
     'af', 'am', 'ar', 'as', 'ay', 'az', 'ba', 'be', 'bg', 'bho', 'bm', 'bn', 
     'bo', 'bs', 'ca', 'ceb', 'ckb', 'co', 'cs', 'cv', 'cy', 'da', 'de', 'doi', 
@@ -302,424 +584,81 @@ zh-TW Китайский (традиционный)
 И многие другие
 """
     args = message.text.split(' ', 2)[1:]
-    if len(args) != 2:
-        await message.reply('Использование: /trans <язык en|ru|...> <текст>\n\n' + help_codes)
-        return
-    lang, text = args
+    if len(args) > 1:
+        lang, text = args
+    else:
+        lang = 'ru'
+        text = args[0]
     # если язык не указан то это русский
     if lang not in supported_langs:
         text = lang + ' ' + text
         lang = 'ru'
     translated = my_trans.translate_text2(text, lang)
     if translated:
-        await message.reply(translated)
+        bot.reply_to(message, translated)
     else:
-        await message.reply('Ошибка перевода')
+        bot.reply_to(message, 'Ошибка перевода')
 
 
-@dp.message_handler(commands=['tts']) 
-async def tts(message: types.Message):
-    args = message.get_args().split()
-    if not args:
-        await message.reply('Использование: /tts <текст>')
-        return
-    text = ' '.join(args)
-    audio = my_tts.tts(text)
-    await message.reply_voice(audio)
-
-
-@dp.message_handler(commands=['tts2']) 
-async def tts2(message: types.Message):
-    args = message.get_args().split()
-    if not args:
-        await message.reply('Использование: /tts ru|en|uk|... <текст>')
-        return
-    text = ' '.join(args[1:])
-    lang = args[0]
-    audio = my_tts.tts(text, lang)
-    await message.reply_voice(audio)
-
-
-@dp.message_handler(commands=['tts3']) 
-async def tts3(message: types.Message):
-    args = message.get_args().split()
-    if not args:
-        await message.reply('Использование: /tts ru|en|uk|... +-xx% <текст>')
-        return
-    text = ' '.join(args[2:])
-    lang = args[0]
-    rate = args[1]
-    audio = my_tts.tts(text, lang, rate)
-    await message.reply_voice(audio)
-
-
-# кнопка для отчистки памяти
-keyboard_mem = InlineKeyboardMarkup()
-button_clear_history = InlineKeyboardButton('Очистить', callback_data='clear_history')
-keyboard_mem.add(button_clear_history)
-@dp.callback_query_handler(lambda c: c.data == 'clear_history')
-async def process_callback_clear_history(callback_query: types.CallbackQuery):
-    """Здесь можно обработать нажатие на кнопку 'Очистить'"""
-    await bot.answer_callback_query(callback_query.id)
-    await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id, reply_markup=None)
-    global dialogs
-    dialogs[callback_query.message.chat.id] = gpt_start_message
-
-
-@dp.message_handler(commands=['mem',])
-async def send_debug_history(message: types.Message):
-    # Отправляем текущую историю сообщений
-    global dialogs
+@bot.message_handler(commands=['name'])
+def send_welcome(message: telebot.types.Message):
+    """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
     
-    chat_id = message.chat.id
-    # создаем новую историю диалогов с юзером из старой если есть
-    if chat_id in dialogs:
-        new_messages = dialogs[chat_id]
-    else:
-        new_messages = gpt_start_message
-    prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
-    try:
-        await message.answer(prompt, disable_web_page_preview = True, reply_markup=keyboard_mem)
-    except Exception as e:
-        print(e)
-        await message.answer(prompt, disable_web_page_preview = True, reply_markup=keyboard_mem)
-
-
-# кнопки для сообщений от бота - продолжай и забудь
-keyboard_chatbot = InlineKeyboardMarkup()
-button_more = InlineKeyboardButton('Продолжай GPT', callback_data='tell_more')
-button_more_bing = InlineKeyboardButton('Продолжай Бинг', callback_data='tell_more_bing')
-button_remove_answer = InlineKeyboardButton('Стереть ответ', callback_data='tell_remove_answer')
-# эта кнопка реализована рядом с обработчиком этой команды а не здесь
-button_clear = InlineKeyboardButton('Забудь всё', callback_data='clear_history')
-keyboard_chatbot.row_width = 2
-keyboard_chatbot.add(button_more, button_more_bing, button_clear, button_remove_answer)
-@dp.callback_query_handler(lambda c: c.data == 'tell_more')
-async def process_callback_tell_more_gpt(callback_query: types.CallbackQuery):
-    """ Команда продолжить боту GPT"""
-    chat_id = callback_query.message.chat.id
-    is_private = callback_query.message.chat.type == 'private'
-    message = callback_query.message
-    
-    await bot.send_chat_action(chat_id, 'typing')
-    await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id, reply_markup=None)
-    
-    resp = dialog_add_user_request(chat_id, 'Продолжай')
-    if resp:
-        if is_private:
-            try:
-                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            except Exception as e:
-                print(e)
-                await bot.send_message(chat_id, escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-        else:
-            try:
-                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            except Exception as e:
-                print(e)
-                await message.reply(escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-        await my_log.log(message, resp)
-@dp.callback_query_handler(lambda c: c.data == 'tell_more_bing')
-async def process_callback_tell_more_bing(callback_query: types.CallbackQuery):
-    """Команда продолжить боту Бинг"""
-    chat_id = callback_query.message.chat.id
-    is_private = callback_query.message.chat.type == 'private'
-    message = callback_query.message
-    
-    await bot.send_chat_action(chat_id, 'typing')
-    await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id, reply_markup=None)
-    
-    resp = dialog_add_user_request_bing(chat_id, 'Продолжай')
-    if resp:
-        if is_private:
-            try:
-                await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            except Exception as e:
-                print(e)
-                await bot.send_message(chat_id, escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-        else:
-            try:
-                await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            except Exception as e:
-                print(e)
-                await message.reply(escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-        await my_log.log(message, resp)
-@dp.callback_query_handler(lambda c: c.data == 'tell_remove_answer')
-async def process_callback_tell_remove_answer(callback_query: types.CallbackQuery):
-    """команда удалить это сообщение от бота"""
-    # получаем id чата и id сообщения с ответом
-    chat_id = callback_query.message.chat.id
-    message_id = callback_query.message.message_id
-    # удаляем сообщение с ответом
-    await bot.delete_message(chat_id, message_id)
-
-
-@dp.message_handler()
-async def echo(message: types.Message):
-    """Обработчик текстовых сообщений"""
-    # определяем откуда пришло сообщение  
-    is_private = message.chat.type == 'private'
-    #is_chat_or_superchat = message.chat.type in ['group', 'supergroup'] 
-
-    # является ли это ответом на наше сообщение
-    is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.id
-
-    # id куда писать ответ
-    chat_id = message.chat.id
-
-    msg = message.text.lower()
-    global blocks, bot_names
-    
-    
-    # определяем какое имя у бота в этом чате, на какое слово он отзывается
-    if chat_id in bot_names:
-        bot_name = bot_names[chat_id]
-    else:
-        bot_name = bot_name_default
-        bot_names[chat_id] = bot_name
-    
-    
-    # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
-    if ((msg.startswith('замолчи') or msg.startswith('заткнись')) and (is_private or is_reply)) or msg.startswith(f'{bot_name} замолчи') or msg.startswith(f'{bot_name}, замолчи') or msg.startswith(f'{bot_name}, заткнись') or msg.startswith(f'{bot_name} заткнись'):
-        blocks[chat_id] = 1
-        await my_log.log(message, 'Включена блокировка автопереводов в чате')
-        await bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown')
-        return
-    # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
-    if ((msg.startswith('вернись')) and (is_private or is_reply)) or (msg.startswith(f'{bot_name} вернись') or msg.startswith(f'{bot_name}, вернись')):
-        blocks[chat_id] = 0
-        await my_log.log(message, 'Выключена блокировка автопереводов в чате')
-        await bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown')
-        return
-
-
-    # если сообщение начинается на 'забудь' то стираем историю общения GPT
-    if (msg.startswith('забудь') and (is_private or is_reply)) or (msg.startswith(f'{bot_name} забудь') or msg.startswith(f'{bot_name}, забудь')):
-        global dialogs
-        dialogs[chat_id] = []
-        await bot.send_message(chat_id, 'Ок', parse_mode='Markdown')
-        await my_log.log(message, 'История GPT принудительно отчищена')
-        return
-
-
-    # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
-    # можно перенаправить запрос к бингу, но он долго отвечает
-    if msg.startswith('бинг ') or msg.startswith('бинг,'):
-        await bot.send_chat_action(chat_id, 'typing')
-        # добавляем новый запрос пользователя в историю диалога пользователя
-        resp = dialog_add_user_request_bing(chat_id, message.text)
-        if resp:
-            if is_private:
-                try:
-                    await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-                except Exception as e:    
-                    print(e)
-                    await bot.send_message(chat_id, escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            else:
-                try:
-                    await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-                except Exception as e:    
-                    print(e)
-                    await message.reply(escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            await my_log.log(message, resp)
-    # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате  
-    elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
-        await bot.send_chat_action(chat_id, 'typing')
-        # добавляем новый запрос пользователя в историю диалога пользователя
-        resp = dialog_add_user_request(chat_id, message.text)
-        if resp:
-            if is_private:
-                try:
-                    await bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-                except Exception as e:    
-                    print(e)
-                    await bot.send_message(chat_id, escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            else:
-                try:
-                    await message.reply(resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-                except Exception as e:    
-                    print(e)
-                    await message.reply(escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=keyboard_chatbot)
-            await my_log.log(message, resp)
-    else: # смотрим надо ли переводить текст
-        if chat_id in blocks and blocks[chat_id] == 1:
-            return
-        if message.entities: # не надо если там спойлеры
-            if message.entities[0]['type'] in ('code', 'spoiler'):
-                await my_log.log(message, 'code or spoiler in message')
-                return
-        text = my_trans.translate(message.text)
-        if text:
-            await message.answer(text)
-            await my_log.log(message, text)
-        else:
-            await my_log.log(message, '')
-
-
-@dp.message_handler(content_types=types.ContentType.VIDEO)
-async def handle_video(message: types.Message):
-    """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
-    # пересланные сообщения пытаемся перевести даже если в них видео
-    if "forward_from_chat" in message:
-        if message.entities:
-            if message.entities[0]['type'] in ('code', 'spoiler'):
-                await my_log.log(message, 'code or spoiler in message')
-                return
-        # у видео нет текста но есть заголовок caption. его и будем переводить
-        text = my_trans.translate(message.caption)
-        if text:
-            await message.answer(text)
-            await my_log.log(message, text)
-        else:
-            await my_log.log(message, '')
-        return
-
-
-@dp.message_handler(content_types=types.ContentType.PHOTO)
-async def handle_photo(message: types.Message):
-    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
-    # пересланные сообщения пытаемся перевести даже если в них картинка
-    # новости в телеграме часто делают как картинка + длинная подпись к ней
-    if "forward_from_chat" in message:
-        if message.entities:
-            if message.entities[0]['type'] in ('code', 'spoiler'):
-                await my_log.log(message, 'code or spoiler in message')
-                return
-        # у фотографий нет текста но есть заголовок caption. его и будем переводить
-        text = my_trans.translate(message.caption)
-        if text:
-            await message.answer(text)
-            await my_log.log(message, text)
-        else:
-            await my_log.log(message, '')
-        return
-
-    # распознаем текст только если есть команда для этого
-    if not message.caption: return
-    if not gpt_basic.detect_ocr_command(message.caption.lower()): return
-
-    #chat_type = message.chat.type
-    #if chat_type != types.ChatType.PRIVATE: return
-    # получаем самую большую фотографию из списка
-    photo = message.photo[-1]
-    fp = io.BytesIO()
-    # скачиваем фотографию в байтовый поток
-    await photo.download(destination_file=fp)
-    # распознаем текст на фотографии с помощью pytesseract
-    text = my_ocr.get_text_from_image(fp.read())
-    # отправляем распознанный текст пользователю
-    if text.strip() != '':
-        # если текст слишком длинный, отправляем его в виде текстового файла
-        if len(text) > 4096:
-            with io.StringIO(text) as f:
-                f.name = 'text.txt'
-                await message.reply_document(f)
-                await my_log.log(message, '[OCR] Sent as file: ' + text)
-        else:
-            await message.reply(text)
-            await my_log.log(message, '[OCR] ' + text)
-    else:
-        await my_log.log(message, '[OCR] no results')
-
-    
-@dp.message_handler(content_types=types.ContentType.DOCUMENT)
-async def handle_document(message: types.Message):
-    """Обработчик документов"""
-    # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
-    caption = message.caption or ''
-    if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
-        # если текстовый файл то пытаемся озвучить как книгу. русский голос, скорость +50%
-        if message.document.mime_type == 'text/plain':
-            file_id = message.document.file_id
-            file_info = await bot.get_file(file_id)
-            file = await bot.download_file_by_id(file_id)
-            text = file.read().decode('utf-8').strip()
+    args = message.text.split()
+    if len(args) > 1:
+        new_name = args[1]
         
-            # Озвучиваем текст
-            audio = my_tts.tts(text)
-            await message.reply_voice(audio)
-            return
-
-
-    # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
-    #отключено пока. слишком долго выполняется
-    #return
-    is_private = message.chat.type == 'private'    
-    if not is_private:
-        return
-    # получаем самый большой документ из списка
-    document = message.document
-    # если документ не является PDF-файлом, отправляем сообщение об ошибке
-    if document.mime_type != 'application/pdf':
-        await message.reply('Это не PDF-файл.')
-        return
-    fp = io.BytesIO()
-    # скачиваем документ в байтовый поток
-    await message.document.download(destination_file=fp)
-    # распознаем текст в документе с помощью функции get_text
-    text = my_ocr.get_text(fp)
-    # отправляем распознанный текст пользователю
-    if text.strip() != '':
-        # если текст слишком длинный, отправляем его в виде текстового файла
-        if len(text) > 4096:
-            with io.StringIO(text) as f:
-                f.name = 'text.txt'
-                await message.reply_document(f)
+        # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
+        regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
+        if re.match(regex, new_name) and len(new_name) <= 10:
+            with lock_dicts:
+                global bot_names
+                bot_names[message.chat.id] = new_name.lower()
+            bot.send_message(message.chat.id, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
+            my_log.log(message, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
         else:
-            await message.reply(text)
+            bot.reply_to(message, "Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.")
 
 
-@dp.message_handler(content_types=types.ContentType.VOICE)
-async def handle_voice(message: types.Message): 
-    """Автоматическое распознавание текст из голосовых сообщений"""
-    # Создание временного файла 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        file_path = temp_file.name
-    
-    # Скачиваем аудиофайл во временный файл
-    file_id = message.voice.file_id
-    await bot.download_file_by_id(file_id, file_path)
-    
-    # Распознаем текст из аудио 
-    text = my_stt.stt(file_path)
-    
-    os.remove(file_path)
-    
-    # Отправляем распознанный текст 
-    if text.strip() != '':
-        await message.reply(text)
-        await my_log.log(message, f'[ASR] {text}')
-    else:
-        await my_log.log(message, '[ASR] no results')
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message: telebot.types.Message):
+    # Отправляем приветственное сообщение
+    bot.send_message(message.chat.id, """Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
+Озвучить текст, надо прислать текстовый файл .txt с кодировкой UTF8 в приват или с подписью прочитай\n\n\
+Сообщения на иностранном языке автоматически переводятся на русский, это можно включить|выключить командой замолчи|вернись\n\n\
+Голосовые сообщения автоматически переводятся в текст\n\n\
+GPT chat активируется словом бот - бот, привет. Что бы отчистить историю напишите забудь.\n\n""" + open('commands.txt').read())
+    my_log.log(message)
 
 
-@dp.message_handler(content_types=types.ContentType.AUDIO)
-async def handle_audio(message: types.Message): 
-    """Распознавание текст из аудио файлов"""
-    caption = message.caption or ''
-    if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй']):
-        return
+@bot.message_handler(func=lambda message: True)
+def echo_all(message: telebot.types.Message) -> None:
+    """Обработчик текстовых сообщений"""
+    thread = threading.Thread(target=do_task, args=(message,))
+    thread.start()
 
-    # Создание временного файла 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        file_path = temp_file.name
-    
-    # Скачиваем аудиофайл во временный файл
-    file_id = message.audio.file_id
-    await bot.download_file_by_id(file_id, file_path)
-    
-    # Распознаем текст из аудио 
-    text = my_stt.stt(file_path)
-    
-    os.remove(file_path)
-    
-    # Отправляем распознанный текст 
-    if text.strip() != '':
-        await message.reply(text)
-        await my_log.log(message, f'[ASR] {text}')
-    else:
-        await my_log.log(message, '[ASR] no results')
+
+def set_default_commands():
+    """регистрирует команды бота из файла commands.txt
+/start - Приветствие
+/help - Помощь
+/cmd1 - Функция 1
+/cmd2 - Функция 2
+    """
+    commands = []
+    with open('commands.txt') as f:
+        for line in f:
+            try:
+                command, description = line[1:].strip().split(' - ', 1)
+                if command and description:
+                    commands.append(telebot.types.BotCommand(command, description))
+            except Exception as e:
+                print(e)
+    bot.set_my_commands(commands)
+
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
+    # обновление регистрации команд при запуске
+    set_default_commands()
+    bot.polling()

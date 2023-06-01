@@ -74,7 +74,7 @@ def ai(prompt, temp = 0.5, max_tok = 2000, timeou = 15, messages = None):
     )
 
     response = completion.choices[0].message.content
-    return utils.check_and_fix_text(response)
+    return check_and_fix_text(response)
 
 
 def translate_text(text, fr = 'autodetect', to = 'ru'):

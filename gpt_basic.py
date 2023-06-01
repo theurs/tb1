@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
 
-from fuzzywuzzy import fuzz
-import requests
-import openai
 import os
-import utils
+import re
+import sys
+
+import enchant
+from fuzzywuzzy import fuzz
+import openai
+
 try:
     import cfg
 except Exception as e:
@@ -168,18 +171,27 @@ def clear_after_stt(text):
     return r
 
 
+def check_and_fix_text(text):
+    """пытаемся исправить странную особенность пиратского GPT сервера, он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
+    ru = enchant.Dict("ru_RU")
+
+    # убираем из текста всё кроме русских букв, 2 странных символа меняем на 1 что бы упростить регулярку
+    text = text.replace('��', '⁂')
+    russian_letters = re.compile('[^⁂а-яА-ЯёЁ\s]')
+    text2 = russian_letters.sub(' ', text)
+    
+    words = text2.split()
+    for word in words:
+        if '⁂' in word:
+            suggestions = ru.suggest(word)
+            if len(suggestions) > 0:
+                text = text.replace(word, suggestions[0])
+    # если не удалось подобрать слово из словаря то просто убираем этот символ, пусть лучше будет оопечатка чем мусор
+    return text.replace('⁂', '')
+
+
 if __name__ == '__main__':
-    pass
-
-#    print(clear_after_ocr("""Your PCis perlectly stable and is running with absolutely no problems whatsoever.
-#
-#You can search for this status code onl1ne if you'd like: ALL SYSTEMS. GO"""))
-    
-    #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом."""))
-    print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))
-
-    #print(detect_ocr_command('Шарлотка с яблоками на скорую руку, например. Остывает.'))
-    
-    #print(clear_after_stt('Ну и что это значит блять. Да ебаный ж ты нахуй.'))
-    #print(clear_after_stt('пошёл нахуй блять'))
-    #print(clear_after_stt("""Чтоб я тебя здесь больше не видел пидарас!"""))
+    if len(sys.argv) != 2:
+        print("Usage: gptbasic.py 'request to qpt'")
+        sys.exit(1)
+    print(ai(sys.argv[1]))

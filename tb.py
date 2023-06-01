@@ -606,7 +606,8 @@ def do_task(message):
                 my_log.log(message, resp)
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
-            #message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
+            if msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},'):
+                message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
             bot.send_chat_action(chat_id, 'typing')
             # добавляем новый запрос пользователя в историю диалога пользователя
             resp = dialog_add_user_request(chat_id, message.text, 'gpt')

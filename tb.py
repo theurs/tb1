@@ -116,14 +116,6 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                 print(error)
                 return 'GPT не ответил.'
     else:
-        # для бинга надо сконвертировать историю по другому
-        # в строчку с разделением на строки с помощью \n
-        # user - hello
-        # bing - hi
-        # user - 2+2?
-        # bing - 4
-        # user - who was first on the moon:
-        
         #bing_prompt = ''.join(f'{i["role"]} - {i["content"]}\n' for i in utils.gpt_start_message + new_messages)
         bing_prompt = text
         resp = subprocess.run(['/usr/bin/python3', '/home/ubuntu/tb/bingai.py', bing_prompt], stdout=subprocess.PIPE)

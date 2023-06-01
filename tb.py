@@ -151,9 +151,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         # клавиатура
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Дальше", callback_data='continue_gpt')
-        button3 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
-        button4 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
-        markup.add(button1, button3, button4)
+        button2 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
+        button3 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
+        markup.add(button1, button2, button3)
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
@@ -579,9 +579,9 @@ def do_task(message):
         # клавиатура
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Дальше", callback_data='continue_gpt')
-        button3 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
-        button4 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
-        markup.add(button1, button3, button4)
+        button2 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
+        button3 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
+        markup.add(button1, button2, button3)
         
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # можно перенаправить запрос к бингу, но он долго отвечает

@@ -85,7 +85,6 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         try:
             resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
             if resp:
-                resp = utils.check_and_fix_text(resp)
                 new_messages = new_messages + [{"role":    "assistant",
                                                     "content": resp}]
             else:
@@ -109,7 +108,6 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                     return 'GPT не ответил.'
                 # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
                 if resp:
-                    resp = check_and_fix_text(resp)
                     new_messages = new_messages + [{"role":    "assistant",
                                                     "content": resp}]
                 else:

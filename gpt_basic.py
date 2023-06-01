@@ -5,6 +5,7 @@ from fuzzywuzzy import fuzz
 import requests
 import openai
 import os
+import utils
 try:
     import cfg
 except Exception as e:
@@ -70,7 +71,7 @@ def ai(prompt, temp = 0.5, max_tok = 2000, timeou = 15, messages = None):
     )
 
     response = completion.choices[0].message.content
-    return response
+    return utils.check_and_fix_text(response)
 
 
 def translate_text(text, fr = 'autodetect', to = 'ru'):
@@ -175,9 +176,9 @@ if __name__ == '__main__':
 #You can search for this status code onl1ne if you'd like: ALL SYSTEMS. GO"""))
     
     #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом."""))
-    #print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))
+    print(translate_text("""Доброго дня! Я готовий допомогти вам з будь-якими питаннями, пов'язаними з моїм функціоналом.""", to = 'gb'))
 
-    print(detect_ocr_command('Шарлотка с яблоками на скорую руку, например. Остывает.'))
+    #print(detect_ocr_command('Шарлотка с яблоками на скорую руку, например. Остывает.'))
     
     #print(clear_after_stt('Ну и что это значит блять. Да ебаный ж ты нахуй.'))
     #print(clear_after_stt('пошёл нахуй блять'))

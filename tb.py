@@ -618,6 +618,7 @@ def do_task(message):
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # можно перенаправить запрос к бингу, но он долго отвечает
         if msg.startswith('бинг ') or msg.startswith('бинг,'):
+            message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
             bot.send_chat_action(chat_id, 'typing')
             # добавляем новый запрос пользователя в историю диалога пользователя
             resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
@@ -637,6 +638,7 @@ def do_task(message):
                 my_log.log(message, resp)
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
+            message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
             bot.send_chat_action(chat_id, 'typing')
             # добавляем новый запрос пользователя в историю диалога пользователя
             resp = dialog_add_user_request(chat_id, message.text, 'gpt')

@@ -125,7 +125,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         # user - who was first on the moon:
         
         bing_prompt = ''.join(f'{i["role"]} - {i["content"]}\n' for i in utils.gpt_start_message + new_messages)
-        #print(bing_prompt)
+        bing_prompt += '\nassistant - ...'
+        print(bing_prompt)
         resp = subprocess.run(['/usr/bin/python3', '/home/ubuntu/tb/bingai.py', bing_prompt], stdout=subprocess.PIPE)
         #resp = subprocess.run(['/usr/bin/python3', '/home/user/V/4 python/2 telegram bot tesseract/test/bingai.py', bing_prompt], stdout=subprocess.PIPE)
         resp = resp.stdout.decode('utf-8')
@@ -195,7 +196,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_reply_markup(message.chat.id, message.message_id)
             bot.send_chat_action(chat_id, 'typing')
             # добавляем новый запрос пользователя в историю диалога пользователя
-            resp = dialog_add_user_request(chat_id, 'Продолжай', 'bing')
+            resp = dialog_add_user_request(chat_id, 'Покажи продолжение', 'bing')
             if resp:
                 if is_private:
                     try:
@@ -616,7 +617,7 @@ def do_task(message):
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # можно перенаправить запрос к бингу, но он долго отвечает
         if msg.startswith('бинг ') or msg.startswith('бинг,'):
-            message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
+            # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
             bot.send_chat_action(chat_id, 'typing')
             # добавляем новый запрос пользователя в историю диалога пользователя
             resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
@@ -636,7 +637,7 @@ def do_task(message):
                 my_log.log(message, resp)
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
-            message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
+            #message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
             bot.send_chat_action(chat_id, 'typing')
             # добавляем новый запрос пользователя в историю диалога пользователя
             resp = dialog_add_user_request(chat_id, message.text, 'gpt')

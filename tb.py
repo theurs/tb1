@@ -124,9 +124,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         # bing - 4
         # user - who was first on the moon:
         
-        bing_prompt = ''.join(f'{i["role"]} - {i["content"]}\n' for i in utils.gpt_start_message + new_messages)
-        #bing_prompt += '\nassistant - ...'
-        #print(bing_prompt)
+        #bing_prompt = ''.join(f'{i["role"]} - {i["content"]}\n' for i in utils.gpt_start_message + new_messages)
+        bing_prompt = text
         resp = subprocess.run(['/usr/bin/python3', '/home/ubuntu/tb/bingai.py', bing_prompt], stdout=subprocess.PIPE)
         #resp = subprocess.run(['/usr/bin/python3', '/home/user/V/4 python/2 telegram bot tesseract/test/bingai.py', bing_prompt], stdout=subprocess.PIPE)
         resp = resp.stdout.decode('utf-8')
@@ -158,12 +157,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         global dialogs
 
         # клавиатура
-        markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
-        button1 = telebot.types.InlineKeyboardButton("Продолжай GPT", callback_data='continue_gpt')
-        button2 = telebot.types.InlineKeyboardButton("Продолжай Бинг", callback_data='continue_bing')
-        button3 = telebot.types.InlineKeyboardButton("Забудь всё", callback_data='forget_all')
-        button4 = telebot.types.InlineKeyboardButton("Стереть ответ", callback_data='erase_answer')
-        markup.add(button1, button2, button3, button4)
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton("Дальше", callback_data='continue_gpt')
+        button3 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
+        button4 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
+        markup.add(button1, button3, button4)
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
@@ -188,26 +186,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     try:
                         bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                     except Exception as error:    
-                        print(error)
-                        bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                my_log.log(message, resp)
-        elif call.data == 'continue_bing':
-            # обработка нажатия кнопки "Продолжай Бинг"
-            bot.edit_message_reply_markup(message.chat.id, message.message_id)
-            bot.send_chat_action(chat_id, 'typing')
-            # добавляем новый запрос пользователя в историю диалога пользователя
-            resp = dialog_add_user_request(chat_id, 'Покажи продолжение', 'bing')
-            if resp:
-                if is_private:
-                    try:
-                        bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                    except Exception as error:
-                        print(error)
-                        bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                else:
-                    try:
-                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                    except Exception as error:
                         print(error)
                         bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                 my_log.log(message, resp)
@@ -607,12 +585,11 @@ def do_task(message):
                 return
 
         # клавиатура
-        markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
-        button1 = telebot.types.InlineKeyboardButton("Продолжай GPT", callback_data='continue_gpt')
-        button2 = telebot.types.InlineKeyboardButton("Продолжай Бинг", callback_data='continue_bing')
-        button3 = telebot.types.InlineKeyboardButton("Забудь всё", callback_data='forget_all')
-        button4 = telebot.types.InlineKeyboardButton("Стереть ответ", callback_data='erase_answer')
-        markup.add(button1, button2, button3, button4)
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton("Дальше", callback_data='continue_gpt')
+        button3 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
+        button4 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
+        markup.add(button1, button3, button4)
         
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # можно перенаправить запрос к бингу, но он долго отвечает

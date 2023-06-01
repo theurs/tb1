@@ -148,7 +148,6 @@ def callback_inline(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
     thread = threading.Thread(target=callback_inline_thread, args=(call,))
     thread.start()
-
 def callback_inline_thread(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
     with semaphore_talks:
@@ -223,6 +222,351 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.delete_message(message.chat.id, message.message_id)
 
 
+@bot.message_handler(content_types = ['audio'])
+def handle_audio(message: telebot.types.Message):
+    """Распознавание текст из аудио файлов"""
+    thread = threading.Thread(target=handle_audio_thread, args=(message,))
+    thread.start()
+def handle_audio_thread(message: telebot.types.Message):
+    """Распознавание текст из аудио файлов"""
+    with semaphore_talks:
+        caption = message.caption
+        if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй']):
+            return
+        # Создание временного файла 
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            file_path = temp_file.name
+        # Скачиваем аудиофайл во временный файл
+        file_info = bot.get_file(message.audio.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        with open(file_path, 'wb') as new_file:
+            new_file.write(downloaded_file)
+        # Распознаем текст из аудио 
+        text = my_stt.stt(file_path)
+        os.remove(file_path)
+        # Отправляем распознанный текст 
+        if text.strip() != '':
+            bot.reply_to(message, text)
+            my_log.log(message, f'[ASR] {text}')
+        else:
+            my_log.log(message, '[ASR] no results')
+
+
+@bot.message_handler(content_types = ['voice'])
+def handle_voice(message: telebot.types.Message): 
+    """Автоматическое распознавание текст из голосовых сообщений"""
+    thread = threading.Thread(target=handle_voice_thread, args=(message,))
+    thread.start()
+def handle_voice_thread(message: telebot.types.Message): 
+    """Автоматическое распознавание текст из голосовых сообщений"""
+    with semaphore_talks:
+        # Создание временного файла 
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            file_path = temp_file.name
+        # Скачиваем аудиофайл во временный файл
+        file_info = bot.get_file(message.voice.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        with open(file_path, 'wb') as new_file:
+            new_file.write(downloaded_file)
+        # Распознаем текст из аудио 
+        text = my_stt.stt(file_path)
+        os.remove(file_path)
+        # Отправляем распознанный текст 
+        if text.strip() != '':
+            bot.reply_to(message, text)
+            my_log.log(message, f'[ASR] {text}')
+        else:
+            my_log.log(message, '[ASR] no results')
+
+
+@bot.message_handler(content_types = ['document'])
+def handle_document(message: telebot.types.Message):
+    """Обработчик документов"""
+    thread = threading.Thread(target=handle_document_thread, args=(message,))
+    thread.start()
+def handle_document_thread(message: telebot.types.Message):
+    """Обработчик документов"""
+    with semaphore_talks:
+        # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
+        caption = message.caption or ''
+        if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
+            # если текстовый файл то пытаемся озвучить как книгу. русский голос
+            if message.document.mime_type == 'text/plain':
+                file_id = message.document.file_id
+                file_info = bot.get_file(file_id)
+                file = bot.download_file(file_info.file_path)
+                text = file.decode('utf-8')
+                try:
+                    lang = detect_langs(text)[0].lang
+                except Exception as error:
+                    lang = 'ru'
+                    print(error)
+                # Озвучиваем текст
+                audio = my_tts.tts(text, lang)
+                bot.send_voice(message.chat.id, audio)
+                my_log.log(message, f'tts file {text}')
+                return
+
+        # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
+        if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
+            # получаем самый большой документ из списка
+            document = message.document
+            # если документ не является PDF-файлом, отправляем сообщение об ошибке
+            if document.mime_type != 'application/pdf':
+                bot.reply_to(message, 'Это не PDF-файл.')
+                return
+            # скачиваем документ в байтовый поток
+            file_id = message.document.file_id
+            file_info = bot.get_file(file_id)
+            file = bot.download_file(file_info.file_path)
+            fp = io.BytesIO(file)
+
+            # распознаем текст в документе с помощью функции get_text
+            text = my_ocr.get_text(fp)
+            # отправляем распознанный текст пользователю
+            if text.strip() != '':
+                # если текст слишком длинный, отправляем его в виде текстового файла
+                if len(text) > 4096:
+                    with io.StringIO(text) as f:
+                        if message.reply_to_message:
+                            bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt', reply_to_message_id = message.reply_to_message.id)
+                        else:
+                            bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt')
+                else:
+                    bot.reply_to(message, text)
+
+
+@bot.message_handler(content_types = ['photo'])
+def handle_photo(message: telebot.types.Message):
+    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
+    thread = threading.Thread(target=handle_photo_thread, args=(message,))
+    thread.start()
+def handle_photo_thread(message: telebot.types.Message):
+    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
+    with semaphore_talks:
+        # пересланные сообщения пытаемся перевести даже если в них картинка
+        # новости в телеграме часто делают как картинка + длинная подпись к ней
+        if message.forward_from_chat:
+            # у фотографий нет текста но есть заголовок caption. его и будем переводить
+            text = my_trans.translate(message.caption)
+            if text:
+                bot.send_message(message.chat.id, text)
+                my_log.log(message, text)
+            else:
+                my_log.log(message, '')
+            return
+
+        # распознаем текст только если есть команда для этого
+        if not message.caption: return
+        if not gpt_basic.detect_ocr_command(message.caption.lower()): return
+
+        # распознаем текст только если есть команда для этого
+        if not message.caption: return
+        if not gpt_basic.detect_ocr_command(message.caption.lower()): return
+
+        # получаем самую большую фотографию из списка
+        photo = message.photo[-1]
+        fp = io.BytesIO()
+        # скачиваем фотографию в байтовый поток
+        file_info = bot.get_file(photo.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        fp.write(downloaded_file)
+        fp.seek(0)
+        # распознаем текст на фотографии с помощью pytesseract
+        text = my_ocr.get_text_from_image(fp.read())
+        # отправляем распознанный текст пользователю
+        if text.strip() != '':
+            # если текст слишком длинный, отправляем его в виде текстового файла
+            if len(text) > 4096:
+                with io.StringIO(text) as f:
+                    f.name = 'text.txt'
+                    bot.send_document(message.chat.id, f)
+                    my_log.log(message, '[OCR] Sent as file: ' + text)
+            else:
+                bot.send_message(message.chat.id, text)
+                my_log.log(message, '[OCR] ' + text)
+        else:
+            my_log.log(message, '[OCR] no results')
+
+
+@bot.message_handler(content_types = ['video'])
+def handle_video(message: telebot.types.Message):
+    """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
+    thread = threading.Thread(target=handle_video_thread, args=(message,))
+    thread.start()
+def handle_video_thread(message: telebot.types.Message):
+    """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
+    with semaphore_talks:
+        # пересланные сообщения пытаемся перевести даже если в них видео
+        if message.forward_from_chat:
+            # у видео нет текста но есть заголовок caption. его и будем переводить
+            text = my_trans.translate(message.caption)
+            if text:
+                bot.send_message(message.chat.id, text)
+                my_log.log(message, text)
+            else:
+                my_log.log(message, "")
+
+
+@bot.message_handler(commands=['mem'])
+def send_debug_history(message: telebot.types.Message):
+    # Отправляем текущую историю сообщений
+    with lock_dicts:
+        global dialogs
+        
+        chat_id = message.chat.id
+        
+        # клавиатура
+        markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
+        button1 = telebot.types.InlineKeyboardButton("Стереть историю", callback_data='clear_history')
+        button2 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
+        markup.add(button1, button2)
+
+        # создаем новую историю диалогов с юзером из старой если есть
+        if chat_id in dialogs:
+            new_messages = dialogs[chat_id]
+        else:
+            new_messages = utils.gpt_start_message
+        prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
+        try:
+            bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=markup)
+        except Exception as error:
+            print(error)
+            bot.send_message(chat_id, utils.escape_markdown(prompt), disable_web_page_preview = True, reply_markup=markup)
+
+
+@bot.message_handler(commands=['tts3']) 
+def tts3(message: telebot.types.Message):
+    thread = threading.Thread(target=tts3_thread, args=(message,))
+    thread.start()
+def tts3_thread(message: telebot.types.Message):
+    with semaphore_talks:
+        args = message.text.split()[1:]
+        if not args:
+            bot.reply_to(message, 'Использование: /tts ru|en|uk|... +-xx% <текст>')
+            return
+        text = ' '.join(args[2:])
+        lang = args[0]
+        rate = args[1]
+        audio = my_tts.tts(text, lang, rate)
+        bot.send_voice(message.chat.id, audio)
+
+
+@bot.message_handler(commands=['tts2']) 
+def tts2(message: telebot.types.Message):
+    thread = threading.Thread(target=tts2_thread, args=(message,))
+    thread.start()
+def tts2_thread(message: telebot.types.Message):
+    with semaphore_talks:
+        args = message.text.split()[1:]
+        if not args:
+            bot.reply_to(message, 'Использование: /tts ru|en|uk|... <текст>')
+            return
+        text = ' '.join(args[1:])
+        lang = args[0]
+        audio = my_tts.tts(text, lang)
+        bot.send_voice(message.chat.id, audio)
+
+
+@bot.message_handler(commands=['tts']) 
+def tts(message: telebot.types.Message):
+    thread = threading.Thread(target=tts_thread, args=(message,))
+    thread.start()
+def tts_thread(message: telebot.types.Message):
+    with semaphore_talks:
+        args = message.text.split()[1:]
+        if not args:
+            bot.reply_to(message, 'Использование: /tts <текст>')
+            return
+        text = ' '.join(args)
+        audio = my_tts.tts(text)
+        bot.send_voice(message.chat.id, audio)
+
+@bot.message_handler(commands=['trans'])
+def trans(message: telebot.types.Message):
+    thread = threading.Thread(target=trans_thread, args=(message,))
+    thread.start()
+def trans_thread(message: telebot.types.Message):
+    with semaphore_talks:
+        supported_langs = [
+        'af', 'am', 'ar', 'as', 'ay', 'az', 'ba', 'be', 'bg', 'bho', 'bm', 'bn', 
+        'bo', 'bs', 'ca', 'ceb', 'ckb', 'co', 'cs', 'cv', 'cy', 'da', 'de', 'doi', 
+        'dv', 'ee', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fj', 'fo', 
+        'fr', 'fr-CA', 'fy', 'ga', 'gd', 'gl', 'gn', 'gom', 'gu', 'ha', 'haw', 
+        'he', 'hi', 'hmn', 'hr', 'hsb', 'ht', 'hu', 'hy', 'id', 'ig', 'ikt', 'ilo',
+        'is', 'it', 'iu', 'iu-Latn', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 
+        'kri', 'ku', 'ky', 'la', 'lb', 'lg', 'ln', 'lo', 'lt', 'lus', 'lv', 'lzh',
+        'mai', 'mg', 'mhr', 'mi', 'mk', 'ml', 'mn', 'mn-Mong', 'mni-Mtei', 'mr', 
+        'mrj', 'ms', 'mt', 'my', 'ne', 'nl', 'no', 'nso', 'ny', 'om', 'or', 'otq', 
+        'pa', 'pap', 'pl', 'prs', 'ps', 'pt-BR', 'pt-PT', 'qu', 'ro', 'ru', 'rw', 
+        'sa', 'sah', 'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl', 
+        'sr-Latn', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'ti', 'tk', 'tl',
+        'tlh-Latn', 'to', 'tr', 'ts', 'tt', 'tw', 'ty', 'udm', 'ug', 'uk', 'ur', 
+        'uz', 'vi', 'xh', 'yi', 'yo', 'yua', 'yue', 'zh-CN', 'zh-TW', 'zu']
+        
+        help_codes = """de Немецкий
+en Английский
+es Испанский
+fr Французский
+ja Японский
+pl Польский
+ru Русский
+
+И многие другие
+    """
+        args = message.text.split(' ', 2)[1:]
+        if len(args) > 1:
+            lang, text = args
+        else:
+            lang = 'ru'
+            text = args[0]
+        # если язык не указан то это русский
+        if lang not in supported_langs:
+            text = lang + ' ' + text
+            lang = 'ru'
+        translated = my_trans.translate_text2(text, lang)
+        if translated:
+            bot.reply_to(message, translated)
+        else:
+            bot.reply_to(message, 'Ошибка перевода')
+
+
+@bot.message_handler(commands=['name'])
+def send_welcome(message: telebot.types.Message):
+    """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
+    
+    args = message.text.split()
+    if len(args) > 1:
+        new_name = args[1]
+        
+        # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
+        regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
+        if re.match(regex, new_name) and len(new_name) <= 10:
+            with lock_dicts:
+                global bot_names
+                bot_names[message.chat.id] = new_name.lower()
+            bot.send_message(message.chat.id, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
+            my_log.log(message, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
+        else:
+            bot.reply_to(message, "Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.")
+
+
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message: telebot.types.Message):
+    # Отправляем приветственное сообщение
+    bot.send_message(message.chat.id, """Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
+Озвучить текст, надо прислать текстовый файл .txt с кодировкой UTF8 в приват или с подписью прочитай\n\n\
+Сообщения на иностранном языке автоматически переводятся на русский, это можно включить|выключить командой замолчи|вернись\n\n\
+Голосовые сообщения автоматически переводятся в текст\n\n\
+GPT chat активируется словом бот - бот, привет. Что бы отчистить историю напишите забудь.\n\n""" + open('commands.txt').read())
+    my_log.log(message)
+
+
+@bot.message_handler(func=lambda message: True)
+def echo_all(message: telebot.types.Message) -> None:
+    """Обработчик текстовых сообщений"""
+    thread = threading.Thread(target=do_task, args=(message,))
+    thread.start()
 def do_task(message):
     """функция обработчик сообщений работающая в отдельном потоке"""
     with semaphore_talks:
@@ -321,332 +665,6 @@ def do_task(message):
             if text:
                 bot.send_message(chat_id, text, parse_mode='Markdown')
                 my_log.log(message, text)
-
-
-@bot.message_handler(content_types = ['audio'])
-def handle_audio(message: telebot.types.Message):
-    """Распознавание текст из аудио файлов"""
-    caption = message.caption
-    if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй']):
-        return
-    # Создание временного файла 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        file_path = temp_file.name
-    # Скачиваем аудиофайл во временный файл
-    file_info = bot.get_file(message.audio.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    with open(file_path, 'wb') as new_file:
-        new_file.write(downloaded_file)
-    # Распознаем текст из аудио 
-    text = my_stt.stt(file_path)
-    os.remove(file_path)
-    # Отправляем распознанный текст 
-    if text.strip() != '':
-        bot.reply_to(message, text)
-        my_log.log(message, f'[ASR] {text}')
-    else:
-        my_log.log(message, '[ASR] no results')
-
-
-@bot.message_handler(content_types = ['voice'])
-def handle_voice(message: telebot.types.Message): 
-    """Автоматическое распознавание текст из голосовых сообщений"""
-    # Создание временного файла 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        file_path = temp_file.name
-    # Скачиваем аудиофайл во временный файл
-    file_info = bot.get_file(message.voice.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    with open(file_path, 'wb') as new_file:
-        new_file.write(downloaded_file)
-    # Распознаем текст из аудио 
-    text = my_stt.stt(file_path)
-    os.remove(file_path)
-    # Отправляем распознанный текст 
-    if text.strip() != '':
-        bot.reply_to(message, text)
-        my_log.log(message, f'[ASR] {text}')
-    else:
-        my_log.log(message, '[ASR] no results')
-
-
-@bot.message_handler(content_types = ['document'])
-def handle_document(message: telebot.types.Message):
-    """Обработчик документов"""
-    # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
-    caption = message.caption or ''
-    if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
-        # если текстовый файл то пытаемся озвучить как книгу. русский голос
-        if message.document.mime_type == 'text/plain':
-            file_id = message.document.file_id
-            file_info = bot.get_file(file_id)
-            file = bot.download_file(file_info.file_path)
-            text = file.decode('utf-8')
-            try:
-                lang = detect_langs(text)[0].lang
-            except Exception as error:
-                lang = 'ru'
-                print(error)
-            # Озвучиваем текст
-            audio = my_tts.tts(text, lang)
-            bot.send_voice(message.chat.id, audio)
-            my_log.log(message, f'tts file {text}')
-            return
-
-    # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
-    if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
-        # получаем самый большой документ из списка
-        document = message.document
-        # если документ не является PDF-файлом, отправляем сообщение об ошибке
-        if document.mime_type != 'application/pdf':
-            bot.reply_to(message, 'Это не PDF-файл.')
-            return
-        # скачиваем документ в байтовый поток
-        file_id = message.document.file_id
-        file_info = bot.get_file(file_id)
-        file = bot.download_file(file_info.file_path)
-        fp = io.BytesIO(file)
-
-        # распознаем текст в документе с помощью функции get_text
-        text = my_ocr.get_text(fp)
-        # отправляем распознанный текст пользователю
-        if text.strip() != '':
-            # если текст слишком длинный, отправляем его в виде текстового файла
-            if len(text) > 4096:
-                with io.StringIO(text) as f:
-                    if message.reply_to_message:
-                        bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt', reply_to_message_id = message.reply_to_message.id)
-                    else:
-                        bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt')
-            else:
-                bot.reply_to(message, text)
-
-
-@bot.message_handler(content_types = ['photo'])
-def handle_photo(message: telebot.types.Message):
-    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
-    # пересланные сообщения пытаемся перевести даже если в них картинка
-    # новости в телеграме часто делают как картинка + длинная подпись к ней
-    if message.forward_from_chat:
-        # у фотографий нет текста но есть заголовок caption. его и будем переводить
-        text = my_trans.translate(message.caption)
-        if text:
-            bot.send_message(message.chat.id, text)
-            my_log.log(message, text)
-        else:
-            my_log.log(message, '')
-        return
-
-    # распознаем текст только если есть команда для этого
-    if not message.caption: return
-    if not gpt_basic.detect_ocr_command(message.caption.lower()): return
-
-    # распознаем текст только если есть команда для этого
-    if not message.caption: return
-    if not gpt_basic.detect_ocr_command(message.caption.lower()): return
-
-    # получаем самую большую фотографию из списка
-    photo = message.photo[-1]
-    fp = io.BytesIO()
-    # скачиваем фотографию в байтовый поток
-    file_info = bot.get_file(photo.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    fp.write(downloaded_file)
-    fp.seek(0)
-    # распознаем текст на фотографии с помощью pytesseract
-    text = my_ocr.get_text_from_image(fp.read())
-    # отправляем распознанный текст пользователю
-    if text.strip() != '':
-        # если текст слишком длинный, отправляем его в виде текстового файла
-        if len(text) > 4096:
-            with io.StringIO(text) as f:
-                f.name = 'text.txt'
-                bot.send_document(message.chat.id, f)
-                my_log.log(message, '[OCR] Sent as file: ' + text)
-        else:
-            bot.send_message(message.chat.id, text)
-            my_log.log(message, '[OCR] ' + text)
-    else:
-        my_log.log(message, '[OCR] no results')
-
-
-@bot.message_handler(content_types = ['video'])
-def handle_video(message: telebot.types.Message):
-    """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
-    # пересланные сообщения пытаемся перевести даже если в них видео
-    if message.forward_from_chat:
-        # у видео нет текста но есть заголовок caption. его и будем переводить
-        text = my_trans.translate(message.caption)
-        if text:
-            bot.send_message(message.chat.id, text)
-            my_log.log(message, text)
-        else:
-            my_log.log(message, "")
-
-
-@bot.message_handler(commands=['mem'])
-def send_debug_history(message: telebot.types.Message):
-    # Отправляем текущую историю сообщений
-    with lock_dicts:
-        global dialogs
-        
-        chat_id = message.chat.id
-        
-        # клавиатура
-        markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
-        button1 = telebot.types.InlineKeyboardButton("Стереть историю", callback_data='clear_history')
-        button2 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
-        markup.add(button1, button2)
-
-        # создаем новую историю диалогов с юзером из старой если есть
-        if chat_id in dialogs:
-            new_messages = dialogs[chat_id]
-        else:
-            new_messages = utils.gpt_start_message
-        prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
-        try:
-            bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=markup)
-        except Exception as error:
-            print(error)
-            bot.send_message(chat_id, utils.escape_markdown(prompt), disable_web_page_preview = True, reply_markup=markup)
-
-
-@bot.message_handler(commands=['tts3']) 
-def tts3(message: telebot.types.Message):
-    args = message.text.split()[1:]
-    if not args:
-        bot.reply_to(message, 'Использование: /tts ru|en|uk|... +-xx% <текст>')
-        return
-    text = ' '.join(args[2:])
-    lang = args[0]
-    rate = args[1]
-    audio = my_tts.tts(text, lang, rate)
-    bot.send_voice(message.chat.id, audio)
-
-
-@bot.message_handler(commands=['tts2']) 
-def tts2(message: telebot.types.Message):
-    args = message.text.split()[1:]
-    if not args:
-        bot.reply_to(message, 'Использование: /tts ru|en|uk|... <текст>')
-        return
-    text = ' '.join(args[1:])
-    lang = args[0]
-    audio = my_tts.tts(text, lang)
-    bot.send_voice(message.chat.id, audio)
-
-
-@bot.message_handler(commands=['tts']) 
-def tts(message: telebot.types.Message):
-    args = message.text.split()[1:]
-    if not args:
-        bot.reply_to(message, 'Использование: /tts <текст>')
-        return
-    text = ' '.join(args)
-    audio = my_tts.tts(text)
-    bot.send_voice(message.chat.id, audio)
-
-
-@bot.message_handler(commands=['trans'])
-def trans(message: telebot.types.Message):
-    supported_langs = [
-    'af', 'am', 'ar', 'as', 'ay', 'az', 'ba', 'be', 'bg', 'bho', 'bm', 'bn', 
-    'bo', 'bs', 'ca', 'ceb', 'ckb', 'co', 'cs', 'cv', 'cy', 'da', 'de', 'doi', 
-    'dv', 'ee', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fj', 'fo', 
-    'fr', 'fr-CA', 'fy', 'ga', 'gd', 'gl', 'gn', 'gom', 'gu', 'ha', 'haw', 
-    'he', 'hi', 'hmn', 'hr', 'hsb', 'ht', 'hu', 'hy', 'id', 'ig', 'ikt', 'ilo',
-    'is', 'it', 'iu', 'iu-Latn', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 
-    'kri', 'ku', 'ky', 'la', 'lb', 'lg', 'ln', 'lo', 'lt', 'lus', 'lv', 'lzh',
-    'mai', 'mg', 'mhr', 'mi', 'mk', 'ml', 'mn', 'mn-Mong', 'mni-Mtei', 'mr', 
-    'mrj', 'ms', 'mt', 'my', 'ne', 'nl', 'no', 'nso', 'ny', 'om', 'or', 'otq', 
-    'pa', 'pap', 'pl', 'prs', 'ps', 'pt-BR', 'pt-PT', 'qu', 'ro', 'ru', 'rw', 
-    'sa', 'sah', 'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl', 
-    'sr-Latn', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'ti', 'tk', 'tl',
-    'tlh-Latn', 'to', 'tr', 'ts', 'tt', 'tw', 'ty', 'udm', 'ug', 'uk', 'ur', 
-    'uz', 'vi', 'xh', 'yi', 'yo', 'yua', 'yue', 'zh-CN', 'zh-TW', 'zu']
-    
-    help_codes = """ar Арабский
-bn Бенгальский
-de Немецкий
-en Английский
-es Испанский
-fr Французский
-hi Хинди
-id Индонезийский
-it Итальянский
-ja Японский
-ko Корейский
-ms Малайский
-nl Голландский
-pa Пенджаби
-pl Польский
-pt-BR Португальский (Бразилия)
-pt-PT Португальский (Португалия)
-ru Русский
-sv Шведский
-ta Тамильский
-te Телугу
-th Тайский
-tr Турецкий
-vi Вьетнамский
-zh-CN Китайский (упрощенный)
-zh-TW Китайский (традиционный)
-
-И многие другие
-"""
-    args = message.text.split(' ', 2)[1:]
-    if len(args) > 1:
-        lang, text = args
-    else:
-        lang = 'ru'
-        text = args[0]
-    # если язык не указан то это русский
-    if lang not in supported_langs:
-        text = lang + ' ' + text
-        lang = 'ru'
-    translated = my_trans.translate_text2(text, lang)
-    if translated:
-        bot.reply_to(message, translated)
-    else:
-        bot.reply_to(message, 'Ошибка перевода')
-
-
-@bot.message_handler(commands=['name'])
-def send_welcome(message: telebot.types.Message):
-    """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
-    
-    args = message.text.split()
-    if len(args) > 1:
-        new_name = args[1]
-        
-        # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
-        regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
-        if re.match(regex, new_name) and len(new_name) <= 10:
-            with lock_dicts:
-                global bot_names
-                bot_names[message.chat.id] = new_name.lower()
-            bot.send_message(message.chat.id, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
-            my_log.log(message, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
-        else:
-            bot.reply_to(message, "Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.")
-
-
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message: telebot.types.Message):
-    # Отправляем приветственное сообщение
-    bot.send_message(message.chat.id, """Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
-Озвучить текст, надо прислать текстовый файл .txt с кодировкой UTF8 в приват или с подписью прочитай\n\n\
-Сообщения на иностранном языке автоматически переводятся на русский, это можно включить|выключить командой замолчи|вернись\n\n\
-Голосовые сообщения автоматически переводятся в текст\n\n\
-GPT chat активируется словом бот - бот, привет. Что бы отчистить историю напишите забудь.\n\n""" + open('commands.txt').read())
-    my_log.log(message)
-
-
-@bot.message_handler(func=lambda message: True)
-def echo_all(message: telebot.types.Message) -> None:
-    """Обработчик текстовых сообщений"""
-    thread = threading.Thread(target=do_task, args=(message,))
-    thread.start()
 
 
 def set_default_commands():

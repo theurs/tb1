@@ -5,21 +5,23 @@ import os
 import random
 import re
 import subprocess
-import time
 import tempfile
 import threading
-import telebot
-import my_trans
-import my_ocr
-import my_tts
-import my_stt
+import time
+
 import openai
-import gpt_basic
-import my_log
-import cfg
-import my_dic
-import utils
+import telebot
 from langdetect import detect_langs
+
+import cfg
+import gpt_basic
+import my_dic
+import my_log
+import my_ocr
+import my_stt
+import my_trans
+import my_tts
+import utils
 
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
@@ -144,75 +146,81 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
-    message = call.message
-    is_private = message.chat.type == 'private'
-    is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
-    chat_id = message.chat.id
-    global dialogs
+    thread = threading.Thread(target=callback_inline_thread, args=(call,))
+    thread.start()
 
-    # клавиатура
-    markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
-    button1 = telebot.types.InlineKeyboardButton("Продолжай GPT", callback_data='continue_gpt')
-    button2 = telebot.types.InlineKeyboardButton("Продолжай Бинг", callback_data='continue_bing')
-    button3 = telebot.types.InlineKeyboardButton("Забудь всё", callback_data='forget_all')
-    button4 = telebot.types.InlineKeyboardButton("Стереть ответ", callback_data='erase_answer')
-    markup.add(button1, button2, button3, button4)
+def callback_inline_thread(call: telebot.types.CallbackQuery):
+    """Обработчик клавиатуры"""
+    with semaphore_talks:
+        message = call.message
+        is_private = message.chat.type == 'private'
+        is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
+        chat_id = message.chat.id
+        global dialogs
 
-    if call.data == 'clear_history':
-        # обработка нажатия кнопки "Стереть историю"
-        bot.edit_message_reply_markup(message.chat.id, message.message_id)
-        with lock_dicts:
-            dialogs[chat_id] = []
-        bot.delete_message(message.chat.id, message.message_id)
-    elif call.data == 'continue_gpt':
-        # обработка нажатия кнопки "Продолжай GPT"
-        bot.edit_message_reply_markup(message.chat.id, message.message_id)
-        bot.send_chat_action(chat_id, 'typing')
-        # добавляем новый запрос пользователя в историю диалога пользователя
-        resp = dialog_add_user_request(chat_id, 'Продолжай', 'gpt')
-        if resp:
-            if is_private:
-                try:
-                    bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                except Exception as error:    
-                    print(error)
-                    bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-            else:
-                try:
-                    bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                except Exception as error:    
-                    print(error)
-                    bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-            my_log.log(message, resp)
-    elif call.data == 'continue_bing':
-        # обработка нажатия кнопки "Продолжай Бинг"
-        bot.edit_message_reply_markup(message.chat.id, message.message_id)
-        bot.send_chat_action(chat_id, 'typing')
-        # добавляем новый запрос пользователя в историю диалога пользователя
-        resp = dialog_add_user_request(chat_id, 'Продолжай', 'bing')
-        if resp:
-            if is_private:
-                try:
-                    bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                except Exception as error:
-                    print(error)
-                    bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-            else:
-                try:
-                    bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                except Exception as error:
-                    print(error)
-                    bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-            my_log.log(message, resp)
-    elif call.data == 'forget_all':
-        # обработка нажатия кнопки "Забудь всё"
-        bot.edit_message_reply_markup(message.chat.id, message.message_id)
-        with lock_dicts:
-            dialogs[chat_id] = []
-    elif call.data == 'erase_answer':
-        # обработка нажатия кнопки "Стереть ответ"
-        bot.edit_message_reply_markup(message.chat.id, message.message_id)
-        bot.delete_message(message.chat.id, message.message_id)
+        # клавиатура
+        markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
+        button1 = telebot.types.InlineKeyboardButton("Продолжай GPT", callback_data='continue_gpt')
+        button2 = telebot.types.InlineKeyboardButton("Продолжай Бинг", callback_data='continue_bing')
+        button3 = telebot.types.InlineKeyboardButton("Забудь всё", callback_data='forget_all')
+        button4 = telebot.types.InlineKeyboardButton("Стереть ответ", callback_data='erase_answer')
+        markup.add(button1, button2, button3, button4)
+
+        if call.data == 'clear_history':
+            # обработка нажатия кнопки "Стереть историю"
+            bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            with lock_dicts:
+                dialogs[chat_id] = []
+            bot.delete_message(message.chat.id, message.message_id)
+        elif call.data == 'continue_gpt':
+            # обработка нажатия кнопки "Продолжай GPT"
+            bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            bot.send_chat_action(chat_id, 'typing')
+            # добавляем новый запрос пользователя в историю диалога пользователя
+            resp = dialog_add_user_request(chat_id, 'Продолжай', 'gpt')
+            if resp:
+                if is_private:
+                    try:
+                        bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    except Exception as error:    
+                        print(error)
+                        bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                else:
+                    try:
+                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    except Exception as error:    
+                        print(error)
+                        bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                my_log.log(message, resp)
+        elif call.data == 'continue_bing':
+            # обработка нажатия кнопки "Продолжай Бинг"
+            bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            bot.send_chat_action(chat_id, 'typing')
+            # добавляем новый запрос пользователя в историю диалога пользователя
+            resp = dialog_add_user_request(chat_id, 'Продолжай', 'bing')
+            if resp:
+                if is_private:
+                    try:
+                        bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    except Exception as error:
+                        print(error)
+                        bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                else:
+                    try:
+                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    except Exception as error:
+                        print(error)
+                        bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                my_log.log(message, resp)
+        elif call.data == 'forget_all':
+            # обработка нажатия кнопки "Забудь всё"
+            bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            with lock_dicts:
+                dialogs[chat_id] = []
+        elif call.data == 'erase_answer':
+            # обработка нажатия кнопки "Стереть ответ"
+            bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            bot.delete_message(message.chat.id, message.message_id)
 
 
 def do_task(message):

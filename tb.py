@@ -217,7 +217,6 @@ def callback_inline(call: telebot.types.CallbackQuery):
 
 def do_task(message):
     """функция обработчик сообщений работающая в отдельном потоке"""
-
     with semaphore_talks:
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
@@ -314,8 +313,6 @@ def do_task(message):
             if text:
                 bot.send_message(chat_id, text, parse_mode='Markdown')
                 my_log.log(message, text)
-            else:
-                my_log.log(message, '')
 
 
 @bot.message_handler(content_types = ['audio'])

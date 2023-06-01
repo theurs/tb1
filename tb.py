@@ -127,6 +127,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         # user - who was first on the moon:
         
         bing_prompt = ''.join(f'{i["role"]} - {i["content"]}\n' for i in utils.gpt_start_message + new_messages)
+        #print(bing_prompt)
         resp = subprocess.run(['/usr/bin/python3', '/home/ubuntu/tb/bingai.py', bing_prompt], stdout=subprocess.PIPE)
         #resp = subprocess.run(['/usr/bin/python3', '/home/user/V/4 python/2 telegram bot tesseract/test/bingai.py', bing_prompt], stdout=subprocess.PIPE)
         resp = resp.stdout.decode('utf-8')

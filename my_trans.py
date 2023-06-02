@@ -10,7 +10,7 @@ import enchant
 
 
 def count_russian_words_not_in_ukrainian_dict(text):
-    """Считаем количество русских слов в тексте, эти слова не должны быть в украинском"""
+    """Считаем количество русских слов в тексте, эти слова не должны быть в украинском и белорусском"""
     d_ru = enchant.Dict("ru_RU")
     d_uk = enchant.Dict("uk_UA")
     russian_words = []
@@ -41,7 +41,14 @@ def detect_lang(text):
     """ Возвращает None если не удалось определить, 2 буквенное определение языка если получилось 'en', 'ru' итп """
     # минимальное количество слов для определения языка = 8. на коротких текстах детектор сильно врёт, возможно 8 это тоже мало
     if sum(1 for word in text.split() if len(word) >= 2) < 8:
-        return None
+        # если пробелов очень мало то возможно это язык типа японского
+        if text.count(' ') > len(text)/20:
+            return None
+    
+    # cчитаем белорусские буквы
+    pattern = r'[ЎўІіЁёЎ́ў́]'
+    if len(re.findall(pattern, text)) > 3:
+        return 'be' # возможно украинский но нам всё равно, главное что не русский
     
     # если в тексте больше 2 русских слов возвращаем None
     if count_russian_words_not_in_ukrainian_dict(text) > 2:
@@ -107,10 +114,12 @@ def translate(text):
     
 
 if __name__ == "__main__":
+    text = 'Конечно, я могу написать два предложения на украинском языке.'
     #text="""Звичайно, я можу написати два речення на українській мові."""
-    
-    
-    text = """Nach dem Abschluss der Schule begann Max, in einer Fabrik zu arbeiten, um Geld zu verdienen. Er sparte jeden Cent, den er konnte, um eines Tages sein Studium zu finanzieren. Nach ein paar Jahren hatte er genug Geld gespart, um sein Studium zu beginnen."""
+    #text = "Вітаю! Я - інфармацыйная сістэма, якая можа адказаць на запытанні ў вас. Я не магу размаўляць на людскай мове, але вы можаце пісаць мне паведамленні на любой мове, якую вы ведаеце. Дзякуй за карыстанне мной!"
+    #text = """Nach dem Abschluss der Schule begann Max, in einer Fabrik zu arbeiten, um Geld zu verdienen. Er sparte jeden Cent, den er konnte, um eines Tages sein Studium zu finanzieren. Nach ein paar Jahren hatte er genug Geld gespart, um sein Studium zu beginnen."""
+    #text = "こんにちは、私はAIアシスタントとして、あなたのお手伝いをすることができます。私は自然言語処理技術を利用して、あなたの質問や要望に応えます。どんなことでもお気軽にお聞きください。よろしくお願いします。"
+    #text = 'مرحبا، أنا مساعد ذكاء اصطناعي ويمكنني مساعدتك في أي شيء تحتاج إليه. أستخدم تقنيات معالجة اللغة الطبيعية للإجابة على أسئلتك وطلباتك. لا تتردد في سؤالي أي شيء. شكرا لك.'
     
     #print(translate_text2(text, 'en'))
     

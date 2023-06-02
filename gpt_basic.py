@@ -21,6 +21,10 @@ except Exception as e:
 # * Join our Discord server.
 # * Get your API key from the #Bot channel by sending /key command.
 # * Use the API Key in your requests to the following endpoints.
+# * Присоединитесь к нашему серверу Discord.
+# * Получите свой API-ключ в канале #Bot, отправив команду /key.
+# * Используйте API-ключ в ваших запросах к следующим конечным точкам.
+# * Если у бота поменялся адрес надо в дискорде боту написать /resetip
 
 openai.api_base = 'https://api.pawan.krd/v1'
 

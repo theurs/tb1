@@ -392,16 +392,10 @@ def handle_photo_thread(message: telebot.types.Message):
                 if len(text) > 4096:
                     with io.StringIO(text) as f:
                         f.name = 'text.txt'
-                        if message.reply_to_message:
-                            bot.send_document(message.chat.id, f, reply_to_message_id=message.reply_to_message.message_id)
-                        else:
-                            bot.send_document(message.chat.id, f)
+                        bot.send_document(message.chat.id, f, reply_to_message_id=message.reply_to_message.message_id)
                         my_log.log(message, '[OCR] Sent as file: ' + text)
                 else:
-                    if message.reply_to_message:
-                        bot.send_message(message.chat.id, text, message.reply_to_message.message_id)
-                    else:
-                        bot.send_message(message.chat.id, text)
+                    bot.send_message(message.chat.id, text, message.reply_to_message.message_id)
                     my_log.log(message, '[OCR] ' + text)
             else:
                 my_log.log(message, '[OCR] no results')

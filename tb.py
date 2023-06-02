@@ -484,7 +484,7 @@ def tts2_thread(message: telebot.types.Message):
         text = ' '.join(args[1:])
         lang = args[0]
         with show_action(message.chat.id, 'record_audio'):
-            audio = my_tts.tts(text, lang, rate)
+            audio = my_tts.tts(text, lang)
             if message.reply_to_message:
                 bot.send_voice(message.chat.id, audio, reply_to_message_id = message.reply_to_message.message_id)
             else:
@@ -503,7 +503,7 @@ def tts_thread(message: telebot.types.Message):
             return
         text = ' '.join(args)
         with show_action(message.chat.id, 'record_audio'):
-            audio = my_tts.tts(text, 'ru', rate)
+            audio = my_tts.tts(text)
             if message.reply_to_message:
                 bot.send_voice(message.chat.id, audio, reply_to_message_id = message.reply_to_message.message_id)
             else:

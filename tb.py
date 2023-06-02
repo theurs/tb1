@@ -242,23 +242,24 @@ def handle_audio_thread(message: telebot.types.Message):
         caption = message.caption
         if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй']):
             return
-        # Создание временного файла 
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            file_path = temp_file.name
-        # Скачиваем аудиофайл во временный файл
-        file_info = bot.get_file(message.audio.file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        with open(file_path, 'wb') as new_file:
-            new_file.write(downloaded_file)
-        # Распознаем текст из аудио 
-        text = my_stt.stt(file_path)
-        os.remove(file_path)
-        # Отправляем распознанный текст 
-        if text.strip() != '':
-            bot.reply_to(message, text)
-            my_log.log(message, f'[ASR] {text}')
-        else:
-            my_log.log(message, '[ASR] no results')
+        with show_action(message.chat.id, 'typing'):
+            # Создание временного файла 
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                file_path = temp_file.name
+            # Скачиваем аудиофайл во временный файл
+            file_info = bot.get_file(message.audio.file_id)
+            downloaded_file = bot.download_file(file_info.file_path)
+            with open(file_path, 'wb') as new_file:
+                new_file.write(downloaded_file)
+            # Распознаем текст из аудио 
+            text = my_stt.stt(file_path)
+            os.remove(file_path)
+            # Отправляем распознанный текст 
+            if text.strip() != '':
+                bot.reply_to(message, text)
+                my_log.log(message, f'[ASR] {text}')
+            else:
+                my_log.log(message, '[ASR] no results')
 
 
 @bot.message_handler(content_types = ['voice'])
@@ -269,23 +270,24 @@ def handle_voice(message: telebot.types.Message):
 def handle_voice_thread(message: telebot.types.Message): 
     """Автоматическое распознавание текст из голосовых сообщений"""
     with semaphore_talks:
-        # Создание временного файла 
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            file_path = temp_file.name
-        # Скачиваем аудиофайл во временный файл
-        file_info = bot.get_file(message.voice.file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        with open(file_path, 'wb') as new_file:
-            new_file.write(downloaded_file)
-        # Распознаем текст из аудио 
-        text = my_stt.stt(file_path)
-        os.remove(file_path)
-        # Отправляем распознанный текст 
-        if text.strip() != '':
-            bot.reply_to(message, text)
-            my_log.log(message, f'[ASR] {text}')
-        else:
-            my_log.log(message, '[ASR] no results')
+        with show_action(message.chat.id, 'typing'):
+            # Создание временного файла 
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                file_path = temp_file.name
+            # Скачиваем аудиофайл во временный файл
+            file_info = bot.get_file(message.voice.file_id)
+            downloaded_file = bot.download_file(file_info.file_path)
+            with open(file_path, 'wb') as new_file:
+                new_file.write(downloaded_file)
+            # Распознаем текст из аудио 
+            text = my_stt.stt(file_path)
+            os.remove(file_path)
+            # Отправляем распознанный текст 
+            if text.strip() != '':
+                bot.reply_to(message, text)
+                my_log.log(message, f'[ASR] {text}')
+            else:
+                my_log.log(message, '[ASR] no results')
 
 
 @bot.message_handler(content_types = ['document'])
@@ -299,50 +301,52 @@ def handle_document_thread(message: telebot.types.Message):
         # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
         caption = message.caption or ''
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
-            # если текстовый файл то пытаемся озвучить как книгу. русский голос
-            if message.document.mime_type == 'text/plain':
-                file_id = message.document.file_id
-                file_info = bot.get_file(file_id)
-                file = bot.download_file(file_info.file_path)
-                text = file.decode('utf-8')
-                try:
-                    lang = detect_langs(text)[0].lang
-                except Exception as error:
-                    lang = 'ru'
-                    print(error)
-                # Озвучиваем текст
-                audio = my_tts.tts(text, lang)
-                bot.send_voice(message.chat.id, audio)
-                my_log.log(message, f'tts file {text}')
-                return
+            with show_action(message.chat.id, 'record_audio'):
+                # если текстовый файл то пытаемся озвучить как книгу. русский голос
+                if message.document.mime_type == 'text/plain':
+                    file_id = message.document.file_id
+                    file_info = bot.get_file(file_id)
+                    file = bot.download_file(file_info.file_path)
+                    text = file.decode('utf-8')
+                    try:
+                        lang = detect_langs(text)[0].lang
+                    except Exception as error:
+                        lang = 'ru'
+                        print(error)
+                    # Озвучиваем текст
+                    audio = my_tts.tts(text, lang)
+                    bot.send_voice(message.chat.id, audio)
+                    my_log.log(message, f'tts file {text}')
+                    return
 
         # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
-            # получаем самый большой документ из списка
-            document = message.document
-            # если документ не является PDF-файлом, отправляем сообщение об ошибке
-            if document.mime_type != 'application/pdf':
-                bot.reply_to(message, 'Это не PDF-файл.')
-                return
-            # скачиваем документ в байтовый поток
-            file_id = message.document.file_id
-            file_info = bot.get_file(file_id)
-            file = bot.download_file(file_info.file_path)
-            fp = io.BytesIO(file)
+            with show_action(message.chat.id, 'upload_document'):
+                # получаем самый большой документ из списка
+                document = message.document
+                # если документ не является PDF-файлом, отправляем сообщение об ошибке
+                if document.mime_type != 'application/pdf':
+                    bot.reply_to(message, 'Это не PDF-файл.')
+                    return
+                # скачиваем документ в байтовый поток
+                file_id = message.document.file_id
+                file_info = bot.get_file(file_id)
+                file = bot.download_file(file_info.file_path)
+                fp = io.BytesIO(file)
 
-            # распознаем текст в документе с помощью функции get_text
-            text = my_ocr.get_text(fp)
-            # отправляем распознанный текст пользователю
-            if text.strip() != '':
-                # если текст слишком длинный, отправляем его в виде текстового файла
-                if len(text) > 4096:
-                    with io.StringIO(text) as f:
-                        if message.reply_to_message:
-                            bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt', reply_to_message_id = message.reply_to_message.id)
-                        else:
-                            bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt')
-                else:
-                    bot.reply_to(message, text)
+                # распознаем текст в документе с помощью функции get_text
+                text = my_ocr.get_text(fp)
+                # отправляем распознанный текст пользователю
+                if text.strip() != '':
+                    # если текст слишком длинный, отправляем его в виде текстового файла
+                    if len(text) > 4096:
+                        with io.StringIO(text) as f:
+                            if message.reply_to_message:
+                                bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt', reply_to_message_id = message.reply_to_message.id)
+                            else:
+                                bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt')
+                    else:
+                        bot.reply_to(message, text)
 
 
 @bot.message_handler(content_types = ['photo'])
@@ -368,34 +372,30 @@ def handle_photo_thread(message: telebot.types.Message):
         # распознаем текст только если есть команда для этого
         if not message.caption: return
         if not gpt_basic.detect_ocr_command(message.caption.lower()): return
-
-        # распознаем текст только если есть команда для этого
-        if not message.caption: return
-        if not gpt_basic.detect_ocr_command(message.caption.lower()): return
-
-        # получаем самую большую фотографию из списка
-        photo = message.photo[-1]
-        fp = io.BytesIO()
-        # скачиваем фотографию в байтовый поток
-        file_info = bot.get_file(photo.file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        fp.write(downloaded_file)
-        fp.seek(0)
-        # распознаем текст на фотографии с помощью pytesseract
-        text = my_ocr.get_text_from_image(fp.read())
-        # отправляем распознанный текст пользователю
-        if text.strip() != '':
-            # если текст слишком длинный, отправляем его в виде текстового файла
-            if len(text) > 4096:
-                with io.StringIO(text) as f:
-                    f.name = 'text.txt'
-                    bot.send_document(message.chat.id, f)
-                    my_log.log(message, '[OCR] Sent as file: ' + text)
+        with show_action(message.chat.id, 'typing'):
+            # получаем самую большую фотографию из списка
+            photo = message.photo[-1]
+            fp = io.BytesIO()
+            # скачиваем фотографию в байтовый поток
+            file_info = bot.get_file(photo.file_id)
+            downloaded_file = bot.download_file(file_info.file_path)
+            fp.write(downloaded_file)
+            fp.seek(0)
+            # распознаем текст на фотографии с помощью pytesseract
+            text = my_ocr.get_text_from_image(fp.read())
+            # отправляем распознанный текст пользователю
+            if text.strip() != '':
+                # если текст слишком длинный, отправляем его в виде текстового файла
+                if len(text) > 4096:
+                    with io.StringIO(text) as f:
+                        f.name = 'text.txt'
+                        bot.send_document(message.chat.id, f)
+                        my_log.log(message, '[OCR] Sent as file: ' + text)
+                else:
+                    bot.send_message(message.chat.id, text)
+                    my_log.log(message, '[OCR] ' + text)
             else:
-                bot.send_message(message.chat.id, text)
-                my_log.log(message, '[OCR] ' + text)
-        else:
-            my_log.log(message, '[OCR] no results')
+                my_log.log(message, '[OCR] no results')
 
 
 @bot.message_handler(content_types = ['video'])
@@ -457,8 +457,12 @@ def tts3_thread(message: telebot.types.Message):
         text = ' '.join(args[2:])
         lang = args[0]
         rate = args[1]
-        audio = my_tts.tts(text, lang, rate)
-        bot.send_voice(message.chat.id, audio)
+        with show_action(message.chat.id, 'record_audio'):
+            audio = my_tts.tts(text, lang, rate)
+            if message.reply_to_message:
+                bot.send_voice(message.chat.id, audio, reply_to_message_id = message.reply_to_message.message_id)
+            else:
+                bot.send_voice(message.chat.id, audio)
 
 
 @bot.message_handler(commands=['tts2']) 
@@ -473,8 +477,12 @@ def tts2_thread(message: telebot.types.Message):
             return
         text = ' '.join(args[1:])
         lang = args[0]
-        audio = my_tts.tts(text, lang)
-        bot.send_voice(message.chat.id, audio)
+        with show_action(message.chat.id, 'record_audio'):
+            audio = my_tts.tts(text, lang, rate)
+            if message.reply_to_message:
+                bot.send_voice(message.chat.id, audio, reply_to_message_id = message.reply_to_message.message_id)
+            else:
+                bot.send_voice(message.chat.id, audio)
 
 
 @bot.message_handler(commands=['tts']) 
@@ -488,8 +496,12 @@ def tts_thread(message: telebot.types.Message):
             bot.reply_to(message, 'Использование: /tts <текст>')
             return
         text = ' '.join(args)
-        audio = my_tts.tts(text)
-        bot.send_voice(message.chat.id, audio)
+        with show_action(message.chat.id, 'record_audio'):
+            audio = my_tts.tts(text, lang, rate)
+            if message.reply_to_message:
+                bot.send_voice(message.chat.id, audio, reply_to_message_id = message.reply_to_message.message_id)
+            else:
+                bot.send_voice(message.chat.id, audio)
 
 @bot.message_handler(commands=['trans'])
 def trans(message: telebot.types.Message):

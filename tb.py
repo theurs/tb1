@@ -44,19 +44,19 @@ bot_name_default = 'бот'
 
 
 class show_action(threading.Thread):
-    """Поток который можно остановит. Беспрерывно отправляет в чат уведомление об активности."""
+    """Поток который можно остановить. Беспрерывно отправляет в чат уведомление об активности.
+    Телеграм автоматически гасит уведомление через 5 секунд, по-этому его надо повторять."""
     def __init__(self, chat_id, action):
         super().__init__()
         self.chat_id = chat_id
         self.action = action
         self.is_running = True
-        self.start()
+        #self.start()
         self.timerseconds = 1
         
     def run(self):
         while self.is_running:
             bot.send_chat_action(self.chat_id, self.action)
-            
             n = 50
             while n > 0:
                 time.sleep(0.1)
@@ -65,6 +65,13 @@ class show_action(threading.Thread):
     def stop(self):
         self.timerseconds = 50
         self.is_running = False
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
 
 
 def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str:
@@ -188,25 +195,23 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
             bot.edit_message_reply_markup(message.chat.id, message.message_id)
-            #bot.send_chat_action(chat_id, 'typing')
-            action_thread = show_action(chat_id, 'typing')
-            # добавляем новый запрос пользователя в историю диалога пользователя
-            resp = dialog_add_user_request(chat_id, 'Продолжай', 'gpt')
-            if resp:
-                if is_private:
-                    try:
-                        bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                    except Exception as error:    
-                        print(error)
-                        bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                else:
-                    try:
-                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                    except Exception as error:    
-                        print(error)
-                        bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+            with show_action(chat_id, 'typing'):
+                # добавляем новый запрос пользователя в историю диалога пользователя
+                resp = dialog_add_user_request(chat_id, 'Продолжай', 'gpt')
+                if resp:
+                    if is_private:
+                        try:
+                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                        except Exception as error:    
+                            print(error)
+                            bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    else:
+                        try:
+                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                        except Exception as error:    
+                            print(error)
+                            bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                 my_log.log(message, resp)
-            action_thread.stop()
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
             bot.edit_message_reply_markup(message.chat.id, message.message_id)
@@ -613,48 +618,44 @@ def do_task(message):
         # можно перенаправить запрос к бингу, но он долго отвечает
         if msg.startswith('бинг ') or msg.startswith('бинг,'):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
-            #bot.send_chat_action(chat_id, 'typing')
-            action_thread = show_action(chat_id, 'typing')
-            # добавляем новый запрос пользователя в историю диалога пользователя
-            resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
-            if resp:
-                if is_private:
-                    try:
-                        bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                    except Exception as error:
-                        print(error)
-                        bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                else:
-                    try:
-                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                    except Exception as error:
-                        print(error)
-                        bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                my_log.log(message, resp)
-            action_thread.stop()
+            with show_action(chat_id, 'typing'):
+                # добавляем новый запрос пользователя в историю диалога пользователя
+                resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
+                if resp:
+                    if is_private:
+                        try:
+                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                        except Exception as error:
+                            print(error)
+                            bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    else:
+                        try:
+                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                        except Exception as error:
+                            print(error)
+                            bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    my_log.log(message, resp)
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
             if msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},'):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
-            #bot.send_chat_action(chat_id, 'typing')
-            action_thread = show_action(chat_id, 'typing')
             # добавляем новый запрос пользователя в историю диалога пользователя
-            resp = dialog_add_user_request(chat_id, message.text, 'gpt')
-            if resp:
-                if is_private:
-                    try:
-                        bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                    except Exception as error:    
-                        print(error)
-                        bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                else:
-                    try:
-                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                    except Exception as error:    
-                        print(error)
-                        bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                my_log.log(message, resp)
-            action_thread.stop()
+            with show_action(chat_id, 'typing'):
+                resp = dialog_add_user_request(chat_id, message.text, 'gpt')
+                if resp:
+                    if is_private:
+                        try:
+                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                        except Exception as error:    
+                            print(error)
+                            bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    else:
+                        try:
+                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                        except Exception as error:    
+                            print(error)
+                            bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                    my_log.log(message, resp)
         else: # смотрим надо ли переводить текст
             with lock_dicts:
                 if chat_id in blocks and blocks[chat_id] == 1:
@@ -686,30 +687,6 @@ def set_default_commands():
             except Exception as e:
                 print(e)
     bot.set_my_commands(commands)
-
-
-class show_action(threading.Thread):
-    """Поток который можно остановит. Беспрерывно отправляет в чат уведомление об активности."""
-    def __init__(self, chat_id, action):
-        super().__init__()
-        self.chat_id = chat_id
-        self.action = action
-        self.is_running = True
-        self.start()
-        self.timerseconds = 1
-        
-    def run(self):
-        while self.is_running:
-            bot.send_chat_action(self.chat_id, self.action)
-            
-            n = 50
-            while n > 0:
-                time.sleep(0.1)
-                n = n - self.timerseconds
-
-    def stop(self):
-        self.timerseconds = 50
-        self.is_running = False
 
 
 if __name__ == '__main__':

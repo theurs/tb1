@@ -334,10 +334,10 @@ def handle_document_thread(message: telebot.types.Message):
         # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
         caption = message.caption or ''
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
-            with show_action(message.chat.id, 'record_audio'):
-                # если текстовый файл то пытаемся озвучить как книгу. русский голос
-                if message.document.mime_type == 'text/plain':
-                    file_id = message.document.file_id
+            # если текстовый файл то пытаемся озвучить как книгу. русский голос
+            if message.document.mime_type == 'text/plain':
+                with show_action(message.chat.id, 'record_audio'):
+                    file_name = message.document.file_name + '.ogg'
                     file_info = bot.get_file(file_id)
                     file = bot.download_file(file_info.file_path)
                     text = file.decode('utf-8')
@@ -349,7 +349,7 @@ def handle_document_thread(message: telebot.types.Message):
                     # Озвучиваем текст
                     audio = my_tts.tts(text, lang)
                     if message.chat.type != 'private':
-                        bot.send_voice(message.chat.id, audio, reply_to_message_id=message.reply_to_message.message_id)
+                        bot.send_voice(message.chat.id, audio, reply_to_message_id=message.message_id)
                     else:
                         bot.send_voice(message.chat.id, audio)
                     my_log.log(message, f'tts file {text}')
@@ -367,6 +367,7 @@ def handle_document_thread(message: telebot.types.Message):
                 # скачиваем документ в байтовый поток
                 file_id = message.document.file_id
                 file_info = bot.get_file(file_id)
+                file_name = message.document.file_name + '.txt'
                 file = bot.download_file(file_info.file_path)
                 fp = io.BytesIO(file)
 
@@ -378,9 +379,9 @@ def handle_document_thread(message: telebot.types.Message):
                     if len(text) > 4096:
                         with io.StringIO(text) as f:
                             if message.chat.type != 'private':
-                                bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt', reply_to_message_id = message.reply_to_message.id)
+                                bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name, reply_to_message_id = message.message_id)
                             else:
-                                bot.send_document(message.chat.id, document = f, visible_file_name = 'text.txt', caption='text.txt')
+                                bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name)
                     else:
                         bot.reply_to(message, text)
 
@@ -426,7 +427,7 @@ def handle_photo_thread(message: telebot.types.Message):
                     with io.StringIO(text) as f:
                         f.name = 'text.txt'
                         if message.chat.type != 'private':
-                            bot.send_document(message.chat.id, f, reply_to_message_id=message.reply_to_message.message_id)
+                            bot.send_document(message.chat.id, f, reply_to_message_id=message.message_id)
                         else:
                             bot.send_document(message.chat.id, f)
                         my_log.log(message, '[OCR] Sent as file: ' + text)
@@ -514,8 +515,8 @@ def tts_thread(message: telebot.types.Message):
     with semaphore_talks:
         with show_action(message.chat.id, 'record_audio'):
             audio = my_tts.tts(text, lang, rate)
-            if message.reply_to_message:
-                bot.send_voice(message.chat.id, audio, reply_to_message_id = message.reply_to_message.message_id)
+            if message.chat.type != 'private':
+                bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id)
             else:
                 bot.send_voice(message.chat.id, audio)
 

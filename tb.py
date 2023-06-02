@@ -43,20 +43,14 @@ bot_names = my_dic.PersistentDict('names.pkl')
 bot_name_default = 'бот'
 
 supported_langs_trans = [
-        'af', 'am', 'ar', 'as', 'ay', 'az', 'ba', 'be', 'bg', 'bho', 'bm', 'bn', 
-        'bo', 'bs', 'ca', 'ceb', 'ckb', 'co', 'cs', 'cv', 'cy', 'da', 'de', 'doi', 
-        'dv', 'ee', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fj', 'fo', 
-        'fr', 'fr-CA', 'fy', 'ga', 'gd', 'gl', 'gn', 'gom', 'gu', 'ha', 'haw', 
-        'he', 'hi', 'hmn', 'hr', 'hsb', 'ht', 'hu', 'hy', 'id', 'ig', 'ikt', 'ilo',
-        'is', 'it', 'iu', 'iu-Latn', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 
-        'kri', 'ku', 'ky', 'la', 'lb', 'lg', 'ln', 'lo', 'lt', 'lus', 'lv', 'lzh',
-        'mai', 'mg', 'mhr', 'mi', 'mk', 'ml', 'mn', 'mn-Mong', 'mni-Mtei', 'mr', 
-        'mrj', 'ms', 'mt', 'my', 'ne', 'nl', 'no', 'nso', 'ny', 'om', 'or', 'otq', 
-        'pa', 'pap', 'pl', 'prs', 'ps', 'pt-BR', 'pt-PT', 'qu', 'ro', 'ru', 'rw', 
-        'sa', 'sah', 'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl',
-        'sr-Latn', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'ti', 'tk', 'tl',
-        'tlh-Latn', 'to', 'tr', 'ts', 'tt', 'tw', 'ty', 'udm', 'ug', 'uk', 'ur', 
-        'uz', 'vi', 'xh', 'yi', 'yo', 'yua', 'yue', 'zh-CN', 'zh-TW', 'zu']
+        "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
+        "el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha",
+        "haw","he","hi","hmn","hr","ht","hu","hy","id","ig","is","it","iw","ja","jw",
+        "ka","kk","km","kn","ko","ku","ky","la","lb","lo","lt","lv","mg","mi","mk",
+        "ml","mn","mr","ms","mt","my","ne","nl","no","ny","or","pa","pl","ps","pt",
+        "ro","ru","rw","sd","si","sk","sl","sm","sn","so","sq","sr","st","su","sv",
+        "sw","ta","te","tg","th","tl","tr","uk","ur","uz","vi","xh","yi","yo","zh",
+        "zh-TW","zu"]
 supported_langs_tts = [
         'af', 'am', 'ar', 'as', 'az', 'be', 'bg', 'bn', 'bs', 'ca', 'cs', 'cy', 'da',
         'de', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fil', 'fr', 'ga', 'gl',
@@ -518,16 +512,20 @@ def trans(message: telebot.types.Message):
     thread.start()
 def trans_thread(message: telebot.types.Message):
     with semaphore_talks:
-        args = message.text.split(' ', 2)[1:]
-        if len(args) > 1:
-            lang, text = args
+        help = f"""/trans [en|ru|uk|..] текст для перевода на указанный язык. Если не указан то на русский.\n\nПоддерживаемые языки: {', '.join(supported_langs_trans)}"""
+        # разбираем параметры
+        # регулярное выражение для разбора строки
+        pattern = r"^/trans\s+((?P<lang>[a-zA-Z-]{2,5})\s+)?(?P<text>.+)"
+        # поиск совпадений с регулярным выражением
+        match = re.match(pattern, message.text)
+        # извлечение параметров из найденных совпадений
+        if match:
+            lang = match.group("lang") or "ru"  # если lang не указан, то по умолчанию 'ru'
+            text = match.group("text") or ''
         else:
-            lang = 'ru'
-            text = args[0]
-        # если язык не указан то это русский
-        if lang not in supported_langs_trans:
-            text = lang + ' ' + text
-            lang = 'ru'
+            bot.reply_to(message, help)
+            return
+
         translated = my_trans.translate_text2(text, lang)
         if translated:
             bot.reply_to(message, translated)
@@ -538,7 +536,6 @@ def trans_thread(message: telebot.types.Message):
 @bot.message_handler(commands=['name'])
 def send_welcome(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
-    
     args = message.text.split()
     if len(args) > 1:
         new_name = args[1]
@@ -558,11 +555,15 @@ def send_welcome(message: telebot.types.Message):
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message: telebot.types.Message):
     # Отправляем приветственное сообщение
-    bot.send_message(message.chat.id, """Этот бот может\n\nРаспознать текст с картинки, надо отправить картинку с подписью прочитай|распознай|ocr|итп\n\n\
-Озвучить текст, надо прислать текстовый файл .txt с кодировкой UTF8 в приват или с подписью прочитай\n\n\
-Сообщения на иностранном языке автоматически переводятся на русский, это можно включить|выключить командой замолчи|вернись\n\n\
-Голосовые сообщения автоматически переводятся в текст\n\n\
-GPT chat активируется словом бот - бот, привет. Что бы отчистить историю напишите забудь.\n\n""" + open('commands.txt').read())
+    bot.send_message(message.chat.id, """Я - ваш персональный чат-бот, готовый помочь вам в любое время суток. Моя задача - помочь вам получить необходимую информацию и решить возникающие проблемы. 
+
+Я умею обрабатывать и анализировать большие объемы данных, быстро находить нужную информацию и предоставлять ее в удобном для вас формате. 
+
+Если у вас есть какие-то вопросы или проблемы, не стесняйтесь обращаться к чат-боту! Я готов помочь вам в любое время и в любой ситуации. 
+
+Спасибо, что выбрали меня в качестве своего помощника! Я буду стараться быть максимально полезным для вас.
+
+Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп.""")
     my_log.log(message)
 
 

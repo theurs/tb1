@@ -315,7 +315,10 @@ def handle_document_thread(message: telebot.types.Message):
                         print(error)
                     # Озвучиваем текст
                     audio = my_tts.tts(text, lang)
-                    bot.send_voice(message.chat.id, audio)
+                    if message.reply_to_message:
+                        bot.send_voice(message.chat.id, audio, reply_to_message_id=message.reply_to_message.message_id)
+                    else:
+                        bot.send_voice(message.chat.id, audio)
                     my_log.log(message, f'tts file {text}')
                     return
 
@@ -389,10 +392,16 @@ def handle_photo_thread(message: telebot.types.Message):
                 if len(text) > 4096:
                     with io.StringIO(text) as f:
                         f.name = 'text.txt'
-                        bot.send_document(message.chat.id, f)
+                        if message.reply_to_message:
+                            bot.send_document(message.chat.id, f, reply_to_message_id=message.reply_to_message.message_id)
+                        else:
+                            bot.send_document(message.chat.id, f)
                         my_log.log(message, '[OCR] Sent as file: ' + text)
                 else:
-                    bot.send_message(message.chat.id, text)
+                    if message.reply_to_message:
+                        bot.send_message(message.chat.id, text, message.reply_to_message.message_id)
+                    else:
+                        bot.send_message(message.chat.id, text)
                     my_log.log(message, '[OCR] ' + text)
             else:
                 my_log.log(message, '[OCR] no results')

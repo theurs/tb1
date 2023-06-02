@@ -99,19 +99,3 @@ if __name__ == '__main__':
     pass
 
     print(ocr('1.jpg'))
-
-    #text = replace_non_letters_with_spaces("""one two три
-    #                                       раз два опять
-    #                                       Что не так""")
-    #print(text)
-    
-    #fo = io.BytesIO(open('1.pdf', 'rb').read())
-    #t = get_text(fo)
-    #print(t)
-
-    #text="""# выводим результат
-    #for paragraph in sentences:
-    #for sentence in paragraph:
-    #    print(sentence)
-    #print()"""
-    #print(find_words(text))

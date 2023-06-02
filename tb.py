@@ -45,9 +45,17 @@ bot_name_default = 'бот'
 
 class show_action(threading.Thread):
     """Поток который можно остановить. Беспрерывно отправляет в чат уведомление об активности.
-    Телеграм автоматически гасит уведомление через 5 секунд, по-этому его надо повторять."""
+    Телеграм автоматически гасит уведомление через 5 секунд, по-этому его надо повторять.
+    Использовать в коде надо как то так
+    with show_action(chat_id, 'typing'):
+        делаем что-нибудь и пока делаем уведомление не гаснет
+    
+    """
     def __init__(self, chat_id, action):
         super().__init__()
+        self.actions = [  "typing", "upload_photo", "record_video", "upload_video", "record_audio",
+                         "upload_audio", "upload_document", "find_location", "record_video_note", "upload_video_note"]
+        assert action in self.actions, f'Допустимые actions = {self.actions}'
         self.chat_id = chat_id
         self.action = action
         self.is_running = True

@@ -141,7 +141,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     if engine == 'gpt':
         # пытаемся получить ответ
         try:
-            resp = gpt_basic.ai(prompt = text, max_tok = 1800, messages = utils.gpt_start_message + new_messages)
+            resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
             if resp:
                 new_messages = new_messages + [{"role":    "assistant",
                                                     "content": resp}]
@@ -160,7 +160,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                     new_messages = new_messages[2:]
                 new_messages = new_messages[:-2]
                 try:
-                    resp = gpt_basic.ai(prompt = text, max_tok = 1800, messages = utils.gpt_start_message + new_messages)
+                    resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
                 except Exception as error2:
                     print(error2)
                     return 'GPT не ответил.'
@@ -581,6 +581,40 @@ def send_welcome(message: telebot.types.Message):
     my_log.log(message)
 
 
+
+
+
+def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
+    """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
+    if len(resp) < 3501:
+        bot.send_message(chat_id, resp, parse_mode, disable_web_page_preview, reply_markup)
+    elif len(resp) < 7000:
+        bot.send_message(chat_id, resp[:3500], parse_mode, disable_web_page_preview, reply_markup)
+        bot.send_message(chat_id, resp[3500:], parse_mode, disable_web_page_preview, reply_markup)
+    else:
+        buf = io.BytesIO()
+        buf.write(resp.encode(''))
+        buf.seek(0)
+        bot.send_document(chat_id, document=buf, caption='resp.txt')
+
+
+def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
+    """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
+    if len(resp) < 3501:
+        bot.reply_to(message, resp, parse_mode, disable_web_page_preview, reply_markup)
+    elif len(resp) < 7000:
+        bot.reply_to(message, resp[:3500], parse_mode, disable_web_page_preview, reply_markup)
+        bot.reply_to(message, resp[3500:], parse_mode, disable_web_page_preview, reply_markup)
+    else:
+        buf = io.BytesIO()
+        buf.write(resp.encode(''))
+        buf.seek(0)
+        bot.send_document(chat_id, document=buf, caption='resp.txt')
+
+
+
+
+
 @bot.message_handler(func=lambda message: True)
 def echo_all(message: telebot.types.Message) -> None:
     """Обработчик текстовых сообщений"""
@@ -663,16 +697,16 @@ def do_task(message):
                 if resp:
                     if is_private:
                         try:
-                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            send_long_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                         except Exception as error:    
                             print(error)
-                            bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            send_long_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                     else:
                         try:
-                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                         except Exception as error:    
                             print(error)
-                            bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            reply_to_long_message(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                     my_log.log(message, resp)
         else: # смотрим надо ли переводить текст
             with lock_dicts:

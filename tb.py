@@ -42,7 +42,7 @@ bot_names = my_dic.PersistentDict('names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 bot_name_default = 'бот'
 
-supported_langs = [
+supported_langs_trans = [
         'af', 'am', 'ar', 'as', 'ay', 'az', 'ba', 'be', 'bg', 'bho', 'bm', 'bn', 
         'bo', 'bs', 'ca', 'ceb', 'ckb', 'co', 'cs', 'cv', 'cy', 'da', 'de', 'doi', 
         'dv', 'ee', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fj', 'fo', 
@@ -53,10 +53,19 @@ supported_langs = [
         'mai', 'mg', 'mhr', 'mi', 'mk', 'ml', 'mn', 'mn-Mong', 'mni-Mtei', 'mr', 
         'mrj', 'ms', 'mt', 'my', 'ne', 'nl', 'no', 'nso', 'ny', 'om', 'or', 'otq', 
         'pa', 'pap', 'pl', 'prs', 'ps', 'pt-BR', 'pt-PT', 'qu', 'ro', 'ru', 'rw', 
-        'sa', 'sah', 'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl', 
+        'sa', 'sah', 'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl',
         'sr-Latn', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'ti', 'tk', 'tl',
         'tlh-Latn', 'to', 'tr', 'ts', 'tt', 'tw', 'ty', 'udm', 'ug', 'uk', 'ur', 
         'uz', 'vi', 'xh', 'yi', 'yo', 'yua', 'yue', 'zh-CN', 'zh-TW', 'zu']
+supported_langs_tts = [
+        'af', 'am', 'ar', 'as', 'az', 'be', 'bg', 'bn', 'bs', 'ca', 'cs', 'cy', 'da',
+        'de', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fil', 'fr', 'ga', 'gl',
+        'gu', 'he', 'hi', 'hr', 'ht', 'hu', 'hy', 'id', 'is', 'it', 'ja', 'jv', 'ka',
+        'kk', 'km', 'kn', 'ko', 'ku', 'ky', 'la', 'lb', 'lo', 'lt', 'lv', 'mg', 'mi',
+        'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'my', 'nb', 'ne', 'nl', 'nn', 'no', 'ny',
+        'or', 'pa', 'pl', 'ps', 'pt', 'ro', 'ru', 'rw', 'sd', 'si', 'sk', 'sl', 'sm',
+        'sn', 'so', 'sq', 'sr', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'tk',
+        'tl', 'tr', 'tt', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
 
 
 class show_action(threading.Thread):
@@ -466,47 +475,6 @@ def send_debug_history(message: telebot.types.Message):
             bot.send_message(chat_id, utils.escape_markdown(prompt), disable_web_page_preview = True, reply_markup=markup)
 
 
-@bot.message_handler(commands=['tts3']) 
-def tts3(message: telebot.types.Message):
-    thread = threading.Thread(target=tts3_thread, args=(message,))
-    thread.start()
-def tts3_thread(message: telebot.types.Message):
-    with semaphore_talks:
-        args = message.text.split()[1:]
-        if not args:
-            bot.reply_to(message, 'Использование: /tts ru|en|uk|... +-xx% <текст>')
-            return
-        text = ' '.join(args[2:])
-        lang = args[0]
-        rate = args[1]
-        with show_action(message.chat.id, 'record_audio'):
-            audio = my_tts.tts(text, lang, rate)
-            if message.reply_to_message:
-                bot.send_voice(message.chat.id, audio, reply_to_message_id = message.reply_to_message.message_id)
-            else:
-                bot.send_voice(message.chat.id, audio)
-
-
-@bot.message_handler(commands=['tts2']) 
-def tts2(message: telebot.types.Message):
-    thread = threading.Thread(target=tts2_thread, args=(message,))
-    thread.start()
-def tts2_thread(message: telebot.types.Message):
-    with semaphore_talks:
-        args = message.text.split()[1:]
-        if not args:
-            bot.reply_to(message, 'Использование: /tts ru|en|uk|... <текст>')
-            return
-        text = ' '.join(args[1:])
-        lang = args[0]
-        with show_action(message.chat.id, 'record_audio'):
-            audio = my_tts.tts(text, lang)
-            if message.reply_to_message:
-                bot.send_voice(message.chat.id, audio, reply_to_message_id = message.reply_to_message.message_id)
-            else:
-                bot.send_voice(message.chat.id, audio)
-
-
 @bot.message_handler(commands=['tts']) 
 def tts(message: telebot.types.Message):
     thread = threading.Thread(target=tts_thread, args=(message,))
@@ -525,12 +493,12 @@ def tts_thread(message: telebot.types.Message):
     else:
         text = lang = rate = ''
 
-    if not text or lang not in supported_langs:
+    if not text or lang not in supported_langs_tts:
         help = f"""Использование: /tts [ru|en|uk|...] [+-XX%] <текст>
 
 +-XX% - ускорение с обязательным указанием направления + или -
 
-Поддерживаемые языки: {', '.join(supported_langs)}"""
+Поддерживаемые языки: {', '.join(supported_langs_tts)}"""
 
         bot.reply_to(message, help)
         return
@@ -543,22 +511,13 @@ def tts_thread(message: telebot.types.Message):
             else:
                 bot.send_voice(message.chat.id, audio)
 
+
 @bot.message_handler(commands=['trans'])
 def trans(message: telebot.types.Message):
     thread = threading.Thread(target=trans_thread, args=(message,))
     thread.start()
 def trans_thread(message: telebot.types.Message):
     with semaphore_talks:
-        help_codes = """de Немецкий
-en Английский
-es Испанский
-fr Французский
-ja Японский
-pl Польский
-ru Русский
-
-И многие другие
-    """
         args = message.text.split(' ', 2)[1:]
         if len(args) > 1:
             lang, text = args
@@ -566,7 +525,7 @@ ru Русский
             lang = 'ru'
             text = args[0]
         # если язык не указан то это русский
-        if lang not in supported_langs:
+        if lang not in supported_langs_trans:
             text = lang + ' ' + text
             lang = 'ru'
         translated = my_trans.translate_text2(text, lang)

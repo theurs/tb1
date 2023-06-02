@@ -141,7 +141,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     if engine == 'gpt':
         # пытаемся получить ответ
         try:
-            resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
+            resp = gpt_basic.ai(prompt = text, max_tok = 1800, messages = utils.gpt_start_message + new_messages)
             if resp:
                 new_messages = new_messages + [{"role":    "assistant",
                                                     "content": resp}]
@@ -160,7 +160,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                     new_messages = new_messages[2:]
                 new_messages = new_messages[:-2]
                 try:
-                    resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
+                    resp = gpt_basic.ai(prompt = text, max_tok = 1800, messages = utils.gpt_start_message + new_messages)
                 except Exception as error2:
                     print(error2)
                     return 'GPT не ответил.'

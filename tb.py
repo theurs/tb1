@@ -175,8 +175,9 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                 return 'GPT не ответил.'
     else:
         bing_prompt = text
+
         #bing_prompt = ''
-        #for m in utils.gpt_start_message + new_messages:
+        #for m in new_messages:
         #    role = m["role"]
         #    if role == 'user':
         #        role == 'юзер'
@@ -186,6 +187,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         #        role == 'роль бинга'
         #    bing_prompt += f'{role} - {m["content"]}\n'
         #bing_prompt += 'бинг - ...'
+        #replacements = {ord(char): " " for char in "'`*_~{}|><"}
+        #bing_prompt = bing_prompt.translate(replacements)
         
         resp = subprocess.run(['/usr/bin/python3', '/home/ubuntu/tb/bingai.py', bing_prompt], stdout=subprocess.PIPE)
         #resp = subprocess.run(['/usr/bin/python3', '/home/user/V/4 python/2 telegram bot tesseract/test/bingai.py', bing_prompt], stdout=subprocess.PIPE)

@@ -32,8 +32,10 @@
 2. Установите утилиту trans `sudo apt-get install translate-shell`
 3. Установите утилиту tesseract. В убунте 22.04.х (и дебиане 11) в репах очень старая версия тессеракта, надо подключать репозиторий с новыми версиями или ставить из бекпортов
     ```
-    sudo apt-get update && sudo apt-get install -y software-properties-common && sudo add-apt-repository -y ppa:alex-p/tesseract-ocr5 && \
-    sudo apt-get update && sudo apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd
+    sudo apt-get update && sudo apt-get install -y software-properties-common \
+    && sudo add-apt-repository -y ppa:alex-p/tesseract-ocr5 && \
+    sudo apt-get update && sudo apt install tesseract-ocr tesseract-ocr-eng \
+    tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd
     ```
 4. Установите словари `sudo apt install aspell aspell-en aspell-ru aspell-uk enchant`
 5. Клонируйте репозиторий с помощью команды:

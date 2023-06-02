@@ -523,7 +523,7 @@ def tts_thread(message: telebot.types.Message):
         rate = match.group("rate") or "+0%"  # если rate не указан, то по умолчанию '+0%'
         text = match.group("text") or ''
     else:
-        text = lang = rate ''
+        text = lang = rate = ''
     
     if not text or lang not in supported_langs:
         bot.reply_to(message, 'Использование: /tts [ru|en|uk|...] [+-XX%] <текст>')

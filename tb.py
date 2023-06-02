@@ -527,7 +527,6 @@ def tts_thread(message: telebot.types.Message):
         return
 
     with semaphore_talks:
-        text = ' '.join(args)
         with show_action(message.chat.id, 'record_audio'):
             audio = my_tts.tts(text, lang, rate)
             if message.reply_to_message:

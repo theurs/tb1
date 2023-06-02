@@ -374,7 +374,7 @@ def handle_photo_thread(message: telebot.types.Message):
 
         # распознаем текст только если есть команда для этого
         if not message.caption and message.chat.type != 'private': return
-        if not gpt_basic.detect_ocr_command(message.caption.lower()): return
+        if message.chat.type != 'private' and not gpt_basic.detect_ocr_command(message.caption.lower()): return
         with show_action(message.chat.id, 'typing'):
             # получаем самую большую фотографию из списка
             photo = message.photo[-1]

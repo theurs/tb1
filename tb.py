@@ -42,6 +42,22 @@ bot_names = my_dic.PersistentDict('names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 bot_name_default = 'бот'
 
+supported_langs = [
+        'af', 'am', 'ar', 'as', 'ay', 'az', 'ba', 'be', 'bg', 'bho', 'bm', 'bn', 
+        'bo', 'bs', 'ca', 'ceb', 'ckb', 'co', 'cs', 'cv', 'cy', 'da', 'de', 'doi', 
+        'dv', 'ee', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fj', 'fo', 
+        'fr', 'fr-CA', 'fy', 'ga', 'gd', 'gl', 'gn', 'gom', 'gu', 'ha', 'haw', 
+        'he', 'hi', 'hmn', 'hr', 'hsb', 'ht', 'hu', 'hy', 'id', 'ig', 'ikt', 'ilo',
+        'is', 'it', 'iu', 'iu-Latn', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 
+        'kri', 'ku', 'ky', 'la', 'lb', 'lg', 'ln', 'lo', 'lt', 'lus', 'lv', 'lzh',
+        'mai', 'mg', 'mhr', 'mi', 'mk', 'ml', 'mn', 'mn-Mong', 'mni-Mtei', 'mr', 
+        'mrj', 'ms', 'mt', 'my', 'ne', 'nl', 'no', 'nso', 'ny', 'om', 'or', 'otq', 
+        'pa', 'pap', 'pl', 'prs', 'ps', 'pt-BR', 'pt-PT', 'qu', 'ro', 'ru', 'rw', 
+        'sa', 'sah', 'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl', 
+        'sr-Latn', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'ti', 'tk', 'tl',
+        'tlh-Latn', 'to', 'tr', 'ts', 'tt', 'tw', 'ty', 'udm', 'ug', 'uk', 'ur', 
+        'uz', 'vi', 'xh', 'yi', 'yo', 'yua', 'yue', 'zh-CN', 'zh-TW', 'zu']
+
 
 class show_action(threading.Thread):
     """Поток который можно остановить. Беспрерывно отправляет в чат уведомление об активности.
@@ -496,14 +512,24 @@ def tts(message: telebot.types.Message):
     thread = threading.Thread(target=tts_thread, args=(message,))
     thread.start()
 def tts_thread(message: telebot.types.Message):
+    # разбираем параметры
+    # регулярное выражение для разбора строки
+    pattern = r"/tts\s*(?P<lang>[a-z]{2})?\s*(?P<rate>[+-]?\d{1,2}%)?\s*(?P<text>.+)"
+    # поиск совпадений с регулярным выражением
+    match = re.match(pattern, message.text)
+    # извлечение параметров из найденных совпадений
+    lang = match.group("lang") or "ru"  # если lang не указан, то по умолчанию 'ru'
+    rate = match.group("rate") or "+0%"  # если rate не указан, то по умолчанию '+0%'
+    text = match.group("text") or ''
+    
+    if not text or lang not in supported_langs:
+        bot.reply_to(message, 'Использование: /tts [ru|en|uk|...] [+-XX%] <текст>')
+        return
+
     with semaphore_talks:
-        args = message.text.split()[1:]
-        if not args:
-            bot.reply_to(message, 'Использование: /tts <текст>')
-            return
         text = ' '.join(args)
         with show_action(message.chat.id, 'record_audio'):
-            audio = my_tts.tts(text)
+            audio = my_tts.tts(text, lang, rate)
             if message.reply_to_message:
                 bot.send_voice(message.chat.id, audio, reply_to_message_id = message.reply_to_message.message_id)
             else:
@@ -515,22 +541,6 @@ def trans(message: telebot.types.Message):
     thread.start()
 def trans_thread(message: telebot.types.Message):
     with semaphore_talks:
-        supported_langs = [
-        'af', 'am', 'ar', 'as', 'ay', 'az', 'ba', 'be', 'bg', 'bho', 'bm', 'bn', 
-        'bo', 'bs', 'ca', 'ceb', 'ckb', 'co', 'cs', 'cv', 'cy', 'da', 'de', 'doi', 
-        'dv', 'ee', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fj', 'fo', 
-        'fr', 'fr-CA', 'fy', 'ga', 'gd', 'gl', 'gn', 'gom', 'gu', 'ha', 'haw', 
-        'he', 'hi', 'hmn', 'hr', 'hsb', 'ht', 'hu', 'hy', 'id', 'ig', 'ikt', 'ilo',
-        'is', 'it', 'iu', 'iu-Latn', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 
-        'kri', 'ku', 'ky', 'la', 'lb', 'lg', 'ln', 'lo', 'lt', 'lus', 'lv', 'lzh',
-        'mai', 'mg', 'mhr', 'mi', 'mk', 'ml', 'mn', 'mn-Mong', 'mni-Mtei', 'mr', 
-        'mrj', 'ms', 'mt', 'my', 'ne', 'nl', 'no', 'nso', 'ny', 'om', 'or', 'otq', 
-        'pa', 'pap', 'pl', 'prs', 'ps', 'pt-BR', 'pt-PT', 'qu', 'ro', 'ru', 'rw', 
-        'sa', 'sah', 'sd', 'si', 'sk', 'sl', 'sm', 'sn', 'so', 'sq', 'sr-Cyrl', 
-        'sr-Latn', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'ti', 'tk', 'tl',
-        'tlh-Latn', 'to', 'tr', 'ts', 'tt', 'tw', 'ty', 'udm', 'ug', 'uk', 'ur', 
-        'uz', 'vi', 'xh', 'yi', 'yo', 'yua', 'yue', 'zh-CN', 'zh-TW', 'zu']
-        
         help_codes = """de Немецкий
 en Английский
 es Испанский

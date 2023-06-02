@@ -526,7 +526,7 @@ def tts_thread(message: telebot.types.Message):
         text = lang = rate = ''
     
     if not text or lang not in supported_langs:
-        bot.reply_to(message, 'Использование: /tts [ru|en|uk|...] [+-XX%] <текст>')
+        bot.reply_to(message, 'Использование: /tts [ru|en|uk|...] [+-XX%] <текст>\n+-XX% - ускорение с обязательным указанием направления + или -')
         return
 
     with semaphore_talks:

@@ -518,9 +518,12 @@ def tts_thread(message: telebot.types.Message):
     # поиск совпадений с регулярным выражением
     match = re.match(pattern, message.text)
     # извлечение параметров из найденных совпадений
-    lang = match.group("lang") or "ru"  # если lang не указан, то по умолчанию 'ru'
-    rate = match.group("rate") or "+0%"  # если rate не указан, то по умолчанию '+0%'
-    text = match.group("text") or ''
+    if match:
+        lang = match.group("lang") or "ru"  # если lang не указан, то по умолчанию 'ru'
+        rate = match.group("rate") or "+0%"  # если rate не указан, то по умолчанию '+0%'
+        text = match.group("text") or ''
+    else:
+        text = lang = rate ''
     
     if not text or lang not in supported_langs:
         bot.reply_to(message, 'Использование: /tts [ru|en|uk|...] [+-XX%] <текст>')

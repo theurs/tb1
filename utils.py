@@ -44,7 +44,8 @@ gpt_start_message = [{"role":       "system",
 
 def escape_markdown(text):
     """функция для экранирования символов перед отправкой в маркдауне телеграма"""
-    pattern = r"([_*\[\]()~|`])"
+    #pattern = r"([_*\[\]()~|`])"
+    pattern = r"([_*\[\]~|`])"
     return re.sub(pattern, r"\\\1", text)
 
 

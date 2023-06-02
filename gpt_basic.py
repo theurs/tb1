@@ -41,6 +41,7 @@ except Exception as e:
         print(e)
 
 
+#def ai(prompt, temp = 1, max_tok = 2000, timeou = 15, messages = None):
 def ai(prompt, temp = 0.5, max_tok = 2000, timeou = 15, messages = None):
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ"""
     if messages == None:

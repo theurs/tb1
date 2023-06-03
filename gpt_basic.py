@@ -233,8 +233,8 @@ def zip_text(text: str) -> str:
 
 
 if __name__ == '__main__':
-
-    text = """1111111111  аааа 2222222222 Last time we talked about text data vectorization in NLP. However, before converting words into numbers, they need to be processed. Read our article about text preprocessing methods: tokenization, stop word removal, stemming, and lemmatization using Python libraries pymorphy2 and NLTK. 
+    """
+    text = 1111111111  аааа 2222222222 Last time we talked about text data vectorization in NLP. However, before converting words into numbers, they need to be processed. Read our article about text preprocessing methods: tokenization, stop word removal, stemming, and lemmatization using Python libraries pymorphy2 and NLTK. 
 
 Tokenization is the process of breaking down text into textual units, such as words or sentences. In the case of sentence segmentation, the task seems trivial - just find a period, question mark, or exclamation point. However, in the Russian language, there are abbreviations that contain a period, such as "к.т.н." - candidate of technical sciences or "т.е." - that is. Therefore, this approach can lead to errors. Fortunately, the Python library NLTK allows us to avoid this problem. Let's consider an example:
 
@@ -242,13 +242,13 @@ Tokenization is the process of breaking down text into textual units, such as wo
 Разбиваем текст на токены
 
 Токенизация – процесс разбиения текста на текстовые единицы, например, слова или предложения. В случае разбиений на предложения задача кажется тривиальной, нужно просто найти точку, вопросительный или восклицательный знак. Но в русском языке существует сокращения, в которых есть точка, например, к.т.н. — кандидат технических наук или т.е. — то есть. Поэтому такой путь может привести к ошибкам. К счастью, Python-библиотека NLTK позволяет избежать этой проблемы. Рассмотрим пример:
-"""
+    
     
     print(zip_text(text))
     print(len(text))
     print(len(zip_text(text)))
     sys.exit(0)
-
+    """
 
     if len(sys.argv) != 2:
         print("Usage: gptbasic.py 'request to qpt'")

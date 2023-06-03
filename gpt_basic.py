@@ -93,6 +93,7 @@ def ai_compress(prompt: str, max_prompt: int  = 200) -> str:
         except Exception as error:
             print(error)
     if len(prompt) > 2000:
+        # Надо попробовать применить тут стенографию и повторить запрос
         return 'Сообщение было слишком длинным'
     return prompt
 

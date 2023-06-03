@@ -141,11 +141,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     if engine == 'gpt':
         # пытаемся получить ответ
         try:
-            # 1 раз из 7 используем шутливый промпт что бы вставить шутку
-            if random.randint(1, 7) == 1:
-                resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message2 + new_messages)
-            else:
-                resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
+            resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
             if resp:
                 new_messages = new_messages + [{"role":    "assistant",
                                                     "content": resp}]
@@ -163,11 +159,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                 while (utils.count_tokens(new_messages) > 1500):
                     new_messages = new_messages[2:]
                 try:
-                    # 1 раз из 7 используем шутливый промпт что бы вставить шутку
-                    if random.randint(1, 7) == 1:
-                        resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message2 + new_messages)
-                    else:
-                        resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
+                    resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
                 except Exception as error2:
                     print(error2)
                     return 'GPT не ответил.'
@@ -211,8 +203,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     with lock_dicts:
         new_messages = new_messages[:-2]
         # если запрос юзера был длинным то в истории надо сохранить его коротко
-        if len(text) > 200:
-            new_text = gpt_basic.ai_compress(text, 200)
+        if len(text) > 300:
+            new_text = gpt_basic.ai_compress(text, 300)
             # заменяем запрос пользователя на сокращенную версию
             new_messages += [{"role":    "user",
                                  "content": new_text}]
@@ -220,8 +212,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             new_messages += [{"role":    "user",
                                  "content": text}]
         # если ответ бота был длинным то в истории надо сохранить его коротко
-        if len(resp) > 200:
-            new_resp = gpt_basic.ai_compress(resp, 200)
+        if len(resp) > 300:
+            new_resp = gpt_basic.ai_compress(resp, 300)
             new_messages += [{"role":    "assistant",
                                  "content": new_resp}]
         else:

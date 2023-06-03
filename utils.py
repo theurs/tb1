@@ -24,6 +24,21 @@ def count_tokens(messages):
     return 0
 
 
+def remove_vowels(text: str) -> str:
+    """
+    Функция для удаления из текста русских и английских гласных букв "а", "о", "e" и "a".
+    :param text: текст, в котором нужно удалить гласные буквы
+    :type text: str
+    :return: текст без указанных гласных букв
+    :rtype: str
+    """
+    vowels = [  'а', 'о',   # русские
+                'a', 'e']   # английские. не стоит наверное удалять слишком много
+    for vowel in vowels:
+        text = text.replace(vowel, '') # заменяем гласные буквы на пустую строку
+    return text
+
+
 if __name__ == '__main__':
     text = """'привет к��к дела ("tesd<\*__t text)"""
     print(escape_markdown(text))

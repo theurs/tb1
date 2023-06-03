@@ -93,7 +93,9 @@ def ai_compress(prompt: str, max_prompt: int  = 200) -> str:
         except Exception as error:
             print(error)
     if len(prompt) > 2000:
-        # Надо попробовать применить тут стенографию и повторить запрос
+        ziped = zip_text(prompt)
+        if len(ziped) <= 2000:
+            return ziped
         return 'Сообщение было слишком длинным'
     return prompt
 
@@ -211,7 +213,43 @@ def check_and_fix_text(text):
     return text.replace('⁂', '')
 
 
+def zip_text(text: str) -> str:
+    """
+    Функция для удаления из текста русских и английских гласных букв типа "а", "о", "e" и "a".
+    Так же удаляются идущие подряд одинаковые символы
+    """
+    vowels = [  'о',   # русские
+                'o']        # английские. не стоит наверное удалять слишком много
+    for vowel in vowels:
+        text = text.replace(vowel, '') # заменяем гласные буквы на пустую строку
+        
+        # используем регулярное выражение для поиска двух и более идущих подряд символов кроме цифр
+        pattern = re.compile(r"(.)\1{1,}")
+        # заменяем найденные подстроки на один символ
+        #text = pattern.sub(r"\1", text)
+        text = re.sub(r'([^\W\d_])\1+', r'\1', text)
+    return text
+
+
+
 if __name__ == '__main__':
+
+    text = """1111111111  аааа 2222222222 Last time we talked about text data vectorization in NLP. However, before converting words into numbers, they need to be processed. Read our article about text preprocessing methods: tokenization, stop word removal, stemming, and lemmatization using Python libraries pymorphy2 and NLTK. 
+
+Tokenization is the process of breaking down text into textual units, such as words or sentences. In the case of sentence segmentation, the task seems trivial - just find a period, question mark, or exclamation point. However, in the Russian language, there are abbreviations that contain a period, such as "к.т.н." - candidate of technical sciences or "т.е." - that is. Therefore, this approach can lead to errors. Fortunately, the Python library NLTK allows us to avoid this problem. Let's consider an example:
+
+В предыдущий раз мы говорили о векторизации текстовых данных в NLP. Однако прежде чем преобразовать слова в числа, их следует обработать. Читайте в нашей статье о методах предобработки текста: токенизации, удалении стоп-слов, стемминге и лемматизации с Python-библиотеками pymorphy2 и NLTK.
+Разбиваем текст на токены
+
+Токенизация – процесс разбиения текста на текстовые единицы, например, слова или предложения. В случае разбиений на предложения задача кажется тривиальной, нужно просто найти точку, вопросительный или восклицательный знак. Но в русском языке существует сокращения, в которых есть точка, например, к.т.н. — кандидат технических наук или т.е. — то есть. Поэтому такой путь может привести к ошибкам. К счастью, Python-библиотека NLTK позволяет избежать этой проблемы. Рассмотрим пример:
+"""
+    
+    print(zip_text(text))
+    print(len(text))
+    print(len(zip_text(text)))
+    sys.exit(0)
+
+
     if len(sys.argv) != 2:
         print("Usage: gptbasic.py 'request to qpt'")
         sys.exit(1)

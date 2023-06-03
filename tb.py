@@ -162,7 +162,6 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                 # чистим историю, повторяем запрос
                 while (utils.count_tokens(new_messages) > 1500):
                     new_messages = new_messages[2:]
-                #new_messages = new_messages[:-2]
                 try:
                     # 1 раз из 7 используем шутливый промпт что бы вставить шутку
                     if random.randint(1, 7) == 1:
@@ -213,7 +212,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         new_messages = new_messages[:-2]
         # если запрос юзера был длинным то в истории надо сохранить его коротко
         if len(text) > 200:
-            new_text = gpt_basic.ai_compress(text)
+            new_text = gpt_basic.ai_compress(text, 200)
             # заменяем запрос пользователя на сокращенную версию
             new_messages += [{"role":    "user",
                                  "content": new_text}]
@@ -222,7 +221,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                                  "content": text}]
         # если ответ бота был длинным то в истории надо сохранить его коротко
         if len(resp) > 200:
-            new_resp = gpt_basic.ai_compress(resp)
+            new_resp = gpt_basic.ai_compress(resp, 200)
             new_messages += [{"role":    "assistant",
                                  "content": new_resp}]
         else:

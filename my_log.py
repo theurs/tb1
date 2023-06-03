@@ -23,5 +23,12 @@ def log(message: telebot.types.Message, reply_from_bot: str = '') -> None:
                 log_file.write(f"[{time_now}] Bot replied: {reply_from_bot}\n")
             log_file.write('\n\n')
 
+
+def log2(text: str) -> None:
+    """для дебага"""
+    log_file_path = 'debug.log'
+    open(log_file_path, 'a').write(f'{text}\n\n')
+
+
 if __name__ == '__main__':
     pass

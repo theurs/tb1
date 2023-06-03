@@ -83,13 +83,14 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
     return check_and_fix_text(response)
 
 
-def ai_compress(prompt: str, max_prompt: int  = 200) -> str:
+def ai_compress(prompt: str, max_prompt: int  = 300) -> str:
     """сжимает длинное сообщение в чате для того что бы экономить память в контексте"""
     if len(prompt) > max_prompt:
         try:
             compressed_prompt = ai(f'Сократи текст до {max_prompt} символов так что бы сохранить смысл и важные детали. \
 Этот текст является запросом или ответом в переписке между пользователем и информационной системой. Текст:\n{prompt}', max_tok = max_prompt)
-            return compressed_prompt
+            if len(compressed_prompt) < len(prompt):
+                return compressed_prompt
         except Exception as error:
             print(error)
     if len(prompt) > 2000:

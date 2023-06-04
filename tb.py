@@ -311,6 +311,7 @@ def handle_audio_thread(message: telebot.types.Message):
                 bot.reply_to(message, text)
                 my_log.log(message, f'[ASR] {text}')
             else:
+                bot.reply_to(message, 'Очень интересно, но ничего не понятно.')
                 my_log.log(message, '[ASR] no results')
 
 

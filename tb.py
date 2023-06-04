@@ -510,7 +510,7 @@ def tts(message: telebot.types.Message):
 def tts_thread(message: telebot.types.Message):
     # разбираем параметры
     # регулярное выражение для разбора строки
-    pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]?\d{1,2}%\s+))?\s*(?P<text>.+)'
+    pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
     # поиск совпадений с регулярным выражением
     match = re.match(pattern, message.text, re.DOTALL)
     # извлечение параметров из найденных совпадений

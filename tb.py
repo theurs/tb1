@@ -510,9 +510,9 @@ def tts(message: telebot.types.Message):
 def tts_thread(message: telebot.types.Message):
     # разбираем параметры
     # регулярное выражение для разбора строки
-    pattern = r"/tts\s*(?P<lang>[a-z]{2})?\s*(?P<rate>[+-]?\d{1,2}%)?\s*(?P<text>.+)"
+    pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]?\d{1,2}%\s+))?\s*(?P<text>.+)'
     # поиск совпадений с регулярным выражением
-    match = re.match(pattern, message.text)
+    match = re.match(pattern, message.text, re.DOTALL)
     # извлечение параметров из найденных совпадений
     if match:
         lang = match.group("lang") or "ru"  # если lang не указан, то по умолчанию 'ru'
@@ -520,6 +520,8 @@ def tts_thread(message: telebot.types.Message):
         text = match.group("text") or ''
     else:
         text = lang = rate = ''
+    lang = lang.strip()
+    rate = rate.strip()
 
     if not text or lang not in supported_langs_tts:
         help = f"""Использование: /tts [ru|en|uk|...] [+-XX%] <текст>
@@ -534,10 +536,16 @@ def tts_thread(message: telebot.types.Message):
     with semaphore_talks:
         with show_action(message.chat.id, 'record_audio'):
             audio = my_tts.tts(text, lang, rate)
-            if message.chat.type != 'private':
-                bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id)
+            if audio:
+                if message.chat.type != 'private':
+                    bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id)
+                else:
+                    bot.send_voice(message.chat.id, audio)
             else:
-                bot.send_voice(message.chat.id, audio)
+                if message.chat.type != 'private':
+                    bot.reply_to(message, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.')
+                else:
+                    bot.send_message(message.chat.id, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.')
 
 
 @bot.message_handler(commands=['trans'])
@@ -549,22 +557,25 @@ def trans_thread(message: telebot.types.Message):
         help = f"""/trans [en|ru|uk|..] текст для перевода на указанный язык. Если не указан то на русский.\n\nПоддерживаемые языки: {', '.join(supported_langs_trans)}"""
         # разбираем параметры
         # регулярное выражение для разбора строки
-        pattern = r"^/trans\s+((?P<lang>[a-zA-Z-]{2,5})\s+)?(?P<text>.+)"
+        pattern = r'^\/trans\s+((?:' + '|'.join(supported_langs_trans) + r')\s+)?\s*(.*)$'
         # поиск совпадений с регулярным выражением
-        match = re.match(pattern, message.text)
+        match = re.match(pattern, message.text, re.DOTALL)
         # извлечение параметров из найденных совпадений
         if match:
-            lang = match.group("lang") or "ru"  # если lang не указан, то по умолчанию 'ru'
-            text = match.group("text") or ''
+            lang = match.group(1) or "ru"  # если lang не указан, то по умолчанию 'ru'
+            text = match.group(2) or ''
         else:
             bot.reply_to(message, help)
             return
+        lang = lang.strip()
 
-        translated = my_trans.translate_text2(text, lang)
-        if translated:
-            bot.reply_to(message, translated)
-        else:
-            bot.reply_to(message, 'Ошибка перевода')
+    with semaphore_talks:
+        with show_action(message.chat.id, 'typing'):
+            translated = my_trans.translate_text2(text, lang)
+            if translated:
+                bot.reply_to(message, translated)
+            else:
+                bot.reply_to(message, 'Ошибка перевода')
 
 
 @bot.message_handler(commands=['name'])

@@ -7,7 +7,7 @@ Type=simple
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/home/ubuntu/vosk/vosk-server/websocket
-ExecStart=/home/ubuntu/vosk/vosk-server/websocket/asr_server.py /home/ubuntu/vosk/vosk-model-ru-0.22
+ExecStart=/home/ubuntu/vosk/vosk-server/websocket/asr_server.py /home/ubuntu/vosk/vosk-model-small-ru-0.22
 Restart=always
 
 [Install]

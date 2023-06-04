@@ -125,8 +125,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     else:
         with lock_dicts:
             # по умолчанию нормальный стиль с ноткой юмора
-            prompts[chat_id] = utils.gpt_start_message2
-            current_prompt = utils.gpt_start_message2
+            prompts[chat_id] = [{"role": "system", "content": utils.gpt_start_message2}]
+            current_prompt =   [{"role": "system", "content": utils.gpt_start_message2}]
 
     # что делать с слишком длинными запросами? пока будем просто игнорировать
     #if len(text) > 2000: ''
@@ -510,9 +510,7 @@ def change_mode(message: telebot.types.Message):
         else:
             new_prompt = arg[0]
         with lock_dicts:
-            prompts[message.chat.id] =  [{"role":    "system",
-                      "content": new_prompt}]
-
+            prompts[message.chat.id] =  [{"role": "system", "content": new_prompt}]
     else:
         bot.reply_to(message, """Меняет роль бота, строку с указаниями что и как говорить.
     /stype <1|2|3|свой текст>

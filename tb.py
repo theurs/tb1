@@ -37,6 +37,10 @@ lock_dicts = threading.Lock()
 dialogs = my_dic.PersistentDict('dialogs.pkl')
 # в каких чатах выключены автопереводы
 blocks = my_dic.PersistentDict('blocks.pkl')
+
+# в каких чатах какой промт
+prompts = my_dic.PersistentDict('prompts.pkl')
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 bot_names = my_dic.PersistentDict('names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -113,8 +117,17 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     Returns:
         str: возвращает ответ который бот может показать, возможно '' или None
     """
-    global dialogs
-    
+    global dialogs, prompts
+
+    # в каждом чате свой собственный промт
+    if chat_id in prompts:
+        current_prompt = prompts[chat_id]
+    else:
+        with lock_dicts:
+            # по умолчанию нормальный стиль с ноткой юмора
+            prompts[chat_id] = utils.gpt_start_message2
+            current_prompt = utils.gpt_start_message2
+
     # что делать с слишком длинными запросами? пока будем просто игнорировать
     #if len(text) > 2000: ''
     
@@ -141,7 +154,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     if engine == 'gpt':
         # пытаемся получить ответ
         try:
-            resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
+            resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages)
             if resp:
                 new_messages = new_messages + [{"role":    "assistant",
                                                     "content": resp}]
@@ -159,7 +172,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                 while (utils.count_tokens(new_messages) > 1500):
                     new_messages = new_messages[2:]
                 try:
-                    resp = gpt_basic.ai(prompt = text, messages = utils.gpt_start_message + new_messages)
+                    resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages)
                 except Exception as error2:
                     print(error2)
                     return 'GPT не ответил.'
@@ -219,7 +232,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         else:
             new_messages += [{"role":    "assistant",
                                  "content": resp}]
-        dialogs[chat_id] = new_messages or utils.gpt_start_message
+        dialogs[chat_id] = new_messages or []
         #my_log.log2(str(dialogs[chat_id]))
 
     return resp
@@ -477,6 +490,37 @@ def handle_video_thread(message: telebot.types.Message):
                 my_log.log(message, "")
 
 
+@bot.message_handler(commands=['style'])
+def change_mode(message: telebot.types.Message):
+    """Меняет роль бота, строку с указаниями что и как говорить.
+    /stype <1|2|3|свой текст>
+    1 - формальный стиль (Ты искусственный интеллект отвечающий на запросы юзера.)
+    2 - формальный стиль + немного юмора (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с подходящим к запросу типом иронии или юмора но не перегибай палку.)
+    3 - токсичный стиль (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.)
+    """
+    global prompts
+    arg = message.text.split(maxsplit=1)[1:]
+    if arg:
+        if arg[0] == '1':
+            new_prompt = utils.gpt_start_message1
+        elif arg[0] == '2':
+            new_prompt = utils.gpt_start_message2
+        elif arg[0] == '3':
+            new_prompt = utils.gpt_start_message3
+        else:
+            new_prompt = arg[0]
+        with lock_dicts:
+            prompts[message.chat.id] =  [{"role":    "system",
+                      "content": new_prompt}]
+
+    else:
+        bot.reply_to(message, """Меняет роль бота, строку с указаниями что и как говорить.
+    /stype <1|2|3|свой текст>
+    1 - формальный стиль (Ты искусственный интеллект отвечающий на запросы юзера.)
+    2 - формальный стиль + немного юмора (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с подходящим к запросу типом иронии или юмора но не перегибай палку.)
+    3 - токсичный стиль (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.)
+    """)
+
 @bot.message_handler(commands=['mem'])
 def send_debug_history(message: telebot.types.Message):
     # Отправляем текущую историю сообщений
@@ -495,7 +539,7 @@ def send_debug_history(message: telebot.types.Message):
         if chat_id in dialogs:
             new_messages = dialogs[chat_id]
         else:
-            new_messages = utils.gpt_start_message
+            new_messages = []
         prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
         try:
             bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=markup)

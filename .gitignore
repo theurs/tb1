@@ -2,8 +2,6 @@ cfg.py
 sync
 __pycache__
 cookies.json
-dialogs.pkl
-blocks.pkl
-names.pkl
+*.pkl
 *.log
 test.py

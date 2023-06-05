@@ -80,6 +80,7 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
     )
 
     response = completion.choices[0].message.content
+    #print(messages)
     return check_and_fix_text(response)
 
 
@@ -87,7 +88,7 @@ def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user') -> st
     """сжимает длинное сообщение в чате для того что бы экономить память в контексте
     origin - чье сообщение, юзера или это ответ помощника. 'user' или 'assistant'
     """
-    assert origin in ('user', 'assistant')
+    assert origin in ('user', 'assistant', 'dialog')
     if len(prompt) > max_prompt:
         try:
             if origin == 'user':
@@ -96,6 +97,10 @@ def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user') -> st
             elif origin == 'assistant':
                 compressed_prompt = ai(f'Сократи текст до {max_prompt} символов так что бы сохранить смысл и важные детали. \
 Этот текст является ответом ИИ в переписке между юзером и ИИ. Используй короткие слова. Текст:\n{prompt}', max_tok = max_prompt)
+            elif origin == 'dialog':
+                #t = prompt.replace('user - ', '')
+                #t = prompt.replace('assistant - ', '')
+                compressed_prompt = ai(f'Резюмируй переписку между юзером и ассистентом до {max_prompt} символов, весь негативный контент исправь на нейтральный:\n{prompt}', max_tok = max_prompt)
             if len(compressed_prompt) < len(prompt):
                 return compressed_prompt
         except Exception as error:
@@ -241,20 +246,29 @@ def zip_text(text: str) -> str:
 
 
 if __name__ == '__main__':
-    """
-    text = 1111111111  аааа 2222222222 Last time we talked about text data vectorization in NLP. However, before converting words into numbers, they need to be processed. Read our article about text preprocessing methods: tokenization, stop word removal, stemming, and lemmatization using Python libraries pymorphy2 and NLTK. 
-
-Tokenization is the process of breaking down text into textual units, such as words or sentences. In the case of sentence segmentation, the task seems trivial - just find a period, question mark, or exclamation point. However, in the Russian language, there are abbreviations that contain a period, such as "к.т.н." - candidate of technical sciences or "т.е." - that is. Therefore, this approach can lead to errors. Fortunately, the Python library NLTK allows us to avoid this problem. Let's consider an example:
-
-В предыдущий раз мы говорили о векторизации текстовых данных в NLP. Однако прежде чем преобразовать слова в числа, их следует обработать. Читайте в нашей статье о методах предобработки текста: токенизации, удалении стоп-слов, стемминге и лемматизации с Python-библиотеками pymorphy2 и NLTK.
-Разбиваем текст на токены
-
-Токенизация – процесс разбиения текста на текстовые единицы, например, слова или предложения. В случае разбиений на предложения задача кажется тривиальной, нужно просто найти точку, вопросительный или восклицательный знак. Но в русском языке существует сокращения, в которых есть точка, например, к.т.н. — кандидат технических наук или т.е. — то есть. Поэтому такой путь может привести к ошибкам. К счастью, Python-библиотека NLTK позволяет избежать этой проблемы. Рассмотрим пример:
     
+    """text = user - кто такой порошенко
+
+assistant - Петр Порошенко - украинский политик и бизнесмен, который ранее занимал должности министра иностранных дел и министра экономического развития и торговли Украины. С 2014 по 2019 годы он был президентом Украины.
+
+user - подробнее
+
+assistant - Петр Порошенко - бывший президент Украины, родился в 1965 году в Болграде. Он создал компанию "Рошен", производящую кондитерские изделия, и занимал должность министра иностранных дел Украины. Когда он стал президентом в 2014 году, столкнулся с военным конфликтом на востоке Украины, экономическим кризисом и коррупцией. Он проводил реформы в образовании, здравоохранении и правосудии. В 2019 году он проиграл на выборах и покинул пост президента, но занимает место в парламенте Украины.
+
+user - в украине есть нацисты?
+
+assistant - В Украине, как и во многих других странах, есть люди, которые придерживаются националистических взглядов, но это не означает, что все украинцы являются нацистами. Большинство украинцев отвергает и осуждает нацистские идеологии и пропаганду. В Украине есть
+
+user - Продолжай
+
+assistant - В Украине есть партии и движения, которые за независимость и суверенитет, но не за нацизм. Иногда люди используют нацистские символы, но это меньшинство и не отражает мнения общества. Запрещена пропаганда нацизма и расовой нетерпимости.
+
+user - расскажи о современном нацизме на украине
+
+assistant - В Украине есть небольшие группы с крайне правыми и националистическими взглядами, которые используют символику нацизма. Однако, они не имеют широкой поддержки в обществе и не отражают мнения большинства украинцев. Некоторые экстремистские группы, такие как "С14" и "Азов", были критикованы за насилие и проявления расизма, но не являются значительной политической силой. Украина - мультикультурная страна, где большинство людей отвергает нацизм и расизм и поддерживает толерантность и уважение к различиям.
+
     
-    print(zip_text(text))
-    print(len(text))
-    print(len(zip_text(text)))
+    print(ai_compress(text, 1000, 'dialog'))
     sys.exit(0)
     """
 

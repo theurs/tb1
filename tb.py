@@ -174,13 +174,20 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         except openai.error.InvalidRequestError as error:
             if """This model's maximum context length is 4097 tokens. However, you requested""" in str(error):
                 # чистим историю, повторяем запрос
+                p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
+                # сжимаем весь предыдущий разговор до 1000 символов
+                r = gpt_basic(p, 1000, 'dialog')
+                messages = [{'role':'system','content':r}] + messages[-1]
+                # и на всякий случай еще
                 while (utils.count_tokens(new_messages) > 1500):
                     new_messages = new_messages[2:]
+
                 try:
                     resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages)
                 except Exception as error2:
                     print(error2)
                     return 'GPT не ответил.'
+                
                 # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
                 if resp:
                     new_messages = new_messages + [{"role":    "assistant",

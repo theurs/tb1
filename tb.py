@@ -266,13 +266,13 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
-            bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             with lock_dicts:
                 dialogs[chat_id] = []
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
-            bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             with show_action(chat_id, 'typing'):
                 # добавляем новый запрос пользователя в историю диалога пользователя
                 resp = dialog_add_user_request(chat_id, 'Продолжай', 'gpt')
@@ -292,12 +292,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 my_log.log(message, resp)
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
-            bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             with lock_dicts:
                 dialogs[chat_id] = []
         elif call.data == 'erase_answer':
             # обработка нажатия кнопки "Стереть ответ"
-            bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             bot.delete_message(message.chat.id, message.message_id)
 
 
@@ -517,6 +517,11 @@ def change_mode(message: telebot.types.Message):
         with lock_dicts:
             prompts[message.chat.id] =  [{"role": "system", "content": new_prompt}]
     else:
+        # клавиатура
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
+        markup.add(button1)
+
         bot.reply_to(message, f"""Текущий стиль
         
 `{prompts[message.chat.id][0]['content']}`
@@ -528,7 +533,7 @@ def change_mode(message: telebot.types.Message):
 1 - формальный стиль (Ты искусственный интеллект отвечающий на запросы юзера.)
 2 - формальный стиль + немного юмора (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с подходящим к запросу типом иронии или юмора но не перегибай палку.)
 3 - токсичный стиль (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.)
-    """, parse_mode='Markdown' )
+    """, parse_mode='Markdown', reply_markup=markup)
 
 @bot.message_handler(commands=['mem'])
 def send_debug_history(message: telebot.types.Message):

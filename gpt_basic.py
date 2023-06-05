@@ -92,10 +92,10 @@ def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user') -> st
         try:
             if origin == 'user':
                 compressed_prompt = ai(f'Сократи текст до {max_prompt} символов так что бы сохранить смысл и важные детали. \
-Этот текст является запросом юзера в переписке между юзером и ИИ. Текст:\n{prompt}', max_tok = max_prompt)
+Этот текст является запросом юзера в переписке между юзером и ИИ. Используй короткие слова. Текст:\n{prompt}', max_tok = max_prompt)
             elif origin == 'assistant':
                 compressed_prompt = ai(f'Сократи текст до {max_prompt} символов так что бы сохранить смысл и важные детали. \
-Этот текст является ответом ИИ в переписке между юзером и ИИ. Текст:\n{prompt}', max_tok = max_prompt)
+Этот текст является ответом ИИ в переписке между юзером и ИИ. Используй короткие слова. Текст:\n{prompt}', max_tok = max_prompt)
             if len(compressed_prompt) < len(prompt):
                 return compressed_prompt
         except Exception as error:

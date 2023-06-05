@@ -160,6 +160,11 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                                                     "content": resp}]
             else:
                 # не сохраняем диалог, нет ответа
+                # если в последнем сообщении нет текста (глюк) то убираем его
+                with lock_dicts:
+                    if messages[-1]['content'].strip() == '':
+                        messages = messages[:-1]
+                    dialogs[chat_id] = new_messages or []
                 return 'GPT не ответил.'
         # бот не ответил или обиделся
         except AttributeError:
@@ -217,7 +222,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         new_messages = new_messages[:-2]
         # если запрос юзера был длинным то в истории надо сохранить его коротко
         if len(text) > 300:
-            new_text = gpt_basic.ai_compress(text, 300)
+            new_text = gpt_basic.ai_compress(text, 300, 'user')
             # заменяем запрос пользователя на сокращенную версию
             new_messages += [{"role":    "user",
                                  "content": new_text}]
@@ -226,7 +231,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                                  "content": text}]
         # если ответ бота был длинным то в истории надо сохранить его коротко
         if len(resp) > 300:
-            new_resp = gpt_basic.ai_compress(resp, 300)
+            new_resp = gpt_basic.ai_compress(resp, 300, 'assistant')
             new_messages += [{"role":    "assistant",
                                  "content": new_resp}]
         else:

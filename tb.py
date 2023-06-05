@@ -24,6 +24,10 @@ import my_tts
 import utils
 
 
+# устанавливаем рабочую папку = папке в которой скрипт лежит
+os.chdir(os.path.abspath(os.path.dirname(__file__)))
+
+
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
 #telebot.apihelper.proxy = cfg.proxy_settings
 

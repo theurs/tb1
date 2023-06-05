@@ -83,12 +83,19 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
     return check_and_fix_text(response)
 
 
-def ai_compress(prompt: str, max_prompt: int  = 300) -> str:
-    """сжимает длинное сообщение в чате для того что бы экономить память в контексте"""
+def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user') -> str:
+    """сжимает длинное сообщение в чате для того что бы экономить память в контексте
+    origin - чье сообщение, юзера или это ответ помощника. 'user' или 'assistant'
+    """
+    assert origin in ('user', 'assistant')
     if len(prompt) > max_prompt:
         try:
-            compressed_prompt = ai(f'Сократи текст до {max_prompt} символов так что бы сохранить смысл и важные детали. \
-Этот текст является запросом или ответом в переписке между пользователем и информационной системой. Текст:\n{prompt}', max_tok = max_prompt)
+            if origin == 'user':
+                compressed_prompt = ai(f'Сократи текст до {max_prompt} символов так что бы сохранить смысл и важные детали. \
+Этот текст является запросом юзера в переписке между юзером и ИИ. Текст:\n{prompt}', max_tok = max_prompt)
+            elif origin == 'assistant':
+                compressed_prompt = ai(f'Сократи текст до {max_prompt} символов так что бы сохранить смысл и важные детали. \
+Этот текст является ответом ИИ в переписке между юзером и ИИ. Текст:\n{prompt}', max_tok = max_prompt)
             if len(compressed_prompt) < len(prompt):
                 return compressed_prompt
         except Exception as error:

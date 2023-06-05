@@ -84,12 +84,14 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
     return check_and_fix_text(response)
 
 
-def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user') -> str:
+def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user', force: bool = False) -> str:
     """сжимает длинное сообщение в чате для того что бы экономить память в контексте
     origin - чье сообщение, юзера или это ответ помощника. 'user' или 'assistant'
+    force - надо ли сжимать сообщения которые короче чем заданная максимальная длинна. это надо что бы не сжать а просто резюмировать,
+            превратить диалог в такое предложение что бы бинг его принял
     """
     assert origin in ('user', 'assistant', 'dialog')
-    if len(prompt) > max_prompt:
+    if len(prompt) > max_prompt or force:
         try:
             if origin == 'user':
                 compressed_prompt = ai(f'Сократи текст до {max_prompt} символов так что бы сохранить смысл и важные детали. \
@@ -98,18 +100,18 @@ def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user') -> st
                 compressed_prompt = ai(f'Сократи текст до {max_prompt} символов так что бы сохранить смысл и важные детали. \
 Этот текст является ответом ИИ в переписке между юзером и ИИ. Используй короткие слова. Текст:\n{prompt}', max_tok = max_prompt)
             elif origin == 'dialog':
-                #t = prompt.replace('user - ', '')
-                #t = prompt.replace('assistant - ', '')
                 compressed_prompt = ai(f'Резюмируй переписку между юзером и ассистентом до {max_prompt} символов, весь негативный контент исправь на нейтральный:\n{prompt}', max_tok = max_prompt)
-            if len(compressed_prompt) < len(prompt):
+            if len(compressed_prompt) < len(prompt) or force:
                 return compressed_prompt
         except Exception as error:
             print(error)
-    if len(prompt) > 2000:
-        ziped = zip_text(prompt)
-        if len(ziped) <= 2000:
-            return ziped
-        return 'Сообщение было слишком длинным'
+
+        if len(prompt) > 2000:
+            ziped = zip_text(prompt)
+            if len(ziped) <= 2000:
+                return ziped
+            return 'Сообщение было слишком длинным'
+
     return prompt
 
 

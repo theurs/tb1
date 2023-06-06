@@ -188,7 +188,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                 # чистим историю, повторяем запрос
                 p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
                 # сжимаем весь предыдущий разговор до 1000 символов
-                r = gpt_basic(p, 1000, 'dialog')
+                r = gpt_basic.ai_compress(p, 1000, 'dialog')
                 messages = [{'role':'system','content':r}] + messages[-1]
                 # и на всякий случай еще
                 while (utils.count_tokens(new_messages) > 1500):

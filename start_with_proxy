@@ -2,4 +2,4 @@
 
 #proxychains4 -q ./gpt_basic.py
 
-proxychains4 -q ./tb.py
+proxychains4 -q ./bingai.py '1+1 one word answer'

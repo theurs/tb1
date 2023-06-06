@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+#import io
 import json
 import asyncio
 from EdgeGPT import Chatbot, ConversationStyle
@@ -10,8 +11,22 @@ import sys
 
 async def main(prompt1: str) -> str:
     cookies = json.loads(open("cookies.json", encoding="utf-8").read())
-    bot = await Chatbot.create(cookies=cookies)
-    r = await bot.ask(prompt=prompt1, conversation_style=ConversationStyle.creative)
+    
+    
+    #output = io.StringIO()
+    #orig_stdout, orig_stderr = sys.stdout, sys.stderr
+    #sys.stdout, sys.stderr = output, output
+    
+    
+    try:
+        bot = await Chatbot.create(cookies=cookies)
+        r = await bot.ask(prompt=prompt1, conversation_style=ConversationStyle.creative)
+    except Exception as error:
+        sys.stdout, sys.stderr = orig_stdout, orig_stderr
+        print(error)
+
+
+    #sys.stdout, sys.stderr = orig_stdout, orig_stderr
 
     text = r['item']['messages'][1]['text']
     links_raw = r['item']['messages'][1]['adaptiveCards'][0]['body'][0]['text']

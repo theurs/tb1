@@ -73,12 +73,20 @@ supported_langs_tts = [
 class show_action(threading.Thread):
     """Поток который можно остановить. Беспрерывно отправляет в чат уведомление об активности.
     Телеграм автоматически гасит уведомление через 5 секунд, по-этому его надо повторять.
+
     Использовать в коде надо как то так
     with show_action(chat_id, 'typing'):
         делаем что-нибудь и пока делаем уведомление не гаснет
     
     """
     def __init__(self, chat_id, action):
+        """_summary_
+
+        Args:
+            chat_id (_type_): id чата в котором будет отображаться уведомление
+            action (_type_):  "typing", "upload_photo", "record_video", "upload_video", "record_audio", 
+                              "upload_audio", "upload_document", "find_location", "record_video_note", "upload_video_note"
+        """
         super().__init__()
         self.actions = [  "typing", "upload_photo", "record_video", "upload_video", "record_audio",
                          "upload_audio", "upload_document", "find_location", "record_video_note", "upload_video_note"]
@@ -243,6 +251,34 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     return resp
 
 
+def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
+    """создает и возвращает клавиатуру по текстовому описанию
+    'chat' - клавиатура для чата с 3 кнопками Дальше, Забудь, Скрой
+    'mem' - клавиатура для команды mem, с кнопками Забудь и Скрой
+    'hide' - клавиатура с одной кнопкой Скрой
+    """
+    if kbd == 'chat':
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton("Дальше", callback_data='continue_gpt')
+        button2 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
+        button3 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
+        markup.add(button1, button2, button3)
+        return markup
+    elif kbd == 'mem':
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton("Стереть историю", callback_data='clear_history')
+        button2 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
+        markup.add(button1, button2)
+        return markup
+    elif kbd == 'hide':
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
+        markup.add(button1)
+        return markup
+    else:
+        raise f"Неизвестная клавиатура '{kbd}'"
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
@@ -256,13 +292,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
         chat_id = message.chat.id
         global dialogs
-
-        # клавиатура
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton("Дальше", callback_data='continue_gpt')
-        button2 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
-        button3 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
-        markup.add(button1, button2, button3)
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
@@ -279,16 +308,16 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if resp:
                     if is_private:
                         try:
-                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
-                            bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
-                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
-                            bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                 my_log.log(message, resp)
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
@@ -326,10 +355,10 @@ def handle_audio_thread(message: telebot.types.Message):
             os.remove(file_path)
             # Отправляем распознанный текст 
             if text.strip() != '':
-                bot.reply_to(message, text)
+                bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
                 my_log.log(message, f'[ASR] {text}')
             else:
-                bot.reply_to(message, 'Очень интересно, но ничего не понятно.')
+                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
                 my_log.log(message, '[ASR] no results')
 
 
@@ -355,7 +384,7 @@ def handle_voice_thread(message: telebot.types.Message):
             os.remove(file_path)
             # Отправляем распознанный текст 
             if text.strip() != '':
-                bot.reply_to(message, text)
+                bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
                 my_log.log(message, f'[ASR] {text}')
             else:
                 my_log.log(message, '[ASR] no results')
@@ -387,9 +416,9 @@ def handle_document_thread(message: telebot.types.Message):
                     # Озвучиваем текст
                     audio = my_tts.tts(text, lang)
                     if message.chat.type != 'private':
-                        bot.send_voice(message.chat.id, audio, reply_to_message_id=message.message_id)
+                        bot.send_voice(message.chat.id, audio, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide'))
                     else:
-                        bot.send_voice(message.chat.id, audio)
+                        bot.send_voice(message.chat.id, audio, reply_markup=get_keyboard('hide'))
                     my_log.log(message, f'tts file {text}')
                     return
 
@@ -400,7 +429,7 @@ def handle_document_thread(message: telebot.types.Message):
                 document = message.document
                 # если документ не является PDF-файлом, отправляем сообщение об ошибке
                 if document.mime_type != 'application/pdf':
-                    bot.reply_to(message, 'Это не PDF-файл.')
+                    bot.reply_to(message, 'Это не PDF-файл.', reply_markup=get_keyboard('hide'))
                     return
                 # скачиваем документ в байтовый поток
                 file_id = message.document.file_id
@@ -417,9 +446,9 @@ def handle_document_thread(message: telebot.types.Message):
                     if len(text) > 4096:
                         with io.StringIO(text) as f:
                             if message.chat.type != 'private':
-                                bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name, reply_to_message_id = message.message_id)
+                                bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide'))
                             else:
-                                bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name)
+                                bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name, reply_markup=get_keyboard('hide'))
                     else:
                         bot.reply_to(message, text)
 
@@ -438,7 +467,7 @@ def handle_photo_thread(message: telebot.types.Message):
             # у фотографий нет текста но есть заголовок caption. его и будем переводить
             text = my_trans.translate(message.caption)
             if text:
-                bot.send_message(message.chat.id, text)
+                bot.send_message(message.chat.id, text, reply_markup=get_keyboard('hide'))
                 my_log.log(message, text)
             else:
                 my_log.log(message, '')
@@ -465,12 +494,12 @@ def handle_photo_thread(message: telebot.types.Message):
                     with io.StringIO(text) as f:
                         f.name = 'text.txt'
                         if message.chat.type != 'private':
-                            bot.send_document(message.chat.id, f, reply_to_message_id=message.message_id)
+                            bot.send_document(message.chat.id, f, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide'))
                         else:
-                            bot.send_document(message.chat.id, f)
+                            bot.send_document(message.chat.id, f, reply_markup=get_keyboard('hide'))
                         my_log.log(message, '[OCR] Sent as file: ' + text)
                 else:
-                    bot.reply_to(message, text)
+                    bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
                     my_log.log(message, '[OCR] ' + text)
             else:
                 my_log.log(message, '[OCR] no results')
@@ -489,7 +518,7 @@ def handle_video_thread(message: telebot.types.Message):
             # у видео нет текста но есть заголовок caption. его и будем переводить
             text = my_trans.translate(message.caption)
             if text:
-                bot.reply_to(message, text)
+                bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
                 my_log.log(message, text)
             else:
                 my_log.log(message, "")
@@ -518,11 +547,6 @@ def change_mode(message: telebot.types.Message):
             prompts[message.chat.id] =  [{"role": "system", "content": new_prompt}]
             my_log.log(message, f'[Новая роль установлена] {new_prompt}')
     else:
-        # клавиатура
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
-        markup.add(button1)
-
         bot.reply_to(message, f"""Текущий стиль
         
 `{prompts[message.chat.id][0]['content']}`
@@ -534,7 +558,7 @@ def change_mode(message: telebot.types.Message):
 1 - формальный стиль (Ты искусственный интеллект отвечающий на запросы юзера.)
 2 - формальный стиль + немного юмора (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с подходящим к запросу типом иронии или юмора но не перегибай палку.)
 3 - токсичный стиль (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.)
-    """, parse_mode='Markdown', reply_markup=markup)
+    """, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
 
 @bot.message_handler(commands=['mem'])
 def send_debug_history(message: telebot.types.Message):
@@ -544,12 +568,6 @@ def send_debug_history(message: telebot.types.Message):
         
         chat_id = message.chat.id
         
-        # клавиатура
-        markup  = telebot.types.InlineKeyboardMarkup(row_width = 2)
-        button1 = telebot.types.InlineKeyboardButton("Стереть историю", callback_data='clear_history')
-        button2 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
-        markup.add(button1, button2)
-
         # создаем новую историю диалогов с юзером из старой если есть
         if chat_id in dialogs:
             new_messages = dialogs[chat_id]
@@ -557,10 +575,10 @@ def send_debug_history(message: telebot.types.Message):
             new_messages = []
         prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
         try:
-            bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=markup)
+            bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
         except Exception as error:
             print(error)
-            bot.send_message(chat_id, utils.escape_markdown(prompt), disable_web_page_preview = True, reply_markup=markup)
+            bot.send_message(chat_id, utils.escape_markdown(prompt), disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
 
 
 @bot.message_handler(commands=['tts']) 
@@ -590,7 +608,7 @@ def tts_thread(message: telebot.types.Message):
 
 Поддерживаемые языки: {', '.join(supported_langs_tts)}"""
 
-        bot.reply_to(message, help)
+        bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
         return
 
     with semaphore_talks:
@@ -598,14 +616,14 @@ def tts_thread(message: telebot.types.Message):
             audio = my_tts.tts(text, lang, rate)
             if audio:
                 if message.chat.type != 'private':
-                    bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id)
+                    bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide'))
                 else:
-                    bot.send_voice(message.chat.id, audio)
+                    bot.send_voice(message.chat.id, audio, reply_markup=get_keyboard('hide'))
             else:
                 if message.chat.type != 'private':
-                    bot.reply_to(message, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.')
+                    bot.reply_to(message, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.', reply_markup=get_keyboard('hide'))
                 else:
-                    bot.send_message(message.chat.id, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.')
+                    bot.send_message(message.chat.id, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.', reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['trans'])
@@ -625,7 +643,7 @@ def trans_thread(message: telebot.types.Message):
             lang = match.group(1) or "ru"  # если lang не указан, то по умолчанию 'ru'
             text = match.group(2) or ''
         else:
-            bot.reply_to(message, help)
+            bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
             return
         lang = lang.strip()
 
@@ -633,9 +651,9 @@ def trans_thread(message: telebot.types.Message):
         with show_action(message.chat.id, 'typing'):
             translated = my_trans.translate_text2(text, lang)
             if translated:
-                bot.reply_to(message, translated)
+                bot.reply_to(message, translated, reply_markup=get_keyboard('hide'))
             else:
-                bot.reply_to(message, 'Ошибка перевода')
+                bot.reply_to(message, 'Ошибка перевода', reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['name'])
@@ -651,10 +669,10 @@ def send_welcome(message: telebot.types.Message):
             with lock_dicts:
                 global bot_names
                 bot_names[message.chat.id] = new_name.lower()
-            bot.send_message(message.chat.id, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
+            bot.send_message(message.chat.id, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.', reply_markup=get_keyboard('hide'))
             my_log.log(message, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
         else:
-            bot.reply_to(message, "Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.")
+            bot.reply_to(message, "Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.", reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['start', 'help'])
@@ -668,20 +686,14 @@ def send_welcome(message: telebot.types.Message):
 
 Спасибо, что выбрали меня в качестве своего помощника! Я буду стараться быть максимально полезным для вас.
 
-Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп.""")
+Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп.""", reply_markup=get_keyboard('hide'))
     my_log.log(message)
-
-
-
 
 
 def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
     if len(resp) < 3501:
-        bot.send_message(chat_id, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
-    #elif len(resp) < 7000:
-    #    bot.send_message(chat_id, resp[:3500], parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
-    #    bot.send_message(chat_id, resp[3500:], parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+        bot.send_message(chat_id, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=get_keyboard('chat'))
     else:
         buf = io.BytesIO()
         buf.write(resp.encode())
@@ -692,18 +704,12 @@ def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_
 def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
     if len(resp) < 3501:
-        bot.reply_to(message, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
-    #elif len(resp) < 7000:
-    #    bot.reply_to(message, resp[:3500], parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
-    #    bot.reply_to(message, resp[3500:], parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+        bot.reply_to(message, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=get_keyboard('chat'))
     else:
         buf = io.BytesIO()
         buf.write(resp.encode())
         buf.seek(0)
         bot.send_document(chat_id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
-
-
-
 
 
 @bot.message_handler(func=lambda message: True)
@@ -735,28 +741,21 @@ def do_task(message):
             if ((msg.startswith('замолчи') or msg.startswith('заткнись')) and (is_private or is_reply)) or msg.startswith(f'{bot_name} замолчи') or msg.startswith(f'{bot_name}, замолчи') or msg.startswith(f'{bot_name}, заткнись') or msg.startswith(f'{bot_name} заткнись'):
                 blocks[chat_id] = 1
                 my_log.log(message, 'Включена блокировка автопереводов в чате')
-                bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown')
+                bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 return
             # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
             if ((msg.startswith('вернись')) and (is_private or is_reply)) or (msg.startswith(f'{bot_name} вернись') or msg.startswith(f'{bot_name}, вернись')):
                 blocks[chat_id] = 0
                 my_log.log(message, 'Выключена блокировка автопереводов в чате')
-                bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown')
+                bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 return
             # если сообщение начинается на 'забудь' то стираем историю общения GPT
             if (msg.startswith('забудь') and (is_private or is_reply)) or (msg.startswith(f'{bot_name} забудь') or msg.startswith(f'{bot_name}, забудь')):
                 dialogs[chat_id] = []
-                bot.send_message(chat_id, 'Ок', parse_mode='Markdown')
+                bot.send_message(chat_id, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 my_log.log(message, 'История GPT принудительно отчищена')
                 return
 
-        # клавиатура
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton("Дальше", callback_data='continue_gpt')
-        button2 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
-        button3 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
-        markup.add(button1, button2, button3)
-        
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # можно перенаправить запрос к бингу, но он долго отвечает
         if msg.startswith('бинг ') or msg.startswith('бинг,'):
@@ -767,16 +766,16 @@ def do_task(message):
                 if resp:
                     if is_private:
                         try:
-                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:
                             print(error)
-                            bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
-                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:
                             print(error)
-                            bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log(message, resp)
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
@@ -788,16 +787,16 @@ def do_task(message):
                 if resp:
                     if is_private:
                         try:
-                            send_long_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            send_long_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
-                            send_long_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            send_long_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
-                            reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
-                            reply_to_long_message(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            reply_to_long_message(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log(message, resp)
         else: # смотрим надо ли переводить текст
             with lock_dicts:
@@ -807,9 +806,10 @@ def do_task(message):
             #     if message.entities[0]['type'] in ('code', 'spoiler'):
             #         my_log.log(message, 'code or spoiler in message')
             #         return
+            with show_action(message.chat.id, 'typing')
             text = my_trans.translate(message.text)
             if text:
-                bot.send_message(chat_id, text, parse_mode='Markdown')
+                bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 my_log.log(message, text)
 
 

@@ -7,7 +7,7 @@ from EdgeGPT import Chatbot, ConversationStyle
 import sys
 
 
-async def main(prompt):
+async def main(prompt: str) -> str:
     cookies = json.loads(open("cookies.json", encoding="utf-8").read())
     bot = await Chatbot.create(cookies=cookies)
     r = await bot.ask(prompt=prompt, conversation_style=ConversationStyle.creative)

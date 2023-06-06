@@ -13,6 +13,7 @@ import openai
 import telebot
 from langdetect import detect_langs
 
+import bingai
 import cfg
 import gpt_basic
 import my_dic
@@ -623,6 +624,29 @@ def tts_thread(message: telebot.types.Message):
                     bot.send_message(message.chat.id, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.', reply_markup=get_keyboard('hide'))
 
 
+@bot.message_handler(commands=['image'])
+def image(message: telebot.types.Message):
+    thread = threading.Thread(target=image_thread, args=(message,))
+    thread.start()
+def image_thread(message: telebot.types.Message):
+    """генерирует картинку по описанию"""
+    with semaphore_talks:
+        help = '/image <текстовое описание картинки, что надо нарисовать>'
+        prompt = message.text.split(maxsplit = 1)[1]
+        if prompt:
+            with show_action(message.chat.id, 'upload_photo'):
+                images = bingai.gen_imgs(prompt)
+                if type(images) == str:
+                    bot.reply_to(message, images)
+                elif type(images) == list:
+                    medias = [telebot.types.InputMediaPhoto(i) for i in images]
+                    bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                else:
+                    bot.reply_to(message, 'Бинг нарисовал неизвестно что.', reply_markup=get_keyboard('hide'))                                
+        else:
+            bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+
+
 @bot.message_handler(commands=['trans'])
 def trans(message: telebot.types.Message):
     thread = threading.Thread(target=trans_thread, args=(message,))
@@ -759,6 +783,21 @@ def do_task(message):
                 return
 
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
+        # проверяем просят ли нарисовать что-нибудь
+        if is_private:
+            if msg.startswith('нарисуй ') or msg.startswith('нарисуй,'):
+                prompt = msg[8:]
+                if prompt:
+                    message.text = f'/image {prompt}'
+                    image_thread(message)
+                    return
+        regex = re.compile(fr'^(бинг |бинг,|{bot_name} |{bot_name},)нарисуй\s+(.+)$')
+        match = regex.match(msg)
+        if match:
+            prompt = match.group(2)
+            message.text = f'/image {prompt}'
+            image_thread(message)
+            return
         # можно перенаправить запрос к бингу, но он долго отвечает
         if msg.startswith('бинг ') or msg.startswith('бинг,'):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово

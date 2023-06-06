@@ -7,6 +7,7 @@ import asyncio
 from EdgeGPT import Chatbot, ConversationStyle
 #from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 import sys
+from BingImageCreator import ImageGen
 
 
 async def main(prompt1: str) -> str:
@@ -54,7 +55,37 @@ async def main(prompt1: str) -> str:
     return text
 
 
+def gen_imgs(prompt: str):
+    """генерирует список картинок по описанию с помощью бинга
+    возвращает список ссылок на картинки или сообщение об ошибке"""
+    with open("cookies.json") as f:
+        c = json.load(f)
+        for ck in c:
+            if ck["name"] == "_U":
+                auth = ck["value"]
+                break
+
+    if auth:
+        image_gen = ImageGen(auth, quiet = True)
+
+        try:
+            images = image_gen.get_images(prompt)
+        except Exception as error:
+            if 'Your prompt has been blocked by Bing. Try to change any bad words and try again.' in str(error):
+                return 'Бинг отказался это рисовать.'
+            print(error)
+            return str(error)
+
+        return images
+
+    return 'No auth provided'
+
+
 if __name__ == "__main__":
     """Usage ./bingai.py 'list 10 japanese dishes'"""
     prompt = sys.argv[1]
     print(asyncio.run(main(prompt)))
+    
+    
+    #prompt = 'anime резонанс душ'
+    #print(gen_imgs(prompt))

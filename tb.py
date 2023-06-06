@@ -402,7 +402,7 @@ def handle_document_thread(message: telebot.types.Message):
             if message.document.mime_type == 'text/plain':
                 with show_action(message.chat.id, 'record_audio'):
                     file_name = message.document.file_name + '.ogg'
-                    file_info = bot.get_file(file_id)
+                    file_info = bot.get_file(message.document.file_id)
                     file = bot.download_file(file_info.file_path)
                     text = file.decode('utf-8')
                     try:
@@ -654,7 +654,7 @@ def trans_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['name'])
-def send_welcome(message: telebot.types.Message):
+def send_name(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
     args = message.text.split()
     if len(args) > 1:
@@ -709,7 +709,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         buf = io.BytesIO()
         buf.write(resp.encode())
         buf.seek(0)
-        bot.send_document(chat_id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
+        bot.send_document(message.chat.id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
 
 
 @bot.message_handler(func=lambda message: True)

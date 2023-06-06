@@ -4,6 +4,7 @@
 import json
 import asyncio
 from EdgeGPT import Chatbot, ConversationStyle
+#from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 import sys
 
 

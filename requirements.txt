@@ -10,6 +10,6 @@ fake_useragent
 openai
 edge_tts
 vosk
-EdgeGPT
+EdgeGPT==0.8.0
 telebot
 pysocks

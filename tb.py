@@ -272,7 +272,7 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
         return markup
     elif kbd == 'hide':
         markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
+        button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
         markup.add(button1)
         return markup
     else:
@@ -806,7 +806,6 @@ def do_task(message):
             #     if message.entities[0]['type'] in ('code', 'spoiler'):
             #         my_log.log(message, 'code or spoiler in message')
             #         return
-            with show_action(message.chat.id, 'typing')
             text = my_trans.translate(message.text)
             if text:
                 bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('hide'))

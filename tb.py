@@ -516,6 +516,7 @@ def change_mode(message: telebot.types.Message):
             new_prompt = arg[0]
         with lock_dicts:
             prompts[message.chat.id] =  [{"role": "system", "content": new_prompt}]
+            my_log.log(message, f'[Новая роль установлена] {new_prompt}')
     else:
         # клавиатура
         markup  = telebot.types.InlineKeyboardMarkup()

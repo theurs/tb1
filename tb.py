@@ -709,7 +709,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         buf = io.BytesIO()
         buf.write(resp.encode())
         buf.seek(0)
-        bot.send_document(chat_id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
+        bot.send_document(message.chat.id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
 
 
 @bot.message_handler(func=lambda message: True)

@@ -140,9 +140,6 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             prompts[chat_id] = [{"role": "system", "content": utils.gpt_start_message2}]
             current_prompt =   [{"role": "system", "content": utils.gpt_start_message2}]
 
-    # что делать с слишком длинными запросами? пока будем просто игнорировать
-    #if len(text) > 2000: ''
-    
     # создаем новую историю диалогов с юзером из старой если есть
     # в истории диалогов не храним системный промпт
     if chat_id in dialogs:
@@ -174,8 +171,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                 # не сохраняем диалог, нет ответа
                 # если в последнем сообщении нет текста (глюк) то убираем его
                 with lock_dicts:
-                    if messages[-1]['content'].strip() == '':
-                        messages = messages[:-1]
+                    if new_messages[-1]['content'].strip() == '':
+                        new_messages = new_messages[:-1]
                     dialogs[chat_id] = new_messages or []
                 return 'GPT не ответил.'
         # бот не ответил или обиделся
@@ -187,9 +184,9 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             if """This model's maximum context length is 4097 tokens. However, you requested""" in str(error):
                 # чистим историю, повторяем запрос
                 p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
-                # сжимаем весь предыдущий разговор до 1000 символов
-                r = gpt_basic.ai_compress(p, 1000, 'dialog')
-                messages = [{'role':'system','content':r}] + messages[-1]
+                # сжимаем весь предыдущий разговор до 700 символов
+                r = gpt_basic.ai_compress(p, 700, 'dialog')
+                new_messages = [{'role':'system','content':r}] + new_messages[-1:]
                 # и на всякий случай еще
                 while (utils.count_tokens(new_messages) > 1500):
                     new_messages = new_messages[2:]
@@ -686,7 +683,10 @@ def send_welcome(message: telebot.types.Message):
 
 Спасибо, что выбрали меня в качестве своего помощника! Я буду стараться быть максимально полезным для вас.
 
-Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп.""", reply_markup=get_keyboard('hide'))
+Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп.
+
+https://github.com/theurs/tb1
+""", parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
     my_log.log(message)
 
 
@@ -729,6 +729,8 @@ def do_task(message):
 
         msg = message.text.lower()
         global blocks, bot_names, dialogs
+        
+        too_big_message_for_chatbot = 1500
 
         with lock_dicts:
             # определяем какое имя у бота в этом чате, на какое слово он отзывается
@@ -760,6 +762,9 @@ def do_task(message):
         # можно перенаправить запрос к бингу, но он долго отвечает
         if msg.startswith('бинг ') or msg.startswith('бинг,'):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
+            if len(msg) > too_big_message_for_chatbot:
+                bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
+                return
             with show_action(chat_id, 'typing'):
                 # добавляем новый запрос пользователя в историю диалога пользователя
                 resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
@@ -779,6 +784,9 @@ def do_task(message):
                     my_log.log(message, resp)
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
+            if len(msg) > too_big_message_for_chatbot:
+                bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
+                return
             if msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},'):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
             # добавляем новый запрос пользователя в историю диалога пользователя

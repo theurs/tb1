@@ -13,7 +13,7 @@ class PersistentDict(dict):
                 try:
                     data = pickle.load(f)
                 except Exception as e:
-                    print('Empty message history')
+                    print(e, 'Empty message history')
                     data = []
             self.update(data)
         except FileNotFoundError:

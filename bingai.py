@@ -7,10 +7,10 @@ from EdgeGPT import Chatbot, ConversationStyle
 import sys
 
 
-async def main(prompt: str) -> str:
+async def main(prompt1: str) -> str:
     cookies = json.loads(open("cookies.json", encoding="utf-8").read())
     bot = await Chatbot.create(cookies=cookies)
-    r = await bot.ask(prompt=prompt, conversation_style=ConversationStyle.creative)
+    r = await bot.ask(prompt=prompt1, conversation_style=ConversationStyle.creative)
 
     text = r['item']['messages'][1]['text']
     links_raw = r['item']['messages'][1]['adaptiveCards'][0]['body'][0]['text']

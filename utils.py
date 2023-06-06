@@ -42,4 +42,4 @@ def remove_vowels(text: str) -> str:
 if __name__ == '__main__':
     text = """'привет к��к дела ("tesd<\*__t text)"""
     print(escape_markdown(text))
-    print(count_tokens(gpt_start_message))
+

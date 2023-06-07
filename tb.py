@@ -362,6 +362,7 @@ def handle_audio_thread(message: telebot.types.Message):
                 new_file.write(downloaded_file)
             # Распознаем текст из аудио 
             text = my_stt.stt(file_path)
+            #text = my_whisper.get_text(file_path)
             os.remove(file_path)
             # Отправляем распознанный текст 
             if text.strip() != '':
@@ -391,6 +392,7 @@ def handle_voice_thread(message: telebot.types.Message):
                 new_file.write(downloaded_file)
             # Распознаем текст из аудио 
             text = my_stt.stt(file_path)
+            #text = my_whisper.get_text(file_path)
             os.remove(file_path)
             # Отправляем распознанный текст 
             if text.strip() != '':

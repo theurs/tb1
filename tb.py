@@ -273,6 +273,11 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
         markup.add(button1)
         return markup
+    elif kbd == 'hide_image':
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_image')
+        markup.add(button1)
+        return markup
     else:
         raise f"Неизвестная клавиатура '{kbd}'"
 
@@ -326,6 +331,13 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть ответ"
             #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             bot.delete_message(message.chat.id, message.message_id)
+        elif call.data == 'erase_image':
+            # обработка нажатия кнопки "Стереть ответ"
+            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
+            bot.delete_message(message.chat.id, message.message_id)
+            # получаем номер сообщения с картинками из сообщения с ссылками на картинки который идет следом
+            for i in message.text.split('\n')[0].split():
+                bot.delete_message(message.chat.id, int(i))
 
 
 @bot.message_handler(content_types = ['audio'])
@@ -641,7 +653,13 @@ def image_thread(message: telebot.types.Message):
                     bot.reply_to(message, images, reply_markup=get_keyboard('hide'))
                 elif type(images) == list:
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
-                    bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                    msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                    caption = ''
+                    for i in msgs_ids:
+                        caption += f'{i.message_id} '
+                    caption += '\n'
+                    caption += '\n'.join(images)
+                    bot.send_message(message.chat.id, caption, disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
                     my_log.log(message, '[image gen] ')
                 else:
                     bot.reply_to(message, 'Бинг нарисовал неизвестно что.', reply_markup=get_keyboard('hide'))

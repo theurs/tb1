@@ -51,7 +51,7 @@
     sudo apt install tesseract-ocr tesseract-ocr-eng \
     tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd
     ```
-4. Установите словари `sudo apt install aspell aspell-en aspell-ru aspell-uk enchant-2`
+4. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk enchant-2 ffmpeg`
 5. Клонируйте репозиторий с помощью команды:
 
    ```

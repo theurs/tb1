@@ -25,6 +25,7 @@ RUN apt-get install -y \
     aspell-uk \
     aspell-ru \
     enchant-2 \
+    ffmpeg \
     locales && rm -rf /var/lib/apt/lists/* \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 

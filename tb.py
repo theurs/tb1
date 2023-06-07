@@ -638,7 +638,7 @@ def image_thread(message: telebot.types.Message):
             with show_action(message.chat.id, 'upload_photo'):
                 images = bingai.gen_imgs(prompt)
                 if type(images) == str:
-                    bot.reply_to(message, images)
+                    bot.reply_to(message, images, reply_markup=get_keyboard('hide'))
                 elif type(images) == list:
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
                     bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)

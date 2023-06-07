@@ -632,8 +632,9 @@ def image_thread(message: telebot.types.Message):
     """генерирует картинку по описанию"""
     with semaphore_talks:
         help = '/image <текстовое описание картинки, что надо нарисовать>'
-        prompt = message.text.split(maxsplit = 1)[1]
-        if prompt:
+        prompt = message.text.split(maxsplit = 1)
+        if len(prompt) > 1:
+            prompt = prompt[1]
             with show_action(message.chat.id, 'upload_photo'):
                 images = bingai.gen_imgs(prompt)
                 if type(images) == str:
@@ -641,8 +642,10 @@ def image_thread(message: telebot.types.Message):
                 elif type(images) == list:
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
                     bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                    my_log.log(message, '[image gen] ')
                 else:
-                    bot.reply_to(message, 'Бинг нарисовал неизвестно что.', reply_markup=get_keyboard('hide'))                                
+                    bot.reply_to(message, 'Бинг нарисовал неизвестно что.', reply_markup=get_keyboard('hide'))
+                    my_log.log(message, '[image gen error] ')
         else:
             bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
 

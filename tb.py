@@ -658,7 +658,7 @@ def image_thread(message: telebot.types.Message):
                     for i in msgs_ids:
                         caption += f'{i.message_id} '
                     caption += '\n'
-                    caption += '\n'.join(images)
+                    caption += '\n\n'.join(images)
                     bot.send_message(message.chat.id, caption, disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
                     my_log.log(message, '[image gen] ')
                 else:

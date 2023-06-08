@@ -578,9 +578,11 @@ def change_mode(message: telebot.types.Message):
 
 `/style <1|2|3|свой текст>`
 
-1 - формальный стиль (Ты искусственный интеллект отвечающий на запросы юзера.)
-2 - формальный стиль + немного юмора (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с подходящим к запросу типом иронии или юмора но не перегибай палку.)
-3 - токсичный стиль (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.)
+1 - формальный стиль `{utils.gpt_start_message1}`
+
+2 - формальный стиль + немного юмора `{utils.gpt_start_message2}`
+
+3 - токсичный стиль `{utils.gpt_start_message3}`
     """, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
 
 @bot.message_handler(commands=['mem'])
@@ -649,7 +651,7 @@ def tts_thread(message: telebot.types.Message):
                     bot.send_message(message.chat.id, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.', reply_markup=get_keyboard('hide'))
 
 
-@bot.message_handler(commands=['image'])
+@bot.message_handler(commands=['image','img'])
 def image(message: telebot.types.Message):
     thread = threading.Thread(target=image_thread, args=(message,))
     thread.start()
@@ -730,10 +732,10 @@ def send_name(message: telebot.types.Message):
             bot.reply_to(message, "Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.", reply_markup=get_keyboard('hide'))
 
 
-@bot.message_handler(commands=['start', 'help'])
+@bot.message_handler(commands=['start'])
 def send_welcome(message: telebot.types.Message):
     # Отправляем приветственное сообщение
-    bot.send_message(message.chat.id, """Я - ваш персональный чат-бот, готовый помочь вам в любое время суток. Моя задача - помочь вам получить необходимую информацию и решить возникающие проблемы. 
+    help = """Я - ваш персональный чат-бот, готовый помочь вам в любое время суток. Моя задача - помочь вам получить необходимую информацию и решить возникающие проблемы. 
 
 Я умею обрабатывать и анализировать большие объемы данных, быстро находить нужную информацию и предоставлять ее в удобном для вас формате. 
 
@@ -741,10 +743,33 @@ def send_welcome(message: telebot.types.Message):
 
 Спасибо, что выбрали меня в качестве своего помощника! Я буду стараться быть максимально полезным для вас.
 
-Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп.
+Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп."""
+    bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+    my_log.log(message)
 
-https://github.com/theurs/tb1
-""", parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+
+@bot.message_handler(commands=['help'])
+def send_welcome(message: telebot.types.Message):
+    # Отправляем приветственное сообщение
+    help = """Чат бот отзывается на кодовое слово `бот`(можно сменить командой /name) ***бот расскажи про биткоин***
+
+Кодовое слово `бинг`(нельзя изменить) позволит получить более актуальную информацию, бот будет дооолго гуглить перед ответом ***бинг курс биткоин***
+
+В привате можно не писать кодовые слова для обращения к боту
+
+Если он забился в угол и не хочет отвечать то возможно надо почистить ему память командой `бот забудь`
+
+Кодовое слово `нарисуй` и дальше описание даст картинки сгенерированные по описанию. В чате надо добавлять к этому обращение ***бот нарисуй на заборе неприличное слово***
+
+В чате бот будет автоматически переводить иностранные тексты на русский и распознавать голосовые сообщения, отключить это можно кодовым словом `бот замолчи`, включить обратно `бот вернись`
+
+Если отправить текстовый файл в приват или с подписью `прочитай` то попытается озвучить его как книгу, ожидает .txt utf8 язык пытается определить автоматически (русский если не получилось)
+
+Если отправить картинку или .pdf с подписью `прочитай` то вытащит текст из них.
+
+""" + '\n'.join(open('commands.txt').readlines()) + '\n\nhttps://github.com/theurs/tb1'
+
+    bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
     my_log.log(message)
 
 

@@ -814,7 +814,7 @@ def do_task(message):
                     message.text = f'/image {prompt}'
                     image_thread(message)
                     return
-        regex = fr'^(бинг |бинг,|{bot_name} |{bot_name},)нарисуй\s+(.+)$'
+        regex = fr'^(бинг|{bot_name})\,?\s+нарисуй\s+(.+)$'
         match = re.match(regex, msg, re.DOTALL)
         if match:
             prompt = match.group(2)

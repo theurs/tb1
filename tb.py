@@ -46,6 +46,9 @@ blocks = my_dic.PersistentDict('blocks.pkl')
 # в каких чатах какой промт
 prompts = my_dic.PersistentDict('prompts.pkl')
 
+# запоминаем промпты для повторения рисования
+image_prompt = {}
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 bot_names = my_dic.PersistentDict('names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -276,7 +279,8 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
     elif kbd == 'hide_image':
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_image')
-        markup.add(button1)
+        button2 = telebot.types.InlineKeyboardButton("Повторить", callback_data='repeat_image')
+        markup.add(button1, button2)
         return markup
     else:
         raise f"Неизвестная клавиатура '{kbd}'"
@@ -338,6 +342,17 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # получаем номер сообщения с картинками из сообщения с ссылками на картинки который идет следом
             for i in message.text.split('\n')[0].split():
                 bot.delete_message(message.chat.id, int(i))
+        elif call.data == 'repeat_image':
+            # получаем номер сообщения с картинками (первый из группы)
+            for i in message.text.split('\n')[0].split():
+                id = int(i)
+                break
+            global image_prompt
+            with lock_dicts:
+                p = image_prompt[id]
+            message.text = f'/image {p}'
+            # рисуем еще картинки с тем же запросом
+            image(message)
 
 
 @bot.message_handler(content_types = ['audio'])
@@ -670,6 +685,12 @@ def image_thread(message: telebot.types.Message):
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                     caption = ''
+
+                    #  запоминаем промпт по ключу (номер первой картинки)
+                    global image_prompt
+                    with lock_dicts:
+                        image_prompt[msgs_ids[0].message_id] = prompt
+
                     for i in msgs_ids:
                         caption += f'{i.message_id} '
                     caption += '\n'

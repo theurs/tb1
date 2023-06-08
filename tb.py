@@ -813,6 +813,12 @@ def do_task(message):
                 if prompt:
                     message.text = f'/image {prompt}'
                     image_thread(message)
+                    with lock_dicts:
+                        n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
+                        if chat_id in dialogs:
+                            dialogs[chat_id] += n
+                        else:
+                            dialogs[chat_id] = n
                     return
         regex = fr'^(бинг|{bot_name})\,?\s+нарисуй\s+(.+)$'
         match = re.match(regex, msg, re.DOTALL)
@@ -820,6 +826,12 @@ def do_task(message):
             prompt = match.group(2)
             message.text = f'/image {prompt}'
             image_thread(message)
+            with lock_dicts:
+                n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
+                if chat_id in dialogs:
+                    dialogs[chat_id] += n
+                else:
+                    dialogs[chat_id] = n
             return
         # можно перенаправить запрос к бингу, но он долго отвечает
         if msg.startswith('бинг ') or msg.startswith('бинг,'):

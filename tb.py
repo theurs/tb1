@@ -347,10 +347,16 @@ def handle_audio(message: telebot.types.Message):
     thread.start()
 def handle_audio_thread(message: telebot.types.Message):
     """Распознавание текст из аудио файлов"""
+
+    # если заблокированы автопереводы в этом чате то выходим
+    if (message.chat.id in blocks and blocks[message.chat.id] == 1) and message.chat.type != 'private':
+        return
+
     with semaphore_talks:
         caption = message.caption
         if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй']):
             return
+
         with show_action(message.chat.id, 'typing'):
             # Создание временного файла 
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -380,6 +386,11 @@ def handle_voice(message: telebot.types.Message):
     thread.start()
 def handle_voice_thread(message: telebot.types.Message): 
     """Автоматическое распознавание текст из голосовых сообщений"""
+
+    # если заблокированы автопереводы в этом чате то выходим
+    if (message.chat.id in blocks and blocks[message.chat.id] == 1) and message.chat.type != 'private':
+        return
+
     with semaphore_talks:
         with show_action(message.chat.id, 'typing'):
             # Создание временного файла 

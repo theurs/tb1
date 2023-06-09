@@ -427,6 +427,19 @@ def handle_voice_thread(message: telebot.types.Message):
             else:
                 my_log.log(message, '[ASR] no results')
 
+            # если в тексте есть обращение к боту то перенаправляем в обработчик обычных сообщений
+            global bot_names
+            with lock_dicts:
+                # определяем какое имя у бота в этом чате, на какое слово он отзывается
+                if message.chat.id in bot_names:
+                    bot_name = bot_names[message.chat.id]
+                else:
+                    bot_name = bot_name_default
+                    bot_names[message.chat.id] = bot_name 
+            if text.startswith((bot_name, 'бинг', 'замолчи','вернись', 'нарисуй', 'забудь')):
+                message.text = text
+                echo_all(message)
+
 
 @bot.message_handler(content_types = ['document'])
 def handle_document(message: telebot.types.Message):

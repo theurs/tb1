@@ -801,6 +801,8 @@ def send_welcome(message: telebot.types.Message):
 
 Если отправить картинку или .pdf с подписью `прочитай` то вытащит текст из них.
 
+Команды и запросы можно делать голосовыми сообщениями, если отправить голосовое сообщение которое начинается на кодовое слово то бот отработает его как текстовую команду.
+
 """ + '\n'.join(open('commands.txt').readlines()) + '\n\nhttps://github.com/theurs/tb1'
 
     bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
@@ -857,19 +859,19 @@ def do_task(message):
                 bot_name = bot_name_default
                 bot_names[chat_id] = bot_name 
             # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
-            if ((msg.startswith('замолчи') or msg.startswith('заткнись')) and (is_private or is_reply)) or msg.startswith(f'{bot_name} замолчи') or msg.startswith(f'{bot_name}, замолчи') or msg.startswith(f'{bot_name}, заткнись') or msg.startswith(f'{bot_name} заткнись'):
+            if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
                 blocks[chat_id] = 1
                 my_log.log(message, 'Включена блокировка автопереводов в чате')
                 bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 return
             # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
-            if ((msg.startswith('вернись')) and (is_private or is_reply)) or (msg.startswith(f'{bot_name} вернись') or msg.startswith(f'{bot_name}, вернись')):
+            if (msg.startswith('вернись') and (is_private or is_reply)) or msg.startswith((f'{bot_name} вернись', f'{bot_name}, вернись')):
                 blocks[chat_id] = 0
                 my_log.log(message, 'Выключена блокировка автопереводов в чате')
                 bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 return
             # если сообщение начинается на 'забудь' то стираем историю общения GPT
-            if (msg.startswith('забудь') and (is_private or is_reply)) or (msg.startswith(f'{bot_name} забудь') or msg.startswith(f'{bot_name}, забудь')):
+            if (msg.startswith('забудь') and (is_private or is_reply)) or msg.startswith((f'{bot_name} забудь', f'{bot_name}, забудь')):
                 dialogs[chat_id] = []
                 bot.send_message(chat_id, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 my_log.log(message, 'История GPT принудительно отчищена')
@@ -878,7 +880,7 @@ def do_task(message):
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # проверяем просят ли нарисовать что-нибудь
         if is_private:
-            if msg.startswith('нарисуй ') or msg.startswith('нарисуй,'):
+            if msg.startswith(('нарисуй ', 'нарисуй,')):
                 prompt = msg[8:]
                 if prompt:
                     message.text = f'/image {prompt}'
@@ -904,7 +906,7 @@ def do_task(message):
                     dialogs[chat_id] = n
             return
         # можно перенаправить запрос к бингу, но он долго отвечает
-        if msg.startswith('бинг ') or msg.startswith('бинг,'):
+        if msg.startswith(('бинг ', 'бинг,', 'бинг\n')):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
             if len(msg) > too_big_message_for_chatbot:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
@@ -927,11 +929,11 @@ def do_task(message):
                             bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log(message, resp)
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
-        elif msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},') or is_reply or is_private:
+        elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
             if len(msg) > too_big_message_for_chatbot:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
                 return
-            if msg.startswith(f'{bot_name} ') or msg.startswith(f'{bot_name},'):
+            if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
             # добавляем новый запрос пользователя в историю диалога пользователя
             with show_action(chat_id, 'typing'):

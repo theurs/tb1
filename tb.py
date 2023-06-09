@@ -294,6 +294,7 @@ def callback_inline(call: telebot.types.CallbackQuery):
 def callback_inline_thread(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
     with semaphore_talks:
+        global image_prompt
         message = call.message
         is_private = message.chat.type == 'private'
         is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
@@ -347,7 +348,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             for i in message.text.split('\n')[0].split():
                 id = int(i)
                 break
-            global image_prompt
             with lock_dicts:
                 p = image_prompt[id]
             message.text = f'/image {p}'

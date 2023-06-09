@@ -401,44 +401,38 @@ def handle_voice(message: telebot.types.Message):
     thread.start()
 def handle_voice_thread(message: telebot.types.Message): 
     """Автоматическое распознавание текст из голосовых сообщений"""
-
-    # если заблокированы автопереводы в этом чате то выходим
-    if (message.chat.id in blocks and blocks[message.chat.id] == 1) and message.chat.type != 'private':
-        return
-
     with semaphore_talks:
-        with show_action(message.chat.id, 'typing'):
-            # Создание временного файла 
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                file_path = temp_file.name
-            # Скачиваем аудиофайл во временный файл
-            file_info = bot.get_file(message.voice.file_id)
-            downloaded_file = bot.download_file(file_info.file_path)
-            with open(file_path, 'wb') as new_file:
-                new_file.write(downloaded_file)
-            # Распознаем текст из аудио 
+        # Создание временного файла 
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            file_path = temp_file.name
+        # Скачиваем аудиофайл во временный файл
+        file_info = bot.get_file(message.voice.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        with open(file_path, 'wb') as new_file:
+            new_file.write(downloaded_file)
+        # Распознаем текст из аудио
+        # если мы не в привате и в этом чате нет блокировки автораспознавания то показываем активность
+        if not (message.chat.id in blocks and blocks[message.chat.id] == 1) or message.chat.type == 'private':
+            with show_action(message.chat.id, 'typing'):
+                text = my_stt.stt(file_path)
+        else:
             text = my_stt.stt(file_path)
-            #text = my_whisper.get_text(file_path)
-            os.remove(file_path)
+
+        #text = my_whisper.get_text(file_path)
+
+        os.remove(file_path)
+
+        # если мы не в привате и в этом чате нет блокировки автораспознавания
+        if not (message.chat.id in blocks and blocks[message.chat.id] == 1) or message.chat.type == 'private':
             # Отправляем распознанный текст 
             if text.strip() != '':
                 bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
                 my_log.log(message, f'[ASR] {text}')
             else:
                 my_log.log(message, '[ASR] no results')
-
-            # если в тексте есть обращение к боту то перенаправляем в обработчик обычных сообщений
-            global bot_names
-            with lock_dicts:
-                # определяем какое имя у бота в этом чате, на какое слово он отзывается
-                if message.chat.id in bot_names:
-                    bot_name = bot_names[message.chat.id]
-                else:
-                    bot_name = bot_name_default
-                    bot_names[message.chat.id] = bot_name 
-            if text.startswith((bot_name, 'бинг', 'замолчи','вернись', 'нарисуй', 'забудь')):
-                message.text = text
-                echo_all(message)
+        # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
+        message.text = text
+        echo_all(message)
 
 
 @bot.message_handler(content_types = ['document'])

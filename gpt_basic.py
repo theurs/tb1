@@ -211,6 +211,7 @@ def clear_after_stt(text):
 
 def check_and_fix_text(text):
     """пытаемся исправить странную особенность пиратского GPT сервера, он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
+
     ru = enchant.Dict("ru_RU")
 
     # убираем из текста всё кроме русских букв, 2 странных символа меняем на 1 что бы упростить регулярку
@@ -224,6 +225,7 @@ def check_and_fix_text(text):
             suggestions = ru.suggest(word)
             if len(suggestions) > 0:
                 text = text.replace(word, suggestions[0])
+
     # если не удалось подобрать слово из словаря то просто убираем этот символ, пусть лучше будет оопечатка чем мусор
     return text.replace('⁂', '')
 

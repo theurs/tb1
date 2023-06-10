@@ -33,18 +33,18 @@ def log2(text: str) -> None:
 def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:
     global lock
     time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-    private_or_chat = 'user' if message.chat.type == 'private' else 'chat'
+    private_or_chat = 'private' if message.chat.type == 'private' else 'chat'
     chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
     user_name = message.from_user.first_name or message.from_user.username or ''
 
-    log_file_path = os.path.join(os.getcwd(), f'logs_{message.chat.id}_echo_{private_or_chat}_{message.chat.type}_{chat_name}.log')
+    log_file_path = os.path.join(os.getcwd(), f'logs [{chat_name}] [{private_or_chat}] [{message.chat.type}] [{message.chat.id}] [echo].log')
 
     with lock:
         with open(log_file_path, 'a') as log_file:
             if reply_from_bot:
-                log_file.write(f"[{time_now}] [{BOT}]: {reply_from_bot}")
+                log_file.write(f"[{time_now}] [BOT]: {reply_from_bot}\n")
             else:
-                log_file.write(f"[{time_now}] [{user_name}]: {message.text or message.caption or ''}")
+                log_file.write(f"[{time_now}] [{user_name}]: {message.text or message.caption or ''}\n")
             
 
 if __name__ == '__main__':

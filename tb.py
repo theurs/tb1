@@ -833,6 +833,7 @@ def echo_all(message: telebot.types.Message) -> None:
 def do_task(message):
     """функция обработчик сообщений работающая в отдельном потоке"""
     with semaphore_talks:
+        my_log.log_echo(message)
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
         # является ли это ответом на наше сообщение
@@ -855,20 +856,23 @@ def do_task(message):
             # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
             if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
                 blocks[chat_id] = 1
-                my_log.log(message, 'Включена блокировка автопереводов в чате')
+                #my_log.log(message, 'Включена блокировка автопереводов в чате')
                 bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
                 return
             # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
             if (msg.startswith('вернись') and (is_private or is_reply)) or msg.startswith((f'{bot_name} вернись', f'{bot_name}, вернись')):
                 blocks[chat_id] = 0
-                my_log.log(message, 'Выключена блокировка автопереводов в чате')
+                #my_log.log(message, 'Выключена блокировка автопереводов в чате')
                 bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
                 return
             # если сообщение начинается на 'забудь' то стираем историю общения GPT
             if (msg.startswith('забудь') and (is_private or is_reply)) or msg.startswith((f'{bot_name} забудь', f'{bot_name}, забудь')):
                 dialogs[chat_id] = []
                 bot.send_message(chat_id, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-                my_log.log(message, 'История GPT принудительно отчищена')
+                #my_log.log(message, 'История GPT принудительно отчищена')
+                my_log.log_echo(message, 'История GPT принудительно отчищена')
                 return
 
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
@@ -904,6 +908,7 @@ def do_task(message):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
             if len(msg) > too_big_message_for_chatbot:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
+                my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
                 return
             with show_action(chat_id, 'typing'):
                 # добавляем новый запрос пользователя в историю диалога пользователя
@@ -921,11 +926,13 @@ def do_task(message):
                         except Exception as error:
                             print(error)
                             bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                    my_log.log(message, resp)
+                    #my_log.log(message, resp)
+                    my_log.log_echo(message, resp)
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
             if len(msg) > too_big_message_for_chatbot:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
+                my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
                 return
             if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
@@ -945,19 +952,17 @@ def do_task(message):
                         except Exception as error:    
                             print(error)
                             reply_to_long_message(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                    my_log.log(message, resp)
+                    #my_log.log(message, resp)
+                    my_log.log_echo(message, resp)
         else: # смотрим надо ли переводить текст
             with lock_dicts:
                 if chat_id in blocks and blocks[chat_id] == 1:
                     return
-            # if message.entities: # не надо если там спойлеры
-            #     if message.entities[0]['type'] in ('code', 'spoiler'):
-            #         my_log.log(message, 'code or spoiler in message')
-            #         return
             text = my_trans.translate(message.text)
             if text:
                 bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-                my_log.log(message, text)
+                #my_log.log(message, text)
+                my_log.log_echo(message, text)
 
 
 def set_default_commands():

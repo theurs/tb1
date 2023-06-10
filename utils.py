@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
+
 import re
+import my_log
+
 
 # диалог всегда начинается одинаково
 
@@ -13,6 +16,7 @@ def escape_markdown(text):
     """функция для экранирования символов перед отправкой в маркдауне телеграма"""
     #pattern = r"([_*\[\]()~|`])"
     pattern = r"([_*\[\]~|`])"
+    my_log.log2(text + '\n\n\n\n')
     return re.sub(pattern, r"\\\1", text)
 
 

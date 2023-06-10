@@ -1055,4 +1055,5 @@ def set_default_commands():
 if __name__ == '__main__':
     # обновление регистрации команд при запуске
     set_default_commands()
+    
     bot.polling()

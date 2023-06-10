@@ -78,7 +78,21 @@ def log_media(message: telebot.types.Message) -> None:
             with open(log_file_path, 'a') as log_file:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил голосовое сообщение] [filesize: \
 {file_size}] [duration: {file_duration}]\n")
-        
+
+    if message.document:
+        file_name = message.document.file_name
+        file_size = message.document.file_size
+        file_mime_type = message.document.mime_type
+        with lock:
+            with open(log_file_path, 'a') as log_file:
+                log_file.write(f"[{time_now}] [{user_name}]: [Отправил документ] [caption: {caption}] \
+[filename: {file_name}] [filesize: {file_size}] [mime type: {file_mime_type}]\n")
+
+    if message.photo or message.video:
+        with lock:
+            with open(log_file_path, 'a') as log_file:
+                log_file.write(f"[{time_now}] [{user_name}]: [Отправил фото] [caption]: {caption}\n")
+
 
 if __name__ == '__main__':
     pass

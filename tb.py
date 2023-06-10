@@ -446,6 +446,9 @@ def handle_document(message: telebot.types.Message):
     thread.start()
 def handle_document_thread(message: telebot.types.Message):
     """Обработчик документов"""
+    
+    my_log.log_media(message)
+    
     with semaphore_talks:
         # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
         caption = message.caption or ''
@@ -468,7 +471,7 @@ def handle_document_thread(message: telebot.types.Message):
                         bot.send_voice(message.chat.id, audio, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide'))
                     else:
                         bot.send_voice(message.chat.id, audio, reply_markup=get_keyboard('hide'))
-                    my_log.log(message, f'tts file {text}')
+                    my_log.log_echo(message, f'[tts file] {text}')
                     return
 
         # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
@@ -479,6 +482,7 @@ def handle_document_thread(message: telebot.types.Message):
                 # если документ не является PDF-файлом, отправляем сообщение об ошибке
                 if document.mime_type != 'application/pdf':
                     bot.reply_to(message, 'Это не PDF-файл.', reply_markup=get_keyboard('hide'))
+                    my_log.log_echo(message, 'Это не PDF-файл.')
                     return
                 # скачиваем документ в байтовый поток
                 file_id = message.document.file_id
@@ -500,6 +504,7 @@ def handle_document_thread(message: telebot.types.Message):
                                 bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name, reply_markup=get_keyboard('hide'))
                     else:
                         bot.reply_to(message, text)
+                    my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
 
 
 @bot.message_handler(content_types = ['photo'])
@@ -509,6 +514,9 @@ def handle_photo(message: telebot.types.Message):
     thread.start()
 def handle_photo_thread(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
+    
+    my_log.log_media(message)
+    
     with semaphore_talks:
         # пересланные сообщения пытаемся перевести даже если в них картинка
         # новости в телеграме часто делают как картинка + длинная подпись к ней
@@ -517,9 +525,9 @@ def handle_photo_thread(message: telebot.types.Message):
             text = my_trans.translate(message.caption)
             if text:
                 bot.send_message(message.chat.id, text, reply_markup=get_keyboard('hide'))
-                my_log.log(message, text)
+                my_log.log_echo(message, text)
             else:
-                my_log.log(message, '')
+                my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
             return
 
         # распознаем текст только если есть команда для этого
@@ -546,12 +554,12 @@ def handle_photo_thread(message: telebot.types.Message):
                             bot.send_document(message.chat.id, f, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide'))
                         else:
                             bot.send_document(message.chat.id, f, reply_markup=get_keyboard('hide'))
-                        my_log.log(message, '[OCR] Sent as file: ' + text)
+                        my_log.log_echo(message, '[OCR] Sent as file: ' + text)
                 else:
                     bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
-                    my_log.log(message, '[OCR] ' + text)
+                    my_log.log_echo(message, '[OCR] ' + text)
             else:
-                my_log.log(message, '[OCR] no results')
+                my_log.log_echo(message, '[OCR] no results')
 
 
 @bot.message_handler(content_types = ['video'])
@@ -561,6 +569,9 @@ def handle_video(message: telebot.types.Message):
     thread.start()
 def handle_video_thread(message: telebot.types.Message):
     """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
+
+    my_log.log_media(message)
+
     with semaphore_talks:
         # пересланные сообщения пытаемся перевести даже если в них видео
         if message.forward_from_chat:
@@ -568,9 +579,9 @@ def handle_video_thread(message: telebot.types.Message):
             text = my_trans.translate(message.caption)
             if text:
                 bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
-                my_log.log(message, text)
+                my_log.log_echo(message, text)
             else:
-                my_log.log(message, "")
+                my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
 
 
 @bot.message_handler(commands=['style'])
@@ -581,6 +592,9 @@ def change_mode(message: telebot.types.Message):
     2 - формальный стиль + немного юмора (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с подходящим к запросу типом иронии или юмора но не перегибай палку.)
     3 - токсичный стиль (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.)
     """
+    
+    my_log.log_echo(message)
+    
     global prompts
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
@@ -594,9 +608,11 @@ def change_mode(message: telebot.types.Message):
             new_prompt = arg[0]
         with lock_dicts:
             prompts[message.chat.id] =  [{"role": "system", "content": new_prompt}]
-            my_log.log(message, f'[Новая роль установлена] {new_prompt}')
+            msg =  f'[Новая роль установлена] `{new_prompt}`'
+            bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, msg)
     else:
-        bot.reply_to(message, f"""Текущий стиль
+        msg = f"""Текущий стиль
         
 `{prompts[message.chat.id][0]['content']}`
         
@@ -609,11 +625,17 @@ def change_mode(message: telebot.types.Message):
 2 - формальный стиль + немного юмора `{utils.gpt_start_message2}`
 
 3 - токсичный стиль `{utils.gpt_start_message3}`
-    """, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+    """
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+        my_log.log_echo(message, msg)
+
 
 @bot.message_handler(commands=['mem'])
 def send_debug_history(message: telebot.types.Message):
     # Отправляем текущую историю сообщений
+    
+    my_log.log_echo(message)
+    
     with lock_dicts:
         global dialogs
         
@@ -625,6 +647,7 @@ def send_debug_history(message: telebot.types.Message):
         else:
             new_messages = []
         prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
+        my_log.log_echo(message, prompt)
         try:
             bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
         except Exception as error:
@@ -637,6 +660,10 @@ def tts(message: telebot.types.Message):
     thread = threading.Thread(target=tts_thread, args=(message,))
     thread.start()
 def tts_thread(message: telebot.types.Message):
+    """/tts [ru|en|uk|...] [+-XX%] <текст>"""
+    
+    my_log.log_echo(message)
+
     # разбираем параметры
     # регулярное выражение для разбора строки
     pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
@@ -660,6 +687,7 @@ def tts_thread(message: telebot.types.Message):
 Поддерживаемые языки: {', '.join(supported_langs_tts)}"""
 
         bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+        my_log.log_echo(message, help)
         return
 
     with semaphore_talks:
@@ -670,11 +698,14 @@ def tts_thread(message: telebot.types.Message):
                     bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide'))
                 else:
                     bot.send_voice(message.chat.id, audio, reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, '[Отправил голосовое сообщение]')
             else:
+                msg = 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.'
                 if message.chat.type != 'private':
-                    bot.reply_to(message, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.', reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
                 else:
-                    bot.send_message(message.chat.id, 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.', reply_markup=get_keyboard('hide'))
+                    bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('hide'))
+                    my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['image','img'])
@@ -683,6 +714,9 @@ def image(message: telebot.types.Message):
     thread.start()
 def image_thread(message: telebot.types.Message):
     """генерирует картинку по описанию"""
+
+    my_log.log_echo(message)
+
     with semaphore_talks:
         help = '/image <текстовое описание картинки, что надо нарисовать>'
         prompt = message.text.split(maxsplit = 1)
@@ -707,12 +741,13 @@ def image_thread(message: telebot.types.Message):
                     caption += '\n'
                     caption += '\n\n'.join(images)
                     bot.send_message(message.chat.id, caption, disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
-                    my_log.log(message, '[image gen] ')
+                    my_log.log_echo(message, '[image gen] ')
                 else:
                     bot.reply_to(message, 'Бинг нарисовал неизвестно что.', reply_markup=get_keyboard('hide'))
-                    my_log.log(message, '[image gen error] ')
+                    my_log.log_echo(message, '[image gen error] ')
         else:
             bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, help)
 
 
 @bot.message_handler(commands=['trans'])
@@ -720,6 +755,9 @@ def trans(message: telebot.types.Message):
     thread = threading.Thread(target=trans_thread, args=(message,))
     thread.start()
 def trans_thread(message: telebot.types.Message):
+
+    my_log.log_echo(message)
+
     with semaphore_talks:
         help = f"""/trans [en|ru|uk|..] текст для перевода на указанный язык. Если не указан то на русский.\n\nПоддерживаемые языки: {', '.join(supported_langs_trans)}"""
         # разбираем параметры
@@ -733,6 +771,7 @@ def trans_thread(message: telebot.types.Message):
             text = match.group(2) or ''
         else:
             bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, help)
             return
         lang = lang.strip()
 
@@ -741,13 +780,19 @@ def trans_thread(message: telebot.types.Message):
             translated = my_trans.translate_text2(text, lang)
             if translated:
                 bot.reply_to(message, translated, reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, translated)
             else:
-                bot.reply_to(message, 'Ошибка перевода', reply_markup=get_keyboard('hide'))
+                msg = 'Ошибка перевода'
+                bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['name'])
 def send_name(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
+
+    my_log.log_echo(message)
+
     args = message.text.split()
     if len(args) > 1:
         new_name = args[1]
@@ -758,15 +803,21 @@ def send_name(message: telebot.types.Message):
             with lock_dicts:
                 global bot_names
                 bot_names[message.chat.id] = new_name.lower()
-            bot.send_message(message.chat.id, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.', reply_markup=get_keyboard('hide'))
-            my_log.log(message, f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.')
+            msg = f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.'
+            bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, msg)
         else:
-            bot.reply_to(message, "Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего.", reply_markup=get_keyboard('hide'))
+            msg = "Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего."
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message: telebot.types.Message):
     # Отправляем приветственное сообщение
+
+    my_log.log_echo(message)
+
     help = """Я - ваш персональный чат-бот, готовый помочь вам в любое время суток. Моя задача - помочь вам получить необходимую информацию и решить возникающие проблемы. 
 
 Я умею обрабатывать и анализировать большие объемы данных, быстро находить нужную информацию и предоставлять ее в удобном для вас формате. 
@@ -777,12 +828,15 @@ def send_welcome(message: telebot.types.Message):
 
 Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп."""
     bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
-    my_log.log(message)
+    my_log.log_echo(message, help)
 
 
 @bot.message_handler(commands=['help'])
 def send_welcome(message: telebot.types.Message):
     # Отправляем приветственное сообщение
+
+    my_log.log_echo(message)
+
     help = """Чат бот отзывается на кодовое слово `бот`(можно сменить командой /name) ***бот расскажи про биткоин***
 
 Кодовое слово `бинг`(нельзя изменить) позволит получить более актуальную информацию, бот будет дооолго гуглить перед ответом ***бинг курс биткоин***
@@ -804,7 +858,7 @@ def send_welcome(message: telebot.types.Message):
 """ + '\n'.join(open('commands.txt').readlines()) + '\n\nhttps://github.com/theurs/tb1'
 
     bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
-    my_log.log(message)
+    my_log.log_echo(message, help)
 
 
 def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
@@ -837,7 +891,9 @@ def echo_all(message: telebot.types.Message) -> None:
 def do_task(message):
     """функция обработчик сообщений работающая в отдельном потоке"""
     with semaphore_talks:
+
         my_log.log_echo(message)
+
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
         # является ли это ответом на наше сообщение

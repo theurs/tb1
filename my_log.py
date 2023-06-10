@@ -31,6 +31,7 @@ def log2(text: str) -> None:
 
 
 def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:
+    """записывает в журнал сообщение полученное обработчиком обычных сообщений либо ответ бота"""
     global lock
     time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
     private_or_chat = 'private' if message.chat.type == 'private' else 'chat'
@@ -45,7 +46,39 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:
                 log_file.write(f"[{time_now}] [BOT]: {reply_from_bot}\n")
             else:
                 log_file.write(f"[{time_now}] [{user_name}]: {message.text or message.caption or ''}\n")
-            
+
+
+def log_media(message: telebot.types.Message) -> None:
+    """записывает в журнал сообщение полученное обработчиком медиа файлов"""
+    global lock
+    time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+    private_or_chat = 'private' if message.chat.type == 'private' else 'chat'
+    chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
+    user_name = message.from_user.first_name or message.from_user.username or ''
+
+    caption = message.caption or ''
+
+    log_file_path = os.path.join(os.getcwd(), f'logs [{chat_name}] [{private_or_chat}] [{message.chat.type}] [{message.chat.id}] [echo].log')
+
+    if message.audio:
+        file_name = message.audio.file_name
+        file_size = message.audio.file_size
+        file_duration = message.audio.duration
+        file_title = message.audio.title
+        file_mime_type = message.audio.mime_type
+        with lock:
+            with open(log_file_path, 'a') as log_file:
+                log_file.write(f"[{time_now}] [{user_name}]: [Отправил аудио файл] [caption: {caption}] [title: {file_title}] \
+[filename: {file_name}] [filesize: {file_size}] [duration: {file_duration}] [mime type: {file_mime_type}]\n")
+
+    if message.voice:
+        file_size = message.voice.file_size
+        file_duration = message.voice.duration
+        with lock:
+            with open(log_file_path, 'a') as log_file:
+                log_file.write(f"[{time_now}] [{user_name}]: [Отправил голосовое сообщение] [filesize: \
+{file_size}] [duration: {file_duration}]\n")
+        
 
 if __name__ == '__main__':
     pass

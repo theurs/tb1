@@ -326,7 +326,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         except Exception as error:    
                             print(error)
                             bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                my_log.log(message, resp)
+                my_log.log_echo(message, '[Продолжает] ' + resp)
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
             #bot.edit_message_reply_markup(message.chat.id, message.message_id)
@@ -362,14 +362,15 @@ def handle_audio(message: telebot.types.Message):
     thread.start()
 def handle_audio_thread(message: telebot.types.Message):
     """Распознавание текст из аудио файлов"""
-
+    
+    my_log.log_media(message)
+    
     # если заблокированы автопереводы в этом чате то выходим
     if (message.chat.id in blocks and blocks[message.chat.id] == 1) and message.chat.type != 'private':
         return
-
     with semaphore_talks:
-        caption = message.caption
-        if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй']):
+        caption = message.caption or ''
+        if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй', 'прочитай']):
             return
 
         with show_action(message.chat.id, 'typing'):
@@ -388,10 +389,10 @@ def handle_audio_thread(message: telebot.types.Message):
             # Отправляем распознанный текст 
             if text.strip() != '':
                 bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
-                my_log.log(message, f'[ASR] {text}')
+                my_log.log_echo(message, f'[ASR] {text}')
             else:
                 bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
-                my_log.log(message, '[ASR] no results')
+                my_log.log_echo(message, '[ASR] no results')
 
 
 @bot.message_handler(content_types = ['voice'])
@@ -401,6 +402,9 @@ def handle_voice(message: telebot.types.Message):
     thread.start()
 def handle_voice_thread(message: telebot.types.Message): 
     """Автоматическое распознавание текст из голосовых сообщений"""
+
+    my_log.log_media(message)
+
     with semaphore_talks:
         # Создание временного файла 
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -427,9 +431,9 @@ def handle_voice_thread(message: telebot.types.Message):
             # Отправляем распознанный текст 
             if text.strip() != '':
                 bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
-                my_log.log(message, f'[ASR] {text}')
+                my_log.log_echo(message, f'[ASR] {text}')
             else:
-                my_log.log(message, '[ASR] no results')
+                my_log.log_echo(message, '[ASR] no results')
         # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
         message.text = text
         echo_all(message)
@@ -856,14 +860,12 @@ def do_task(message):
             # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
             if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
                 blocks[chat_id] = 1
-                #my_log.log(message, 'Включена блокировка автопереводов в чате')
                 bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
                 return
             # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
             if (msg.startswith('вернись') and (is_private or is_reply)) or msg.startswith((f'{bot_name} вернись', f'{bot_name}, вернись')):
                 blocks[chat_id] = 0
-                #my_log.log(message, 'Выключена блокировка автопереводов в чате')
                 bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
                 return
@@ -871,7 +873,6 @@ def do_task(message):
             if (msg.startswith('забудь') and (is_private or is_reply)) or msg.startswith((f'{bot_name} забудь', f'{bot_name}, забудь')):
                 dialogs[chat_id] = []
                 bot.send_message(chat_id, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-                #my_log.log(message, 'История GPT принудительно отчищена')
                 my_log.log_echo(message, 'История GPT принудительно отчищена')
                 return
 
@@ -926,7 +927,6 @@ def do_task(message):
                         except Exception as error:
                             print(error)
                             bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                    #my_log.log(message, resp)
                     my_log.log_echo(message, resp)
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
@@ -952,7 +952,6 @@ def do_task(message):
                         except Exception as error:    
                             print(error)
                             reply_to_long_message(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                    #my_log.log(message, resp)
                     my_log.log_echo(message, resp)
         else: # смотрим надо ли переводить текст
             with lock_dicts:
@@ -961,7 +960,6 @@ def do_task(message):
             text = my_trans.translate(message.text)
             if text:
                 bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-                #my_log.log(message, text)
                 my_log.log_echo(message, text)
 
 

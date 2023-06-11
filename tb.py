@@ -260,11 +260,12 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
     'hide' - клавиатура с одной кнопкой Скрой
     """
     if kbd == 'chat':
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton("Дальше", callback_data='continue_gpt')
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+        button1 = telebot.types.InlineKeyboardButton("➡️", callback_data='continue_gpt')
         button2 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
-        button3 = telebot.types.InlineKeyboardButton("Скрой", callback_data='erase_answer')
-        markup.add(button1, button2, button3)
+        button3 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
+        button4 = telebot.types.InlineKeyboardButton("ru", callback_data='translate_chat')
+        markup.add(button1, button2, button3, button4)
         return markup
     elif kbd == 'mem':
         markup  = telebot.types.InlineKeyboardMarkup()
@@ -365,8 +366,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # рисуем еще картинки с тем же запросом
             image(message)
         elif call.data == 'translate':
+            """реакция на клавиатуру для OCR кнопка перевести текст"""
             translated = my_trans.translate(message.text)
             bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('hide'))
+        elif call.data == 'translate_chat':
+            """реакция на клавиатуру для Чата кнопка перевести текст"""
+            translated = my_trans.translate_text2(message.text)
+            if translated and translated != message.text:
+                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, parse_mode='Markdown', reply_markup=get_keyboard('chat'))
 
 
 @bot.message_handler(content_types = ['audio'])

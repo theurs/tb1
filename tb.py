@@ -371,7 +371,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('hide'))
         elif call.data == 'translate_chat':
             """реакция на клавиатуру для Чата кнопка перевести текст"""
-            translated = my_trans.translate_text2(message.text)
+            #translated = my_trans.translate_text2(message.text)
+            translated = my_trans.translate(message.text)
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, parse_mode='Markdown', reply_markup=get_keyboard('chat'))
 

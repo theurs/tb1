@@ -3,6 +3,7 @@
 
 import re
 import my_log
+import my_dic
 
 
 # диалог всегда начинается одинаково
@@ -44,7 +45,37 @@ def remove_vowels(text: str) -> str:
     return text
 
 
+class MessageList:
+    """список последних сообщений в чате с заданным максимальным размером в байтах
+    это нужно для суммаризации событий в чате с помощью бинга
+    """
+    def __init__(self, max_size=60000):
+        self.max_size = max_size
+        self.messages = []
+        self.size = 0
+
+    def append(self, message: str):
+        assert len(message) < (4*1024)+1
+        message_bytes = message.encode('utf-8')
+        message_size = len(message_bytes)
+        if self.size + message_size > self.max_size:
+            while self.size + message_size > self.max_size:
+                oldest_message = self.messages.pop(0)
+                self.size -= len(oldest_message.encode('utf-8'))
+        self.messages.append(message)
+        self.size += message_size
+
+#    # эти методы нужны что бы можно было сериализовать объект с помощью pickle
+#    def __getstate__(self):
+#        return (self.max_size, self.messages, self.size)
+#    def __setstate__(self, state):
+#        self.max_size, self.messages, self.size = state
+
+
 if __name__ == '__main__':
-    text = """'привет к��к дела ("tesd<\*__t text)"""
-    print(escape_markdown(text))
+    a = my_dic.PersistentDict('test.pkl')
+    
+    
+    #text = """'привет к��к дела ("tesd<\*__t text)"""
+    #print(escape_markdown(text))
 

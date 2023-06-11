@@ -27,7 +27,7 @@ def log(message: telebot.types.Message, reply_from_bot: str = '') -> None:
 def log2(text: str) -> None:
     """для дебага"""
     log_file_path = 'debug.log'
-    open(log_file_path, 'a').write(f'{text}\n\n')
+    open(log_file_path, 'a').write(f'{text}\n=========================================================================================\n')
 
 
 def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:

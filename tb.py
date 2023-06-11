@@ -6,6 +6,7 @@ import random
 import re
 import subprocess
 import tempfile
+import datetime
 import threading
 import time
 
@@ -24,6 +25,10 @@ import my_stt
 import my_trans
 import my_tts
 import utils
+
+
+# путь до утилиты командной строки которая используется для запросов к бингу
+bingai_cmd = '/home/ubuntu/tb/bingai.py'
 
 
 # устанавливаем рабочую папку = папке в которой скрипт лежит
@@ -49,6 +54,9 @@ prompts = my_dic.PersistentDict('prompts.pkl')
 
 # запоминаем промпты для повторения рисования
 image_prompt = {}
+
+# запоминаем диалоги в чатах для того что бы потом можно было сделать самморизацию, выдать краткое содержание
+chat_logs = my_dic.PersistentDict('chat_logs.pkl')
 
 # в каких чатах какое у бота кодовое слово для обращения к боту
 bot_names = my_dic.PersistentDict('names.pkl')
@@ -217,7 +225,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         hist_compressed = gpt_basic.ai_compress(hist, 1000, 'dialog', force = True)
         bing_prompt = hist_compressed + '\n' + text
         
-        resp = subprocess.run(['/usr/bin/python3', '/home/ubuntu/tb/bingai.py', bing_prompt], stdout=subprocess.PIPE)
+        resp = subprocess.run(['/usr/bin/python3', bingai_cmd, bing_prompt], stdout=subprocess.PIPE)
         #resp = subprocess.run(['/usr/bin/python3', '/home/user/V/4 python/2 telegram bot tesseract/test/bingai.py', bing_prompt], stdout=subprocess.PIPE)
         resp = resp.stdout.decode('utf-8')
         if resp:
@@ -812,6 +820,77 @@ def trans_thread(message: telebot.types.Message):
                 my_log.log_echo(message, msg)
 
 
+
+
+
+
+
+
+
+
+
+@bot.message_handler(commands=['last'])
+def last(message: telebot.types.Message):
+    thread = threading.Thread(target=last_thread, args=(message,))
+    thread.start()
+def last_thread(message: telebot.types.Message):
+    """делает сумморизацию истории чата, берет последние X сообщений из чата и просит бинг сделать сумморизацию"""
+    
+    my_log.log_echo(message)
+
+    with semaphore_talks:
+        args = message.text.split()
+        help = '/last [X] - показать сумморизацию истории чата за последние Х сообщений, либо все какие есть в памяти. X = от 1 до 60000'
+        if len(args) == 2:
+            try:
+                x = int(args[1])
+                assert x > 0 and x < 60000
+                limit = x
+            except Exception as error:
+                print(error)
+                bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, help)
+                return
+        elif len(args) > 2:
+            bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, help)
+            return
+        else:
+            limit = 60000
+
+        with lock_dicts:
+            if message.chat.id in chat_logs:
+                messages = chat_logs[message.chat.id]
+            else:
+                mes = 'История пуста'
+                bot.reply_to(message, mes, reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, mes)
+                return
+
+        if limit > len(messages.messages):
+            limit = len(messages.messages)
+
+        prompt = 'сделай сумморизацию журнала чата, не больше 500 слов, ответь по-русски, не надо объяснять что такое сумморизация\n\n'
+        
+        prompt += '\n'.join(messages.messages[-limit:])
+
+        with show_action(message.chat.id, 'find_location'):
+        
+            resp = subprocess.run(['/usr/bin/python3', bingai_cmd, prompt], stdout=subprocess.PIPE)
+            resp = resp.stdout.decode('utf-8')
+            if resp:
+               bot.reply_to(message, resp, disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+               my_log.log_echo(message, resp)
+            else:
+                mes = 'Бинг не ответил'
+                bot.reply_to(message, mes, reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, mes)
+
+
+
+
+
+
 @bot.message_handler(commands=['name'])
 def send_name(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
@@ -932,6 +1011,17 @@ def do_task(message):
         too_big_message_for_chatbot = 1500
 
         with lock_dicts:
+            # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
+            if not is_private:
+                time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+                user_name = message.from_user.first_name or message.from_user.username or 'unknown'
+                if chat_id in chat_logs:
+                    m = chat_logs[chat_id]
+                else:
+                    m = utils.MessageList()
+                m.append(f'[{time_now}] [{user_name}] {message.text}')
+                chat_logs[chat_id] = m
+        
             # определяем какое имя у бота в этом чате, на какое слово он отзывается
             if chat_id in bot_names:
                 bot_name = bot_names[chat_id]

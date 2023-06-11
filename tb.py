@@ -9,6 +9,7 @@ import tempfile
 import threading
 import time
 
+#import markdown2
 import openai
 import telebot
 from langdetect import detect_langs
@@ -276,6 +277,12 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
         markup.add(button1)
         return markup
+    elif kbd == 'translate':
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
+        button2 = telebot.types.InlineKeyboardButton("Перевод", callback_data='translate')
+        markup.add(button1, button2)
+        return markup
     elif kbd == 'hide_image':
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_image')
@@ -357,6 +364,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             message.text = f'/image {p}'
             # рисуем еще картинки с тем же запросом
             image(message)
+        elif call.data == 'translate':
+            translated = my_trans.translate(message.text)
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(content_types = ['audio'])
@@ -560,7 +570,7 @@ def handle_photo_thread(message: telebot.types.Message):
                             bot.send_document(message.chat.id, f, reply_markup=get_keyboard('hide'))
                         my_log.log_echo(message, '[OCR] Sent as file: ' + text)
                 else:
-                    bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, text, reply_markup=get_keyboard('translate'))
                     my_log.log_echo(message, '[OCR] ' + text)
             else:
                 my_log.log_echo(message, '[OCR] no results')
@@ -1005,9 +1015,12 @@ def do_task(message):
             # добавляем новый запрос пользователя в историю диалога пользователя
             with show_action(chat_id, 'typing'):
                 resp = dialog_add_user_request(chat_id, message.text, 'gpt')
+                #md = markdown2.Markdown()
+                #resp2 = md.convert(resp)
                 if resp:
                     if is_private:
                         try:
+                            #send_long_message(chat_id, resp2, parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             send_long_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
@@ -1016,6 +1029,7 @@ def do_task(message):
                             send_long_message(chat_id, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
+                            #reply_to_long_message(message, resp2, parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)

@@ -13,6 +13,8 @@ import html2text
 import requests
 from urllib.parse import urlparse
 import chardet
+from youtube_transcript_api import YouTubeTranscriptApi
+from urllib.parse import urlparse, parse_qs
 
 
 async def main(prompt1: str) -> str:
@@ -82,25 +84,55 @@ def gen_imgs(prompt: str):
     return 'No auth provided'
 
 
+def get_text_from_youtube(url: str) -> str:
+    """Вытаскивает текст из субтитров на ютубе
+
+    Args:
+        url (str): ссылка на ютуб видео
+
+    Returns:
+        str: первые субтитры из списка какие есть в видео
+    """
+    top_langs = ('ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro')
+
+    query = urlparse(url)
+    
+    if 'youtu' in query.netloc:
+        if query.path == '/watch':
+            video_id = parse_qs(query.query)['v'][0]
+        else:
+            video_id = query.path[1:]
+    else:
+        video_id = None
+        raise ValueError(f'Bad youtube URL, no id found {url}')
+    
+    #video_id = parse_qs(query.query)['v'][0]
+
+    t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+
+    text = '\n'.join([x['text'] for x in t])
+
+    return text or ''
+
+
 def summ_url(url:str) -> str:
     """скачивает веб страницу в память и пропускает через фильтр html2text, возвращает текст"""
-    # Получаем содержимое страницы
-    response = requests.get(url)
-    content = response.content
-    #content = response.content.decode('utf-8')
-    
-    # Определяем кодировку текста
-    encoding = chardet.detect(content)['encoding']
-
-    # Декодируем содержимое страницы
-    content = content.decode(encoding)
-
-    # Пропускаем содержимое через фильтр html2text
-    h = html2text.HTML2Text()
-    h.ignore_links = True
-    h.ignore_images = True
-    
-    text = h.handle(content)
+    if '/youtu.be/' in url or 'youtube.com/' in url:
+        text = get_text_from_youtube(url)
+    else:
+        # Получаем содержимое страницы
+        response = requests.get(url)
+        content = response.content
+        #content = response.content.decode('utf-8')
+        # Определяем кодировку текста
+        encoding = chardet.detect(content)['encoding']
+        # Декодируем содержимое страницы
+        content = content.decode(encoding)
+        # Пропускаем содержимое через фильтр html2text
+        h = html2text.HTML2Text()
+        h.ignore_links = True
+        h.ignore_images = True
+        text = h.handle(content)
     
     # уменьшаем текст до 60000 байт (не символов!)
     text2 = text

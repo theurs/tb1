@@ -279,4 +279,4 @@ assistant - В Украине есть небольшие группы с кра
     if len(sys.argv) != 2:
         print("Usage: gptbasic.py 'request to qpt'")
         sys.exit(1)
-    print(ai(sys.argv[1], max_tok = 4000))
+    print(ai(sys.argv[1], max_tok = 2000))

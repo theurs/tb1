@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 import chardet
 from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
+import gpt_basic
 
 
 async def main(prompt1: str) -> str:
@@ -147,8 +148,19 @@ def summ_url(url:str) -> str:
 читать его полностью, используй для передачи мой родной язык - русский, \
 начни свой ответ со слов Вот краткое содержание текста, \
 закончи свой ответ словами Конец краткого содержания, ничего после этого не добавляй.'
+
+#    request_size = len((text2+prompt).encode())
+#    print(request_size)
+#    if request_size < 4000:
+#        result = gpt_basic.ai(prompt + '\n\n' + text2)
+#    else:
+#        result = ai(prompt + '\n\n' + text2)
     
-    result = ai(prompt + '\n\n' + text2)
+    try:
+        result = gpt_basic.ai(prompt + '\n\n' + text2)
+    except Exception as error:
+        if """This model's maximum context length is 4097 tokens. However, you requested""" in str(error):
+            result = ai(prompt + '\n\n' + text2)
     
     return result
 

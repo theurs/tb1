@@ -839,14 +839,10 @@ def summ_text_thread(message: telebot.types.Message):
                         my_log.log_echo(message, m)
                         return
                     if res:
-                        #bot.reply_to(message, res, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                         reply_to_long_message(message, resp=res, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                             
                         my_log.log_echo(message, res)
                         sum_cache[url] = res
-
-                        #message.text = f'[Бинг ответил на запрос о суммаризации текста по ссылке] [url] ' + res
-                        #echo_all(message)
 
                         return
                     else:

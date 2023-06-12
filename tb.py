@@ -31,6 +31,8 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
+_bot_name = bot.get_me().username
+#my_log.log2(str(bot.get_me()))
 #telebot.apihelper.proxy = cfg.proxy_settings
 
 
@@ -302,6 +304,7 @@ def callback_inline(call: telebot.types.CallbackQuery):
     thread.start()
 def callback_inline_thread(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
+    
     with semaphore_talks:
         global image_prompt
         message = call.message
@@ -616,7 +619,11 @@ def change_mode(message: telebot.types.Message):
     2 - формальный стиль + немного юмора (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с подходящим к запросу типом иронии или юмора но не перегибай палку.)
     3 - токсичный стиль (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.)
     """
-    
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
     my_log.log_echo(message)
     
     global prompts
@@ -657,7 +664,11 @@ def change_mode(message: telebot.types.Message):
 @bot.message_handler(commands=['mem'])
 def send_debug_history(message: telebot.types.Message):
     # Отправляем текущую историю сообщений
-    
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
     my_log.log_echo(message)
     
     with lock_dicts:
@@ -687,7 +698,11 @@ def tts(message: telebot.types.Message):
     thread.start()
 def tts_thread(message: telebot.types.Message):
     """/tts [ru|en|uk|...] [+-XX%] <текст>"""
-    
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
     my_log.log_echo(message)
 
     # разбираем параметры
@@ -741,6 +756,10 @@ def image(message: telebot.types.Message):
 def image_thread(message: telebot.types.Message):
     """генерирует картинку по описанию"""
 
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
     my_log.log_echo(message)
 
     with semaphore_talks:
@@ -782,6 +801,10 @@ def trans(message: telebot.types.Message):
     thread.start()
 def trans_thread(message: telebot.types.Message):
 
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
     my_log.log_echo(message)
 
     with semaphore_talks:
@@ -813,22 +836,17 @@ def trans_thread(message: telebot.types.Message):
                 my_log.log_echo(message, msg)
 
 
-
-
-
-
-
-
-
-
-
 @bot.message_handler(commands=['last'])
 def last(message: telebot.types.Message):
     thread = threading.Thread(target=last_thread, args=(message,))
     thread.start()
 def last_thread(message: telebot.types.Message):
     """делает сумморизацию истории чата, берет последние X сообщений из чата и просит бинг сделать сумморизацию"""
-    
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
     my_log.log_echo(message)
 
     with semaphore_talks:
@@ -890,13 +908,13 @@ def last_thread(message: telebot.types.Message):
                 my_log.log_echo(message, mes)
 
 
-
-
-
-
 @bot.message_handler(commands=['name'])
 def send_name(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
 
     my_log.log_echo(message)
 
@@ -923,6 +941,10 @@ def send_name(message: telebot.types.Message):
 def send_welcome(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
     my_log.log_echo(message)
 
     help = """Я - ваш персональный чат-бот, готовый помочь вам в любое время суток. Моя задача - помочь вам получить необходимую информацию и решить возникающие проблемы. 
@@ -941,6 +963,10 @@ def send_welcome(message: telebot.types.Message):
 @bot.message_handler(commands=['help'])
 def send_welcome(message: telebot.types.Message):
     # Отправляем приветственное сообщение
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
 
     my_log.log_echo(message)
 
@@ -997,6 +1023,10 @@ def echo_all(message: telebot.types.Message) -> None:
     thread.start()
 def do_task(message):
     """функция обработчик сообщений работающая в отдельном потоке"""
+
+    # не обрабатывать неизвестные команды
+    if message.text.startswith('/'): return
+
     with semaphore_talks:
 
         my_log.log_echo(message)

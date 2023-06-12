@@ -2,6 +2,7 @@
 
 
 #import io
+import os
 import json
 import asyncio
 from EdgeGPT import Chatbot, ConversationStyle
@@ -78,9 +79,12 @@ def gen_imgs(prompt: str):
 
 
 if __name__ == "__main__":
-    """Usage ./bingai.py 'list 10 japanese dishes'"""
-    prompt = sys.argv[1]
-    print(ai(prompt))
+    """Usage ./bingai.py 'list 10 japanese dishes'|filename"""
+    t = sys.argv[1]
+    if os.path.exists(t):
+        print(ai(open(t).read()))
+    else:
+        print(ai(t))
     
     
     #prompt = 'anime резонанс душ'

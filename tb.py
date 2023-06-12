@@ -55,6 +55,9 @@ image_prompt = {}
 # запоминаем диалоги в чатах для того что бы потом можно было сделать самморизацию, выдать краткое содержание
 chat_logs = my_dic.PersistentDict('chat_logs.pkl')
 
+# для запоминания ответов на команду /sum
+sum_cache = {}
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 bot_names = my_dic.PersistentDict('names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -793,6 +796,58 @@ def image_thread(message: telebot.types.Message):
         else:
             bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, help)
+
+
+@bot.message_handler(commands=['sum'])
+def summ_text(message: telebot.types.Message):
+    thread = threading.Thread(target=summ_text_thread, args=(message,))
+    thread.start()
+def summ_text_thread(message: telebot.types.Message):
+
+    # не обрабатывать команды к другому боту
+    #if '@' in message.text and f'@{_bot_name}' not in message.text: return
+
+    global sum_cache
+
+    my_log.log_echo(message)
+
+    text = message.text
+    
+    if len(text.split(' ', 1)) == 2:
+        url = text.split(' ', 1)[1].strip()
+        if bingai.is_valid_url(url):
+            with semaphore_talks:
+
+                #смотрим нет ли в кеше ответа на этот урл
+                r = ''
+                with lock_dicts:
+                    if url in sum_cache:
+                        r = sum_cache[url]
+                if r:
+                    reply_to_long_message(message, resp=r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    my_log.log_echo(message, r)
+                    return
+
+                with show_action(message.chat.id, 'typing'):
+                    res = bingai.summ_url(url)
+                    if res:
+                        #bot.reply_to(message, res, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                        reply_to_long_message(message, resp=res, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                        my_log.log_echo(message, res)
+                        sum_cache[url] = res
+
+                        #message.text = f'[Бинг ответил на запрос о суммаризации текста по ссылке] [url] ' + res
+                        #echo_all(message)
+
+                        return
+                    else:
+                        error = 'Бинг не ответил'
+                        bot.reply_to(message, error, reply_markup=get_keyboard('hide'))
+                        my_log.log_echo(message, error)
+                        return
+    help = '/sum URL'
+    bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+    my_log.log_echo(message, help)
 
 
 @bot.message_handler(commands=['trans'])

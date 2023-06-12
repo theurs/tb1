@@ -9,6 +9,9 @@ from EdgeGPT import Chatbot, ConversationStyle
 #from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 import sys
 from BingImageCreator import ImageGen
+import html2text
+import requests
+from urllib.parse import urlparse
 
 
 async def main(prompt1: str) -> str:
@@ -78,10 +81,57 @@ def gen_imgs(prompt: str):
     return 'No auth provided'
 
 
+def summ_url(url:str) -> str:
+    """скачивает веб страницу в память и пропускает через фильтр html2text, возвращает текст"""
+    # Получаем содержимое страницы
+    response = requests.get(url)
+    content = response.content.decode('utf-8')
+    
+    # Пропускаем содержимое через фильтр html2text
+    h = html2text.HTML2Text()
+    h.ignore_links = True
+    h.ignore_images = True
+    
+    text = h.handle(content)
+    
+    # уменьшаем текст до 60000 байт (не символов!)
+    text2 = text
+    if len(text2) > 60000:
+        text2 = text2[:60000]
+    text_bytes = text2.encode()
+    while len(text_bytes) > 60000:
+        text2 = text2[:-1]
+        text_bytes = text2.encode()
+
+    #prompt = 'Сделай сокращение этого текста до его краткого описания, сохраняя при этом основную суть и ключевую информацию, теги надо игнорировать. Ответь по-русски, не больше 4000 слов. Текст:'
+    
+    prompt = 'Передай краткое содержание веб текста веб страницы так что бы мне не пришлось \
+читать его полностью, используй для передачи мой родной язык - русский, \
+начни свой ответ со слов Вот краткое содержание текста, \
+закончи свой ответ словами Конец краткого содержания, ничего после этого не добавляй.'
+    
+    result = ai(prompt + '\n\n' + text2)
+    
+    return result
+
+
+def is_valid_url(url: str) -> bool:
+    """Функция is_valid_url() принимает строку url и возвращает True, если эта строка является веб-ссылкой,
+    и False в противном случае."""
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
+
+
 if __name__ == "__main__":
-    """Usage ./bingai.py 'list 10 japanese dishes'|filename"""
+    """Usage ./bingai.py 'list 10 japanese dishes'|URL|filename"""
     t = sys.argv[1]
-    if os.path.exists(t):
+    
+    if is_valid_url(t):
+        print(summ_url(t))
+    elif os.path.exists(t):
         print(ai(open(t).read()))
     else:
         print(ai(t))

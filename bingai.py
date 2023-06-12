@@ -159,8 +159,8 @@ def summ_url(url:str) -> str:
     try:
         result = gpt_basic.ai(prompt + '\n\n' + text2)
     except Exception as error:
-        if """This model's maximum context length is 4097 tokens. However, you requested""" in str(error):
-            result = ai(prompt + '\n\n' + text2)
+        result = ai(prompt + '\n\n' + text2)
+        print(error)
     
     return result
 

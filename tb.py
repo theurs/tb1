@@ -829,10 +829,19 @@ def summ_text_thread(message: telebot.types.Message):
                     return
 
                 with show_action(message.chat.id, 'typing'):
-                    res = bingai.summ_url(url)
+                    res = ''
+                    try:
+                        res = bingai.summ_url(url)
+                    except Exception as error:
+                        print(error)
+                        m = 'У этого видео нет субтитров'
+                        bot.reply_to(message, m, reply_markup=get_keyboard('hide'))
+                        my_log.log_echo(message, m)
+                        return
                     if res:
                         #bot.reply_to(message, res, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                         reply_to_long_message(message, resp=res, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                            
                         my_log.log_echo(message, res)
                         sum_cache[url] = res
 

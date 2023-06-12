@@ -13,21 +13,12 @@ from BingImageCreator import ImageGen
 async def main(prompt1: str) -> str:
     cookies = json.loads(open("cookies.json", encoding="utf-8").read())
     
-    
-    #output = io.StringIO()
-    #orig_stdout, orig_stderr = sys.stdout, sys.stderr
-    #sys.stdout, sys.stderr = output, output
-    
-    
     try:
         bot = await Chatbot.create(cookies=cookies)
         r = await bot.ask(prompt=prompt1, conversation_style=ConversationStyle.creative)
     except Exception as error:
         sys.stdout, sys.stderr = orig_stdout, orig_stderr
         print(error)
-
-
-    #sys.stdout, sys.stderr = orig_stdout, orig_stderr
 
     text = r['item']['messages'][1]['text']
     links_raw = r['item']['messages'][1]['adaptiveCards'][0]['body'][0]['text']
@@ -53,6 +44,11 @@ async def main(prompt1: str) -> str:
         text = text.replace(fr, to)
         n += 1
     return text
+
+
+def ai(prompt: str) -> str:
+    """сырой запрос к бингу"""
+    return asyncio.run(main(prompt))
 
 
 def gen_imgs(prompt: str):
@@ -84,7 +80,7 @@ def gen_imgs(prompt: str):
 if __name__ == "__main__":
     """Usage ./bingai.py 'list 10 japanese dishes'"""
     prompt = sys.argv[1]
-    print(asyncio.run(main(prompt)))
+    print(ai(prompt))
     
     
     #prompt = 'anime резонанс душ'

@@ -4,7 +4,6 @@ import io
 import os
 import random
 import re
-import subprocess
 import tempfile
 import datetime
 import threading
@@ -25,10 +24,6 @@ import my_stt
 import my_trans
 import my_tts
 import utils
-
-
-# путь до утилиты командной строки которая используется для запросов к бингу
-bingai_cmd = '/home/ubuntu/tb/bingai.py'
 
 
 # устанавливаем рабочую папку = папке в которой скрипт лежит
@@ -225,9 +220,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         hist_compressed = gpt_basic.ai_compress(hist, 1000, 'dialog', force = True)
         bing_prompt = hist_compressed + '\n' + text
         
-        resp = subprocess.run(['/usr/bin/python3', bingai_cmd, bing_prompt], stdout=subprocess.PIPE)
-        #resp = subprocess.run(['/usr/bin/python3', '/home/user/V/4 python/2 telegram bot tesseract/test/bingai.py', bing_prompt], stdout=subprocess.PIPE)
-        resp = resp.stdout.decode('utf-8')
+        resp = bingai.ai(bing_prompt)
         if resp:
             new_messages = new_messages + [{"role":    "assistant",
                                             "content": resp}]
@@ -870,17 +863,27 @@ def last_thread(message: telebot.types.Message):
         if limit > len(messages.messages):
             limit = len(messages.messages)
 
-        prompt = 'сделай сумморизацию журнала чата, не больше 500 слов, ответь по-русски, не надо объяснять что такое сумморизация\n\n'
+        #prompt = 'сделай сумморизацию журнала чата, не больше 500 слов, ответь по-русски, не надо объяснять что такое сумморизация\n\n'
+        prompt = 'покажи краткий вариант журнала чата с сохранением первоначального смысла, не более 500 слов, отвечай по-русски, разделяй предложения двумя переносами строки для удобства чтения\n\n'
         
         prompt += '\n'.join(messages.messages[-limit:])
 
-        with show_action(message.chat.id, 'find_location'):
+        with show_action(message.from_user.id, 'typing'):
+        #with show_action(message.chat.id, 'typing'):
         
-            resp = subprocess.run(['/usr/bin/python3', bingai_cmd, prompt], stdout=subprocess.PIPE)
-            resp = resp.stdout.decode('utf-8')
+            resp = bingai.ai(prompt)
+
+
             if resp:
-               bot.reply_to(message, resp, disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
-               my_log.log_echo(message, resp)
+                resp = f'Сумморизация последних {limit} сообщений в чате {message.chat.username or message.chat.first_name or message.chat.title or "unknown"}\n\n' + resp
+                # пробуем отправить в приват а если не получилось то в общий чат
+                try:
+                    bot.send_message(message.from_user.id, resp, disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+                except Exception as error:
+                    print(error)
+                    my_log.log2(str(error))
+                    bot.reply_to(message, resp, disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, resp)
             else:
                 mes = 'Бинг не ответил'
                 bot.reply_to(message, mes, reply_markup=get_keyboard('hide'))
@@ -1013,7 +1016,8 @@ def do_task(message):
         with lock_dicts:
             # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
             if not is_private:
-                time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+                #time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+                time_now = datetime.datetime.now().strftime('%H:%M')
                 user_name = message.from_user.first_name or message.from_user.username or 'unknown'
                 if chat_id in chat_logs:
                     m = chat_logs[chat_id]

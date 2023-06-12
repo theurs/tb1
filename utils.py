@@ -65,12 +65,6 @@ class MessageList:
         self.messages.append(message)
         self.size += message_size
 
-#    # эти методы нужны что бы можно было сериализовать объект с помощью pickle
-#    def __getstate__(self):
-#        return (self.max_size, self.messages, self.size)
-#    def __setstate__(self, state):
-#        self.max_size, self.messages, self.size = state
-
 
 if __name__ == '__main__':
     a = my_dic.PersistentDict('test.pkl')

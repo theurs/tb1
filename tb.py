@@ -11,6 +11,7 @@ import time
 
 #import markdown2
 import openai
+import PyPDF2
 import telebot
 from langdetect import detect_langs
 
@@ -481,7 +482,35 @@ def handle_document_thread(message: telebot.types.Message):
     
     my_log.log_media(message)
     
+    
     with semaphore_talks:
+    
+        # если прислали текстовый файл или pdf с подписью перескажи
+        # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
+        if message.caption and message.caption.startswith(('что там','перескажи','краткое содержание', 'кратко')) and message.document.mime_type in ('text/plain', 'application/pdf'):
+            with show_action(message.chat.id, 'typing'):
+                file_info = bot.get_file(message.document.file_id)
+                downloaded_file = bot.download_file(file_info.file_path)
+                file_bytes = io.BytesIO(downloaded_file)
+                text = ''
+                if message.document.mime_type == 'application/pdf':
+                    pdf_reader = PyPDF2.PdfReader(file_bytes)
+                    for page in pdf_reader.pages:
+                        text += page.extract_text()
+                elif message.document.mime_type == 'text/plain':
+                    text = file_bytes.read().decode('utf-8')
+
+                if text.strip():
+                    summary = bingai.summ_text(text)
+                    bot.reply_to(message, summary, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    my_log.log(message, summary)
+                else:
+                    help = 'Не удалось получить никакого текста из документа.'
+                    bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+                    my_log.log(message, help)
+                return
+
+
         # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
         caption = message.caption or ''
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
@@ -1053,6 +1082,8 @@ def send_welcome(message: telebot.types.Message):
 Если отправить картинку или .pdf с подписью `прочитай` то вытащит текст из них.
 
 Если отправить ссылку в приват то попытается прочитать текст из неё и выдать краткое содержание.
+
+Если отправить текстовый файл или пдф с подписью `что там` или `перескажи` то выдаст краткое содержание.
 
 Команды и запросы можно делать голосовыми сообщениями, если отправить голосовое сообщение которое начинается на кодовое слово то бот отработает его как текстовую команду.
 

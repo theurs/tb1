@@ -116,8 +116,35 @@ def get_text_from_youtube(url: str) -> str:
     return text or ''
 
 
+
+def summ_text(text: str) -> str:
+    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание"""
+    # уменьшаем текст до 60000 байт (не символов!)
+    text2 = text
+    if len(text2) > 60000:
+        text2 = text2[:60000]
+    text_bytes = text2.encode()
+    while len(text_bytes) > 60000:
+        text2 = text2[:-1]
+        text_bytes = text2.encode()
+
+    prompt = 'Передай краткое содержание веб текста веб страницы так что бы мне не пришлось \
+читать его полностью, используй для передачи мой родной язык - русский, \
+начни свой ответ со слов Вот краткое содержание текста, \
+закончи свой ответ словами Конец краткого содержания, ничего после этого не добавляй.'
+
+    try:
+        result = gpt_basic.ai(prompt + '\n\n' + text2)
+    except Exception as error:
+        result = ai(prompt + '\n\n' + text2)
+        print(error)
+    
+    return result
+
+
 def summ_url(url:str) -> str:
-    """скачивает веб страницу в память и пропускает через фильтр html2text, возвращает текст"""
+    """скачивает веб страницу в память и пропускает через фильтр html2text, возвращает текст
+    если в ссылке ютуб то скачивает субтитры к видео вместо текста"""
     if '/youtu.be/' in url or 'youtube.com/' in url:
         text = get_text_from_youtube(url)
     else:
@@ -135,34 +162,7 @@ def summ_url(url:str) -> str:
         h.ignore_images = True
         text = h.handle(content)
     
-    # уменьшаем текст до 60000 байт (не символов!)
-    text2 = text
-    if len(text2) > 60000:
-        text2 = text2[:60000]
-    text_bytes = text2.encode()
-    while len(text_bytes) > 60000:
-        text2 = text2[:-1]
-        text_bytes = text2.encode()
-
-    prompt = 'Передай краткое содержание веб текста веб страницы так что бы мне не пришлось \
-читать его полностью, используй для передачи мой родной язык - русский, \
-начни свой ответ со слов Вот краткое содержание текста, \
-закончи свой ответ словами Конец краткого содержания, ничего после этого не добавляй.'
-
-#    request_size = len((text2+prompt).encode())
-#    print(request_size)
-#    if request_size < 4000:
-#        result = gpt_basic.ai(prompt + '\n\n' + text2)
-#    else:
-#        result = ai(prompt + '\n\n' + text2)
-    
-    try:
-        result = gpt_basic.ai(prompt + '\n\n' + text2)
-    except Exception as error:
-        result = ai(prompt + '\n\n' + text2)
-        print(error)
-    
-    return result
+    return summ_text(text)
 
 
 def is_valid_url(url: str) -> bool:

@@ -331,7 +331,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if resp:
                     if is_private:
                         try:
-                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            bot.send_message(chat_id, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            #bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
                             #bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
@@ -339,7 +340,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                             bot.send_message(chat_id, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
-                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            bot.reply_to(message, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            #bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
                             #bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
@@ -942,7 +944,11 @@ def last_thread(message: telebot.types.Message):
             limit = len(messages.messages)
 
         #prompt = 'сделай сумморизацию журнала чата, не больше 500 слов, ответь по-русски, не надо объяснять что такое сумморизация\n\n'
-        prompt = 'покажи краткий вариант журнала чата с сохранением первоначального смысла, не более 500 слов, отвечай по-русски, разделяй предложения двумя переносами строки для удобства чтения\n\n'
+        #prompt = 'покажи краткий вариант журнала чата с сохранением первоначального смысла, не более 500 слов, отвечай по-русски, разделяй предложения двумя переносами строки для удобства чтения\n\n'
+        prompt = 'Передай краткое содержание журнала чата так что бы мне не пришлось \
+читать его полностью, используй для передачи мой родной язык - русский, \
+начни свой ответ со слов Вот краткое содержание журнала, \
+закончи свой ответ словами Конец краткого содержания журнала, ничего после этого не добавляй.\n\n'
         
         prompt += '\n'.join(messages.messages[-limit:])
 
@@ -1169,6 +1175,7 @@ def do_task(message):
                 else:
                     dialogs[chat_id] = n
             return
+
         # можно перенаправить запрос к бингу, но он долго отвечает
         if msg.startswith(('бинг ', 'бинг,', 'бинг\n')):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
@@ -1182,7 +1189,8 @@ def do_task(message):
                 if resp:
                     if is_private:
                         try:
-                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            #bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            bot.send_message(chat_id, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:
                             print(error)
                             #bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
@@ -1190,13 +1198,15 @@ def do_task(message):
                             bot.send_message(chat_id, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
-                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            #bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            bot.reply_to(message, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:
                             print(error)
                             #bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             my_log.log2(resp)
                             bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log_echo(message, resp)
+
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
             if len(msg) > too_big_message_for_chatbot:
@@ -1213,8 +1223,8 @@ def do_task(message):
                 if resp:
                     if is_private:
                         try:
-                            #send_long_message(chat_id, resp2, parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                            send_long_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            send_long_message(chat_id, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            #send_long_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
                             #send_long_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
@@ -1222,8 +1232,8 @@ def do_task(message):
                             send_long_message(chat_id, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
-                            #reply_to_long_message(message, resp2, parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                            reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            reply_to_long_message(message,  utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            #reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
                             #reply_to_long_message(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))

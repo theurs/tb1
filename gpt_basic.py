@@ -43,7 +43,7 @@ except Exception as e:
 
 # требует новой версии питона list[str]
 #def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, messages: list[str] = None) -> str:
-def ai(prompt: str, temp: float = 0.1, max_tok: int = 2000, timeou: int = 15, messages =  None) -> str:
+def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, messages =  None) -> str:
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ"""
     if messages == None:
         messages = [    {"role": "system",
@@ -70,7 +70,7 @@ def ai(prompt: str, temp: float = 0.1, max_tok: int = 2000, timeou: int = 15, me
                     }
                 ]
 
-    # тут можно добавить степерь творчества(бреда) от 0 до 1 дефолт - temperature=0.5
+    # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=messages,

@@ -836,7 +836,7 @@ def summ_text_thread(message: telebot.types.Message):
                         res = bingai.summ_url(url)
                     except Exception as error:
                         print(error)
-                        m = 'У этого видео нет субтитров'
+                        m = 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном.'
                         bot.reply_to(message, m, reply_markup=get_keyboard('hide'))
                         my_log.log_echo(message, m)
                         return
@@ -1052,6 +1052,8 @@ def send_welcome(message: telebot.types.Message):
 
 Если отправить картинку или .pdf с подписью `прочитай` то вытащит текст из них.
 
+Если отправить ссылку в приват то попытается прочитать текст из неё и выдать краткое содержание.
+
 Команды и запросы можно делать голосовыми сообщениями, если отправить голосовое сообщение которое начинается на кодовое слово то бот отработает его как текстовую команду.
 
 """ + '\n'.join(open('commands.txt').readlines()) + '\n\nhttps://github.com/theurs/tb1'
@@ -1146,6 +1148,13 @@ def do_task(message):
                 bot.send_message(chat_id, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                 my_log.log_echo(message, 'История GPT принудительно отчищена')
                 return
+
+        # если в сообщении только ссылка и она отправлена боту в приват
+        # тогда сумморизируем текст из неё
+        if bingai.is_valid_url(message.text) and is_private:
+            message.text = '/sum ' + message.text
+            summ_text(message)
+            return
 
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # проверяем просят ли нарисовать что-нибудь

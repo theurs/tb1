@@ -67,8 +67,13 @@ def get_text_from_image(b):
 # Определяем функцию для извлечения текста из PDF-файла
 def get_text(fileobj):
     text = ''
+    max = 5 # распознаем не больше 5 страниц
     with fitz.open(stream=fileobj) as doc:
         for i, page in enumerate(doc):
+
+            max -= 1
+            if max == 0: break
+
             p = page.get_pixmap()
             b = p.tobytes()
             text += get_text_from_image(b)

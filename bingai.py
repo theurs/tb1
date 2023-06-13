@@ -16,6 +16,8 @@ import chardet
 from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
 import gpt_basic
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 
 async def main(prompt1: str) -> str:
@@ -155,13 +157,41 @@ def summ_url(url:str) -> str:
         # Определяем кодировку текста
         encoding = chardet.detect(content)['encoding']
         # Декодируем содержимое страницы
-        content = content.decode(encoding)
+        try:
+            content = content.decode(encoding)
+        except UnicodeDecodeError as error:
+            print(error)
+            content = response.content.decode('utf-8')
         # Пропускаем содержимое через фильтр html2text
         h = html2text.HTML2Text()
         h.ignore_links = True
         h.ignore_images = True
         text = h.handle(content)
     
+    return summ_text(text)
+
+
+# создаем экземпляр драйвера для браузера Chrome
+options = Options()
+options.add_argument("--headless=new")
+driver = webdriver.Chrome(options=options)
+def summ_url2(url:str) -> str:
+    """скачивает веб страницу в память и пропускает через фильтр html2text, возвращает текст
+    если в ссылке ютуб то скачивает субтитры к видео вместо текста
+    версия с selenium    
+    """
+    if '/youtu.be/' in url or 'youtube.com/' in url:
+        text = get_text_from_youtube(url)
+    else:
+        # Получаем содержимое страницы
+        driver.get(url)
+        html = driver.page_source       
+        # Пропускаем содержимое через фильтр html2text
+        h = html2text.HTML2Text()
+        h.ignore_links = True
+        h.ignore_images = True
+        text = h.handle(html)
+
     return summ_text(text)
 
 

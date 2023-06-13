@@ -16,3 +16,4 @@ telebot
 pysocks
 html2text
 youtube_transcript_api
+selenium

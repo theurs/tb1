@@ -192,7 +192,7 @@ def summ_url(url:str) -> str:
 #    версия с selenium    
 #    """
 #    if '/youtu.be/' in url or 'youtube.com/' in url:
-#        text = get_text_from_youtube(url)
+#       text = get_text_from_youtube(url)
 #    else:
 #        # Получаем содержимое страницы
 #        driver.get(url)
@@ -202,7 +202,7 @@ def summ_url(url:str) -> str:
 #        h.ignore_links = True
 #        h.ignore_images = True
 #        text = h.handle(html)
-
+#
 #    return summ_text(text)
 
 

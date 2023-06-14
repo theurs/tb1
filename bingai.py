@@ -30,8 +30,9 @@ async def main(prompt1: str) -> str:
         bot = await Chatbot.create(cookies=cookies)
         r = await bot.ask(prompt=prompt1, conversation_style=ConversationStyle.creative)
     except Exception as error:
-        sys.stdout, sys.stderr = orig_stdout, orig_stderr
+        #sys.stdout, sys.stderr = orig_stdout, orig_stderr
         print(error)
+        return ''
 
     text = r['item']['messages'][1]['text']
     links_raw = r['item']['messages'][1]['adaptiveCards'][0]['body'][0]['text']

@@ -72,7 +72,7 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
 
     # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-3.5-turbo-16k",
         messages=messages,
         max_tokens=max_tok,
         temperature=temp,
@@ -277,6 +277,10 @@ assistant - В Украине есть небольшие группы с кра
     """
 
     if len(sys.argv) != 2:
-        print("Usage: gptbasic.py 'request to qpt'")
+        print("Usage: gptbasic.py filename|'request to qpt'")
         sys.exit(1)
-    print(ai(sys.argv[1], max_tok = 2000))
+    t = sys.argv[1]
+    if os.path.exists(t):
+        print(ai(open(t).read(), max_tok = 2000))
+    else:
+        print(ai(t, max_tok = 2000))

@@ -564,7 +564,7 @@ def handle_document_thread(message: telebot.types.Message):
                             else:
                                 bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name, reply_markup=get_keyboard('hide'))
                     else:
-                        bot.reply_to(message, text)
+                        bot.reply_to(message, text, reply_markup=get_keyboard('translate'))
                     my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
 
 

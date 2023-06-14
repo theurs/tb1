@@ -109,7 +109,7 @@ def translate(text):
         
         #return gpt_basic.translate_text(text) or translate_text2(text) or None
         # отключил ГПТ, он часто включает цензуру
-        return translate_text2(text) or translate_text2(text) or None
+        return translate_text2(text) or translate_text(text) or None
     return None
     
 

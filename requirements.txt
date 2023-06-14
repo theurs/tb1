@@ -17,3 +17,5 @@ pysocks
 html2text
 youtube_transcript_api
 selenium
+chardet
+python-magic

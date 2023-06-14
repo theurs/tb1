@@ -60,11 +60,15 @@
     sudo apt install tesseract-ocr tesseract-ocr-eng \
     tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd
     ```
-4. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk enchant-2 ffmpeg chromium-browser chromium-chromedriver`
+4. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk enchant-2 ffmpeg chromium-browser chromium-chromedriver python3-venv`
 5. Клонируйте репозиторий с помощью команды:
 
    ```
    git clone https://github.com/theurs/tb1.git
+   
+   python -m venv .tb1
+   source ~/.tb1/bin/activate
+   
    ```
    
 4. Перейдите в директорию проекта:
@@ -90,10 +94,7 @@ export TOKEN='токен телеграм бота'
 export OPENAI_KEY='openai api key'
 ```
 
-Путь до утилиты edge-tts записан прямо в коде в my_tts.py. Его надо изменить на ваш.
-`/home/ubuntu/.local/bin/edge-tts`
-И так же в my_ocr.py
-И в my_stt.py
+Путь до утилиты edge-tts записан прямо в коде в my_tts.py. Его надо изменить на ваш. /home/ubuntu/.tb1/bin/edge-tts И так же в my_ocr.py И в my_stt.py
 
 Для работы распознавания голосовых сообщений надо установить vosk сервер.
 

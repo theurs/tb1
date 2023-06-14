@@ -8,7 +8,7 @@ import subprocess  # Библиотека для вызова внешних п�
 import os  # Библиотека для работы с файловой системой
 
 
-edge_tts_cmd = "/home/ubuntu/.local/bin/edge-tts"
+edge_tts_cmd = "/home/ubuntu/.tb1/bin/edge-tts"
 #edge_tts_cmd = "/home/user/.local/bin/edge-tts"
 
 

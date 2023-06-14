@@ -13,7 +13,7 @@ import enchant
 import gpt_basic
 
 
-pt_cmd = "/home/ubuntu/.local/bin/pytesseract"
+pt_cmd = "/home/ubuntu/.tb1/bin/pytesseract"
 
 
 def replace_non_letters_with_spaces(text):

@@ -7,7 +7,7 @@ import os
 import gpt_basic
 
 
-vosk_cmd = "/home/ubuntu/.local/bin/vosk-transcriber"
+vosk_cmd = "/home/ubuntu/.tb1/bin/vosk-transcriber"
 #vosk_cmd = "/home/user/.local/bin/vosk-transcriber"
 
 

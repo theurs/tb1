@@ -9,6 +9,7 @@ Group=ubuntu
 WorkingDirectory=/home/ubuntu/tb
 ExecStart=/home/ubuntu/.tb1/bin/python3 /home/ubuntu/tb/tb.py
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

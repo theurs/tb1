@@ -51,13 +51,13 @@ blocks = my_dic.PersistentDict('blocks.pkl')
 prompts = my_dic.PersistentDict('prompts.pkl')
 
 # запоминаем промпты для повторения рисования
-image_prompt = {}
+image_prompt = my_dic.PersistentDict('image_prompts.pkl')
 
 # запоминаем диалоги в чатах для того что бы потом можно было сделать самморизацию, выдать краткое содержание
 chat_logs = my_dic.PersistentDict('chat_logs.pkl')
 
 # для запоминания ответов на команду /sum
-sum_cache = {}
+sum_cache = my_dic.PersistentDict('sum_cache.pkl')
 
 # в каких чатах какое у бота кодовое слово для обращения к боту
 bot_names = my_dic.PersistentDict('names.pkl')
@@ -724,6 +724,12 @@ def send_debug_history(message: telebot.types.Message):
             #bot.send_message(chat_id, utils.escape_markdown(prompt), disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
             my_log.log2(prompt)
             bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
+
+
+@bot.message_handler(commands=['restart']) 
+def restart(message: telebot.types.Message):
+    """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
+    bot.stop_polling()
 
 
 @bot.message_handler(commands=['tts']) 

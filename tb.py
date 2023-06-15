@@ -886,6 +886,28 @@ def summ_text_thread(message: telebot.types.Message):
     my_log.log_echo(message, help)
 
 
+@bot.message_handler(commands=['sum2'])
+def summ2_text(message: telebot.types.Message):
+    # убирает запрос из кеша если он там есть и делает запрос снова
+
+    global sum_cache
+
+    #my_log.log_echo(message)
+
+    text = message.text
+    
+    if len(text.split(' ', 1)) == 2:
+        url = text.split(' ', 1)[1].strip()
+        if bingai.is_valid_url(url):
+            #смотрим нет ли в кеше ответа на этот урл
+            with lock_dicts:
+                if url in sum_cache:
+                    sum_cache.pop(url)
+
+    summ_text(message)
+
+
+
 @bot.message_handler(commands=['trans'])
 def trans(message: telebot.types.Message):
     thread = threading.Thread(target=trans_thread, args=(message,))

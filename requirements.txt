@@ -12,6 +12,7 @@ openai
 edge_tts
 vosk
 EdgeGPT==0.8.0
+#EdgeGPT
 telebot
 pysocks
 html2text

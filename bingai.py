@@ -233,7 +233,8 @@ if __name__ == "__main__":
     if is_valid_url(t):
         print(summ_url(t))
     elif os.path.exists(t):
-        print(ai(open(t).read()))
+        #print(ai(open(t).read()))
+        print(summ_text(open(t).read()))
     else:
         print(ai(t))
     

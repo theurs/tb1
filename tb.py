@@ -40,27 +40,31 @@ _bot_name = bot.get_me().username
 # до 20 одновременных потоков для чата с гпт и бингом
 semaphore_talks = threading.Semaphore(20)
 
+# папка для постоянных словарей, памяти бота
+if not os.path.exists('db'):
+    os.mkdir('db')
+
 # замок для блокировки постоянных словарей
 lock_dicts = threading.Lock()
 # история диалогов для GPT chat
-dialogs = my_dic.PersistentDict('dialogs.pkl')
+dialogs = my_dic.PersistentDict('db/dialogs.pkl')
 # в каких чатах выключены автопереводы
-blocks = my_dic.PersistentDict('blocks.pkl')
+blocks = my_dic.PersistentDict('db/blocks.pkl')
 
 # в каких чатах какой промт
-prompts = my_dic.PersistentDict('prompts.pkl')
+prompts = my_dic.PersistentDict('db/prompts.pkl')
 
 # запоминаем промпты для повторения рисования
-image_prompt = my_dic.PersistentDict('image_prompts.pkl')
+image_prompt = my_dic.PersistentDict('db/image_prompts.pkl')
 
 # запоминаем диалоги в чатах для того что бы потом можно было сделать самморизацию, выдать краткое содержание
-chat_logs = my_dic.PersistentDict('chat_logs.pkl')
+chat_logs = my_dic.PersistentDict('db/chat_logs.pkl')
 
 # для запоминания ответов на команду /sum
-sum_cache = my_dic.PersistentDict('sum_cache.pkl')
+sum_cache = my_dic.PersistentDict('db/sum_cache.pkl')
 
 # в каких чатах какое у бота кодовое слово для обращения к боту
-bot_names = my_dic.PersistentDict('names.pkl')
+bot_names = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 bot_name_default = 'бот'
 

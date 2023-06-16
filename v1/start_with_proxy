@@ -1,5 +1,0 @@
-#proxychains4 ./gpt_basic.py
-
-#proxychains4 -q ./gpt_basic.py
-
-proxychains4 -q ./tb.py

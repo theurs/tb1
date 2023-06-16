@@ -1,4 +1,0 @@
-docker stop kaldi-ru
-docker rm kaldi-ru
-
-docker run -d -p 2700:2700 --name kaldi-ru --restart always -v /home/ubuntu/vosk/vosk-model-small-ru-0.22:/opt/vosk-model-en/model alphacep/kaldi-en:latest

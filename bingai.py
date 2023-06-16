@@ -155,9 +155,18 @@ def summ_url(url:str) -> str:
         text = get_text_from_youtube(url)
     else:
         # Получаем содержимое страницы
-        response = requests.get(url)
-        content = response.content
-        
+        #response = requests.get(url)
+        #content = response.content
+        response = requests.get(url, stream=True)
+        content = b''
+        # Ограничиваем размер
+        for chunk in response.iter_content(chunk_size=1024):
+            content += chunk
+            if len(content) > 1 * 1024 * 1024: # 1 MB
+                break
+        #print(len(content))
+        #print(magic.from_buffer(content))
+
         if 'PDF document' in magic.from_buffer(content):
             file_bytes = io.BytesIO(content)
             pdf_reader = PyPDF2.PdfReader(file_bytes)

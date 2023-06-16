@@ -10,9 +10,14 @@ import threading
 lock = threading.Lock()
 
 
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+
+
 def log(message: telebot.types.Message, reply_from_bot: str = '') -> None:
     global lock
-    log_file_path = os.path.join(os.getcwd(), f'logs_{message.chat.id}.log')
+    #log_file_path = os.path.join(os.getcwd(), f'logs/{message.chat.id}.log')
+    log_file_path = f'logs/{message.chat.id}.log'
     with lock:
         with open(log_file_path, 'a') as log_file:
             time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
@@ -26,7 +31,7 @@ def log(message: telebot.types.Message, reply_from_bot: str = '') -> None:
 
 def log2(text: str) -> None:
     """для дебага"""
-    log_file_path = 'debug.log'
+    log_file_path = 'logs/debug.log'
     open(log_file_path, 'a').write(f'{text}\n=========================================================================================\n')
 
 
@@ -38,8 +43,9 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:
     chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
     user_name = message.from_user.first_name or message.from_user.username or ''
 
-    logname = f'logs [{chat_name}] [{private_or_chat}] [{message.chat.type}] [{message.chat.id}].log'.replace('[private] [private]', '[private]').replace('[chat] [supergroup]', '[chat]')
-    log_file_path = os.path.join(os.getcwd(), logname)
+    logname = f'logs/[{chat_name}] [{private_or_chat}] [{message.chat.type}] [{message.chat.id}].log'.replace('[private] [private]', '[private]').replace('[chat] [supergroup]', '[chat]')
+    log_file_path = logname
+    #log_file_path = os.path.join(os.getcwd(), logname)
 
     with lock:
         with open(log_file_path, 'a') as log_file:
@@ -59,8 +65,9 @@ def log_media(message: telebot.types.Message) -> None:
 
     caption = message.caption or ''
 
-    logname = f'logs [{chat_name}] [{private_or_chat}] [{message.chat.type}] [{message.chat.id}].log'.replace('[private] [private]', '[private]').replace('[chat] [supergroup]', '[chat]')
-    log_file_path = os.path.join(os.getcwd(), logname)
+    logname = f'logs/[{chat_name}] [{private_or_chat}] [{message.chat.type}] [{message.chat.id}].log'.replace('[private] [private]', '[private]').replace('[chat] [supergroup]', '[chat]')
+    log_file_path = logname
+    #log_file_path = os.path.join(os.getcwd(), logname)
 
     if message.audio:
         file_name = message.audio.file_name
@@ -98,3 +105,5 @@ def log_media(message: telebot.types.Message) -> None:
 
 if __name__ == '__main__':
     pass
+    log2('1')
+    

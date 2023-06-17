@@ -21,6 +21,7 @@ import gpt_basic
 import magic
 import PyPDF2
 import io
+import re
 import utils
 from multiprocessing import Pool
 from langdetect import detect
@@ -105,18 +106,7 @@ def get_text_from_youtube(url: str) -> str:
     """
     top_langs = ('ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro')
 
-    query = urlparse(url)
-    
-    if 'youtu' in query.netloc:
-        if query.path == '/watch':
-            video_id = parse_qs(query.query)['v'][0]
-        else:
-            video_id = query.path[1:]
-    else:
-        video_id = None
-        raise ValueError(f'Bad youtube URL, no id found {url}')
-    
-    #video_id = parse_qs(query.query)['v'][0]
+    video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
 
     t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
 

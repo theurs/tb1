@@ -21,6 +21,9 @@ import gpt_basic
 import magic
 import PyPDF2
 import io
+import utils
+from multiprocessing import Pool
+from langdetect import detect
 
 
 async def main(prompt1: str) -> str:
@@ -122,30 +125,64 @@ def get_text_from_youtube(url: str) -> str:
     return text or ''
 
 
-
-def summ_text(text: str) -> str:
-    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание"""
-    # уменьшаем текст до 60000 байт (не символов!)
-    text2 = text
-    if len(text2) > 60000:
-        text2 = text2[:60000]
-    text_bytes = text2.encode()
-    while len(text_bytes) > 60000:
-        text2 = text2[:-1]
-        text_bytes = text2.encode()
+def summ_text_worker(text: str) -> str:
+    """паралелльный воркер для summ_text"""
+#    prompt = 'Передай краткое содержание веб текста веб страницы так что бы мне не пришлось \
+#читать его полностью, используй для передачи мой родной язык - русский, \
+#начни свой ответ со слов Вот краткое содержание текста, \
+#закончи свой ответ словами Конец краткого содержания, ничего после этого не добавляй.'
 
     prompt = 'Передай краткое содержание веб текста веб страницы так что бы мне не пришлось \
 читать его полностью, используй для передачи мой родной язык - русский, \
-начни свой ответ со слов Вот краткое содержание текста, \
-закончи свой ответ словами Конец краткого содержания, ничего после этого не добавляй.'
+начни свой ответ с маркера ***~~*~*, \
+закончи свой ответ маркером ***~~*~*, ничего после этого не добавляй.'
+
 
     try:
-        result = gpt_basic.ai(prompt + '\n\n' + text2)
+        result = gpt_basic.ai(prompt + '\n\n' + text)
     except Exception as error:
-        result = ai(prompt + '\n\n' + text2)
+        try:
+            result = ai(prompt + '\n\n' + text)
+        except Exception as error2:
+            print(error2)
+            result = ''
         print(error)
-    
+
     return result
+
+
+def summ_text(text: str) -> str:
+    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание"""
+    ## уменьшаем текст до 60000 байт (не символов!)
+    #text2 = text
+    #if len(text2) > 60000:
+    #    text2 = text2[:60000]
+    #text_bytes = text2.encode()
+    #while len(text_bytes) > 60000:
+    #    text2 = text2[:-1]
+    #    text_bytes = text2.encode()
+
+    # разбиваем текст на части если слишком большой, не больше 6 кусков по 31т русских символов,
+    # 60т английских и 31т прочих. бинг может принимать до 64кбайт запросы в утф8
+    lang = detect(text)
+    if lang == 'en':
+        texts = utils.split_text(text, 56000)[:6]
+    else:
+        texts = utils.split_text(text, 28000)[:6]
+
+    # это должно обработать куски текста паралельно но склеить последовательно. так ли это работает на самом деле - хз
+    with Pool(processes=10) as pool:
+        results = pool.map(summ_text_worker, texts)
+
+    # складываем результаты
+    final_result = ''
+    for i in results:
+        if type(i) == str:
+            final_result += i
+            final_result += '\n\n\n'
+
+    final_result = final_result.replace('***~~*~*', '')
+    return final_result
 
 
 def summ_url(url:str) -> str:

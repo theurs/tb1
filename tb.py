@@ -506,7 +506,10 @@ def handle_document_thread(message: telebot.types.Message):
 
                 if text.strip():
                     summary = bingai.summ_text(text)
-                    bot.reply_to(message, summary, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    for i in utils.split_text(summary, 3900):
+                        bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    #bot.reply_to(message, summary, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    #reply_to_long_message(message, resp=summary, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     my_log.log(message, summary)
                 else:
                     help = 'Не удалось получить никакого текста из документа.'
@@ -865,7 +868,9 @@ def summ_text_thread(message: telebot.types.Message):
                     if url in sum_cache:
                         r = sum_cache[url]
                 if r:
-                    reply_to_long_message(message, resp=r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    for i in utils.split_text(r, 3900):
+                        bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    #reply_to_long_message(message, resp=r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     my_log.log_echo(message, r)
                     return
 
@@ -880,8 +885,10 @@ def summ_text_thread(message: telebot.types.Message):
                         my_log.log_echo(message, m)
                         return
                     if res:
-                        reply_to_long_message(message, resp=res, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
-                            
+                        for i in utils.split_text(res, 3900):
+                            bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                        #reply_to_long_message(message, resp=res, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+
                         my_log.log_echo(message, res)
                         sum_cache[url] = res
 

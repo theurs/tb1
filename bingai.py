@@ -27,12 +27,20 @@ from multiprocessing import Pool
 from langdetect import detect
 
 
-async def main(prompt1: str) -> str:
+async def main(prompt1: str, style: int = 3) -> str:
+
+    if style == 1:
+        st = ConversationStyle.precise
+    elif style == 2:
+        st = ConversationStyle.balanced
+    elif style == 3:
+        st = ConversationStyle.creative
+
     cookies = json.loads(open("cookies.json", encoding="utf-8").read())
     
     try:
         bot = await Chatbot.create(cookies=cookies)
-        r = await bot.ask(prompt=prompt1, conversation_style=ConversationStyle.creative)
+        r = await bot.ask(prompt=prompt1, conversation_style=st)
     except Exception as error:
         #sys.stdout, sys.stderr = orig_stdout, orig_stderr
         print(error)
@@ -117,16 +125,19 @@ def get_text_from_youtube(url: str) -> str:
 
 def summ_text_worker(text: str) -> str:
     """паралелльный воркер для summ_text"""
-#    prompt = 'Передай краткое содержание веб текста веб страницы так что бы мне не пришлось \
+#    prompt = 'Передай краткое содержание текста веб страницы так что бы мне не пришлось \
 #читать его полностью, используй для передачи мой родной язык - русский, \
 #начни свой ответ со слов Вот краткое содержание текста, \
 #закончи свой ответ словами Конец краткого содержания, ничего после этого не добавляй.'
 
-    prompt = 'Передай краткое содержание веб текста веб страницы так что бы мне не пришлось \
-читать его полностью, используй для передачи мой родной язык - русский, \
-начни свой ответ с маркера ***~~*~*, \
-закончи свой ответ маркером ***~~*~*, ничего после этого не добавляй.'
+    prompt = 'Передай краткое содержание текста веб страницы так что бы мне не пришлось \
+читать его полностью, отвечай только на русском языке, \
+начни свой ответ с маркера >>>, \
+разделяй абзацы переносами строки для удобства чтения, \
+закончи свой ответ маркером <<<, \
+ничего кроме краткого содержания текста и маркеров в ответе не пиши.'
 
+    if type(text) != str or len(text) < 1: return ''
 
     try:
         result = gpt_basic.ai(prompt + '\n\n' + text)
@@ -138,19 +149,14 @@ def summ_text_worker(text: str) -> str:
             result = ''
         print(error)
 
+    result = result.replace('>>>','')
+    result = result.replace('<<<','')
+
     return result
 
 
-def summ_text(text: str) -> str:
+def summ_text2(text: str) -> str:
     """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание"""
-    ## уменьшаем текст до 60000 байт (не символов!)
-    #text2 = text
-    #if len(text2) > 60000:
-    #    text2 = text2[:60000]
-    #text_bytes = text2.encode()
-    #while len(text_bytes) > 60000:
-    #    text2 = text2[:-1]
-    #    text_bytes = text2.encode()
 
     # разбиваем текст на части если слишком большой, не больше 6 кусков по 31т русских символов,
     # 60т английских и 31т прочих. бинг может принимать до 64кбайт запросы в утф8
@@ -171,8 +177,22 @@ def summ_text(text: str) -> str:
             final_result += i
             final_result += '\n\n\n'
 
-    final_result = final_result.replace('***~~*~*', '')
     return final_result
+
+
+def summ_text(text: str) -> str:
+    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание"""
+    # уменьшаем текст до 60000 байт (не символов!)
+    text2 = text
+    if len(text2) > 60000:
+        text2 = text2[:60000]
+    text_bytes = text2.encode()
+
+    while len(text_bytes) > 60000:
+        text2 = text2[:-1]
+        text_bytes = text2.encode()
+
+    return summ_text_worker(text2)
 
 
 def summ_url(url:str) -> str:

@@ -138,7 +138,7 @@ def summ_text_worker(text: str) -> str:
 #ничего кроме краткого содержания текста и маркеров в ответе не пиши.'
 
 
-    prompt = """Выдели из текста основное содержание, убери всё лишнее,
+    prompt = """Выдели из текста основное содержание,
 передай краткое содержание,
 отвечай на русском языке,
 начни свой ответ с маркера >>>,
@@ -148,7 +148,7 @@ def summ_text_worker(text: str) -> str:
     if type(text) != str or len(text) < 1: return ''
 
     try:
-        result = gpt_basic.ai(prompt + '\n\n' + text, 2)
+        result = gpt_basic.ai(prompt + '\n\n' + text, 1)
     except Exception as error:
         try:
             result = ai(prompt + '\n\n' + text)

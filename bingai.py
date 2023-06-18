@@ -138,11 +138,11 @@ def summ_text_worker(text: str) -> str:
 #ничего кроме краткого содержания текста и маркеров в ответе не пиши.'
 
 
-    prompt = """Выдели из текста основное содержание,
-передай краткое содержание,
+    prompt = """Действуй так будто ты создан для сумморизации текста,
+выдели из предоставленного текста основное содержание,
 отвечай на русском языке,
 начни свой ответ с маркера >>>,
-закончи свой ответ маркером <<<."""
+закончи свой ответ маркером <<<. Текст идет далее:"""
 
 
     if type(text) != str or len(text) < 1: return ''
@@ -157,10 +157,15 @@ def summ_text_worker(text: str) -> str:
             result = ''
         print(error)
 
-    result = result.replace('>>>','')
-    result = result.replace('<<<','')
+    #result = result.replace('>>>','')
+    #result = result.replace('<<<','')
+    
+    r = re.search(">>>(.*)<<<", result, re.DOTALL)
 
-    return result
+    if r:
+        return r.group(1)
+    else:
+        return result
 
 
 def summ_text2(text: str) -> str:

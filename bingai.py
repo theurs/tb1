@@ -72,9 +72,9 @@ async def main(prompt1: str, style: int = 3) -> str:
     return text
 
 
-def ai(prompt: str) -> str:
+def ai(prompt: str, style: int = 3) -> str:
     """сырой запрос к бингу"""
-    return asyncio.run(main(prompt))
+    return asyncio.run(main(prompt, style))
 
 
 def gen_imgs(prompt: str):
@@ -138,20 +138,26 @@ def summ_text_worker(text: str) -> str:
 #ничего кроме краткого содержания текста и маркеров в ответе не пиши.'
 
 
-    prompt = """Действуй так будто ты создан для сумморизации текста,
-выдели из предоставленного текста основное содержание,
-отвечай на русском языке,
-начни свой ответ с маркера >>>,
-закончи свой ответ маркером <<<."""
-
+#    prompt = """Действуй так будто ты создан для сумморизации текста,
+#выдели из предоставленного текста основное содержание,
+#отвечай на русском языке,
+#начни свой ответ с маркера >>>,
+#закончи свой ответ маркером <<<."""
+    
+    prompt = f"""Summarize the following, answer in russian language:
+-------------
+{text}
+-------------
+BEGIN:
+"""
 
     if type(text) != str or len(text) < 1: return ''
-
+    #print(prompt)
     try:
-        result = gpt_basic.ai(prompt + '\n\n' + text, 1)
+        result = gpt_basic.ai(prompt)
     except Exception as error:
         try:
-            result = ai(prompt + '\n\n' + text)
+            result = ai(prompt, 1)
         except Exception as error2:
             print(error2)
             result = ''
@@ -160,12 +166,14 @@ def summ_text_worker(text: str) -> str:
     #result = result.replace('>>>','')
     #result = result.replace('<<<','')
     
-    r = re.search(">>>(.*)<<<", result, re.DOTALL)
+    #r = re.search(">>>(.*)<<<", result, re.DOTALL)
 
-    if r:
-        return r.group(1)
-    else:
-        return result
+    #if r:
+    #    return r.group(1)
+    #else:
+    #    return result
+    
+    return result
 
 
 def summ_text2(text: str) -> str:

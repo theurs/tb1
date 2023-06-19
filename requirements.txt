@@ -20,3 +20,4 @@ youtube_transcript_api
 selenium
 chardet
 python-magic
+transliterate

@@ -25,6 +25,7 @@ import re
 import utils
 from multiprocessing import Pool
 from langdetect import detect
+from transliterate import translit
 
 
 async def main(prompt1: str, style: int = 3) -> str:
@@ -175,6 +176,10 @@ def summ_text2(text: str) -> str:
 
 def summ_text(text: str) -> str:
     """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание, только первые 30(60)т символов"""
+    # транслитерируем текст что бы побольше русских слов утрамбовалось в 64кб
+    # text = translit(text, 'ru', reversed=True)
+    #print(text)
+    
     # уменьшаем текст до 60000 байт (не символов!)
     text2 = text
     if len(text2) > 60000:

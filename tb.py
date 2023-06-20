@@ -1165,7 +1165,11 @@ def do_task(message):
         # id куда писать ответ
         chat_id = message.chat.id
 
+        # удаляем пробелы в конце каждой строки
+        message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
+
         msg = message.text.lower()
+
         global blocks, bot_names, dialogs
         
         too_big_message_for_chatbot = 1500

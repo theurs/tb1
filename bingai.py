@@ -126,11 +126,12 @@ def get_text_from_youtube(url: str) -> str:
 
 def summ_text_worker(text: str, subj: str = 'text') -> str:
     """паралелльный воркер для summ_text
-       subj == 'text' - обычный текст о котором ничего не известно
-       subj == 'chat_log' - журнал чата
+       subj == 'text' or 'pdf'  - обычный текст о котором ничего не известно
+       subj == 'chat_log'       - журнал чата
+       subj == 'youtube_video'  - субтитры к видео на ютубе
     """
 
-    if subj == 'text':
+    if subj == 'text' or 'pdf':
         prompt = f"""Summarize the following, answer in russian language:
 -------------
 {text}
@@ -138,13 +139,19 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
 BEGIN:
 """
     elif subj == 'chat_log':
-        prompt = f"""Summarize the following chat log, answer in russian language:
+        prompt = f"""Summarize the following telegram chat log, answer in russian language:
 -------------
 {text}
 -------------
 BEGIN:
 """
-
+    elif subj == 'youtube_video':
+        prompt = f"""Read the following YouTube video subtitles and summarize its content in Russian:
+-------------
+{text}
+-------------
+BEGIN:
+"""
     if type(text) != str or len(text) < 1: return ''
 
     try:
@@ -185,8 +192,10 @@ def summ_text2(text: str) -> str:
     return final_result
 
 
-def summ_text(text: str) -> str:
-    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание, только первые 30(60)т символов"""
+def summ_text(text: str, subj: str = 'text') -> str:
+    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание, только первые 30(60)т символов
+    subj - смотрите summ_text_worker()
+    """
     # транслитерируем текст что бы побольше русских слов утрамбовалось в 64кб
     # text = translit(text, 'ru', reversed=True)
     #print(text)
@@ -201,18 +210,19 @@ def summ_text(text: str) -> str:
         text2 = text2[:-1]
         text_bytes = text2.encode()
 
-    return summ_text_worker(text2)
+    return summ_text_worker(text2, subj)
 
 
 def summ_url(url:str) -> str:
     """скачивает веб страницу в память и пропускает через фильтр html2text, возвращает текст
     если в ссылке ютуб то скачивает субтитры к видео вместо текста"""
+    youtube = False
+    pdf = False
     if '/youtu.be/' in url or 'youtube.com/' in url:
         text = get_text_from_youtube(url)
+        youtube = True
     else:
         # Получаем содержимое страницы
-        #response = requests.get(url)
-        #content = response.content
         response = requests.get(url, stream=True)
         content = b''
         # Ограничиваем размер
@@ -220,17 +230,15 @@ def summ_url(url:str) -> str:
             content += chunk
             if len(content) > 1 * 1024 * 1024: # 1 MB
                 break
-        #print(len(content))
-        #print(magic.from_buffer(content))
 
         if 'PDF document' in magic.from_buffer(content):
+            pdf = True
             file_bytes = io.BytesIO(content)
             pdf_reader = PyPDF2.PdfReader(file_bytes)
             text = ''
             for page in pdf_reader.pages:
                 text += page.extract_text()
         else:
-            #content = response.content.decode('utf-8')
             # Определяем кодировку текста
             encoding = chardet.detect(content)['encoding']
             # Декодируем содержимое страницы
@@ -245,7 +253,13 @@ def summ_url(url:str) -> str:
             h.ignore_images = True
             text = h.handle(content)
     
-    return summ_text(text)
+    if youtube:
+        r = summ_text(text, 'youtube_video')
+    elif pdf:
+        r = summ_text(text, 'pdf')
+    else:
+        r = summ_text(text, 'text')
+    return r
 
 
 # создаем экземпляр драйвера для браузера Chrome

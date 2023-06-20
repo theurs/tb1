@@ -147,7 +147,7 @@ BEGIN:
 BEGIN:
 """
     elif subj == 'youtube_video':
-        prompt = f"""Summarize the following YouTube video subtitles, answer in russian language:
+        prompt = f"""Summarize the following video subtitles extracted from youtube, answer in russian language:
 -------------
 {text}
 -------------

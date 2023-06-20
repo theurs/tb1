@@ -16,6 +16,7 @@ import chardet
 from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
 import gpt_basic
+import my_log
 #from selenium import webdriver
 #from selenium.webdriver.chrome.options import Options
 import magic
@@ -131,7 +132,7 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
        subj == 'youtube_video'  - субтитры к видео на ютубе
     """
 
-    if subj == 'text' or 'pdf':
+    if subj == 'text' or subj == 'pdf':
         prompt = f"""Summarize the following, answer in russian language:
 -------------
 {text}
@@ -146,12 +147,13 @@ BEGIN:
 BEGIN:
 """
     elif subj == 'youtube_video':
-        prompt = f"""Read the following YouTube video subtitles and summarize its content in Russian:
+        prompt = f"""Summarize the following YouTube video subtitles, answer in russian language:
 -------------
 {text}
 -------------
 BEGIN:
 """
+
     if type(text) != str or len(text) < 1: return ''
 
     try:

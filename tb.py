@@ -860,6 +860,10 @@ def summ_text_thread(message: telebot.types.Message):
     if len(text.split(' ', 1)) == 2:
         url = text.split(' ', 1)[1].strip()
         if bingai.is_valid_url(url):
+            # убираем из ютуб урла временную метку
+            if '/youtu.be/' in url or 'youtube.com/' in url:
+                url = url.split("&t=")[0]
+
             with semaphore_talks:
 
                 #смотрим нет ли в кеше ответа на этот урл
@@ -890,8 +894,8 @@ def summ_text_thread(message: telebot.types.Message):
                         #reply_to_long_message(message, resp=res, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
 
                         my_log.log_echo(message, res)
-                        sum_cache[url] = res
-
+                        with lock_dicts:
+                            sum_cache[url] = res
                         return
                     else:
                         error = 'Бинг не ответил'
@@ -916,6 +920,10 @@ def summ2_text(message: telebot.types.Message):
     if len(text.split(' ', 1)) == 2:
         url = text.split(' ', 1)[1].strip()
         if bingai.is_valid_url(url):
+            # убираем из ютуб урла временную метку
+            if '/youtu.be/' in url or 'youtube.com/' in url:
+                url = url.split("&t=")[0]
+
             #смотрим нет ли в кеше ответа на этот урл
             with lock_dicts:
                 if url in sum_cache:

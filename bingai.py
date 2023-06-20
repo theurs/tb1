@@ -124,10 +124,21 @@ def get_text_from_youtube(url: str) -> str:
     return text or ''
 
 
-def summ_text_worker(text: str) -> str:
-    """паралелльный воркер для summ_text"""
+def summ_text_worker(text: str, subj: str = 'text') -> str:
+    """паралелльный воркер для summ_text
+       subj == 'text' - обычный текст о котором ничего не известно
+       subj == 'chat_log' - журнал чата
+    """
 
-    prompt = f"""Summarize the following, answer in russian language:
+    if subj == 'text':
+        prompt = f"""Summarize the following, answer in russian language:
+-------------
+{text}
+-------------
+BEGIN:
+"""
+    elif subj == 'chat_log':
+        prompt = f"""Summarize the following chat log, answer in russian language:
 -------------
 {text}
 -------------

@@ -1011,30 +1011,19 @@ def last_thread(message: telebot.types.Message):
         if limit > len(messages.messages):
             limit = len(messages.messages)
 
-        #prompt = 'сделай сумморизацию журнала чата, не больше 500 слов, ответь по-русски, не надо объяснять что такое сумморизация\n\n'
-        #prompt = 'покажи краткий вариант журнала чата с сохранением первоначального смысла, не более 500 слов, отвечай по-русски, разделяй предложения двумя переносами строки для удобства чтения\n\n'
-        prompt = 'Передай краткое содержание журнала чата так что бы мне не пришлось \
-читать его полностью, используй для передачи мой родной язык - русский, \
-начни свой ответ со слов Вот краткое содержание журнала, \
-закончи свой ответ словами Конец краткого содержания журнала, ничего после этого не добавляй.\n\n'
-        
-        prompt += '\n'.join(messages.messages[-limit:])
-
         with show_action(message.from_user.id, 'typing'):
-        #with show_action(message.chat.id, 'typing'):
-        
-            resp = bingai.ai(prompt)
 
+            resp = bingai.summ_text_worker('\n'.join(messages.messages[-limit:]), 'chat_log')
 
             if resp:
                 resp = f'Сумморизация последних {limit} сообщений в чате {message.chat.username or message.chat.first_name or message.chat.title or "unknown"}\n\n' + resp
                 # пробуем отправить в приват а если не получилось то в общий чат
                 try:
-                    bot.send_message(message.from_user.id, resp, disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+                    bot.send_message(message.from_user.id, resp, disable_web_page_preview=True, reply_markup=get_keyboard('translate'))
                 except Exception as error:
                     print(error)
                     my_log.log2(str(error))
-                    bot.reply_to(message, resp, disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, resp, disable_web_page_preview=True, reply_markup=get_keyboard('translate'))
                 my_log.log_echo(message, resp)
             else:
                 mes = 'Бинг не ответил'

@@ -1123,7 +1123,7 @@ def send_welcome(message: telebot.types.Message):
 
 Команды и запросы можно делать голосовыми сообщениями, если отправить голосовое сообщение которое начинается на кодовое слово то бот отработает его как текстовую команду.
 
-""" + '\n'.join(open('commands.txt').readlines()) + '\n\nhttps://github.com/theurs/tb1'
+""" + '\n'.join(open('commands.txt').readlines()) + '\n\n⚙️ https://github.com/theurs/tb1\n\n💬 https://t.me/theurs'
 
     bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
     my_log.log_echo(message, help)

@@ -132,6 +132,10 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
        subj == 'youtube_video'  - субтитры к видео на ютубе
     """
 
+    # если запустили из pool.map и передали параметры как список
+    if type(text) == tuple:
+        text, subj = text[0], text[1]
+
     if subj == 'text' or subj == 'pdf':
         prompt = f"""Summarize the following, answer in russian language:
 -------------
@@ -169,8 +173,10 @@ BEGIN:
     return result
 
 
-def summ_text2(text: str) -> str:
-    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание, только первые 6 блоков по 30(60)т символов"""
+def summ_text_2(text: str, subj: str = 'text') -> str:
+    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание, только первые 6 блоков по 30(60)т символов
+    subj - смотрите summ_text_worker()
+"""
 
     # разбиваем текст на части если слишком большой, не больше 6 кусков по 31т русских символов,
     # 60т английских и 31т прочих. бинг может принимать до 64кбайт запросы в утф8
@@ -182,7 +188,7 @@ def summ_text2(text: str) -> str:
 
     # это должно обработать куски текста паралельно но склеить последовательно. так ли это работает на самом деле - хз
     with Pool(processes=10) as pool:
-        results = pool.map(summ_text_worker, texts)
+        results = pool.map(summ_text_worker, [(x, subj) for x in texts])
 
     # складываем результаты
     final_result = ''

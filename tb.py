@@ -2,7 +2,6 @@
 
 import io
 import os
-from pathlib import Path
 import random
 import re
 import tempfile

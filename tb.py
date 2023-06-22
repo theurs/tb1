@@ -910,6 +910,66 @@ def show_gallery(message: telebot.types.Message, cur: int, update: bool):
             bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
 
 
+@bot.message_handler(commands=['gallery','gal'])
+def html_gallery(message: telebot.types.Message):
+    thread = threading.Thread(target=html_gallery_thread, args=(message,))
+    thread.start()
+def html_gallery_thread(message: telebot.types.Message):
+    """генерирует картинку по описанию"""
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
+    my_log.log_echo(message)
+
+    global images_db    
+
+    header = """<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Заголовок страницы</title>
+</head>
+<body>
+
+
+<table>
+"""
+
+    footer = """
+</table>
+
+
+
+</body>
+</html>
+"""
+
+    with semaphore_talks:
+        with lock_dicts:
+            body = ''
+            ttl = images_db['total']
+            c = 4
+            while ttl > 0:
+                if c == 4:
+                    body += '<tr>\n'
+                cap = images_db[ttl-1][0]
+                ref = images_db[ttl-1][1][0]
+                body += f'<td><figure><a href="{ref}" target="_blank"><img src="{ref}" style="max-width: 256px; max-height: 256px;"></a><figcaption>{cap}</figcaption></figure></td>\n'
+                c = c-1
+                if c == 0:
+                    c = 4
+                    body += '</tr>\n'
+                ttl -= 1
+    html = header + body + footer
+    current_time = datetime.datetime.now().strftime('%d-%m-%Y %H：%M')
+    bytes_io = io.BytesIO(html.encode('utf-8'))
+    bytes_io.seek(0)
+    bytes_io.name = f'gallery {current_time}.html'
+    bot.send_document(message.chat.id, bytes_io, caption=f'gallery {current_time}.html', reply_markup=get_keyboard('hide'))
+
+
 @bot.message_handler(commands=['image','img'])
 def image(message: telebot.types.Message):
     thread = threading.Thread(target=image_thread, args=(message,))

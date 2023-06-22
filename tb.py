@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 import random
 import re
-import requests
 import tempfile
 import datetime
 import threading
@@ -360,37 +359,37 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         
         if call.data == 'image_gallery_prev_prompt':
             # переходим к предыдущему промпту в базе галереи
-            cur = int(message.caption.split()[0])
+            cur = int(message.text.split()[0])
             cur -= 1
             thread = threading.Thread(target=show_gallery, args=(message, cur, True))
             thread.start()
         elif call.data == 'image_gallery_next_prompt':
             # переходим к следующему промпту в базе галереи
-            cur = int(message.caption.split()[0])
+            cur = int(message.text.split()[0])
             cur += 1
             thread = threading.Thread(target=show_gallery, args=(message, cur, True))
             thread.start()
         elif call.data == 'image_gallery_prev_prompt10':
             # переходим к предыдущему (-10) промпту в базе галереи
-            cur = int(message.caption.split()[0])
+            cur = int(message.text.split()[0])
             cur -= 10
             thread = threading.Thread(target=show_gallery, args=(message, cur, True))
             thread.start()
         elif call.data == 'image_gallery_next_prompt10':
             # переходим к следующему (+10) промпту в базе галереи
-            cur = int(message.caption.split()[0])
+            cur = int(message.text.split()[0])
             cur += 10
             thread = threading.Thread(target=show_gallery, args=(message, cur, True))
             thread.start()
         elif call.data == 'image_gallery_prev_prompt100':
             # переходим к предыдущему (-100) промпту в базе галереи
-            cur = int(message.caption.split()[0])
+            cur = int(message.text.split()[0])
             cur -= 100
             thread = threading.Thread(target=show_gallery, args=(message, cur, True))
             thread.start()
         elif call.data == 'image_gallery_next_prompt100':
             # переходим к следующему (+100) промпту в базе галереи
-            cur = int(message.caption.split()[0])
+            cur = int(message.text.split()[0])
             cur += 100
             thread = threading.Thread(target=show_gallery, args=(message, cur, True))
             thread.start()
@@ -904,14 +903,13 @@ def show_gallery(message: telebot.types.Message, cur: int, update: bool):
             prompt = images_db[cur-1][0]
             images = images_db[cur-1][1]
             ttl = images_db['total']
-        msg = f'{cur} из {ttl}\n\n{prompt}'
+        msg = f'{cur} из {ttl}\n\n<a href="{images[0]}">{prompt}</a>'
+
         if update:
-            response = requests.get(images[0])
-            image_bytes = response.content
-            new_media = telebot.types.InputMediaPhoto(media=image_bytes, caption=msg)
-            bot.edit_message_media(chat_id=message.chat.id, message_id=message.message_id, media=new_media, reply_markup=get_keyboard('image_gallery'))
+            my_log.log2(msg)
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
         else:
-            bot.send_photo(chat_id=message.chat.id, caption = msg, photo=images[0], reply_markup=get_keyboard('image_gallery'))
+            bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
 
 
 @bot.message_handler(commands=['image','img'])

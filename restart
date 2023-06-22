@@ -1,3 +1,5 @@
 sudo systemctl restart telegram-bot
 sudo systemctl status telegram-bot
 
+
+sudo journalctl -f -u telegram-bot

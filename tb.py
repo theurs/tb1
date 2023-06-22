@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 import random
 import re
+import requests
 import tempfile
 import datetime
 import threading
@@ -53,8 +54,8 @@ _bot_name = bot.get_me().username
 #telebot.apihelper.proxy = cfg.proxy_settings
 
 
-# до 20 одновременных потоков для чата с гпт и бингом
-semaphore_talks = threading.Semaphore(20)
+# до 40 одновременных потоков для чата с гпт и бингом
+semaphore_talks = threading.Semaphore(40)
 
 # папка для постоянных словарей, памяти бота
 if not os.path.exists('db'):
@@ -78,6 +79,14 @@ chat_logs = my_dic.PersistentDict('db/chat_logs.pkl')
 
 # для запоминания ответов на команду /sum
 sum_cache = my_dic.PersistentDict('db/sum_cache.pkl')
+
+# для запоминания всех сгенерированных изображений и запросов
+# тут есть ключ 'total' в котором хранится счетчик записей
+# записи состоят из counter_id: (prompt, images) где
+# counter_id - порядковый номер для возможности перечесления последних записей в обратном порядке
+# prompt - строка запроса, что хотел нарисовать юзер
+# images - веб адреса картинок которые нарисовал ИИ по запросу
+images_db = my_dic.PersistentDict('db/images_db.pkl')
 
 # в каких чатах какое у бота кодовое слово для обращения к боту
 bot_names = my_dic.PersistentDict('db/names.pkl')
@@ -317,6 +326,17 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
         button2 = telebot.types.InlineKeyboardButton("Повторить", callback_data='repeat_image')
         markup.add(button1, button2)
         return markup
+    elif kbd == 'image_gallery':
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+        button1 = telebot.types.InlineKeyboardButton("-1", callback_data='image_gallery_prev_prompt')
+        button2 = telebot.types.InlineKeyboardButton("+1", callback_data='image_gallery_next_prompt')
+        button3 = telebot.types.InlineKeyboardButton("-10", callback_data='image_gallery_prev_prompt10')
+        button4 = telebot.types.InlineKeyboardButton("+10", callback_data='image_gallery_next_prompt10')
+        button5 = telebot.types.InlineKeyboardButton("-100", callback_data='image_gallery_prev_prompt100')
+        button6 = telebot.types.InlineKeyboardButton("+100", callback_data='image_gallery_next_prompt100')
+        button7 = telebot.types.InlineKeyboardButton("X",  callback_data='erase_answer')
+        markup.add(button1, button2, button3, button4, button5, button6, button7)
+        return markup
     else:
         raise f"Неизвестная клавиатура '{kbd}'"
 
@@ -337,7 +357,44 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         chat_id = message.chat.id
         global dialogs
 
-        if call.data == 'clear_history':
+        
+        if call.data == 'image_gallery_prev_prompt':
+            # переходим к предыдущему промпту в базе галереи
+            cur = int(message.caption.split()[0])
+            cur -= 1
+            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
+            thread.start()
+        elif call.data == 'image_gallery_next_prompt':
+            # переходим к следующему промпту в базе галереи
+            cur = int(message.caption.split()[0])
+            cur += 1
+            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
+            thread.start()
+        elif call.data == 'image_gallery_prev_prompt10':
+            # переходим к предыдущему (-10) промпту в базе галереи
+            cur = int(message.caption.split()[0])
+            cur -= 10
+            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
+            thread.start()
+        elif call.data == 'image_gallery_next_prompt10':
+            # переходим к следующему (+10) промпту в базе галереи
+            cur = int(message.caption.split()[0])
+            cur += 10
+            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
+            thread.start()
+        elif call.data == 'image_gallery_prev_prompt100':
+            # переходим к предыдущему (-100) промпту в базе галереи
+            cur = int(message.caption.split()[0])
+            cur -= 100
+            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
+            thread.start()
+        elif call.data == 'image_gallery_next_prompt100':
+            # переходим к следующему (+100) промпту в базе галереи
+            cur = int(message.caption.split()[0])
+            cur += 100
+            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
+            thread.start()
+        elif call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
             #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             with lock_dicts:
@@ -404,7 +461,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             """реакция на клавиатуру для Чата кнопка перевести текст"""
             translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
-#                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, parse_mode='Markdown', reply_markup=get_keyboard('chat'))
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('chat'))
 
 
@@ -812,6 +868,52 @@ def tts_thread(message: telebot.types.Message):
                     my_log.log_echo(message, msg)
 
 
+@bot.message_handler(commands=['images','imgs'])
+def images(message: telebot.types.Message):
+    thread = threading.Thread(target=images_thread, args=(message,))
+    thread.start()
+def images_thread(message: telebot.types.Message):
+    """показывает чот было нагенерировано ранее"""
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
+    my_log.log_echo(message)
+
+    global images_db
+    
+    ttl = 0
+    
+    with lock_dicts:
+        if 'total' in images_db:
+            ttl = images_db['total']
+    
+    if ttl:
+        show_gallery(message, ttl, update = False)
+    else:
+        msg = 'В галерее пусто'
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+        my_log.log_echo(message, msg)
+
+
+def show_gallery(message: telebot.types.Message, cur: int, update: bool):
+    """показывает картинки из базы, cur - номер который надо показать"""
+    with semaphore_talks:
+        with lock_dicts:
+            prompt = images_db[cur-1][0]
+            images = images_db[cur-1][1]
+            ttl = images_db['total']
+        msg = f'{cur} из {ttl}\n\n{prompt}'
+        if update:
+            response = requests.get(images[0])
+            image_bytes = response.content
+            new_media = telebot.types.InputMediaPhoto(media=image_bytes, caption=msg)
+            bot.edit_message_media(chat_id=message.chat.id, message_id=message.message_id, media=new_media, reply_markup=get_keyboard('image_gallery'))
+        else:
+            bot.send_photo(chat_id=message.chat.id, caption = msg, photo=images[0], reply_markup=get_keyboard('image_gallery'))
+
+
 @bot.message_handler(commands=['image','img'])
 def image(message: telebot.types.Message):
     thread = threading.Thread(target=image_thread, args=(message,))
@@ -838,10 +940,19 @@ def image_thread(message: telebot.types.Message):
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                     caption = ''
-
-                    #  запоминаем промпт по ключу (номер первой картинки)
-                    global image_prompt
+                    # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
+                    # что бы можно было их потом просматривать отдельно
+                    global image_prompt, images_db
                     with lock_dicts:
+                        if 'total' in images_db:
+                            ttl = images_db['total']
+                        else:
+                            ttl = 0
+                            images_db['total'] = 0
+                        for i in images:
+                            images_db[ttl] = (prompt, (i,))
+                            ttl += 1
+                        images_db['total'] = ttl
                         image_prompt[msgs_ids[0].message_id] = prompt
 
                     for i in msgs_ids:

@@ -2,7 +2,6 @@
 
 import io
 import os
-import logging
 from pathlib import Path
 import random
 import re
@@ -31,20 +30,6 @@ import utils
 
 # устанавливаем рабочую папку = папке в которой скрипт лежит
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
-
-
-# Настройка логирования
-logger = telebot.logger
-telebot.logger.setLevel(logging.INFO)
-# Создание обработчика для записи логов в файл
-Path('logs').mkdir(exist_ok=True)
-handler = logging.FileHandler('logs/bot.log')
-handler.setLevel(logging.INFO)
-# Создание форматирования для логов
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-# Добавление обработчика в логгер
-logger.addHandler(handler)
 
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)

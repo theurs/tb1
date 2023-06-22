@@ -887,13 +887,25 @@ def show_gallery(message: telebot.types.Message, cur: int, update: bool):
     """показывает картинки из базы, cur - номер который надо показать"""
     with semaphore_talks:
         with lock_dicts:
+            ttl = images_db['total']
+            if cur < 1:
+                cur = 1
+            if cur > ttl:
+                cur = ttl
+            
             prompt = images_db[cur-1][0]
             images = images_db[cur-1][1]
-            ttl = images_db['total']
+
         msg = f'{cur} из {ttl}\n\n<a href="{images[0]}">{html.escape(prompt)}</a>'
 
         if update:
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
+            try:
+                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
+            except telebot.apihelper.ApiTelegramException as error:
+                if 'message is not modified:' in str(error):
+                    pass
+                else:
+                    raise error
         else:
             bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
 

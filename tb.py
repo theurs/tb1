@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import io
+import html
 import os
 import random
 import re
@@ -889,7 +890,7 @@ def show_gallery(message: telebot.types.Message, cur: int, update: bool):
             prompt = images_db[cur-1][0]
             images = images_db[cur-1][1]
             ttl = images_db['total']
-        msg = f'{cur} из {ttl}\n\n<a href="{images[0]}">{prompt}</a>'
+        msg = f'{cur} из {ttl}\n\n<a href="{images[0]}">{html.escape(prompt)}</a>'
 
         if update:
             bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')

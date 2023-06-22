@@ -906,7 +906,6 @@ def show_gallery(message: telebot.types.Message, cur: int, update: bool):
         msg = f'{cur} из {ttl}\n\n<a href="{images[0]}">{prompt}</a>'
 
         if update:
-            my_log.log2(msg)
             bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
         else:
             bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')

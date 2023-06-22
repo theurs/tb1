@@ -105,11 +105,12 @@ def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user', force
         except Exception as error:
             print(error)
 
-        if len(prompt) > 2000:
+        if len(prompt) > max_prompt:
             ziped = zip_text(prompt)
-            if len(ziped) <= 2000:
-                return ziped
-            return 'Сообщение было слишком длинным'
+            if len(ziped) <= max_prompt:
+                prompt = ziped
+            else:
+                prompt = prompt[:max_prompt]
 
     return prompt
 

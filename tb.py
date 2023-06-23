@@ -38,6 +38,14 @@ _bot_name = bot.get_me().username
 #telebot.apihelper.proxy = cfg.proxy_settings
 
 
+# телеграм группа для отправки сгенерированных картинок
+try:
+    pics_group = cfg.pics_group
+    pics_group_url = cfg.pics_group_url
+except Exception as error:
+    print(error)
+    pics_group = 0
+
 # до 40 одновременных потоков для чата с гпт и бингом
 semaphore_talks = threading.Semaphore(40)
 
@@ -321,7 +329,11 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
         button5 = telebot.types.InlineKeyboardButton("-100", callback_data='image_gallery_prev_prompt100')
         button6 = telebot.types.InlineKeyboardButton("+100", callback_data='image_gallery_next_prompt100')
         button7 = telebot.types.InlineKeyboardButton("X",  callback_data='erase_answer')
-        markup.add(button1, button2, button3, button4, button5, button6, button7)
+        if pics_group:
+            button8 = telebot.types.InlineKeyboardButton("↗",  url = pics_group_url)
+            markup.add(button1, button2, button3, button4, button5, button6, button7, button8)
+        else:
+            markup.add(button1, button2, button3, button4, button5, button6, button7)
         return markup
     else:
         raise f"Неизвестная клавиатура '{kbd}'"
@@ -797,6 +809,22 @@ def restart(message: telebot.types.Message):
     bot.stop_polling()
 
 
+#@bot.message_handler(commands=['test']) 
+#def test(message: telebot.types.Message):
+#    thread = threading.Thread(target=test_thread, args=(message,))
+#    thread.start()
+#def test_thread(message: telebot.types.Message):
+#    """отсылает все накопленные картинки в группу"""
+#    l = []
+#    with lock_dicts:
+#        for n in images_db.keys():
+#            if type(images_db[n]) == tuple:
+#                l.append((images_db[n][0], images_db[n][1][0]))
+#    for i in l:
+#        bot.send_photo(pics_group, photo=i[1], caption = i[0])
+#        time.sleep(5)
+
+
 @bot.message_handler(commands=['tts']) 
 def tts(message: telebot.types.Message):
     thread = threading.Thread(target=tts_thread, args=(message,))
@@ -859,7 +887,7 @@ def images(message: telebot.types.Message):
     thread = threading.Thread(target=images_thread, args=(message,))
     thread.start()
 def images_thread(message: telebot.types.Message):
-    """показывает чот было нагенерировано ранее"""
+    """показывает что было нагенерировано ранее"""
 
     # не обрабатывать команды к другому боту
     if '@' in message.text:
@@ -995,6 +1023,12 @@ def image_thread(message: telebot.types.Message):
                 elif type(images) == list:
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                    if pics_group:
+                        try:
+                            bot.send_message(pics_group, prompt, disable_web_page_preview = True)
+                            bot.send_media_group(pics_group, medias)
+                        except Exception as error:
+                            print(error)
                     caption = ''
                     # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
                     # что бы можно было их потом просматривать отдельно

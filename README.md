@@ -93,8 +93,6 @@ key = 'openai api key'
 pics_group = xxx
 pics_group_url = 'https://t.me/yyy'
 ```
-
-```
 вместо этого можно передавать токен через переменную окружения
 ```
 export TOKEN='токен телеграм бота'

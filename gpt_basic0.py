@@ -25,12 +25,7 @@ except Exception as e:
 # * Используйте API-ключ в ваших запросах к следующим конечным точкам.
 # * Если у бота поменялся адрес надо в дискорде боту написать /resetip
 
-#openai.api_base = 'https://api.pawan.krd/v1'
-
-# еще 1 бесплатный сервер
-# принимает любой ключ
-openai.api_base = "https://rough-bush-a7e5.dolores.workers.dev"
-
+openai.api_base = 'https://api.pawan.krd/v1'
 
 
 # Пробуем получить апи ключ из конфига или переменной окружения
@@ -76,8 +71,6 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
 
     # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
     completion = openai.ChatCompletion.create(
-        #model="gpt-3.5-turbo-16k",
-        headers = {"X-Api-Service": "openai-gpt"},
         model="gpt-3.5-turbo-16k",
         messages=messages,
         max_tokens=max_tok,

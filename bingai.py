@@ -170,7 +170,8 @@ BEGIN:
             result = ''
         print(error)
 
-    return result
+    return f'{result}\n\n{len(text)} символов в исходном тексте'
+    #return result
 
 
 def summ_text_2(text: str, subj: str = 'text') -> str:

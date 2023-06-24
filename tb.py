@@ -167,6 +167,20 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         str: возвращает ответ который бот может показать, возможно '' или None
     """
     global dialogs, prompts
+    
+    
+    # 16k
+    max_hist_lines = 12 # 16k - 4k - (max_hist_lines*max_hist_mem)
+    max_hist_bytes = 10000
+    max_hist_compressed=1500
+    max_hist_mem = 1000
+    
+    # 4k
+    #max_hist_lines = 10
+    #max_hist_bytes = 2000
+    #max_hist_compressed=700
+    #max_hist_mem=300
+    
 
     # в каждом чате свой собственный промт
     if chat_id in prompts:
@@ -185,12 +199,12 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     else:
         new_messages = []
     # теперь ее надо почистить что бы влезла в запрос к GPT
-    # просто удаляем все кроме 10 последний
-    if len(new_messages) > 10:
-        new_messages = new_messages[10:]
-    # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше 2000
+    # просто удаляем все кроме max_hist_lines последних
+    if len(new_messages) > max_hist_lines:
+        new_messages = new_messages[max_hist_lines:]
+    # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше max_hist_bytes
     # удаляем по 2 сразу так как первая - промпт для бота
-    while (utils.count_tokens(new_messages) > 2000):
+    while (utils.count_tokens(new_messages) > max_hist_bytes):
         new_messages = new_messages[2:]
     
     # добавляем в историю новый запрос и отправляем
@@ -218,14 +232,14 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             return 'Не хочу говорить об этом. Или не могу.'
         # произошла ошибка переполнения ответа
         except openai.error.InvalidRequestError as error:
-            if """This model's maximum context length is 4097 tokens. However, you requested""" in str(error):
+            if """This model's maximum context length is""" in str(error):
                 # чистим историю, повторяем запрос
                 p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
-                # сжимаем весь предыдущий разговор до 700 символов
-                r = gpt_basic.ai_compress(p, 700, 'dialog')
+                # сжимаем весь предыдущий разговор до max_hist_compressed символов
+                r = gpt_basic.ai_compress(p, max_hist_compressed, 'dialog')
                 new_messages = [{'role':'system','content':r}] + new_messages[-1:]
                 # и на всякий случай еще
-                while (utils.count_tokens(new_messages) > 1500):
+                while (utils.count_tokens(new_messages) > max_hist_compressed):
                     new_messages = new_messages[2:]
 
                 try:
@@ -246,7 +260,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     else:
         # для бинга
         hist = '\n'.join([f"{i['role']}: {i['content']}" for i in new_messages])
-        hist_compressed = gpt_basic.ai_compress(hist, 1000, 'dialog', force = True)
+        hist_compressed = gpt_basic.ai_compress(hist, 1500, 'dialog', force = True)
         bing_prompt = hist_compressed + '\n' + text
         
         resp = bingai.ai(bing_prompt)
@@ -261,8 +275,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     with lock_dicts:
         new_messages = new_messages[:-2]
         # если запрос юзера был длинным то в истории надо сохранить его коротко
-        if len(text) > 300:
-            new_text = gpt_basic.ai_compress(text, 300, 'user')
+        if len(text) > max_hist_mem:
+            new_text = gpt_basic.ai_compress(text, max_hist_mem, 'user')
             # заменяем запрос пользователя на сокращенную версию
             new_messages += [{"role":    "user",
                                  "content": new_text}]
@@ -270,8 +284,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             new_messages += [{"role":    "user",
                                  "content": text}]
         # если ответ бота был длинным то в истории надо сохранить его коротко
-        if len(resp) > 300:
-            new_resp = gpt_basic.ai_compress(resp, 300, 'assistant')
+        if len(resp) > max_hist_mem:
+            new_resp = gpt_basic.ai_compress(resp, max_hist_mem, 'assistant')
             new_messages += [{"role":    "assistant",
                                  "content": new_resp}]
         else:
@@ -1397,7 +1411,9 @@ def do_task(message):
 
         global blocks, bot_names, dialogs
         
-        too_big_message_for_chatbot = 1500
+        
+        #too_big_message_for_chatbot = 1500
+        too_big_message_for_chatbot = 4000
 
         with lock_dicts:
             # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга

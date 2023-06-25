@@ -304,12 +304,13 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
     'hide' - клавиатура с одной кнопкой Скрой
     """
     if kbd == 'chat':
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
-        button1 = telebot.types.InlineKeyboardButton("➡️", callback_data='continue_gpt')
-        button2 = telebot.types.InlineKeyboardButton("Забудь", callback_data='forget_all')
-        button3 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
-        button4 = telebot.types.InlineKeyboardButton("ru", callback_data='translate_chat')
-        markup.add(button1, button2, button3, button4)
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button1 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button2 = telebot.types.InlineKeyboardButton("🆕", callback_data='forget_all')
+        button3 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button4 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button5 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
+        markup.add(button1, button2, button3, button4, button5)
         return markup
     elif kbd == 'mem':
         markup  = telebot.types.InlineKeyboardMarkup()
@@ -325,8 +326,9 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
     elif kbd == 'translate':
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
-        button2 = telebot.types.InlineKeyboardButton("Перевод", callback_data='translate')
-        markup.add(button1, button2)
+        button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button3 = telebot.types.InlineKeyboardButton("Перевод", callback_data='translate')
+        markup.add(button1, button2, button3)
         return markup
     elif kbd == 'hide_image':
         markup  = telebot.types.InlineKeyboardMarkup()
@@ -447,6 +449,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть ответ"
             #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             bot.delete_message(message.chat.id, message.message_id)
+        elif call.data == 'tts':
+            lang = my_trans.detect_lang(message.text) or 'ru'
+            message.text = f'/tts {lang} {message.text}'
+            tts(message)
         elif call.data == 'erase_image':
             # обработка нажатия кнопки "Стереть ответ"
             #bot.edit_message_reply_markup(message.chat.id, message.message_id)

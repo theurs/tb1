@@ -21,3 +21,4 @@ selenium
 chardet
 python-magic
 transliterate
+trafilatura

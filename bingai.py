@@ -27,6 +27,7 @@ import utils
 from multiprocessing import Pool
 from langdetect import detect
 from transliterate import translit
+import trafilatura
 
 
 async def main(prompt1: str, style: int = 3) -> str:
@@ -222,7 +223,7 @@ def summ_text(text: str, subj: str = 'text') -> str:
     return summ_text_worker(text2, subj)
 
 
-def summ_url(url:str) -> str:
+def summ_url_old(url:str) -> str:
     """скачивает веб страницу в память и пропускает через фильтр html2text, возвращает текст
     если в ссылке ютуб то скачивает субтитры к видео вместо текста"""
     youtube = False
@@ -262,6 +263,55 @@ def summ_url(url:str) -> str:
             h.ignore_images = True
             text = h.handle(content)
     
+    if youtube:
+        r = summ_text(text, 'youtube_video')
+    elif pdf:
+        r = summ_text(text, 'pdf')
+    else:
+        r = summ_text(text, 'text')
+    return r
+
+
+def summ_url(url:str) -> str:
+    """скачивает веб страницу, просит гптчат или бинг сделать краткое исложение текста, возвращает текст
+    если в ссылке ютуб то скачивает субтитры к видео вместо текста"""
+    youtube = False
+    pdf = False
+    if '/youtu.be/' in url or 'youtube.com/' in url:
+        text = get_text_from_youtube(url)
+        youtube = True
+    else:
+        # Получаем содержимое страницы
+        response = requests.get(url, stream=True)
+        content = b''
+        # Ограничиваем размер
+        for chunk in response.iter_content(chunk_size=1024):
+            content += chunk
+            if len(content) > 1 * 1024 * 1024: # 1 MB
+                break
+
+        if 'PDF document' in magic.from_buffer(content):
+            pdf = True
+            file_bytes = io.BytesIO(content)
+            pdf_reader = PyPDF2.PdfReader(file_bytes)
+            text = ''
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+        else:
+            # Определяем кодировку текста
+            encoding = chardet.detect(content)['encoding']
+            # Декодируем содержимое страницы
+            try:
+                content = content.decode(encoding)
+            except UnicodeDecodeError as error:
+                print(error)
+                content = response.content.decode('utf-8')
+            text = trafilatura.extract(content)
+            #print(text)
+            #sys(exit(0))
+            #downloaded = trafilatura.fetch_url(url)
+            #text = trafilatura.extract(downloaded)
+   
     if youtube:
         r = summ_text(text, 'youtube_video')
     elif pdf:

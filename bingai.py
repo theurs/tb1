@@ -306,11 +306,10 @@ def summ_url(url:str) -> str:
             except UnicodeDecodeError as error:
                 print(error)
                 content = response.content.decode('utf-8')
-            text = trafilatura.extract(content)
-            #print(text)
-            #sys(exit(0))
-            #downloaded = trafilatura.fetch_url(url)
-            #text = trafilatura.extract(downloaded)
+
+            newconfig = trafilatura.settings.use_config()
+            newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
+            text = trafilatura.extract(content, config=newconfig)
    
     if youtube:
         r = summ_text(text, 'youtube_video')

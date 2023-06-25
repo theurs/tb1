@@ -1121,6 +1121,7 @@ def summ_text_thread(message: telebot.types.Message):
                         res = bingai.summ_url(url)
                     except Exception as error:
                         print(error)
+                        #my_log.log2(error)
                         m = 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном.'
                         bot.reply_to(message, m, reply_markup=get_keyboard('hide'))
                         my_log.log_echo(message, m)

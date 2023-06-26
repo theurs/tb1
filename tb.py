@@ -924,10 +924,10 @@ def google_thread(message: telebot.types.Message):
     with show_action(message.chat.id, 'typing'):
         r = my_google.search(q)
         try:
-            bot.reply_to(message, r, parse_mode = 'Markdown', reply_markup=get_keyboard('translate'))
+            bot.reply_to(message, r, parse_mode = 'Markdown', reply_markup=get_keyboard('chat'))
         except Exception as error:
             my_log.log2(error)
-            bot.reply_to(message, r, parse_mode = '', reply_markup=get_keyboard('translate'))
+            bot.reply_to(message, r, parse_mode = '', reply_markup=get_keyboard('chat'))
         
         global dialogs
         chat_id = message.chat.id

@@ -52,7 +52,7 @@ def search(q: str, max_req: int = 15000, max_search: int = 20) -> str:
         content = response.text
     
         if content:
-            text = trafilatura.extract(content, config=newconfig)
+            text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True)
             if text:
                 result += text
                 if len(result) > max_req:

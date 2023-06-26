@@ -923,7 +923,11 @@ def google_thread(message: telebot.types.Message):
     q = message.text.split(maxsplit=1)[1]
     with show_action(message.chat.id, 'typing'):
         r = my_google.search(q)
-        bot.reply_to(message, r, reply_markup=get_keyboard('translate'))
+        try:
+            bot.reply_to(message, r, parse_mode = 'Markdown', reply_markup=get_keyboard('translate'))
+        except Exception as error:
+            my_log.log2(error)
+            bot.reply_to(message, r, parse_mode = '', reply_markup=get_keyboard('translate'))
         
         global dialogs
         chat_id = message.chat.id

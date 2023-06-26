@@ -13,6 +13,7 @@ import magic
 import PyPDF2
 
 import gpt_basic
+import my_log
 
 
 #max_req = 15000
@@ -20,11 +21,14 @@ import gpt_basic
 #max_search = 20
 
 
-def search(q: str, max_req: int = 15000, max_search: int = 20) -> str:
+def search(q: str, max_req: int = 15000, max_search: int = 20, hist: str = '') -> str:
     """ищет в гугле ответ на вопрос q, отвечает с помощью GPT
     max_req - максимальный размер ответа гугла, сколько текста можно отправить гпт чату
     max_search - сколько ссылок можно прочитать пока не наберется достаточно текстов
+    hist - история диалога, о чем говорили до этого
     """
+    
+    max_req = max_req - len(hist)
     
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(q)}',]
@@ -52,7 +56,8 @@ def search(q: str, max_req: int = 15000, max_search: int = 20) -> str:
         content = response.text
     
         if content:
-            text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True)
+            #text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True)
+            text = trafilatura.extract(content, config=newconfig)
             if text:
                 result += text
                 if len(result) > max_req:
@@ -70,11 +75,18 @@ def search(q: str, max_req: int = 15000, max_search: int = 20) -> str:
 постарайся понять смысл его запроса и что он хочет увидеть в ответ,
 если на такие запросы нельзя отвечать то переведи всё в шутку.
 
+
+О чем говорили до этого: {hist}
+
+
 Запрос: {q}
+
 
 Результаты поиска в гугле по этому запросу:
 
+
 {result}"""
+    #my_log.log2(text[:max_req])
     return gpt_basic.ai(text[:max_req])
 
 

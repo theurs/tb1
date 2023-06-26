@@ -172,7 +172,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     
     # 16k
     #max_hist_lines = 12 # 16k - 4k - (max_hist_lines*max_hist_mem)
-    max_hist_lines = 22
+    max_hist_lines = 16
     max_hist_bytes = 12000
     max_hist_compressed=1500
     max_hist_mem = 1000
@@ -810,11 +810,10 @@ def send_debug_history(message: telebot.types.Message):
         chat_id = message.chat.id
         
         # создаем новую историю диалогов с юзером из старой если есть
+        messages = []
         if chat_id in dialogs:
-            new_messages = dialogs[chat_id]
-        else:
-            new_messages = []
-        prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
+            messages = dialogs[chat_id]
+        prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
         my_log.log_echo(message, prompt)
         try:
             bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
@@ -822,7 +821,7 @@ def send_debug_history(message: telebot.types.Message):
             print(error)
             #bot.send_message(chat_id, utils.escape_markdown(prompt), disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
             my_log.log2(prompt)
-            bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
+            send_long_message(chat_id, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
 
 
 @bot.message_handler(commands=['restart']) 
@@ -919,18 +918,29 @@ def google_thread(message: telebot.types.Message):
         if f'@{_bot_name}' not in message.text: return
 
     my_log.log_echo(message)
+    
+    global dialogs
+    chat_id = message.chat.id
+
+    max_hist_compressed = 3000
 
     q = message.text.split(maxsplit=1)[1]
     with show_action(message.chat.id, 'typing'):
-        r = my_google.search(q)
+        messages = []
+        with lock_dicts:
+            if chat_id in dialogs:
+                messages = dialogs[chat_id]
+        p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
+        # сжимаем весь предыдущий разговор до max_hist_compressed символов
+        c = p[-max_hist_compressed:]
+        r = my_google.search(q, hist = c)
         try:
-            bot.reply_to(message, r, parse_mode = 'Markdown', reply_markup=get_keyboard('chat'))
+            bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
         except Exception as error:
             my_log.log2(error)
-            bot.reply_to(message, r, parse_mode = '', reply_markup=get_keyboard('chat'))
+            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+        my_log.log_echo(message, r)
         
-        global dialogs
-        chat_id = message.chat.id
         with lock_dicts:
             if chat_id not in dialogs:
                 dialogs[chat_id] = []

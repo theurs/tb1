@@ -22,6 +22,7 @@ import gpt_basic
 import my_dic
 import my_log
 import my_ocr
+import my_google
 import my_stt
 import my_trans
 import my_tts
@@ -900,6 +901,29 @@ def tts_thread(message: telebot.types.Message):
                 else:
                     bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('hide'))
                     my_log.log_echo(message, msg)
+
+
+
+
+
+@bot.message_handler(commands=['google',])
+def google(message: telebot.types.Message):
+    thread = threading.Thread(target=google_thread, args=(message,))
+    thread.start()
+def google_thread(message: telebot.types.Message):
+    """показывает что было нагенерировано ранее"""
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
+    my_log.log_echo(message)
+
+    q = message.text.split(maxsplit=1)[1]
+    with show_action(message.chat.id, 'typing'):
+        r = my_google.search(q)
+        bot.reply_to(message, r, reply_markup=get_keyboard('translate'))
+
 
 
 @bot.message_handler(commands=['images','imgs'])

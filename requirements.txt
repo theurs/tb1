@@ -22,3 +22,4 @@ chardet
 python-magic
 transliterate
 trafilatura
+google

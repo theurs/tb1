@@ -171,8 +171,9 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     
     
     # 16k
-    max_hist_lines = 12 # 16k - 4k - (max_hist_lines*max_hist_mem)
-    max_hist_bytes = 10000
+    #max_hist_lines = 12 # 16k - 4k - (max_hist_lines*max_hist_mem)
+    max_hist_lines = 22
+    max_hist_bytes = 12000
     max_hist_compressed=1500
     max_hist_mem = 1000
     
@@ -923,7 +924,17 @@ def google_thread(message: telebot.types.Message):
     with show_action(message.chat.id, 'typing'):
         r = my_google.search(q)
         bot.reply_to(message, r, reply_markup=get_keyboard('translate'))
-
+        
+        global dialogs
+        chat_id = message.chat.id
+        with lock_dicts:
+            if chat_id not in dialogs:
+                dialogs[chat_id] = []
+            dialogs[chat_id] += [{"role":    'system',
+                                  "content": f'user попросил сделать запрос в Google: {q}'},
+                                  {"role":    'system',
+                                  "content": f'assistant поискал в Google и ответил: {r}'}
+                                  ]
 
 
 @bot.message_handler(commands=['images','imgs'])

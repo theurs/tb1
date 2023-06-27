@@ -262,16 +262,28 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     else:
         # для бинга
         hist = '\n'.join([f"{i['role']}: {i['content']}" for i in new_messages])
-        hist_compressed = gpt_basic.ai_compress(hist, 1500, 'dialog', force = True)
+        hist_compressed = ''
+        #try:
+        #    hist_compressed = gpt_basic.ai_compress(hist, 1500, 'dialog', force = True)
+        #except Exception as error:
+        #    print(error)
+        #    my_log.log2(error)
         bing_prompt = hist_compressed + '\n' + text
-        
-        resp = bingai.ai(bing_prompt)
+
+        msg_bing_no_answer = 'Бинг не ответил.'
+        try:
+            #my_log.log2(bing_prompt)
+            resp = bingai.ai(bing_prompt)            
+        except Exception as error:
+            print(error)
+            my_log.log2(error)
+            return msg_bing_no_answer
         if resp:
             new_messages = new_messages + [{"role":    "assistant",
                                             "content": resp}]
         else:
             # не сохраняем диалог, нет ответа
-            return 'Бинг не ответил.'
+            return msg_bing_no_answer
 
     # сохраняем диалог, на данном этапе в истории разговора должны быть 2 последних записи несжатыми
     with lock_dicts:

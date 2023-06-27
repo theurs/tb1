@@ -25,7 +25,9 @@ except Exception as e:
 # * Используйте API-ключ в ваших запросах к следующим конечным точкам.
 # * Если у бота поменялся адрес надо в дискорде боту написать /resetip
 
-openai.api_base = 'https://api.pawan.krd/v1'
+#openai.api_base = 'https://api.pawan.krd/v1'
+# x2 price :(
+openai.api_base = 'https://api.pawan.krd/unfiltered/v1'
 
 # еще 1 бесплатный сервер
 # принимает любой ключ

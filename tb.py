@@ -268,12 +268,12 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         #except Exception as error:
         #    print(error)
         #    my_log.log2(error)
-        bing_prompt = hist_compressed + '\n' + text
+        bing_prompt = hist_compressed + '\n\n' + 'Отвечай по-русски\n\n' + text
 
         msg_bing_no_answer = 'Бинг не ответил.'
         try:
             #my_log.log2(bing_prompt)
-            resp = bingai.ai(bing_prompt)            
+            resp = bingai.ai(bing_prompt, 1)
         except Exception as error:
             print(error)
             my_log.log2(error)
@@ -1598,32 +1598,32 @@ def do_task(message):
             if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
             # спрашиваем гпт не надо ли загуглить этот запрос
-            q = f"""
-Нужно ли искать информацию в Google что бы хорошо ответить на запрос юзера,
-ответь одним словом, ДА или НЕТ,
-отвечай ДА если ты точно знаешь что юзер ищет свежую часто обновляемую информацию,
-либо информацию о событиях о которых у тебя нет сведений,
-отвечай НЕТ во ВСЕХ остальных случаях,
-гуглить длинные и непонятные запросы не надо, твой ответ
-должен содержать только одно слово. Запрос юзера: {msg}
-"""
-            try:
-                qq = gpt_basic.ai(q)
-                my_log.log2(q + '\n\n' + qq)
-                if qq.lower().startswith('да'):
-                    q2 = f"""
-Перефразируй запрос юзер так что бы лучше найти информацию в Google по этому запросу,
-не упоминай никаких сайтов и не задавай уточняющих вопросов,
-в твоем ответе должен быть только текст запроса к гуглу без лишних слов,
-если не можешь то восстанови потерянные большие буквы в запросе юзера. Запрос юзера: {msg}"""
-                    qq2 = gpt_basic.ai(q2)
-                    my_log.log2(q2 + '\n\n' + qq2)
-                    message.text = f'/google {qq2}'
-                    google_thread(message)
-                    return
-            except Exception as error:
-                print(error)
-                my_log.log2(error)
+#            q = f"""
+#Нужно ли искать информацию в Google что бы хорошо ответить на запрос юзера,
+#ответь одним словом, ДА или НЕТ,
+#отвечай ДА если ты точно знаешь что юзер ищет свежую часто обновляемую информацию,
+#либо информацию о событиях о которых у тебя нет сведений,
+#отвечай НЕТ во ВСЕХ остальных случаях,
+#гуглить длинные и непонятные запросы не надо, твой ответ
+#должен содержать только одно слово. Запрос юзера: {msg}
+#"""
+#            try:
+#                qq = gpt_basic.ai(q)
+#                my_log.log2(q + '\n\n' + qq)
+#                if qq.lower().startswith('да'):
+#                    q2 = f"""
+#Перефразируй запрос юзер так что бы лучше найти информацию в Google по этому запросу,
+#не упоминай никаких сайтов и не задавай уточняющих вопросов,
+#в твоем ответе должен быть только текст запроса к гуглу без лишних слов,
+#если не можешь то восстанови потерянные большие буквы в запросе юзера. Запрос юзера: {msg}"""
+#                    qq2 = gpt_basic.ai(q2)
+#                    my_log.log2(q2 + '\n\n' + qq2)
+#                    message.text = f'/google {qq2}'
+#                    google_thread(message)
+#                    return
+#            except Exception as error:
+#                print(error)
+#                my_log.log2(error)
             # добавляем новый запрос пользователя в историю диалога пользователя
             with show_action(chat_id, 'typing'):
                 resp = dialog_add_user_request(chat_id, message.text, 'gpt')

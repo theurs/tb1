@@ -172,16 +172,16 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     
     # 16k
     #max_hist_lines = 12 # 16k - 4k - (max_hist_lines*max_hist_mem)
-    max_hist_lines = 16
-    max_hist_bytes = 12000
-    max_hist_compressed=1500
-    max_hist_mem = 1000
+    #max_hist_lines = 16
+    #max_hist_bytes = 12000
+    #max_hist_compressed=1500
+    #max_hist_mem = 1000
     
     # 4k
-    #max_hist_lines = 10
-    #max_hist_bytes = 2000
-    #max_hist_compressed=700
-    #max_hist_mem=300
+    max_hist_lines = 10
+    max_hist_bytes = 2000
+    max_hist_compressed=700
+    max_hist_mem=300
     
 
     # в каждом чате свой собственный промт
@@ -911,7 +911,7 @@ def google(message: telebot.types.Message):
     thread = threading.Thread(target=google_thread, args=(message,))
     thread.start()
 def google_thread(message: telebot.types.Message):
-    """показывает что было нагенерировано ранее"""
+    """ищет в гугле перед ответом"""
 
     # не обрабатывать команды к другому боту
     if '@' in message.text:
@@ -922,18 +922,19 @@ def google_thread(message: telebot.types.Message):
     global dialogs
     chat_id = message.chat.id
 
-    max_hist_compressed = 3000
+    max_hist_compressed = 1000
 
     q = message.text.split(maxsplit=1)[1]
     with show_action(message.chat.id, 'typing'):
-        messages = []
-        with lock_dicts:
-            if chat_id in dialogs:
-                messages = dialogs[chat_id]
-        p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
-        # сжимаем весь предыдущий разговор до max_hist_compressed символов
-        c = p[-max_hist_compressed:]
-        r = my_google.search(q, hist = c)
+        #messages = []
+        #with lock_dicts:
+        #    if chat_id in dialogs:
+        #        messages = dialogs[chat_id]
+        #p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
+        ## сжимаем весь предыдущий разговор до max_hist_compressed символов
+        #c = p[-max_hist_compressed:]
+        #r = my_google.search(q, hist = c)
+        r = my_google.search(q)
         try:
             bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
         except Exception as error:
@@ -1468,8 +1469,8 @@ def do_task(message):
         global blocks, bot_names, dialogs
         
         
-        #too_big_message_for_chatbot = 1500
-        too_big_message_for_chatbot = 4000
+        too_big_message_for_chatbot = 1500
+        #too_big_message_for_chatbot = 4000
 
         with lock_dicts:
             # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
@@ -1584,28 +1585,49 @@ def do_task(message):
                 return
             if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
+            # спрашиваем гпт не надо ли загуглить этот запрос
+            q = f"""
+Нужно ли искать информацию в Google что бы хорошо ответить на запрос юзера,
+ответь одним словом, ДА или НЕТ,
+отвечай ДА если ты точно знаешь что юзер ищет свежую часто обновляемую информацию,
+либо информацию о событиях о которых у тебя нет сведений,
+отвечай НЕТ во ВСЕХ остальных случаях,
+гуглить длинные и непонятные запросы не надо, твой ответ
+должен содержать только одно слово. Запрос юзера: {msg}
+"""
+            try:
+                qq = gpt_basic.ai(q)
+                my_log.log2(q + '\n\n' + qq)
+                if qq.lower().startswith('да'):
+                    q2 = f"""
+Перефразируй запрос юзер так что бы лучше найти информацию в Google по этому запросу,
+не упоминай никаких сайтов и не задавай уточняющих вопросов,
+в твоем ответе должен быть только текст запроса к гуглу без лишних слов,
+если не можешь то восстанови потерянные большие буквы в запросе юзера. Запрос юзера: {msg}"""
+                    qq2 = gpt_basic.ai(q2)
+                    my_log.log2(q2 + '\n\n' + qq2)
+                    message.text = f'/google {qq2}'
+                    google_thread(message)
+                    return
+            except Exception as error:
+                print(error)
+                my_log.log2(error)
             # добавляем новый запрос пользователя в историю диалога пользователя
             with show_action(chat_id, 'typing'):
                 resp = dialog_add_user_request(chat_id, message.text, 'gpt')
-                #md = markdown2.Markdown()
-                #resp2 = md.convert(resp)
                 if resp:
                     if is_private:
                         try:
-                            #send_long_message(chat_id, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             send_long_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
-                            #send_long_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             my_log.log2(resp)
                             send_long_message(chat_id, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
-                            #reply_to_long_message(message,  utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                         except Exception as error:    
                             print(error)
-                            #reply_to_long_message(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             my_log.log2(resp)
                             reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log_echo(message, resp)

@@ -1432,7 +1432,7 @@ def send_welcome(message: telebot.types.Message):
 def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
     if len(resp) < 3501:
-        bot.send_message(chat_id, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=get_keyboard('chat'))
+        bot.send_message(chat_id, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
     else:
         buf = io.BytesIO()
         buf.write(resp.encode())
@@ -1443,7 +1443,7 @@ def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_
 def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
     if len(resp) < 3501:
-        bot.reply_to(message, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=get_keyboard('chat'))
+        bot.reply_to(message, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
     else:
         buf = io.BytesIO()
         buf.write(resp.encode())

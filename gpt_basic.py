@@ -29,10 +29,6 @@ except Exception as e:
 # x2 price :(
 openai.api_base = 'https://api.pawan.krd/unfiltered/v1'
 
-# еще 1 бесплатный сервер
-# принимает любой ключ
-#openai.api_base = "https://rough-bush-a7e5.dolores.workers.dev"
-
 
 
 # Пробуем получить апи ключ из конфига или переменной окружения

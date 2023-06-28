@@ -162,6 +162,7 @@ BEGIN:
     if type(text) != str or len(text) < 1: return ''
 
     try:
+        raise '123'
         result = gpt_basic.ai(prompt)
     except Exception as error:
         try:

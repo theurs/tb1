@@ -80,8 +80,8 @@ def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str =
 
 {result}"""
     #my_log.log2(text[:max_req])
-    #return gpt_basic.ai(text[:max_req])
-    return bingai.ai(text[:max_req])
+    return gpt_basic.ai(text[:max_req])
+    #return bingai.ai(text[:max_req])
 
 
 

@@ -17,8 +17,8 @@ import my_log
 
 
 
-#max_request = 6000
-max_request = 1800
+max_request = 3500
+#max_request = 1800
 
 def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str = '') -> str:
     """ищет в гугле ответ на вопрос q, отвечает с помощью GPT

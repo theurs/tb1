@@ -92,6 +92,39 @@ key = 'openai api key'
 # id телеграм канала куда скидываются все сгенерированные картинки
 pics_group = xxx
 pics_group_url = 'https://t.me/yyy'
+
+# размер буфера для поиска в гугле, чем больше тем лучше ищет и отвечает
+# и тем больше токенов жрет
+# для модели с 4к памяти
+max_request = 1800
+# для модели с 16к памяти
+#max_request = 15000
+
+# используем другой сервер, openai нас не пускает и ключей не продает, приходится заходить черз задний вход
+# бесплатные ключи у дискорд бота https://github.com/PawanOsman/ChatGPT#use-our-hosted-api-reverse-proxy
+# To use our hosted ChatGPT API, you can use the following steps:
+# * Join our Discord server.
+# * Get your API key from the #Bot channel by sending /key command.
+# * Use the API Key in your requests to the following endpoints.
+# * Присоединитесь к нашему серверу Discord.
+# * Получите свой API-ключ в канале #Bot, отправив команду /key.
+# * Используйте API-ключ в ваших запросах к следующим конечным точкам.
+# * Если у бота поменялся адрес надо в дискорде боту написать /resetip
+
+#openai_api_base = 'https://api.pawan.krd/v1'
+# x2 price :(
+openai_api_base = 'https://api.pawan.krd/unfiltered/v1'
+
+
+# local poe.com proxy
+# должен быть настроен и запущен https://github.com/juzeon/poe-openai-proxy
+#openai_api_base = 'http://127.0.0.1:3700/v1'
+
+model = 'gpt-3.5-turbo-16k'
+#model = 'gpt-3.5-turbo-8k'
+#model = 'gpt-3.5-turbo'
+#model="Sage"
+#model = 'Claude-instant'
 ```
 вместо этого можно передавать токен через переменную окружения
 ```

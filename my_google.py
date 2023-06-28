@@ -21,6 +21,14 @@ import my_log
 #max_request = 15000
 max_request = 1800
 
+try:
+    import cfg
+    max_request = cfg.max_request
+except Exception as error:
+    print(error)  
+
+
+
 def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str = '') -> str:
     """ищет в гугле ответ на вопрос q, отвечает с помощью GPT
     max_req - максимальный размер ответа гугла, сколько текста можно отправить гпт чату

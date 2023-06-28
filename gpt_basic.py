@@ -14,27 +14,19 @@ except Exception as e:
     print(e)
 
 
-# используем другой сервер, openai нас не пускает и ключей не продает, приходится заходить черз задний вход
-# бесплатные ключи у дискорд бота https://github.com/PawanOsman/ChatGPT#use-our-hosted-api-reverse-proxy
-# To use our hosted ChatGPT API, you can use the following steps:
-# * Join our Discord server.
-# * Get your API key from the #Bot channel by sending /key command.
-# * Use the API Key in your requests to the following endpoints.
-# * Присоединитесь к нашему серверу Discord.
-# * Получите свой API-ключ в канале #Bot, отправив команду /key.
-# * Используйте API-ключ в ваших запросах к следующим конечным точкам.
-# * Если у бота поменялся адрес надо в дискорде боту написать /resetip
-
-#openai.api_base = 'https://api.pawan.krd/v1'
-# x2 price :(
-openai.api_base = 'https://api.pawan.krd/unfiltered/v1'
+# если в конфиге есть другой адрес гейта то используем его
+try:
+    openai.api_base = cfg.openai_api_base
+except Exception as error:
+    print(error)
 
 
-
-# local poe.com proxy
-# должен быть настроен и запущен https://github.com/juzeon/poe-openai-proxy
-#openai.api_base = 'http://127.0.0.1:3700/v1'
-
+# если в конфиге указана другая модель
+model = 'gpt-3.5-turbo-16k'
+try:
+    model = cfg.model
+except Exception as error:
+    print(error)
 
 
 # Пробуем получить апи ключ из конфига или переменной окружения

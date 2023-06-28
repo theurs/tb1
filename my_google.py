@@ -19,7 +19,7 @@ import my_log
 
 
 #max_request = 15000
-max_request = 1800
+max_request = 2800
 
 try:
     import cfg
@@ -88,7 +88,7 @@ def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str =
 
 {result}"""
     #my_log.log2(text[:max_req])
-    return gpt_basic.ai(text[:max_req])
+    return gpt_basic.ai(text[:max_req], max_tok=1000)
     #return bingai.ai(text[:max_req])
 
 

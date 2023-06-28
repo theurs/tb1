@@ -13,12 +13,13 @@ import magic
 import PyPDF2
 
 import gpt_basic
+import bingai
 import my_log
 
 
 
-max_request = 3500
-#max_request = 1800
+#max_request = 15000
+max_request = 1800
 
 def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str = '') -> str:
     """ищет в гугле ответ на вопрос q, отвечает с помощью GPT
@@ -50,7 +51,7 @@ def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str =
             #text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True)
             text = trafilatura.extract(content, config=newconfig)
             if text:
-                result += text
+                result += f'\n\n|||{url}|||\n\n{text}\n\n'
                 if len(result) > max_req:
                     break
 
@@ -78,8 +79,9 @@ def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str =
 
 
 {result}"""
-    my_log.log2(text[:max_req])
-    return gpt_basic.ai(text[:max_req])
+    #my_log.log2(text[:max_req])
+    #return gpt_basic.ai(text[:max_req])
+    return bingai.ai(text[:max_req])
 
 
 

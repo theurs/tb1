@@ -4,10 +4,6 @@ import os
 import re
 import sys
 
-import threading
-# не больше 1 запроса за раз
-semaphore_talks = threading.Semaphore(1)
-
 import enchant
 from fuzzywuzzy import fuzz
 import openai
@@ -31,13 +27,13 @@ except Exception as e:
 
 #openai.api_base = 'https://api.pawan.krd/v1'
 # x2 price :(
-#openai.api_base = 'https://api.pawan.krd/unfiltered/v1'
+openai.api_base = 'https://api.pawan.krd/unfiltered/v1'
 
 
 
 # local poe.com proxy
 # должен быть настроен и запущен https://github.com/juzeon/poe-openai-proxy
-openai.api_base = 'http://127.0.0.1:3700/v1'
+#openai.api_base = 'http://127.0.0.1:3700/v1'
 
 
 
@@ -82,19 +78,18 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
                     }
                 ]
 
-    with semaphore_talks:
-        # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
-        completion = openai.ChatCompletion.create(
-            #headers = {"X-Api-Service": "openai-gpt"},
-            model="Sage", #gpt3.5
-            #model = 'Claude-instant',
-            messages=messages,
-            max_tokens=max_tok,
-            temperature=temp,
-            timeout=timeou
-        )
-
-        response = completion.choices[0].message.content
+    # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
+    completion = openai.ChatCompletion.create(
+        #headers = {"X-Api-Service": "openai-gpt"},
+        #model="Sage", #gpt3.5
+        #model = 'Claude-instant',
+        model = 'gpt-3.5-turbo-16k',
+        messages=messages,
+        max_tokens=max_tok,
+        temperature=temp,
+        timeout=timeou
+    )
+    response = completion.choices[0].message.content
     #print(messages)
     return check_and_fix_text(response)
 

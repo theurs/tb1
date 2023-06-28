@@ -1150,7 +1150,8 @@ def summ_text_thread(message: telebot.types.Message):
     # не обрабатывать команды к другому боту
     #if '@' in message.text and f'@{_bot_name}' not in message.text: return
 
-    global sum_cache
+    global sum_cache, dialogs
+    chat_id = message.chat.id
 
     my_log.log_echo(message)
 
@@ -1175,6 +1176,14 @@ def summ_text_thread(message: telebot.types.Message):
                         bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     #reply_to_long_message(message, resp=r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     my_log.log_echo(message, r)
+                    with lock_dicts:
+                        if chat_id not in dialogs:
+                            dialogs[chat_id] = []
+                        dialogs[chat_id] += [{"role":    'system',
+                                  "content": f'user попросил кратко пересказать содержание текста по ссылке/из файла'},
+                                  {"role":    'system',
+                                  "content": f'assistant прочитал и ответил: {r}'}
+                                  ]
                     return
 
                 with show_action(message.chat.id, 'typing'):
@@ -1196,6 +1205,13 @@ def summ_text_thread(message: telebot.types.Message):
                         my_log.log_echo(message, res)
                         with lock_dicts:
                             sum_cache[url] = res
+                            if chat_id not in dialogs:
+                                dialogs[chat_id] = []
+                            dialogs[chat_id] += [{"role":    'system',
+                                  "content": f'user попросил кратко пересказать содержание текста по ссылке/из файла'},
+                                  {"role":    'system',
+                                  "content": f'assistant прочитал и ответил: {res}'}
+                                  ]
                         return
                     else:
                         error = 'Бинг не ответил'

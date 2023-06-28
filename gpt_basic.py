@@ -27,7 +27,13 @@ except Exception as e:
 
 #openai.api_base = 'https://api.pawan.krd/v1'
 # x2 price :(
-openai.api_base = 'https://api.pawan.krd/unfiltered/v1'
+#openai.api_base = 'https://api.pawan.krd/unfiltered/v1'
+
+
+
+# local poe.com proxy
+# должен быть настроен и запущен https://github.com/juzeon/poe-openai-proxy
+openai.api_base = 'http://127.0.0.1:3700/v1'
 
 
 
@@ -75,7 +81,8 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
     # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
     completion = openai.ChatCompletion.create(
         #headers = {"X-Api-Service": "openai-gpt"},
-        model="gpt-3.5-turbo-16k",
+        model="Sage", #gpt3.5
+        #model = 'Claude-instant',
         messages=messages,
         max_tokens=max_tok,
         temperature=temp,

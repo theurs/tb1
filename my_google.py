@@ -16,7 +16,11 @@ import gpt_basic
 import my_log
 
 
-def search(q: str, max_req: int = 1800, max_search: int = 10, hist: str = '') -> str:
+
+#max_request = 6000
+max_request = 1800
+
+def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str = '') -> str:
     """ищет в гугле ответ на вопрос q, отвечает с помощью GPT
     max_req - максимальный размер ответа гугла, сколько текста можно отправить гпт чату
     max_search - сколько ссылок можно прочитать пока не наберется достаточно текстов

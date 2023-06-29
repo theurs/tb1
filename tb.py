@@ -168,21 +168,6 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         str: возвращает ответ который бот может показать, возможно '' или None
     """
     global dialogs, prompts
-    
-    
-    # 16k
-    #max_hist_lines = 12 # 16k - 4k - (max_hist_lines*max_hist_mem)
-    #max_hist_lines = 16
-    #max_hist_bytes = 12000
-    #max_hist_compressed=1500
-    #max_hist_mem = 1000
-    
-    # 4k
-    max_hist_lines = 10
-    max_hist_bytes = 2000
-    max_hist_compressed=700
-    max_hist_mem=300
-    
 
     # в каждом чате свой собственный промт
     if chat_id in prompts:
@@ -205,11 +190,11 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     #my_log.log2(current_prompt + new_messages)
     # теперь ее надо почистить что бы влезла в запрос к GPT
     # просто удаляем все кроме max_hist_lines последних
-    if len(new_messages) > max_hist_lines:
-        new_messages = new_messages[max_hist_lines:]
-    # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше max_hist_bytes
+    if len(new_messages) > cfg.max_hist_lines:
+        new_messages = new_messages[cfg.max_hist_lines:]
+    # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше cfg.max_hist_bytes
     # удаляем по 2 сразу так как первая - промпт для бота
-    while (utils.count_tokens(new_messages) > max_hist_bytes):
+    while (utils.count_tokens(new_messages) > cfg.max_hist_bytes):
         new_messages = new_messages[2:]
     
     # добавляем в историю новый запрос и отправляем
@@ -240,11 +225,11 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             if """This model's maximum context length is""" in str(error):
                 # чистим историю, повторяем запрос
                 p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
-                # сжимаем весь предыдущий разговор до max_hist_compressed символов
-                r = gpt_basic.ai_compress(p, max_hist_compressed, 'dialog')
+                # сжимаем весь предыдущий разговор до cfg.max_hist_compressed символов
+                r = gpt_basic.ai_compress(p, cfg.max_hist_compressed, 'dialog')
                 new_messages = [{'role':'system','content':r}] + new_messages[-1:]
                 # и на всякий случай еще
-                while (utils.count_tokens(new_messages) > max_hist_compressed):
+                while (utils.count_tokens(new_messages) > cfg.max_hist_compressed):
                     new_messages = new_messages[2:]
 
                 try:
@@ -266,11 +251,6 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         # для бинга
         hist = '\n'.join([f"{i['role']}: {i['content']}" for i in new_messages])
         hist_compressed = ''
-        #try:
-        #    hist_compressed = gpt_basic.ai_compress(hist, 1500, 'dialog', force = True)
-        #except Exception as error:
-        #    print(error)
-        #    my_log.log2(error)
         bing_prompt = hist_compressed + '\n\n' + 'Отвечай по-русски\n\n' + text
 
         msg_bing_no_answer = 'Бинг не ответил.'
@@ -292,8 +272,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     with lock_dicts:
         new_messages = new_messages[:-2]
         # если запрос юзера был длинным то в истории надо сохранить его коротко
-        if len(text) > max_hist_mem:
-            new_text = gpt_basic.ai_compress(text, max_hist_mem, 'user')
+        if len(text) > cfg.max_hist_mem:
+            new_text = gpt_basic.ai_compress(text, cfg.max_hist_mem, 'user')
             # заменяем запрос пользователя на сокращенную версию
             new_messages += [{"role":    "user",
                                  "content": new_text}]
@@ -301,15 +281,14 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             new_messages += [{"role":    "user",
                                  "content": text}]
         # если ответ бота был длинным то в истории надо сохранить его коротко
-        if len(resp) > max_hist_mem:
-            new_resp = gpt_basic.ai_compress(resp, max_hist_mem, 'assistant')
+        if len(resp) > cfg.max_hist_mem:
+            new_resp = gpt_basic.ai_compress(resp, cfg.max_hist_mem, 'assistant')
             new_messages += [{"role":    "assistant",
                                  "content": new_resp}]
         else:
             new_messages += [{"role":    "assistant",
                                  "content": resp}]
         dialogs[chat_id] = new_messages or []
-        #my_log.log2(str(dialogs[chat_id]))
 
     return resp
 
@@ -830,13 +809,9 @@ def send_debug_history(message: telebot.types.Message):
             messages = dialogs[chat_id]
         prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
         my_log.log_echo(message, prompt)
-        try:
-            bot.send_message(chat_id, prompt, disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
-        except Exception as error:
-            print(error)
-            #bot.send_message(chat_id, utils.escape_markdown(prompt), disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
-            my_log.log2(prompt)
-            send_long_message(chat_id, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
+        for i in utils.split_text(prompt, 3500):
+            bot.send_message(chat_id, i, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
+            time.sleep(2)
 
 
 @bot.message_handler(commands=['restart']) 
@@ -937,18 +912,8 @@ def google_thread(message: telebot.types.Message):
     global dialogs
     chat_id = message.chat.id
 
-    max_hist_compressed = 1000
-
     q = message.text.split(maxsplit=1)[1]
     with show_action(message.chat.id, 'typing'):
-        #messages = []
-        #with lock_dicts:
-        #    if chat_id in dialogs:
-        #        messages = dialogs[chat_id]
-        #p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
-        ## сжимаем весь предыдущий разговор до max_hist_compressed символов
-        #c = p[-max_hist_compressed:]
-        #r = my_google.search(q, hist = c)
         r = my_google.search(q)
         try:
             bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
@@ -1499,10 +1464,6 @@ def do_task(message):
 
         global blocks, bot_names, dialogs
         
-        
-        too_big_message_for_chatbot = 1500
-        #too_big_message_for_chatbot = 4000
-
         with lock_dicts:
             # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
             if not is_private:
@@ -1580,9 +1541,9 @@ def do_task(message):
         # можно перенаправить запрос к бингу, но он долго отвечает
         if msg.startswith(('бинг ', 'бинг,', 'бинг\n')):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
-            if len(msg) > too_big_message_for_chatbot:
-                bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
-                my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
+            if len(msg) > cfg.max_message_from_user:
+                bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
+                my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
             with show_action(chat_id, 'typing'):
                 # добавляем новый запрос пользователя в историю диалога пользователя
@@ -1610,9 +1571,9 @@ def do_task(message):
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
-            if len(msg) > too_big_message_for_chatbot:
-                bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
-                my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {too_big_message_for_chatbot}')
+            if len(msg) > cfg.max_message_from_user:
+                bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
+                my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
             if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово

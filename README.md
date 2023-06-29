@@ -102,6 +102,27 @@ max_request = 1800
 # для модели с 16к памяти
 #max_request = 15000
 
+# насколько большие сообщения от юзера принимать
+# если у gpt всего 4к памяти то 1500
+#max_message_from_user = 4000
+max_message_from_user = 1500
+
+
+
+# 16k
+#max_hist_lines = 18
+#max_hist_bytes = 12000
+#max_hist_compressed=1500
+#max_hist_mem = 4000
+
+# 4k
+max_hist_lines = 10
+max_hist_bytes = 2000
+max_hist_compressed=700
+max_hist_mem=300
+
+
+
 # используем другой сервер, openai нас не пускает и ключей не продает, приходится заходить черз задний вход
 # бесплатные ключи у дискорд бота https://github.com/PawanOsman/ChatGPT#use-our-hosted-api-reverse-proxy
 # To use our hosted ChatGPT API, you can use the following steps:

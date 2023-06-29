@@ -87,6 +87,8 @@
 ```
 token = 'токен телеграм бота'
 key = 'openai api key'
+# второй ключ для больших запросов, если нет то можно просто продублировать
+key2 = 'openai api key'
 
 # если хочется иметь канал(не группа) в котором будут все сгенерированные фотки то надо добавить туда бота
 # id телеграм канала куда скидываются все сгенерированные картинки
@@ -116,6 +118,13 @@ max_request = 1800
 openai_api_base = 'https://api.pawan.krd/unfiltered/v1'
 
 
+# отдельный второй гейт если есть иначе продублировать. нужен для.. больших запросов в гугл
+# https://discord.gg/cattogpt
+# команда /info боту что бы получить ключ и статистику
+# дают до 30т запросов
+openai_api_base2 = 'https://api.cattto.repl.co/v1'
+
+
 # local poe.com proxy
 # должен быть настроен и запущен https://github.com/juzeon/poe-openai-proxy
 #openai_api_base = 'http://127.0.0.1:3700/v1'
@@ -125,11 +134,6 @@ model = 'gpt-3.5-turbo-16k'
 #model = 'gpt-3.5-turbo'
 #model="Sage"
 #model = 'Claude-instant'
-```
-вместо этого можно передавать токен через переменную окружения
-```
-export TOKEN='токен телеграм бота'
-export OPENAI_KEY='openai api key'
 ```
 
 Путь до утилиты edge-tts записан прямо в коде в my_tts.py. Его надо изменить на ваш. /home/ubuntu/.tb1/bin/edge-tts И так же в my_ocr.py И в my_stt.py

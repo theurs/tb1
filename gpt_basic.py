@@ -8,43 +8,22 @@ import enchant
 from fuzzywuzzy import fuzz
 import openai
 
-try:
-    import cfg
-except Exception as e:
-    print(e)
-
-
-# если в конфиге есть другой адрес гейта то используем его
-try:
-    openai.api_base = cfg.openai_api_base
-except Exception as error:
-    print(error)
-
-
-# если в конфиге указана другая модель
-model = 'gpt-3.5-turbo-16k'
-try:
-    model = cfg.model
-except Exception as error:
-    print(error)
-
-
-# Пробуем получить апи ключ из конфига или переменной окружения
-openai.api_key = None
-try:
-    openai.api_key = cfg.key
-except Exception as e:
-    print(e)
-    try:
-        openai.api_key = os.getenv('OPENAI_KEY')
-    except Exception as e:
-        print(e)
+import cfg
 
 
 # требует новой версии питона list[str]
 #def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, messages: list[str] = None) -> str:
-def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, messages =  None) -> str:
-    """Сырой текстовый запрос к GPT чату, возвращает сырой ответ"""
+def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, messages =  None, second = False) -> str:
+    """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
+    second - использовать ли второй гейт и ключ, для больших запросов
+    """
+    if second:
+        openai.api_key = cfg.key2
+        openai.api_base = cfg.openai_api_base2
+    else:
+        openai.api_key = cfg.key
+        openai.api_base = cfg.openai_api_base
+
     if messages == None:
         messages = [    {"role": "system",
                     "content": """Ты информационная система отвечающая на запросы юзера."""
@@ -63,7 +42,6 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
                     #{"role": "assistant",
                     # "content": "history messages from assistant for more context"
                     #},
-
 
                     {"role": "user",
                      "content": prompt

@@ -6,6 +6,7 @@ import datetime
 import io
 import requests
 import urllib.parse
+import sys
 
 import googlesearch
 import trafilatura
@@ -17,8 +18,6 @@ import bingai
 import my_log
 
 
-
-#max_request = 15000
 max_request = 2800
 
 try:
@@ -87,13 +86,16 @@ def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str =
 
 
 {result}"""
+
     #my_log.log2(text[:max_req])
-    return gpt_basic.ai(text[:max_req], max_tok=1000)
+    return gpt_basic.ai(text[:max_req], max_tok=1000, second = True)
     #return bingai.ai(text[:max_req])
 
 
 
 if __name__ == "__main__":
+    print(search('текст песни малиновая лада'), '\n\n')
+    sys.exit(0)
     print(search('курс доллара'), '\n\n')
     print(search('текст песни егора пикачу'), '\n\n')
 

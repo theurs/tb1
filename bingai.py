@@ -162,8 +162,8 @@ BEGIN:
     if type(text) != str or len(text) < 1: return ''
 
     try:
-        raise '123'
-        result = gpt_basic.ai(prompt)
+        assert len(text) < 15000
+        result = gpt_basic.ai(prompt, second = True)
     except Exception as error:
         try:
             result = ai(prompt, 1)

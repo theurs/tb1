@@ -192,6 +192,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             # по умолчанию нормальный стиль с ноткой юмора
             prompts[chat_id] = [{"role": "system", "content": utils.gpt_start_message2}]
             current_prompt =   [{"role": "system", "content": utils.gpt_start_message2}]
+    current_date = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+    #current_prompt += [{"role": "system", "content": f'Сейчас на часах: {current_date} но не надо упоминать об этом.'}]
 
     # создаем новую историю диалогов с юзером из старой если есть
     # в истории диалогов не храним системный промпт
@@ -200,6 +202,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             new_messages = dialogs[chat_id]
     else:
         new_messages = []
+    #my_log.log2(current_prompt + new_messages)
     # теперь ее надо почистить что бы влезла в запрос к GPT
     # просто удаляем все кроме max_hist_lines последних
     if len(new_messages) > max_hist_lines:

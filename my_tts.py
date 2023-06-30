@@ -32,7 +32,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     
     # Удаляем символы переноса строки и перевода каретки 
     text = text.replace('\r','') 
-    text = text.replace('\n',' ')  
+    text = text.replace('\n\n','\n')  
     
     # Создаем временный файл для записи аудио
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f: 

@@ -236,6 +236,6 @@ if __name__ == '__main__':
         sys.exit(1)
     t = sys.argv[1]
     if os.path.exists(t):
-        print(ai(open(t).read(), max_tok = 2000))
+        print(ai(open(t).read(), max_tok = 2000, second = True))
     else:
         print(ai(t, max_tok = 2000))

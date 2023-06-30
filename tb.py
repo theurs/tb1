@@ -10,7 +10,6 @@ import datetime
 import threading
 import time
 
-#import markdown2
 import openai
 import PyPDF2
 import telebot
@@ -60,6 +59,9 @@ lock_dicts = threading.Lock()
 dialogs = my_dic.PersistentDict('db/dialogs.pkl')
 # в каких чатах выключены автопереводы
 blocks = my_dic.PersistentDict('db/blocks.pkl')
+
+# каким голосом озвучивать, мужским или женским
+tts_gender = my_dic.PersistentDict('db/tts_gender.pkl')
 
 # в каких чатах какой промт
 prompts = my_dic.PersistentDict('db/prompts.pkl')
@@ -177,8 +179,6 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             # по умолчанию нормальный стиль с ноткой юмора
             prompts[chat_id] = [{"role": "system", "content": utils.gpt_start_message2}]
             current_prompt =   [{"role": "system", "content": utils.gpt_start_message2}]
-    current_date = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-    #current_prompt += [{"role": "system", "content": f'Сейчас на часах: {current_date} но не надо упоминать об этом.'}]
 
     # создаем новую историю диалогов с юзером из старой если есть
     # в истории диалогов не храним системный промпт
@@ -187,7 +187,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             new_messages = dialogs[chat_id]
     else:
         new_messages = []
-    #my_log.log2(current_prompt + new_messages)
+
+
     # теперь ее надо почистить что бы влезла в запрос к GPT
     # просто удаляем все кроме max_hist_lines последних
     if len(new_messages) > cfg.max_hist_lines:
@@ -269,25 +270,25 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             return msg_bing_no_answer
 
     # сохраняем диалог, на данном этапе в истории разговора должны быть 2 последних записи несжатыми
+    new_messages = new_messages[:-2]
+    # если запрос юзера был длинным то в истории надо сохранить его коротко
+    if len(text) > cfg.max_hist_mem:
+        new_text = gpt_basic.ai_compress(text, cfg.max_hist_mem, 'user')
+        # заменяем запрос пользователя на сокращенную версию
+        new_messages += [{"role":    "user",
+                             "content": new_text}]
+    else:
+        new_messages += [{"role":    "user",
+                            "content": text}]
+    # если ответ бота был длинным то в истории надо сохранить его коротко
+    if len(resp) > cfg.max_hist_mem:
+        new_resp = gpt_basic.ai_compress(resp, cfg.max_hist_mem, 'assistant')
+        new_messages += [{"role":    "assistant",
+                             "content": new_resp}]
+    else:
+        new_messages += [{"role":    "assistant",
+                             "content": resp}]
     with lock_dicts:
-        new_messages = new_messages[:-2]
-        # если запрос юзера был длинным то в истории надо сохранить его коротко
-        if len(text) > cfg.max_hist_mem:
-            new_text = gpt_basic.ai_compress(text, cfg.max_hist_mem, 'user')
-            # заменяем запрос пользователя на сокращенную версию
-            new_messages += [{"role":    "user",
-                                 "content": new_text}]
-        else:
-            new_messages += [{"role":    "user",
-                                 "content": text}]
-        # если ответ бота был длинным то в истории надо сохранить его коротко
-        if len(resp) > cfg.max_hist_mem:
-            new_resp = gpt_basic.ai_compress(resp, cfg.max_hist_mem, 'assistant')
-            new_messages += [{"role":    "assistant",
-                                 "content": new_resp}]
-        else:
-            new_messages += [{"role":    "assistant",
-                                 "content": resp}]
         dialogs[chat_id] = new_messages or []
 
     return resp
@@ -620,7 +621,13 @@ def handle_document_thread(message: telebot.types.Message):
                         lang = 'ru'
                         print(error)
                     # Озвучиваем текст
-                    audio = my_tts.tts(text, lang)
+                    global tts_gender
+                    if message.chat.id in tts_gender:
+                        with lock_dicts:
+                            gender = tts_gender[message.chat.id]
+                    else:
+                        gender = 'female'    
+                    audio = my_tts.tts(text, lang, gender=gender)
                     if message.chat.type != 'private':
                         bot.send_voice(message.chat.id, audio, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide'))
                     else:
@@ -798,20 +805,20 @@ def send_debug_history(message: telebot.types.Message):
 
     my_log.log_echo(message)
     
-    with lock_dicts:
-        global dialogs
+    global dialogs
         
-        chat_id = message.chat.id
+    chat_id = message.chat.id
         
-        # создаем новую историю диалогов с юзером из старой если есть
-        messages = []
-        if chat_id in dialogs:
+    # создаем новую историю диалогов с юзером из старой если есть
+    messages = []
+    if chat_id in dialogs:
+        with lock_dicts:
             messages = dialogs[chat_id]
-        prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
-        my_log.log_echo(message, prompt)
-        for i in utils.split_text(prompt, 3500):
-            bot.send_message(chat_id, i, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
-            time.sleep(2)
+    prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
+    my_log.log_echo(message, prompt)
+    for i in utils.split_text(prompt, 3500):
+        bot.send_message(chat_id, i, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
+        time.sleep(2)
 
 
 @bot.message_handler(commands=['restart']) 
@@ -834,6 +841,46 @@ def restart(message: telebot.types.Message):
 #    for i in l:
 #        bot.send_photo(pics_group, photo=i[1], caption = i[0])
 #        time.sleep(5)
+
+
+@bot.message_handler(commands=['ttsmale']) 
+def tts_male(message: telebot.types.Message):
+    thread = threading.Thread(target=tts_male_thread, args=(message,))
+    thread.start()
+def tts_male_thread(message: telebot.types.Message):
+    """Переключает голос TTS на мужской"""
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
+    my_log.log_echo(message)
+
+    global tts_gender
+    with lock_dicts:
+       tts_gender[message.chat.id] = 'male'
+    
+    bot.send_message(message.chat.id, 'Голос TTS теперь мужской', reply_markup=get_keyboard('hide'))
+
+
+@bot.message_handler(commands=['ttsfemale']) 
+def tts_female(message: telebot.types.Message):
+    thread = threading.Thread(target=tts_female_thread, args=(message,))
+    thread.start()
+def tts_female_thread(message: telebot.types.Message):
+    """Переключает голос TTS на женский"""
+
+    # не обрабатывать команды к другому боту
+    if '@' in message.text:
+        if f'@{_bot_name}' not in message.text: return
+
+    my_log.log_echo(message)
+
+    global tts_gender
+    with lock_dicts:
+       tts_gender[message.chat.id] = 'female'
+    
+    bot.send_message(message.chat.id, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['tts']) 
@@ -877,7 +924,13 @@ def tts_thread(message: telebot.types.Message):
 
     with semaphore_talks:
         with show_action(message.chat.id, 'record_audio'):
-            audio = my_tts.tts(text, lang, rate)
+            global tts_gender
+            if message.chat.id in tts_gender:
+                with lock_dicts:
+                    gender = tts_gender[message.chat.id]
+            else:
+                gender = 'female'
+            audio = my_tts.tts(text, lang, rate, gender=gender)
             if audio:
                 if message.chat.type != 'private':
                     bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide'))
@@ -1082,7 +1135,8 @@ def image_thread(message: telebot.types.Message):
                     caption = ''
                     # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
                     # что бы можно было их потом просматривать отдельно
-                    global image_prompt, images_db
+                    global image_prompt, images_db, dialogs
+                    chat_id = message.chat.id
                     with lock_dicts:
                         if 'total' in images_db:
                             ttl = images_db['total']
@@ -1101,9 +1155,24 @@ def image_thread(message: telebot.types.Message):
                     caption += '\n\n'.join(images)
                     bot.send_message(message.chat.id, caption, disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
                     my_log.log_echo(message, '[image gen] ')
+                    
+                    with lock_dicts:
+                        n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
+                        if chat_id in dialogs:
+                            dialogs[chat_id] += n
+                        else:
+                            dialogs[chat_id] = n
+                    
                 else:
                     bot.reply_to(message, 'Бинг нарисовал неизвестно что.', reply_markup=get_keyboard('hide'))
                     my_log.log_echo(message, '[image gen error] ')
+                    with lock_dicts:
+                        n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant не захотел или не смог нарисовать это с помощью DALL-E'}]
+                        if chat_id in dialogs:
+                            dialogs[chat_id] += n
+                        else:
+                            dialogs[chat_id] = n
+
         else:
             bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, help)
@@ -1142,7 +1211,6 @@ def summ_text_thread(message: telebot.types.Message):
                 if r:
                     for i in utils.split_text(r, 3900):
                         bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
-                    #reply_to_long_message(message, resp=r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     my_log.log_echo(message, r)
                     with lock_dicts:
                         if chat_id not in dialogs:
@@ -1160,16 +1228,14 @@ def summ_text_thread(message: telebot.types.Message):
                         res = bingai.summ_url(url)
                     except Exception as error:
                         print(error)
-                        #my_log.log2(error)
-                        m = 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном.'
+                        m = 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.'
                         bot.reply_to(message, m, reply_markup=get_keyboard('hide'))
                         my_log.log_echo(message, m)
                         return
                     if res:
-                        for i in utils.split_text(res, 3900):
+                        for i in utils.split_text(res, 3500):
                             bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
-                        #reply_to_long_message(message, resp=res, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
-
+                            time.sleep(2)
                         my_log.log_echo(message, res)
                         with lock_dicts:
                             sum_cache[url] = res
@@ -1530,12 +1596,6 @@ def do_task(message):
             prompt = match.group(2)
             message.text = f'/image {prompt}'
             image_thread(message)
-            with lock_dicts:
-                n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
-                if chat_id in dialogs:
-                    dialogs[chat_id] += n
-                else:
-                    dialogs[chat_id] = n
             return
 
         # можно перенаправить запрос к бингу, но он долго отвечает
@@ -1577,33 +1637,7 @@ def do_task(message):
                 return
             if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
-            # спрашиваем гпт не надо ли загуглить этот запрос
-#            q = f"""
-#Нужно ли искать информацию в Google что бы хорошо ответить на запрос юзера,
-#ответь одним словом, ДА или НЕТ,
-#отвечай ДА если ты точно знаешь что юзер ищет свежую часто обновляемую информацию,
-#либо информацию о событиях о которых у тебя нет сведений,
-#отвечай НЕТ во ВСЕХ остальных случаях,
-#гуглить длинные и непонятные запросы не надо, твой ответ
-#должен содержать только одно слово. Запрос юзера: {msg}
-#"""
-#            try:
-#                qq = gpt_basic.ai(q)
-#                my_log.log2(q + '\n\n' + qq)
-#                if qq.lower().startswith('да'):
-#                    q2 = f"""
-#Перефразируй запрос юзер так что бы лучше найти информацию в Google по этому запросу,
-#не упоминай никаких сайтов и не задавай уточняющих вопросов,
-#в твоем ответе должен быть только текст запроса к гуглу без лишних слов,
-#если не можешь то восстанови потерянные большие буквы в запросе юзера. Запрос юзера: {msg}"""
-#                    qq2 = gpt_basic.ai(q2)
-#                    my_log.log2(q2 + '\n\n' + qq2)
-#                    message.text = f'/google {qq2}'
-#                    google_thread(message)
-#                    return
-#            except Exception as error:
-#                print(error)
-#                my_log.log2(error)
+
             # добавляем новый запрос пользователя в историю диалога пользователя
             with show_action(chat_id, 'typing'):
                 resp = dialog_add_user_request(chat_id, message.text, 'gpt')

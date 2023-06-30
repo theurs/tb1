@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 
-#import io
 import os
 import json
 import asyncio
@@ -9,7 +8,6 @@ from EdgeGPT import Chatbot, ConversationStyle
 #from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 import sys
 from BingImageCreator import ImageGen
-import html2text
 import requests
 from urllib.parse import urlparse
 import chardet
@@ -17,14 +15,11 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
 import gpt_basic
 import my_log
-#from selenium import webdriver
-#from selenium.webdriver.chrome.options import Options
 import magic
 import PyPDF2
 import io
 import re
 import utils
-from multiprocessing import Pool
 from langdetect import detect
 from transliterate import translit
 import trafilatura
@@ -135,7 +130,7 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
 
     # если запустили из pool.map и передали параметры как список
     if type(text) == tuple:
-        text, subj = text[0], text[1]
+        text, subj, cont = text[0], text[1], text[2]
 
     if subj == 'text' or subj == 'pdf':
         prompt = f"""Summarize the following, answer in russian language:
@@ -175,33 +170,6 @@ BEGIN:
     return result
 
 
-def summ_text_2(text: str, subj: str = 'text') -> str:
-    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание, только первые 6 блоков по 30(60)т символов
-    subj - смотрите summ_text_worker()
-"""
-
-    # разбиваем текст на части если слишком большой, не больше 6 кусков по 31т русских символов,
-    # 60т английских и 31т прочих. бинг может принимать до 64кбайт запросы в утф8
-    lang = detect(text)
-    if lang == 'en':
-        texts = utils.split_text(text, 56000)[:6]
-    else:
-        texts = utils.split_text(text, 28000)[:6]
-
-    # это должно обработать куски текста паралельно но склеить последовательно. так ли это работает на самом деле - хз
-    with Pool(processes=10) as pool:
-        results = pool.map(summ_text_worker, [(x, subj) for x in texts])
-
-    # складываем результаты
-    final_result = ''
-    for i in results:
-        if type(i) == str:
-            final_result += i
-            final_result += '\n\n\n'
-
-    return final_result
-
-
 def summ_text(text: str, subj: str = 'text') -> str:
     """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание, только первые 30(60)т символов
     subj - смотрите summ_text_worker()
@@ -223,57 +191,8 @@ def summ_text(text: str, subj: str = 'text') -> str:
     return summ_text_worker(text2, subj)
 
 
-def summ_url_old(url:str) -> str:
-    """скачивает веб страницу в память и пропускает через фильтр html2text, возвращает текст
-    если в ссылке ютуб то скачивает субтитры к видео вместо текста"""
-    youtube = False
-    pdf = False
-    if '/youtu.be/' in url or 'youtube.com/' in url:
-        text = get_text_from_youtube(url)
-        youtube = True
-    else:
-        # Получаем содержимое страницы
-        response = requests.get(url, stream=True)
-        content = b''
-        # Ограничиваем размер
-        for chunk in response.iter_content(chunk_size=1024):
-            content += chunk
-            if len(content) > 1 * 1024 * 1024: # 1 MB
-                break
-
-        if 'PDF document' in magic.from_buffer(content):
-            pdf = True
-            file_bytes = io.BytesIO(content)
-            pdf_reader = PyPDF2.PdfReader(file_bytes)
-            text = ''
-            for page in pdf_reader.pages:
-                text += page.extract_text()
-        else:
-            # Определяем кодировку текста
-            encoding = chardet.detect(content)['encoding']
-            # Декодируем содержимое страницы
-            try:
-                content = content.decode(encoding)
-            except UnicodeDecodeError as error:
-                print(error)
-                content = response.content.decode('utf-8')
-            # Пропускаем содержимое через фильтр html2text
-            h = html2text.HTML2Text()
-            h.ignore_links = True
-            h.ignore_images = True
-            text = h.handle(content)
-    
-    if youtube:
-        r = summ_text(text, 'youtube_video')
-    elif pdf:
-        r = summ_text(text, 'pdf')
-    else:
-        r = summ_text(text, 'text')
-    return r
-
-
 def summ_url(url:str) -> str:
-    """скачивает веб страницу, просит гптчат или бинг сделать краткое исложение текста, возвращает текст
+    """скачивает веб страницу, просит гптчат или бинг сделать краткое изложение текста, возвращает текст
     если в ссылке ютуб то скачивает субтитры к видео вместо текста"""
     youtube = False
     pdf = False
@@ -320,30 +239,6 @@ def summ_url(url:str) -> str:
     return r
 
 
-# создаем экземпляр драйвера для браузера Chrome
-#options = Options()
-#options.add_argument("--headless=new")
-#driver = webdriver.Chrome(options=options)
-#def summ_url2(url:str) -> str:
-#    """скачивает веб страницу в память и пропускает через фильтр html2text, возвращает текст
-#    если в ссылке ютуб то скачивает субтитры к видео вместо текста
-#    версия с selenium    
-#    """
-#    if '/youtu.be/' in url or 'youtube.com/' in url:
-#       text = get_text_from_youtube(url)
-#    else:
-#        # Получаем содержимое страницы
-#        driver.get(url)
-#        html = driver.page_source       
-#        # Пропускаем содержимое через фильтр html2text
-#        h = html2text.HTML2Text()
-#        h.ignore_links = True
-#        h.ignore_images = True
-#        text = h.handle(html)
-#
-#    return summ_text(text)
-
-
 def is_valid_url(url: str) -> bool:
     """Функция is_valid_url() принимает строку url и возвращает True, если эта строка является веб-ссылкой,
     и False в противном случае."""
@@ -361,8 +256,7 @@ if __name__ == "__main__":
     if is_valid_url(t):
         print(summ_url(t))
     elif os.path.exists(t):
-        print(gpt_basic.ai(open(t).read()))
-        #print(summ_text(open(t).read()))
+        print(summ_text(open(t).read()))
     else:
         print(ai(t))
     

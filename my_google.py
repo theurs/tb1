@@ -40,22 +40,15 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
 
     for url in urls:
         content = trafilatura.fetch_url(url)
-    
+
         if content:
-            #text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True)
+            # text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True)
             text = trafilatura.extract(content, config=newconfig)
             if text:
                 result += f'\n\n|||{url}|||\n\n{text}\n\n'
                 if len(result) > max_req:
                     break
 
-    #text = f'Выдели из текста важные факты и подробности, они понадобятся для дальнейших ответов.\n\n\n{result}'
-    
-    #text = f'Ответь на запрос юзера, используй результаты поиска в гугле по этому запросу, отвечай коротко и по делу если юзер не просил по другому.\nЗапрос: {q}\nРезультаты поиска в гугле по этому запросу:\n\n\n{result}'
-    
-    #text = f'Ответь на запрос юзера, используй результаты поиска в гугле по этому запросу, отвечай только на запрос юзера без мыслей в сторону и своих комментариев.\nЗапрос: {q}\nРезультаты поиска в гугле по этому запросу:\n\n\n{result}'
-    #text = f'Ответь на запрос юзера, используй результаты поиска в гугле по этому запросу.\nЗапрос: {q}\nРезультаты поиска в гугле по этому запросу:\n\n\n{result}'
-    
     text = f"""Ответь на запрос юзера, используй результаты поиска в Google по этому запросу,
 игнорируй непонятные символы в результатах поиска, они не должны влиять на ответ,
 в ответе должно быть только то что юзер искал, и не должно быть того что не искал,

@@ -72,7 +72,7 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
 
 if __name__ == "__main__":
     print(search('текст песни doni ft валерия ты такой'), '\n\n')
-    sys.exit(0)
+
     print(search('курс доллара'), '\n\n')
     print(search('текст песни егора пикачу'), '\n\n')
 

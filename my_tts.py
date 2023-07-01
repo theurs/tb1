@@ -133,6 +133,6 @@ def get_voice(language_code: str, gender: str = 'female'):
 
 
 if __name__ == "__main__":
-    print(type(tts2('Привет, как дела!', 'ru')))
+    print(type(tts('Привет, как дела!', 'ru')))
 
     #print(get_voice('ru', 'male'))

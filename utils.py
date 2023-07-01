@@ -3,7 +3,6 @@
 
 import re
 import my_log
-import my_dic
 
 
 # диалог всегда начинается одинаково

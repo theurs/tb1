@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 
 
-import chardet
-import datetime
-import io
-import requests
 import urllib.parse
-import sys
 
 import googlesearch
 import trafilatura

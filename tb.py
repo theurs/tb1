@@ -3,7 +3,6 @@
 import io
 import html
 import os
-import random
 import re
 import tempfile
 import datetime

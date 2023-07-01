@@ -14,12 +14,10 @@ import chardet
 from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
 import gpt_basic
-import my_log
 import magic
 import PyPDF2
 import io
 import re
-import utils
 from langdetect import detect
 from transliterate import translit
 import trafilatura

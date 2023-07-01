@@ -4,7 +4,7 @@
 from py_trans import PyTranslator
 from langdetect import detect, detect_langs
 import subprocess
-import gpt_basic
+#import gpt_basic
 import re
 import enchant
 

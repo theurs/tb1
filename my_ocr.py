@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 
-import tempfile
-import subprocess
-import os
 import io
 import re
 import fitz
@@ -11,7 +8,6 @@ import pytesseract
 from PIL import Image
 import enchant
 import gpt_basic
-import sys
 import threading
 
 

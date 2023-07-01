@@ -10,8 +10,6 @@ import sys
 
 import googlesearch
 import trafilatura
-import magic
-import PyPDF2
 
 import gpt_basic
 import bingai

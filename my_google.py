@@ -12,21 +12,10 @@ import googlesearch
 import trafilatura
 
 import gpt_basic
-import bingai
-import my_log
+import cfg
 
 
-max_request = 2800
-
-try:
-    import cfg
-    max_request = cfg.max_request
-except Exception as error:
-    print(error)  
-
-
-
-def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str = '') -> str:
+def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: str = '') -> str:
     """ищет в гугле ответ на вопрос q, отвечает с помощью GPT
     max_req - максимальный размер ответа гугла, сколько текста можно отправить гпт чату
     max_search - сколько ссылок можно прочитать пока не наберется достаточно текстов
@@ -85,10 +74,7 @@ def search(q: str, max_req: int = max_request, max_search: int = 10, hist: str =
 
 {result}"""
 
-    #my_log.log2(text[:max_req])
-    return gpt_basic.ai(text[:max_req], max_tok=1000, second = True)
-    #return bingai.ai(text[:max_req])
-
+    return gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
 
 
 if __name__ == "__main__":

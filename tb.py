@@ -471,7 +471,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             """реакция на клавиатуру для OCR кнопка перевести текст"""
             translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
-                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('hide'))
+                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('translate'))
         elif call.data == 'translate_chat':
             """реакция на клавиатуру для Чата кнопка перевести текст"""
             translated = my_trans.translate_text2(message.text)
@@ -940,6 +940,11 @@ def tts_thread(message: telebot.types.Message):
 
 +-XX% - ускорение с обязательным указанием направления + или -
 
+/tts привет
+/tts en hello, let me speak from all my heart
+/tts +50% привет со скоростью 1.5х
+/tts uk -50% тянем время, говорим по-русски с украинским акцентом :)
+
 Поддерживаемые языки: {', '.join(supported_langs_tts)}"""
 
         bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
@@ -985,11 +990,33 @@ def google_thread(message: telebot.types.Message):
     else: return
 
     my_log.log_echo(message)
-    
+
     global dialogs
     chat_id = message.chat.id
 
-    q = message.text.split(maxsplit=1)[1]
+    try:
+        q = message.text.split(maxsplit=1)[1]
+    except Exception as error:
+        print(error)
+        help = """/google текст запроса
+
+Будет делать запрос в гугл, и потом пытаться найти нужный ответ в результатах
+
+/google курс биткоина, прогноз на ближайшее время
+
+/google текст песни малиновая лада
+
+/google кто звонил +69997778888, из какой страны
+
+Можно попробовать сделать запрос в гугл и добавить указание что делать с найденным боту, но не факт что это нормально сработает. Текст запроса будет целиком передан в гугол и дополнительные инструкции могут испортить результат поиска.
+
+вместо команды /google можно написать кодовое слово гугл в начала
+
+гугл, сколько на земле людей, точные цифры и прогноз
+"""
+        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('hide'))
+        return
+        
     with show_action(message.chat.id, 'typing'):
         r = my_google.search(q)
         try:
@@ -1139,7 +1166,16 @@ def image_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     with semaphore_talks:
-        help = '/image <текстовое описание картинки, что надо нарисовать>'
+        help = """/image <текстовое описание картинки, что надо нарисовать>
+        
+/image желтое поле, голубое небо, кроваво-красная луна
+
+вместо команды /image можно использовать слово нарисуй или сокращенную команду /img
+
+нарисуй желтое поле, голубое небо, кроваво-красная луна
+
+бот нарисуй луна падает на землю (в чате надо добавлять имя бота что бы он понял что это к нему обращаются)
+"""
         prompt = message.text.split(maxsplit = 1)
         if len(prompt) > 1:
             prompt = prompt[1]
@@ -1321,7 +1357,14 @@ def trans_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     with semaphore_talks:
-        help = f"""/trans [en|ru|uk|..] текст для перевода на указанный язык. Если не указан то на русский.\n\nПоддерживаемые языки: {', '.join(supported_langs_trans)}"""
+        help = f"""/trans [en|ru|uk|..] текст для перевода на указанный язык
+
+Если не указан то на русский.
+
+/trans en привет, как дела
+/trans was ist das
+
+Поддерживаемые языки: {', '.join(supported_langs_trans)}"""
         # разбираем параметры
         # регулярное выражение для разбора строки
         pattern = r'^\/trans\s+((?:' + '|'.join(supported_langs_trans) + r')\s+)?\s*(.*)$'
@@ -1341,7 +1384,7 @@ def trans_thread(message: telebot.types.Message):
         with show_action(message.chat.id, 'typing'):
             translated = my_trans.translate_text2(text, lang)
             if translated:
-                bot.reply_to(message, translated, reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, translated, reply_markup=get_keyboard('translate'))
                 my_log.log_echo(message, translated)
             else:
                 msg = 'Ошибка перевода'
@@ -1477,6 +1520,8 @@ def send_welcome(message: telebot.types.Message):
     my_log.log_echo(message)
 
     help = """Чат бот отзывается на кодовое слово `бот`(можно сменить командой /name) ***бот расскажи про биткоин***
+
+Кодовое слово `гугл`(нельзя изменить) позволит получить более актуальную информацию, бот будет гуглить перед ответом ***гугл курс биткоин***
 
 Кодовое слово `бинг`(нельзя изменить) позволит получить более актуальную информацию, бот будет дооолго гуглить перед ответом ***бинг курс биткоин***
 
@@ -1654,6 +1699,11 @@ def do_task(message):
                             bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log_echo(message, resp)
 
+        # можно перенаправить запрос к бингу, но он долго отвечает
+        elif msg.startswith(('гугл ', 'гугл,', 'гугл\n')):
+            message.text = f'/google {msg[5:]}'
+            google(message)
+            return
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
             if len(msg) > cfg.max_message_from_user:

@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 
 
-import io  # Библиотека для работы с байтовыми потоками
-import edge_tts  # Библиотека для генерации речи 
-import tempfile  # Библиотека для создания временных файлов
-import subprocess  # Библиотека для вызова внешних процессов
-import os  # Библиотека для работы с файловой системой
-
-
-edge_tts_cmd = "/home/ubuntu/.tb1/bin/edge-tts"
-#edge_tts_cmd = "/home/user/.local/bin/edge-tts"
+import io
+import edge_tts
+import tempfile
+import os
+import asyncio
 
 
 def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
@@ -28,36 +24,27 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     Функция возвращает байтовый поток с сгенерированным аудио.
     """
     
+    lang = voice
+
     voice = get_voice(voice, gender)
-    
+
     # Удаляем символы переноса строки и перевода каретки 
     text = text.replace('\r','') 
     text = text.replace('\n\n','\n')  
-    
+
     # Создаем временный файл для записи аудио
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f: 
         filename = f.name 
-        
+
     # Запускаем edge-tts для генерации аудио
-    command = [
-        edge_tts_cmd,     # Исполняемый файл 
-        "--rate="+rate, # Скорость речи
-        "--text",       # Входной текст 
-        text,
-        "-v",           # Голос
-        voice,
-        "--write-media",# Записать аудио в файл
-        filename        # Имя выходного файла
-    ]
-    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    
+    com = edge_tts.Communicate(text, voice, rate=rate)
+    asyncio.run(com.save(filename))
+
     # Читаем аудио из временного файла 
     with open(filename, "rb") as f: 
         data = io.BytesIO(f.read())
-        
-    # Удаляем временный файл
+
     os.remove(filename)
-    
     # Возвращаем байтовый поток с аудио
     return data.getvalue()
 
@@ -146,7 +133,6 @@ def get_voice(language_code: str, gender: str = 'female'):
 
 
 if __name__ == "__main__":
-    #with open('test.mp3', 'wb') as f:
-    #    f.write(tts('Привет, как дела!', 'ru'))
+    print(type(tts2('Привет, как дела!', 'ru')))
 
-    print(get_voice('ru', 'male'))
+    #print(get_voice('ru', 'male'))

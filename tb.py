@@ -745,6 +745,30 @@ def handle_video_thread(message: telebot.types.Message):
                 my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
 
 
+def is_for_me(cmd: str):
+    """проверяет кому адресована команда, этому боту или какому то другому
+    
+    /cmd@botname args
+    
+    возвращает (True/False, 'та же команда но без имени бота')
+    если имени бота нет вообще то считает что обращались к этому боту
+    """
+    arg1 = cmd.split()[0]
+    if '@' in arg1:
+        message_cmd = arg1.split('@', maxsplit = 1)[0]
+        if len(arg1.split('@', maxsplit = 1)) > 1:
+            message_bot = arg1.split('@', maxsplit = 1)[1]
+        else:
+            message_bot = ''
+        if len(cmd.split()) > 1:
+            message_args = cmd.split(maxsplit = 1)[1]
+        else:
+            message_args = ''
+        return  (message_bot == _bot_name, f'{message_cmd} {message_args}'.strip())
+    else:
+        return (True, cmd)
+
+
 @bot.message_handler(commands=['style'])
 def change_mode(message: telebot.types.Message):
     """Меняет роль бота, строку с указаниями что и как говорить.
@@ -754,12 +778,12 @@ def change_mode(message: telebot.types.Message):
     3 - токсичный стиль (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.)
     """
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
-    
+
     global prompts
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
@@ -799,9 +823,9 @@ def change_mode(message: telebot.types.Message):
 def send_debug_history(message: telebot.types.Message):
     # Отправляем текущую историю сообщений
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
     
@@ -850,9 +874,9 @@ def tts_male(message: telebot.types.Message):
 def tts_male_thread(message: telebot.types.Message):
     """Переключает голос TTS на мужской"""
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -870,9 +894,9 @@ def tts_female(message: telebot.types.Message):
 def tts_female_thread(message: telebot.types.Message):
     """Переключает голос TTS на женский"""
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -890,9 +914,9 @@ def tts(message: telebot.types.Message):
 def tts_thread(message: telebot.types.Message):
     """/tts [ru|en|uk|...] [+-XX%] <текст>"""
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -956,9 +980,9 @@ def google(message: telebot.types.Message):
 def google_thread(message: telebot.types.Message):
     """ищет в гугле перед ответом"""
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
     
@@ -992,9 +1016,9 @@ def images(message: telebot.types.Message):
 def images_thread(message: telebot.types.Message):
     """показывает что было нагенерировано ранее"""
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -1048,9 +1072,9 @@ def html_gallery(message: telebot.types.Message):
 def html_gallery_thread(message: telebot.types.Message):
     """генерирует картинку по описанию"""
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -1108,9 +1132,9 @@ def image(message: telebot.types.Message):
 def image_thread(message: telebot.types.Message):
     """генерирует картинку по описанию"""
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -1184,8 +1208,9 @@ def summ_text(message: telebot.types.Message):
     thread.start()
 def summ_text_thread(message: telebot.types.Message):
 
-    # не обрабатывать команды к другому боту
-    #if '@' in message.text and f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     global sum_cache, dialogs
     chat_id = message.chat.id
@@ -1289,9 +1314,9 @@ def trans(message: telebot.types.Message):
     thread.start()
 def trans_thread(message: telebot.types.Message):
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -1331,9 +1356,9 @@ def last(message: telebot.types.Message):
 def last_thread(message: telebot.types.Message):
     """делает сумморизацию истории чата, берет последние X сообщений из чата и просит бинг сделать сумморизацию"""
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -1393,9 +1418,9 @@ def last_thread(message: telebot.types.Message):
 def send_name(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -1422,9 +1447,9 @@ def send_name(message: telebot.types.Message):
 def send_welcome(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 
@@ -1445,9 +1470,9 @@ def send_welcome(message: telebot.types.Message):
 def send_welcome(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
-    # не обрабатывать команды к другому боту
-    if '@' in message.text:
-        if f'@{_bot_name}' not in message.text: return
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
     my_log.log_echo(message)
 

@@ -122,7 +122,9 @@ if __name__ == "__main__":
     #print(translate_text(text))
     #print(translate_text2(text))
 
-    print(translate(text))
+    #print(translate(text))
 
     #print(detect_lang('історією та культурою. Только не говори что надо'))
     #print(detect_langs(text)[0].lang)
+
+    print(translate_text('@', 'en'))

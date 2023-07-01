@@ -80,27 +80,12 @@ def get_text(fileobj):
     return text
 
 
-
 def ocr(input_file):
     """распознает текст из файла"""
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        output_file = temp_file.name
-    
-    langs = 'eng'
-
-    with open(output_file, "w") as f:
-        subprocess.run([pt_cmd, "-l", langs, input_file], stdout = f)
-
-    with open(output_file, "r") as f:
-        text = f.read()
-    # Удаление временного файла
-    os.remove(output_file)
-    return text
-
-
+    return get_text_from_image(open(input_file, 'rb').read())
 
 
 if __name__ == '__main__':
     pass
 
-    print(ocr('1.jpg'))
+    print(ocr('1.png'))

@@ -11,9 +11,12 @@ import pytesseract
 from PIL import Image
 import enchant
 import gpt_basic
+import sys
+import threading
 
 
-pt_cmd = "/home/ubuntu/.tb1/bin/pytesseract"
+# запрещаем запускать больше чем 1 процесс распознавания
+lock = threading.Lock()
 
 
 def replace_non_letters_with_spaces(text):
@@ -48,7 +51,8 @@ def get_text_from_image(b):
     #language = 'rus+eng+ukr'
     language = 'rus+eng'
     f = io.BytesIO(b)
-    r1 = pytesseract.image_to_string(Image.open(f), lang=language)
+    with lock:
+        r1 = pytesseract.image_to_string(Image.open(f), lang=language)
     # склеиваем разорванные предложения
     lines = r1.split('\n')
     result = lines[0] + ' '

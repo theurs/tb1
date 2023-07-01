@@ -157,8 +157,6 @@ model = 'gpt-3.5-turbo-16k'
 #model = 'Claude-instant'
 ```
 
-Путь до утилиты vosk-transcriber записан прямо в коде в my_stt.py. Его надо изменить на ваш. /home/ubuntu/.tb1/bin/vosk-transcriber
-
 Для работы распознавания голосовых сообщений надо установить vosk сервер.
 
 `https://github.com/alphacep/vosk-server`

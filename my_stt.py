@@ -4,11 +4,14 @@
 import subprocess
 import tempfile
 import os
+import sys
+from pathlib import Path
+
 import gpt_basic
 
 
-vosk_cmd = "/home/ubuntu/.tb1/bin/vosk-transcriber"
-#vosk_cmd = "/home/user/.local/bin/vosk-transcriber"
+# сработает если бот запущен питоном из этого venv
+vosk_cmd = Path(Path(sys.executable).parent, 'vosk-transcriber')
 
 
 def stt(input_file):
@@ -25,5 +28,6 @@ def stt(input_file):
 
 
 if __name__ == "__main__":
-    text = stt('2.ogg')
-    print(text)
+    print(vosk_cmd)
+    #text = stt('2.ogg')
+    #print(text)

@@ -1313,7 +1313,7 @@ def summ_text_thread(message: telebot.types.Message):
                         bot.reply_to(message, error, reply_markup=get_keyboard('hide'))
                         my_log.log_echo(message, error)
                         return
-    help = '/sum URL'
+    help = 'Пример: /sum https://youtu.be/3i123i6Bf-U'
     bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
     my_log.log_echo(message, help)
 

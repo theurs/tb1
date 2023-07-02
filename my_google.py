@@ -139,7 +139,7 @@ def search(q: str) -> str:
     try:
         r = search_google(q)
     except urllib.error.HTTPError as error:
-        if '' in str(error):
+        if 'HTTP Error 429: Too Many Requests' in str(error):
             r = search_ddg(q)
         else:
             print(error)

@@ -1688,26 +1688,29 @@ def do_task(message):
 
 
 def set_default_commands():
-    """регистрирует команды бота из файла commands.txt
-/start - Приветствие
-/help - Помощь
-/cmd1 - Функция 1
-/cmd2 - Функция 2
+    """
+    Reads a file containing a list of commands and their descriptions,
+    and sets the default commands for the bot.
     """
     commands = []
-    with open('commands.txt') as f:
-        for line in f:
+    with open('commands.txt', encoding='utf-8') as file:
+        for line in file:
             try:
                 command, description = line[1:].strip().split(' - ', 1)
                 if command and description:
                     commands.append(telebot.types.BotCommand(command, description))
-            except Exception as e:
-                print(e)
+            except Exception as error:
+                print(error)
     bot.set_my_commands(commands)
 
 
-if __name__ == '__main__':
-    # обновление регистрации команд при запуске
+def main():
+    """
+    Runs the main function, which sets default commands and starts polling the bot.
+    """
     set_default_commands()
-    
     bot.polling()
+
+
+if __name__ == '__main__':
+    main()

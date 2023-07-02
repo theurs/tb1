@@ -936,9 +936,6 @@ def tts_thread(message: telebot.types.Message):
                     my_log.log_echo(message, msg)
 
 
-
-
-
 @bot.message_handler(commands=['google',])
 def google(message: telebot.types.Message):
     thread = threading.Thread(target=google_thread, args=(message,))
@@ -971,9 +968,66 @@ def google_thread(message: telebot.types.Message):
 
 Можно попробовать сделать запрос в гугл и добавить указание что делать с найденным боту, но не факт что это нормально сработает. Текст запроса будет целиком передан в гугол и дополнительные инструкции могут испортить результат поиска.
 
-вместо команды /google можно написать кодовое слово гугл в начала
+вместо команды /google можно написать кодовое слово гугл в начале
 
 гугл, сколько на земле людей, точные цифры и прогноз
+"""
+        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('hide'))
+        return
+        
+    with ShowAction(message.chat.id, 'typing'):
+        r = my_google.search(q)
+        try:
+            bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+        except Exception as error2:
+            my_log.log2(error2)
+            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+        my_log.log_echo(message, r)
+        
+        if chat_id not in DIALOGS_DB:
+            DIALOGS_DB[chat_id] = []
+        DIALOGS_DB[chat_id] += [{"role":    'system',
+                                "content": f'user попросил сделать запрос в Google: {q}'},
+                                {"role":    'system',
+                                "content": f'assistant поискал в Google и ответил: {r}'}
+                                ]
+
+
+@bot.message_handler(commands=['ddg',])
+def ddg(message: telebot.types.Message):
+    thread = threading.Thread(target=ddg_thread, args=(message,))
+    thread.start()
+def ddg_thread(message: telebot.types.Message):
+    """ищет в DuckDuckGo перед ответом"""
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    global DIALOGS_DB
+    chat_id = message.chat.id
+
+    try:
+        q = message.text.split(maxsplit=1)[1]
+    except Exception as error2:
+        print(error2)
+        help = """/ddg текст запроса
+
+Будет делать запрос в DuckDuckGo, и потом пытаться найти нужный ответ в результатах
+
+/ddg курс биткоина, прогноз на ближайшее время
+
+/ddg текст песни малиновая лада
+
+/ddg кто звонил +69997778888, из какой страны
+
+Можно попробовать сделать запрос в гугл и добавить указание что делать с найденным боту, но не факт что это нормально сработает. Текст запроса будет целиком передан в гугол и дополнительные инструкции могут испортить результат поиска.
+
+вместо команды /ddg можно написать кодовое слово утка в начале
+
+утка, сколько на земле людей, точные цифры и прогноз
 """
         bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('hide'))
         return
@@ -1422,7 +1476,7 @@ def send_name(message: telebot.types.Message):
         
         # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
         regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
-        BAD_NAMES = ('бинг', 'гугл', 'нарисуй')
+        BAD_NAMES = ('бинг', 'гугл', 'утка', 'нарисуй')
         if re.match(regex, new_name) and len(new_name) <= 10 \
                     and new_name.lower() not in BAD_NAMES:
             global BOT_NAMES
@@ -1473,6 +1527,8 @@ def send_welcome(message: telebot.types.Message):
     help = """Чат бот отзывается на кодовое слово `бот`(можно сменить командой /name) ***бот расскажи про биткоин***
 
 Кодовое слово `гугл`(нельзя изменить) позволит получить более актуальную информацию, бот будет гуглить перед ответом ***гугл курс биткоин***
+
+Кодовое слово `утка`(нельзя изменить) позволит получить более актуальную информацию, бот будет искать в DuckDuckGo перед ответом ***утка курс биткоин***
 
 Кодовое слово `бинг`(нельзя изменить) позволит получить более актуальную информацию, бот будет дооолго гуглить перед ответом ***бинг курс биткоин***
 

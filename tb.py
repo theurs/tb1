@@ -1682,7 +1682,7 @@ def do_task(message):
                             reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log_echo(message, resp)
         else: # смотрим надо ли переводить текст
-            if chat_id in BLOCKS and BLOCKS[chblocks == 1:
+            if chat_id in BLOCKS and BLOCKS[chat_id] == 1:
                 return
             text = my_trans.translate(message.text)
             if text:

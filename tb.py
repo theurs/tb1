@@ -979,7 +979,7 @@ def google_thread(message: telebot.types.Message):
         return
         
     with ShowAction(message.chat.id, 'typing'):
-        r = my_google.search(q)
+        r = my_google.search_ddg(q)
         try:
             bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
         except Exception as error2:

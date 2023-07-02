@@ -24,3 +24,5 @@ python-magic-bin
 transliterate
 trafilatura
 google
+duckduckgo_search
+

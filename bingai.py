@@ -131,21 +131,21 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
         text, subj, cont = text[0], text[1], text[2]
 
     if subj == 'text' or subj == 'pdf':
-        prompt = f"""Summarize the following, answer in russian language:
+        prompt = f"""Summarize the following, briefly answer in Russian with easy-to-read formatting:
 -------------
 {text}
 -------------
 BEGIN:
 """
     elif subj == 'chat_log':
-        prompt = f"""Summarize the following telegram chat log, answer in russian language:
+        prompt = f"""Summarize the following telegram chat log, briefly answer in Russian with easy-to-read formatting:
 -------------
 {text}
 -------------
 BEGIN:
 """
     elif subj == 'youtube_video':
-        prompt = f"""Summarize the following video subtitles extracted from youtube, answer in russian language:
+        prompt = f"""Summarize the following video subtitles extracted from youtube, briefly answer in Russian with easy-to-read formatting:
 -------------
 {text}
 -------------

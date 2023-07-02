@@ -151,6 +151,7 @@ def search(query: str) -> str:
     except urllib.error.HTTPError as error:
         if 'HTTP Error 429: Too Many Requests' in str(error):
             result = search_ddg(query)
+            my_log.log2(query)
         else:
             print(error)
             raise error

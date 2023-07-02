@@ -1688,7 +1688,7 @@ def do_task(message):
                 return
             text = my_trans.translate(message.text)
             if text:
-                bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('translate'))
                 my_log.log_echo(message, text)
 
 

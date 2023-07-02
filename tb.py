@@ -33,7 +33,6 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
 _bot_name = bot.get_me().username
-#my_log.log2(str(bot.get_me()))
 #telebot.apihelper.proxy = cfg.proxy_settings
 
 
@@ -41,8 +40,8 @@ _bot_name = bot.get_me().username
 try:
     pics_group = cfg.pics_group
     pics_group_url = cfg.pics_group_url
-except Exception as error:
-    print(error)
+except Exception as error123:
+    print(error123)
     pics_group = 0
 
 # до 40 одновременных потоков для чата с гпт и бингом
@@ -67,7 +66,8 @@ prompts = my_dic.PersistentDict('db/prompts.pkl')
 # запоминаем промпты для повторения рисования
 image_prompt = my_dic.PersistentDict('db/image_prompts.pkl')
 
-# запоминаем диалоги в чатах для того что бы потом можно было сделать самморизацию, выдать краткое содержание
+# запоминаем диалоги в чатах для того что бы потом можно было сделать самморизацию,
+# выдать краткое содержание
 chat_logs = my_dic.PersistentDict('db/chat_logs.pkl')
 
 # для запоминания ответов на команду /sum
@@ -86,7 +86,7 @@ images_db = my_dic.PersistentDict('db/images_db.pkl')
 # в каких чатах какое у бота кодовое слово для обращения к боту
 bot_names = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
-bot_name_default = 'бот'
+BOT_NAME_DEFAULT = 'бот'
 
 supported_langs_trans = [
         "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
@@ -108,12 +108,12 @@ supported_langs_tts = [
         'tl', 'tr', 'tt', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
 
 
-class show_action(threading.Thread):
+class ShowAction(threading.Thread):
     """Поток который можно остановить. Беспрерывно отправляет в чат уведомление об активности.
     Телеграм автоматически гасит уведомление через 5 секунд, по-этому его надо повторять.
 
     Использовать в коде надо как то так
-    with show_action(chat_id, 'typing'):
+    with ShowAction(chat_id, 'typing'):
         делаем что-нибудь и пока делаем уведомление не гаснет
     
     """
@@ -217,8 +217,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             # не сохраняем диалог, нет ответа
             return 'Не хочу говорить об этом. Или не могу.'
         # произошла ошибка переполнения ответа
-        except openai.error.InvalidRequestError as error:
-            if """This model's maximum context length is""" in str(error):
+        except openai.error.InvalidRequestError as error2:
+            if """This model's maximum context length is""" in str(error2):
                 # чистим историю, повторяем запрос
                 p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or 'Пусто'
                 # сжимаем весь предыдущий разговор до cfg.max_hist_compressed символов
@@ -230,8 +230,8 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
 
                 try:
                     resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages)
-                except Exception as error2:
-                    print(error2)
+                except Exception as error3:
+                    print(error3)
                     return 'GPT не ответил.'
                 
                 # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
@@ -241,7 +241,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                 else:
                     return 'GPT не ответил.'
             else:
-                print(error)
+                print(error2)
                 return 'GPT не ответил.'
     else:
         # для бинга
@@ -253,9 +253,9 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
         try:
             #my_log.log2(bing_prompt)
             resp = bingai.ai(bing_prompt, 1)
-        except Exception as error:
-            print(error)
-            my_log.log2(error)
+        except Exception as error2:
+            print(error2)
+            my_log.log2(error2)
             return msg_bing_no_answer
         if resp:
             new_messages = new_messages + [{"role":    "assistant",
@@ -407,7 +407,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
             #bot.edit_message_reply_markup(message.chat.id, message.message_id)
-            with show_action(chat_id, 'typing'):
+            with ShowAction(chat_id, 'typing'):
                 # добавляем новый запрос пользователя в историю диалога пользователя
                 resp = dialog_add_user_request(chat_id, 'Продолжай', 'gpt')
                 if resp:
@@ -415,18 +415,16 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         try:
                             #bot.send_message(chat_id, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                        except Exception as error:    
-                            print(error)
-                            #bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                        except Exception as error2:    
+                            print(error2)
                             my_log.log2(resp)
                             bot.send_message(chat_id, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
                             #bot.reply_to(message, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                        except Exception as error:    
-                            print(error)
-                            #bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                        except Exception as error2:    
+                            print(error2)
                             my_log.log2(resp)
                             bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                 my_log.log_echo(message, '[Продолжает] ' + resp)
@@ -456,12 +454,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # рисуем еще картинки с тем же запросом
             image(message)
         elif call.data == 'translate':
-            """реакция на клавиатуру для OCR кнопка перевести текст"""
+            # реакция на клавиатуру для OCR кнопка перевести текст
             translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('translate'))
         elif call.data == 'translate_chat':
-            """реакция на клавиатуру для Чата кнопка перевести текст"""
+            # реакция на клавиатуру для Чата кнопка перевести текст
             translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('chat'))
@@ -474,9 +472,9 @@ def handle_audio(message: telebot.types.Message):
     thread.start()
 def handle_audio_thread(message: telebot.types.Message):
     """Распознавание текст из аудио файлов"""
-    
+
     my_log.log_media(message)
-    
+
     # если заблокированы автопереводы в этом чате то выходим
     if (message.chat.id in blocks and blocks[message.chat.id] == 1) and message.chat.type != 'private':
         return
@@ -485,7 +483,7 @@ def handle_audio_thread(message: telebot.types.Message):
         if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй', 'прочитай']):
             return
 
-        with show_action(message.chat.id, 'typing'):
+        with ShowAction(message.chat.id, 'typing'):
             # Создание временного файла 
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 file_path = temp_file.name
@@ -529,7 +527,7 @@ def handle_voice_thread(message: telebot.types.Message):
         # Распознаем текст из аудио
         # если мы не в привате и в этом чате нет блокировки автораспознавания то показываем активность
         if not (message.chat.id in blocks and blocks[message.chat.id] == 1) or message.chat.type == 'private':
-            with show_action(message.chat.id, 'typing'):
+            with ShowAction(message.chat.id, 'typing'):
                 text = my_stt.stt(file_path)
         else:
             text = my_stt.stt(file_path)
@@ -566,8 +564,10 @@ def handle_document_thread(message: telebot.types.Message):
     
         # если прислали текстовый файл или pdf с подписью перескажи
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
-        if message.caption and message.caption.startswith(('что там','перескажи','краткое содержание', 'кратко')) and message.document.mime_type in ('text/plain', 'application/pdf'):
-            with show_action(message.chat.id, 'typing'):
+        if message.caption \
+        and message.caption.startswith(('что там','перескажи','краткое содержание', 'кратко')) \
+        and message.document.mime_type in ('text/plain', 'application/pdf'):
+            with ShowAction(message.chat.id, 'typing'):
                 file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
                 file_bytes = io.BytesIO(downloaded_file)
@@ -598,16 +598,16 @@ def handle_document_thread(message: telebot.types.Message):
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
             # если текстовый файл то пытаемся озвучить как книгу. русский голос
             if message.document.mime_type == 'text/plain':
-                with show_action(message.chat.id, 'record_audio'):
+                with ShowAction(message.chat.id, 'record_audio'):
                     file_name = message.document.file_name + '.ogg'
                     file_info = bot.get_file(message.document.file_id)
                     file = bot.download_file(file_info.file_path)
                     text = file.decode('utf-8')
                     try:
                         lang = detect_langs(text)[0].lang
-                    except Exception as error:
+                    except Exception as error2:
                         lang = 'ru'
-                        print(error)
+                        print(error2)
                     # Озвучиваем текст
                     global tts_gender
                     if message.chat.id in tts_gender:
@@ -624,7 +624,7 @@ def handle_document_thread(message: telebot.types.Message):
 
         # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
-            with show_action(message.chat.id, 'upload_document'):
+            with ShowAction(message.chat.id, 'upload_document'):
                 # получаем самый большой документ из списка
                 document = message.document
                 # если документ не является PDF-файлом, отправляем сообщение об ошибке
@@ -681,7 +681,7 @@ def handle_photo_thread(message: telebot.types.Message):
         # распознаем текст только если есть команда для этого
         if not message.caption and message.chat.type != 'private': return
         if message.chat.type != 'private' and not gpt_basic.detect_ocr_command(message.caption.lower()): return
-        with show_action(message.chat.id, 'typing'):
+        with ShowAction(message.chat.id, 'typing'):
             # получаем самую большую фотографию из списка
             photo = message.photo[-1]
             fp = io.BytesIO()
@@ -919,7 +919,7 @@ def tts_thread(message: telebot.types.Message):
         return
 
     with semaphore_talks:
-        with show_action(message.chat.id, 'record_audio'):
+        with ShowAction(message.chat.id, 'record_audio'):
             global tts_gender
             if message.chat.id in tts_gender:
                 gender = tts_gender[message.chat.id]
@@ -962,8 +962,8 @@ def google_thread(message: telebot.types.Message):
 
     try:
         q = message.text.split(maxsplit=1)[1]
-    except Exception as error:
-        print(error)
+    except Exception as error2:
+        print(error2)
         help = """/google текст запроса
 
 Будет делать запрос в гугл, и потом пытаться найти нужный ответ в результатах
@@ -983,7 +983,7 @@ def google_thread(message: telebot.types.Message):
         bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('hide'))
         return
         
-    with show_action(message.chat.id, 'typing'):
+    with ShowAction(message.chat.id, 'typing'):
         r = my_google.search(q)
         try:
             bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
@@ -1141,7 +1141,7 @@ def image_thread(message: telebot.types.Message):
         prompt = message.text.split(maxsplit = 1)
         if len(prompt) > 1:
             prompt = prompt[1]
-            with show_action(message.chat.id, 'upload_photo'):
+            with ShowAction(message.chat.id, 'upload_photo'):
                 images = bingai.gen_imgs(prompt)
                 if type(images) == str:
                     bot.reply_to(message, images, reply_markup=get_keyboard('hide'))
@@ -1152,8 +1152,8 @@ def image_thread(message: telebot.types.Message):
                         try:
                             bot.send_message(pics_group, prompt, disable_web_page_preview = True)
                             bot.send_media_group(pics_group, medias)
-                        except Exception as error:
-                            print(error)
+                        except Exception as error2:
+                            print(error2)
                     caption = ''
                     # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
                     # что бы можно было их потом просматривать отдельно
@@ -1240,12 +1240,12 @@ def summ_text_thread(message: telebot.types.Message):
                                 ]
                     return
 
-                with show_action(message.chat.id, 'typing'):
+                with ShowAction(message.chat.id, 'typing'):
                     res = ''
                     try:
                         res = bingai.summ_url(url)
-                    except Exception as error:
-                        print(error)
+                    except Exception as error2:
+                        print(error2)
                         m = 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.'
                         bot.reply_to(message, m, reply_markup=get_keyboard('hide'))
                         my_log.log_echo(message, m)
@@ -1336,7 +1336,7 @@ def trans_thread(message: telebot.types.Message):
         lang = lang.strip()
 
     with semaphore_talks:
-        with show_action(message.chat.id, 'typing'):
+        with ShowAction(message.chat.id, 'typing'):
             translated = my_trans.translate_text2(text, lang)
             if translated:
                 bot.reply_to(message, translated, reply_markup=get_keyboard('translate'))
@@ -1391,7 +1391,7 @@ def last_thread(message: telebot.types.Message):
         if limit > len(messages.messages):
             limit = len(messages.messages)
 
-        with show_action(message.from_user.id, 'typing'):
+        with ShowAction(message.from_user.id, 'typing'):
 
             resp = bingai.summ_text_worker('\n'.join(messages.messages[-limit:]), 'chat_log')
 
@@ -1569,7 +1569,7 @@ def do_task(message):
         if chat_id in bot_names:
             bot_name = bot_names[chat_id]
         else:
-            bot_name = bot_name_default
+            bot_name = BOT_NAME_DEFAULT
             bot_names[chat_id] = bot_name 
         # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
         if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
@@ -1626,7 +1626,7 @@ def do_task(message):
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
-            with show_action(chat_id, 'typing'):
+            with ShowAction(chat_id, 'typing'):
                 # добавляем новый запрос пользователя в историю диалога пользователя
                 resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
                 if resp:
@@ -1634,8 +1634,8 @@ def do_task(message):
                         try:
                             bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             #bot.send_message(chat_id, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                        except Exception as error:
-                            print(error)
+                        except Exception as error2:
+                            print(error2)
                             #bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                             my_log.log2(resp)
                             bot.send_message(chat_id, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
@@ -1665,21 +1665,21 @@ def do_task(message):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
 
             # добавляем новый запрос пользователя в историю диалога пользователя
-            with show_action(chat_id, 'typing'):
+            with ShowAction(chat_id, 'typing'):
                 resp = dialog_add_user_request(chat_id, message.text, 'gpt')
                 if resp:
                     if is_private:
                         try:
                             send_long_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                        except Exception as error:    
-                            print(error)
+                        except Exception as error2:    
+                            print(error2)
                             my_log.log2(resp)
                             send_long_message(chat_id, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     else:
                         try:
                             reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                        except Exception as error:    
-                            print(error)
+                        except Exception as error2:    
+                            print(error2)
                             my_log.log2(resp)
                             reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log_echo(message, resp)

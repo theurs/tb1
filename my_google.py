@@ -136,11 +136,11 @@ def search(q: str) -> str:
     """Ищет в гугле а если не получилось то в  duckduckgo
     """
 
-    try:
-        r = search_google(q)
-    except Exception as error:
-        print(error)
-        r = search_ddg(q)
+    #try:
+    r = search_google(q)
+    #except Exception as error:
+    #print(error)
+    r = search_ddg(q)
     return r
 
 

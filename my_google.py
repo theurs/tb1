@@ -8,6 +8,7 @@ import trafilatura
 
 import gpt_basic
 import cfg
+import my_log
 
 
 def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: str = '') -> str:
@@ -62,6 +63,7 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
 
 {result}"""
 
+    my_log.log2(text)
     return gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
 
 

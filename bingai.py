@@ -199,7 +199,10 @@ def summ_url(url:str) -> str:
         youtube = True
     else:
         # Получаем содержимое страницы
-        response = requests.get(url, stream=True)
+                
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+
+        response = requests.get(url, stream=True, headers=headers, timeout=10)
         content = b''
         # Ограничиваем размер
         for chunk in response.iter_content(chunk_size=1024):
@@ -228,6 +231,7 @@ def summ_url(url:str) -> str:
             newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
             text = trafilatura.extract(content, config=newconfig)
    
+    return text
     if youtube:
         r = summ_text(text, 'youtube_video')
     elif pdf:
@@ -249,6 +253,10 @@ def is_valid_url(url: str) -> bool:
 
 if __name__ == "__main__":
     """Usage ./bingai.py 'list 10 japanese dishes'|URL|filename"""
+    #r = summ_url('https://techxplore.com/news/2023-06-problems.html')
+    #print(r)
+    #sys.exit(0)
+    
     t = sys.argv[1]
     
     if is_valid_url(t):

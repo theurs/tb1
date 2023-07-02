@@ -20,6 +20,7 @@ youtube_transcript_api
 selenium
 chardet
 python-magic
+python-magic-bin
 transliterate
 trafilatura
 google

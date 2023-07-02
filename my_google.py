@@ -13,7 +13,7 @@ import cfg
 import my_log
 
 
-def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: str = '') -> str:
+def search_google(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: str = '') -> str:
     """ищет в гугле ответ на вопрос q, отвечает с помощью GPT
     max_req - максимальный размер ответа гугла, сколько текста можно отправить гпт чату
     max_search - сколько ссылок можно прочитать пока не наберется достаточно текстов
@@ -40,9 +40,9 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
         content = trafilatura.fetch_url(url)
 
         if content:
-            #text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
-            #    include_comments = True, include_images = True, include_tables=True)
-            text = trafilatura.extract(content, config=newconfig)
+            text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
+                include_comments = True)
+            #text = trafilatura.extract(content, config=newconfig)
             if text:
                 result += f'\n\n|||{url}|||\n\n{text}\n\n'
                 if len(result) > max_req:
@@ -102,9 +102,9 @@ def search_ddg(q: str, max_req: int = cfg.max_request, max_search: int = 10, his
         content = trafilatura.fetch_url(url)
 
         if content:
-            #text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
-            #    include_comments = True)
-            text = trafilatura.extract(content, config=newconfig)
+            text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
+                include_comments = True)
+            #text = trafilatura.extract(content, config=newconfig)
             if text:
                 result += f'\n\n|||{url}|||\n\n{text}\n\n'
                 if len(result) > max_req:
@@ -132,10 +132,19 @@ def search_ddg(q: str, max_req: int = cfg.max_request, max_search: int = 10, his
     return gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
 
 
+def search(q: str) -> str:
+    """Ищет в гугле а если не получилось то в  duckduckgo
+    """
+
+    try:
+        r = search_google(q)
+    except Exception as error:
+        print(error)
+        r = search_ddg(q)
+    return r
+
 
 if __name__ == "__main__":
-    
-    search = search_ddg
     
     print(search('курс доллара'), '\n\n')
     

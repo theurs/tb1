@@ -63,7 +63,7 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
 
 {result}"""
 
-    my_log.log2(text)
+    my_log.log2(text[:max_req])
     return gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
 
 

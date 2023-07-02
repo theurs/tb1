@@ -6,3 +6,4 @@ cookies.json
 *.log
 *.json
 test.py
+.google-cookie

@@ -231,7 +231,7 @@ def summ_url(url:str) -> str:
             newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
             text = trafilatura.extract(content, config=newconfig)
    
-    return text
+    #return text
     if youtube:
         r = summ_text(text, 'youtube_video')
     elif pdf:

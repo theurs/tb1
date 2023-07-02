@@ -25,7 +25,8 @@ def search_google(q: str, max_req: int = cfg.max_request, max_search: int = 10, 
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(q)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
-    r = googlesearch.search(q, stop = max_search, user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36')
+    r = googlesearch.search(q, stop = max_search, \
+        user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36')
     bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
     for url in r:
         if any(s.lower() in url.lower() for s in bad_results):
@@ -70,10 +71,19 @@ def search_google(q: str, max_req: int = cfg.max_request, max_search: int = 10, 
     return gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
 
 
-def ddg_text(q: str) -> str:
+def ddg_text(query: str) -> str:
+    """
+    Generate a list of URLs from DuckDuckGo search results based on the given query.
+
+    Parameters:
+        query (str): The search query.
+
+    Returns:
+        str: A URL from each search result.
+    """
     with DDGS() as ddgs:
-        for r in ddgs.text(q, safesearch='Off', timelimit='y', region = 'ru-ru'):
-            yield r['href']
+        for result in ddgs.text(query, safesearch='Off', timelimit='y', region = 'ru-ru'):
+            yield result['href']
 
 
 def search_ddg(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: str = '') -> str:
@@ -132,19 +142,19 @@ def search_ddg(q: str, max_req: int = cfg.max_request, max_search: int = 10, his
     return gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
 
 
-def search(q: str) -> str:
+def search(query: str) -> str:
     """Ищет в гугле а если не получилось то в  duckduckgo
     """
 
     try:
-        r = search_google(q)
+        result = search_google(query)
     except urllib.error.HTTPError as error:
         if 'HTTP Error 429: Too Many Requests' in str(error):
-            r = search_ddg(q)
+            result = search_ddg(query)
         else:
             print(error)
             raise error
-    return r
+    return result
 
 
 if __name__ == "__main__":

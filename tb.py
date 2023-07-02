@@ -583,15 +583,12 @@ def handle_document_thread(message: telebot.types.Message):
                     summary = bingai.summ_text(text)
                     for i in utils.split_text(summary, 3900):
                         bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
-                    #bot.reply_to(message, summary, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
-                    #reply_to_long_message(message, resp=summary, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     my_log.log(message, summary)
                 else:
                     help = 'Не удалось получить никакого текста из документа.'
                     bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
                     my_log.log(message, help)
                 return
-
 
         # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
         caption = message.caption or ''
@@ -664,7 +661,7 @@ def handle_photo_thread(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
     
     my_log.log_media(message)
-    
+
     with semaphore_talks:
         # пересланные сообщения пытаемся перевести даже если в них картинка
         # новости в телеграме часто делают как картинка + длинная подпись к ней
@@ -733,25 +730,21 @@ def handle_video_thread(message: telebot.types.Message):
 
 
 def is_for_me(cmd: str):
-    """проверяет кому адресована команда, этому боту или какому то другому
+    """Checks who the command is addressed to, this bot or another one.
     
     /cmd@botname args
     
-    возвращает (True/False, 'та же команда но без имени бота')
-    если имени бота нет вообще то считает что обращались к этому боту
+    Returns (True/False, 'the same command but without the bot name').
+    If there is no bot name at all, assumes that the command is addressed to this bot.
     """
-    arg1 = cmd.split()[0]
-    if '@' in arg1:
-        message_cmd = arg1.split('@', maxsplit = 1)[0]
-        if len(arg1.split('@', maxsplit = 1)) > 1:
-            message_bot = arg1.split('@', maxsplit = 1)[1]
-        else:
-            message_bot = ''
-        if len(cmd.split()) > 1:
-            message_args = cmd.split(maxsplit = 1)[1]
-        else:
-            message_args = ''
-        return  (message_bot == _bot_name, f'{message_cmd} {message_args}'.strip())
+    command_parts = cmd.split()
+    first_arg = command_parts[0]
+
+    if '@' in first_arg:
+        message_cmd = first_arg.split('@', maxsplit=1)[0]
+        message_bot = first_arg.split('@', maxsplit=1)[1] if len(first_arg.split('@', maxsplit=1)) > 1 else ''
+        message_args = cmd.split(maxsplit=1)[1] if len(command_parts) > 1 else ''
+        return (message_bot == _bot_name, f'{message_cmd} {message_args}'.strip())
     else:
         return (True, cmd)
 
@@ -807,7 +800,9 @@ def change_mode(message: telebot.types.Message):
 
 @bot.message_handler(commands=['mem'])
 def send_debug_history(message: telebot.types.Message):
-    # Отправляем текущую историю сообщений
+    """
+    Отправляет текущую историю сообщений пользователю.
+    """
 
     # не обрабатывать команды к другому боту /cmd@botname args
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]

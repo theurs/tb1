@@ -102,9 +102,9 @@ def search_ddg(q: str, max_req: int = cfg.max_request, max_search: int = 10, his
         content = trafilatura.fetch_url(url)
 
         if content:
-            #text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
-            #    include_comments = True, include_images = True, include_tables=True)
-            text = trafilatura.extract(content, config=newconfig)
+            text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
+                include_comments = True)
+            #text = trafilatura.extract(content, config=newconfig)
             if text:
                 result += f'\n\n|||{url}|||\n\n{text}\n\n'
                 if len(result) > max_req:

@@ -9,6 +9,7 @@ from fuzzywuzzy import fuzz
 import openai
 
 import cfg
+import utils
 
 
 # требует новой версии питона list[str]
@@ -192,6 +193,8 @@ def clear_after_stt(text):
 
 def check_and_fix_text(text):
     """пытаемся исправить странную особенность пиратского GPT сервера, он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
+    if 'Windows' in utils.platform():
+        return text
 
     ru = enchant.Dict("ru_RU")
 
@@ -231,6 +234,10 @@ def zip_text(text: str) -> str:
 
 
 if __name__ == '__main__':
+    t = 'hi'
+    print(ai(t))
+    sys.exit(0)
+
     if len(sys.argv) != 2:
         print("Usage: gptbasic.py filename|'request to qpt'")
         sys.exit(1)

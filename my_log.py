@@ -22,7 +22,8 @@ def log(message: telebot.types.Message, reply_from_bot: str = '') -> None:
         with open(log_file_path, 'a') as log_file:
             time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
             log_file.write(f"[{time_now}] [{message.chat.type}] [{('user' if message.chat.type == 'private' else 'chat')} \
-{message.chat.username or message.chat.first_name or message.chat.title or ''}] [{message.from_user.first_name or message.from_user.username or ''}]: \
+{message.chat.username or message.chat.first_name or message.chat.title or ''}] \
+[{message.from_user.first_name or message.from_user.username or ''}]: \
 {message.text or message.caption}\n")
             if reply_from_bot:
                 log_file.write(f"[{time_now}] Bot replied: {reply_from_bot}\n")
@@ -45,7 +46,6 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:
 
     logname = f'logs/[{chat_name}] [{private_or_chat}] [{message.chat.type}] [{message.chat.id}].log'.replace('[private] [private]', '[private]').replace('[chat] [supergroup]', '[chat]')
     log_file_path = logname
-    #log_file_path = os.path.join(os.getcwd(), logname)
 
     with lock:
         with open(log_file_path, 'a') as log_file:

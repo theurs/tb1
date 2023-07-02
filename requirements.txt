@@ -23,4 +23,4 @@ python-magic
 python-magic-bin
 transliterate
 trafilatura
-google
+googlesearch-python

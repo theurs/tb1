@@ -3,6 +3,7 @@
 
 import re
 import my_log
+import platform as platform_module
 
 
 # диалог всегда начинается одинаково
@@ -133,6 +134,11 @@ def split_text(text: str, chunk_limit: int = 1500):
         position = space_index + 1
     # возвращаем список частей текста
     return chunks
+
+
+def platform() -> str:
+    """Определяет на какой платформе работает скрипт, windows или linux"""
+    return platform_module.platform()
 
 
 if __name__ == '__main__':

@@ -23,7 +23,7 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(q)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
-    r = googlesearch.search(q, stop = max_search)
+    r = googlesearch.search(q, num_results = max_search)
     bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
     for url in r:
         if any(s.lower() in url.lower() for s in bad_results):
@@ -69,7 +69,7 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
 
 
 if __name__ == "__main__":
-    print(search('текст песни doni ft валерия ты такой'), '\n\n')
+    print(search('полный текст песни doni ft валерия ты такой'), '\n\n')
 
     print(search('курс доллара'), '\n\n')
     print(search('текст песни егора пикачу'), '\n\n')

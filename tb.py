@@ -1422,14 +1422,17 @@ def send_name(message: telebot.types.Message):
         
         # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
         regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
-        if re.match(regex, new_name) and len(new_name) <= 10:
+        bot_names = ('бинг', 'гугл', 'нарисуй')
+        if re.match(regex, new_name) and len(new_name) <= 10\
+           and new_name.lower() not in bot_names:
             global bot_names
             bot_names[message.chat.id] = new_name.lower()
             msg = f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.'
             bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
         else:
-            msg = "Неправильное имя, можно только русские и английские буквы и цифры после букв, не больше 10 всего."
+            msg = f"Неправильное имя, можно только русские и английские буквы и цифры после букв, \
+                не больше 10 всего. Имена {', '.join(bot_names) if bot_names else ''}уже заняты."
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
 

@@ -1432,7 +1432,7 @@ def send_name(message: telebot.types.Message):
             my_log.log_echo(message, msg)
         else:
             msg = f"Неправильное имя, можно только русские и английские буквы и цифры после букв, \
-                не больше 10 всего. Имена {', '.join(bad_names) if bot_names else ''}уже заняты."
+не больше 10 всего. Имена {', '.join(bad_names) if bot_names else ''} уже заняты."
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
 

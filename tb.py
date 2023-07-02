@@ -476,7 +476,7 @@ def handle_audio_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     # если заблокированы автопереводы в этом чате то выходим
-    if (message.chat.id in BLOCKS and BLOCKS[message.chat.id] == 1) and message.chat.type !blocksvate':
+    if (message.chat.id in BLOCKS and BLOCKS[message.chat.id] == 1) and message.chat.type != 'private':
         return
     with semaphore_talks:
         caption = message.caption or ''

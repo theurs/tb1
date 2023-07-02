@@ -72,7 +72,7 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
 
 def ddg_text(q: str) -> str:
     with DDGS() as ddgs:
-        for r in ddgs.text(q, safesearch='Off', timelimit='y'):
+        for r in ddgs.text(q, safesearch='Off', timelimit='y', region = 'ru-ru'):
             yield r['href']
 
 
@@ -136,6 +136,8 @@ def search_ddg(q: str, max_req: int = cfg.max_request, max_search: int = 10, his
 if __name__ == "__main__":
     
     search = search_ddg
+    
+    print(search('курс доллара'), '\n\n')
     
     print(search('полный текст песни doni ft валерия ты такой'), '\n\n')
 

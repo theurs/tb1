@@ -526,7 +526,7 @@ def handle_voice_thread(message: telebot.types.Message):
             new_file.write(downloaded_file)
         # Распознаем текст из аудио
         # если мы не в привате и в этом чате нет блокировки автораспознавания то показываем активность
-        if not (message.chat.id in BLOCKS and BLOCKS[message.chat.id] == 1) or message.chat.type =blocksvate':
+        if not (message.chat.id in BLOCKS and BLOCKS[message.chat.id] == 1) or message.chat.type == 'private'':
             with ShowAction(message.chat.id, 'typing'):
                 text = my_stt.stt(file_path)
         else:
@@ -537,7 +537,7 @@ def handle_voice_thread(message: telebot.types.Message):
         os.remove(file_path)
 
         # если мы не в привате и в этом чате нет блокировки автораспознавания
-        if not (message.chat.id in BLOCKS and BLOCKS[message.chat.id] == 1) or message.chat.type =blocksvate':
+        if not (message.chat.id in BLOCKS and BLOCKS[message.chat.id] == 1) or message.chat.type == 'private'':
             # Отправляем распознанный текст 
             if text.strip() != '':
                 bot.reply_to(message, text, reply_markup=get_keyboard('hide'))

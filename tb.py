@@ -52,8 +52,7 @@ semaphore_talks = threading.Semaphore(40)
 if not os.path.exists('db'):
     os.mkdir('db')
 
-# замок для блокировки постоянных словарей
-lock_dicts = threading.Lock()
+
 # история диалогов для GPT chat
 dialogs = my_dic.PersistentDict('db/dialogs.pkl')
 # в каких чатах выключены автопереводы
@@ -174,16 +173,14 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     if chat_id in prompts:
         current_prompt = prompts[chat_id]
     else:
-        with lock_dicts:
-            # по умолчанию нормальный стиль с ноткой юмора
-            prompts[chat_id] = [{"role": "system", "content": utils.gpt_start_message2}]
-            current_prompt =   [{"role": "system", "content": utils.gpt_start_message2}]
+        # по умолчанию нормальный стиль с ноткой юмора
+        prompts[chat_id] = [{"role": "system", "content": utils.gpt_start_message2}]
+        current_prompt =   [{"role": "system", "content": utils.gpt_start_message2}]
 
     # создаем новую историю диалогов с юзером из старой если есть
     # в истории диалогов не храним системный промпт
     if chat_id in dialogs:
-        with lock_dicts:
-            new_messages = dialogs[chat_id]
+        new_messages = dialogs[chat_id]
     else:
         new_messages = []
 
@@ -211,10 +208,9 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
             else:
                 # не сохраняем диалог, нет ответа
                 # если в последнем сообщении нет текста (глюк) то убираем его
-                with lock_dicts:
-                    if new_messages[-1]['content'].strip() == '':
-                        new_messages = new_messages[:-1]
-                    dialogs[chat_id] = new_messages or []
+                if new_messages[-1]['content'].strip() == '':
+                    new_messages = new_messages[:-1]
+                dialogs[chat_id] = new_messages or []
                 return 'GPT не ответил.'
         # бот не ответил или обиделся
         except AttributeError:
@@ -287,8 +283,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     else:
         new_messages += [{"role":    "assistant",
                              "content": resp}]
-    with lock_dicts:
-        dialogs[chat_id] = new_messages or []
+    dialogs[chat_id] = new_messages or []
 
     return resp
 
@@ -407,8 +402,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
             #bot.edit_message_reply_markup(message.chat.id, message.message_id)
-            with lock_dicts:
-                dialogs[chat_id] = []
+            dialogs[chat_id] = []
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
@@ -438,12 +432,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 my_log.log_echo(message, '[Продолжает] ' + resp)
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
-            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
-            with lock_dicts:
-                dialogs[chat_id] = []
+            dialogs[chat_id] = []
         elif call.data == 'erase_answer':
             # обработка нажатия кнопки "Стереть ответ"
-            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'tts':
             lang = my_trans.detect_lang(message.text) or 'ru'
@@ -451,7 +442,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             tts(message)
         elif call.data == 'erase_image':
             # обработка нажатия кнопки "Стереть ответ"
-            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             bot.delete_message(message.chat.id, message.message_id)
             # получаем номер сообщения с картинками из сообщения с ссылками на картинки который идет следом
             for i in message.text.split('\n')[0].split():
@@ -461,8 +451,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             for i in message.text.split('\n')[0].split():
                 id = int(i)
                 break
-            with lock_dicts:
-                p = image_prompt[id]
+            p = image_prompt[id]
             message.text = f'/image {p}'
             # рисуем еще картинки с тем же запросом
             image(message)
@@ -622,8 +611,7 @@ def handle_document_thread(message: telebot.types.Message):
                     # Озвучиваем текст
                     global tts_gender
                     if message.chat.id in tts_gender:
-                        with lock_dicts:
-                            gender = tts_gender[message.chat.id]
+                        gender = tts_gender[message.chat.id]
                     else:
                         gender = 'female'    
                     audio = my_tts.tts(text, lang, gender=gender)
@@ -794,11 +782,10 @@ def change_mode(message: telebot.types.Message):
             new_prompt = utils.gpt_start_message3
         else:
             new_prompt = arg[0]
-        with lock_dicts:
-            prompts[message.chat.id] =  [{"role": "system", "content": new_prompt}]
-            msg =  f'[Новая роль установлена] `{new_prompt}`'
-            bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-            my_log.log_echo(message, msg)
+        prompts[message.chat.id] =  [{"role": "system", "content": new_prompt}]
+        msg =  f'[Новая роль установлена] `{new_prompt}`'
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+        my_log.log_echo(message, msg)
     else:
         msg = f"""Текущий стиль
         
@@ -835,8 +822,7 @@ def send_debug_history(message: telebot.types.Message):
     # создаем новую историю диалогов с юзером из старой если есть
     messages = []
     if chat_id in dialogs:
-        with lock_dicts:
-            messages = dialogs[chat_id]
+        messages = dialogs[chat_id]
     prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
     my_log.log_echo(message, prompt)
     for i in utils.split_text(prompt, 3500):
@@ -848,22 +834,6 @@ def send_debug_history(message: telebot.types.Message):
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
     bot.stop_polling()
-
-
-#@bot.message_handler(commands=['test']) 
-#def test(message: telebot.types.Message):
-#    thread = threading.Thread(target=test_thread, args=(message,))
-#    thread.start()
-#def test_thread(message: telebot.types.Message):
-#    """отсылает все накопленные картинки в группу"""
-#    l = []
-#    with lock_dicts:
-#        for n in images_db.keys():
-#            if type(images_db[n]) == tuple:
-#                l.append((images_db[n][0], images_db[n][1][0]))
-#    for i in l:
-#        bot.send_photo(pics_group, photo=i[1], caption = i[0])
-#        time.sleep(5)
 
 
 @bot.message_handler(commands=['ttsmale']) 
@@ -880,8 +850,7 @@ def tts_male_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     global tts_gender
-    with lock_dicts:
-       tts_gender[message.chat.id] = 'male'
+    tts_gender[message.chat.id] = 'male'
     
     bot.send_message(message.chat.id, 'Голос TTS теперь мужской', reply_markup=get_keyboard('hide'))
 
@@ -900,8 +869,7 @@ def tts_female_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     global tts_gender
-    with lock_dicts:
-       tts_gender[message.chat.id] = 'female'
+    tts_gender[message.chat.id] = 'female'
     
     bot.send_message(message.chat.id, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide'))
 
@@ -954,8 +922,7 @@ def tts_thread(message: telebot.types.Message):
         with show_action(message.chat.id, 'record_audio'):
             global tts_gender
             if message.chat.id in tts_gender:
-                with lock_dicts:
-                    gender = tts_gender[message.chat.id]
+                gender = tts_gender[message.chat.id]
             else:
                 gender = 'female'
             audio = my_tts.tts(text, lang, rate, gender=gender)
@@ -1020,19 +987,18 @@ def google_thread(message: telebot.types.Message):
         r = my_google.search(q)
         try:
             bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-        except Exception as error:
-            my_log.log2(error)
+        except Exception as error2:
+            my_log.log2(error2)
             bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
         my_log.log_echo(message, r)
         
-        with lock_dicts:
-            if chat_id not in dialogs:
-                dialogs[chat_id] = []
-            dialogs[chat_id] += [{"role":    'system',
-                                  "content": f'user попросил сделать запрос в Google: {q}'},
-                                  {"role":    'system',
-                                  "content": f'assistant поискал в Google и ответил: {r}'}
-                                  ]
+        if chat_id not in dialogs:
+            dialogs[chat_id] = []
+        dialogs[chat_id] += [{"role":    'system',
+                                "content": f'user попросил сделать запрос в Google: {q}'},
+                                {"role":    'system',
+                                "content": f'assistant поискал в Google и ответил: {r}'}
+                                ]
 
 
 @bot.message_handler(commands=['images','imgs'])
@@ -1052,9 +1018,8 @@ def images_thread(message: telebot.types.Message):
     
     ttl = 0
     
-    with lock_dicts:
-        if 'total' in images_db:
-            ttl = images_db['total']
+    if 'total' in images_db:
+        ttl = images_db['total']
     
     if ttl:
         show_gallery(message, ttl, update = False)
@@ -1067,15 +1032,14 @@ def images_thread(message: telebot.types.Message):
 def show_gallery(message: telebot.types.Message, cur: int, update: bool):
     """показывает картинки из базы, cur - номер который надо показать"""
     with semaphore_talks:
-        with lock_dicts:
-            ttl = images_db['total']
-            if cur < 1:
-                cur = 1
-            if cur > ttl:
-                cur = ttl
-            
-            prompt = images_db[cur-1][0]
-            images = images_db[cur-1][1]
+        ttl = images_db['total']
+        if cur < 1:
+            cur = 1
+        if cur > ttl:
+            cur = ttl
+        
+        prompt = images_db[cur-1][0]
+        images = images_db[cur-1][1]
 
         msg = f'{cur} из {ttl}\n\n<a href="{images[0]}">{html.escape(prompt)}</a>'
 
@@ -1128,21 +1092,20 @@ def html_gallery_thread(message: telebot.types.Message):
 """
 
     with semaphore_talks:
-        with lock_dicts:
-            body = ''
-            ttl = images_db['total']
-            c = 4
-            while ttl > 0:
-                if c == 4:
-                    body += '<tr>\n'
-                cap = images_db[ttl-1][0]
-                ref = images_db[ttl-1][1][0]
-                body += f'<td><figure><a href="{ref}" target="_blank"><img src="{ref}" style="max-width: 256px; max-height: 256px;"></a><figcaption>{cap}</figcaption></figure></td>\n'
-                c = c-1
-                if c == 0:
-                    c = 4
-                    body += '</tr>\n'
-                ttl -= 1
+        body = ''
+        ttl = images_db['total']
+        c = 4
+        while ttl > 0:
+            if c == 4:
+                body += '<tr>\n'
+            cap = images_db[ttl-1][0]
+            ref = images_db[ttl-1][1][0]
+            body += f'<td><figure><a href="{ref}" target="_blank"><img src="{ref}" style="max-width: 256px; max-height: 256px;"></a><figcaption>{cap}</figcaption></figure></td>\n'
+            c = c-1
+            if c == 0:
+                c = 4
+                body += '</tr>\n'
+            ttl -= 1
     html = header + body + footer
     current_time = datetime.datetime.now().strftime('%d-%m-%Y %H：%M')
     bytes_io = io.BytesIO(html.encode('utf-8'))
@@ -1196,17 +1159,16 @@ def image_thread(message: telebot.types.Message):
                     # что бы можно было их потом просматривать отдельно
                     global image_prompt, images_db, dialogs
                     chat_id = message.chat.id
-                    with lock_dicts:
-                        if 'total' in images_db:
-                            ttl = images_db['total']
-                        else:
-                            ttl = 0
-                            images_db['total'] = 0
-                        for i in images:
-                            images_db[ttl] = (prompt, (i,))
-                            ttl += 1
-                        images_db['total'] = ttl
-                        image_prompt[msgs_ids[0].message_id] = prompt
+                    if 'total' in images_db:
+                        ttl = images_db['total']
+                    else:
+                        ttl = 0
+                        images_db['total'] = 0
+                    for i in images:
+                        images_db[ttl] = (prompt, (i,))
+                        ttl += 1
+                    images_db['total'] = ttl
+                    image_prompt[msgs_ids[0].message_id] = prompt
 
                     for i in msgs_ids:
                         caption += f'{i.message_id} '
@@ -1215,22 +1177,20 @@ def image_thread(message: telebot.types.Message):
                     bot.send_message(message.chat.id, caption, disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
                     my_log.log_echo(message, '[image gen] ')
                     
-                    with lock_dicts:
-                        n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
-                        if chat_id in dialogs:
-                            dialogs[chat_id] += n
-                        else:
-                            dialogs[chat_id] = n
+                    n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
+                    if chat_id in dialogs:
+                        dialogs[chat_id] += n
+                    else:
+                        dialogs[chat_id] = n
                     
                 else:
                     bot.reply_to(message, 'Бинг нарисовал неизвестно что.', reply_markup=get_keyboard('hide'))
                     my_log.log_echo(message, '[image gen error] ')
-                    with lock_dicts:
-                        n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant не захотел или не смог нарисовать это с помощью DALL-E'}]
-                        if chat_id in dialogs:
-                            dialogs[chat_id] += n
-                        else:
-                            dialogs[chat_id] = n
+                    n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant не захотел или не смог нарисовать это с помощью DALL-E'}]
+                    if chat_id in dialogs:
+                        dialogs[chat_id] += n
+                    else:
+                        dialogs[chat_id] = n
 
         else:
             bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
@@ -1265,21 +1225,19 @@ def summ_text_thread(message: telebot.types.Message):
 
                 #смотрим нет ли в кеше ответа на этот урл
                 r = ''
-                with lock_dicts:
-                    if url in sum_cache:
-                        r = sum_cache[url]
+                if url in sum_cache:
+                    r = sum_cache[url]
                 if r:
                     for i in utils.split_text(r, 3900):
                         bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     my_log.log_echo(message, r)
-                    with lock_dicts:
-                        if chat_id not in dialogs:
-                            dialogs[chat_id] = []
-                        dialogs[chat_id] += [{"role":    'system',
-                                  "content": f'user попросил кратко пересказать содержание текста по ссылке/из файла'},
-                                  {"role":    'system',
-                                  "content": f'assistant прочитал и ответил: {r}'}
-                                  ]
+                    if chat_id not in dialogs:
+                        dialogs[chat_id] = []
+                    dialogs[chat_id] += [{"role":    'system',
+                                "content": f'user попросил кратко пересказать содержание текста по ссылке/из файла'},
+                                {"role":    'system',
+                                "content": f'assistant прочитал и ответил: {r}'}
+                                ]
                     return
 
                 with show_action(message.chat.id, 'typing'):
@@ -1297,15 +1255,14 @@ def summ_text_thread(message: telebot.types.Message):
                             bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                             time.sleep(2)
                         my_log.log_echo(message, res)
-                        with lock_dicts:
-                            sum_cache[url] = res
-                            if chat_id not in dialogs:
-                                dialogs[chat_id] = []
-                            dialogs[chat_id] += [{"role":    'system',
-                                  "content": f'user попросил кратко пересказать содержание текста по ссылке/из файла'},
-                                  {"role":    'system',
-                                  "content": f'assistant прочитал и ответил: {res}'}
-                                  ]
+                        sum_cache[url] = res
+                        if chat_id not in dialogs:
+                            dialogs[chat_id] = []
+                        dialogs[chat_id] += [{"role":    'system',
+                                "content": f'user попросил кратко пересказать содержание текста по ссылке/из файла'},
+                                {"role":    'system',
+                                "content": f'assistant прочитал и ответил: {res}'}
+                                ]
                         return
                     else:
                         error = 'Бинг не ответил'
@@ -1335,9 +1292,8 @@ def summ2_text(message: telebot.types.Message):
                 url = url.split("&t=")[0]
 
             #смотрим нет ли в кеше ответа на этот урл
-            with lock_dicts:
-                if url in sum_cache:
-                    sum_cache.pop(url)
+            if url in sum_cache:
+                sum_cache.pop(url)
 
     summ_text(message)
 
@@ -1424,14 +1380,13 @@ def last_thread(message: telebot.types.Message):
         else:
             limit = 60000
 
-        with lock_dicts:
-            if message.chat.id in chat_logs:
-                messages = chat_logs[message.chat.id]
-            else:
-                mes = 'История пуста'
-                bot.reply_to(message, mes, reply_markup=get_keyboard('hide'))
-                my_log.log_echo(message, mes)
-                return
+        if message.chat.id in chat_logs:
+            messages = chat_logs[message.chat.id]
+        else:
+            mes = 'История пуста'
+            bot.reply_to(message, mes, reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, mes)
+            return
 
         if limit > len(messages.messages):
             limit = len(messages.messages)
@@ -1473,9 +1428,8 @@ def send_name(message: telebot.types.Message):
         # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
         regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
         if re.match(regex, new_name) and len(new_name) <= 10:
-            with lock_dicts:
-                global bot_names
-                bot_names[message.chat.id] = new_name.lower()
+            global bot_names
+            bot_names[message.chat.id] = new_name.lower()
             msg = f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.'
             bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
@@ -1599,43 +1553,42 @@ def do_task(message):
 
         global blocks, bot_names, dialogs
         
-        with lock_dicts:
-            # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
-            if not is_private:
-                #time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-                time_now = datetime.datetime.now().strftime('%H:%M')
-                user_name = message.from_user.first_name or message.from_user.username or 'unknown'
-                if chat_id in chat_logs:
-                    m = chat_logs[chat_id]
-                else:
-                    m = utils.MessageList()
-                m.append(f'[{time_now}] [{user_name}] {message.text}')
-                chat_logs[chat_id] = m
-        
-            # определяем какое имя у бота в этом чате, на какое слово он отзывается
-            if chat_id in bot_names:
-                bot_name = bot_names[chat_id]
+        # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
+        if not is_private:
+            #time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+            time_now = datetime.datetime.now().strftime('%H:%M')
+            user_name = message.from_user.first_name or message.from_user.username or 'unknown'
+            if chat_id in chat_logs:
+                m = chat_logs[chat_id]
             else:
-                bot_name = bot_name_default
-                bot_names[chat_id] = bot_name 
-            # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
-            if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
-                blocks[chat_id] = 1
-                bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-                my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
-                return
-            # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
-            if (msg.startswith('вернись') and (is_private or is_reply)) or msg.startswith((f'{bot_name} вернись', f'{bot_name}, вернись')):
-                blocks[chat_id] = 0
-                bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-                my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
-                return
-            # если сообщение начинается на 'забудь' то стираем историю общения GPT
-            if (msg.startswith('забудь') and (is_private or is_reply)) or msg.startswith((f'{bot_name} забудь', f'{bot_name}, забудь')):
-                dialogs[chat_id] = []
-                bot.send_message(chat_id, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-                my_log.log_echo(message, 'История GPT принудительно отчищена')
-                return
+                m = utils.MessageList()
+            m.append(f'[{time_now}] [{user_name}] {message.text}')
+            chat_logs[chat_id] = m
+    
+        # определяем какое имя у бота в этом чате, на какое слово он отзывается
+        if chat_id in bot_names:
+            bot_name = bot_names[chat_id]
+        else:
+            bot_name = bot_name_default
+            bot_names[chat_id] = bot_name 
+        # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
+        if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
+            blocks[chat_id] = 1
+            bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
+            return
+        # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
+        if (msg.startswith('вернись') and (is_private or is_reply)) or msg.startswith((f'{bot_name} вернись', f'{bot_name}, вернись')):
+            blocks[chat_id] = 0
+            bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
+            return
+        # если сообщение начинается на 'забудь' то стираем историю общения GPT
+        if (msg.startswith('забудь') and (is_private or is_reply)) or msg.startswith((f'{bot_name} забудь', f'{bot_name}, забудь')):
+            dialogs[chat_id] = []
+            bot.send_message(chat_id, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, 'История GPT принудительно отчищена')
+            return
 
         # если в сообщении только ссылка и она отправлена боту в приват
         # тогда сумморизируем текст из неё
@@ -1652,12 +1605,11 @@ def do_task(message):
                 if prompt:
                     message.text = f'/image {prompt}'
                     image_thread(message)
-                    with lock_dicts:
-                        n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
-                        if chat_id in dialogs:
-                            dialogs[chat_id] += n
-                        else:
-                            dialogs[chat_id] = n
+                    n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
+                    if chat_id in dialogs:
+                        dialogs[chat_id] += n
+                    else:
+                        dialogs[chat_id] = n
                     return
         regex = fr'^(бинг|{bot_name})\,?\s+нарисуй\s+(.+)$'
         match = re.match(regex, msg, re.DOTALL)
@@ -1732,9 +1684,8 @@ def do_task(message):
                             reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log_echo(message, resp)
         else: # смотрим надо ли переводить текст
-            with lock_dicts:
-                if chat_id in blocks and blocks[chat_id] == 1:
-                    return
+            if chat_id in blocks and blocks[chat_id] == 1:
+                return
             text = my_trans.translate(message.text)
             if text:
                 bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('hide'))

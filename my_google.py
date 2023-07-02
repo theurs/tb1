@@ -38,9 +38,9 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
         content = trafilatura.fetch_url(url)
 
         if content:
-            text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
-                include_comments = True, include_images = True, include_tables=True)
-            #text = trafilatura.extract(content, config=newconfig)
+            #text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
+            #    include_comments = True, include_images = True, include_tables=True)
+            text = trafilatura.extract(content, config=newconfig)
             if text:
                 result += f'\n\n|||{url}|||\n\n{text}\n\n'
                 if len(result) > max_req:
@@ -64,7 +64,7 @@ def search(q: str, max_req: int = cfg.max_request, max_search: int = 10, hist: s
 
 {result}"""
 
-    my_log.log2(text[:max_req])
+    #my_log.log2(text[:max_req])
     return gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
 
 

@@ -1704,11 +1704,18 @@ def do_task(message):
                             bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log_echo(message, resp)
 
-        # можно перенаправить запрос к бингу, но он долго отвечает
+        # можно перенаправить запрос к гуглу, но он долго отвечает
         elif msg.startswith(('гугл ', 'гугл,', 'гугл\n')):
             message.text = f'/google {msg[5:]}'
             google(message)
             return
+
+        # можно перенаправить запрос к DuckDuckGo, но он долго отвечает
+        elif msg.startswith(('утка ', 'утка,', 'утка\n')):
+            message.text = f'/ddg {msg[5:]}'
+            ddg(message)
+            return
+
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
             if len(msg) > cfg.max_message_from_user:

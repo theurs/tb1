@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 
+import cfg
+if cfg.stt == 'whisper':
+    import whisper
+
 import sys
 import threading
-
-import whisper
-
-import cfg
 
 
 MODEL = None

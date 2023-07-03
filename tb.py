@@ -24,6 +24,7 @@ import my_google
 import my_stt
 import my_trans
 import my_tts
+import my_whisper
 import utils
 
 
@@ -493,8 +494,10 @@ def handle_audio_thread(message: telebot.types.Message):
             with open(file_path, 'wb') as new_file:
                 new_file.write(downloaded_file)
             # Распознаем текст из аудио 
-            text = my_stt.stt(file_path)
-            #text = my_whisper.get_text(file_path)
+            if cfg.stt == 'vosk':
+                text = my_stt.stt(file_path)
+            elif cfg.stt == 'whisper':
+                text = my_whisper.get_text(file_path)
             os.remove(file_path)
             # Отправляем распознанный текст 
             if text.strip() != '':
@@ -528,11 +531,15 @@ def handle_voice_thread(message: telebot.types.Message):
         # если мы не в привате и в этом чате нет блокировки автораспознавания то показываем активность
         if not (message.chat.id in BLOCKS and BLOCKS[message.chat.id] == 1) or message.chat.type == 'private':
             with ShowAction(message.chat.id, 'typing'):
-                text = my_stt.stt(file_path)
+                if cfg.stt == 'vosk':
+                    text = my_stt.stt(file_path)
+                elif cfg.stt == 'whisper':
+                    text = my_whisper.get_text(file_path)
         else:
-            text = my_stt.stt(file_path)
-
-        #text = my_whisper.get_text(file_path)
+            if cfg.stt == 'vosk':
+                text = my_stt.stt(file_path)
+            elif cfg.stt == 'whisper':
+                text = my_whisper.get_text(file_path)
 
         os.remove(file_path)
 

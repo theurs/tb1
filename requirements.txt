@@ -25,4 +25,4 @@ transliterate
 trafilatura
 google
 duckduckgo_search
-
+openai-whisper

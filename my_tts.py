@@ -8,11 +8,12 @@ import asyncio
 
 import edge_tts
 import gtts
-import vosk_tts
+from vosk_tts.model import Model
+from vosk_tts.synth import Synth
 
 
-VOSK_MODEL = vosk_tts.Model(model_name="vosk-model-tts-ru-0.1-natasha")
-VOSK_SYNTH = vosk_tts.Synth(model)
+VOSK_MODEL = Model(model_name="vosk-model-tts-ru-0.1-natasha")
+VOSK_SYNTH = Synth(VOSK_MODEL)
 
 
 def tts_vosk(text: str) -> bytes:

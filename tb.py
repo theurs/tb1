@@ -876,6 +876,25 @@ def tts_female_thread(message: telebot.types.Message):
     bot.send_message(message.chat.id, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide'))
 
 
+@bot.message_handler(commands=['ttsgoogle']) 
+def tts_google(message: telebot.types.Message):
+    thread = threading.Thread(target=tts_google_thread, args=(message,))
+    thread.start()
+def tts_google_thread(message: telebot.types.Message):
+    """Переключает голос TTS на женский"""
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    global TTS_GENDER
+    TTS_GENDER[message.chat.id] = 'google_female'
+    
+    bot.send_message(message.chat.id, 'Голос TTS теперь женский от Гугла', reply_markup=get_keyboard('hide'))
+
+
 @bot.message_handler(commands=['tts']) 
 def tts(message: telebot.types.Message):
     thread = threading.Thread(target=tts_thread, args=(message,))

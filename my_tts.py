@@ -6,6 +6,15 @@ import edge_tts
 import tempfile
 import os
 import asyncio
+import gtts
+
+
+def tts_google(text: str, lang: str = 'ru') -> bytes:
+    mp3_fp = io.BytesIO()
+    result = gtts.gTTS(text, lang=lang)
+    result.write_to_fp(mp3_fp)
+    mp3_fp.seek(0)
+    return mp3_fp.read()
 
 
 def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
@@ -23,8 +32,10 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
 
     Функция возвращает байтовый поток с сгенерированным аудио.
     """
-    
     lang = voice
+
+    if gender == 'google_female':
+        return tts_google(text, lang)
 
     voice = get_voice(voice, gender)
 
@@ -133,6 +144,8 @@ def get_voice(language_code: str, gender: str = 'female'):
 
 
 if __name__ == "__main__":
-    print(type(tts('Привет, как дела!', 'ru')))
+    #print(type(tts('Привет, как дела!', 'ru')))
+    
+    print(type(tts_google('Привет, как дела!', 'ru')))
 
     #print(get_voice('ru', 'male'))

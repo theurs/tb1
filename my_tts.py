@@ -2,14 +2,41 @@
 
 
 import io
-import edge_tts
 import tempfile
 import os
 import asyncio
+
+import edge_tts
 import gtts
+import vosk_tts
+
+
+VOSK_MODEL = vosk_tts.Model(model_name="vosk-model-tts-ru-0.1-natasha")
+VOSK_SYNTH = vosk_tts.Synth(model)
+
+
+def tts_vosk(text: str) -> bytes:
+    # Создаем временный файл для записи аудио
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f: 
+        filename = f.name 
+
+    VOSK_SYNTH.synth(text, filename)
+    data = open(filename, "rb").read()
+    os.remove(filename)
+    return data
 
 
 def tts_google(text: str, lang: str = 'ru') -> bytes:
+    """
+    Converts the given text to speech using the Google Text-to-Speech (gTTS) API.
+
+    Parameters:
+        text (str): The text to be converted to speech.
+        lang (str, optional): The language of the text. Defaults to 'ru'.
+
+    Returns:
+        bytes: The audio file in the form of bytes.
+    """
     mp3_fp = io.BytesIO()
     result = gtts.gTTS(text, lang=lang)
     result.write_to_fp(mp3_fp)
@@ -146,6 +173,6 @@ def get_voice(language_code: str, gender: str = 'female'):
 if __name__ == "__main__":
     #print(type(tts('Привет, как дела!', 'ru')))
     
-    print(type(tts_google('Привет, как дела!', 'ru')))
+    print(type(tts_vosk('Привет, как дела!')))
 
     #print(get_voice('ru', 'male'))

@@ -8,23 +8,6 @@ import asyncio
 
 import edge_tts
 import gtts
-from vosk_tts.model import Model
-from vosk_tts.synth import Synth
-
-
-VOSK_MODEL = Model(model_name="vosk-model-tts-ru-0.1-natasha")
-VOSK_SYNTH = Synth(VOSK_MODEL)
-
-
-def tts_vosk(text: str) -> bytes:
-    # Создаем временный файл для записи аудио
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f: 
-        filename = f.name 
-
-    VOSK_SYNTH.synth(text, filename)
-    data = open(filename, "rb").read()
-    os.remove(filename)
-    return data
 
 
 def tts_google(text: str, lang: str = 'ru') -> bytes:
@@ -174,6 +157,4 @@ def get_voice(language_code: str, gender: str = 'female'):
 if __name__ == "__main__":
     #print(type(tts('Привет, как дела!', 'ru')))
     
-    print(type(tts_vosk('Привет, как дела!')))
-
-    #print(get_voice('ru', 'male'))
+    print(get_voice('ru', 'male'))

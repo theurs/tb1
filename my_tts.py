@@ -6,17 +6,21 @@ import io
 import glob
 import os
 import re
+import string
 import subprocess
 import tempfile
 import threading
-import wave
+import sys
+from urllib.parse import urlparse
 
 import edge_tts
 import gtts
 from transliterate import translit
 from lingua_franca.format import pronounce_number
 import lingua_franca
+import pronouncing
 import torch #silero
+
 import utils
 
 
@@ -217,10 +221,24 @@ def all_num_to_text(text:str) -> str:
 def unroll_text(text: str, lang: str = 'ru') -> str:
     """Заменяет в тексте не русские символы на русские и цифры на слова для TTS который сам так не умеет"""
     load_language(lang)
-    result = translit(text, 'ru')
-    result = all_num_to_text(result)
-    result = word_to_tts(result)
-    return result
+    result = word_to_tts(text)                  # меняем абревиатуры на слоги
+    result =   tts_links(result)                # меняем ссылки
+    result = all_num_to_text(result)            # меняем цифры на слова
+
+    result = result.replace('\r', '')
+    result = result.replace('\n', '⁂ ')
+    
+    result2 = ''
+    for word in result.split(' '):
+        result2 += ' ' + translate_word(word) + ' '
+        
+    result2 = result2.strip()
+    result2 = result2.replace('⁂', '.\n')
+    
+    result2 = result2.replace('  ', ' ')
+    result2 = result2.replace('  ', ' ')
+    result2 = result2.replace('  ', ' ')
+    return result2
    
 
 def tts_google(text: str, lang: str = 'ru') -> bytes:
@@ -371,28 +389,110 @@ def get_voice(language_code: str, gender: str = 'female'):
     return voices[language_code][gender]
 
 
+def extract_domain(url):
+    parsed_url = urlparse(url)
+    domain = parsed_url.netloc
+    return domain
+
+
+def tts_links(text):
+    # Регулярное выражение для поиска ссылок
+    pattern = r'(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)'
+    
+    # Функция-обработчик для замены ссылок
+    def replace_link(match):
+        # Получаем найденную ссылку
+        link = match.group(0)
+        
+        # Обрабатываем ссылку по своему усмотрению
+        #processed_link = f"[Ссылка: {link}]"
+        processed_link = f"[Ссылка на сайт {translate_word(extract_domain(link))}]"
+        
+        return processed_link
+    
+    # Заменяем ссылки на их обработанную версию
+    processed_text = re.sub(pattern, replace_link, text, flags=re.DOTALL)
+    
+    return processed_text
+
+
+def translate_word(word: str) -> str:
+    """
+    Translates a word from English to Russian using a phonetic transcription and a mapping table.
+
+    Args:
+        word (str): The word to be translated.
+
+    Returns:
+        str: The translated word in Russian.
+    """
+    EN_RU_TABLE = {
+    "AA": "о", "AE": "э", "AH": "а", "AO": "о", "AW": "ау", "AY": "ай",
+    "B": "б", "CH": "ч", "D": "д", "DH": "з", "EH": "э", "ER": "эр",
+    "EY": "эй", "F": "ф", "G": "г", "HH": "х", "IH": "и", "IY": "и",
+    "JH": "дж", "K": "к", "L": "л", "M": "м", "N": "н", "NG": "нг",
+    "OW": "о", "OY": "ой", "P": "п", "R": "р", "S": "с", "SH": "ш",
+    "T": "т", "TH": "т", "UH": "у", "UW": "у", "V": "в", "W": "в",
+    "Y": "й", "Z": "з", "ZH": "ж"}
+    word = word.strip()
+    if word == '':
+        return ' '
+    punctuation_ending = ''
+    punctuation_starting = ''
+    if word[-1] in string.punctuation:
+        punctuation_ending = word[-1]
+        word = word[:-1]
+    
+    if word == '':
+        return punctuation_ending
+    
+    if word[0] in string.punctuation:
+        punctuation_starting = word[0]
+        word = word[1:]
+
+    if '-' in word:
+        a, b = word.split('-', maxsplit=2)
+        return punctuation_starting + translate_word(a) + '-' + translate_word(b) + punctuation_ending
+
+    transcription = pronouncing.phones_for_word(word)
+    if len(transcription) == 0:
+        return punctuation_starting + translit(word, 'ru') + punctuation_ending
+    result = ''
+    for phoneme in transcription[0].split():
+        stress = ''
+        if '1' in phoneme or '2' in phoneme:
+            stress = '+'
+            phoneme = phoneme.replace('1', '')
+            phoneme = phoneme.replace('2', '')
+        if '0' in phoneme:
+            phoneme = phoneme.replace('0', '')
+        result += stress + EN_RU_TABLE[phoneme]
+    
+    return punctuation_starting + result + punctuation_ending
+
+
 if __name__ == "__main__":
     #print(type(tts('Привет, как дела!', 'ru')))
-    
+
     #print(get_voice('ru', 'male'))
+
+    #print(translate_word('(trade-in)'))
+    #sys.exit()
     
-    text = """1. Что такое "Нормализация"? АБВГД
+    text = """Меня зовут Даниил Храповицкий, я iOS‑разработчик студии СleverPumpkin, и сегодня поговорим про xcstrings в Xcode 15.
 
-Есть такое понятие как логическая избыточность. Это когда, например, в таблице пользователей есть столбец номер телефона. То есть у пользователя Х может быть только один номер телефона для связи. Но зачастую это неудобно: ведь номеров у человека может быть несколько.
+Один из самых неприятных аспектов iOS‑разработки — это локализация и плюрализация строк. Мало того, что они разбиты на разные файлы: strings и stringsdict, так ещё и работа с этими файлами для начинающего разработчика может оказаться не сильно очевидной. «Что такое %#@⁠VARIABLE@?», «Как добавлять несколько плюралок в одну строку?», «Как использовать плюралки в локализованных строках?», «Как добавлять разные переводы для разных девайсов?» — Все эти вопросы рано или поздно возникают у разработчика. После получения ответов на них каждый задаётся вопросом: «А почему всё так плохо?»
 
-В такой ситуации разумно вынести номер телефона в отдельную таблицу и организовать связь "Один-ко-многим" (у одного пользователя может быть несколько телефонных номеров)
+У зелёных наших братьев дела обстоят получше — у них один файл для локализации. У нас же всё так непросто, потому что формат данных достался нам из Objective‑C, где какая‑то строгость и защита от дураков были не совсем обязательны (вы вообще видели Objective‑C?). Поэтому раньше в файлах локализации можно было:
 
-То есть мы разбиваем таблицу на части или делаем декомпозицию, приводя таким образом таблицу к нормальной форме
+— спокойно пропустить точку с запятой, о месте в коде которой Xcode стыдливо умолчит;
 
-Нормализация как раз и подразумевает собой процесс приведения базы данных к нормальным формам с целью избавления от логической избыточности, а декомпозиция - это одна из вариаций нормализации.
+— упустить тот момент, что название NSStringLocalizedFormatKey должно совпадать с ключом строчки, для которой мы предоставляем плюрализацию (когда об этом знаешь, то забыть сложно, но на первых порах все делали такие ошибки);
 
-Нормальных форм существует аж 8: с 1NF и до 6NF а также Бойса-Кодда и Доменно-ключевая формы.
-2. Есть ли преимущество у NoSQL над SQL?
+— вообще забыть добавить перевод для одного из ключей, после чего в приложении будет отображаться ключ вместо нормальной строки."""
 
-Иногда можно добиться большего быстродействия у первого языка. Если кратко - преимущество есть в скорости выполнения запросов. Это связано с отсутствием связей и конкретной схемы в NoSQL.
-
-Так MongoDB может выигрывать у PostrgeSQL в запросах, которые подразумевают много связей и за которыми постгрес полезет в другие таблицы, которые, вдобавок, могут оказаться очень большими.
-"""
     print(unroll_text(text))
+
     #print(word_to_tts(text))
+
     open('1.ogg', 'wb').write(tts_silero(text))

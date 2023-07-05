@@ -87,11 +87,13 @@ def tts_silero_chunk(text: str, voice: str = 'xenia') -> bytes:
     global DEVICE, MODEL
     if not DEVICE:
         DEVICE = torch.device('cpu')
-        MODEL, _ = torch.hub.load(repo_or_dir='snakers4/silero-models',
-                                        model='silero_tts',
-                                        language='ru',
-                                        speaker='v3_1_ru')
-        MODEL.to('cpu')
+        local_file = 'tts_model/v3_1_ru.pt'
+        # MODEL, _ = torch.hub.load(repo_or_dir='snakers4/silero-models',
+        #                                 model='silero_tts',
+        #                                 language='ru',
+        #                                 speaker='v3_1_ru')
+        # MODEL.to('cpu')
+        MODEL = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
 
     sample_rate = 48000
     speaker = voice # aidar, baya, kseniya, xenia, eugene, random

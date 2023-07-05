@@ -1,14 +1,225 @@
 #!/usr/bin/env python3
 
 
-import io
-import tempfile
-import os
 import asyncio
+import io
+import glob
+import os
+import re
+import subprocess
+import tempfile
+import threading
+import wave
 
 import edge_tts
 import gtts
+from transliterate import translit
+from lingua_franca.format import pronounce_number
+import lingua_franca
+import torch #silero
+import utils
 
+
+# cleanup
+for filePath in [x for x in glob.glob('*.wav') + glob.glob('*.ogg') if 'temp_tts_file' in x]:
+    try:
+        os.remove(filePath)
+    except:
+        print("Error while deleting file : ", filePath)
+
+
+lock = threading.Lock()
+# отложенная инициализация, только при вызове функции
+DEVICE, MODEL = None, None
+
+
+def tts_silero(text: str, voice: str = 'xenia') -> bytes:
+    with lock:
+        tmp_fname = 'temp_tts_file.ogg'
+        tmp_wav_file = 'temp_tts_file.wav'
+        try:
+            os.remove(tmp_fname)
+        except OSError:
+            pass
+        try:
+            os.remove(tmp_wav_file)
+        except OSError:
+            pass
+
+        result_files = []
+        n = 1
+        base_n = 'temp_tts_file-'
+        
+        for chunk in utils.split_text(text, 800):
+            data = tts_silero_chunk(chunk, voice=voice)
+            new_chunkfile = f'{base_n}{n}.wav'
+            with open(new_chunkfile, 'wb') as f:
+                f.write(data)
+            result_files.append(new_chunkfile)
+            n += 1
+
+        subprocess.run(['sox'] + result_files + [tmp_wav_file])
+        subprocess.run(['ffmpeg', '-i', tmp_wav_file, '-c:a', 'libvorbis', tmp_fname])
+
+        data = open(tmp_fname, 'rb').read()
+
+        for i in result_files:
+            os.remove(i)
+        os.remove(tmp_fname)
+        os.remove(tmp_wav_file)
+
+        return data
+
+
+def tts_silero_chunk(text: str, voice: str = 'xenia') -> bytes:
+    """
+    Generate an audio file (WAV) from the given text using the Silero TTS model.
+
+    Args:
+        text (str): The input text to convert into speech.
+        voice (str, optional): The voice to use for the speech. Defaults to 'xenia'.
+                               Available voices: aidar, baya, kseniya, xenia, eugene, random.
+
+    Returns:
+        bytes: The audio data in bytes format.
+    """
+
+    global DEVICE, MODEL
+    if not DEVICE:
+        DEVICE = torch.device('cpu')
+        MODEL, _ = torch.hub.load(repo_or_dir='snakers4/silero-models',
+                                        model='silero_tts',
+                                        language='ru',
+                                        speaker='v3_1_ru')
+        MODEL.to('cpu')
+
+    sample_rate = 48000
+    speaker = voice # aidar, baya, kseniya, xenia, eugene, random
+
+    # замена английских букв и цифр на русские буквы и слова
+    text = unroll_text(text)
+
+    audio_path = MODEL.save_wav(text=text,
+                                speaker=speaker,
+                                put_accent=True,
+                                put_yo=True,
+                                sample_rate=sample_rate
+                                )
+
+    data = open(audio_path, 'rb').read()
+    os.remove(audio_path)
+
+    return data
+
+
+def is_abr(word):
+    if len(word) < 2:
+        return False
+    for i in range(len(word) - 1):
+        if word[i].isupper() and word[i + 1].isupper():
+            return True
+    return False
+
+
+def split_on_uppercase(s, keep_contiguous=True):
+    """
+
+    Args:
+        s (str): string
+        keep_contiguous (bool): flag to indicate we want to 
+                                keep contiguous uppercase chars together
+
+    Returns:
+
+    """
+    string_length = len(s)
+    is_lower_around = (lambda: s[i-1].islower() or 
+                       string_length > (i + 1) and s[i + 1].islower())
+
+    start = 0
+    parts = []
+    for i in range(1, string_length):
+        if s[i].isupper() and (not keep_contiguous or is_lower_around()):
+            parts.append(s[start: i])
+            start = i
+    parts.append(s[start:])
+
+    return parts
+
+
+def word_to_tts(text: str) -> str:
+    """Заменяет в тексте абревиатуры на слоги для чтения с помощью TTS."""
+    syllables = {'A': 'a', 'Б': 'бэ', 'В': 'вэ',
+                 'Г': 'гэ', 'Д': 'дэ', 'Е': 'е',
+                 'Ё': 'ё', 'Ж': 'жэ', 'З': 'зэ',
+                 'И': 'и', 'Й': 'й', 'К': 'ка',
+                 'Л': 'эл', 'М': 'эм', 'Н': 'эн',
+                 'О': 'о', 'П': 'пэ', 'Р': 'эр',
+                 'С': 'эс', 'Т': 'тэ', 'У': 'у',
+                 'Ф': 'эф', 'Х': 'хэ', 'Ц': 'цэ', 'Ч': 'чэ',
+                 'Ш': 'шэ', 'Щ': 'щэ', 'Ъ': 'твёрдый знак',
+                 'Ы': 'ы', 'Ь': 'мягкий знак',
+                 'Э': 'э', 'Ю': 'ю', 'Я': 'я',
+                 'Q':'кью'}
+    
+    text = text.replace('\r', '')
+    text = text.replace('\n', '⁂ ')
+    
+    result = ''
+    # заменяем в тексте все буквы в словах состоящих только из больших букв с помощь словаря
+    for word in text.split():                               # бьем текст на слова
+        for subword in split_on_uppercase(word):            # и на части слов 
+            if is_abr(subword):                             # если слово - абревиатура то 
+                for letter in subword:                      # проходим по каждой букве
+                    try:
+                        result += syllables[letter] + ' '   # и пытаемся заменить на слог
+                    except KeyError:
+                        result += letter + ' '              # если не получилось то оставляем как есть
+            else:
+                result += subword                           # если не абревиатура то оставляем как есть
+            result += ' '
+
+    result = result.strip()
+    result = result.replace('⁂', '\n')
+    return result
+
+
+def load_language(lang:str):
+    lingua_franca.load_language(lang)
+
+
+def convert_one_num_float(match_obj):
+    if match_obj.group() is not None:
+        text = str(match_obj.group())
+        return pronounce_number(float(match_obj.group()))
+
+
+def convert_diapazon(match_obj):
+    if match_obj.group() is not None:
+        text = str(match_obj.group())
+        text = text.replace("-"," тире ")
+        return all_num_to_text(text)
+
+
+def all_num_to_text(text:str) -> str:
+    text = re.sub(r'[\d]*[.][\d]+-[\d]*[.][\d]+', convert_diapazon, text)
+    text = re.sub(r'-[\d]*[.][\d]+', convert_one_num_float, text)
+    text = re.sub(r'[\d]*[.][\d]+', convert_one_num_float, text)
+    text = re.sub(r'[\d]-[\d]+', convert_diapazon, text)
+    text = re.sub(r'-[\d]+', convert_one_num_float, text)
+    text = re.sub(r'[\d]+', convert_one_num_float, text)
+    text = text.replace("%", " процентов")
+    return text
+
+
+def unroll_text(text: str, lang: str = 'ru') -> str:
+    """Заменяет в тексте не русские символы на русские и цифры на слова для TTS который сам так не умеет"""
+    load_language(lang)
+    result = translit(text, 'ru')
+    result = all_num_to_text(result)
+    result = word_to_tts(result)
+    return result
+   
 
 def tts_google(text: str, lang: str = 'ru') -> bytes:
     """
@@ -157,4 +368,25 @@ def get_voice(language_code: str, gender: str = 'female'):
 if __name__ == "__main__":
     #print(type(tts('Привет, как дела!', 'ru')))
     
-    print(get_voice('ru', 'male'))
+    #print(get_voice('ru', 'male'))
+    
+    text = """1. Что такое "Нормализация"? АБВГД
+
+Есть такое понятие как логическая избыточность. Это когда, например, в таблице пользователей есть столбец номер телефона. То есть у пользователя Х может быть только один номер телефона для связи. Но зачастую это неудобно: ведь номеров у человека может быть несколько.
+
+В такой ситуации разумно вынести номер телефона в отдельную таблицу и организовать связь "Один-ко-многим" (у одного пользователя может быть несколько телефонных номеров)
+
+То есть мы разбиваем таблицу на части или делаем декомпозицию, приводя таким образом таблицу к нормальной форме
+
+Нормализация как раз и подразумевает собой процесс приведения базы данных к нормальным формам с целью избавления от логической избыточности, а декомпозиция - это одна из вариаций нормализации.
+
+Нормальных форм существует аж 8: с 1NF и до 6NF а также Бойса-Кодда и Доменно-ключевая формы.
+2. Есть ли преимущество у NoSQL над SQL?
+
+Иногда можно добиться большего быстродействия у первого языка. Если кратко - преимущество есть в скорости выполнения запросов. Это связано с отсутствием связей и конкретной схемы в NoSQL.
+
+Так MongoDB может выигрывать у PostrgeSQL в запросах, которые подразумевают много связей и за которыми постгрес полезет в другие таблицы, которые, вдобавок, могут оказаться очень большими.
+"""
+    print(unroll_text(text))
+    #print(word_to_tts(text))
+    open('1.ogg', 'wb').write(tts_silero(text))

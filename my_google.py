@@ -157,7 +157,9 @@ def search(query: str) -> str:
 
 
 if __name__ == "__main__":
-    
+    print(download_text(['https://www.google.com/search?q=курс+доллара'], 10))    
+    sys.exit(0)
+
     print(search_google('курс доллара'), '\n\n')
     
     print(search('полный текст песни doni ft валерия ты такой'), '\n\n')

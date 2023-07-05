@@ -895,6 +895,44 @@ def tts_google_thread(message: telebot.types.Message):
     bot.send_message(message.chat.id, 'Голос TTS теперь женский от Гугла', reply_markup=get_keyboard('hide'))
 
 
+@bot.message_handler(commands=['ttssileroxenia'])
+def tts_silero_xenia(message: telebot.types.Message):
+    thread = threading.Thread(target=tts_silero_xenia_thread, args=(message,))
+    thread.start()
+def tts_silero_xenia_thread(message: telebot.types.Message):
+    """Переключает голос TTS на silero xenia"""
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    global TTS_GENDER
+    TTS_GENDER[message.chat.id] = 'silero_xenia'
+    
+    bot.send_message(message.chat.id, 'Голос TTS теперь женский от Silero [xenia]', reply_markup=get_keyboard('hide'))
+
+
+@bot.message_handler(commands=['ttssileroaidar'])
+def tts_silero_aidar(message: telebot.types.Message):
+    thread = threading.Thread(target=tts_silero_aidar_thread, args=(message,))
+    thread.start()
+def tts_silero_aidar_thread(message: telebot.types.Message):
+    """Переключает голос TTS на silero aidar"""
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    global TTS_GENDER
+    TTS_GENDER[message.chat.id] = 'silero_aidar'
+    
+    bot.send_message(message.chat.id, 'Голос TTS теперь мужской от Silero [aidar]', reply_markup=get_keyboard('hide'))
+
+
 @bot.message_handler(commands=['tts']) 
 def tts(message: telebot.types.Message):
     thread = threading.Thread(target=tts_thread, args=(message,))

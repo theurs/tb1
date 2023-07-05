@@ -260,6 +260,10 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
 
     if gender == 'google_female':
         return tts_google(text, lang)
+    elif gender == 'silero_xenia':
+        return tts_silero(text, 'xenia')
+    elif gender == 'silero_aidar':
+        return tts_silero(text, 'aidar')
 
     voice = get_voice(voice, gender)
 

@@ -157,7 +157,7 @@ openai_api_base = 'https://api.pawan.krd/unfiltered/v1'
 # отдельный второй гейт если есть иначе продублировать. нужен для.. больших запросов в гугл
 # https://discord.gg/cattogpt
 # команда /info боту что бы получить ключ и статистику
-# дают до 30т запросов
+# дают до 8т запросов
 openai_api_base2 = 'https://api.cattto.repl.co/v1'
 
 

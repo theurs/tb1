@@ -1330,7 +1330,7 @@ def summ_text_thread(message: telebot.types.Message):
     
     if len(text.split(' ', 1)) == 2:
         url = text.split(' ', 1)[1].strip()
-        if bingai.is_valid_url(url):
+        if my_sum.is_valid_url(url):
             # убираем из ютуб урла временную метку
             if '/youtu.be/' in url or 'youtube.com/' in url:
                 url = url.split("&t=")[0]
@@ -1400,7 +1400,7 @@ def summ2_text(message: telebot.types.Message):
     
     if len(text.split(' ', 1)) == 2:
         url = text.split(' ', 1)[1].strip()
-        if bingai.is_valid_url(url):
+        if my_sum.is_valid_url(url):
             # убираем из ютуб урла временную метку
             if '/youtu.be/' in url or 'youtube.com/' in url:
                 url = url.split("&t=")[0]
@@ -1711,7 +1711,7 @@ def do_task(message):
 
         # если в сообщении только ссылка и она отправлена боту в приват
         # тогда сумморизируем текст из неё
-        if bingai.is_valid_url(message.text) and is_private:
+        if my_sum.is_valid_url(message.text) and is_private:
             message.text = '/sum ' + message.text
             summ_text(message)
             return

@@ -6,12 +6,12 @@ import gpt_basic
 import io
 import magic
 import os
+import PyPDF2
 import re
 import requests
 import sys
+import trafilatura
 from langdetect import detect
-from PyPDF2 import PyPDF2
-from trafilatura import trafilatura
 from urllib.parse import urlparse
 from youtube_transcript_api import YouTubeTranscriptApi
 

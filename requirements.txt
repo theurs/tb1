@@ -9,7 +9,6 @@ google
 gTTS
 html2text
 langdetect
-lingua_franca
 openai
 openai-whisper
 Pillow
@@ -22,7 +21,6 @@ pytesseract
 python-Levenshtein
 python-magic
 #python-magic-bin
-pronouncing
 selenium
 telebot
 #trafilatura==1.6.1

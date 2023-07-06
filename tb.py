@@ -22,6 +22,7 @@ import my_log
 import my_ocr
 import my_google
 import my_stt
+import my_sum
 import my_trans
 import my_tts
 import my_whisper
@@ -587,7 +588,7 @@ def handle_document_thread(message: telebot.types.Message):
                     text = file_bytes.read().decode('utf-8')
 
                 if text.strip():
-                    summary = bingai.summ_text(text)
+                    summary = my_sum.summ_text(text)
                     for i in utils.split_text(summary, 3900):
                         bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     my_log.log(message, summary)
@@ -1356,7 +1357,7 @@ def summ_text_thread(message: telebot.types.Message):
                 with ShowAction(message.chat.id, 'typing'):
                     res = ''
                     try:
-                        res = bingai.summ_url(url)
+                        res = my_sum.summ_url(url)
                     except Exception as error2:
                         print(error2)
                         m = 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.'
@@ -1506,7 +1507,7 @@ def last_thread(message: telebot.types.Message):
 
         with ShowAction(message.from_user.id, 'typing'):
 
-            resp = bingai.summ_text_worker('\n'.join(messages.messages[-limit:]), 'chat_log')
+            resp = my_sum.summ_text_worker('\n'.join(messages.messages[-limit:]), 'chat_log')
 
             if resp:
                 resp = f'Сумморизация последних {limit} сообщений в чате {message.chat.username or message.chat.first_name or message.chat.title or "unknown"}\n\n' + resp

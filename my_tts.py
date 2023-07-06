@@ -100,7 +100,7 @@ def tts_silero_chunk(text: str, voice: str = 'xenia') -> bytes:
 
     # замена английских букв и цифр на русские буквы и слова
     text = tts_text_with_gpt(text)
-    print(text, '\n')
+    #print(text, '\n')
     
 
     audio_path = MODEL.save_wav(text=text,

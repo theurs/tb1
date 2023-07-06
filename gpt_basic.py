@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import time
 
 import enchant
 from fuzzywuzzy import fuzz
@@ -49,17 +50,26 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, me
                     }
                 ]
 
-    # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
-    completion = openai.ChatCompletion.create(
-        #headers = {"X-Api-Service": "openai-gpt"},
-        #model="Sage", #gpt3.5
-        #model = 'Claude-instant',
-        model = 'gpt-3.5-turbo-16k',
-        messages=messages,
-        max_tokens=max_tok,
-        temperature=temp,
-        timeout=timeou
-    )
+    # пробуем сделать запрос, повторяем до 3 раз при ошибке с доступом с интервалом 10 секунд
+    n = 3
+    while n > 0:
+        n -= 1
+        try:
+            # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
+            completion = openai.ChatCompletion.create(
+                #headers = {"X-Api-Service": "openai-gpt"},
+                #model="Sage", #gpt3.5
+                #model = 'Claude-instant',
+                model = 'gpt-3.5-turbo-16k',
+                messages=messages,
+                max_tokens=max_tok,
+                temperature=temp,
+                timeout=timeou
+            )
+            break
+        except openai.error.ServiceUnavailableError as error:
+            print(error)
+            time.sleep(10)
     response = completion.choices[0].message.content
     #print(messages)
     return check_and_fix_text(response)

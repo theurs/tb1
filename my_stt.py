@@ -67,12 +67,12 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
 
     with sr.AudioFile(audio_file2) as source:
         audio = google_recognizer.record(source)  # read the entire audio file
-    try:
-        text = google_recognizer.recognize_google(audio, language=language)
-    except sr.UnknownValueError:
-        text = "Google Speech Recognition could not understand audio"
-    except sr.RequestError as error:
-        text = f"Could not request results from Google Speech Recognition service; {error}"
+    #try:
+    text = google_recognizer.recognize_google(audio, language=language)
+    #except sr.UnknownValueError:
+    #    text = "Google Speech Recognition could not understand audio"
+    #except sr.RequestError as error:
+    #    text = f"Could not request results from Google Speech Recognition service; {error}"
 
     #os.remove(audio_file)
     os.remove(audio_file2)
@@ -96,6 +96,10 @@ def stt(input_file: str) -> str:
     try:
         text = stt_google(input_file)
     except AssertionError:
+        pass
+    except sr.UnknownValueError:
+        pass
+    except sr.RequestError:
         pass
     except Exception as unknown_error:
         print(unknown_error)

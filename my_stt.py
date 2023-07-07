@@ -90,17 +90,17 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
 def stt(input_file: str) -> str:
     with tempfile.NamedTemporaryFile() as temp_file:
         output_file = temp_file.name
-    
+
     text = ''
-    
+
     try:
         text = stt_google(input_file)
     except AssertionError:
         pass
-    except sr.UnknownValueError:
-        pass
-    except sr.RequestError:
-        pass
+    except sr.UnknownValueError as unknown_value_error:
+        print(unknown_value_error)
+    except sr.RequestError as request_error:
+        print(request_error)
     except Exception as unknown_error:
         print(unknown_error)
 

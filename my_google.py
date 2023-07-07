@@ -159,7 +159,8 @@ def search(query: str) -> str:
 
 
 if __name__ == "__main__":
-    print(download_text(['https://www.google.com/search?q=курс+доллара'], 10))    
+    #print(download_text(['https://www.google.com/search?q=курс+доллара'], 10))    
+    print(search('3 закона робототехники'), '\n\n')
     sys.exit(0)
 
     print(search_google('курс доллара'), '\n\n')

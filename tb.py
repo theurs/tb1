@@ -17,6 +17,7 @@ from langdetect import detect_langs
 import bingai
 import cfg
 import gpt_basic
+import my_chimera
 import my_dic
 import my_log
 import my_ocr
@@ -1258,7 +1259,10 @@ def image_thread(message: telebot.types.Message):
         if len(prompt) > 1:
             prompt = prompt[1]
             with ShowAction(message.chat.id, 'upload_photo'):
-                images = bingai.gen_imgs(prompt)
+                if cfg.key_chimeraGPT:
+                    images = my_chimera.image_gen(prompt)
+                else:
+                    images = bingai.gen_imgs(prompt)
                 if type(images) == str:
                     bot.reply_to(message, images, reply_markup=get_keyboard('hide'))
                 elif type(images) == list:
@@ -1288,8 +1292,8 @@ def image_thread(message: telebot.types.Message):
 
                     for i in msgs_ids:
                         caption += f'{i.message_id} '
-                    caption += '\n'
-                    caption += '\n\n'.join(images)
+                    #caption += '\n'
+                    #caption += '\n\n'.join(images)
                     bot.send_message(message.chat.id, caption, disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
                     my_log.log_echo(message, '[image gen] ')
                     

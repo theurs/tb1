@@ -98,6 +98,12 @@ key = 'openai api key'
 # второй ключ для больших запросов, если нет то можно просто продублировать
 key2 = 'openai api key'
 
+# ключ для рисования через сайт химеры (рисует кандинский)
+#https://discord.gg/BfwvN8Dy
+#ChimeraGPT - The best API for chat completions with free GPT-4 access! Friendly community, free GPT-4, etc. only here! | 2510 members
+#cfg.key_chimeraGPT = ''
+key_chimeraGPT = 'xxx'
+
 # разпознавание голоса, виспер лучше но требует много памяти и мощного процессора или видеокарту
 stt = 'whisper'
 whisper_model = 'medium' # ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small', 'medium.en', 'medium', 'large-v1', 'large-v2', 'large']

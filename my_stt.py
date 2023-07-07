@@ -77,6 +77,13 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     #os.remove(audio_file)
     os.remove(audio_file2)
 
+    # хак для голосовых команд обращенных к гуглу и бингу
+    # воск их записывает по-русски а гугл по-английски
+    lower_text = text.lower()
+    if lower_text.startswith('google'):
+        text = 'гугл ' + text[6:]
+    if lower_text.startswith('bing'):
+        text = 'бинг ' + text[4:]
     return text
 
 

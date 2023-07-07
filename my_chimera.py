@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
+
 import json
-import asyncio
-import aiohttp
 
 import openai
 
@@ -14,12 +13,35 @@ openai.api_base = "https://chimeragpt.adventblocks.cc/v1"
 
 
 def stt(audio_file: str) -> str:
+    """
+    Transcribes an audio file to text using OpenAI API.
+
+    Args:
+        audio_file (str): The path to the audio file.
+
+    Returns:
+        str: The transcribed text.
+
+    Raises:
+        FileNotFoundError: If the audio file does not exist.
+    """
     audio_file = open(audio_file, "rb")
     translation = openai.Audio.transcribe("whisper-1", audio_file)
     return json.dumps(translation, ensure_ascii=False)['text']
 
 
 def image_gen(prompt: str, amount: int = 10, size: int ='1024x1024'):
+    """
+    Generates a specified number of images based on a given prompt.
+    
+    Parameters:
+        - prompt (str): The text prompt used to generate the images.
+        - amount (int, optional): The number of images to generate. Defaults to 10.
+        - size (str, optional): The size of the generated images. Must be one of '1024x1024', '512x512', or '256x256'. Defaults to '1024x1024'.
+        
+    Returns:
+        - list: A list of URLs pointing to the generated images.
+    """
     assert amount <= 10, 'Too many images to gen'
     assert size in ('1024x1024','512x512','256x256'), 'Wrong image size'
     response = openai.Image.create(

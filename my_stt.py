@@ -98,6 +98,7 @@ def stt(input_file: str) -> str:
     try:
         # сначала пробуем через химеру
         assert cfg.key_chimeraGPT != '', 'No chimera key'
+        assert audio_duration(audio_file) < 600, 'Too big for free speech recognition'
         print('here')
         text = my_chimera.stt(input_file)
     except Exception as error:

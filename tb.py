@@ -1259,13 +1259,20 @@ def image_thread(message: telebot.types.Message):
         if len(prompt) > 1:
             prompt = prompt[1]
             with ShowAction(message.chat.id, 'upload_photo'):
+                images = []
                 if cfg.key_chimeraGPT:
-                    images = my_chimera.image_gen(prompt)
-                else:
-                    images = bingai.gen_imgs(prompt)
-                if type(images) == str:
-                    bot.reply_to(message, images, reply_markup=get_keyboard('hide'))
-                elif type(images) == list:
+                    try:
+                        images += my_chimera.image_gen(prompt, 4)
+                    except Exception as error_chimera_img:
+                        print(error_chimera_img)
+                try:
+                    images2 = bingai.gen_imgs(prompt)
+                    if type(images2) == list:
+                        images += images2
+                except Exception as error_bing_img:
+                    print(error_bing_img)
+                
+                if type(images) == list and len(images) > 0:
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                     if pics_group:

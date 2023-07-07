@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-import concurrent.futures
+import multiprocessing
 
 import bingai
 import cfg
@@ -32,17 +32,18 @@ def chimera(prompt: str):
     return []
 
 
+def runner(args):
+    return args[0](args[1])
+
+
 def gen_images(prompt: str):
     """рисует одновременно и с помощью бинга и с сервисом от chimera"""
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future1 = executor.submit(bing, prompt)
-        future2 = executor.submit(chimera, prompt)
-        # Дождитесь завершения обоих функций
-        result1 = future1.result()
-        print('1')
-        result2 = future2.result()
-        print('2')
-    return result1 + result2    
+
+    data_pairs = [ [bing,prompt], [chimera,prompt] ]
+        
+    pool = multiprocessing.Pool(processes=2)
+
+    return pool.map(runner, data_pairs)
 
 
 if __name__ == '__main__':

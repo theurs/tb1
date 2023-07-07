@@ -2,7 +2,6 @@
 
 
 import chardet
-import gpt_basic
 import io
 import magic
 import os
@@ -16,7 +15,9 @@ from urllib.parse import urlparse
 from youtube_transcript_api import YouTubeTranscriptApi
 
 import bingai
+import cfg
 import gpt_basic
+import my_chimera
 
 
 def get_text_from_youtube(url: str) -> str:
@@ -57,6 +58,12 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
 -------------
 BEGIN:
 """
+#        prompt = f"""Обобщите следующее, кратко ответьте на русском языке с удобным для чтения форматированием:
+#-------------
+#{text}
+#-------------
+#НАЧИНАЙТЕ:
+#"""
     elif subj == 'chat_log':
         prompt = f"""Summarize the following telegram chat log, briefly answer in Russian with easy-to-read formatting:
 -------------
@@ -64,13 +71,25 @@ BEGIN:
 -------------
 BEGIN:
 """
+#        prompt = f"""Обобщите следующий лог телеграмм чата, кратко ответьте на русском языке с удобным для чтения форматированием:
+#-------------
+#{text}
+#-------------
+#НАЧИНАЙТЕ:
+#"""
     elif subj == 'youtube_video':
         prompt = f"""Summarize the following video subtitles extracted from youtube, briefly answer in Russian with easy-to-read formatting:
 -------------
 {text}
 -------------
-BEGIN:
 """
+#        prompt = f"""Обобщите следующие видео субтитры, извлеченные из youtube, кратко ответьте на русском языке с удобным для чтения форматированием:
+#-------------
+#{text}
+#-------------
+#НАЧИНАЙТЕ:
+
+#"""
 
     if type(text) != str or len(text) < 1: return ''
 
@@ -78,6 +97,17 @@ BEGIN:
         assert len(text) < 15000
         result = gpt_basic.ai(prompt, second = True)
     except Exception as error:
+        # пробуем клод-100к если есть
+#        if cfg.key_chimeraGPT != '':
+#            try:
+                #print('trying clode-100k')
+#                result = my_chimera.ai(prompt)
+#                if result:
+#                    return result
+                #print('clode failed')
+#            except Exception as chimera_error:
+#                print(chimera_error)    
+
         try:
             result = bingai.ai(prompt, 1)
         except Exception as error2:
@@ -89,17 +119,24 @@ BEGIN:
 
 
 def summ_text(text: str, subj: str = 'text') -> str:
-    """сумморизирует текст с помощью бинга или гптчата, возвращает краткое содержание, только первые 30(60)т символов
+    """сумморизирует текст с помощью бинга или гптчата или клод-100к, возвращает краткое содержание, только первые 30(60)(99)т символов
     subj - смотрите summ_text_worker()
     """
+    # лимит для gpt4 от бинга
+    max_size = 60000
+    
+    # лимит для клод-100к от химеры
+    #if cfg.key_chimeraGPT != '':
+    #    max_size = 99000
+    #    return summ_text_worker(text[:max_size], subj)
 
-    # уменьшаем текст до 60000 байт (не символов!)
+    # уменьшаем текст до max_size байт (не символов!)
     text2 = text
-    if len(text2) > 60000:
-        text2 = text2[:60000]
+    if len(text2) > max_size:
+        text2 = text2[:max_size]
     text_bytes = text2.encode()
 
-    while len(text_bytes) > 60000:
+    while len(text_bytes) > max_size:
         text2 = text2[:-1]
         text_bytes = text2.encode()
 

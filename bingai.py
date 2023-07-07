@@ -65,6 +65,7 @@ async def main(prompt1: str, style: int = 3) -> str:
 
 def ai(prompt: str, style: int = 3) -> str:
     """сырой запрос к бингу"""
+    print('bing', len(prompt))
     return asyncio.run(main(prompt, style))
 
 

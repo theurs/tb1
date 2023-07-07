@@ -4,10 +4,14 @@
 import asyncio
 import json
 import sys
+import threading
 
 from EdgeGPT import Chatbot, ConversationStyle
 #from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 from BingImageCreator import ImageGen
+
+
+lock_gen_img = threading.Lock()
 
 
 async def main(prompt1: str, style: int = 3) -> str:
@@ -67,27 +71,28 @@ def ai(prompt: str, style: int = 3) -> str:
 def gen_imgs(prompt: str):
     """генерирует список картинок по описанию с помощью бинга
     возвращает список ссылок на картинки или сообщение об ошибке"""
-    with open("cookies.json") as f:
-        c = json.load(f)
-        for ck in c:
-            if ck["name"] == "_U":
-                auth = ck["value"]
-                break
+    with lock_gen_img:
+        with open("cookies.json") as f:
+            c = json.load(f)
+            for ck in c:
+                if ck["name"] == "_U":
+                    auth = ck["value"]
+                    break
 
-    if auth:
-        image_gen = ImageGen(auth, quiet = True)
+        if auth:
+            image_gen = ImageGen(auth, quiet = True)
 
-        try:
-            images = image_gen.get_images(prompt)
-        except Exception as error:
-            if 'Your prompt has been blocked by Bing. Try to change any bad words and try again.' in str(error):
-                return 'Бинг отказался это рисовать.'
-            print(error)
-            return str(error)
+            try:
+                images = image_gen.get_images(prompt)
+            except Exception as error:
+                if 'Your prompt has been blocked by Bing. Try to change any bad words and try again.' in str(error):
+                    return 'Бинг отказался это рисовать.'
+                print(error)
+                return str(error)
 
-        return images
+            return images
 
-    return 'No auth provided'
+        return 'No auth provided'
 
 
 if __name__ == "__main__":

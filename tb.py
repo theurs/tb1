@@ -555,7 +555,7 @@ def handle_voice_thread(message: telebot.types.Message):
         # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
         if text:
             message.text = text
-        echo_all(message)
+            echo_all(message)
 
 
 @bot.message_handler(content_types = ['document'])

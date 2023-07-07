@@ -551,6 +551,7 @@ def handle_voice_thread(message: telebot.types.Message):
                 bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
                 my_log.log_echo(message, f'[ASR] {text}')
             else:
+                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
                 my_log.log_echo(message, '[ASR] no results')
         # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
         if text:

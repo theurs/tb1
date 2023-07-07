@@ -49,6 +49,8 @@ def gen_images(prompt: str):
     for i in results:
         result += i
 
+    return result
+
 
 if __name__ == '__main__':
     print(gen_images('мотоцикл из золота под дождем'))

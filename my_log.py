@@ -103,7 +103,15 @@ def log_media(message: telebot.types.Message) -> None:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил фото] [caption]: {caption}\n")
 
 
+def log_google(request: str, respond: str):
+    """записывает в журнал сообщение полученное обработчиком google"""
+    time_now = datetime.datetime.now().strftime('%d-%m-%Y %H.%M.%S')
+    log_file_path = f'logs/askgoogle at {time_now}.log'
+    with open(log_file_path, 'a', encoding="utf-8") as log_file:
+        log_file.write(f'{respond}\n\n{"="*40}\n\n{request}')
+
+
 if __name__ == '__main__':
     pass
-    log2('1')
+    log_google('1', '2')
     

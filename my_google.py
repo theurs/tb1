@@ -77,7 +77,9 @@ def ask_gpt(query: str, max_req: int, history: str, result: str, engine: str) ->
 
 {result}"""
     #my_log.log2(text[:max_req])
-    return gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
+    result = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
+    my_log.log_google(text[:max_req], result)
+    return result
 
 
 def search_google(query: str, max_req: int = cfg.max_request, max_search: int = 10, history: str = '') -> str:

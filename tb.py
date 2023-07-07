@@ -514,7 +514,7 @@ def handle_voice(message: telebot.types.Message):
     """Автоматическое распознавание текст из голосовых сообщений"""
     thread = threading.Thread(target=handle_voice_thread, args=(message,))
     thread.start()
-def handle_voice_thread(message: telebot.types.Message): 
+def handle_voice_thread(message: telebot.types.Message):
     """Автоматическое распознавание текст из голосовых сообщений"""
 
     my_log.log_media(message)
@@ -553,7 +553,8 @@ def handle_voice_thread(message: telebot.types.Message):
             else:
                 my_log.log_echo(message, '[ASR] no results')
         # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
-        message.text = text
+        if text:
+            message.text = text
         echo_all(message)
 
 

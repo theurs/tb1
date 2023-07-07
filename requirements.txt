@@ -21,7 +21,8 @@ pytesseract
 python-Levenshtein
 python-magic
 #python-magic-bin
-selenium
+#selenium
+SpeechRecognition
 telebot
 #trafilatura==1.6.1
 trafilatura

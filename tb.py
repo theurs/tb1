@@ -1300,9 +1300,9 @@ def image_thread(message: telebot.types.Message):
 
                     for i in msgs_ids:
                         caption += f'{i.message_id} '
-                    #caption += '\n'
-                    #caption += '\n\n'.join(images)
-                    bot.send_message(message.chat.id, caption, disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
+                    caption += '\n'
+                    caption += ', '.join([f'< href="{x}">{link}</a>' for x in images])
+                    bot.send_message(message.chat.id, caption, parse_mode = 'HTML', disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
                     my_log.log_echo(message, '[image gen] ')
                     
                     n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]

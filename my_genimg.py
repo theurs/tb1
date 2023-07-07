@@ -43,7 +43,11 @@ def gen_images(prompt: str):
         
     pool = multiprocessing.Pool(processes=2)
 
-    return pool.map(runner, data_pairs)
+    results = pool.map(runner, data_pairs)
+    
+    result = []
+    for i in results:
+        result += i
 
 
 if __name__ == '__main__':

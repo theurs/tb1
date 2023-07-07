@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 
-import multiprocessing
-
 import bingai
 import cfg
 import my_chimera
@@ -32,24 +30,9 @@ def chimera(prompt: str):
     return []
 
 
-def runner(args):
-    return args[0](args[1])
-
-
 def gen_images(prompt: str):
     """рисует одновременно и с помощью бинга и с сервисом от chimera"""
-
-    data_pairs = [ [bing,prompt], [chimera,prompt] ]
-        
-    pool = multiprocessing.Pool(processes=2)
-
-    results = pool.map(runner, data_pairs)
-    
-    result = []
-    for i in results:
-        result += i
-
-    return result
+    return bing(prompt) + chimera(prompt)
 
 
 if __name__ == '__main__':

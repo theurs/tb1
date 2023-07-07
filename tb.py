@@ -1262,16 +1262,17 @@ def image_thread(message: telebot.types.Message):
                 images = []
                 if cfg.key_chimeraGPT:
                     try:
-                        images += my_chimera.image_gen(prompt, 4)
+                        images += my_chimera.image_gen(prompt, amount = 4)
                     except Exception as error_chimera_img:
                         print(error_chimera_img)
+                        my_log.log2(error_chimera_img)
                 try:
                     images2 = bingai.gen_imgs(prompt)
                     if type(images2) == list:
                         images += images2
                 except Exception as error_bing_img:
                     print(error_bing_img)
-                
+                my_log.log2(str(images))
                 if type(images) == list and len(images) > 0:
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)

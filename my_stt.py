@@ -95,25 +95,27 @@ def stt(input_file: str) -> str:
         output_file = temp_file.name
 
     text = ''
-    try:
-        # сначала пробуем через химеру
-        assert cfg.key_chimeraGPT != '', 'No chimera key'
-        assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
-        print('here')
-        text = my_chimera.stt(input_file)
-    except Exception as error:
-        print(error)
 
+    try: # сначала пробуем через гугл
+       text = stt_google(input_file)
+    except AssertionError:
+        pass
+    except sr.UnknownValueError as unknown_value_error:
+        print(unknown_value_error)
+    except sr.RequestError as request_error:
+        print(request_error)
+    except Exception as unknown_error:
+        print(unknown_error)
+
+    if not text:
         try:
-            text = stt_google(input_file)
-        except AssertionError:
-            pass
-        except sr.UnknownValueError as unknown_value_error:
-            print(unknown_value_error)
-        except sr.RequestError as request_error:
-            print(request_error)
-        except Exception as unknown_error:
-            print(unknown_error)
+            # затем химера
+            assert cfg.key_chimeraGPT != '', 'No chimera key'
+            assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
+            print('here')
+            text = my_chimera.stt(input_file)
+        except Exception as error:
+            print(error)
 
     if not text:
         with lock:
@@ -123,8 +125,10 @@ def stt(input_file: str) -> str:
         # Удаление временного файла
         os.remove(output_file)
 
-    cleared = gpt_basic.clear_after_stt(text)
-    return cleared
+    if text:
+        cleared = gpt_basic.clear_after_stt(text)
+        return cleared
+    return text
 
 
 if __name__ == "__main__":

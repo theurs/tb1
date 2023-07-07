@@ -34,14 +34,16 @@ def chimera(prompt: str):
 
 def gen_images(prompt: str):
     """рисует одновременно и с помощью бинга и с сервисом от chimera"""
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         future1 = executor.submit(bing, prompt)
         future2 = executor.submit(chimera, prompt)
         # Дождитесь завершения обоих функций
         result1 = future1.result()
+        print('1')
         result2 = future2.result()
+        print('2')
     return result1 + result2    
 
 
 if __name__ == '__main__':
-    print(gen_images('мотоцикл из золота под дождем и радуга'))
+    print(gen_images('мотоцикл из золота под дождем'))

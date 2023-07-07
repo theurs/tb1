@@ -58,8 +58,8 @@ def tts_silero(text: str, voice: str = 'xenia') -> bytes:
             result_files.append(new_chunkfile)
             n += 1
 
-        subprocess.run(['sox'] + result_files + [tmp_wav_file])
-        subprocess.run(['ffmpeg', '-i', tmp_wav_file, '-c:a', 'libvorbis', tmp_fname])
+        subprocess.run(['sox'] + result_files + [tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['ffmpeg', '-i', tmp_wav_file, '-c:a', 'libvorbis', tmp_fname], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         data = open(tmp_fname, 'rb').read()
 

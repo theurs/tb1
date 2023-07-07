@@ -167,6 +167,12 @@ openai_api_base = 'https://api.pawan.krd/unfiltered/v1'
 openai_api_base2 = 'https://api.cattto.repl.co/v1'
 
 
+#https://discord.gg/BfwvN8Dy
+#ChimeraGPT - The best API for chat completions with free GPT-4 access! Friendly community, free GPT-4, etc. only here! | 2510 members
+#openai_api_base = 'https://chimeragpt.adventblocks.cc/v1'
+#openai_api_base2  = 'https://chimeragpt.adventblocks.cc/v1'
+
+
 # local poe.com proxy
 # должен быть настроен и запущен https://github.com/juzeon/poe-openai-proxy
 #openai_api_base = 'http://127.0.0.1:3700/v1'

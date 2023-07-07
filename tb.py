@@ -17,7 +17,7 @@ from langdetect import detect_langs
 import bingai
 import cfg
 import gpt_basic
-import my_chimera
+import my_genimg
 import my_dic
 import my_log
 import my_ocr
@@ -1259,21 +1259,8 @@ def image_thread(message: telebot.types.Message):
         if len(prompt) > 1:
             prompt = prompt[1]
             with ShowAction(message.chat.id, 'upload_photo'):
-                images = []
-                if cfg.key_chimeraGPT:
-                    try:
-                        images += my_chimera.image_gen(prompt, amount = 4)
-                    except Exception as error_chimera_img:
-                        print(error_chimera_img)
-                        #my_log.log2(error_chimera_img)
-                try:
-                    images2 = bingai.gen_imgs(prompt)
-                    if type(images2) == list:
-                        images += images2
-                except Exception as error_bing_img:
-                    print(error_bing_img)
-                #my_log.log2(str(images))
-                if type(images) == list and len(images) > 0:
+                images = my_genimg.gen_images(prompt)
+                if len(images) > 0:
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                     if pics_group:
@@ -1312,7 +1299,7 @@ def image_thread(message: telebot.types.Message):
                         DIALOGS_DB[chat_id] = n
                     
                 else:
-                    bot.reply_to(message, 'Бинг нарисовал неизвестно что.', reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, 'Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', reply_markup=get_keyboard('hide'))
                     my_log.log_echo(message, '[image gen error] ')
                     n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant не захотел или не смог нарисовать это с помощью DALL-E'}]
                     if chat_id in DIALOGS_DB:

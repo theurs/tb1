@@ -97,28 +97,35 @@ BEGIN:
 
     if len(prompt) < 15000:
         try:
-            result = gpt_basic.ai(prompt, second = True)
+            result = gpt_basic.ai(prompt, second = True) + '\n\nchatGPT ' + len(prompt)
         except Exception as error:
             print(error)
 
     if not result and len(prompt) < 60000:
         try:
-            result = bingai.ai(prompt, 1)
+            result = bingai.ai(prompt, 1) + '\n\nbing ' + len(prompt)
         except Exception as error2:
             print(error2)
 
     if not result:
         if cfg.key_chimeraGPT != '':
             try:
-                result = my_chimera.ai(prompt_ru[:99000])
+                result = my_chimera.ai(prompt_ru[:99000])  + '\n\nClaude-instant-100k ' + len(prompt[:99000])
             except Exception as chimera_error:
                 print(chimera_error)    
 
     if not result:
         try:
-            result = bingai.ai(prompt[:60000], 1)
+            result = bingai.ai(prompt[:60000], 1) + '\n\nbing ' + len(prompt[:60000])
         except Exception as error2:
             print(error2)
+
+    if not result:
+        try:
+            result = gpt_basic.ai(prompt[:15000], second = True) + '\n\nchatGPT ' + len(prompt[:15000])
+        except Exception as error:
+            print(error)
+
 
     return result
 

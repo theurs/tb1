@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 
+from multiprocessing.pool import ThreadPool
+
 import bingai
 import cfg
 import my_chimera
@@ -32,7 +34,14 @@ def chimera(prompt: str):
 
 def gen_images(prompt: str):
     """рисует одновременно и с помощью бинга и с сервисом от chimera"""
-    return bing(prompt) + chimera(prompt)
+    #return bing(prompt) + chimera(prompt)
+
+    pool = ThreadPool(processes=4)
+
+    async_result1 = pool.apply_async(bing, (prompt,))
+    async_result2 = pool.apply_async(chimera, (prompt,))
+
+    return async_result1.get() +  async_result2.get()
 
 
 if __name__ == '__main__':

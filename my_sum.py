@@ -18,6 +18,7 @@ import bingai
 import cfg
 import gpt_basic
 import my_chimera
+import utils
 
 
 def get_text_from_youtube(url: str) -> str:
@@ -72,7 +73,7 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
 -------------
 BEGIN:
 """
-        prompt_ru = f"""Обобщите следующее, кратко ответьте на русском языке с удобным для чтения форматированием:
+        prompt_ru = f"""Обобщите следующее, кратко ответьте на русском языке с удобным для чтения форматированием, ответ должен начаться с символов >> и закончиться символами <<:
 -------------
 {text}
 -------------
@@ -127,7 +128,18 @@ BEGIN:
     if not result:
         if cfg.key_chimeraGPT != '':
             try:
-                result = f'{my_chimera.ai(prompt_ru[:99000])}\n\n--\nClaude-instant-100k [{len(prompt[:99000])} символов]'
+                # до 4 кусков по 99к :)
+                max_chunks = 4
+                new_text_size = 0
+                for chunk in utils.split_text(prompt_ru, 99000):
+                    max_chunks -= 1
+                    new_text_size += len(chunk)
+                    result += f'{my_chimera.ai(chunk)}\n\n'
+                    if max_chunks == 0:
+                        break
+                result += f'--\nClaude-instant-100k [{len(new_text_size)} символов]'
+
+                #result = f'{my_chimera.ai(prompt_ru[:99000])}\n\n--\nClaude-instant-100k [{len(prompt[:99000])} символов]'
             except Exception as chimera_error:
                 print(chimera_error)    
 

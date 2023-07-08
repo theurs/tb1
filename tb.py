@@ -676,7 +676,7 @@ def handle_photo_thread(message: telebot.types.Message):
     with semaphore_talks:
         # пересланные сообщения пытаемся перевести даже если в них картинка
         # новости в телеграме часто делают как картинка + длинная подпись к ней
-        if message.forward_from_chat:
+        if message.forward_from_chat and message.caption:
             # у фотографий нет текста но есть заголовок caption. его и будем переводить
             text = my_trans.translate(message.caption)
             if text:
@@ -1256,6 +1256,7 @@ def image_thread(message: telebot.types.Message):
 бот нарисуй луна падает на землю (в чате надо добавлять имя бота что бы он понял что это к нему обращаются)
 """
         prompt = message.text.split(maxsplit = 1)
+        chat_id = message.chat.id
         if len(prompt) > 1:
             prompt = prompt[1]
             with ShowAction(message.chat.id, 'upload_photo'):
@@ -1273,7 +1274,6 @@ def image_thread(message: telebot.types.Message):
                     # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
                     # что бы можно было их потом просматривать отдельно
                     global IMAGE_PROMPTS, IMAGES_DB, DIALOGS_DB
-                    chat_id = message.chat.id
                     if 'total' in IMAGES_DB:
                         ttl = IMAGES_DB['total']
                     else:
@@ -1306,7 +1306,6 @@ def image_thread(message: telebot.types.Message):
                         DIALOGS_DB[chat_id] += n
                     else:
                         DIALOGS_DB[chat_id] = n
-
         else:
             bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, help)

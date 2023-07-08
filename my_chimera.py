@@ -46,7 +46,7 @@ def stt(audio_file: str) -> str:
     """
     audio_file = open(audio_file, "rb")
     translation = openai.Audio.transcribe("whisper-1", audio_file)
-    return json.dumps(translation, ensure_ascii=False)['text']
+    return json.loads(json.dumps(translation, ensure_ascii=False))['text']
 
 
 def image_gen(prompt: str, amount: int = 10, size: int ='1024x1024'):
@@ -78,6 +78,6 @@ if __name__ == '__main__':
     #image_prompt = 'автомобиль без колес вид сбоку. хищный вид. оформление для аватарки'
     #print(image_gen(image_prompt))
     
-    #print(tts(text))
+    print(stt('1.mp3'))
 
-    print(ai(open('1.txt', 'r').read()))
+    #print(ai(open('1.txt', 'r').read()))

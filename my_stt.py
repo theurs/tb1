@@ -112,10 +112,11 @@ def stt(input_file: str) -> str:
             # затем химера
             assert cfg.key_chimeraGPT != '', 'No chimera key'
             assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
-            print('here')
+            print('chimera start')
             text = my_chimera.stt(input_file)
+            print('chimera success')
         except Exception as error:
-            print(error)
+            print(error, text)
 
     if not text:
         with lock:

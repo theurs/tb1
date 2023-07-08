@@ -1379,7 +1379,7 @@ def summ_text_thread(message: telebot.types.Message):
                                 ]
                         return
                     else:
-                        error = 'Бинг не ответил'
+                        error = 'Не смог прочитать текст с этой страницы.'
                         bot.reply_to(message, error, reply_markup=get_keyboard('hide'))
                         my_log.log_echo(message, error)
                         return

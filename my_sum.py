@@ -97,32 +97,32 @@ BEGIN:
 
     if len(prompt) < 15000:
         try:
-            result = gpt_basic.ai(prompt, second = True) + '\n\nchatGPT ' + str(len(prompt))
+            result = f'{gpt_basic.ai(prompt, second = True)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
         except Exception as error:
             print(error)
 
     if not result and len(prompt) < 60000:
         try:
-            result = bingai.ai(prompt, 1) + '\n\nbing ' + str(len(prompt))
+            result = f'{bingai.ai(prompt, 1)}\n\n--\nBing AI [{len(prompt)} символов]'
         except Exception as error2:
             print(error2)
 
     if not result:
         if cfg.key_chimeraGPT != '':
             try:
-                result = my_chimera.ai(prompt_ru[:99000])  + '\n\nClaude-instant-100k ' + str(len(prompt[:99000]))
+                result = f'{my_chimera.ai(prompt_ru[:99000])}\n\n--\nClaude-instant-100k [{len(prompt[:99000])} символов]'
             except Exception as chimera_error:
                 print(chimera_error)    
 
     if not result:
         try:
-            result = bingai.ai(prompt[:60000], 1) + '\n\nbing ' + str(len(prompt[:60000]))
+            result = f'{bingai.ai(prompt[:60000], 1)}\n\n--\nBing AI [{len(prompt[:60000])} символов]'
         except Exception as error2:
             print(error2)
 
     if not result:
         try:
-            result = gpt_basic.ai(prompt[:15000], second = True) + '\n\nchatGPT ' + str(len(prompt[:15000]))
+            result = f'{gpt_basic.ai(prompt[:15000], second = True)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:15000])} символов]'
         except Exception as error:
             print(error)
 

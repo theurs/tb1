@@ -13,7 +13,7 @@ openai.api_base = "https://chimeragpt.adventblocks.cc/v1"
 
 
 def ai(prompt: str, messages = None, max_token: int = 2000) -> str:
-    print(len(prompt))
+    print('clode-100k', len(prompt))
     if messages == None:
         messages = [    {"role": "system",
                          "content": """Ты информационная система отвечающая на запросы юзера."""},

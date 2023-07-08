@@ -321,7 +321,7 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
         button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button3 = telebot.types.InlineKeyboardButton("Перевод", callback_data='translate')
+        button3 = telebot.types.InlineKeyboardButton("Перевод 🇷🇺", callback_data='translate')
         markup.add(button1, button2, button3)
         return markup
     elif kbd == 'hide_image':

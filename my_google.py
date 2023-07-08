@@ -36,9 +36,11 @@ def download_text(urls: list, max_req: int = cfg.max_request) -> str:
     for url in urls:
         content = trafilatura.fetch_url(url)
         if content:
-            #text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
-            #    include_comments = True)
-            text = trafilatura.extract(content, config=newconfig)
+            if cfg.max_request > 15000:
+                text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
+                                           include_comments = True)
+            else:
+                text = trafilatura.extract(content, config=newconfig)
             if text:
                 result += f'\n\n|||{url}|||\n\n{text}\n\n'
                 if len(result) > max_req:

@@ -40,6 +40,20 @@ def get_text_from_youtube(url: str) -> str:
     return text or ''
 
 
+def shrink_text_for_bing(text: str, max_size = 60000) -> str:
+    """уменьшаем текст до 60000 байт (не символов!)"""
+    text2 = text
+    if len(text2) > max_size:
+        text2 = text2[:max_size]
+    text_bytes = text2.encode()
+
+    while len(text_bytes) > max_size:
+        text2 = text2[:-1]
+        text_bytes = text2.encode()
+
+    return text2
+
+
 def summ_text_worker(text: str, subj: str = 'text') -> str:
     """паралелльный воркер для summ_text
        subj == 'text' or 'pdf'  - обычный текст о котором ничего не известно
@@ -101,9 +115,12 @@ BEGIN:
         except Exception as error:
             print(error)
 
+    if not result:
+        prompt_bing = shrink_text_for_bing(prompt)
+
     if not result and len(prompt) < 60000:
         try:
-            result = f'{bingai.ai(prompt, 1)}\n\n--\nBing AI [{len(prompt)} символов]'
+            result = f'{bingai.ai(prompt_bing, 1)}\n\n--\nBing AI [{len(prompt_bing)} символов]'
         except Exception as error2:
             print(error2)
 
@@ -116,7 +133,7 @@ BEGIN:
 
     if not result:
         try:
-            result = f'{bingai.ai(prompt[:60000], 1)}\n\n--\nBing AI [{len(prompt[:60000])} символов]'
+            result = f'{bingai.ai(prompt_bing, 1)}\n\n--\nBing AI [{len(prompt_bing)} символов]'
         except Exception as error2:
             print(error2)
 
@@ -125,7 +142,6 @@ BEGIN:
             result = f'{gpt_basic.ai(prompt[:15000], second = True)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:15000])} символов]'
         except Exception as error:
             print(error)
-
 
     return result
 

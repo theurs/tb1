@@ -61,7 +61,8 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, m
                 #headers = {"X-Api-Service": "openai-gpt"},
                 #model="Sage", #gpt3.5
                 #model = 'Claude-instant',
-                model = 'gpt-3.5-turbo-16k',
+                #model = 'gpt-3.5-turbo-16k',
+                model = cfg.model,
                 messages=messages,
                 max_tokens=max_tok,
                 temperature=temp,

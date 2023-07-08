@@ -112,9 +112,10 @@ def stt(input_file: str) -> str:
             # затем химера
             assert cfg.key_chimeraGPT != '', 'No chimera key'
             assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
-            print('chimera start')
+            #print('chimera start')
             text = my_chimera.stt(input_file)
-            print('chimera success')
+            #print('chimera success')
+            #text += '\n\n--chimera'
         except Exception as error:
             print(error, text)
 
@@ -134,5 +135,5 @@ def stt(input_file: str) -> str:
 
 if __name__ == "__main__":
     #print(vosk_cmd)
-    text = stt('1.mp3')
+    text = stt('1.ogg')
     print(text)

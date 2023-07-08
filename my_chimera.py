@@ -2,6 +2,10 @@
 
 
 import json
+import os
+import subprocess
+import tempfile
+from pathlib import Path
 
 import openai
 
@@ -31,6 +35,26 @@ def ai(prompt: str, messages = None, max_token: int = 2000) -> str:
     return completion.choices[0].message.content
 
 
+def convert_to_wav(input_file: str) -> str:
+    """Конвертирует аудиофайл в WAV формат с помощью ffmpeg
+    возвращает имя нового файла (созданного во временной папке)"""
+    # Создаем временный файл с расширением .wav
+    temp_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+    temp_file.close()
+    output_file = temp_file.name
+    
+    os.remove(output_file)
+    # Конвертируем аудиофайл в mp3 с помощью ffmpeg
+    command = ["ffmpeg", "-i", input_file, "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2", output_file]
+    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Проверяем, успешно ли прошла конвертация
+    if os.path.exists(output_file):
+        return output_file
+    else:
+        return None
+
+
 def stt(audio_file: str) -> str:
     """
     Transcribes an audio file to text using OpenAI API.
@@ -44,8 +68,17 @@ def stt(audio_file: str) -> str:
     Raises:
         FileNotFoundError: If the audio file does not exist.
     """
-    audio_file = open(audio_file, "rb")
-    translation = openai.Audio.transcribe("whisper-1", audio_file)
+    audio_file_new = audio_file
+
+    good_formats = ['m4a', 'mp3', 'webm', 'mp4', 'mpga', 'wav', 'mpeg']
+    input_file = Path(audio_file)
+    if input_file.suffix not in good_formats:
+        audio_file_new = Path(convert_to_wav(audio_file))
+
+    audio_file_bytes = open(audio_file_new, "rb")
+    audio_file_new.unlink()
+
+    translation = openai.Audio.transcribe("whisper-1", audio_file_bytes)
     return json.loads(json.dumps(translation, ensure_ascii=False))['text']
 
 
@@ -78,6 +111,6 @@ if __name__ == '__main__':
     #image_prompt = 'автомобиль без колес вид сбоку. хищный вид. оформление для аватарки'
     #print(image_gen(image_prompt))
     
-    print(stt('1.mp3'))
+    print(stt('1.ogg'))
 
     #print(ai(open('1.txt', 'r').read()))

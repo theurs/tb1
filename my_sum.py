@@ -128,18 +128,18 @@ BEGIN:
     if not result:
         if cfg.key_chimeraGPT != '':
             try:
-                # до 4 кусков по 99к :)
-                max_chunks = 4
-                new_text_size = 0
-                for chunk in utils.split_text(prompt_ru, 99000):
-                    max_chunks -= 1
-                    new_text_size += len(chunk)
-                    result += f'{my_chimera.ai(chunk)}\n\n'
-                    if max_chunks == 0:
-                        break
-                result += f'--\nClaude-instant-100k [{len(new_text_size)} символов]'
+                ## до 4 кусков по 99к :)
+                #max_chunks = 4
+                #new_text_size = 0
+                #for chunk in utils.split_text(prompt_ru, 99000):
+                #    max_chunks -= 1
+                #    new_text_size += len(chunk)
+                #    result += f'{my_chimera.ai(chunk)}\n\n'
+                #    if max_chunks == 0:
+                #        break
+                #result += f'--\nClaude-instant-100k [{len(new_text_size)} символов]'
 
-                #result = f'{my_chimera.ai(prompt_ru[:99000])}\n\n--\nClaude-instant-100k [{len(prompt[:99000])} символов]'
+                result = f'{my_chimera.ai(prompt_ru[:99000])}\n\n--\nClaude-instant-100k [{len(prompt[:99000])} символов]'
             except Exception as chimera_error:
                 print(chimera_error)    
 

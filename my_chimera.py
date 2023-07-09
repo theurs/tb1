@@ -39,13 +39,14 @@ def convert_to_wav(input_file: str) -> str:
     """Конвертирует аудиофайл в WAV формат с помощью ffmpeg
     возвращает имя нового файла (созданного во временной папке)"""
     # Создаем временный файл с расширением .wav
-    temp_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+    temp_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
     temp_file.close()
     output_file = temp_file.name
     
     os.remove(output_file)
-    # Конвертируем аудиофайл в mp3 с помощью ffmpeg
-    command = ["ffmpeg", "-i", input_file, "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2", output_file]
+    # Конвертируем аудиофайл в wav с помощью ffmpeg
+    #command = ["ffmpeg", "-i", input_file, '-acodec', 'libmp3lame', output_file]
+    command = ["ffmpeg", "-i", input_file, output_file]
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # Проверяем, успешно ли прошла конвертация
@@ -70,10 +71,11 @@ def stt(audio_file: str) -> str:
     """
     audio_file_new = audio_file
 
-    good_formats = ['m4a', 'mp3', 'webm', 'mp4', 'mpga', 'wav', 'mpeg']
+    #good_formats = ['m4a', 'mp3', 'webm', 'mp4', 'mpga', 'wav', 'mpeg']
     input_file = Path(audio_file)
-    if input_file.suffix not in good_formats:
-        audio_file_new = Path(convert_to_wav(audio_file))
+    #if input_file.suffix not in good_formats:
+    #    audio_file_new = Path(convert_to_wav(audio_file))
+    audio_file_new = Path(convert_to_wav(audio_file))
 
     audio_file_bytes = open(audio_file_new, "rb")
     audio_file_new.unlink()
@@ -111,6 +113,6 @@ if __name__ == '__main__':
     #image_prompt = 'автомобиль без колес вид сбоку. хищный вид. оформление для аватарки'
     #print(image_gen(image_prompt))
     
-    print(stt('1.ogg'))
+    print(stt('123'))
 
     #print(ai(open('1.txt', 'r').read()))

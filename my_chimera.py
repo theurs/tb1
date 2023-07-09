@@ -112,8 +112,8 @@ if __name__ == '__main__':
     #image_prompt = 'автомобиль без колес вид сбоку. хищный вид. оформление для аватарки'
     #print(image_gen(image_prompt))
     
-    #print(stt('123'))
+    #print(stt('1.opus'))
 
-    #print(ai(open('1.txt', 'r').read()))
+    print(ai(open('1.txt', 'r').read()))
 
-    print(ai('напиши рассказ на свободную тему 30 слов', model='gpt-4-0613', max_token=30000))
+    #print(ai('напиши рассказ на свободную тему 30 слов', model='gpt-4-0613', max_token=30000))

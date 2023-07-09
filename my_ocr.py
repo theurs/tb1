@@ -3,12 +3,15 @@
 
 import io
 import re
+import threading
+from PIL import Image
+
+import enchant
 import fitz
 import pytesseract
-from PIL import Image
-import enchant
+
 import gpt_basic
-import threading
+import utils
 
 
 # запрещаем запускать больше чем 1 процесс распознавания
@@ -59,7 +62,8 @@ def get_text_from_image(b):
             continue
         result += i + ' '
     result = result[:-1]
-    if find_words(result) < 4: return ''
+    if 'Windows' not in utils.platform():
+        if find_words(result) < 4: return ''
     result_cleared = gpt_basic.clear_after_ocr(result)
     return result_cleared
 
@@ -88,4 +92,4 @@ def ocr(input_file):
 if __name__ == '__main__':
     pass
 
-    print(ocr('1.png'))
+    print(ocr('1.jpg'))

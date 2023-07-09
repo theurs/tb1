@@ -56,14 +56,14 @@ def shrink_text_for_bing(text: str, max_size = 60000) -> str:
 
 
 def summ_text_worker(text: str, subj: str = 'text') -> str:
-    """паралелльный воркер для summ_text
+    """параллельный воркер для summ_text
        subj == 'text' or 'pdf'  - обычный текст о котором ничего не известно
        subj == 'chat_log'       - журнал чата
        subj == 'youtube_video'  - субтитры к видео на ютубе
     """
 
     # если запустили из pool.map и передали параметры как список
-    if type(text) == tuple:
+    if text.isinstance(tuple):
         text, subj, cont = text[0], text[1], text[2]
 
     if subj == 'text' or subj == 'pdf':

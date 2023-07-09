@@ -635,9 +635,27 @@ def handle_document_thread(message: telebot.types.Message):
                 # получаем самый большой документ из списка
                 document = message.document
                 # если документ не является PDF-файлом, отправляем сообщение об ошибке
+                if document.mime_type == 'image/jpeg':
+                    with ShowAction(message.chat.id, 'typing'):
+                        # скачиваем документ в байтовый поток
+                        file_id = message.document.file_id
+                        file_info = bot.get_file(file_id)
+                        file_name = message.document.file_name + '.jpg'
+                        file = bot.download_file(file_info.file_path)
+                        fp = io.BytesIO(file)
+                        # распознаем текст на фотографии с помощью pytesseract
+                        text = my_ocr.get_text_from_image(fp.read())
+                        # отправляем распознанный текст пользователю
+                        if text.strip() != '':
+                            reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
+                            my_log.log_echo(message, '[OCR] ' + text)
+                        else:
+                            reply_to_long_message(message, 'Не смог распознать текст.', reply_markup=get_keyboard('translate'))
+                            my_log.log_echo(message, '[OCR] no results')
+                    return
                 if document.mime_type != 'application/pdf':
-                    bot.reply_to(message, 'Это не PDF-файл.', reply_markup=get_keyboard('hide'))
-                    my_log.log_echo(message, 'Это не PDF-файл.')
+                    bot.reply_to(message, f'Это не PDF-файл. {document.mime_type}', reply_markup=get_keyboard('hide'))
+                    my_log.log_echo(message, f'Это не PDF-файл. {document.mime_type}')
                     return
                 # скачиваем документ в байтовый поток
                 file_id = message.document.file_id

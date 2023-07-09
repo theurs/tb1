@@ -1623,8 +1623,14 @@ def send_welcome(message: telebot.types.Message):
 
 def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
-    if len(resp) < 3501:
-        bot.send_message(chat_id, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+    if len(resp) < 12000:
+        for chunk in utils.split_text(resp, 3500):
+            try:
+                bot.send_message(chat_id, chunk, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+            except Exception as e:
+                print(e)
+                bot.send_message(chat_id, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+            time.sleep(2)
     else:
         buf = io.BytesIO()
         buf.write(resp.encode())
@@ -1634,8 +1640,14 @@ def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_
 
 def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
-    if len(resp) < 3501:
-        bot.reply_to(message, resp, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+    if len(resp) < 12000:
+        for chunk in utils.split_text(resp, 3500):
+            try:
+                bot.reply_to(message, chunk, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+            except Exception as e:
+                print(e)
+                bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+            time.sleep(2)
     else:
         buf = io.BytesIO()
         buf.write(resp.encode())

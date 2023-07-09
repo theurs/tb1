@@ -629,7 +629,7 @@ def handle_document_thread(message: telebot.types.Message):
                     my_log.log_echo(message, f'[tts file] {text}')
                     return
 
-        # дальше идет попытка распознать ПДФ файл, вытащить текст с изображений
+        # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
             with ShowAction(message.chat.id, 'upload_document'):
                 # получаем самый большой документ из списка

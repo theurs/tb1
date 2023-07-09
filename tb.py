@@ -503,7 +503,9 @@ def handle_audio_thread(message: telebot.types.Message):
             os.remove(file_path)
             # Отправляем распознанный текст 
             if text.strip() != '':
-                bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
+                for chunk in utils.split(text):
+                    bot.reply_to(message, chunk, reply_markup=get_keyboard('translate'))
+                    time.sleep(2)
                 my_log.log_echo(message, f'[ASR] {text}')
             else:
                 bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))

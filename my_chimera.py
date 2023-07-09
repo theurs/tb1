@@ -35,17 +35,16 @@ def ai(prompt: str, messages = None, max_token: int = 2000) -> str:
     return completion.choices[0].message.content
 
 
-def convert_to_wav(input_file: str) -> str:
-    """Конвертирует аудиофайл в WAV формат с помощью ffmpeg
+def convert_to_mp3(input_file: str) -> str:
+    """Конвертирует аудиофайл в MP3 формат с помощью ffmpeg
     возвращает имя нового файла (созданного во временной папке)"""
-    # Создаем временный файл с расширением .wav
+    # Создаем временный файл с расширением .mp3
     temp_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
     temp_file.close()
     output_file = temp_file.name
     
     os.remove(output_file)
     # Конвертируем аудиофайл в wav с помощью ffmpeg
-    #command = ["ffmpeg", "-i", input_file, '-acodec', 'libmp3lame', output_file]
     command = ["ffmpeg", "-i", input_file, output_file]
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -75,7 +74,7 @@ def stt(audio_file: str) -> str:
     input_file = Path(audio_file)
     #if input_file.suffix not in good_formats:
     #    audio_file_new = Path(convert_to_wav(audio_file))
-    audio_file_new = Path(convert_to_wav(audio_file))
+    audio_file_new = Path(convert_to_mp3(audio_file))
 
     audio_file_bytes = open(audio_file_new, "rb")
     audio_file_new.unlink()

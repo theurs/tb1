@@ -141,9 +141,9 @@ BEGIN:
 
                 result = f'{my_chimera.ai(prompt_ru[:99000])}\n\n--\nClaude-instant-100k [{len(prompt[:99000])} символов]'
             except Exception as chimera_error:
-                print(chimera_error)    
-
+                print(chimera_error)
     if not result:
+        print('chimera failed')
         try:
             result = f'{bingai.ai(prompt_bing, 1)}\n\n--\nBing AI [{len(prompt_bing)} символов]'
         except Exception as error2:

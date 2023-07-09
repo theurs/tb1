@@ -16,8 +16,8 @@ openai.api_key = cfg.key_chimeraGPT
 openai.api_base = "https://chimeragpt.adventblocks.cc/v1"
 
 
-def ai(prompt: str, messages = None, max_token: int = 2000) -> str:
-    print('clode-100k', len(prompt))
+def ai(prompt: str, messages = None, max_token: int = 4000, timeout: int = 180, model: str = 'claude-instant-100k') -> str:
+    print(f'chimera {model}', len(prompt))
     if messages == None:
         messages = [    {"role": "system",
                          "content": """Ты информационная система отвечающая на запросы юзера."""},
@@ -26,8 +26,8 @@ def ai(prompt: str, messages = None, max_token: int = 2000) -> str:
                     ]
 
     completion = openai.ChatCompletion.create(
-        model='claude-instant-100k',
-        timeout=180,
+        model=model,
+        timeout=timeout,
         max_tokens=max_token,
         messages=messages
     )
@@ -112,6 +112,8 @@ if __name__ == '__main__':
     #image_prompt = 'автомобиль без колес вид сбоку. хищный вид. оформление для аватарки'
     #print(image_gen(image_prompt))
     
-    print(stt('123'))
+    #print(stt('123'))
 
     #print(ai(open('1.txt', 'r').read()))
+
+    print(ai('напиши рассказ на свободную тему 30 слов', model='gpt-4-0613', max_token=30000))

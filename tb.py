@@ -503,9 +503,7 @@ def handle_audio_thread(message: telebot.types.Message):
             os.remove(file_path)
             # Отправляем распознанный текст 
             if text.strip() != '':
-                for chunk in utils.split_text(text):
-                    bot.reply_to(message, chunk, reply_markup=get_keyboard('translate'))
-                    time.sleep(2)
+                reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
                 my_log.log_echo(message, f'[ASR] {text}')
             else:
                 bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
@@ -594,8 +592,7 @@ def handle_document_thread(message: telebot.types.Message):
 
                 if text.strip():
                     summary = my_sum.summ_text(text)
-                    for i in utils.split_text(summary, 3900):
-                        bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    reply_to_long_message(message, summary, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     my_log.log(message, summary)
                 else:
                     help = 'Не удалось получить никакого текста из документа.'
@@ -833,9 +830,7 @@ def send_debug_history(message: telebot.types.Message):
         messages = DIALOGS_DB[chat_id]
     prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
     my_log.log_echo(message, prompt)
-    for i in utils.split_text(prompt, 3500):
-        bot.send_message(chat_id, i, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
-        time.sleep(2)
+    send_long_message(chat_id, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
 
 
 @bot.message_handler(commands=['restart']) 
@@ -1344,8 +1339,7 @@ def summ_text_thread(message: telebot.types.Message):
                 if url in SUM_CACHE:
                     r = SUM_CACHE[url]
                 if r:
-                    for i in utils.split_text(r, 3900):
-                        bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    reply_to_long_message(message, r, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                     my_log.log_echo(message, r)
                     if chat_id not in DIALOGS_DB:
                         DIALOGS_DB[chat_id] = []
@@ -1367,9 +1361,7 @@ def summ_text_thread(message: telebot.types.Message):
                         my_log.log_echo(message, m)
                         return
                     if res:
-                        for i in utils.split_text(res, 3500):
-                            bot.reply_to(message, i, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
-                            time.sleep(2)
+                        reply_to_long_message(message, res, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
                         my_log.log_echo(message, res)
                         SUM_CACHE[url] = res
                         if chat_id not in DIALOGS_DB:
@@ -1623,15 +1615,21 @@ def send_welcome(message: telebot.types.Message):
     my_log.log_echo(message, help)
 
 
-def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
+def send_long_message(chat_id: int, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
+                      reply_markup: telebot.types.InlineKeyboardMarkup = None):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
     if len(resp) < 12000:
-        for chunk in utils.split_text(resp, 3500):
+        chunks = utils.split_text(resp, 3500)
+        counter = len(chunks)
+        for chunk in chunks:
             try:
                 bot.send_message(chat_id, chunk, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
             except Exception as e:
                 print(e)
                 bot.send_message(chat_id, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+            counter -= 1
+            if counter < 0:
+                break
             time.sleep(2)
     else:
         buf = io.BytesIO()
@@ -1640,15 +1638,21 @@ def send_long_message(chat_id: int, resp: str, parse_mode:str, disable_web_page_
         bot.send_document(chat_id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
 
 
-def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str, disable_web_page_preview: bool, reply_markup: telebot.types.InlineKeyboardMarkup):
+def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str = None,
+                          disable_web_page_preview: bool = None, reply_markup: telebot.types.InlineKeyboardMarkup = None):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
     if len(resp) < 12000:
-        for chunk in utils.split_text(resp, 3500):
+        chunks = utils.split_text(resp, 3500)
+        counter = len(chunks)
+        for chunk in chunks:
             try:
                 bot.reply_to(message, chunk, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
             except Exception as e:
                 print(e)
                 bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+            counter -= 1
+            if counter < 0:
+                break
             time.sleep(2)
     else:
         buf = io.BytesIO()

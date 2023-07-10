@@ -63,7 +63,7 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
     """
 
     # если запустили из pool.map и передали параметры как список
-    if text.isinstance(tuple):
+    if isinstance(text, tuple):
         text, subj, cont = text[0], text[1], text[2]
 
     if subj == 'text' or subj == 'pdf':

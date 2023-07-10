@@ -121,7 +121,9 @@ BEGIN:
 
     if not result and len(prompt) < 60000:
         try:
-            result = f'{bingai.ai(prompt_bing, 1)}\n\n--\nBing AI [{len(prompt_bing)} символов]'
+            result_2 = bingai.ai(prompt_bing, 1)
+            if result_2:
+                result = f'{result_2}\n\n--\nBing AI [{len(prompt_bing)} символов]'
         except Exception as error2:
             print(error2)
 
@@ -145,7 +147,8 @@ BEGIN:
     if not result:
         print('chimera failed')
         try:
-            result = f'{bingai.ai(prompt_bing, 1)}\n\n--\nBing AI [{len(prompt_bing)} символов]'
+            result_2 = bingai.ai(prompt_bing, 1)
+            result = f'{result_2}\n\n--\nBing AI [{len(prompt_bing)} символов]'
         except Exception as error2:
             print(error2)
 

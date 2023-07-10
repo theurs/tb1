@@ -386,7 +386,7 @@ if __name__ == "__main__":
     #sys.exit(0)
     
     #print(gpt_basic.ai('1+1'))
-    print(search_google_iter('Главные герои книги три мушкетера, подробно'), '\n\n')
+    print(search_google_iter('когда доллар рухнет?'), '\n\n')
     
     # print(search_google('курс доллара'), '\n\n')
     

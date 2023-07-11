@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 
-import re
 import my_log
+import os
+import re
+import subprocess
+import tempfile
 import platform as platform_module
 
 
@@ -140,6 +143,25 @@ def split_text(text: str, chunk_limit: int = 1500):
 def platform() -> str:
     """Определяет на какой платформе работает скрипт, windows или linux"""
     return platform_module.platform()
+
+
+def convert_to_mp3(input_file: str) -> str:
+    """Конвертирует аудиофайл в MP3 формат с помощью ffmpeg
+    возвращает имя нового файла (созданного во временной папке)"""
+    # Создаем временный файл с расширением .mp3
+    temp_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+    temp_file.close()
+    output_file = temp_file.name
+    os.remove(output_file)
+    # Конвертируем аудиофайл в wav с помощью ffmpeg
+    command = ["ffmpeg", "-i", input_file, output_file]
+    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Проверяем, успешно ли прошла конвертация
+    if os.path.exists(output_file):
+        return output_file
+    else:
+        return None
 
 
 if __name__ == '__main__':

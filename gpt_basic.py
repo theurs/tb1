@@ -51,29 +51,32 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, m
                     }
                 ]
 
-    # пробуем сделать запрос, повторяем до 3 раз при ошибке с доступом с интервалом 10 секунд
-    n = 3
-    while n > 0:
-        n -= 1
-        try:
-            # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
-            completion = openai.ChatCompletion.create(
-                #headers = {"X-Api-Service": "openai-gpt"},
-                #model="Sage", #gpt3.5
-                #model = 'Claude-instant',
-                #model = 'gpt-3.5-turbo-16k',
-                model = cfg.model,
-                messages=messages,
-                max_tokens=max_tok,
-                temperature=temp,
-                timeout=timeou
-            )
-            break
-        except openai.error.ServiceUnavailableError as error:
-            print(error)
-            time.sleep(10)
-    response = completion.choices[0].message.content
-    #print(messages)
+    try:
+        # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
+        completion = openai.ChatCompletion.create(
+            model = cfg.model,
+            messages=messages,
+            max_tokens=max_tok,
+            temperature=temp,
+            timeout=timeou
+        )
+        response = completion.choices[0].message.content
+    except Exception as unknown_error1:
+        print(unknown_error1)
+        # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
+        openai.api_key = cfg.reserve_key
+        openai.api_base = cfg.reserve_openai_api_base
+        completion = openai.ChatCompletion.create(
+            model = cfg.model,
+            messages=messages,
+            max_tokens=max_tok,
+            temperature=temp,
+            timeout=timeou
+        )
+        response = completion.choices[0].message.content
+    except Exception as unknown_error2:
+        print(unknown_error2)
+
     return check_and_fix_text(response)
 
 
@@ -246,7 +249,8 @@ def zip_text(text: str) -> str:
 
 
 if __name__ == '__main__':
-
+    print(ai('реши бином ньютона 3, 5'))
+    sys.exit()
     if len(sys.argv) != 2:
         print("Usage: gptbasic.py filename|'request to qpt'")
         sys.exit(1)

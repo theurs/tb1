@@ -12,6 +12,7 @@ import speech_recognition as sr
 import cfg
 import gpt_basic
 import my_chimera
+import my_cattoGPT
 
 
 

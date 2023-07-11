@@ -104,6 +104,14 @@ key2 = 'openai api key'
 #cfg.key_chimeraGPT = ''
 key_chimeraGPT = 'xxx'
 
+
+# https://discord.gg/cattogpt
+# команда /info боту что бы получить ключ и статистику
+# дают до 8т запросов
+key_cattoGPT = ''
+key_cattoGPT = 'xxx'
+
+
 # разпознавание голоса, виспер лучше но требует много памяти и мощного процессора или видеокарту
 stt = 'whisper'
 whisper_model = 'medium' # ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small', 'medium.en', 'medium', 'large-v1', 'large-v2', 'large']

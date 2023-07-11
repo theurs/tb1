@@ -14,7 +14,7 @@ openai.api_key = cfg.key_chimeraGPT
 openai.api_base = "https://chimeragpt.adventblocks.cc/v1"
 
 
-def ai(prompt: str, messages = None, max_token: int = 2000, timeout: int = 120, model: str = 'claude-instant-100k') -> str:
+def ai(prompt: str, messages = None, max_token: int = 2000, timeout: int = 120, model: str = 'claude-2-100k') -> str:
     print(f'chimera {model}', len(prompt))
     if messages == None:
         messages = [    {"role": "system",
@@ -94,4 +94,4 @@ if __name__ == '__main__':
 
     #print(ai(open('1.txt', 'r').read()))
 
-    print(ai('напиши рассказ на свободную тему 30 слов', max_token=30000))
+    print(ai('напиши рассказ на свободную тему 1000 слов', max_token=30000))

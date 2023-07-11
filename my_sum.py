@@ -148,7 +148,7 @@ BEGIN:
         print('chimera failed')
         try:
             result_2 = bingai.ai(prompt_bing, 1)
-            if result2:
+            if result_2:
                 result = f'{result_2}\n\n--\nBing AI [{len(prompt_bing)} символов]'
         except Exception as error2:
             print(error2)

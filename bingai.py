@@ -6,9 +6,7 @@ import json
 import re
 import sys
 import threading
-from pprint import pprint
 
-#from EdgeGPT import Chatbot, ConversationStyle
 from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 from BingImageCreator import ImageGen
 
@@ -44,28 +42,6 @@ async def main(prompt1: str, style: int = 3) -> str:
     pattern = r'\[\^\d{1,2}\^]'
     cleaned_text = re.sub(pattern, '', text)
     return cleaned_text.replace(' .', '.')
-    links_raw = r['item']['messages'][1]['adaptiveCards'][0]['body'][0]['text']
-    
-
-    links = []
-    for i in links_raw.split('\n'):
-        s = i.strip()
-        if len(s) > 2:
-            if s[0] == '[' and s[1].isnumeric():
-                link = s.split(']: ')[1].split(' "')[0]
-                links.append(link)
-            else:
-                break
-        else:
-            break
-
-    n = 1
-    for i in links:
-        fr = f'[^{n}^]'
-        to = f'[ <{n}> ]({links[n - 1]})'
-        text = text.replace(fr, to)
-        n += 1
-    return text
 
 
 def ai(prompt: str, style: int = 3) -> str:
@@ -105,8 +81,9 @@ if __name__ == "__main__":
     # prompt = 'anime резонанс душ'
     # print(gen_imgs(prompt))
 
-    print(ai('Официальный сайт iVentoy'))
-    sys.exit()
+    #print(ai('Официальный сайт iVentoy'))
+    
+    #sys.exit()
 
     """Usage ./bingai.py 'list 10 japanese dishes"""
 

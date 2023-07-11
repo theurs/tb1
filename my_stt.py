@@ -121,6 +121,18 @@ def stt(input_file: str) -> str:
             print(error, text)
 
     if not text:
+        try:
+            # затем cattoGPT
+            assert cfg.key_cattoGPT != '', 'No cattoGPT key'
+            assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
+            #print('cattoGPT start')
+            text = my_cattoGPT.stt(input_file)
+            #print('cattoGPT success')
+            #text += '\n\n--cattoGPT'
+        except Exception as error:
+            print(error, text)
+
+    if not text:
         with lock:
             subprocess.run([vosk_cmd, "--server", "--input", input_file, "--output", output_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             with open(output_file, "r") as f:

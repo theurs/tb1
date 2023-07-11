@@ -1785,24 +1785,12 @@ def do_task(message):
                 # добавляем новый запрос пользователя в историю диалога пользователя
                 resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
                 if resp:
-                    if is_private:
-                        try:
-                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                            #bot.send_message(chat_id, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                        except Exception as error2:
-                            print(error2)
-                            #bot.send_message(chat_id, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                            my_log.log2(resp)
-                            bot.send_message(chat_id, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                    else:
-                        try:
-                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                            #bot.reply_to(message, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                        except Exception as error:
-                            print(error)
-                            #bot.reply_to(message, utils.escape_markdown(resp), parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                            my_log.log2(resp)
-                            bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                    try:
+                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                    except Exception as error:
+                        print(error)
+                        my_log.log2(resp)
+                        bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
                     my_log.log_echo(message, resp)
 
         # можно перенаправить запрос к гуглу, но он долго отвечает

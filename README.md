@@ -108,7 +108,7 @@ key_chimeraGPT = 'xxx'
 # https://discord.gg/cattogpt
 # команда /info боту что бы получить ключ и статистику
 # дают до 8т запросов
-key_cattoGPT = ''
+#key_cattoGPT = ''
 key_cattoGPT = 'xxx'
 
 

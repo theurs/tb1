@@ -172,7 +172,7 @@ openai_api_base = 'https://api.pawan.krd/unfiltered/v1'
 # https://discord.gg/cattogpt
 # команда /info боту что бы получить ключ и статистику
 # дают до 8т запросов
-openai_api_base2 = 'https://api.cattto.repl.co/v1'
+openai_api_base2 = 'https://free.catto.codes/v1'
 
 
 #https://discord.gg/BfwvN8Dy

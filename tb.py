@@ -801,6 +801,8 @@ def change_mode(message: telebot.types.Message):
             new_prompt = utils.gpt_start_message2
         elif arg[0] == '3':
             new_prompt = utils.gpt_start_message3
+        elif arg[0] == '4':
+            new_prompt = utils.gpt_start_message4
         else:
             new_prompt = arg[0]
         PROMPTS[message.chat.id] =  [{"role": "system", "content": new_prompt}]
@@ -814,7 +816,7 @@ def change_mode(message: telebot.types.Message):
         
 Меняет роль бота, строку с указаниями что и как говорить.
 
-`/style <1|2|3|свой текст>`
+`/style <1|2|3|4|свой текст>`
 
 1 - формальный стиль `{utils.gpt_start_message1}`
 
@@ -822,7 +824,7 @@ def change_mode(message: telebot.types.Message):
 
 3 - токсичный стиль `{utils.gpt_start_message3}`
 
-Пример своего текст - Ты известная порно актриса Ева Элфи и отвечаешь на вопросы поклонников в телеграм чате, твои ответы всегда очень горячие и провокационные, короткие, с жаргоном из порноиндустрии, намекающие на порно.
+4 - Ева Элфи `{utils.gpt_start_message4}`
     """
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
         my_log.log_echo(message, msg)

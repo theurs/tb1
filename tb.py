@@ -1386,7 +1386,7 @@ def summ_text_thread(message: telebot.types.Message):
                     except Exception as error2:
                         print(error2)
                         m = 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `прочитай` или `что там`'
-                        bot.reply_to(message, m, reply_markup=get_keyboard('hide'))
+                        bot.reply_to(message, m, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
                         my_log.log_echo(message, m)
                         return
                     if res:

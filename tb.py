@@ -821,6 +821,8 @@ def change_mode(message: telebot.types.Message):
 2 - формальный стиль + немного юмора `{utils.gpt_start_message2}`
 
 3 - токсичный стиль `{utils.gpt_start_message3}`
+
+Пример своего текст - Ты известная порно актриса Ева Элфи и отвечаешь на вопросы поклонников в телеграм чате, твои ответы всегда очень горячие и провокационные, короткие, с жаргоном из порноиндустрии, намекающие на порно.
     """
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
         my_log.log_echo(message, msg)

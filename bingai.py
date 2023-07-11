@@ -3,11 +3,13 @@
 
 import asyncio
 import json
+import re
 import sys
 import threading
+from pprint import pprint
 
-from EdgeGPT import Chatbot, ConversationStyle
-#from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
+#from EdgeGPT import Chatbot, ConversationStyle
+from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 from BingImageCreator import ImageGen
 
 
@@ -31,17 +33,20 @@ async def main(prompt1: str, style: int = 3) -> str:
     
     try:
         bot = await Chatbot.create(cookies=cookies)
-        r = await bot.ask(prompt=prompt1, conversation_style=st)
+        r = await bot.ask(prompt=prompt1, conversation_style=st, simplify_response=True)
     except Exception as error:
         #sys.stdout, sys.stderr = orig_stdout, orig_stderr
         print(error)
         return ''
+    await bot.close()
 
-    text = r['item']['messages'][1]['text']
+    text = r['text']
+    pattern = r'\[\^\d{1,2}\^]'
+    cleaned_text = re.sub(pattern, '', text)
+    return cleaned_text.replace(' .', '.')
     links_raw = r['item']['messages'][1]['adaptiveCards'][0]['body'][0]['text']
     
-    await bot.close()
-    
+
     links = []
     for i in links_raw.split('\n'):
         s = i.strip()
@@ -97,12 +102,14 @@ def gen_imgs(prompt: str):
 
 
 if __name__ == "__main__":
+    # prompt = 'anime резонанс душ'
+    # print(gen_imgs(prompt))
+
+    print(ai('Официальный сайт iVentoy'))
+    sys.exit()
+
     """Usage ./bingai.py 'list 10 japanese dishes"""
-    
+
     t = sys.argv[1]
-    
+
     print(ai(t))
-    
-    
-    #prompt = 'anime резонанс душ'
-    #print(gen_imgs(prompt))

@@ -1,8 +1,8 @@
 chardet
 duckduckgo_search
 edge_tts
-#EdgeGPT
-EdgeGPT==0.8.0
+EdgeGPT
+#EdgeGPT==0.8.0
 fake_useragent
 fuzzywuzzy
 google

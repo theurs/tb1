@@ -30,6 +30,13 @@ import my_whisper
 import utils
 
 
+# использовать прокси (пиратские сайты обычно лочат ваш ип, так что смотрите за этим)
+#cfg.all_proxy = ''
+#cfg.all_proxy = 'socks5://172.28.1.5:1080'
+if cfg.all_proxy:
+    os.environ['all_proxy'] = cfg.all_proxy
+
+
 # устанавливаем рабочую папку = папке в которой скрипт лежит
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 

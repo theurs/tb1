@@ -14,7 +14,7 @@ openai.api_key = cfg.key_chimeraGPT
 openai.api_base = "https://chimeragpt.adventblocks.cc/v1"
 
 
-def ai(prompt: str, messages = None, max_token: int = 2000, timeout: int = 120, model: str = 'claude-2-100k') -> str:
+def ai(prompt: str, messages = None, max_token: int = 2000, timeout: int = 120, model: str = 'claude-instant-100k') -> str:
     print(f'chimera {model}', len(prompt))
     if messages == None:
         messages = [    {"role": "system",

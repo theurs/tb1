@@ -3,7 +3,6 @@
 import os
 import re
 import sys
-import time
 
 import enchant
 from fuzzywuzzy import fuzz
@@ -13,9 +12,7 @@ import cfg
 import utils
 
 
-# требует новой версии питона list[str]
-#def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 15, messages: list[str] = None) -> str:
-def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages =  None, second = False) -> str:
+def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages = None, second = False) -> str:
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
     second - использовать ли второй гейт и ключ, для больших запросов
     """
@@ -28,28 +25,9 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, m
         openai.api_base = cfg.openai_api_base
 
     if messages == None:
-        messages = [    {"role": "system",
-                    "content": """Ты искусственный интеллект отвечающий на запросы юзера."""
-                    # в роли интерпретатра бейсика он говорит много лишнего и странного
-                    #"content": 'Ты интерпретатор вымышленного языка программирования "GPT-BASIC 3000". Тебе дают программы на естественном языке, ты даешь самый очевидный и скучный результат.'
-                    },
-
-                    #{"role": "assistant",
-                    # "content": "history messages from assistant for more context"
-                    #},
-                
-                    #{"role": "user",
-                    # "content": "history messages from user for more context"
-                    #},
-
-                    #{"role": "assistant",
-                    # "content": "history messages from assistant for more context"
-                    #},
-
-                    {"role": "user",
-                     "content": prompt
-                    }
-                ]
+        assert prompt != '', 'prompt не может быть пустым'
+        messages = [{"role": "system", "content": """Ты искусственный интеллект отвечающий на запросы юзера."""},
+                    {"role": "user", "content": prompt}]
 
     try:
         # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
@@ -208,7 +186,7 @@ def clear_after_stt(text):
 
 
 def check_and_fix_text(text):
-    """пытаемся исправить странную особенность пиратского GPT сервера, он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
+    """пытаемся исправить странную особенность пиратского GPT сервера (только pawan?), он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
     if 'Windows' in utils.platform():
         return text
 
@@ -250,7 +228,10 @@ def zip_text(text: str) -> str:
 
 
 if __name__ == '__main__':
-    print(ai('реши бином ньютона 3, 5'))
+    if cfg.all_proxy:
+        os.environ['all_proxy'] = cfg.all_proxy
+    
+    print(ai(''))
     sys.exit()
     if len(sys.argv) != 2:
         print("Usage: gptbasic.py filename|'request to qpt'")

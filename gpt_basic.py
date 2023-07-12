@@ -19,7 +19,7 @@ def ai(prompt: str, temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, m
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
     second - использовать ли второй гейт и ключ, для больших запросов
     """
-    print('gpt', len(prompt))
+    print(cfg.model, len(prompt))
     if second:
         openai.api_key = cfg.key2
         openai.api_base = cfg.openai_api_base2

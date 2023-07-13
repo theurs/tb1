@@ -475,7 +475,17 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('chat'))
-
+        elif call.data.startswith('[bingmarker_768569871]'):
+            call_data = call.data[22:]
+            if call_data == 'БИНГ Начать заново':
+                bingai.chat('', chat_id, reset = True)
+                msg = 'История диалога с бингом отчищена.'
+                bot.send_message(chat_id, msg)
+                my_log.log_echo(message, msg)
+            else:
+                message.text = call_data
+                echo_all(message)
+            return
 
 @bot.message_handler(content_types = ['audio'])
 def handle_audio(message: telebot.types.Message):
@@ -1860,11 +1870,14 @@ def do_task(message):
                 with ShowAction(chat_id, 'typing'):
                     answer = bingai.chat(message.text, chat_id)
                     if answer:
-                        messages_left = answer['messages_left']
+                        messages_left = str(answer['messages_left'])
                         text = f"{answer['text']}\n\n{messages_left}/30"
                         suggestions = answer['suggestions']
+                        #text = 'test'
+                        #messages_left = '29'
+                        #suggestions = ['test1', 'test2', 'test3']
                         markup  = telebot.types.InlineKeyboardMarkup()
-                        button1 = telebot.types.InlineKeyboardButton('Начать заново', callback_data=f'[bingmarker_768569871]{bot_name} Начать заново')
+                        button1 = telebot.types.InlineKeyboardButton('Начать заново', callback_data=f'[bingmarker_768569871]БИНГ Начать заново')
                         buttons = [x for x in suggestions]
                         if len(buttons) == 3:
                             button2 = telebot.types.InlineKeyboardButton(text = buttons[0], callback_data=f'[bingmarker_768569871]{buttons[0]}')

@@ -19,8 +19,19 @@ DIALOGS = {}
 lock_gen_img = threading.Lock()
 
 
-async def chat_async(query: str, dialog: int, style = 3):
+async def chat_async(query: str, dialog: int, style = 3, reset = False):
     """возвращает список, объект для поддержания диалога и ответ"""
+    if reset:
+        try:
+            await DIALOGS[dialog].close()
+        except KeyError:
+            print(f'no such key in DIALOGS: {dialog}')
+        try:
+            del DIALOGS[dialog]
+        except KeyError:
+            print(f'no such key in DIALOGS: {dialog}')    
+        return
+
     if style == 1:
         st = ConversationStyle.precise
     elif style == 2:
@@ -37,8 +48,14 @@ async def chat_async(query: str, dialog: int, style = 3):
     except Exception as error:
         #sys.stdout, sys.stderr = orig_stdout, orig_stderr
         print(error)
-        await DIALOGS[dialog].close()
-        del DIALOGS[dialog]
+        try:
+            await DIALOGS[dialog].close()
+        except KeyError:
+            print(f'no such key in DIALOGS: {dialog}')
+        try:
+            del DIALOGS[dialog]
+        except KeyError:
+            print(f'no such key in DIALOGS: {dialog}')
         return error
     text = r['text']
     suggestions = r['suggestions']
@@ -49,9 +66,9 @@ async def chat_async(query: str, dialog: int, style = 3):
     return {'text': cleaned_text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
 
 
-def chat(query: str, dialog: int, style = 3):
+def chat(query: str, dialog: int, style = 3, reset = False):
     """возвращает ответ"""
-    return asyncio.run(chat_async(query, dialog, style))
+    return asyncio.run(chat_async(query, dialog, style, reset))
 
 
 async def main(prompt1: str, style: int = 3) -> str:

@@ -62,6 +62,8 @@ if not os.path.exists('db'):
     os.mkdir('db')
 
 
+# в каких чатах включен/выключен режим общения с бингом 'off' | 'on'
+BING_MODE = my_dic.PersistentDict('db/bing_mode.pkl')
 # история диалогов для GPT chat
 DIALOGS_DB = my_dic.PersistentDict('db/dialogs.pkl')
 # в каких чатах выключены автопереводы
@@ -1644,6 +1646,34 @@ def send_welcome(message: telebot.types.Message):
     my_log.log_echo(message, help)
 
 
+@bot.message_handler(commands=['bingmode'])
+def bing_mode(message: telebot.types.Message):
+    # Отправляем приветственное сообщение
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    id = message.chat.id
+
+    mode = 'off'
+    if id in BING_MODE:
+        mode = BING_MODE[id]
+
+    if mode == 'off': mode = 'on'
+    else: mode = 'off'
+
+    BING_MODE[id] = mode
+
+    msg = f'Режим диалога с BING AI {mode}'
+
+    bot.reply_to(message, msg, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+
+    my_log.log_echo(message, msg)
+
+
 def send_long_message(chat_id: int, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
                       reply_markup: telebot.types.InlineKeyboardMarkup = None):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
@@ -1825,6 +1855,25 @@ def do_task(message):
             if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
 
+            # если активирован режим общения с бинг чатом
+            if chat_id in BING_MODE and BING_MODE[chat_id] == 'on':
+                with ShowAction(chat_id, 'typing'):
+                    answer = bingai.chat(message.text, chat_id)
+                    if answer:
+                        messages_left = answer['messages_left']
+                        text = f"{answer['text']}\n\n{messages_left}/30"
+                        suggestions = answer['suggestions']
+                        markup  = telebot.types.InlineKeyboardMarkup()
+                        button1 = telebot.types.InlineKeyboardButton('Начать заново', callback_data=f'[bingmarker_768569871]{bot_name} Начать заново')
+                        buttons = [x for x in suggestions]
+                        if len(buttons) == 3:
+                            button2 = telebot.types.InlineKeyboardButton(text = buttons[0], callback_data=f'[bingmarker_768569871]{buttons[0]}')
+                            button3 = telebot.types.InlineKeyboardButton(text = buttons[1], callback_data=f'[bingmarker_768569871]{buttons[1]}')
+                            button4 = telebot.types.InlineKeyboardButton(text = buttons[2], callback_data=f'[bingmarker_768569871]{buttons[2]}')
+                            markup.add(button1, button2, button3, button4)
+                        bot.reply_to(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                        return
+
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(chat_id, 'typing'):
                 resp = dialog_add_user_request(chat_id, message.text, 'gpt')
@@ -1879,5 +1928,4 @@ def main():
 
 
 if __name__ == '__main__':
-
     main()

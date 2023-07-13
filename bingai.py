@@ -3,6 +3,7 @@
 
 import asyncio
 import json
+import os
 import re
 import sys
 import threading
@@ -10,8 +11,47 @@ import threading
 from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 from BingImageCreator import ImageGen
 
+import cfg
+
+
+DIALOGS = {}
 
 lock_gen_img = threading.Lock()
+
+
+async def chat_async(query: str, dialog: int, style = 3):
+    """возвращает список, объект для поддержания диалога и ответ"""
+    if style == 1:
+        st = ConversationStyle.precise
+    elif style == 2:
+        st = ConversationStyle.balanced
+    elif style == 3:
+        st = ConversationStyle.creative
+
+    if dialog not in DIALOGS:
+        cookies = json.loads(open("cookies.json", encoding="utf-8").read())
+        DIALOGS[dialog] = await Chatbot.create(cookies=cookies)
+
+    try:
+        r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
+    except Exception as error:
+        #sys.stdout, sys.stderr = orig_stdout, orig_stderr
+        print(error)
+        await DIALOGS[dialog].close()
+        del DIALOGS[dialog]
+        return error
+    text = r['text']
+    suggestions = r['suggestions']
+    messages_left = r['messages_left']
+    messages_max = r['max_messages']
+    pattern = r'\[\^\d{1,2}\^]'
+    cleaned_text = re.sub(pattern, '', text).replace(' .', '.')
+    return {'text': cleaned_text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
+
+
+def chat(query: str, dialog: int, style = 3):
+    """возвращает ответ"""
+    return asyncio.run(chat_async(query, dialog, style))
 
 
 async def main(prompt1: str, style: int = 3) -> str:
@@ -78,11 +118,24 @@ def gen_imgs(prompt: str):
 
 
 if __name__ == "__main__":
+
+    #os.environ['all_proxy'] = cfg.all_proxy
+
+    #print(ai('Официальный сайт iVentoy'))
+    #sys.exit()
+
+    while 1:
+        q = input('Вы: ')
+        r = chat(q, 0, style=3)
+        print(r.characters_written)
+        print(f"Бинг: {r['text']}\nmessages left: {r['messages_left']}\nSuggestions: {r['suggestions']}")
+    sys.exit()
+
     # prompt = 'anime резонанс душ'
     # print(gen_imgs(prompt))
 
     #print(ai('Официальный сайт iVentoy'))
-    
+
     #sys.exit()
 
     """Usage ./bingai.py 'list 10 japanese dishes"""

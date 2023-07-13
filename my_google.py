@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import os
 import random
 import re
 import string
@@ -29,14 +30,15 @@ def download_text(urls: list, max_req: int = cfg.max_request) -> str:
     Returns:
         str: The concatenated text downloaded from the URLs.
     """
-    max_req += 5000 # 5000 дополнительно под длинные ссылки с запасом
+    #max_req += 5000 # 5000 дополнительно под длинные ссылки с запасом
     result = ''
     newconfig = trafilatura.settings.use_config()
     newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
     for url in urls:
         content = trafilatura.fetch_url(url)
-        text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
-                                   include_comments = True)
+        # text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
+        #                            include_comments = True)
+        text = trafilatura.extract(content, config=newconfig, deduplicate=True)
         if text:
             result += f'\n\n|||{url}|||\n\n{text}\n\n'
             if len(result) > max_req:
@@ -219,9 +221,13 @@ def search_google(query: str, max_req: int = cfg.max_request, max_search: int = 
         urls.append(url)
     result = download_text(urls, max_req)
 
-    text, links = shorten_links(result)
+    # text, links = shorten_links(result)
+    # answer = ask_gpt(query, max_req, history, text, 'Google')
+    # return restore_links(answer, links)
+    text = result
     answer = ask_gpt(query, max_req, history, text, 'Google')
-    return restore_links(answer, links)
+    return answer
+
 
 
 def search_google_iter(query: str, max_req: int = cfg.max_request, max_search: int = 10, history: str = '') -> str:
@@ -288,9 +294,12 @@ def search_ddg(query: str, max_req: int = cfg.max_request, max_search: int = 10,
         urls.append(url)
     result = download_text(urls, max_req)
     
-    text, links = shorten_links(result)
+    # text, links = shorten_links(result)
+    # answer = ask_gpt(query, max_req, history, text, 'DuckDuckGo')
+    # return restore_links(answer, links)
+    text = result
     answer = ask_gpt(query, max_req, history, text, 'DuckDuckGo')
-    return restore_links(answer, links)
+    return answer
 
 
 def search_ddg_iter(query: str, max_req: int = cfg.max_request, max_search: int = 10, history: str = '') -> str:
@@ -374,19 +383,20 @@ def restore_links(text: str, replace_links: dict) -> str:
 
 if __name__ == "__main__":
 
-
+    os.environ['all_proxy'] = cfg.all_proxy
+    
     #text, links = shorten_links(text)
     #print(text)
     #print(links, text)
     #print(restore_links(text, links))
 
     #print(download_text(['https://www.google.com/search?q=курс+доллара'], 10))    
-    
+
     #print(search('3 закона робототехники'), '\n\n')
     #sys.exit(0)
-    
+
     #print(gpt_basic.ai('1+1'))
-    print(search_google_iter('путина разыскивают в турции?'), '\n\n')
+    print(search_google('откуда этот IP 107.189.11.166'), '\n\n')
     
     # print(search_google('курс доллара'), '\n\n')
     

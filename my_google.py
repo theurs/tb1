@@ -201,7 +201,7 @@ def ask_gpt3(query: str, max_req: int, history: str, result: str, engine: str) -
     return result
 
 
-def search_google(query: str, max_req: int = cfg.max_request, max_search: int = 10, history: str = '') -> str:
+def search_google(query: str, max_req: int = cfg.max_request, max_search: int = 20, history: str = '') -> str:
     """ищет в гугле ответ на вопрос query, отвечает с помощью GPT
     max_req - максимальный размер ответа гугла, сколько текста можно отправить гпт чату
     max_search - сколько ссылок можно прочитать пока не наберется достаточно текстов
@@ -212,8 +212,7 @@ def search_google(query: str, max_req: int = cfg.max_request, max_search: int = 
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
-    r = googlesearch.search(query, stop = max_search, \
-        user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36')
+    r = googlesearch.search(query, stop = max_search)
     bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
     for url in r:
         if any(s.lower() in url.lower() for s in bad_results):

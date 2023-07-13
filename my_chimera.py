@@ -92,6 +92,14 @@ if __name__ == '__main__':
     
     #print(stt('1.ogg'))
 
-    #print(ai(open('1.txt', 'r').read()))
+    
+    #print(ai(open('2.txt', 'r').read()[:30000], model='gpt-4-32k-poe'))
 
-    print(ai('напиши рассказ на свободную тему 1000 слов', max_token=30000))
+
+    #print(ai('напиши рассказ на свободную тему 1000 слов', max_token=30000))
+    
+    
+    #print(ai('hi', model='gpt-4-32k-poe', max_token=30000))
+    
+    for i in openai.Model.list()['data']:
+        print(i['id'])

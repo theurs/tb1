@@ -119,7 +119,7 @@ BEGIN:
     if not result:
         prompt_bing = shrink_text_for_bing(prompt)
 
-    if not result and len(prompt) < 60000:
+    if not result and len(prompt) < 32000:
         try:
             result_2 = bingai.ai(prompt_bing, 1)
             if result_2:

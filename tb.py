@@ -1873,17 +1873,10 @@ def do_task(message):
                         messages_left = str(answer['messages_left'])
                         text = f"{answer['text']}\n\n{messages_left}/30"
                         suggestions = answer['suggestions']
-                        #text = 'test'
-                        #messages_left = '29'
-                        #suggestions = ['test1', 'test2', 'test3']
                         markup  = telebot.types.InlineKeyboardMarkup()
                         button1 = telebot.types.InlineKeyboardButton('Начать заново', callback_data=f'[bingmarker_768569871]БИНГ Начать заново')
-                        buttons = [x for x in suggestions]
-                        if len(buttons) == 3:
-                            button2 = telebot.types.InlineKeyboardButton(text = buttons[0], callback_data=f'[bingmarker_768569871]{buttons[0]}')
-                            button3 = telebot.types.InlineKeyboardButton(text = buttons[1], callback_data=f'[bingmarker_768569871]{buttons[1]}')
-                            button4 = telebot.types.InlineKeyboardButton(text = buttons[2], callback_data=f'[bingmarker_768569871]{buttons[2]}')
-                            markup.add(button1, button2, button3, button4)
+                        buttons = [button1,] + [telebot.types.InlineKeyboardButton(text = x, callback_data=f'[bingmarker_768569871]{x}') for x in suggestions]
+                        markup.add(*buttons)
                         bot.reply_to(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                         return
 

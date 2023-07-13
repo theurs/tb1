@@ -136,6 +136,11 @@ def gen_imgs(prompt: str):
 
 if __name__ == "__main__":
 
+
+    #prompt = 'anime резонанс душ'
+    #print(gen_imgs(prompt))
+
+
     #os.environ['all_proxy'] = cfg.all_proxy
 
     #print(ai('Официальный сайт iVentoy'))
@@ -147,9 +152,6 @@ if __name__ == "__main__":
         print(r.characters_written)
         print(f"Бинг: {r['text']}\nmessages left: {r['messages_left']}\nSuggestions: {r['suggestions']}")
     sys.exit()
-
-    # prompt = 'anime резонанс душ'
-    # print(gen_imgs(prompt))
 
     #print(ai('Официальный сайт iVentoy'))
 

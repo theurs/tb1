@@ -15,6 +15,7 @@ import cfg
 
 
 DIALOGS = {}
+CHAT_LOCKS = {}
 
 lock_gen_img = threading.Lock()
 
@@ -68,7 +69,14 @@ async def chat_async(query: str, dialog: int, style = 3, reset = False):
 
 def chat(query: str, dialog: int, style = 3, reset = False):
     """возвращает ответ"""
-    return asyncio.run(chat_async(query, dialog, style, reset))
+    if dialog in CHAT_LOCKS:
+        lock = CHAT_LOCKS[dialog]
+    else:
+        lock = threading.Lock()
+        CHAT_LOCKS[dialog] = lock
+    with lock:
+        result = asyncio.run(chat_async(query, dialog, style, reset))
+    return result
 
 
 async def main(prompt1: str, style: int = 3) -> str:

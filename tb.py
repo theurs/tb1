@@ -3,7 +3,9 @@
 import io
 import html
 import os
+#import random
 import re
+#import string
 import tempfile
 import datetime
 import threading
@@ -100,6 +102,12 @@ BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 BOT_NAME_DEFAULT = 'бот'
 
+# хранит номера и строки подсказок от бинга, callback_data для 
+# клавиатуры не может содержать многих символов, по-этому надо иметь словарь
+# где рандомный id = строке в которой могут быть запрещенные символы
+# BING_SUGGESTIONS = my_dic.PersistentDict('db/bing_suggestions.pkl')
+
+
 supported_langs_trans = [
         "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
         "el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha",
@@ -149,7 +157,10 @@ class ShowAction(threading.Thread):
         
     def run(self):
         while self.is_running:
-            bot.send_chat_action(self.chat_id, self.action)
+            try:
+                bot.send_chat_action(self.chat_id, self.action)
+            except telebot.apihelper.ApiTelegramException as error:
+                print('ShowAction.run', error)
             n = 50
             while n > 0:
                 time.sleep(0.1)
@@ -165,6 +176,39 @@ class ShowAction(threading.Thread):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
+
+
+# def get_suggestion_id(suggestion: str) -> str:
+#     """
+#     Generate a unique ID for a suggestion and store it in the BING_SUGGESTIONS global dictionary.
+
+#     Parameters:
+#         suggestion (str): The suggestion to be stored.
+
+#     Returns:
+#         str: The unique ID generated for the suggestion.
+#     """
+#     global BING_SUGGESTIONS
+#     magic = '90870123'
+#     allowed_chars = string.ascii_letters
+#     id = magic + ''.join(random.choice(allowed_chars) for _ in range(16))
+#     BING_SUGGESTIONS[id] = suggestion
+
+#     return id
+
+
+# def get_suggestion_by_id(id: str) -> str:
+#     """
+#     Get a suggestion by its ID.
+
+#     Args:
+#         id (str): The ID of the suggestion.
+
+#     Returns:
+#         str: The suggestion associated with the given ID.
+#     """
+#     global BING_SUGGESTIONS
+#     return BING_SUGGESTIONS[id]
 
 
 def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str:
@@ -475,17 +519,18 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('chat'))
-        elif call.data.startswith('[bingmarker_768569871]'):
-            call_data = call.data[22:]
-            if call_data == 'БИНГ Начать заново':
-                bingai.chat('', chat_id, reset = True)
-                msg = 'История диалога с бингом отчищена.'
-                bot.send_message(chat_id, msg)
-                my_log.log_echo(message, msg)
-            else:
-                message.text = call_data
-                echo_all(message)
-            return
+        elif call.data == 'restart_bing':
+            bingai.chat('', chat_id, reset = True)
+            msg = 'История диалога с бингом отчищена.'
+            bot.send_message(chat_id, msg)
+            my_log.log_echo(message, msg)
+        #если это подсказки от бинга
+        # elif call.data.startswith('90870123'):
+        #     message.text = get_suggestion_by_id(call.data)
+        #     message.reply_to_message.text = get_suggestion_by_id(call.data)
+        #     echo_all(message)
+        #     return
+
 
 @bot.message_handler(content_types = ['audio'])
 def handle_audio(message: telebot.types.Message):
@@ -1881,22 +1926,31 @@ def do_task(message):
             # если активирован режим общения с бинг чатом
             if chat_id in BING_MODE and BING_MODE[chat_id] == 'on':
                 with ShowAction(chat_id, 'typing'):
-                    answer = bingai.chat(message.text, chat_id)
-                    if answer:
-                        messages_left = str(answer['messages_left'])
-                        text = f"{answer['text']}\n\n{messages_left}/30"
-                        suggestions = answer['suggestions']
-                        markup  = telebot.types.InlineKeyboardMarkup()
-                        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data=f'[bingmarker_768569871]БИНГ Начать заново')
-                        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-                        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-                        button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
-                        button5 = telebot.types.InlineKeyboardButton(text = suggestions[0], callback_data=f'[bingmarker_768569871]{suggestions[0]}')
-                        button6 = telebot.types.InlineKeyboardButton(text = suggestions[1], callback_data=f'[bingmarker_768569871]{suggestions[1]}')
-                        button7 = telebot.types.InlineKeyboardButton(text = suggestions[2], callback_data=f'[bingmarker_768569871]{suggestions[2]}')
-                        markup.add(button1, button2, button3, button4, button5, button6, button7)
-                        bot.reply_to(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
-                        return
+                    try:
+                        answer = bingai.chat(message.text, chat_id)
+                        if answer:
+                            messages_left = str(answer['messages_left'])
+                            text = f"{answer['text']}\n\n{messages_left}/30"
+                            # suggestions = answer['suggestions']
+                            markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+                            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='restart_bing')
+                            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+                            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+                            button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
+                            markup.add(button1, button2, button3, button4)
+                            # for suggestion in suggestions:
+                            #     button = telebot.types.InlineKeyboardButton(text=str(suggestion), callback_data=get_suggestion_id(suggestion))
+                            #     markup.add(button)
+                            try:
+                                bot.reply_to(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                            except Exception as error:
+                                print(error)
+                                bot.reply_to(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=markup)
+                            if int(messages_left) == 1:
+                                bingai.chat(message.text, chat_id, reset = True)
+                    except Exception as error:
+                        print(error)
+                    return
 
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(chat_id, 'typing'):

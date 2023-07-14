@@ -1983,6 +1983,7 @@ def do_task(message):
                                 bot.reply_to(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=markup)
                             if int(messages_left) == 1:
                                 bingai.chat(message.text, chat_id, reset = True)
+                            my_log.log(message, text)
                     except Exception as error:
                         print(error)
                     return

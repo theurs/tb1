@@ -1003,8 +1003,8 @@ def set_new_model(message: telebot.types.Message):
     msg0 = f'Старая модель `{cfg.model}`.'
     msg = f'Установлена новая модель `{model}`.'
     cfg.model = model
-    bot.send_message(chat_id, msg0)
-    bot.send_message(chat_id, msg)
+    bot.send_message(chat_id, msg0, parse_mode='Markdown')
+    bot.send_message(chat_id, msg, parse_mode='Markdown')
     my_log.log_echo(message, msg0)
     my_log.log_echo(message, msg)
 

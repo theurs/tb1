@@ -998,6 +998,7 @@ def bingreset_thread(message: telebot.types.Message):
 @bot.message_handler(commands=['model']) 
 def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
+    chat_id = message.chat.id
     model = message.text.split()[1]
     msg0 = f'Старая модель `{cfg.model}`.'
     msg = f'Установлена новая модель `{model}`.'

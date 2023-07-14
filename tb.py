@@ -657,11 +657,11 @@ def handle_document_thread(message: telebot.types.Message):
                 if text.strip():
                     summary = my_sum.summ_text(text)
                     reply_to_long_message(message, summary, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
-                    my_log.log(message, summary)
+                    my_log.log_echo(message, summary)
                 else:
                     help = 'Не удалось получить никакого текста из документа.'
                     bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
-                    my_log.log(message, help)
+                    my_log.log_echo(message, help)
                 return
 
         # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
@@ -1983,7 +1983,7 @@ def do_task(message):
                                 bot.reply_to(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=markup)
                             if int(messages_left) == 1:
                                 bingai.chat(message.text, chat_id, reset = True)
-                            my_log.log(message, text)
+                            my_log.log_echo(message, text)
                     except Exception as error:
                         print(error)
                     return

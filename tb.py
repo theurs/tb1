@@ -933,7 +933,10 @@ def send_debug_history(message: telebot.types.Message):
 @bot.message_handler(commands=['restart']) 
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
-    bot.stop_polling()
+    if message.from_user.id in cfg.admins:
+        bot.stop_polling()
+    else:
+        bot.reply_to(message, 'Эта команда только для админов.', reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['ttsmale']) 
@@ -997,6 +1000,11 @@ def bingreset_thread(message: telebot.types.Message):
 @bot.message_handler(commands=['model']) 
 def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
+    
+    if message.from_user.id not in cfg.admins:
+       bot.reply_to(message, 'Эта команда только для админов.', reply_markup=get_keyboard('hide')) 
+       return
+    
     chat_id = message.chat.id
     model = message.text.split()[1]
     msg0 = f'Старая модель `{cfg.model}`.'

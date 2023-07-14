@@ -14,6 +14,9 @@ openai.api_base = "https://free.catto.codes/v1"
 
 
 def ai(prompt: str, messages = None, max_token: int = 2000, timeout: int = 180, model: str = 'gpt-3.5-turbo-16k-0613') -> str:
+    
+    assert openai.api_key != '', 'No key for cattoGPT'
+    
     print(f'cattoGPT {model}', len(prompt))
     if messages == None:
         messages = [    {"role": "system",
@@ -45,6 +48,9 @@ def stt(audio_file: str) -> str:
     Raises:
         FileNotFoundError: If the audio file does not exist.
     """
+    
+    assert openai.api_key != '', 'No key for cattoGPT'
+    
     audio_file_new = audio_file
 
     #good_formats = ['m4a', 'mp3', 'webm', 'mp4', 'mpga', 'wav', 'mpeg']
@@ -72,6 +78,7 @@ def image_gen(prompt: str, amount: int = 4, size: str ='1024x1024'):
     Returns:
         - list: A list of URLs pointing to the generated images.
     """
+    assert openai.api_key != '', 'No key for cattoGPT'
     assert amount <= 10, 'Too many images to gen'
     assert size in ('1024x1024','512x512','256x256'), 'Wrong image size'
     response = openai.Image.create(

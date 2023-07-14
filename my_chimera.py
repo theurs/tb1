@@ -15,6 +15,9 @@ openai.api_base = "https://chimeragpt.adventblocks.cc/v1"
 
 
 def ai(prompt: str, messages = None, max_token: int = 2000, timeout: int = 120, model: str = 'claude-instant-100k') -> str:
+    
+    assert openai.api_key != '', 'No key for chimera'
+    
     print(f'chimera {model}', len(prompt))
     if messages == None:
         messages = [    {"role": "system",
@@ -46,6 +49,9 @@ def stt(audio_file: str) -> str:
     Raises:
         FileNotFoundError: If the audio file does not exist.
     """
+    
+    assert openai.api_key != '', 'No key for chimera'
+    
     audio_file_new = audio_file
 
     #good_formats = ['m4a', 'mp3', 'webm', 'mp4', 'mpga', 'wav', 'mpeg']
@@ -73,6 +79,7 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
     Returns:
         - list: A list of URLs pointing to the generated images.
     """
+    assert openai.api_key != '', 'No key for chimera'
     assert amount <= 10, 'Too many images to gen'
     assert size in ('1024x1024','512x512','256x256'), 'Wrong image size'
     response = openai.Image.create(

@@ -172,6 +172,9 @@ model = 'gpt-3.5-turbo-16k'
 reserve_openai_api_base = 'xxx'
 reserve_key = 'yyy'
 
+#еще вариант https://gptfreeee.tech/ создаешь себе ключ
+#openai.api_base = "https://gptfreeee.tech/v1
+
 # использовать прокси (пиратские сайты обычно лочат ваш ип, так что смотрите за этим)
 #all_proxy = ''
 all_proxy = 'socks5://172.28.1.5:1080'

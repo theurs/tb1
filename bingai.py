@@ -136,20 +136,16 @@ def gen_imgs(prompt: str):
 
 if __name__ == "__main__":
 
-
     #prompt = 'anime резонанс душ'
     #print(gen_imgs(prompt))
 
-
-    #os.environ['all_proxy'] = cfg.all_proxy
-
-    #print(ai('Официальный сайт iVentoy'))
-    #sys.exit()
+    print(ai('hi'))
+    sys.exit()
 
     while 1:
         q = input('Вы: ')
         r = chat(q, 0, style=3)
-        print(r.characters_written)
+        #print(r.characters_written)
         print(f"Бинг: {r['text']}\nmessages left: {r['messages_left']}\nSuggestions: {r['suggestions']}")
     sys.exit()
 

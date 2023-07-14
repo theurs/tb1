@@ -185,9 +185,9 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     if chat_id in PROMPTS:
         current_prompt = PROMPTS[chat_id]
     else:
-        # по умолчанию нормальный стиль с ноткой юмора
-        PROMPTS[chat_id] = [{"role": "system", "content": utils.gpt_start_message2}]
-        current_prompt =   [{"role": "system", "content": utils.gpt_start_message2}]
+        # по умолчанию формальный стиль
+        PROMPTS[chat_id] = [{"role": "system", "content": utils.gpt_start_message1}]
+        current_prompt =   [{"role": "system", "content": utils.gpt_start_message1}]
 
     # создаем новую историю диалогов с юзером из старой если есть
     # в истории диалогов не храним системный промпт
@@ -812,6 +812,17 @@ def change_mode(message: telebot.types.Message):
     my_log.log_echo(message)
 
     global PROMPTS
+    
+    chat_id = message.chat.id
+    
+    # в каждом чате свой собственный промт
+    if chat_id in PROMPTS:
+        current_prompt = PROMPTS[chat_id]
+    else:
+        # по умолчанию формальный стиль
+        PROMPTS[chat_id] = [{"role": "system", "content": utils.gpt_start_message1}]
+        current_prompt =   [{"role": "system", "content": utils.gpt_start_message1}]
+
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
         if arg[0] == '1':
@@ -1666,6 +1677,8 @@ def bing_mode(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
+    global BING_MODE
+
     id = message.chat.id
 
     mode = 'off'
@@ -1757,7 +1770,7 @@ def do_task(message):
 
         msg = message.text.lower()
 
-        global BLOCKS, BOT_NAMESblocksOGS_DB
+        global BLOCKS, BOT_NAMES, CHAT_LOGS, DIALOGS_DB, BING_MODE
         
         # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
         if not is_private:
@@ -1874,8 +1887,12 @@ def do_task(message):
                         text = f"{answer['text']}\n\n{messages_left}/30"
                         suggestions = answer['suggestions']
                         markup  = telebot.types.InlineKeyboardMarkup()
-                        button1 = telebot.types.InlineKeyboardButton('Начать заново', callback_data=f'[bingmarker_768569871]БИНГ Начать заново')
-                        buttons = [button1,] + [telebot.types.InlineKeyboardButton(text = x, callback_data=f'[bingmarker_768569871]{x}') for x in suggestions]
+                        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data=f'[bingmarker_768569871]БИНГ Начать заново')
+                        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+                        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+                        button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
+                        buttons = [button1, button2, button3, button4] + \
+                                  [telebot.types.InlineKeyboardButton(text = x, callback_data=f'[bingmarker_768569871]{x}') for x in suggestions]
                         markup.add(*buttons)
                         bot.reply_to(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                         return

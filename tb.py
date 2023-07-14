@@ -1891,9 +1891,10 @@ def do_task(message):
                         button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
                         button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
                         button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
-                        buttons = [button1, button2, button3, button4] + \
-                                  [telebot.types.InlineKeyboardButton(text = x, callback_data=f'[bingmarker_768569871]{x}') for x in suggestions]
-                        markup.add(*buttons)
+                        button5 = telebot.types.InlineKeyboardButton(text = suggestions[0], callback_data=f'[bingmarker_768569871]{suggestions[0]}')
+                        button6 = telebot.types.InlineKeyboardButton(text = suggestions[1], callback_data=f'[bingmarker_768569871]{suggestions[1]}')
+                        button7 = telebot.types.InlineKeyboardButton(text = suggestions[2], callback_data=f'[bingmarker_768569871]{suggestions[2]}')
+                        markup.add(button1, button2, button3, button4, button5, button6, button7)
                         bot.reply_to(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                         return
 

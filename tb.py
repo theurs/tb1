@@ -1977,7 +1977,7 @@ def do_task(message):
                             #     button = telebot.types.InlineKeyboardButton(text=str(suggestion), callback_data=get_suggestion_id(suggestion))
                             #     markup.add(button)
                             try:
-                                bot.reply_to(message, text, parse_mode='MarkdownV2', disable_web_page_preview = True, reply_markup=markup)
+                                bot.reply_to(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                             except Exception as error:
                                 print(error)
                                 bot.reply_to(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=markup)

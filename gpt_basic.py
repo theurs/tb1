@@ -231,8 +231,9 @@ if __name__ == '__main__':
     if cfg.all_proxy:
         os.environ['all_proxy'] = cfg.all_proxy
     
-    print(ai(''))
+    print(ai('привет'))
     sys.exit()
+
     if len(sys.argv) != 2:
         print("Usage: gptbasic.py filename|'request to qpt'")
         sys.exit(1)

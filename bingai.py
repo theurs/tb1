@@ -20,6 +20,13 @@ CHAT_LOCKS = {}
 lock_gen_img = threading.Lock()
 
 
+def reset_bing_chat(chat_id: int):
+    try:
+        chat(first_message, chat_id)
+    except Exception as error2:
+        print(error2)
+
+
 async def chat_async(query: str, dialog: int, style = 3, reset = False):
     """возвращает список, объект для поддержания диалога и ответ"""
     if reset:

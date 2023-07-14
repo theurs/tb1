@@ -520,9 +520,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('chat'))
         elif call.data == 'restart_bing':
-            bingai.chat('', chat_id, reset = True)
+            bingai.reset_bing_chat(chat_id)
             msg = 'История диалога с бингом отчищена.'
-            bot.send_message(chat_id, msg)
+            bot.send_message(chat_id, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
         #если это подсказки от бинга
         # elif call.data.startswith('90870123'):
@@ -974,8 +974,6 @@ def tts_female_thread(message: telebot.types.Message):
     bot.send_message(message.chat.id, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide'))
 
 
-
-
 @bot.message_handler(commands=['bingreset']) 
 def bingreset(message: telebot.types.Message):
     thread = threading.Thread(target=bingreset_thread, args=(message,))
@@ -989,7 +987,8 @@ def bingreset_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
-    bingai.chat('', chat_id, reset = True)
+    bingai.reset_bing_chat(chat_id)
+
     msg = 'История диалога с бингом отчищена.'
     bot.send_message(chat_id, msg)
     my_log.log_echo(message, msg)
@@ -1977,12 +1976,12 @@ def do_task(message):
                             #     button = telebot.types.InlineKeyboardButton(text=str(suggestion), callback_data=get_suggestion_id(suggestion))
                             #     markup.add(button)
                             try:
-                                bot.reply_to(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                                reply_to_long_message(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
                             except Exception as error:
                                 print(error)
-                                bot.reply_to(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=markup)
+                                reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=markup)
                             if int(messages_left) == 1:
-                                bingai.chat(message.text, chat_id, reset = True)
+                                bingai.reset_bing_chat(chat_id)
                             my_log.log_echo(message, answer['text'])
                     except Exception as error:
                         print(error)

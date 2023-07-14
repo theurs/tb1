@@ -67,7 +67,7 @@ async def chat_async(query: str, dialog: int, style = 3, reset = False):
     return {'text': cleaned_text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
 
 
-def chat(query: str, dialog: int, style = 3, reset = False):
+def chat(query: str, dialog: int, style: int = 3, reset: bool = False) -> str:
     """возвращает ответ"""
     if dialog in CHAT_LOCKS:
         lock = CHAT_LOCKS[dialog]

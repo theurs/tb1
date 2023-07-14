@@ -974,6 +974,37 @@ def tts_female_thread(message: telebot.types.Message):
     bot.send_message(message.chat.id, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide'))
 
 
+
+
+@bot.message_handler(commands=['bingreset']) 
+def bingreset(message: telebot.types.Message):
+    thread = threading.Thread(target=bingreset_thread, args=(message,))
+    thread.start()
+def bingreset_thread(message: telebot.types.Message):
+    """Принудительно сбросить диалог с бингом, обнулить историю"""
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    bingai.chat('', chat_id, reset = True)
+    msg = 'История диалога с бингом отчищена.'
+    bot.send_message(chat_id, msg)
+    my_log.log_echo(message, msg)
+
+
+@bot.message_handler(commands=['model']) 
+def set_new_model(message: telebot.types.Message):
+    """меняет модель для гпт, никаких проверок не делает"""
+    model = message.text.split()[1]
+    msg = f'Установлена модель `{model}`.'
+    cfg.model = model
+    bot.send_message(chat_id, msg)
+    my_log.log_echo(message, msg)
+
+
 @bot.message_handler(commands=['ttsgoogle']) 
 def tts_google(message: telebot.types.Message):
     thread = threading.Thread(target=tts_google_thread, args=(message,))

@@ -10,12 +10,18 @@ import openai
 
 import cfg
 import utils
+import my_dic
 
 
-def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages = None, second = False) -> str:
+CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
+
+
+def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages = None, second = False, chat_id = None) -> str:
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
     second - использовать ли второй гейт и ключ, для больших запросов
     """
+    global CUSTOM_MODELS
+    
     print(cfg.model, len(prompt))
     if second:
         openai.api_key = cfg.key2
@@ -29,10 +35,15 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
         messages = [{"role": "system", "content": """Ты искусственный интеллект отвечающий на запросы юзера."""},
                     {"role": "user", "content": prompt}]
 
+    current_model = cfg.model
+    if chat_id and chat_id in CUSTOM_MODELS:
+        current_model = CUSTOM_MODELS[chat_id]
+
+    response = ''
     try:
         # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
         completion = openai.ChatCompletion.create(
-            model = cfg.model,
+            model = current_model,
             messages=messages,
             max_tokens=max_tok,
             temperature=temp,

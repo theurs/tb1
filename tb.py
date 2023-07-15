@@ -257,7 +257,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     if engine == 'gpt':
         # пытаемся получить ответ
         try:
-            resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages)
+            resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages, chat_id=chat_id)
             if resp:
                 new_messages = new_messages + [{"role":    "assistant",
                                                     "content": resp}]
@@ -285,7 +285,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                     new_messages = new_messages[2:]
 
                 try:
-                    resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages)
+                    resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages, chat_id=chat_id)
                 except Exception as error3:
                     print(error3)
                     return 'GPT не ответил.'
@@ -1000,16 +1000,44 @@ def bingreset_thread(message: telebot.types.Message):
 @bot.message_handler(commands=['model']) 
 def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
-    
-    if message.from_user.id not in cfg.admins:
-       bot.reply_to(message, 'Эта команда только для админов.', reply_markup=get_keyboard('hide')) 
-       return
-    
+
     chat_id = message.chat.id
+
+    if chat_id in gpt_basic.CUSTOM_MODELS:
+        current_model = gpt_basic.CUSTOM_MODELS[chat_id]
+    else:
+        current_model = cfg.model
+
+    if len(message.text.split()) < 2:
+        msg = f"""Меняет модель для chatGPT.
+
+Выбрано: `/model {current_model}`
+
+Возможные варианты (на самом деле это просто примеры а реальные варианты зависят от настроек бота, его бекэндов):
+
+`/model gpt-4`
+`/model gpt-3.5-turbo-16k`
+`/model gpt-3.5-turbo-8k`
+`/model gpt-3.5-turbo`
+`/model sage`
+`/model сlaude-instant`
+`/model claude-instant-100k`
+`/model claude-2-100k`
+"""
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide')) 
+        my_log.log_echo(message, msg)
+        return
+
+    # if message.from_user.id not in cfg.admins:
+    #    msg = 'Эта команда только для админов.'
+    #    bot.reply_to(message, msg, reply_markup=get_keyboard('hide')) 
+    #    my_log.log_echo(message, msg)
+    #    return
+
     model = message.text.split()[1]
-    msg0 = f'Старая модель `{cfg.model}`.'
+    msg0 = f'Старая модель `{current_model}`.'
     msg = f'Установлена новая модель `{model}`.'
-    cfg.model = model
+    gpt_basic.CUSTOM_MODELS[chat_id] = model
     bot.send_message(chat_id, msg0, parse_mode='Markdown')
     bot.send_message(chat_id, msg, parse_mode='Markdown')
     my_log.log_echo(message, msg0)
@@ -1445,25 +1473,6 @@ def image_thread(message: telebot.types.Message):
         else:
             bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, help)
-
-
-@bot.message_handler(commands=['test'])
-def test(message: telebot.types.Message):
-    text = """Искусство – это одна из самых прекрасных и вдохновляющих сфер человеческой деятельности. Оно позволяет нам выразить свои мысли, эмоции и идеи через различные формы и творческие выражения. Искусство может быть воплощено в живописи, скульптуре, музыке, литературе, танце и многих других формах.
-
-Когда мы взглядываем на картину или слушаем музыку, искусство переносит нас в другой мир, где мы можем отдохнуть от повседневных забот и насладиться красотой и гармонией. Оно вдохновляет нас, вызывает эмоции и заставляет задуматься. Каждое произведение искусства имеет свою уникальность и индивидуальность, и оно может иметь разные значения и интерпретации для каждого отдельного человека.
-
-Искусство также имеет важное значение для культуры и истории народа. Оно отражает и сохраняет наши традиции, верования и ценности. Многие произведения искусства становятся символами нашей национальной идентичности и представляют нас перед миром.
-
-Искусство – это также средство коммуникации и взаимодействия между людьми. Оно может объединять людей разных культур и языков, преодолевать барьеры и создавать мосты между разными сообществами. Искусство способно вдохновить диалог и понимание, а также вызывать дискуссии и размышления.
-
-В целом, искусство играет важную роль в нашей жизни. Оно приносит красоту, радость и глубокий смысл. Оно помогает нам лучше понять себя и мир вокруг нас. Поэтому давайте ценим и наслаждаемся искусством во всех его проявлениях и поддерживаем творческих людей, которые делают нашу жизнь более яркой и интересной."""
-    m = bot.reply_to(message, '_')
-    
-    s = ''
-    for i in text.split():
-        s += i + ' '
-        bot.edit_message_text(text=s, chat_id=message.chat.id, message_id=m.message_id)
 
 
 @bot.message_handler(commands=['sum'])

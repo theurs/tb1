@@ -186,7 +186,11 @@ def get_voice(language_code: str, gender: str = 'female'):
     """принимает двухбуквенное обозначение языка и возвращает голосовой движок для его озвучки
     gender = 'male' or 'female'"""
     assert gender in ('male', 'female')
-    
+
+    # белорусский язык это скорее всего ошибка автоопределителя, но в любом случае такой язык не поддерживается, меняем на украинский
+    if language_code == 'be':
+        language_code = 'uk'
+
     voices = {
  'af': {'female': 'af-ZA-AdriNeural', 'male': 'af-ZA-WillemNeural'},
  'am': {'female': 'am-ET-MekdesNeural', 'male': 'am-ET-AmehaNeural'},

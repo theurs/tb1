@@ -57,7 +57,7 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
             openai.api_key = cfg.reserve_key
             openai.api_base = cfg.reserve_openai_api_base
             completion = openai.ChatCompletion.create(
-                model = cfg.model,
+                model = current_model,
                 messages=messages,
                 max_tokens=max_tok,
                 temperature=temp,

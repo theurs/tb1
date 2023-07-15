@@ -53,6 +53,11 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
                 timeout=timeou
             )
             response = completion.choices[0].message.content
+            
+            # меняем местами основной и резервный сервер что бы в следующий раз не натыкаться на упавший сервер
+            cfg.openai_api_base,         cfg.reserve_openai_api_base, cfg.key,         cfg.reserve_key = \
+            cfg.reserve_openai_api_base, cfg.openai_api_base,         cfg.reserve_key, cfg.key
+            
         except Exception as unknown_error2:
             print(unknown_error2)
 

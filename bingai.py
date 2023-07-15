@@ -86,6 +86,37 @@ def chat(query: str, dialog: int, style: int = 3, reset: bool = False) -> str:
     return result
 
 
+async def main_stream(prompt1: str, style: int = 3) -> str:
+    """
+    Выполняет запрос к бингу.
+    style: 1 - precise, 2 - balanced, 3 - creative
+    """
+
+    if style == 1:
+        st = ConversationStyle.precise
+    elif style == 2:
+        st = ConversationStyle.balanced
+    elif style == 3:
+        st = ConversationStyle.creative
+
+    cookies = json.loads(open("cookies.json", encoding="utf-8").read())
+    
+    bot = await Chatbot.create(cookies=cookies)
+    #r = await bot.ask_stream(prompt=prompt1, conversation_style=st, simplify_response=True)
+    wrote = 0
+    async for final, response in bot.ask_stream(prompt=prompt1, conversation_style=st, search_result=False, locale='ru'):
+        if not final:
+            if response[wrote:].startswith('```json'):
+                wrote = len(response)
+                continue
+        if not final:
+            # print(response[wrote:], end='')
+            yield response[wrote:]
+        wrote = len(response)
+
+    await bot.close()
+
+
 async def main(prompt1: str, style: int = 3) -> str:
     """
     Выполняет запрос к бингу.
@@ -122,6 +153,13 @@ def ai(prompt: str, style: int = 3) -> str:
     return asyncio.run(main(prompt, style))
 
 
+def ai_stream(prompt: str, timer: float = 1) -> str:
+    """сырой запрос к бингу, ответ выдается каждые timer секунд по мере поступления"""
+    print('bing', len(prompt))
+    x = asyncio.run(main_stream(prompt, 3))
+    print(x)
+
+
 def gen_imgs(prompt: str):
     """генерирует список картинок по описанию с помощью бинга
     возвращает список ссылок на картинки или сообщение об ошибке"""
@@ -151,10 +189,12 @@ def gen_imgs(prompt: str):
 
 if __name__ == "__main__":
 
+    #os.environ['all_proxy'] = cfg.all_proxy
+
     #prompt = 'anime резонанс душ'
     #print(gen_imgs(prompt))
 
-    print(ai('hi'))
+    ai_stream('курс доллара на сегодня во владивостоке', 2)
     sys.exit()
 
     while 1:

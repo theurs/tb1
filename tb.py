@@ -1029,7 +1029,7 @@ def set_new_model(message: telebot.types.Message):
 `/model claude-2-100k`
 """
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide')) 
-        my_log.log_echo(message, msg, reply_markup=get_keyboard('chat'))
+        my_log.log_echo(message, msg)
         return
 
     # if message.from_user.id not in cfg.admins:

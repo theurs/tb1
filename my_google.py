@@ -395,9 +395,8 @@ if __name__ == "__main__":
     #sys.exit(0)
 
     #print(gpt_basic.ai('1+1'))
-    print(search_google('откуда этот IP 107.189.11.166'), '\n\n')
     
-    # print(search_google('курс доллара'), '\n\n')
+    print(search_google('курс доллара'), '\n\n')
     
     # print(search('полный текст песни doni ft валерия ты такой'), '\n\n')
 

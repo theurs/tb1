@@ -165,11 +165,15 @@ openai_api_base2 = 'https://free.catto.codes/v1'
 # должен быть настроен и запущен https://github.com/juzeon/poe-openai-proxy
 #openai_api_base = 'http://127.0.0.1:3700/v1'
 
+#model = 'gpt-4'
 model = 'gpt-3.5-turbo-16k'
 #model = 'gpt-3.5-turbo-8k'
 #model = 'gpt-3.5-turbo'
-#model="Sage"
-#model = 'Claude-instant'
+#model="sage"
+#model = 'сlaude-instant'
+#model = 'claude-instant-100k'
+#model = 'claude-2-100k'
+
 
 # запасной прокси и ключ на случай если основной упал, если не то продублировать. должен быть совместим с основным
 reserve_openai_api_base = 'xxx'

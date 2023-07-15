@@ -97,7 +97,7 @@ if __name__ == '__main__':
     #image_prompt = 'автомобиль без колес вид сбоку. хищный вид. оформление для аватарки'
     #print(image_gen(image_prompt))
     
-    #print(stt('1.ogg'))
+    print(stt('1.ogg'))
 
     
     #print(ai(open('2.txt', 'r').read()[:30000], model='gpt-4-32k-poe'))

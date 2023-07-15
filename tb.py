@@ -1042,8 +1042,8 @@ def set_new_model(message: telebot.types.Message):
     msg0 = f'Старая модель `{current_model}`.'
     msg = f'Установлена новая модель `{model}`.'
     gpt_basic.CUSTOM_MODELS[chat_id] = model
-    bot.send_message(chat_id, msg0, parse_mode='Markdown', reply_markup=get_keyboard('chat'))
-    bot.send_message(chat_id, msg, parse_mode='Markdown', reply_markup=get_keyboard('chat'))
+    bot.send_message(chat_id, msg0, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+    bot.send_message(chat_id, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
     my_log.log_echo(message, msg0)
     my_log.log_echo(message, msg)
 

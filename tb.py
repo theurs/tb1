@@ -383,6 +383,14 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
         button2 = telebot.types.InlineKeyboardButton("Повторить", callback_data='repeat_image')
         markup.add(button1, button2)
         return markup
+    elif kbd == 'bing_chat':
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='restart_bing')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
+        markup.add(button1, button2, button3, button4)
+        return markup
     elif kbd == 'image_gallery':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
         button1 = telebot.types.InlineKeyboardButton("-1", callback_data='image_gallery_prev_prompt')
@@ -631,10 +639,9 @@ def handle_document(message: telebot.types.Message):
     thread.start()
 def handle_document_thread(message: telebot.types.Message):
     """Обработчик документов"""
-    
+
     my_log.log_media(message)
-    
-    
+
     with semaphore_talks:
     
         # если прислали текстовый файл или pdf с подписью перескажи
@@ -861,12 +868,9 @@ def change_mode(message: telebot.types.Message):
     chat_id = message.chat.id
     
     # в каждом чате свой собственный промт
-    if chat_id in PROMPTS:
-        current_prompt = PROMPTS[chat_id]
-    else:
+    if chat_id not in PROMPTS:
         # по умолчанию формальный стиль
         PROMPTS[chat_id] = [{"role": "system", "content": utils.gpt_start_message1}]
-        current_prompt =   [{"role": "system", "content": utils.gpt_start_message1}]
 
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
@@ -880,7 +884,7 @@ def change_mode(message: telebot.types.Message):
             new_prompt = utils.gpt_start_message4
         else:
             new_prompt = arg[0]
-        PROMPTS[message.chat.id] =  [{"role": "system", "content": new_prompt}]
+        PROMPTS[chat_id] =  [{"role": "system", "content": new_prompt}]
         msg =  f'[Новая роль установлена] `{new_prompt}`'
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
         my_log.log_echo(message, msg)
@@ -1718,7 +1722,7 @@ def send_name(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['start'])
-def send_welcome(message: telebot.types.Message):
+def send_welcome_start(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
     # не обрабатывать команды к другому боту /cmd@botname args
@@ -1741,7 +1745,7 @@ def send_welcome(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['help'])
-def send_welcome(message: telebot.types.Message):
+def send_welcome_help(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
     # не обрабатывать команды к другому боту /cmd@botname args
@@ -2001,21 +2005,11 @@ def do_task(message):
                         if answer:
                             messages_left = str(answer['messages_left'])
                             text = f"{answer['text']}\n\n{messages_left}/30"
-                            # suggestions = answer['suggestions']
-                            markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
-                            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='restart_bing')
-                            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-                            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-                            button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
-                            markup.add(button1, button2, button3, button4)
-                            # for suggestion in suggestions:
-                            #     button = telebot.types.InlineKeyboardButton(text=str(suggestion), callback_data=get_suggestion_id(suggestion))
-                            #     markup.add(button)
                             try:
-                                reply_to_long_message(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=markup)
+                                reply_to_long_message(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('bing_chat'))
                             except Exception as error:
                                 print(error)
-                                reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=markup)
+                                reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('bing_chat'))
                             if int(messages_left) == 1:
                                 bingai.reset_bing_chat(chat_id)
                             my_log.log_echo(message, answer['text'])

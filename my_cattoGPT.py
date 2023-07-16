@@ -100,6 +100,6 @@ if __name__ == '__main__':
 
     #print(ai(open('1.txt', 'r').read()))
 
-    print(ai('hi', model='', max_token=30000))
+    print(ai('hi'))
     #for i in openai.Model.list()['data']:
     #    print(i['id'])

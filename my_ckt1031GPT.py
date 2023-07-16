@@ -10,7 +10,7 @@ import openai
 import cfg
 
 
-def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 180, messages = None, chat_id = None) -> str:
+def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 180, messages = None) -> str:
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
     second - использовать ли второй гейт и ключ, для больших запросов
     """

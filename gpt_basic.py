@@ -11,6 +11,7 @@ import openai
 import cfg
 import utils
 import my_dic
+import my_ckt1031GPT
 
 
 CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
@@ -90,13 +91,16 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
                 timeout=timeou
             )
             response = completion.choices[0].message.content
-            
+
             # меняем местами основной и резервный сервер что бы в следующий раз не натыкаться на упавший сервер
             # cfg.openai_api_base,         cfg.reserve_openai_api_base, cfg.key,         cfg.reserve_key = \
             # cfg.reserve_openai_api_base, cfg.openai_api_base,         cfg.reserve_key, cfg.key
-            
         except Exception as unknown_error2:
             print(unknown_error2)
+            try:
+                response = my_ckt1031GPT.ai(prompt, temp, max_tok, timeou, messages)
+            except Exception as unknown_error3:
+                print(unknown_error3)
 
     return check_and_fix_text(response)
 
@@ -273,7 +277,8 @@ if __name__ == '__main__':
     if cfg.all_proxy:
         os.environ['all_proxy'] = cfg.all_proxy
     
-    print(ai_test())
+    #print(ai_test())
+    print(ai('hi'))
     sys.exit()
 
     if len(sys.argv) != 2:

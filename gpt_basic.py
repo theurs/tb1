@@ -96,6 +96,7 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
             # cfg.openai_api_base,         cfg.reserve_openai_api_base, cfg.key,         cfg.reserve_key = \
             # cfg.reserve_openai_api_base, cfg.openai_api_base,         cfg.reserve_key, cfg.key
         except Exception as unknown_error2:
+            # если основной и резервный не сработали то последний вариант, он использует только модель из конфига
             print(unknown_error2)
             try:
                 response = my_ckt1031GPT.ai(prompt, temp, max_tok, timeou, messages)

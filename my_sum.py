@@ -128,14 +128,8 @@ BEGIN:
     except AttributeError as error:
         pass
 
-    if not result:
-        prompt_bing = shrink_text_for_bing(prompt)
-        try:
-            result = f'{gpt_basic.ai(prompt, second = True)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
-        except Exception as error:
-            print(error)
-
     if not result and len(prompt) < 32000:
+        prompt_bing = shrink_text_for_bing(prompt)
         try:
             result_2 = bingai.ai(prompt_bing, 1)
             if result_2:
@@ -252,9 +246,9 @@ if __name__ == "__main__":
     
     os.environ['all_proxy'] = cfg.all_proxy
     
-    #r = summ_url('https://habr.com/ru/articles/748272/')
-    #print(r)
-    #sys.exit(0)
+    r = summ_url('https://habr.com/ru/articles/748266/')
+    print(r)
+    sys.exit(0)
     
     t = sys.argv[1]
     

@@ -1,19 +1,12 @@
 #!/usr/bin/env python3
 
 import os
-import re
 import sys
 
-import enchant
-from fuzzywuzzy import fuzz
 import openai
 
 import cfg
-import utils
-import my_dic
 
-
-CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
 
 
 def ai_test() -> str:

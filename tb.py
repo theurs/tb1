@@ -152,15 +152,11 @@ class ShowAction(threading.Thread):
         self.chat_id = chat_id
         self.action = action
         self.is_running = True
-        #self.start()
         self.timerseconds = 1
         
     def run(self):
         while self.is_running:
-            try:
-                bot.send_chat_action(self.chat_id, self.action)
-            except telebot.apihelper.ApiTelegramException as error:
-                print('ShowAction.run', error)
+            bot.send_chat_action(self.chat_id, self.action)
             n = 50
             while n > 0:
                 time.sleep(0.1)

@@ -18,6 +18,7 @@ import bingai
 import cfg
 import gpt_basic
 import my_chimera
+import my_ckt1031GPT
 import utils
 
 
@@ -116,8 +117,23 @@ BEGIN:
         except Exception as error:
             print(error)
 
+    try:
+        if cfg.key_ckt1031:
+            pass
+        if not result and len(prompt) < 25000:
+            try:
+                result = f'{my_ckt1031GPT.ai(prompt)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
+            except Exception as error:
+                print(error)
+    except AttributeError as error:
+        pass
+
     if not result:
         prompt_bing = shrink_text_for_bing(prompt)
+        try:
+            result = f'{gpt_basic.ai(prompt, second = True)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
+        except Exception as error:
+            print(error)
 
     if not result and len(prompt) < 32000:
         try:
@@ -233,7 +249,10 @@ def is_valid_url(url: str) -> bool:
 
 if __name__ == "__main__":
     """Usage ./summarize.py '|URL|filename"""
-    #r = summ_url('https://techxplore.com/news/2023-06-problems.html')
+    
+    os.environ['all_proxy'] = cfg.all_proxy
+    
+    #r = summ_url('https://habr.com/ru/articles/748272/')
     #print(r)
     #sys.exit(0)
     

@@ -165,6 +165,7 @@ class ShowAction(threading.Thread):
     def stop(self):
         self.timerseconds = 50
         self.is_running = False
+        bot.send_chat_action(self.chat_id, 'cancel')
 
     def __enter__(self):
         self.start()

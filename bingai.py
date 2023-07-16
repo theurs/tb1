@@ -22,8 +22,9 @@ lock_gen_img = threading.Lock()
 
 def reset_bing_chat(chat_id: int):
     try:
-        chat(first_message, chat_id)
+        chat('', chat_id)
     except Exception as error2:
+        my_log.log2(f'bingai.reset_bing_chat: {error2}')
         print(error2)
 
 

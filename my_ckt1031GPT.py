@@ -14,7 +14,6 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
     second - использовать ли второй гейт и ключ, для больших запросов
     """
-    global CUSTOM_MODELS
 
     print(cfg.model, len(prompt))
 
@@ -27,8 +26,6 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
                     {"role": "user", "content": prompt}]
 
     current_model = cfg.model
-    if chat_id and chat_id in CUSTOM_MODELS:
-        current_model = CUSTOM_MODELS[chat_id]
 
     completion = None
 

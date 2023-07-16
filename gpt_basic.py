@@ -21,8 +21,12 @@ def ai_test() -> str:
     """
     openai.api_key = cfg.key_test
     openai.api_base = cfg.openai_api_base_test
+    
+    #   text = open('1.txt', 'r').read()[:20000]
+    text = 'Привет как дела'
+    
     messages = [{"role": "system", "content": "Ты искусственный интеллект отвечающий на запросы юзера."},
-                {"role": "user", "content": "Привет ты кто"}]
+                {"role": "user", "content": text}]
 
     current_model = cfg.model_test
 

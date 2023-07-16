@@ -156,7 +156,10 @@ class ShowAction(threading.Thread):
         
     def run(self):
         while self.is_running:
-            bot.send_chat_action(self.chat_id, self.action)
+            try:
+                bot.send_chat_action(self.chat_id, self.action)
+            except Exception as error:
+                my_log.log2(str(error))
             n = 50
             while n > 0:
                 time.sleep(0.1)

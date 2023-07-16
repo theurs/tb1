@@ -35,8 +35,7 @@ def ai_test() -> str:
         timeout=180,
         stream=False
     )
-    response = completion.choices[0].message.content
-    return response
+    return сompletion["choices"][0]["message"]["content"]
 
 
 def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages = None, second = False, chat_id = None) -> str:

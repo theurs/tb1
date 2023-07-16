@@ -993,6 +993,8 @@ def bingreset_thread(message: telebot.types.Message):
     else: return
 
     my_log.log_echo(message)
+    
+    chat_id = message.chat.id
 
     bingai.reset_bing_chat(chat_id)
 

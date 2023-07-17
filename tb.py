@@ -563,7 +563,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('chat'))
         elif call.data == 'restart_bard':
-            bingai.reset_bard_chat(chat_id)
+            my_bard.reset_bard_chat(chat_id)
             msg = 'История диалога с бардом отчищена.'
             bot.send_message(chat_id, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)

@@ -2136,7 +2136,7 @@ def do_task(message):
                             except Exception as error:
                                 print(error)
                                 reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('bard_chat'))
-                            my_log.log_echo(message, answer['text'])
+                            my_log.log_echo(message, answer)
                     except Exception as error:
                         print(error)
                         my_log.log2(str(error))

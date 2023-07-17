@@ -19,6 +19,7 @@ from langdetect import detect_langs
 import bingai
 import cfg
 import gpt_basic
+import my_bard
 import my_genimg
 import my_dic
 import my_log
@@ -66,6 +67,10 @@ if not os.path.exists('db'):
 
 # в каких чатах включен/выключен режим общения с бингом 'off' | 'on'
 BING_MODE = my_dic.PersistentDict('db/bing_mode.pkl')
+
+# в каких чатах включен/выключен режим общения с бингом 'off' | 'on'
+BARD_MODE = my_dic.PersistentDict('db/bard_mode.pkl')
+
 # история диалогов для GPT chat
 DIALOGS_DB = my_dic.PersistentDict('db/dialogs.pkl')
 # в каких чатах выключены автопереводы
@@ -391,6 +396,14 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
         markup.add(button1, button2, button3, button4)
         return markup
+    elif kbd == 'bard_chat':
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='restart_bard')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
+        markup.add(button1, button2, button3, button4)
+        return markup
     elif kbd == 'image_gallery':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
         button1 = telebot.types.InlineKeyboardButton("-1", callback_data='image_gallery_prev_prompt')
@@ -549,6 +562,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('chat'))
+        elif call.data == 'restart_bard':
+            bingai.reset_bard_chat(chat_id)
+            msg = 'История диалога с бардом отчищена.'
+            bot.send_message(chat_id, msg, reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, msg)
         elif call.data == 'restart_bing':
             bingai.reset_bing_chat(chat_id)
             msg = 'История диалога с бингом отчищена.'
@@ -1848,9 +1866,37 @@ def send_welcome_help(message: telebot.types.Message):
     my_log.log_echo(message, help)
 
 
+@bot.message_handler(commands=['bardmode'])
+def bard_mode(message: telebot.types.Message):
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    global BARD_MODE
+
+    chat_id = message.chat.id
+
+    mode = 'off'
+    if chat_id in BARD_MODE:
+        mode = BARD_MODE[chat_id]
+
+    if mode == 'off': mode = 'on'
+    else: mode = 'off'
+
+    BARD_MODE[chat_id] = mode
+
+    msg = f'Режим диалога с BARD AI {mode}'
+
+    bot.reply_to(message, msg, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+
+    my_log.log_echo(message, msg)
+
+
 @bot.message_handler(commands=['bingmode'])
 def bing_mode(message: telebot.types.Message):
-    # Отправляем приветственное сообщение
 
     # не обрабатывать команды к другому боту /cmd@botname args
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
@@ -2074,6 +2120,24 @@ def do_task(message):
                                 reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('bing_chat'))
                             if int(messages_left) == 1:
                                 bingai.reset_bing_chat(chat_id)
+                            my_log.log_echo(message, answer['text'])
+                    except Exception as error:
+                        print(error)
+                    return
+
+            # если активирован режим общения с бинг чатом
+            if chat_id in BARD_MODE and BARD_MODE[chat_id] == 'on':
+                with ShowAction(chat_id, 'typing'):
+                    try:
+                        answer = my_bard.chat(message.text, chat_id)
+                        if answer:
+                            try:
+                                reply_to_long_message(message, answer, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('bard_chat'))
+                            except Exception as error:
+                                print(error)
+                                reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('bard_chat'))
+                            if int(messages_left) == 1:
+                                my_bard.reset_bard_chat(chat_id)
                             my_log.log_echo(message, answer['text'])
                     except Exception as error:
                         print(error)

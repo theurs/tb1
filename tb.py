@@ -2136,11 +2136,10 @@ def do_task(message):
                             except Exception as error:
                                 print(error)
                                 reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('bard_chat'))
-                            if int(messages_left) == 1:
-                                my_bard.reset_bard_chat(chat_id)
                             my_log.log_echo(message, answer['text'])
                     except Exception as error:
                         print(error)
+                        my_log.log2(str(error))
                     return
 
             # добавляем новый запрос пользователя в историю диалога пользователя

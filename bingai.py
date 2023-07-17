@@ -190,20 +190,11 @@ def gen_imgs(prompt: str):
 
 if __name__ == "__main__":
 
-    #os.environ['all_proxy'] = cfg.all_proxy
-
     #prompt = 'anime резонанс душ'
     #print(gen_imgs(prompt))
 
-    ai_stream('курс доллара на сегодня во владивостоке', 2)
-    sys.exit()
-
-    while 1:
-        q = input('Вы: ')
-        r = chat(q, 0, style=3)
-        #print(r.characters_written)
-        print(f"Бинг: {r['text']}\nmessages left: {r['messages_left']}\nSuggestions: {r['suggestions']}")
-    sys.exit()
+    #print(ai('курс доллара на сегодня во владивостоке'))
+    #sys.exit()
 
     #print(ai('Официальный сайт iVentoy'))
 

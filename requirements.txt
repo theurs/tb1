@@ -1,3 +1,4 @@
+bardapi
 chardet
 duckduckgo_search
 edge_tts

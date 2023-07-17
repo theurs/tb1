@@ -78,6 +78,13 @@ key = 'openai api key'
 # второй ключ для больших запросов, если нет то можно просто продублировать
 key2 = 'openai api key'
 
+
+# токен от барда, кончается на точку. надо установить cookie editor в браузере, зайти на сайт барда
+# https://bard.google.com/ нажать F12 найти там раздел cookie editor
+# искать __Secure-1PSID в куках с сайта https://bard.google.com/
+bard_token = '...'
+
+
 # ключ для рисования через сайт химеры (рисует кандинский)
 #https://discord.gg/BfwvN8Dy
 #ChimeraGPT - The best API for chat completions with free GPT-4 access! Friendly community, free GPT-4, etc. only here! | 2510 members

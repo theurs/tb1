@@ -132,6 +132,14 @@ supported_langs_tts = [
         'sn', 'so', 'sq', 'sr', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'tk',
         'tl', 'tr', 'tt', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
 
+MSG_CONFIG = """***Панель управления***
+
+Тут можно:
+
+- стереть память боту
+- переключить час с chatGPT на Microsoft Bing или Google Bard
+- изменить голос
+"""
 
 class ShowAction(threading.Thread):
     """Поток который можно остановить. Беспрерывно отправляет в чат уведомление об активности.
@@ -427,43 +435,48 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         else:
             voice = 'tts_female'
 
+        voices = {'tts_female': 'Микрософт жен.',
+                  'tts_male': 'Микрософт муж.',
+                  'tts_google_female': 'Google',
+                  'tts_silero_xenia': 'Силеро - xenia',
+                  'tts_silero_aidar': 'Силеро - aidar'
+                  }
+        voice_title = voices[voice]
+
         bing_mode = BING_MODE[chat_id] if chat_id in BING_MODE else 'off'
         bard_mode = BARD_MODE[chat_id] if chat_id in BARD_MODE else 'off'
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
-        button = telebot.types.InlineKeyboardButton(f'Голосовой движок: {voice[4:]}', callback_data=voice)
-        markup.add(button)
-
         if bard_mode == 'off':
-            button = telebot.types.InlineKeyboardButton('Перейти в режим Bard AI', callback_data='bard_mode_enable')
+            button1 = telebot.types.InlineKeyboardButton('☑️Bard AI', callback_data='bard_mode_enable')
         else:
-            button = telebot.types.InlineKeyboardButton('Перейти в режим chatGPT', callback_data='bard_mode_disable')
-        markup.add(button)
+            button1 = telebot.types.InlineKeyboardButton('✅Bard AI', callback_data='bard_mode_disable')
+
+        button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='bardAI_reset')
+        markup.row(button1, button2)
 
         if bing_mode == 'off':
-            button = telebot.types.InlineKeyboardButton('Перейти в режим Bing AI', callback_data='bing_mode_enable')
+            button1 = telebot.types.InlineKeyboardButton('☑️Bing AI', callback_data='bing_mode_enable')
         else:
-            button = telebot.types.InlineKeyboardButton('Перейти в режим chatGPT', callback_data='bing_mode_disable')
-        markup.add(button)
+            button1 = telebot.types.InlineKeyboardButton('✅Bing AI', callback_data='bing_mode_disable')
 
-        button = telebot.types.InlineKeyboardButton('Стереть историю Bing AI', callback_data='bingAI_reset')
-        markup.add(button)
+        button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='bingAI_reset')
+        markup.row(button1, button2)
 
-        button = telebot.types.InlineKeyboardButton('Стереть историю Bard AI', callback_data='bardAI_reset')
-        markup.add(button)
+        button1 = telebot.types.InlineKeyboardButton('❌Стереть GPT', callback_data='chatGPT_reset')
 
-        button = telebot.types.InlineKeyboardButton('Стереть историю chatGPT', callback_data='chatGPT_reset')
-        markup.add(button)
+        button2 = telebot.types.InlineKeyboardButton('🔍История GPT', callback_data='chatGPT_memory_debug')
+        markup.row(button1, button2)
 
-        button = telebot.types.InlineKeyboardButton('Показать историю chatGPT', callback_data='chatGPT_memory_debug')
+        button = telebot.types.InlineKeyboardButton(f'📢Голос: {voice_title}', callback_data=voice)
         markup.add(button)
 
         if cfg.pics_group_url:
-            button_pics = telebot.types.InlineKeyboardButton("Галерея",  url = cfg.pics_group_url)
+            button_pics = telebot.types.InlineKeyboardButton("🖼️Галерея",  url = cfg.pics_group_url)
             markup.add(button_pics)
 
-        button = telebot.types.InlineKeyboardButton('Закрыть меню', callback_data='erase_answer')
+        button = telebot.types.InlineKeyboardButton('🙈Закрыть меню', callback_data='erase_answer')
         markup.add(button)
 
         return markup
@@ -599,31 +612,33 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_log.log_echo(message, msg)
         elif call.data == 'tts_female':
             TTS_GENDER[chat_id] = 'male'
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'tts_male':
             TTS_GENDER[chat_id] = 'google_female'
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'tts_google_female':
             TTS_GENDER[chat_id] = 'silero_xenia'
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'tts_silero_xenia':
             TTS_GENDER[chat_id] = 'silero_aidar'
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'tts_silero_aidar':
             TTS_GENDER[chat_id] = 'female'
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'bing_mode_enable':
             BING_MODE[chat_id] = 'on'
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+            BARD_MODE[chat_id] = 'off'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'bing_mode_disable':
             BING_MODE[chat_id] = 'off'
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'bard_mode_enable':
             BARD_MODE[chat_id] = 'on'
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+            BING_MODE[chat_id] = 'off'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'bard_mode_disable':
             BARD_MODE[chat_id] = 'off'
-            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'chatGPT_reset':
             DIALOGS_DB[chat_id] = []
         elif call.data == 'bingAI_reset':
@@ -951,7 +966,8 @@ def config(message: telebot.types.Message):
 
     my_log.log_echo(message)
     chat_id = message.chat.id
-    bot.send_message(chat_id, 'Настройки', reply_markup=get_keyboard('config', chat_id))
+
+    bot.send_message(chat_id, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id))
 
 
 @bot.message_handler(commands=['style'])
@@ -2156,6 +2172,10 @@ def do_task(message):
                     except Exception as error:
                         print(error)
                     return
+
+            # по умолчанию всех в барда
+            if chat_id not in BARD_MODE:
+                BARD_MODE[chat_id] = 'on'
 
             # если активирован режим общения с бинг чатом
             if chat_id in BARD_MODE and BARD_MODE[chat_id] == 'on':

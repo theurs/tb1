@@ -8,9 +8,11 @@ from bardapi import Bard
 
 import cfg
 import my_log
+import my_dic
 
 
-DIALOGS = {}
+#DIALOGS = {}
+DIALOGS = my_dic.PersistentDict('db/bard_sessions.pkl')
 CHAT_LOCKS = {}
 
 

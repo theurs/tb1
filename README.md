@@ -99,6 +99,8 @@ whisper_model = 'medium' # ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 's
 
 # если хочется иметь канал(не группа) в котором будут все сгенерированные фотки то надо добавить туда бота
 # id телеграм канала куда скидываются все сгенерированные картинки
+#pics_group = 0
+#pics_group_url = ''
 pics_group = xxx
 pics_group_url = 'https://t.me/yyy'
 
@@ -185,6 +187,17 @@ reserve_key = 'yyy'
 # использовать прокси (пиратские сайты обычно лочат ваш ип, так что смотрите за этим)
 #all_proxy = ''
 all_proxy = 'socks5://172.28.1.5:1080'
+
+
+key_test = 'xxx'
+openai_api_base_test = 'xxx'
+model_test = 'gpt-3.5-turbo-16k'
+
+
+# https://openai-api.ckt1031.xyz/
+key_ckt1031 = 'xxx'
+openai_api_base_ckt1031 = 'https://openai-api.ckt1031.xyz/v1'
+model_ckt1031 = 'gpt-3.5-turbo-16k'
 ```
 
 Для работы распознавания голосовых сообщений надо установить vosk сервер.

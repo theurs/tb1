@@ -344,7 +344,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     return resp
 
 
-def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
+def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup:
     """создает и возвращает клавиатуру по текстовому описанию
     'chat' - клавиатура для чата с 3 кнопками Дальше, Забудь, Скрой
     'mem' - клавиатура для команды mem, с кнопками Забудь и Скрой
@@ -406,6 +406,29 @@ def get_keyboard(kbd: str) -> telebot.types.InlineKeyboardMarkup:
         else:
             markup.add(button1, button2, button3, button4, button5, button6, button7)
         return markup
+    elif kbd == 'config':
+        global TTS_GENDER, BING_MODE
+        if chat_id and chat_id in TTS_GENDER:
+            voice = f'tts_{TTS_GENDER[chat_id]}'
+        else:
+            voice = 'tts_female'
+        bing_mode = BING_MODE[chat_id] if chat_id in BING_MODE else 'off'
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
+        button1 = telebot.types.InlineKeyboardButton(f'Голосовой движок: {voice[4:]}', callback_data=voice)
+        if bing_mode == 'off':
+            button2 = telebot.types.InlineKeyboardButton('Перейти в режим Bing AI', callback_data='bing_mode_enable')
+        else:
+            button2 = telebot.types.InlineKeyboardButton('Перейти в режим chatGPT', callback_data='bing_mode_disable')
+        button3 = telebot.types.InlineKeyboardButton('Стереть историю Bing AI', callback_data='bingAI_reset')
+        button4 = telebot.types.InlineKeyboardButton('Стереть историю chatGPT', callback_data='chatGPT_reset')
+        button5 = telebot.types.InlineKeyboardButton('Показать историю chatGPT', callback_data='chatGPT_memory_debug')
+        button99 = telebot.types.InlineKeyboardButton('Закрыть меню', callback_data='erase_answer')
+        markup.add(button1, button2, button3, button4, button5)
+        if cfg.pics_group_url:
+            button_pics = telebot.types.InlineKeyboardButton("Галерея",  url = cfg.pics_group_url)
+            markup.add(button_pics)
+        markup.add(button99)
+        return markup
     else:
         raise f"Неизвестная клавиатура '{kbd}'"
 
@@ -424,9 +447,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         is_private = message.chat.type == 'private'
         is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
         chat_id = message.chat.id
-        global DIALOGS_DB
+        global DIALOGS_DB, TTS_GENDER, BING_MODE
 
-        
         if call.data == 'image_gallery_prev_prompt':
             # переходим к предыдущему промпту в базе галереи
             cur = int(message.text.split()[0])
@@ -532,12 +554,34 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             msg = 'История диалога с бингом отчищена.'
             bot.send_message(chat_id, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
-        #если это подсказки от бинга
-        # elif call.data.startswith('90870123'):
-        #     message.text = get_suggestion_by_id(call.data)
-        #     message.reply_to_message.text = get_suggestion_by_id(call.data)
-        #     echo_all(message)
-        #     return
+        elif call.data == 'tts_female':
+            TTS_GENDER[chat_id] = 'male'
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'tts_male':
+            TTS_GENDER[chat_id] = 'google_female'
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'tts_google_female':
+            TTS_GENDER[chat_id] = 'silero_xenia'
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'tts_silero_xenia':
+            TTS_GENDER[chat_id] = 'silero_aidar'
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'tts_silero_aidar':
+            TTS_GENDER[chat_id] = 'female'
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'bing_mode_enable':
+            BING_MODE[chat_id] = 'on'
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'bing_mode_disable':
+            BING_MODE[chat_id] = 'off'
+            bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text = message.text, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'chatGPT_reset':
+            DIALOGS_DB[chat_id] = []
+        elif call.data == 'bingAI_reset':
+            bingai.reset_bing_chat(chat_id)
+        elif call.data == 'chatGPT_memory_debug':
+            send_debug_history(message)
+        
 
 
 @bot.message_handler(content_types = ['audio'])
@@ -846,6 +890,18 @@ def is_for_me(cmd: str):
         return (message_bot == _bot_name, f'{message_cmd} {message_args}'.strip())
     else:
         return (True, cmd)
+
+
+@bot.message_handler(commands=['config'])
+def config(message: telebot.types.Message):
+    """Меню настроек"""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+    chat_id = message.chat.id
+    bot.send_message(chat_id, 'Настройки', reply_markup=get_keyboard('config', chat_id))
 
 
 @bot.message_handler(commands=['style'])
@@ -1302,6 +1358,8 @@ def images_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     global IMAGES_DB
+    if not IMAGES_DB:
+        return
     
     ttl = 0
     
@@ -1355,7 +1413,9 @@ def html_gallery_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
-    global IMAGES_DB    
+    global IMAGES_DB
+    if not IMAGES_DB:
+        return
 
     header = """<!DOCTYPE html>
 <html lang="ru">
@@ -1800,16 +1860,16 @@ def bing_mode(message: telebot.types.Message):
 
     global BING_MODE
 
-    id = message.chat.id
+    chat_id = message.chat.id
 
     mode = 'off'
-    if id in BING_MODE:
-        mode = BING_MODE[id]
+    if chat_id in BING_MODE:
+        mode = BING_MODE[chat_id]
 
     if mode == 'off': mode = 'on'
     else: mode = 'off'
 
-    BING_MODE[id] = mode
+    BING_MODE[chat_id] = mode
 
     msg = f'Режим диалога с BING AI {mode}'
 

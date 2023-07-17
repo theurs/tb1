@@ -476,7 +476,7 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         if chat_id not in BLOCKS:
             BLOCKS[chat_id] = 0
 
-        if BLOCKS[chat_id] == 1:
+        if BLOCKS[chat_id] == 0:
             button = telebot.types.InlineKeyboardButton(f'✅Автопереводы', callback_data='autotranslate_disable')
         else:
             button = telebot.types.InlineKeyboardButton(f'☑️Автопереводы', callback_data='autotranslate_enable')
@@ -651,10 +651,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             BARD_MODE[chat_id] = 'off'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'autotranslate_disable':
-            BLOCKS[chat_id] = 0
+            BLOCKS[chat_id] = 1
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'autotranslate_enable':
-            BLOCKS[chat_id] = 1
+            BLOCKS[chat_id] = 0
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'chatGPT_reset':
             DIALOGS_DB[chat_id] = []

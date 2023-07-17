@@ -430,7 +430,7 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
             markup.add(button1, button2, button3, button4, button5, button6, button7)
         return markup
     elif kbd == 'config':
-        global TTS_GENDER, BING_MODE, BARD_MODE
+        global TTS_GENDER, BING_MODE, BARD_MODE, BLOCKS
 
         if chat_id and chat_id in TTS_GENDER:
             voice = f'tts_{TTS_GENDER[chat_id]}'
@@ -471,6 +471,15 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         markup.row(button1, button2)
 
         button = telebot.types.InlineKeyboardButton(f'📢Голос: {voice_title}', callback_data=voice)
+        markup.add(button)
+
+        if chat_id not in BLOCKS:
+            BLOCKS[chat_id] = 0
+
+        if BLOCKS[chat_id] == 1:
+            button = telebot.types.InlineKeyboardButton(f'✅Автопереводы', callback_data='autotranslate_disable')
+        else:
+            button = telebot.types.InlineKeyboardButton(f'☑️Автопереводы', callback_data='autotranslate_enable')
         markup.add(button)
 
         if cfg.pics_group_url:
@@ -640,6 +649,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'bard_mode_disable':
             BARD_MODE[chat_id] = 'off'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'autotranslate_disable':
+            BLOCKS[chat_id] = 0
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'autotranslate_enable':
+            BLOCKS[chat_id] = 1
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'chatGPT_reset':
             DIALOGS_DB[chat_id] = []
@@ -2072,13 +2087,13 @@ def do_task(message, custom_prompt: str = ''):
             BOT_NAMES[chat_id] = bot_name 
         # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
         if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
-            BLOCKS[blocksd] = 1
+            BLOCKS[chat_id] = 1
             bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
             return
         # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
         if (msg.startswith('вернись') and (is_private or is_reply)) or msg.startswith((f'{bot_name} вернись', f'{bot_name}, вернись')):
-            BLOCKS[blocksd] = 0
+            BLOCKS[chat_id] = 0
             bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
             return

@@ -137,7 +137,7 @@ MSG_CONFIG = """***Панель управления***
 Тут можно:
 
 - стереть память боту
-- переключить час с chatGPT на Microsoft Bing или Google Bard
+- переключить чат с chatGPT на Microsoft Bing или Google Bard
 - изменить голос
 """
 
@@ -366,7 +366,7 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
     if kbd == 'chat':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button1 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button2 = telebot.types.InlineKeyboardButton("🆕", callback_data='forget_all')
+        button2 = telebot.types.InlineKeyboardButton("♻️", callback_data='forget_all')
         button3 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
         button4 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
         button5 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
@@ -397,20 +397,22 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         markup.add(button1, button2)
         return markup
     elif kbd == 'bing_chat':
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
         button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='restart_bing')
         button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
         button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
         button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
-        markup.add(button1, button2, button3, button4)
+        markup.add(button0, button1, button2, button3, button4)
         return markup
     elif kbd == 'bard_chat':
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
         button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='restart_bard')
         button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
         button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
         button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
-        markup.add(button1, button2, button3, button4)
+        markup.add(button0, button1, button2, button3, button4)
         return markup
     elif kbd == 'image_gallery':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
@@ -464,9 +466,8 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='bingAI_reset')
         markup.row(button1, button2)
 
-        button1 = telebot.types.InlineKeyboardButton('❌Стереть GPT', callback_data='chatGPT_reset')
-
-        button2 = telebot.types.InlineKeyboardButton('🔍История GPT', callback_data='chatGPT_memory_debug')
+        button1 = telebot.types.InlineKeyboardButton('🔍История GPT', callback_data='chatGPT_memory_debug')
+        button2 = telebot.types.InlineKeyboardButton('❌Стереть GPT', callback_data='chatGPT_reset')
         markup.row(button1, button2)
 
         button = telebot.types.InlineKeyboardButton(f'📢Голос: {voice_title}', callback_data=voice)
@@ -543,28 +544,29 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
-            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
-            with ShowAction(chat_id, 'typing'):
-                # добавляем новый запрос пользователя в историю диалога пользователя
-                resp = dialog_add_user_request(chat_id, 'Продолжай', 'gpt')
-                if resp:
-                    if is_private:
-                        try:
-                            #bot.send_message(chat_id, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                            bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                        except Exception as error2:    
-                            print(error2)
-                            my_log.log2(resp)
-                            bot.send_message(chat_id, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                    else:
-                        try:
-                            #bot.reply_to(message, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                            bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                        except Exception as error2:    
-                            print(error2)
-                            my_log.log2(resp)
-                            bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
-                my_log.log_echo(message, '[Продолжает] ' + resp)
+            echo_all(message, 'Продолжай')
+            return
+            # with ShowAction(chat_id, 'typing'):
+            #     # добавляем новый запрос пользователя в историю диалога пользователя
+            #     resp = dialog_add_user_request(chat_id, 'Продолжай', 'gpt')
+            #     if resp:
+            #         if is_private:
+            #             try:
+            #                 #bot.send_message(chat_id, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            #                 bot.send_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            #             except Exception as error2:    
+            #                 print(error2)
+            #                 my_log.log2(resp)
+            #                 bot.send_message(chat_id, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            #         else:
+            #             try:
+            #                 #bot.reply_to(message, utils.html(resp), parse_mode='HTML', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            #                 bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            #             except Exception as error2:    
+            #                 print(error2)
+            #                 my_log.log2(resp)
+            #                 bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            #     my_log.log_echo(message, '[Продолжает] ' + resp)
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
             DIALOGS_DB[chat_id] = []
@@ -2019,12 +2021,15 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
 
 
 @bot.message_handler(func=lambda message: True)
-def echo_all(message: telebot.types.Message) -> None:
+def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
     """Обработчик текстовых сообщений"""
-    thread = threading.Thread(target=do_task, args=(message,))
+    thread = threading.Thread(target=do_task, args=(message, custom_prompt))
     thread.start()
-def do_task(message):
+def do_task(message, custom_prompt: str = ''):
     """функция обработчик сообщений работающая в отдельном потоке"""
+
+    if custom_prompt:
+        message.text = custom_prompt
 
     # не обрабатывать неизвестные команды
     if message.text.startswith('/'): return

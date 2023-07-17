@@ -2065,7 +2065,7 @@ def do_task(message, custom_prompt: str = ''):
 
         msg = message.text.lower()
 
-        global BLOCKS, BOT_NAMES, CHAT_LOGS, DIALOGS_DB, BING_MODE
+        global BLOCKS, BOT_NAMES, CHAT_LOGS, DIALOGS_DB, BING_MODE, BARD_MODE
         
         # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
         if not is_private:
@@ -2099,9 +2099,16 @@ def do_task(message, custom_prompt: str = ''):
             return
         # если сообщение начинается на 'забудь' то стираем историю общения GPT
         if (msg.startswith('забудь') and (is_private or is_reply)) or msg.startswith((f'{bot_name} забудь', f'{bot_name}, забудь')):
-            DIALOGS_DB[chat_id] = []
+            if chat_id in BARD_MODE and BARD_MODE[chat_id] == 'on':
+                my_bard.reset_bard_chat(chat_id)
+                my_log.log_echo(message, 'История барда принудительно отчищена')
+            elif chat_id in BING_MODE and BING_MODE[chat_id] == 'on':
+                my_bing.reset_bing_chat(chat_id)
+                my_log.log_echo(message, 'История бинга принудительно отчищена')
+            else:
+                DIALOGS_DB[chat_id] = []
+                my_log.log_echo(message, 'История GPT принудительно отчищена')
             bot.send_message(chat_id, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-            my_log.log_echo(message, 'История GPT принудительно отчищена')
             return
 
         # если в сообщении только ссылка и она отправлена боту в приват

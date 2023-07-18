@@ -1248,11 +1248,13 @@ def tts_thread(message: telebot.types.Message):
     urls = re.findall(r'^/tts\s*(https?://[^\s]+)?$', message.text.lower())
 
     # обрабатываем урл, просто достаем текст и показываем с клавиатурой для озвучки
-    if len(urls) == 1 and urls[0]:
-        if '/youtu.be/' in urls[0] or 'youtube.com/' in urls[0]:
-            text = my_sum.get_text_from_youtube(message.text.split()[1])
+    args = message.text.split()
+    if len(args) == 2 and my_sum.is_valid_url(args[1]):
+        url = args[1]
+        if '/youtu.be/' in url or 'youtube.com/' in url:
+            text = my_sum.get_text_from_youtube(url)
         else:
-            text = my_google.download_text(urls, 100000, no_links = True)
+            text = my_google.download_text([url, ], 100000, no_links = True)
         if text:
             reply_to_long_message(message, text, reply_markup=get_keyboard('translate'), disable_web_page_preview=True)
         return

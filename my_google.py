@@ -19,13 +19,14 @@ import my_chimera
 import my_log
 
 
-def download_text(urls: list, max_req: int = cfg.max_request) -> str:
+def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) -> str:
     """
     Downloads text from a list of URLs and returns the concatenated result.
     
     Args:
         urls (list): A list of URLs from which to download text.
         max_req (int, optional): The maximum length of the result string. Defaults to cfg.max_request.
+        no_links(bool, optional): Include links in the result. Defaults to False.
         
     Returns:
         str: The concatenated text downloaded from the URLs.
@@ -40,7 +41,10 @@ def download_text(urls: list, max_req: int = cfg.max_request) -> str:
         #                            include_comments = True)
         text = trafilatura.extract(content, config=newconfig, deduplicate=True)
         if text:
-            result += f'\n\n|||{url}|||\n\n{text}\n\n'
+            if no_links:
+                result += f'\n\n{text}\n\n'
+            else:
+                result += f'\n\n|||{url}|||\n\n{text}\n\n'
             if len(result) > max_req:
                 break
     return result

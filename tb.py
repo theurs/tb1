@@ -1235,13 +1235,27 @@ def tts(message: telebot.types.Message):
     thread = threading.Thread(target=tts_thread, args=(message,))
     thread.start()
 def tts_thread(message: telebot.types.Message):
-    """/tts [ru|en|uk|...] [+-XX%] <текст>"""
+    """ /tts [ru|en|uk|...] [+-XX%] <текст>
+        /tts <URL>
+    """
 
     # не обрабатывать команды к другому боту /cmd@botname args
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
+
+    urls = re.findall(r'^/tts\s*(https?://[^\s]+)?$', message.text.lower())
+
+    # обрабатываем урл, просто достаем текст и показываем с клавиатурой для озвучки
+    if len(urls) == 1:
+        if '/youtu.be/' in urls[0] or 'youtube.com/' in urls[0]:
+            text = my_sum.get_text_from_youtube(urls[0])
+        else:
+            text = my_google.download_text(urls, 100000, no_links = True)
+        if text:
+            reply_to_long_message(message, text, reply_markup=get_keyboard('translate'), disable_web_page_preview=True)
+        return
 
     # разбираем параметры
     # регулярное выражение для разбора строки
@@ -1259,7 +1273,7 @@ def tts_thread(message: telebot.types.Message):
     rate = rate.strip()
 
     if not text or lang not in supported_langs_tts:
-        help = f"""Использование: /tts [ru|en|uk|...] [+-XX%] <текст>
+        help = f"""Использование: /tts [ru|en|uk|...] [+-XX%] <текст>|<URL>
 
 +-XX% - ускорение с обязательным указанием направления + или -
 

@@ -1248,7 +1248,7 @@ def tts_thread(message: telebot.types.Message):
     urls = re.findall(r'^/tts\s*(https?://[^\s]+)?$', message.text.lower())
 
     # обрабатываем урл, просто достаем текст и показываем с клавиатурой для озвучки
-    if len(urls) == 1:
+    if len(urls) == 1 and urls[0]:
         if '/youtu.be/' in urls[0] or 'youtube.com/' in urls[0]:
             text = my_sum.get_text_from_youtube(message.text.split()[1])
         else:

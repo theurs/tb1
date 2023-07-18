@@ -71,7 +71,7 @@
 6. Создайте файл cfg.py и добавьте в него строку
 ```
 # список админов, кому можно использовать команды /restart /model
-admins = [id-xxx,]
+admins = [xxx,]
 
 token = 'токен телеграм бота'
 key = 'openai api key'
@@ -86,7 +86,7 @@ bard_token = '...'
 
 
 # ключ для рисования через сайт химеры (рисует кандинский)
-#https://discord.gg/BfwvN8Dy
+#https://discord.gg/CFkw3UfR
 #ChimeraGPT - The best API for chat completions with free GPT-4 access! Friendly community, free GPT-4, etc. only here! | 2510 members
 #cfg.key_chimeraGPT = ''
 key_chimeraGPT = 'xxx'
@@ -164,7 +164,7 @@ openai_api_base = 'https://api.pawan.krd/unfiltered/v1'
 openai_api_base2 = 'https://free.catto.codes/v1'
 
 
-#https://discord.gg/BfwvN8Dy
+#https://discord.gg/CFkw3UfR
 #ChimeraGPT - The best API for chat completions with free GPT-4 access! Friendly community, free GPT-4, etc. only here! | 2510 members
 #openai_api_base = 'https://chimeragpt.adventblocks.cc/v1'
 #openai_api_base2  = 'https://chimeragpt.adventblocks.cc/v1'

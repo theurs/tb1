@@ -1250,7 +1250,7 @@ def tts_thread(message: telebot.types.Message):
     # обрабатываем урл, просто достаем текст и показываем с клавиатурой для озвучки
     if len(urls) == 1:
         if '/youtu.be/' in urls[0] or 'youtube.com/' in urls[0]:
-            text = my_sum.get_text_from_youtube(urls[0])
+            text = my_sum.get_text_from_youtube(message.text.split()[1])
         else:
             text = my_google.download_text(urls, 100000, no_links = True)
         if text:

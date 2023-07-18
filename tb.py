@@ -636,8 +636,8 @@ def handle_audio_thread(message: telebot.types.Message):
 
     with semaphore_talks:
         caption = message.caption or ''
-        if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй', 'прочитай']):
-            return
+        # if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй', 'прочитай']):
+        #     return
 
         with ShowAction(message.chat.id, 'typing'):
             # Создание временного файла 
@@ -685,15 +685,9 @@ def handle_voice_thread(message: telebot.types.Message):
         downloaded_file = bot.download_file(file_info.file_path)
         with open(file_path, 'wb') as new_file:
             new_file.write(downloaded_file)
+
         # Распознаем текст из аудио
-        # если мы не в привате и в этом чате нет блокировки автораспознавания то показываем активность
-        if not (message.chat.id in BLOCKS and BLOCKS[message.chat.id] == 1) or message.chat.type == 'private':
-            with ShowAction(message.chat.id, 'typing'):
-                if cfg.stt == 'vosk':
-                    text = my_stt.stt(file_path)
-                elif cfg.stt == 'whisper':
-                    text = my_whisper.get_text(file_path)
-        else:
+        with ShowAction(message.chat.id, 'typing'):
             if cfg.stt == 'vosk':
                 text = my_stt.stt(file_path)
             elif cfg.stt == 'whisper':
@@ -701,15 +695,14 @@ def handle_voice_thread(message: telebot.types.Message):
 
         os.remove(file_path)
 
-        # если мы не в привате и в этом чате нет блокировки автораспознавания
-        if not (message.chat.id in BLOCKS and BLOCKS[message.chat.id] == 1) or message.chat.type == 'private':
-            # Отправляем распознанный текст 
-            if text.strip() != '':
-                bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
-                my_log.log_echo(message, f'[ASR] {text}')
-            else:
-                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
-                my_log.log_echo(message, '[ASR] no results')
+        # Отправляем распознанный текст
+        if text.strip() != '':
+            bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, f'[ASR] {text}')
+        else:
+            bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
+            my_log.log_echo(message, '[ASR] no results')
+
         # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
         if text:
             message.text = text
@@ -921,10 +914,6 @@ def handle_video_thread(message: telebot.types.Message):
                 my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
 
     with semaphore_talks:
-        caption = message.caption or ''
-        if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй', 'прочитай']):
-            return
-
         with ShowAction(message.chat.id, 'typing'):
             # Создание временного файла 
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:

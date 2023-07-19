@@ -96,11 +96,11 @@ def chat_request(query: str, dialog: int, reset = False):
     result = response['content']
 
     if response['links']:
-        for url in response['links']:
+        for url in response['links'][:6]:
             if url:
                 result += f"\n\n{url}"
     if response['images']:
-        for image in response['images']:
+        for image in response['images'][:6]:
             if str(image):
                 result += f"\n\n{str(image)}"
 

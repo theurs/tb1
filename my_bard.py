@@ -82,7 +82,7 @@ def chat_request(query: str, dialog: int, reset = False):
             my_log.log2(f'my_bard.py:chat:no such key in DIALOGS: {dialog}')
 
         try:
-            response = session.get_answer(line)['content']
+            response = session.get_answer(query)['content']
         except Exception as error2:
             print(error2)
             my_log.log2(str(error2))
@@ -91,7 +91,7 @@ def chat_request(query: str, dialog: int, reset = False):
     return response
 
 
-def chat_request2(query: str, dialog: int, reset = False):
+def chat_request_image(query: str, dialog: int, image: bytes, reset = False):
     """возвращает ответ"""
 
     if reset:
@@ -105,7 +105,7 @@ def chat_request2(query: str, dialog: int, reset = False):
         DIALOGS[dialog] = session
 
     try:
-        response = session.get_answer(query)
+        response = session.ask_about_image(query, image)['content']
     except Exception as error:
         print(error)
         my_log.log2(str(error))
@@ -119,13 +119,13 @@ def chat_request2(query: str, dialog: int, reset = False):
             my_log.log2(f'my_bard.py:chat:no such key in DIALOGS: {dialog}')
 
         try:
-            response = session.get_answer(line)
+            response = session.ask_about_image(query, image)['content']
         except Exception as error2:
             print(error2)
             my_log.log2(str(error2))
             return ''
 
-    return (response['content'], response['links'], response['images'], response['code'])
+    return response
 
 
 def chat(query: str, dialog: int, reset: bool = False) -> str:
@@ -140,12 +140,21 @@ def chat(query: str, dialog: int, reset: bool = False) -> str:
     return result
 
 
+def chat_image(query: str, dialog: int, image: bytes, reset: bool = False) -> str:
+    """возвращает ответ"""
+    if dialog in CHAT_LOCKS:
+        lock = CHAT_LOCKS[dialog]
+    else:
+        lock = threading.Lock()
+        CHAT_LOCKS[dialog] = lock
+    with lock:
+        result = chat_request_image(query, dialog, image, reset)
+    return result
+
+
 if __name__ == "__main__":
 
     n = -1
-
-    a = chat_request2('Сайты про лошадей', n)
-    print(a[0], '\n\n')
-    print(a[1], '\n\n')
-    print(a[2], '\n\n')
-    print(a[2], '\n\n')
+    image = open('1.jpg', 'rb').read()
+    a = chat_request_image('Что на картинке', n, image)
+    print(a)

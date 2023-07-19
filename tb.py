@@ -870,6 +870,25 @@ def handle_photo_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
+    chat_id = message.chat.id
+    if chat_id in COMMAND_MODE:
+        if COMMAND_MODE[chat_id] == 'bardimage':
+            with semaphore_talks:
+                with ShowAction(chat_id, 'typing'):
+                    # скачиваем документ в байтовый поток
+                    msg = 'Бард не ответил'
+                    file_id = message.photo[-1].file_id
+                    file_info = bot.get_file(file_id)
+                    image = bot.download_file(file_info.file_path)
+                    description = my_bard.chat_image('What is in the image? Ответь по-русски.', chat_id, image)
+                    if description:
+                        bot.reply_to(message, description, parse_mode='Markdown', reply_markup=get_keyboard('translate'))
+                    else:
+                        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('translate'))
+                return
+        COMMAND_MODE[chat_id] = ''
+        return
+
     if check_blocks(message.chat.id):
         return
 
@@ -1588,6 +1607,23 @@ def html_gallery_thread(message: telebot.types.Message):
     bytes_io.seek(0)
     bytes_io.name = f'gallery {current_time}.html'
     bot.send_document(message.chat.id, bytes_io, caption=f'gallery {current_time}.html', reply_markup=get_keyboard('hide'))
+
+
+@bot.message_handler(commands=['bardimage',])
+def bardimage(message: telebot.types.Message):
+    """генерировать описание картинки с помощью гугл бард"""
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    help = """Отправьте картинку и я попытаюсь понять что на ней изображено"""
+    
+    global COMMAND_MODE
+    COMMAND_MODE[message.chat.id] = 'bardimage'
+    bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
 
 
 @bot.message_handler(commands=['image','img'])

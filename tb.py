@@ -102,6 +102,11 @@ SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
 #          телеграм не дает прикреплять кнопки к нескольким картинкам
 IMAGES_DB = my_dic.PersistentDict('db/images_db.pkl')
 
+# в каких чатах какая команда дана, как обрабатывать последующий текст
+# например после команды /image ожидаем описание картинки
+# COMMAND_MODE[chat_id] = 'google'|'image'|...
+COMMAND_MODE = {}
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -179,7 +184,7 @@ class ShowAction(threading.Thread):
     def stop(self):
         self.timerseconds = 50
         self.is_running = False
-        bot.send_chat_action(self.chat_id, 'cancel')
+        #bot.send_chat_action(self.chat_id, 'cancel')
 
     def __enter__(self):
         self.start()
@@ -348,6 +353,11 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
         markup.add(button1)
         return markup
+    elif kbd == 'command_mode':
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton("Отмена", callback_data='cancel_command')
+        markup.add(button1)
+        return markup
     elif kbd == 'translate':
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
@@ -419,6 +429,13 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
+        if bard_mode == 'off' and bing_mode == 'off':
+            button1 = telebot.types.InlineKeyboardButton('✅ChatGPT', callback_data='chatGPT_mode_disable')
+        else:
+            button1 = telebot.types.InlineKeyboardButton('☑️ChatGPT', callback_data='chatGPT_mode_enable')
+        button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='chatGPT_reset')
+        markup.row(button1, button2)
+
         if bard_mode == 'off':
             button1 = telebot.types.InlineKeyboardButton('☑️Bard AI', callback_data='bard_mode_enable')
         else:
@@ -433,10 +450,6 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
             button1 = telebot.types.InlineKeyboardButton('✅Bing AI', callback_data='bing_mode_disable')
 
         button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='bingAI_reset')
-        markup.row(button1, button2)
-
-        button1 = telebot.types.InlineKeyboardButton('🔍История GPT', callback_data='chatGPT_memory_debug')
-        button2 = telebot.types.InlineKeyboardButton('❌Стереть GPT', callback_data='chatGPT_reset')
         markup.row(button1, button2)
 
         button = telebot.types.InlineKeyboardButton(f'📢Голос: {voice_title}', callback_data=voice)
@@ -454,6 +467,9 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         if cfg.pics_group_url:
             button_pics = telebot.types.InlineKeyboardButton("🖼️Галерея",  url = cfg.pics_group_url)
             markup.add(button_pics)
+
+        button = telebot.types.InlineKeyboardButton('🔍История ChatGPT', callback_data='chatGPT_memory_debug')
+        markup.add(button)
 
         button = telebot.types.InlineKeyboardButton('🙈Закрыть меню', callback_data='erase_answer')
         markup.add(button)
@@ -527,6 +543,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
             DIALOGS_DB[chat_id] = []
+        elif call.data == 'cancel_command':
+            # обработка нажатия кнопки "Отменить ввод команды"
+            global COMMAND_MODE
+            COMMAND_MODE[chat_id] = ''
+            bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'erase_answer':
             # обработка нажатия кнопки "Стереть ответ"
             bot.delete_message(message.chat.id, message.message_id)
@@ -583,6 +604,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'tts_silero_aidar':
             TTS_GENDER[chat_id] = 'female'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'chatGPT_mode_disable':
+            BING_MODE[chat_id] = 'off'
+            BARD_MODE[chat_id] = 'on'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+        elif call.data == 'chatGPT_mode_enable':
+            BING_MODE[chat_id] = 'off'
+            BARD_MODE[chat_id] = 'off'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
         elif call.data == 'bing_mode_enable':
             BING_MODE[chat_id] = 'on'
@@ -1016,7 +1045,7 @@ def change_mode(message: telebot.types.Message):
         
 `{PROMPTS[message.chat.id][0]['content']}`
         
-Меняет роль бота, строку с указаниями что и как говорить.
+Меняет роль бота, строку с указаниями что и как говорить. Работает только для ChatGPT.
 
 `/style <1|2|3|4|свой текст>`
 
@@ -1027,8 +1056,12 @@ def change_mode(message: telebot.types.Message):
 3 - токсичный стиль `{utils.gpt_start_message3}`
 
 4 - Ева Элфи `{utils.gpt_start_message4}`
+
+Напишите свой текст или цифру одного из готовых стилей
     """
-        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+        global COMMAND_MODE
+        COMMAND_MODE[message.chat.id] = 'style'
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode'))
         my_log.log_echo(message, msg)
 
 
@@ -1284,9 +1317,14 @@ def tts_thread(message: telebot.types.Message):
 /tts +50% привет со скоростью 1.5х
 /tts uk -50% тянем время, говорим по-русски с украинским акцентом :)
 
-Поддерживаемые языки: {', '.join(supported_langs_tts)}"""
+Поддерживаемые языки: {', '.join(supported_langs_tts)}
 
-        bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+Напишите что надо произнести, чтобы получить голосовое сообщение
+"""
+
+        global COMMAND_MODE
+        COMMAND_MODE[message.chat.id] = 'tts'
+        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode'))
         my_log.log_echo(message, help)
         return
 
@@ -1348,8 +1386,12 @@ def google_thread(message: telebot.types.Message):
 вместо команды /google можно написать кодовое слово гугл в начале
 
 гугл, сколько на земле людей, точные цифры и прогноз
+
+Напишите запрос в гугл
 """
-        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('hide'))
+        global COMMAND_MODE
+        COMMAND_MODE[message.chat.id] = 'google'
+        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode'))
         return
         
     with ShowAction(message.chat.id, 'typing'):
@@ -1405,10 +1447,14 @@ def ddg_thread(message: telebot.types.Message):
 вместо команды /ddg можно написать кодовое слово утка в начале
 
 утка, сколько на земле людей, точные цифры и прогноз
+
+Напишите свой запрос в DuckDuckGo
 """
-        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('hide'))
+        global COMMAND_MODE
+        COMMAND_MODE[message.chat.id] = 'ddg'
+        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode'))
         return
-        
+
     with ShowAction(message.chat.id, 'typing'):
         r = my_google.search_ddg(q)
         try:
@@ -1559,14 +1605,8 @@ def image_thread(message: telebot.types.Message):
 
     with semaphore_talks:
         help = """/image <текстовое описание картинки, что надо нарисовать>
-        
-/image желтое поле, голубое небо, кроваво-красная луна
 
-вместо команды /image можно использовать слово нарисуй или сокращенную команду /img
-
-нарисуй желтое поле, голубое небо, кроваво-красная луна
-
-бот нарисуй луна падает на землю (в чате надо добавлять имя бота что бы он понял что это к нему обращаются)
+Напишите что надо нарисовать, как это выглядит
 """
         prompt = message.text.split(maxsplit = 1)
         chat_id = message.chat.id
@@ -1620,7 +1660,9 @@ def image_thread(message: telebot.types.Message):
                     else:
                         DIALOGS_DB[chat_id] = n
         else:
-            bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+            global COMMAND_MODE
+            COMMAND_MODE[message.chat.id] = 'image'
+            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
             my_log.log_echo(message, help)
 
 
@@ -1693,8 +1735,12 @@ def summ_text_thread(message: telebot.types.Message):
                         bot.reply_to(message, error, reply_markup=get_keyboard('hide'))
                         my_log.log_echo(message, error)
                         return
-    help = 'Пример: /sum https://youtu.be/3i123i6Bf-U'
-    bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+    help = """Пример: /sum https://youtu.be/3i123i6Bf-U
+
+Давайте вашу ссылку и я перескажу содержание"""
+    global COMMAND_MODE
+    COMMAND_MODE[message.chat.id] = 'sum'
+    bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
     my_log.log_echo(message, help)
 
 
@@ -1721,8 +1767,6 @@ def summ2_text(message: telebot.types.Message):
 
     summ_text(message)
 
-
-
 @bot.message_handler(commands=['trans'])
 def trans(message: telebot.types.Message):
     thread = threading.Thread(target=trans_thread, args=(message,))
@@ -1743,7 +1787,10 @@ def trans_thread(message: telebot.types.Message):
 /trans en привет, как дела
 /trans was ist das
 
-Поддерживаемые языки: {', '.join(supported_langs_trans)}"""
+Поддерживаемые языки: {', '.join(supported_langs_trans)}
+
+Напишите что надо перевести
+"""
         # разбираем параметры
         # регулярное выражение для разбора строки
         pattern = r'^\/trans\s+((?:' + '|'.join(supported_langs_trans) + r')\s+)?\s*(.*)$'
@@ -1754,7 +1801,9 @@ def trans_thread(message: telebot.types.Message):
             lang = match.group(1) or "ru"  # если lang не указан, то по умолчанию 'ru'
             text = match.group(2) or ''
         else:
-            bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+            global COMMAND_MODE
+            COMMAND_MODE[message.chat.id] = 'trans'
+            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
             my_log.log_echo(message, help)
             return
         lang = lang.strip()
@@ -1786,7 +1835,10 @@ def last_thread(message: telebot.types.Message):
 
     with semaphore_talks:
         args = message.text.split()
-        help = '/last [X] - показать сумморизацию истории чата за последние Х сообщений, либо все какие есть в памяти. X = от 1 до 60000'
+        help = """/last [X] - показать сумморизацию истории чата за последние Х сообщений, либо все какие есть в памяти. X = от 1 до 60000
+
+Напишите цифру
+"""
         if len(args) == 2:
             try:
                 x = int(args[1])
@@ -1798,7 +1850,9 @@ def last_thread(message: telebot.types.Message):
                 my_log.log_echo(message, help)
                 return
         elif len(args) > 2:
-            bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+            global COMMAND_MODE
+            COMMAND_MODE[message.chat.id] = 'last'
+            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
             my_log.log_echo(message, help)
             return
         else:
@@ -1845,13 +1899,13 @@ def send_name(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
+    BAD_NAMES = ('бинг', 'гугл', 'утка', 'нарисуй')
     args = message.text.split()
     if len(args) > 1:
         new_name = args[1]
         
         # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
         regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
-        BAD_NAMES = ('бинг', 'гугл', 'утка', 'нарисуй')
         if re.match(regex, new_name) and len(new_name) <= 10 \
                     and new_name.lower() not in BAD_NAMES:
             global BOT_NAMES
@@ -1864,6 +1918,12 @@ def send_name(message: telebot.types.Message):
 не больше 10 всего. Имена {', '.join(BAD_NAMES) if BAD_NAMES else ''} уже заняты."
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
+    else:
+        help = f"Напишите новое имя бота и я поменяю его, только русские и английские буквы и цифры после букв, \
+не больше 10 всего. Имена {', '.join(BAD_NAMES) if BAD_NAMES else ''} уже заняты."
+        global COMMAND_MODE
+        COMMAND_MODE[message.chat.id] = 'name'
+        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode'))
 
 
 @bot.message_handler(commands=['start'])
@@ -2065,8 +2125,41 @@ def do_task(message, custom_prompt: str = ''):
 
         msg = message.text.lower()
 
-        global BLOCKS, BOT_NAMES, CHAT_LOGS, DIALOGS_DB, BING_MODE, BARD_MODE
-        
+        global BLOCKS, BOT_NAMES, CHAT_LOGS, DIALOGS_DB, BING_MODE, BARD_MODE, COMMAND_MODE
+
+        # если предварительно была введена какая то команда то этот текст надо отправить в неё
+        if chat_id in COMMAND_MODE:
+            if COMMAND_MODE[chat_id]:
+                if COMMAND_MODE[chat_id] == 'image':
+                    message.text = f'/image {message.text}'
+                    image(message)
+                elif COMMAND_MODE[chat_id] == 'tts':
+                    message.text = f'/tts {message.text}'
+                    tts(message)
+                elif COMMAND_MODE[chat_id] == 'trans':
+                    message.text = f'/trans {message.text}'
+                    trans(message)
+                elif COMMAND_MODE[chat_id] == 'google':
+                    message.text = f'/google {message.text}'
+                    google(message)
+                elif COMMAND_MODE[chat_id] == 'ddg':
+                    message.text = f'/ddg {message.text}'
+                    ddg(message)
+                elif COMMAND_MODE[chat_id] == 'name':
+                    message.text = f'/name {message.text}'
+                    send_name(message)
+                elif COMMAND_MODE[chat_id] == 'style':
+                    message.text = f'/style {message.text}'
+                    change_mode(message)
+                elif COMMAND_MODE[chat_id] == 'last':
+                    message.text = f'/last {message.text}'
+                    last(message)
+                elif COMMAND_MODE[chat_id] == 'sum':
+                    message.text = f'/sum {message.text}'
+                    summ_text(message)
+                COMMAND_MODE[chat_id] = ''
+                return
+
         # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
         if not is_private:
             #time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')

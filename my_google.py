@@ -232,7 +232,6 @@ def search_google(query: str, max_req: int = cfg.max_request, max_search: int = 
     return answer
 
 
-
 def search_google_iter(query: str, max_req: int = cfg.max_request, max_search: int = 10, history: str = '') -> str:
     """ищет в гугле ответ на вопрос query, отвечает с помощью GPT
     ищет по одному сайту за раз

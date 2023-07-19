@@ -95,7 +95,8 @@ def chat_request(query: str, dialog: int, reset = False):
 
     result = response['content']
 
-    links = response['links']
+    links = list(set([x for x in response['links'] if 'http://' not in x]))
+    
     if len(links) > 4:
         links = links[:4]
     try:

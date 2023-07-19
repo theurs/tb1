@@ -100,9 +100,9 @@ def chat_request(query: str, dialog: int, reset = False):
     result = response['content']
 
     if response['links']:
-        result += f'\n\n{response['links']}'
+        result += f"\n\n{response['links']}"
     if response['images']:
-        result += f'\n\n{response['images']}'
+        result += f"\n\n{response['images']}"
 
     return result
 

@@ -43,6 +43,14 @@ def get_new_session():
     #bard = Bard(token=cfg.bard_token, proxies=proxies, session=session, timeout=30, language = 'ru')
     bard = Bard(token=cfg.bard_token, proxies=proxies, session=session, timeout=30)
 
+    rules = """
+1. Отвечай на русском языке если в запросе есть кириллица и тебя не просили отвечать на другом языке.
+2. В ответе должна быть только точная информация, не надо выдумывать если об этом специально не просили.
+3. Отвечай коротко если не просили давать развернутый ответ.
+"""
+    r = bard.get_answer(rules)
+    my_log.log2(str(r))
+
     return bard
 
 
@@ -69,7 +77,7 @@ def chat_request(query: str, dialog: int, reset = False):
         DIALOGS[dialog] = session
 
     try:
-        response = session.get_answer(query)['content']
+        response = session.get_answer(query)
     except Exception as error:
         print(error)
         my_log.log2(str(error))
@@ -83,13 +91,20 @@ def chat_request(query: str, dialog: int, reset = False):
             my_log.log2(f'my_bard.py:chat:no such key in DIALOGS: {dialog}')
 
         try:
-            response = session.get_answer(query)['content']
+            response = session.get_answer(query)
         except Exception as error2:
             print(error2)
             my_log.log2(str(error2))
             return ''
 
-    return response
+    result = response['content']
+
+    if response['links']:
+        result += f'\n\n{response['links']}'
+    if response['images']:
+        result += f'\n\n{response['images']}'
+
+    return result
 
 
 def chat_request_image(query: str, dialog: int, image: bytes, reset = False):

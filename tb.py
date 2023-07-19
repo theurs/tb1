@@ -1617,6 +1617,9 @@ def bardimage(message: telebot.types.Message):
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
     else: return
 
+    # не работает нормально, всегда врёт, и зависает еще после одного запроса
+    return
+
     my_log.log_echo(message)
 
     help = """Отправьте картинку и я попытаюсь понять что на ней изображено"""

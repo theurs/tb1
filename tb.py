@@ -661,55 +661,13 @@ def check_blocks(chat_id: int) -> bool:
     return False if BLOCKS[chat_id] == 1 else True
 
 
-@bot.message_handler(content_types = ['audio'])
-def handle_audio(message: telebot.types.Message):
-    """Распознавание текст из аудио файлов"""
-    thread = threading.Thread(target=handle_audio_thread, args=(message,))
-    thread.start()
-def handle_audio_thread(message: telebot.types.Message):
-    """Распознавание текст из аудио файлов"""
-
-    my_log.log_media(message)
-
-    if check_blocks(message.chat.id):
-        return
-
-    with semaphore_talks:
-        caption = message.caption or ''
-        # if not(message.chat.type == 'private' or caption.lower() in ['распознай', 'расшифруй', 'прочитай']):
-        #     return
-
-        with ShowAction(message.chat.id, 'typing'):
-            # Создание временного файла 
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                file_path = temp_file.name
-            # Скачиваем аудиофайл во временный файл
-            file_info = bot.get_file(message.audio.file_id)
-            downloaded_file = bot.download_file(file_info.file_path)
-            with open(file_path, 'wb') as new_file:
-                new_file.write(downloaded_file)
-            # Распознаем текст из аудио 
-            if cfg.stt == 'vosk':
-                text = my_stt.stt(file_path)
-            elif cfg.stt == 'whisper':
-                text = my_whisper.get_text(file_path)
-            os.remove(file_path)
-            # Отправляем распознанный текст 
-            if text.strip() != '':
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
-                my_log.log_echo(message, f'[ASR] {text}')
-            else:
-                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
-                my_log.log_echo(message, '[ASR] no results')
-
-
-@bot.message_handler(content_types = ['voice'])
+@bot.message_handler(content_types = ['voice', 'audio'])
 def handle_voice(message: telebot.types.Message): 
     """Автоматическое распознавание текст из голосовых сообщений"""
     thread = threading.Thread(target=handle_voice_thread, args=(message,))
     thread.start()
 def handle_voice_thread(message: telebot.types.Message):
-    """Автоматическое распознавание текст из голосовых сообщений"""
+    """Автоматическое распознавание текст из голосовых сообщений и аудио файлов"""
 
     my_log.log_media(message)
 
@@ -721,7 +679,10 @@ def handle_voice_thread(message: telebot.types.Message):
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             file_path = temp_file.name
         # Скачиваем аудиофайл во временный файл
-        file_info = bot.get_file(message.voice.file_id)
+        try:
+            file_info = bot.get_file(message.voice.file_id)
+        except AttributeError:
+            file_info = bot.get_file(message.audio.file_id)
         downloaded_file = bot.download_file(file_info.file_path)
         with open(file_path, 'wb') as new_file:
             new_file.write(downloaded_file)
@@ -737,7 +698,7 @@ def handle_voice_thread(message: telebot.types.Message):
 
         # Отправляем распознанный текст
         if text.strip() != '':
-            bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, text, reply_markup=get_keyboard('translate'))
             my_log.log_echo(message, f'[ASR] {text}')
         else:
             bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))

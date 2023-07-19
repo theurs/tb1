@@ -1,24 +1,31 @@
 #!/usr/bin/env python3
 
 
-import requests
 import threading
-from pprint import pprint
 
+import requests
 from bardapi import Bard
 
 import cfg
 import my_log
 
-
+# хранилище сессий {chat_id(int):session(bardapi.Bard),...}
 DIALOGS = {}
+# хранилище замков что бы юзеры не могли делать новые запросы пока не получен ответ на старый
+# {chat_id(int):threading.Lock(),...}
 CHAT_LOCKS = {}
 
-
+# максимальный размер запроса который принимает бард, получен подбором
 MAX_REQUEST = 3100
 
 
 def get_new_session():
+    """
+    Retrieves a new session for making requests to Bard AI.
+
+    Returns:
+        `Bard`: An instance of the `Bard` class with a new session.
+    """
     if cfg.all_proxy:
         proxies = {
             'http': cfg.all_proxy,
@@ -51,17 +58,35 @@ def get_new_session():
 
 
 def reset_bard_chat(dialog: int):
-        try:
-            del DIALOGS[dialog]
-        except KeyError:
-            print(f'no such key in DIALOGS: {dialog}')
-            my_log.log2(f'my_bard.py:reset_bard_chat:no such key in DIALOGS: {dialog}')
-        return
+    """
+    Deletes a specific dialog from the DIALOGS dictionary.
+
+    Args:
+        dialog (int): The key of the dialog to be deleted.
+
+    Returns:
+        None
+    """
+    try:
+        del DIALOGS[dialog]
+    except KeyError:
+        print(f'no such key in DIALOGS: {dialog}')
+        my_log.log2(f'my_bard.py:reset_bard_chat:no such key in DIALOGS: {dialog}')
+    return
 
 
 def chat_request(query: str, dialog: int, reset = False):
-    """возвращает ответ"""
+    """
+    Execute a chat request and return the response.
 
+    Parameters:
+        query (str): The query to be sent to the chat session.
+        dialog (int): The ID of the dialog session.
+        reset (bool, optional): If True, reset the chat session before executing the request. Defaults to False.
+
+    Returns:
+        str: The response content from the chat session.
+    """
     if reset:
         reset_bard_chat(dialog)
         return
@@ -97,28 +122,28 @@ def chat_request(query: str, dialog: int, reset = False):
 
     links = list(set([x for x in response['links'] if 'http://' not in x]))
     
-    if len(links) > 4:
-        links = links[:4]
+    if len(links) > 6:
+        links = links[:6]
     try:
         if links:
             for url in links:
                 if url:
                     result += f"\n\n{url}"
-    except Exception as e:
-        print(e)
-        my_log.log2(str(e))
-    
-    #images = response['images']
-    #if len(images) > 4:
-    #   images = images[:4]
-    #try:
+    except Exception as error:
+        print(error)
+        my_log.log2(str(error))
+
+    # images = response['images']
+    # if len(images) > 6:
+    #   images = images[:6]
+    # try:
     #    if images:
     #        for image in images:
     #            if str(image):
     #                result += f"\n\n{str(image)}"
-    #except Exception as e:
-    #    print(e)
-    #    my_log.log2(str(e))
+    # except Exception as error2:
+    #    print(error2)
+    #    my_log.log2(str(error2))
 
     if len(result) > 16000:
         return result[:16000]
@@ -127,8 +152,18 @@ def chat_request(query: str, dialog: int, reset = False):
 
 
 def chat_request_image(query: str, dialog: int, image: bytes, reset = False):
-    """возвращает ответ"""
-
+    """
+    Function to make a chat request with an image.
+    
+    Args:
+        query (str): The query for the chat request.
+        dialog (int): The index of the dialog.
+        image (bytes): The image to be used in the chat request.
+        reset (bool, optional): Whether to reset the chat dialog. Defaults to False.
+    
+    Returns:
+        str: The response from the chat request.
+    """
     if reset:
         reset_bard_chat(dialog)
         return
@@ -164,7 +199,17 @@ def chat_request_image(query: str, dialog: int, image: bytes, reset = False):
 
 
 def chat(query: str, dialog: int, reset: bool = False) -> str:
-    """возвращает ответ"""
+    """
+    Execute a chat query and return the response.
+
+    Args:
+        query (str): The query to be sent to the chat system.
+        dialog (int): The ID of the dialog.
+        reset (bool, optional): Whether to reset the dialog state. Defaults to False.
+
+    Returns:
+        str: The response from the chat system.
+    """
     if dialog in CHAT_LOCKS:
         lock = CHAT_LOCKS[dialog]
     else:
@@ -176,7 +221,18 @@ def chat(query: str, dialog: int, reset: bool = False) -> str:
 
 
 def chat_image(query: str, dialog: int, image: bytes, reset: bool = False) -> str:
-    """возвращает ответ"""
+    """
+    Executes a chat request with an image.
+
+    Args:
+        query (str): The query string for the chat request.
+        dialog (int): The ID of the dialog.
+        image (bytes): The image to be included in the chat request.
+        reset (bool, optional): Whether to reset the dialog state. Defaults to False.
+
+    Returns:
+        str: The response from the chat request.
+    """
     if dialog in CHAT_LOCKS:
         lock = CHAT_LOCKS[dialog]
     else:

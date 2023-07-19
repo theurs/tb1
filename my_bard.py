@@ -96,15 +96,18 @@ def chat_request(query: str, dialog: int, reset = False):
     result = response['content']
 
     if response['links']:
-        for url in response['links'][:6]:
+        for url in response['links']:
             if url:
                 result += f"\n\n{url}"
     if response['images']:
-        for image in response['images'][:6]:
+        for image in response['images']:
             if str(image):
                 result += f"\n\n{str(image)}"
 
-    return result
+    if len(result) > 16000:
+        return result[:16000]
+    else:
+        return result
 
 
 def chat_request_image(query: str, dialog: int, image: bytes, reset = False):

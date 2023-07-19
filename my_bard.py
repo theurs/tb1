@@ -95,23 +95,29 @@ def chat_request(query: str, dialog: int, reset = False):
 
     result = response['content']
 
+    links = response['links']
+    if len(links) > 4:
+        links = links[:4]
     try:
-        if response['links']:
-            for url in response['links']:
+        if links:
+            for url in links:
                 if url:
                     result += f"\n\n{url}"
     except Exception as e:
         print(e)
         my_log.log2(str(e))
     
-    try:
-        if response['images']:
-            for image in response['images']:
-                if str(image):
-                    result += f"\n\n{str(image)}"
-    except Exception as e:
-        print(e)
-        my_log.log2(str(e))
+    #images = response['images']
+    #if len(images) > 4:
+    #   images = images[:4]
+    #try:
+    #    if images:
+    #        for image in images:
+    #            if str(image):
+    #                result += f"\n\n{str(image)}"
+    #except Exception as e:
+    #    print(e)
+    #    my_log.log2(str(e))
 
     if len(result) > 16000:
         return result[:16000]

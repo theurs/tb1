@@ -371,6 +371,17 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         button2 = telebot.types.InlineKeyboardButton("Повторить", callback_data='repeat_image')
         markup.add(button1, button2)
         return markup
+    elif kbd == 'start':
+        markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+        button1 = telebot.types.KeyboardButton('🎨Нарисуй')
+        button2 = telebot.types.KeyboardButton('🌐Найди')
+        button3 = telebot.types.KeyboardButton('📋Перескажи')
+        button4 = telebot.types.KeyboardButton('🎧Озвучь')
+        button5 = telebot.types.KeyboardButton('🈶Переведи')
+        button6 = telebot.types.KeyboardButton('⚙️Настройки')
+        markup.row(button1, button2, button3)
+        markup.row(button4, button5, button6)
+        return markup
     elif kbd == 'bing_chat':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
@@ -1984,7 +1995,7 @@ def send_welcome_start(message: telebot.types.Message):
 Спасибо, что выбрали меня в качестве своего помощника! Я буду стараться быть максимально полезным для вас.
 
 Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп."""
-    bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+    bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('start'))
     my_log.log_echo(message, help)
 
 
@@ -2141,6 +2152,27 @@ def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
     thread.start()
 def do_task(message, custom_prompt: str = ''):
     """функция обработчик сообщений работающая в отдельном потоке"""
+
+    if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '⚙️Настройки']:
+        if message.text == '🎨Нарисуй':
+            message.text = '/image'
+            image( message)
+        if message.text == '🌐Найди':
+            message.text = '/google'
+            google(message)
+        if message.text == '📋Перескажи':
+            message.text = '/sum'
+            summ_text(message)
+        if message.text == '🎧Озвучь':
+            message.text = '/tts'
+            tts(message)
+        if message.text == '🈶Переведи':
+            message.text = '/trans'
+            trans(message)
+        if message.text == '⚙️Настройки':
+            message.text = '/config'
+            config(message)
+        return
 
     if custom_prompt:
         message.text = custom_prompt

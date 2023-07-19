@@ -97,9 +97,13 @@ def chat_request(query: str, dialog: int, reset = False):
     result = response['content']
 
     if response['links']:
-        result += f"\n\n{response['links']}"
+        for url in response['links']:
+            if url:
+                result += f"\n\n{url}"
     if response['images']:
-        result += f"\n\n{response['images']}"
+        for image in response['images']:
+            if str(image):
+                result += f"\n\n{str(image)}"
 
     return result
 

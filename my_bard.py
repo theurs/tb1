@@ -43,10 +43,9 @@ def get_new_session():
     #bard = Bard(token=cfg.bard_token, proxies=proxies, session=session, timeout=30, language = 'ru')
     bard = Bard(token=cfg.bard_token, proxies=proxies, session=session, timeout=30)
 
-    rules = """Отвечай на русском языке если в запросе есть кириллица и тебя не просили \
-отвечать на другом языке, отвечай коротко если не просили давать развернутый ответ."""
+    rules = """Отвечай на русском языке если в запросе есть кириллица и тебя не просили отвечать на другом языке."""
     r = bard.get_answer(rules)
-    my_log.log2(str(r))
+    #my_log.log2(str(r))
 
     return bard
 

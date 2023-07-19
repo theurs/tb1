@@ -40,6 +40,7 @@ def get_new_session():
         "Referer": "https://bard.google.com/",
         }
 
+    #bard = Bard(token=cfg.bard_token, proxies=proxies, session=session, timeout=30, language = 'ru')
     bard = Bard(token=cfg.bard_token, proxies=proxies, session=session, timeout=30)
 
     return bard
@@ -155,6 +156,7 @@ def chat_image(query: str, dialog: int, image: bytes, reset: bool = False) -> st
 if __name__ == "__main__":
 
     n = -1
-    image = open('1.jpg', 'rb').read()
-    a = chat_request_image('Что на картинке', n, image)
-    print(a)
+    #image = open('1.jpg', 'rb').read()
+    #a = chat_request_image('Что на картинке', n, image)
+    b = chat_request('что такое фуфломет', n)
+    print(b)

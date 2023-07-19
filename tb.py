@@ -909,7 +909,7 @@ def handle_photo_thread(message: telebot.types.Message):
                 my_log.log_echo(message, '[OCR] no results')
 
 
-@bot.message_handler(content_types = ['video'])
+@bot.message_handler(content_types = ['video', 'video_note'])
 def handle_video(message: telebot.types.Message):
     """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
     thread = threading.Thread(target=handle_video_thread, args=(message,))
@@ -939,7 +939,10 @@ def handle_video_thread(message: telebot.types.Message):
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 file_path = temp_file.name
             # Скачиваем аудиофайл во временный файл
-            file_info = bot.get_file(message.video.file_id)
+            try:
+                file_info = bot.get_file(message.video.file_id)
+            except AttributeError:
+                file_info = bot.get_file(message.video_note.file_id)
             downloaded_file = bot.download_file(file_info.file_path)
             with open(file_path, 'wb') as new_file:
                 new_file.write(downloaded_file)

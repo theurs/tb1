@@ -112,7 +112,7 @@ def stt(input_file: str) -> str:
         try:
             # затем химера
             assert cfg.key_chimeraGPT != '', 'No chimera key'
-            assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
+            assert audio_duration(input_file) < 1200, 'Too big for free speech recognition'
             #print('chimera start')
             text = my_chimera.stt(input_file)
             #print('chimera success')
@@ -124,7 +124,7 @@ def stt(input_file: str) -> str:
         try:
             # затем cattoGPT
             assert cfg.key_cattoGPT != '', 'No cattoGPT key'
-            assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
+            assert audio_duration(input_file) < 1200, 'Too big for free speech recognition'
             #print('cattoGPT start')
             text = my_cattoGPT.stt(input_file)
             #print('cattoGPT success')
@@ -147,6 +147,7 @@ def stt(input_file: str) -> str:
 
 
 if __name__ == "__main__":
+    os.environ['all_proxy'] = cfg.all_proxy
     #print(vosk_cmd)
-    text = stt('1.ogg')
+    text = stt('1.mp3')
     print(text)

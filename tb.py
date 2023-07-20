@@ -583,7 +583,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             image(message)
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
-            translated = my_trans.translate_text2(message.text)
+            with ShowAction(chat_id, 'typing'):
+                translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('translate'))
         elif call.data == 'translate_chat':

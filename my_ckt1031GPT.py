@@ -11,10 +11,19 @@ import cfg
 
 
 def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 180, messages = None) -> str:
-    """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
-    second - использовать ли второй гейт и ключ, для больших запросов
     """
+    Generates a GPT response for the given query.
 
+    Args:
+        prompt (str): The prompt for the GPT model. Default is an empty string.
+        temp (float): The temperature for controlling the creativity of the generated response. Default is 0.5.
+        max_tok (int): The maximum number of tokens in the generated response. Default is 2000.
+        timeou (int): The timeout duration in seconds for generating the response. Default is 180.
+        messages (list): The list of messages for generating the response. Default is None.
+
+    Returns:
+        str: The generated response.
+    """
     print(cfg.model, len(prompt))
 
     openai.api_key = cfg.key_ckt1031

@@ -840,10 +840,11 @@ def handle_photo_thread(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
 
     my_log.log_media(message)
-
+    my_log.log2('stage1')
     chat_id = message.chat.id
     if chat_id in COMMAND_MODE:
         if COMMAND_MODE[chat_id] == 'bardimage':
+            COMMAND_MODE[chat_id] = ''
             with semaphore_talks:
                 with ShowAction(chat_id, 'typing'):
                     # скачиваем документ в байтовый поток
@@ -857,31 +858,32 @@ def handle_photo_thread(message: telebot.types.Message):
                     else:
                         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('translate'))
                 return
-        COMMAND_MODE[chat_id] = ''
         return
-
+    my_log.log2('stage2')
     if check_blocks(message.chat.id):
         return
-
+    my_log.log2('stage3')
     with semaphore_talks:
         # пересланные сообщения пытаемся перевести даже если в них картинка
         # новости в телеграме часто делают как картинка + длинная подпись к ней
         if message.forward_from_chat and message.caption:
             # у фотографий нет текста но есть заголовок caption. его и будем переводить
-            text = my_trans.translate(message.caption)
+            with ShowAction(message.chat.id, 'typing'):
+                text = my_trans.translate(message.caption)
             if text:
                 bot.send_message(message.chat.id, text, reply_markup=get_keyboard('hide'))
                 my_log.log_echo(message, text)
             else:
                 my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
             return
-
+        my_log.log2('stage4')
         # распознаем текст только если есть команда для этого
         if not message.caption and message.chat.type != 'private': return
         if message.chat.type != 'private' and not gpt_basic.detect_ocr_command(message.caption.lower()): return
         with ShowAction(message.chat.id, 'typing'):
             # получаем самую большую фотографию из списка
             photo = message.photo[-1]
+            my_log.log2('stage5')
             fp = io.BytesIO()
             # скачиваем фотографию в байтовый поток
             file_info = bot.get_file(photo.file_id)
@@ -892,18 +894,8 @@ def handle_photo_thread(message: telebot.types.Message):
             text = my_ocr.get_text_from_image(fp.read())
             # отправляем распознанный текст пользователю
             if text.strip() != '':
-                # если текст слишком длинный, отправляем его в виде текстового файла
-                if len(text) > 4096:
-                    with io.StringIO(text) as f:
-                        f.name = 'text.txt'
-                        if message.chat.type != 'private':
-                            bot.send_document(message.chat.id, f, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide'))
-                        else:
-                            bot.send_document(message.chat.id, f, reply_markup=get_keyboard('hide'))
-                        my_log.log_echo(message, '[OCR] Sent as file: ' + text)
-                else:
-                    bot.reply_to(message, text, reply_markup=get_keyboard('translate'))
-                    my_log.log_echo(message, '[OCR] ' + text)
+                reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
+                my_log.log_echo(message, '[OCR] ' + text)
             else:
                 my_log.log_echo(message, '[OCR] no results')
 

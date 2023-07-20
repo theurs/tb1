@@ -840,7 +840,7 @@ def handle_photo_thread(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
 
     my_log.log_media(message)
-    my_log.log2('stage1')
+
     chat_id = message.chat.id
     if chat_id in COMMAND_MODE:
         if COMMAND_MODE[chat_id] == 'bardimage':
@@ -859,10 +859,10 @@ def handle_photo_thread(message: telebot.types.Message):
                         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('translate'))
                 return
         return
-    my_log.log2('stage2')
+
     if check_blocks(message.chat.id):
         return
-    my_log.log2('stage3')
+
     with semaphore_talks:
         # пересланные сообщения пытаемся перевести даже если в них картинка
         # новости в телеграме часто делают как картинка + длинная подпись к ней
@@ -876,14 +876,14 @@ def handle_photo_thread(message: telebot.types.Message):
             else:
                 my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
             return
-        my_log.log2('stage4')
-        # распознаем текст только если есть команда для этого
+
+        # распознаем текст только если есть команда для этого или если прислали в приват
         if not message.caption and message.chat.type != 'private': return
         if message.chat.type != 'private' and not gpt_basic.detect_ocr_command(message.caption.lower()): return
+
         with ShowAction(message.chat.id, 'typing'):
             # получаем самую большую фотографию из списка
             photo = message.photo[-1]
-            my_log.log2('stage5')
             fp = io.BytesIO()
             # скачиваем фотографию в байтовый поток
             file_info = bot.get_file(photo.file_id)

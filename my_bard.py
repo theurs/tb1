@@ -2,12 +2,13 @@
 
 
 import threading
-
 import requests
+
 from bardapi import Bard
 
 import cfg
 import my_log
+
 
 # хранилище сессий {chat_id(int):session(bardapi.Bard),...}
 DIALOGS = {}
@@ -19,7 +20,7 @@ CHAT_LOCKS = {}
 MAX_REQUEST = 3100
 
 
-def get_new_session():
+def get_new_session(user_name: str = ''):
     """
     Retrieves a new session for making requests to Bard AI.
 
@@ -47,10 +48,13 @@ def get_new_session():
         "Referer": "https://bard.google.com/",
         }
 
-    #bard = Bard(token=cfg.bard_token, proxies=proxies, session=session, timeout=30, language = 'ru')
     bard = Bard(token=cfg.bard_token, proxies=proxies, session=session, timeout=30)
 
     rules = """Отвечай на русском языке если в запросе есть кириллица и тебя не просили отвечать на другом языке."""
+    if user_name:
+        rules += f" Ты общаешься с человеком по имени {user_name}, обращай внимание на его пол, \
+если не понятно по имени то определяй по словам которые использует человек, людям нравится когда ты правильно говоришь с учетом пола."
+    #my_log.log2(str(rules))
     r = bard.get_answer(rules)
     #my_log.log2(str(r))
 
@@ -75,7 +79,7 @@ def reset_bard_chat(dialog: int):
     return
 
 
-def chat_request(query: str, dialog: int, reset = False):
+def chat_request(query: str, dialog: int, reset = False, user_name: str = ''):
     """
     Execute a chat request and return the response.
 
@@ -94,7 +98,7 @@ def chat_request(query: str, dialog: int, reset = False):
     if dialog in DIALOGS:
         session = DIALOGS[dialog]
     else:
-        session = get_new_session()
+        session = get_new_session(user_name)
         DIALOGS[dialog] = session
 
     try:
@@ -105,7 +109,7 @@ def chat_request(query: str, dialog: int, reset = False):
 
         try:
             del DIALOGS[dialog]
-            session = get_new_session()
+            session = get_new_session(user_name)
             DIALOGS[dialog] = session
         except KeyError:
             print(f'no such key in DIALOGS: {dialog}')
@@ -198,7 +202,7 @@ def chat_request_image(query: str, dialog: int, image: bytes, reset = False):
     return response
 
 
-def chat(query: str, dialog: int, reset: bool = False) -> str:
+def chat(query: str, dialog: int, reset: bool = False, user_name: str = '') -> str:
     """
     Execute a chat query and return the response.
 
@@ -216,7 +220,7 @@ def chat(query: str, dialog: int, reset: bool = False) -> str:
         lock = threading.Lock()
         CHAT_LOCKS[dialog] = lock
     with lock:
-        result = chat_request(query, dialog, reset)
+        result = chat_request(query, dialog, reset, user_name)
     return result
 
 
@@ -246,8 +250,7 @@ def chat_image(query: str, dialog: int, image: bytes, reset: bool = False) -> st
 if __name__ == "__main__":
 
     n = -1
-    #image = open('1.jpg', 'rb').read()
-    #a = chat_request_image('Что на картинке', n, image)
+
     queries = [ 'что такое фуфломёт?',
                 'курс доллара за последние 3 дня',
                 'от чего лечит фуфломицин?',
@@ -256,3 +259,7 @@ if __name__ == "__main__":
         print('user:', q)
         b = chat_request(q, n)
         print('bard:', b, '\n')
+
+    #image = open('1.jpg', 'rb').read()
+    #a = chat_request_image('Что на картинке', n, image)
+    #print(a)

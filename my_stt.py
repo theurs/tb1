@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 
 
-import subprocess
-import tempfile
 import os
+import subprocess
 import sys
 import threading
+import tempfile
 from pathlib import Path
 import speech_recognition as sr
 
 import cfg
 import gpt_basic
-import my_chimera
 import my_cattoGPT
-
+import my_chimera
+import my_log
+import my_whisper
 
 
 # сработает если бот запущен питоном из этого venv
 vosk_cmd = Path(Path(sys.executable).parent, 'vosk-transcriber')
 
 # запрещаем запускать больше чем 1 процесс распознавания голоса в одно время (только для vosk)
-lock = threading.Lock()
+vosk_lock = threading.Lock()
 
 
 def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
@@ -65,20 +66,15 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     Returns:
         str: The transcribed text from the audio file.
     """
-    assert audio_duration(audio_file) < 50, 'Too big for free speech recognition'
+    assert audio_duration(audio_file) < 55, 'Too big for free speech recognition'
     audio_file2 = convert_to_wave_with_ffmpeg(audio_file)
     google_recognizer = sr.Recognizer()
 
     with sr.AudioFile(audio_file2) as source:
         audio = google_recognizer.record(source)  # read the entire audio file
-    #try:
-    text = google_recognizer.recognize_google(audio, language=language)
-    #except sr.UnknownValueError:
-    #    text = "Google Speech Recognition could not understand audio"
-    #except sr.RequestError as error:
-    #    text = f"Could not request results from Google Speech Recognition service; {error}"
 
-    #os.remove(audio_file)
+    text = google_recognizer.recognize_google(audio, language=language)
+
     os.remove(audio_file2)
 
     # хак для голосовых команд обращенных к гуглу и бингу
@@ -92,6 +88,15 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
 
 
 def stt(input_file: str) -> str:
+    """
+    This function takes an input file path as a parameter and returns the transcribed text from the audio file.
+    
+    Args:
+        input_file (str): The path of the input audio file.
+    
+    Returns:
+        str: The transcribed text from the audio file.
+    """
     with tempfile.NamedTemporaryFile() as temp_file:
         output_file = temp_file.name
 
@@ -103,42 +108,43 @@ def stt(input_file: str) -> str:
         pass
     except sr.UnknownValueError as unknown_value_error:
         print(unknown_value_error)
+        my_log.log2(str(unknown_value_error))
     except sr.RequestError as request_error:
         print(request_error)
+        my_log.log2(str(request_error))
     except Exception as unknown_error:
         print(unknown_error)
+        my_log.log2(str(unknown_error))
 
     if not text:
         try:
             # затем химера
             assert cfg.key_chimeraGPT != '', 'No chimera key'
-            assert audio_duration(input_file) < 1200, 'Too big for free speech recognition'
-            #print('chimera start')
+            assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
             text = my_chimera.stt(input_file)
-            #print('chimera success')
-            #text += '\n\n--chimera'
         except Exception as error:
             print(error, text)
+            my_log.log2(f'{error}\n\n{text}')
 
     if not text:
         try:
             # затем cattoGPT
             assert cfg.key_cattoGPT != '', 'No cattoGPT key'
-            assert audio_duration(input_file) < 1200, 'Too big for free speech recognition'
-            #print('cattoGPT start')
+            assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
             text = my_cattoGPT.stt(input_file)
-            #print('cattoGPT success')
-            #text += '\n\n--cattoGPT'
         except Exception as error:
             print(error, text)
+            my_log.log2(f'{error}\n\n{text}')
 
-    if not text:
-        with lock:
-            subprocess.run([vosk_cmd, "--server", "--input", input_file, "--output", output_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            with open(output_file, "r") as f:
-                text = f.read()
-        # Удаление временного файла
-        os.remove(output_file)
+    if cfg.stt == 'whisper':
+        my_whisper.get_text(input_file)
+    elif cfg.stt == 'vosk':
+        if not text:
+            with vosk_lock:
+                subprocess.run([vosk_cmd, "--server", "--input", input_file, "--output", output_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                with open(output_file, "r") as f:
+                    text = f.read()
+            os.remove(output_file)
 
     if text:
         cleared = gpt_basic.clear_after_stt(text)

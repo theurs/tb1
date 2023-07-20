@@ -8,16 +8,30 @@ import openai
 
 import cfg
 import utils
+import my_log
 
 
+# https://discord.gg/CFkw3UfR
 openai.api_key = cfg.key_chimeraGPT
 openai.api_base = "https://chimeragpt.adventblocks.cc/v1"
 
 
 def ai(prompt: str, messages = None, max_token: int = 2000, timeout: int = 120, model: str = 'claude-instant-100k') -> str:
-    
+    """
+    Generate the response from the AI model based on the given prompt and messages.
+
+    Args:
+        prompt (str): The prompt string for the AI model.
+        messages (List[Dict[str, str]]): The list of messages in the chat. Each message is a dictionary with 'role' and 'content' keys.
+        max_token (int): The maximum number of tokens to generate in the response.
+        timeout (int): The timeout value in seconds for the AI model to generate the response.
+        model (str): The name of the AI model to use for generating the response.
+
+    Returns:
+        str: The generated response from the AI model.
+    """
     assert openai.api_key != '', 'No key for chimera'
-    
+
     print(f'chimera {model}', len(prompt))
     if messages == None:
         messages = [    {"role": "system",
@@ -49,21 +63,20 @@ def stt(audio_file: str) -> str:
     Raises:
         FileNotFoundError: If the audio file does not exist.
     """
-    
-    assert openai.api_key != '', 'No key for chimera'
-    
-    audio_file_new = audio_file
 
-    #good_formats = ['m4a', 'mp3', 'webm', 'mp4', 'mpga', 'wav', 'mpeg']
-    input_file = Path(audio_file)
-    #if input_file.suffix not in good_formats:
-    #    audio_file_new = Path(utils.convert_to_wav(audio_file))
+    assert openai.api_key != '', 'No key for chimera'
+
     audio_file_new = Path(utils.convert_to_mp3(audio_file))
 
     audio_file_bytes = open(audio_file_new, "rb")
-    audio_file_new.unlink()
 
     translation = openai.Audio.transcribe("whisper-1", audio_file_bytes)
+
+    try:
+        audio_file_new.unlink()
+    except PermissionError:
+        pass
+
     return json.loads(json.dumps(translation, ensure_ascii=False))['text']
 
 
@@ -97,7 +110,7 @@ if __name__ == '__main__':
     image_prompt = 'автомобиль без колес вид сбоку. хищный вид. оформление для аватарки'
     print(image_gen(image_prompt))
     
-    #print(stt('1.ogg'))
+    print(stt('1.mp3'))
 
     
     #print(ai(open('2.txt', 'r').read()[:30000], model='gpt-4-32k-poe'))

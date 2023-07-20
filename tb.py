@@ -3,9 +3,7 @@
 import io
 import html
 import os
-#import random
 import re
-#import string
 import tempfile
 import datetime
 import threading
@@ -29,7 +27,6 @@ import my_stt
 import my_sum
 import my_trans
 import my_tts
-import my_whisper
 import utils
 
 
@@ -689,10 +686,7 @@ def handle_voice_thread(message: telebot.types.Message):
 
         # Распознаем текст из аудио
         with ShowAction(message.chat.id, 'typing'):
-            if cfg.stt == 'vosk':
-                text = my_stt.stt(file_path)
-            elif cfg.stt == 'whisper':
-                text = my_whisper.get_text(file_path)
+            text = my_stt.stt(file_path)
 
         os.remove(file_path)
 
@@ -947,10 +941,7 @@ def handle_video_thread(message: telebot.types.Message):
             with open(file_path, 'wb') as new_file:
                 new_file.write(downloaded_file)
             # Распознаем текст из аудио 
-            if cfg.stt == 'vosk':
-                text = my_stt.stt(file_path)
-            elif cfg.stt == 'whisper':
-                text = my_whisper.get_text(file_path)
+            text = my_stt.stt(file_path)
             os.remove(file_path)
             # Отправляем распознанный текст 
             if text.strip() != '':

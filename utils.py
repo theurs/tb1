@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 
-import my_log
 import os
 import re
 import subprocess
 import tempfile
 import platform as platform_module
 
+import my_log
 
 # диалог всегда начинается одинаково
 
@@ -18,18 +18,32 @@ gpt_start_message3 = 'Ты троль из интернета. Отвечай с
 gpt_start_message4 = 'Ты известная порно актриса Ева Элфи и отвечаешь на вопросы поклонников в телеграм чате, твои ответы всегда очень горячие и провокационные, короткие, с жаргоном из порноиндустрии, намекающие на порно.'
 
 def escape_markdown(text):
-    """функция для экранирования символов перед отправкой в маркдауне телеграма"""
-    #pattern = r"([_*\[\]()~|`])"
+    """
+    Escapes special characters in a given text using Markdown escape sequences.
+
+    Args:
+        text (str): The text to escape.
+
+    Returns:
+        str: The escaped text.
+    """
     pattern = r"([_*\[\]~|`])"
     my_log.log2(text + '\n\n\n\n')
     return re.sub(pattern, r"\\\1", text)
 
 
 def count_tokens(messages):
-    """пытаемся посчитать количество символов в диалоге юзера с ботом
-    хз что такое токены считаем просто символы"""
+    """
+    Count the number of tokens in the given messages.
+
+    Parameters:
+        messages (list): A list of messages.
+
+    Returns:
+        int: The number of tokens in the messages. Returns 0 if messages is empty.
+    """
+    # токенты никто из пиратов не считает, так что просто считаем символы
     if messages:
-        # тут будет некоторое количество лишнего но пусть будет
        return len(str(messages))
     return 0
 
@@ -70,84 +84,48 @@ class MessageList:
         self.size += message_size
 
 
-# не использует. удалить
-def html(text: str) -> str:
-    """конвертирует маркдаун который генерируют gpt chat и bing ai в html коды телеграма"""
-
-    # заменить символы <> в строке так что бы не менять их в хтмл теге <u></u> и в маркаун теге >!Спойлер (скрытый текст)!<
-    # сначала меняем их на что то другое
-    html = text.replace('<u>', '🌞🌸🐝🍯🍓')
-    html = html.replace('</u>', '🌊🌴🍹🕶️🌞')
-    html = html.replace('>!', '🐶🦴🏠🌳🎾')
-    html = html.replace('!<', '🎬🍿🎥🎞️🤩')
-    # потом меняем символы <>
-    html = html.replace('<', '&lt;')
-    html = html.replace('>', '&gt;')
-    # и возвращаем обратно
-    html = html.replace('🌞🌸🐝🍯🍓', '<u>')
-    html = html.replace('🌊🌴🍹🕶️🌞', '</u>')
-    html = html.replace('🐶🦴🏠🌳🎾', '>!')
-    html = html.replace('🎬🍿🎥🎞️🤩', '!<')
-
-    html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', html)
-    html = re.sub(r'\*(.*?)\*', r'<i>\1</i>', html)
-    html = re.sub(r'\~\~(.*?)\~\~', r'<s>\1</s>', html)
-
-
-    code_pattern = r"```([a-z]+)\n([\s\S]+?)\n```"
-    replacement = r"<pre language='\1'>\2</pre>"
-    html = re.sub(code_pattern, replacement, html)
-
-
-    code_pattern = r"\`\`\`([\s\S]*?)\`\`\`"
-    replacement = r'<pre>\1</pre>'
-    html = re.sub(code_pattern, replacement, html)
-
-
-    spoiler_pattern = r"\|\|\|([\s\S]*?)\|\|\|"
-    replacement = r'<span class="tg-spoiler">\1</span>'
-    html = re.sub(spoiler_pattern, replacement, html)
-
-    html = re.sub(r'>!(.*?)!<', r'<span class="tg-spoiler">\1</span>', html)
-
-    html = re.sub(r'\`(.*?)\`', r'<code>\1</code>', html)
-
-    regex = re.compile(r'\[([^\]]+)\]\((https?://[^\)]+)\)')
-    html = regex.sub(r'<a href="\2">\1</a>', html)
-
-    return html
-
-
 def split_text(text: str, chunk_limit: int = 1500):
-    """разбивает текст на части заданной длины не разрывая слова,
-    в результате куски могут быть больше чем задано, если в тексте нет пробелов то намного больше Ж)"""
-    # создаем пустой список для хранения частей текста
+    """
+    Splits a text into chunks of a specified length without breaking words.
+
+    Args:
+        text (str): The text to be split.
+        chunk_limit (int, optional): The maximum length of each chunk. Defaults to 1500.
+
+    Returns:
+        list: A list of chunks of the text.
+
+    Note:
+        If no spaces are found in the text, the chunks may be larger than the specified limit.
+    """
     chunks = []
-    # создаем переменную для хранения текущей позиции в тексте
     position = 0
-    # пока позиция меньше длины текста
     while position < len(text):
-        # находим индекс пробела после лимита
         space_index = text.find(" ", position + chunk_limit)
-        # если пробел не найден, то берем весь оставшийся текст
         if space_index == -1:
             space_index = len(text)
-        # добавляем часть текста от текущей позиции до пробела в список
         chunks.append(text[position:space_index])
-        # обновляем текущую позицию на следующий символ после пробела
         position = space_index + 1
-    # возвращаем список частей текста
     return chunks
 
 
 def platform() -> str:
-    """Определяет на какой платформе работает скрипт, windows или linux"""
+    """
+    Return the platform information.
+    """
     return platform_module.platform()
 
 
 def convert_to_mp3(input_file: str) -> str:
-    """Конвертирует аудиофайл в MP3 формат с помощью ffmpeg
-    возвращает имя нового файла (созданного во временной папке)"""
+    """
+    Converts an audio file to the MP3 format.
+
+    Args:
+        input_file (str): The path to the input audio file.
+
+    Returns:
+        str: The path to the converted MP3 file.
+    """
     # Создаем временный файл с расширением .mp3
     temp_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
     temp_file.close()

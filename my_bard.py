@@ -22,10 +22,13 @@ MAX_REQUEST = 3100
 
 def get_new_session(user_name: str = ''):
     """
-    Retrieves a new session for making requests to Bard AI.
+    Retrieves a new session for making HTTP requests.
+
+    Args:
+        user_name (str, optional): The name of the user. Defaults to ''.
 
     Returns:
-        `Bard`: An instance of the `Bard` class with a new session.
+        Bard: An instance of the Bard class representing the new session.
     """
     if cfg.all_proxy:
         proxies = {
@@ -79,17 +82,18 @@ def reset_bard_chat(dialog: int):
     return
 
 
-def chat_request(query: str, dialog: int, reset = False, user_name: str = ''):
+def chat_request(query: str, dialog: int, reset = False, user_name: str = '') -> str:
     """
-    Execute a chat request and return the response.
+    Generates a response to a chat request.
 
-    Parameters:
-        query (str): The query to be sent to the chat session.
-        dialog (int): The ID of the dialog session.
-        reset (bool, optional): If True, reset the chat session before executing the request. Defaults to False.
+    Args:
+        query (str): The user's query.
+        dialog (int): The dialog number.
+        reset (bool, optional): Whether to reset the dialog. Defaults to False.
+        user_name (str, optional): The user's name. Defaults to ''.
 
     Returns:
-        str: The response content from the chat session.
+        str: The generated response.
     """
     if reset:
         reset_bard_chat(dialog)
@@ -204,15 +208,16 @@ def chat_request_image(query: str, dialog: int, image: bytes, reset = False):
 
 def chat(query: str, dialog: int, reset: bool = False, user_name: str = '') -> str:
     """
-    Execute a chat query and return the response.
+    Executes a chat request with the given query and dialog ID.
 
     Args:
-        query (str): The query to be sent to the chat system.
-        dialog (int): The ID of the dialog.
-        reset (bool, optional): Whether to reset the dialog state. Defaults to False.
+        query (str): The query to be sent to the chat API.
+        dialog (int): The ID of the dialog to send the request to.
+        reset (bool, optional): Whether to reset the conversation. Defaults to False.
+        user_name (str, optional): The name of the user. Defaults to ''.
 
     Returns:
-        str: The response from the chat system.
+        str: The response from the chat API.
     """
     if dialog in CHAT_LOCKS:
         lock = CHAT_LOCKS[dialog]

@@ -154,7 +154,7 @@ def convert_to_mp3(input_file: str) -> str:
     output_file = temp_file.name
     os.remove(output_file)
     # Конвертируем аудиофайл в wav с помощью ffmpeg
-    command = ["ffmpeg", "-i", input_file, output_file]
+    command = ["ffmpeg", "-i", input_file, '-b:a', '96k', '-map', 'a', output_file]
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # Проверяем, успешно ли прошла конвертация

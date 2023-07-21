@@ -20,6 +20,15 @@ CHAT_LOCKS = {}
 MAX_REQUEST = 3100
 
 
+# указатель на текущий ключ в списке ключей (токенов)
+current_token = 0
+# если задан всего 1 ключ то продублировать его, что бы было 2, пускай и одинаковые но 2
+if len(cfg.tokens) == 1:
+    cfg.tokens.append(cfg.tokens[0])
+# на случай если все ключи протухли надо использовать счетчик что бы не попасть в петлю
+loop_detector = {}
+
+
 def get_new_session(user_name: str = ''):
     """
     Retrieves a new session for making HTTP requests.
@@ -40,7 +49,7 @@ def get_new_session(user_name: str = ''):
 
     session = requests.Session()
 
-    session.cookies.set("__Secure-1PSID", cfg.bard_token)
+    session.cookies.set("__Secure-1PSID", cfg.bard_tokens[current_token])
 
     session.headers = {
         "Host": "bard.google.com",
@@ -51,7 +60,7 @@ def get_new_session(user_name: str = ''):
         "Referer": "https://bard.google.com/",
         }
 
-    bard = Bard(token=cfg.bard_token, proxies=proxies, session=session, timeout=30)
+    bard = Bard(token=cfg.bard_tokens[current_token], proxies=proxies, session=session, timeout=30)
 
     rules = """Отвечай на русском языке если в запросе есть кириллица и тебя не просили отвечать на другом языке."""
     if user_name:
@@ -117,7 +126,7 @@ def chat_request(query: str, dialog: int, reset = False, user_name: str = '') ->
             DIALOGS[dialog] = session
         except KeyError:
             print(f'no such key in DIALOGS: {dialog}')
-            my_log.log2(f'my_bard.py:chat:no such key in DIALOGS: {dialog}')
+            my_log.log2(f'my_bard.py:chat_request:no such key in DIALOGS: {dialog}')
 
         try:
             response = session.get_answer(query)
@@ -128,8 +137,25 @@ def chat_request(query: str, dialog: int, reset = False, user_name: str = '') ->
 
     result = response['content']
 
-    links = list(set([x for x in response['links'] if 'http://' not in x]))
-    
+    try:
+        links = list(set([x for x in response['links'] if 'http://' not in x]))
+    except Exception as links_error:
+        # вероятно получили ответ с ошибкой слишком частого доступа, надо сменить ключ
+        if dialog in loop_detector:
+            loop_detector[dialog] += 1
+        else:
+            loop_detector[dialog] = 1
+        if loop_detector[dialog] >= len(cfg.bard_tokens):
+            loop_detector[dialog] = 0
+            return ''
+        current_token += 1
+        if current_token >= len(cfg.bard_tokens):
+            current_token = 0
+        print(links_error)
+        my_log.log2(f'{my_bard.py:chat_request:links_error}')
+        chat_request(query, dialog, reset = True, user_name = user_name)
+        return chat_request(query, dialog, reset, user_name)
+
     if len(links) > 6:
         links = links[:6]
     try:

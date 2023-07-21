@@ -155,5 +155,5 @@ def stt(input_file: str) -> str:
 if __name__ == "__main__":
     os.environ['all_proxy'] = cfg.all_proxy
     #print(vosk_cmd)
-    text = stt('1.mp3')
+    text = stt('1.ogg')
     print(text)

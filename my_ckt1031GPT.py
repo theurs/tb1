@@ -8,6 +8,11 @@ import time
 import openai
 
 import cfg
+import my_log
+
+
+openai.api_key = cfg.key_ckt1031
+openai.api_base = cfg.openai_api_base_ckt1031
 
 
 def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 180, messages = None) -> str:
@@ -25,9 +30,6 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
         str: The generated response.
     """
     print(cfg.model, len(prompt))
-
-    openai.api_key = cfg.key_ckt1031
-    openai.api_base = cfg.openai_api_base_ckt1031
 
     if messages == None:
         assert prompt != '', 'prompt не может быть пустым'
@@ -70,6 +72,40 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
         return ''
 
 
+def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
+    """
+    Generates a specified number of images based on a given prompt.
+    
+    Parameters:
+        - prompt (str): The text prompt used to generate the images.
+        - amount (int, optional): The number of images to generate. Defaults to 10.
+        - size (str, optional): The size of the generated images. Must be one of '1024x1024', '512x512', or '256x256'. Defaults to '1024x1024'.
+        
+    Returns:
+        - list: A list of URLs pointing to the generated images.
+    """
+    assert openai.api_key != '', 'No key for chimera'
+    assert amount <= 10, 'Too many images to gen'
+    assert size in ('1024x1024','512x512','256x256'), 'Wrong image size'
+    response = None
+    for _ in range(3):
+        try:
+            response = openai.Image.create(
+                prompt = prompt,
+                n = amount,
+                size=size,
+            )
+            break
+        except Exception as error:
+            print(error)
+            my_log.log2(f'my_ctkt1031:image_gen: {error}')
+            time.sleep(2)
+    if response:
+        return [x['url'] for x in response["data"]]
+    else:
+        return []
+
+
 if __name__ == '__main__':
     if cfg.all_proxy:
         os.environ['all_proxy'] = cfg.all_proxy
@@ -78,3 +114,5 @@ if __name__ == '__main__':
     for _ in range(20):
         print(ai('привет. одна цифра и вопрос в ответе должна быть и никаких слов. вопрос - 1+2='))
     #print(ai(open('1.txt','r', encoding='utf-8').read()[:25000]))
+    
+    #print(image_gen('золотой джип', 2))

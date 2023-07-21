@@ -699,23 +699,23 @@ def handle_voice_thread(message: telebot.types.Message):
         with ShowAction(message.chat.id, 'typing'):
             text = my_stt.stt(file_path)
 
-        os.remove(file_path)
+            os.remove(file_path)
 
-        text = text.strip()
-        # Отправляем распознанный текст
-        if text:
-            if len(text) > 300:
-                text = my_bard.clear_voice_message_text(text)
-            reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
-            my_log.log_echo(message, f'[ASR] {text}')
-        else:
-            bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
-            my_log.log_echo(message, '[ASR] no results')
+            text = text.strip()
+            # Отправляем распознанный текст
+            if text:
+                if len(text) > 300:
+                    text = my_bard.clear_voice_message_text(text)
+                reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
+                my_log.log_echo(message, f'[ASR] {text}')
+            else:
+                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
+                my_log.log_echo(message, '[ASR] no results')
 
-        # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
-        if text:
-            message.text = text
-            echo_all(message)
+            # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
+            if text:
+                message.text = text
+                echo_all(message)
 
 
 @bot.message_handler(content_types = ['document'])

@@ -12,6 +12,7 @@ import pytesseract
 
 import gpt_basic
 import utils
+import my_log
 
 
 # запрещаем запускать больше чем 1 процесс распознавания
@@ -25,6 +26,15 @@ def replace_non_letters_with_spaces(text):
 
 #считаем количество распознанных слов
 def find_words(text):
+    """
+    Find the number of words in the given text that belong to different languages.
+    
+    Args:
+        text (str): The input text.
+        
+    Returns:
+        int: The total count of words that belong to different languages.
+    """
     text = replace_non_letters_with_spaces(text)
     # Создаем объект словаря для нужного языка
     en = enchant.Dict("en_US")  # для английского языка
@@ -46,12 +56,28 @@ def find_words(text):
 
 
 #распознаем  текст с картинки из байтовой строки
-def get_text_from_image(b):
+def get_text_from_image(data: bytes) -> str:
+    """
+    Extracts text from an image.
+
+    Args:
+        data (bytes): The image data as bytes.
+
+    Returns:
+        str: The extracted text from the image.
+    """
+
+    my_log.log2(f'get_text_from_image data len = {len(data)}')
+
     #language = 'rus+eng+ukr'
     language = 'rus+eng'
-    f = io.BytesIO(b)
+    f = io.BytesIO(data)
+
     with lock:
         r1 = pytesseract.image_to_string(Image.open(f), lang=language)
+
+    my_log.log2(f'get_text_from_image result len = {len(r1)}')
+    
     # склеиваем разорванные предложения
     lines = r1.split('\n')
     result = lines[0] + ' '
@@ -61,15 +87,29 @@ def get_text_from_image(b):
             result += '\n\n'
             continue
         result += i + ' '
+
+    my_log.log2(f'get_text_from_image result = {result}')
+
     result = result[:-1]
+
     if 'Windows' not in utils.platform():
         if find_words(result) < 4: return ''
+
     result_cleared = gpt_basic.clear_after_ocr(result)
     return result_cleared
 
 
 # Определяем функцию для извлечения текста из PDF-файла
 def get_text(fileobj):
+    """
+    Extracts text from a PDF file.
+
+    Parameters:
+        fileobj (file-like object): The PDF file object to extract text from.
+
+    Returns:
+        str: The extracted text from the PDF file.
+    """
     text = ''
     max = 5 # распознаем не больше 5 страниц
     with fitz.open(stream=fileobj) as doc:

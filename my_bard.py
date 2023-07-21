@@ -23,8 +23,8 @@ MAX_REQUEST = 3100
 # указатель на текущий ключ в списке ключей (токенов)
 current_token = 0
 # если задан всего 1 ключ то продублировать его, что бы было 2, пускай и одинаковые но 2
-if len(cfg.tokens) == 1:
-    cfg.tokens.append(cfg.tokens[0])
+if len(cfg.bard_tokens) == 1:
+    cfg.bard_tokens.append(cfg.bard_tokens[0])
 # на случай если все ключи протухли надо использовать счетчик что бы не попасть в петлю
 loop_detector = {}
 

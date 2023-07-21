@@ -385,7 +385,7 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         button6 = telebot.types.KeyboardButton('📎Файл')
         button7 = telebot.types.KeyboardButton('⚙️Настройки')
         markup.row(button1, button2, button3)
-        markup.row(button4, button5, button6)
+        markup.row(button4, button5, button7)
         # markup.row(button4, button6, button7)
         return markup
     elif kbd == 'bing_chat':

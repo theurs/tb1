@@ -28,8 +28,8 @@ python-magic
 #selenium
 SpeechRecognition
 telebot
-## python -m textblob.download_corpora
-#textblob
+# python -m textblob.download_corpora
+textblob
 #trafilatura==1.6.1
 trafilatura
 transliterate

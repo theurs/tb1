@@ -67,7 +67,7 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
         current_model = CUSTOM_MODELS[chat_id]
 
     # использовать указанную модель если есть
-    current_model = cfg.model if not model_to_use else model_to_use
+    current_model = current_model if not model_to_use else model_to_use
 
     response = ''
     try:

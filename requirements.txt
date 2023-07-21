@@ -12,8 +12,9 @@ html2text
 langdetect
 openai
 openai-whisper
-#sudo apt install pandoc
+#sudo apt install pandoc texlive-latex-recommended
 pandoc
+pdflatex
 Pillow
 py_trans
 pyenchant

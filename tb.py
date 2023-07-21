@@ -23,6 +23,7 @@ import my_dic
 import my_log
 import my_ocr
 import my_google
+import my_pandoc
 import my_stt
 import my_sum
 import my_trans
@@ -98,6 +99,9 @@ SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
 #          пока что в этом списке по 1 картинке, выводить по несколько сразу не получается
 #          телеграм не дает прикреплять кнопки к нескольким картинкам
 IMAGES_DB = my_dic.PersistentDict('db/images_db.pkl')
+
+# хранилище для файлов. для вопросов к чатботам по содержимому файлов
+FILES_DB = my_dic.PersistentDict('db/files_db.pkl')
 
 # в каких чатах какая команда дана, как обрабатывать последующий текст
 # например после команды /image ожидаем описание картинки
@@ -377,10 +381,12 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         button2 = telebot.types.KeyboardButton('🌐Найди')
         button3 = telebot.types.KeyboardButton('📋Перескажи')
         button4 = telebot.types.KeyboardButton('🎧Озвучь')
-        button5 = telebot.types.KeyboardButton('🈶Переведи')
-        button6 = telebot.types.KeyboardButton('⚙️Настройки')
+        #button5 = telebot.types.KeyboardButton('🈶Переведи')
+        button6 = telebot.types.KeyboardButton('📎Файл')
+        button7 = telebot.types.KeyboardButton('⚙️Настройки')
         markup.row(button1, button2, button3)
-        markup.row(button4, button5, button6)
+        #markup.row(button4, button5, button6, button7)
+        markup.row(button4, button6, button7)
         return markup
     elif kbd == 'bing_chat':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
@@ -719,7 +725,48 @@ def handle_document_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
-    if check_blocks(message.chat.id):
+    chat_id = message.chat.id
+
+    if chat_id in COMMAND_MODE and COMMAND_MODE[chat_id] == 'wait_for_file':
+        with semaphore_talks:
+            with ShowAction(chat_id, 'typing'):
+                # скачиваем файл во временный файл
+                file_info = bot.get_file(message.document.file_id)
+                file_name = message.document.file_name
+
+                # временный файл
+                temp_file = tempfile.NamedTemporaryFile(suffix=file_name, delete=False)
+                temp_file.close()
+                output_file = temp_file.name
+                os.remove(output_file)
+
+                downloaded_file = bot.download_file(file_info.file_path)
+                with open(output_file, 'wb') as file_handler:
+                    file_handler.write(downloaded_file)
+
+                text = my_pandoc.get_text_from_file(output_file)
+                os.remove(output_file)
+
+                if not text:
+                    bot.reply_to(message, 'Не удалось прочитать текст из файла.', reply_markup=get_keyboard('hide'))
+                    my_log.log_echo(message, '[FILE UPLOAD FAILED] не удалось прочитать текст из файла')
+                    return
+                file_size = len(downloaded_file)
+
+                FILES_DB[chat_id] = {}
+                FILES_DB[chat_id]['text'] = text
+                FILES_DB[chat_id]['size'] = file_size
+                FILES_DB[chat_id]['name'] = file_name
+                FILES_DB[chat_id]['original_bytes'] = downloaded_file
+
+                msg = f'Загружен файл: {file_name} ({file_size} байт, {len(text)} символов)\n\nЗадавайте вопрос по этому файлу или отправьте другой'
+                bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode'))
+                my_log.log_echo(message, f'[FILE UPLOADED] {msg}')
+
+                return
+
+
+    if check_blocks(chat_id):
         return
 
     with semaphore_talks:
@@ -729,7 +776,7 @@ def handle_document_thread(message: telebot.types.Message):
         if message.caption \
         and message.caption.startswith(('что там','перескажи','краткое содержание', 'кратко')) \
         and message.document.mime_type in ('text/plain', 'application/pdf'):
-            with ShowAction(message.chat.id, 'typing'):
+            with ShowAction(chat_id, 'typing'):
                 file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
                 file_bytes = io.BytesIO(downloaded_file)
@@ -756,7 +803,7 @@ def handle_document_thread(message: telebot.types.Message):
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
             # если текстовый файл то пытаемся озвучить как книгу. русский голос
             if message.document.mime_type == 'text/plain':
-                with ShowAction(message.chat.id, 'record_audio'):
+                with ShowAction(chat_id, 'record_audio'):
                     file_name = message.document.file_name + '.ogg'
                     file_info = bot.get_file(message.document.file_id)
                     file = bot.download_file(file_info.file_path)
@@ -768,26 +815,26 @@ def handle_document_thread(message: telebot.types.Message):
                         print(error2)
                     # Озвучиваем текст
                     global TTS_GENDER
-                    if message.chat.id in TTS_GENDER:
-                        gender = TTS_GENDER[message.chat.id]
+                    if chat_id in TTS_GENDER:
+                        gender = TTS_GENDER[chat_id]
                     else:
                         gender = 'female'    
                     audio = my_tts.tts(text, lang, gender=gender)
                     if message.chat.type != 'private':
-                        bot.send_voice(message.chat.id, audio, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide'))
+                        bot.send_voice(chat_id, audio, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide'))
                     else:
-                        bot.send_voice(message.chat.id, audio, reply_markup=get_keyboard('hide'))
+                        bot.send_voice(chat_id, audio, reply_markup=get_keyboard('hide'))
                     my_log.log_echo(message, f'[tts file] {text}')
                     return
 
         # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
-            with ShowAction(message.chat.id, 'upload_document'):
+            with ShowAction(chat_id, 'upload_document'):
                 # получаем самый большой документ из списка
                 document = message.document
                 # если документ не является PDF-файлом, отправляем сообщение об ошибке
                 if document.mime_type == 'image/jpeg':
-                    with ShowAction(message.chat.id, 'typing'):
+                    with ShowAction(chat_id, 'typing'):
                         # скачиваем документ в байтовый поток
                         file_id = message.document.file_id
                         file_info = bot.get_file(file_id)
@@ -823,12 +870,73 @@ def handle_document_thread(message: telebot.types.Message):
                     if len(text) > 4096:
                         with io.StringIO(text) as f:
                             if message.chat.type != 'private':
-                                bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide'))
+                                bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide'))
                             else:
-                                bot.send_document(message.chat.id, document = f, visible_file_name = file_name, caption=file_name, reply_markup=get_keyboard('hide'))
+                                bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, reply_markup=get_keyboard('hide'))
                     else:
                         bot.reply_to(message, text, reply_markup=get_keyboard('translate'))
                     my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
+
+
+@bot.message_handler(commands=['file'])
+def file_command(message: telebot.types.Message):
+    """Режим работы с файлами для чат ботов"""
+    thread = threading.Thread(target=file_command_thread, args=(message,))
+    thread.start()
+def file_command_thread(message: telebot.types.Message):
+    """Режим работы с файлами для чат ботов"""
+
+    my_log.log_media(message)
+
+    global DIALOGS_DB
+
+    chat_id = message.chat.id
+
+    if chat_id in FILES_DB and FILES_DB[chat_id]:
+        file_name = FILES_DB[chat_id]['name']
+        file_size = FILES_DB[chat_id]['size']
+        file_text = FILES_DB[chat_id]['text']
+        text_size = len(file_text)
+
+        query = message.text
+
+        if not query:
+            msg = f'Загружен файл: {file_name} ({file_size} байт, {text_size} символов)\n\nЗадавайте вопрос по этому файлу или отправьте другой'
+            bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode'))
+            return
+
+        # делаем запрос по тексту
+        with ShowAction(chat_id, 'typing'):
+            result = gpt_basic.query_file(query, file_name, file_size, file_text)
+
+            if result:
+                bot.reply_to(message, result, reply_markup=get_keyboard('command_mode'))
+                my_log.log_echo(message, result)
+                if chat_id not in DIALOGS_DB:
+                    DIALOGS_DB[chat_id] = []
+                    DIALOGS_DB[chat_id] += [{"role":    'system',
+                                "content": f'user попросил сделал запрос по содержанию файла: {query}'},
+                                {"role":    'system',
+                                "content": f'assistant ответил: {result}'}
+                                ]
+                return
+            else:
+                msg = f'Нет ответа по запросу: {query}'
+                bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode'))
+                my_log.log_echo(message, msg)
+                if chat_id not in DIALOGS_DB:
+                    DIALOGS_DB[chat_id] = []
+                    DIALOGS_DB[chat_id] += [{"role":    'system',
+                                "content": f'user попросил сделал запрос по содержанию файла: {query}'},
+                                {"role":    'system',
+                                "content": f'assistant не ответил'}
+                                ]
+                return
+    else:
+        COMMAND_MODE[chat_id] = 'wait_for_file'
+        bot.reply_to(message, 'Пришлите мне файл или ссылку и я буду отвечать на запросы по тексту из этого файла',
+                     reply_markup=get_keyboard('command_mode'))
+        return
 
 
 @bot.message_handler(content_types = ['photo'])
@@ -2104,7 +2212,7 @@ def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
 def do_task(message, custom_prompt: str = ''):
     """функция обработчик сообщений работающая в отдельном потоке"""
 
-    if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '⚙️Настройки']:
+    if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '📎Файл', '⚙️Настройки']:
         if message.text == '🎨Нарисуй':
             message.text = '/image'
             image( message)
@@ -2120,6 +2228,9 @@ def do_task(message, custom_prompt: str = ''):
         if message.text == '🈶Переведи':
             message.text = '/trans'
             trans(message)
+        if message.text == '📎Файл':
+            message.text = '/file'
+            file_command(message)
         if message.text == '⚙️Настройки':
             message.text = '/config'
             config(message)
@@ -2179,6 +2290,10 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
+                elif COMMAND_MODE[chat_id] == 'wait_for_file':
+                    file_command(message)
+                    # возврат что бы не отключать файловый режим
+                    return
                 COMMAND_MODE[chat_id] = ''
                 return
 

@@ -16,7 +16,6 @@ import my_ckt1031GPT
 
 CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
 
-
 def ai_test() -> str:
     """
     """
@@ -43,12 +42,13 @@ def ai_test() -> str:
     return сompletion["choices"][0]["message"]["content"]
 
 
-def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages = None, second = False, chat_id = None) -> str:
+def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages = None,
+       second = False, chat_id = None, model_to_use: str = '') -> str:
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
     second - использовать ли второй гейт и ключ, для больших запросов
     """
     global CUSTOM_MODELS
-    
+
     print(cfg.model, len(prompt))
     if second:
         openai.api_key = cfg.key2
@@ -65,6 +65,9 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
     current_model = cfg.model
     if chat_id and chat_id in CUSTOM_MODELS:
         current_model = CUSTOM_MODELS[chat_id]
+
+    # использовать указанную модель если есть
+    current_model = cfg.model if not model_to_use else model_to_use
 
     response = ''
     try:
@@ -274,12 +277,66 @@ def zip_text(text: str) -> str:
     return new_text
 
 
+def query_file(query: str, file_name: str, file_size: int, file_text: str) -> str:
+    """
+    Query a file using the chatGPT model and return the response.
+
+    Args:
+        query (str): The query to ask the chatGPT model.
+        file_name (str): The name of the file.
+        file_size (int): The size of the file in bytes.
+        file_text (str): The content of the file.
+
+    Returns:
+        str: The response from the chatGPT model.
+    """
+
+    msg = f"""Ответь на запрос юзера по содержанию файла
+Запрос: {query}
+Имя файла: {file_name}
+Размер файла: {file_size}
+Текст из файла:
+
+
+{file_text}
+"""
+    msg_size = len(msg)
+    if msg_size > 99000:
+        msg = msg[:99000]
+        msg_size = 99000
+
+    result = ''
+
+    if msg_size < 15000:
+        try:
+            result = ai(msg, model_to_use = 'gpt-3.5-turbo-16k')
+        except Exception as error:
+            print(error)
+            my_log.log2(f'gpt_basic:query_file: {error}')
+
+    if not result and msg_size < 30000:
+        try:
+            result = ai(msg, model_to_use = 'claude-2-100k')
+        except Exception as error:
+            print(error)
+            my_log.log2(f'gpt_basic:query_file: {error}')
+
+    if not result and msg_size <= 99000:
+        try:
+            result = ai(msg, model_to_use = 'claude-instant-100k')
+        except Exception as error:
+            print(error)
+            my_log.log2(f'gpt_basic:query_file: {error}')
+
+    return result
+
+
 if __name__ == '__main__':
     if cfg.all_proxy:
         os.environ['all_proxy'] = cfg.all_proxy
     
     #print(ai_test())
-    print(ai('hi'))
+    print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
     sys.exit()
 
     if len(sys.argv) != 2:

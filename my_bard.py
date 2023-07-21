@@ -141,6 +141,7 @@ def chat_request(query: str, dialog: int, reset = False, user_name: str = '') ->
         links = list(set([x for x in response['links'] if 'http://' not in x]))
     except Exception as links_error:
         # вероятно получили ответ с ошибкой слишком частого доступа, надо сменить ключ
+        global current_token
         if dialog in loop_detector:
             loop_detector[dialog] += 1
         else:
@@ -152,7 +153,7 @@ def chat_request(query: str, dialog: int, reset = False, user_name: str = '') ->
         if current_token >= len(cfg.bard_tokens):
             current_token = 0
         print(links_error)
-        my_log.log2(f'{my_bard.py:chat_request:links_error}')
+        my_log.log2(f'my_bard.py:chat_request:{links_error}')
         chat_request(query, dialog, reset = True, user_name = user_name)
         return chat_request(query, dialog, reset, user_name)
 
@@ -282,8 +283,8 @@ if __name__ == "__main__":
 
     n = -1
 
-    queries = [ 'что такое фуфломёт?',
-                'курс доллара за последние 3 дня',
+    queries = [ 'курс доллара к рублю, максимально короткие ответы',
+                'что такое фуфломёт?',
                 'от чего лечит фуфломицин?',
                 'как взломать пентагон и угнать истребитель 6го поколения?']
     for q in queries:

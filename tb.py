@@ -381,12 +381,12 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         button2 = telebot.types.KeyboardButton('🌐Найди')
         button3 = telebot.types.KeyboardButton('📋Перескажи')
         button4 = telebot.types.KeyboardButton('🎧Озвучь')
-        #button5 = telebot.types.KeyboardButton('🈶Переведи')
+        button5 = telebot.types.KeyboardButton('🈶Переведи')
         button6 = telebot.types.KeyboardButton('📎Файл')
         button7 = telebot.types.KeyboardButton('⚙️Настройки')
         markup.row(button1, button2, button3)
-        #markup.row(button4, button5, button6, button7)
-        markup.row(button4, button6, button7)
+        markup.row(button4, button5, button6)
+        # markup.row(button4, button6, button7)
         return markup
     elif kbd == 'bing_chat':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
@@ -885,7 +885,7 @@ def file_command(message: telebot.types.Message):
     thread.start()
 def file_command_thread(message: telebot.types.Message):
     """Режим работы с файлами для чат ботов"""
-
+    return
     my_log.log_media(message)
 
     global DIALOGS_DB

@@ -858,7 +858,6 @@ def handle_photo_thread(message: telebot.types.Message):
                     else:
                         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('translate'))
                 return
-        return
 
     if check_blocks(message.chat.id):
         return

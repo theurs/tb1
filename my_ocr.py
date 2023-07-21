@@ -67,16 +67,12 @@ def get_text_from_image(data: bytes) -> str:
         str: The extracted text from the image.
     """
 
-    my_log.log2(f'get_text_from_image data len = {len(data)}')
-
     #language = 'rus+eng+ukr'
     language = 'rus+eng'
     f = io.BytesIO(data)
 
     with lock:
         r1 = pytesseract.image_to_string(Image.open(f), lang=language)
-
-    my_log.log2(f'get_text_from_image result len = {len(r1)}')
     
     # склеиваем разорванные предложения
     lines = r1.split('\n')
@@ -87,8 +83,6 @@ def get_text_from_image(data: bytes) -> str:
             result += '\n\n'
             continue
         result += i + ' '
-
-    my_log.log2(f'get_text_from_image result = {result}')
 
     result = result[:-1]
 

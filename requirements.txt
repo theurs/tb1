@@ -12,6 +12,8 @@ html2text
 langdetect
 openai
 openai-whisper
+#sudo apt install pandoc
+pandoc
 Pillow
 py_trans
 pyenchant

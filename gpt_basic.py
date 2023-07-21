@@ -328,6 +328,13 @@ def query_file(query: str, file_name: str, file_size: int, file_text: str) -> st
             print(error)
             my_log.log2(f'gpt_basic:query_file: {error}')
 
+    if not result:
+        try:
+            result = ai(msg[:15000], model_to_use = 'gpt-3.5-turbo-16k')
+        except Exception as error:
+            print(error)
+            my_log.log2(f'gpt_basic:query_file: {error}')
+
     return result
 
 

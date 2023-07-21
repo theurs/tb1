@@ -703,7 +703,7 @@ def handle_voice_thread(message: telebot.types.Message):
 
         # Отправляем распознанный текст
         if text.strip() != '':
-            bot.reply_to(message, text, reply_markup=get_keyboard('translate'))
+            reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
             my_log.log_echo(message, f'[ASR] {text}')
         else:
             bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))

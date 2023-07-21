@@ -12,7 +12,8 @@ html2text
 langdetect
 openai
 openai-whisper
-#sudo apt install pandoc texlive-latex-recommended
+# sudo apt install pandoc texlive-latex-recommended
+# ? pandoc==2.4b0
 pandoc
 pdflatex
 Pillow

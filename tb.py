@@ -157,11 +157,10 @@ class ShowAction(threading.Thread):
     Телеграм автоматически гасит уведомление через 5 секунд, по-этому его надо повторять.
 
     Использовать в коде надо как то так
-    with ShowAction(chat_id, 'typing'):
+    with ShowAction(message, 'typing'):
         делаем что-нибудь и пока делаем уведомление не гаснет
-    
     """
-    def __init__(self, chat_id, action):
+    def __init__(self, message, action):
         """_summary_
 
         Args:
@@ -173,15 +172,16 @@ class ShowAction(threading.Thread):
         self.actions = [  "typing", "upload_photo", "record_video", "upload_video", "record_audio",
                          "upload_audio", "upload_document", "find_location", "record_video_note", "upload_video_note"]
         assert action in self.actions, f'Допустимые actions = {self.actions}'
-        self.chat_id = chat_id
+        self.chat_id = message.chat.id
+        self.thread_id = message.message_thread_id
         self.action = action
         self.is_running = True
         self.timerseconds = 1
-        
+
     def run(self):
         while self.is_running:
             try:
-                bot.send_chat_action(self.chat_id, self.action)
+                bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)
             except Exception as error:
                 my_log.log2(str(error))
             n = 50
@@ -192,7 +192,7 @@ class ShowAction(threading.Thread):
     def stop(self):
         self.timerseconds = 50
         self.is_running = False
-        bot.send_chat_action(self.chat_id, 'cancel')
+        bot.send_chat_action(self.chat_id, 'cancel', message_thread_id = self.thread_id)
 
     def __enter__(self):
         self.start()
@@ -333,6 +333,23 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     DIALOGS_DB[chat_id] = new_messages or []
 
     return resp
+
+
+def get_topic_id(message: telebot.types.Message):
+    """
+    Get the topic ID from a Telegram message.
+    просто id недостаточно для определения группы и подгруппы (топик / тред / тема форума)
+    если треда нет то будет None
+
+    Parameters:
+        message (telebot.types.Message): The Telegram message object.
+
+    Returns:
+        str: '[chat.id] [thread.id]'
+    """
+    thread_id = message.message_thread_id
+    chat_id = message.chat.id
+    return f'[{chat_id}] [{thread_id}]'
 
 
 def is_admin_member(message: telebot.types.Message):
@@ -621,13 +638,13 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             image(message)
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
-            with ShowAction(chat_id, 'typing'):
+            with ShowAction(message, 'typing'):
                 translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('translate'))
         elif call.data == 'translate_chat':
             # реакция на клавиатуру для Чата кнопка перевести текст
-            with ShowAction(chat_id, 'typing'):
+            with ShowAction(message, 'typing'):
                 translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('chat'))
@@ -728,7 +745,7 @@ def handle_voice_thread(message: telebot.types.Message):
             new_file.write(downloaded_file)
 
         # Распознаем текст из аудио
-        with ShowAction(message.chat.id, 'typing'):
+        with ShowAction(message, 'typing'):
             text = my_stt.stt(file_path)
             
             my_log.log2(f'[ASR] {text}')
@@ -767,7 +784,7 @@ def handle_document_thread(message: telebot.types.Message):
 
     if chat_id in COMMAND_MODE and COMMAND_MODE[chat_id] == 'wait_for_file':
         with semaphore_talks:
-            with ShowAction(chat_id, 'typing'):
+            with ShowAction(message, 'typing'):
                 # скачиваем файл во временный файл
                 file_info = bot.get_file(message.document.file_id)
                 file_name = message.document.file_name
@@ -814,7 +831,7 @@ def handle_document_thread(message: telebot.types.Message):
         if message.caption \
         and message.caption.startswith(('что там','перескажи','краткое содержание', 'кратко')) \
         and message.document.mime_type in ('text/plain', 'application/pdf'):
-            with ShowAction(chat_id, 'typing'):
+            with ShowAction(message, 'typing'):
                 file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
                 file_bytes = io.BytesIO(downloaded_file)
@@ -841,7 +858,7 @@ def handle_document_thread(message: telebot.types.Message):
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
             # если текстовый файл то пытаемся озвучить как книгу. русский голос
             if message.document.mime_type == 'text/plain':
-                with ShowAction(chat_id, 'record_audio'):
+                with ShowAction(message, 'record_audio'):
                     file_name = message.document.file_name + '.ogg'
                     file_info = bot.get_file(message.document.file_id)
                     file = bot.download_file(file_info.file_path)
@@ -867,12 +884,12 @@ def handle_document_thread(message: telebot.types.Message):
 
         # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
         if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
-            with ShowAction(chat_id, 'upload_document'):
+            with ShowAction(message, 'upload_document'):
                 # получаем самый большой документ из списка
                 document = message.document
                 # если документ не является PDF-файлом, отправляем сообщение об ошибке
                 if document.mime_type == 'image/jpeg':
-                    with ShowAction(chat_id, 'typing'):
+                    with ShowAction(message, 'typing'):
                         # скачиваем документ в байтовый поток
                         file_id = message.document.file_id
                         file_info = bot.get_file(file_id)
@@ -944,7 +961,7 @@ def file_command_thread(message: telebot.types.Message):
             return
 
         # делаем запрос по тексту
-        with ShowAction(chat_id, 'typing'):
+        with ShowAction(message, 'typing'):
             result = gpt_basic.query_file(query, file_name, file_size, file_text)
 
             if result:
@@ -992,7 +1009,7 @@ def handle_photo_thread(message: telebot.types.Message):
         if COMMAND_MODE[chat_id] == 'bardimage':
             COMMAND_MODE[chat_id] = ''
             with semaphore_talks:
-                with ShowAction(chat_id, 'typing'):
+                with ShowAction(message, 'typing'):
                     # скачиваем документ в байтовый поток
                     msg = 'Бард не ответил'
                     file_id = message.photo[-1].file_id
@@ -1013,7 +1030,7 @@ def handle_photo_thread(message: telebot.types.Message):
         # новости в телеграме часто делают как картинка + длинная подпись к ней
         if message.forward_from_chat and message.caption:
             # у фотографий нет текста но есть заголовок caption. его и будем переводить
-            with ShowAction(message.chat.id, 'typing'):
+            with ShowAction(message, 'typing'):
                 text = my_trans.translate(message.caption)
             if text:
                 bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
@@ -1026,7 +1043,7 @@ def handle_photo_thread(message: telebot.types.Message):
         if not message.caption and message.chat.type != 'private': return
         if message.chat.type != 'private' and not gpt_basic.detect_ocr_command(message.caption.lower()): return
 
-        with ShowAction(message.chat.id, 'typing'):
+        with ShowAction(message, 'typing'):
             # получаем самую большую фотографию из списка
             photo = message.photo[-1]
             fp = io.BytesIO()
@@ -1070,7 +1087,7 @@ def handle_video_thread(message: telebot.types.Message):
                 my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
 
     with semaphore_talks:
-        with ShowAction(message.chat.id, 'typing'):
+        with ShowAction(message, 'typing'):
             # Создание временного файла 
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 file_path = temp_file.name
@@ -1462,7 +1479,7 @@ def tts_thread(message: telebot.types.Message):
         return
 
     with semaphore_talks:
-        with ShowAction(message.chat.id, 'record_audio'):
+        with ShowAction(message, 'record_audio'):
             global TTS_GENDER
             if message.chat.id in TTS_GENDER:
                 gender = TTS_GENDER[message.chat.id]
@@ -1527,7 +1544,7 @@ def google_thread(message: telebot.types.Message):
         bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode'))
         return
         
-    with ShowAction(message.chat.id, 'typing'):
+    with ShowAction(message, 'typing'):
         r = my_google.search(q)
         try:
             bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
@@ -1588,7 +1605,7 @@ def ddg_thread(message: telebot.types.Message):
         bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode'))
         return
 
-    with ShowAction(message.chat.id, 'typing'):
+    with ShowAction(message, 'typing'):
         r = my_google.search_ddg(q)
         try:
             bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
@@ -1765,7 +1782,7 @@ def image_thread(message: telebot.types.Message):
         chat_id = message.chat.id
         if len(prompt) > 1:
             prompt = prompt[1]
-            with ShowAction(message.chat.id, 'upload_photo'):
+            with ShowAction(message, 'upload_photo'):
                 images = my_genimg.gen_images(prompt)
                 if len(images) > 0:
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
@@ -1861,7 +1878,7 @@ def summ_text_thread(message: telebot.types.Message):
                                 ]
                     return
 
-                with ShowAction(message.chat.id, 'typing'):
+                with ShowAction(message, 'typing'):
                     res = ''
                     try:
                         res = my_sum.summ_url(url)
@@ -1962,7 +1979,7 @@ def trans_thread(message: telebot.types.Message):
         lang = lang.strip()
 
     with semaphore_talks:
-        with ShowAction(message.chat.id, 'typing'):
+        with ShowAction(message, 'typing'):
             translated = my_trans.translate_text2(text, lang)
             if translated:
                 bot.reply_to(message, translated, reply_markup=get_keyboard('translate'))
@@ -2022,7 +2039,7 @@ def last_thread(message: telebot.types.Message):
         if limit > len(messages.messages):
             limit = len(messages.messages)
 
-        with ShowAction(message.from_user.id, 'typing'):
+        with ShowAction(message, 'typing'):
 
             resp = my_sum.summ_text_worker('\n'.join(messages.messages[-limit:]), 'chat_log')
 
@@ -2422,7 +2439,7 @@ def do_task(message, custom_prompt: str = ''):
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
-            with ShowAction(chat_id, 'typing'):
+            with ShowAction(message, 'typing'):
                 # добавляем новый запрос пользователя в историю диалога пользователя
                 resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
                 if resp:
@@ -2461,7 +2478,7 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с бинг чатом
             if chat_id in BING_MODE and BING_MODE[chat_id] == 'on':
-                with ShowAction(chat_id, 'typing'):
+                with ShowAction(message, 'typing'):
                     try:
                         answer = bingai.chat(message.text, chat_id)
                         if answer:
@@ -2489,7 +2506,7 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     return
-                with ShowAction(chat_id, 'typing'):
+                with ShowAction(message, 'typing'):
                     try:
                         # имя пользователя если есть или ник
                         user_name = message.from_user.first_name or message.from_user.username or ''
@@ -2507,7 +2524,7 @@ def do_task(message, custom_prompt: str = ''):
                     return
 
             # добавляем новый запрос пользователя в историю диалога пользователя
-            with ShowAction(chat_id, 'typing'):
+            with ShowAction(message, 'typing'):
                 resp = dialog_add_user_request(chat_id, message.text, 'gpt')
                 if resp:
                     if is_private:

@@ -32,7 +32,7 @@ import my_tts
 import utils
 
 
-telebot.logger.setLevel(logging.DEBUG)
+#telebot.logger.setLevel(logging.DEBUG)
 
 
 # использовать прокси (пиратские сайты обычно лочат ваш ип, так что смотрите за этим)
@@ -350,7 +350,8 @@ def get_topic_id(message: telebot.types.Message):
     Returns:
         str: '[chat.id] [thread.id]'
     """
-    thread_id = message.message_thread_id
+    #thread_id = message.message_thread_id
+    thread_id = 0
     chat_id = message.chat.id
     return f'[{chat_id}] [{thread_id}]'
 

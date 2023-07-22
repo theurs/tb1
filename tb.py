@@ -778,8 +778,6 @@ def handle_voice_thread(message: telebot.types.Message):
         # Распознаем текст из аудио
         with ShowAction(message, 'typing'):
             text = my_stt.stt(file_path)
-            
-            my_log.log2(f'[ASR] {text}')
 
             os.remove(file_path)
 
@@ -788,7 +786,6 @@ def handle_voice_thread(message: telebot.types.Message):
             if text:
                 if len(text) > 500:
                     text = my_bard.clear_voice_message_text(text)
-                    my_log.log2(f'[ASR after bard] {text}')
                 reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, f'[ASR] {text}')
             else:

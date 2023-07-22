@@ -2441,6 +2441,8 @@ def do_task(message, custom_prompt: str = ''):
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         # или если в чате активирован режим суперчата
+        if chat_id not in SUPER_CHAT:
+            SUPER_CHAT[chat_id] = 0
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private \
             or (not is_private and SUPER_CHAT[chat_id] == 1):
             if len(msg) > cfg.max_message_from_user:

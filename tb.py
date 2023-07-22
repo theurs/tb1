@@ -2,6 +2,7 @@
 
 import io
 import html
+import logging
 import os
 import re
 import tempfile
@@ -29,6 +30,9 @@ import my_sum
 import my_trans
 import my_tts
 import utils
+
+
+telebot.logger.setLevel(logging.DEBUG)
 
 
 # использовать прокси (пиратские сайты обычно лочат ваш ип, так что смотрите за этим)

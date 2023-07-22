@@ -1814,7 +1814,7 @@ def image_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
-    chat_id_full = message.chat.id
+    chat_id_full = get_topic_id(message)
 
     with semaphore_talks:
         help = """/image <текстовое описание картинки, что надо нарисовать>
@@ -2224,7 +2224,7 @@ def bard_mode(message: telebot.types.Message):
     global BARD_MODE
 
     chat_id = message.chat.id
-    chat_id_full = get_topic_id(chat_id)
+    chat_id_full = get_topic_id(message)
 
     mode = 'off'
     if chat_id_full in BARD_MODE:
@@ -2329,7 +2329,7 @@ def do_task(message, custom_prompt: str = ''):
     if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '📎Файл', '⚙️Настройки']:
         if message.text == '🎨Нарисуй':
             message.text = '/image'
-            image( message)
+            image(message)
         if message.text == '🌐Найди':
             message.text = '/google'
             google(message)

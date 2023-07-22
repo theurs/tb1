@@ -1317,11 +1317,11 @@ def set_new_model(message: telebot.types.Message):
         my_log.log_echo(message, msg)
         return
 
-    # if message.from_user.id not in cfg.admins:
-    #    msg = 'Эта команда только для админов.'
-    #    bot.reply_to(message, msg, reply_markup=get_keyboard('hide')) 
-    #    my_log.log_echo(message, msg)
-    #    return
+    if not (message.from_user.id in cfg.admins or is_admin_member(message)):
+       msg = 'Эта команда только для админов.'
+       bot.reply_to(message, msg, reply_markup=get_keyboard('hide')) 
+       my_log.log_echo(message, msg)
+       return
 
     model = message.text.split()[1]
     msg0 = f'Старая модель `{current_model}`.'

@@ -2468,9 +2468,12 @@ def do_task(message, custom_prompt: str = ''):
             summ_text(message)
             return
 
+        if chat_id_full not in SUPER_CHAT:
+            SUPER_CHAT[chat_id_full] = 0
+
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # проверяем просят ли нарисовать что-нибудь
-        if is_private:
+        if is_private or SUPER_CHAT[chat_id_full] == 1:
             if msg.startswith(('нарисуй ', 'нарисуй,')):
                 prompt = msg[8:]
                 if prompt:
@@ -2524,8 +2527,6 @@ def do_task(message, custom_prompt: str = ''):
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         # или если в чате активирован режим суперчата
-        if chat_id_full not in SUPER_CHAT:
-            SUPER_CHAT[chat_id_full] = 0
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private \
             or (not is_private and SUPER_CHAT[chat_id_full] == 1):
             if len(msg) > cfg.max_message_from_user:

@@ -1114,7 +1114,7 @@ def is_for_me(cmd: str):
         return (True, cmd)
 
 
-@bot.message_handler(commands=['config', 'uibkhhkljs'])
+@bot.message_handler(commands=['config'])
 def config(message: telebot.types.Message):
     """Меню настроек"""
     # не обрабатывать команды к другому боту /cmd@botname args
@@ -1128,7 +1128,8 @@ def config(message: telebot.types.Message):
     chat_id = message.chat.id
 
     try:
-        bot.send_message(chat_id, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id, message))
+        bot.reply_to(message, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id, message))
+        #bot.send_message(chat_id, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id, message))
     except Exception as error:
         my_log.log2(f'config:{error}')
 

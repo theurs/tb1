@@ -374,6 +374,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
     ...
     """
     chat_id_full = get_topic_id(message)
+    chat_id = message.chat.id
 
     if kbd == 'chat':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
@@ -526,7 +527,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button = telebot.types.InlineKeyboardButton('🔍История ChatGPT', callback_data='chatGPT_memory_debug')
         markup.add(button)
 
-        if flag == 'admin' or is_admin_member(message) or message.from_user.id in cfg.admins:
+        if flag == 'admin' or is_admin_member(message) or chat_id in cfg.admins:
             if chat_id_full not in SUPER_CHAT:
                 SUPER_CHAT[chat_id_full] = 0
             if SUPER_CHAT[chat_id_full] == 1:

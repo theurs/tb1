@@ -16,7 +16,7 @@ import utils
 # хранилище сессий {chat_id(int):session(bardapi.Bard),...}
 DIALOGS = {}
 # хранилище замков что бы юзеры не могли делать новые запросы пока не получен ответ на старый
-# {chat_id(int):threading.Lock(),...}
+# {chat_id(str):threading.Lock(),...}
 CHAT_LOCKS = {}
 
 # максимальный размер запроса который принимает бард, получен подбором
@@ -76,12 +76,12 @@ def get_new_session(user_name: str = ''):
     return bard
 
 
-def reset_bard_chat(dialog: int):
+def reset_bard_chat(dialog: str):
     """
     Deletes a specific dialog from the DIALOGS dictionary.
 
     Args:
-        dialog (int): The key of the dialog to be deleted.
+        dialog (str): The key of the dialog to be deleted.
 
     Returns:
         None
@@ -94,13 +94,13 @@ def reset_bard_chat(dialog: int):
     return
 
 
-def chat_request(query: str, dialog: int, reset = False, user_name: str = '') -> str:
+def chat_request(query: str, dialog: str, reset = False, user_name: str = '') -> str:
     """
     Generates a response to a chat request.
 
     Args:
         query (str): The user's query.
-        dialog (int): The dialog number.
+        dialog (str): The dialog number.
         reset (bool, optional): Whether to reset the dialog. Defaults to False.
         user_name (str, optional): The user's name. Defaults to ''.
 
@@ -189,13 +189,13 @@ def chat_request(query: str, dialog: int, reset = False, user_name: str = '') ->
         return result
 
 
-def chat_request_image(query: str, dialog: int, image: bytes, reset = False):
+def chat_request_image(query: str, dialog: str, image: bytes, reset = False):
     """
     Function to make a chat request with an image.
     
     Args:
         query (str): The query for the chat request.
-        dialog (int): The index of the dialog.
+        dialog (str): The index of the dialog.
         image (bytes): The image to be used in the chat request.
         reset (bool, optional): Whether to reset the chat dialog. Defaults to False.
     
@@ -236,13 +236,13 @@ def chat_request_image(query: str, dialog: int, image: bytes, reset = False):
     return response
 
 
-def chat(query: str, dialog: int, reset: bool = False, user_name: str = '') -> str:
+def chat(query: str, dialog: str, reset: bool = False, user_name: str = '') -> str:
     """
     Executes a chat request with the given query and dialog ID.
 
     Args:
         query (str): The query to be sent to the chat API.
-        dialog (int): The ID of the dialog to send the request to.
+        dialog (str): The ID of the dialog to send the request to.
         reset (bool, optional): Whether to reset the conversation. Defaults to False.
         user_name (str, optional): The name of the user. Defaults to ''.
 
@@ -259,13 +259,13 @@ def chat(query: str, dialog: int, reset: bool = False, user_name: str = '') -> s
     return result
 
 
-def chat_image(query: str, dialog: int, image: bytes, reset: bool = False) -> str:
+def chat_image(query: str, dialog: str, image: bytes, reset: bool = False) -> str:
     """
     Executes a chat request with an image.
 
     Args:
         query (str): The query string for the chat request.
-        dialog (int): The ID of the dialog.
+        dialog (str): The ID of the dialog.
         image (bytes): The image to be included in the chat request.
         reset (bool, optional): Whether to reset the dialog state. Defaults to False.
 

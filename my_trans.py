@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 
 
-from py_trans import PyTranslator
-from langdetect import detect, detect_langs
-import subprocess
-#import gpt_basic
 import re
+import subprocess
+
 import enchant
+from langdetect import detect, detect_langs
+from py_trans import PyTranslator
+
+import utils
 
 
 def count_russian_words_not_in_ukrainian_dict(text):
     """Считаем количество русских слов в тексте, эти слова не должны быть в украинском и белорусском"""
+    platform = utils.platform().lower()
+    if 'wind' in platform:
+        return len(text.split())
     d_ru = enchant.Dict("ru_RU")
     d_uk = enchant.Dict("uk_UA")
     russian_words = []

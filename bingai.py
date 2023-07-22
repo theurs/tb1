@@ -20,7 +20,7 @@ CHAT_LOCKS = {}
 lock_gen_img = threading.Lock()
 
 
-def reset_bing_chat(chat_id: int):
+def reset_bing_chat(chat_id: str):
     try:
         chat('', chat_id, reset=True)
     except Exception as error2:
@@ -28,7 +28,7 @@ def reset_bing_chat(chat_id: int):
         print(error2)
 
 
-async def chat_async(query: str, dialog: int, style = 3, reset = False):
+async def chat_async(query: str, dialog: str, style = 3, reset = False):
     """возвращает список, объект для поддержания диалога и ответ"""
     if reset:
         try:
@@ -75,7 +75,7 @@ async def chat_async(query: str, dialog: int, style = 3, reset = False):
     return {'text': cleaned_text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
 
 
-def chat(query: str, dialog: int, style: int = 3, reset: bool = False) -> str:
+def chat(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
     """возвращает ответ"""
     if dialog in CHAT_LOCKS:
         lock = CHAT_LOCKS[dialog]
@@ -196,9 +196,9 @@ if __name__ == "__main__":
     #print(ai('курс доллара на сегодня во владивостоке'))
     #sys.exit()
 
-    #print(ai('Официальный сайт iVentoy'))
+    #print(chat('1+1=', '[0] [None]'))
 
-    #sys.exit()
+    sys.exit()
 
     """Usage ./bingai.py 'list 10 japanese dishes"""
 

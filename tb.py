@@ -54,6 +54,7 @@ try:
 except Exception as error123:
     print(error123)
     pics_group = 0
+    pics_group_url
 
 # до 40 одновременных потоков для чата с гпт и бингом
 semaphore_talks = threading.Semaphore(40)
@@ -61,7 +62,6 @@ semaphore_talks = threading.Semaphore(40)
 # папка для постоянных словарей, памяти бота
 if not os.path.exists('db'):
     os.mkdir('db')
-
 
 # в каких чатах включен/выключен режим общения с бингом 'off' | 'on'
 BING_MODE = my_dic.PersistentDict('db/bing_mode.pkl')
@@ -93,7 +93,7 @@ SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
 # для запоминания всех сгенерированных изображений и запросов
 # тут есть ключ 'total' в котором хранится счетчик записей
 # записи состоят из counter_id: (prompt, images) где
-# counter_id - порядковый номер для возможности перечесления последних записей в обратном порядке
+# counter_id - порядковый номер для возможности перечисления последних записей в обратном порядке
 # prompt - строка запроса, что хотел нарисовать юзер
 # images - веб адреса картинок которые нарисовал ИИ по запросу
 #          пока что в этом списке по 1 картинке, выводить по несколько сразу не получается
@@ -202,12 +202,12 @@ class ShowAction(threading.Thread):
         self.stop()
 
 
-def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str:
+def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str:
     """добавляет в историю переписки с юзером его новый запрос и ответ от чатбота
     делает запрос и возвращает ответ
 
     Args:
-        chat_id (int): номер чата или юзера, нужен для хранения истории переписки
+        chat_id (str): номер чата или юзера, нужен для хранения истории переписки
         text (str): новый запрос от юзера
         engine (str, optional): 'gpt' или 'bing'. Defaults to 'gpt'.
 
@@ -231,7 +231,6 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     else:
         new_messages = []
 
-
     # теперь ее надо почистить что бы влезла в запрос к GPT
     # просто удаляем все кроме max_hist_lines последних
     if len(new_messages) > cfg.max_hist_lines:
@@ -240,7 +239,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     # удаляем по 2 сразу так как первая - промпт для бота
     while (utils.count_tokens(new_messages) > cfg.max_hist_bytes):
         new_messages = new_messages[2:]
-    
+
     # добавляем в историю новый запрос и отправляем
     new_messages = new_messages + [{"role":    "user",
                                     "content": text}]
@@ -280,7 +279,7 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
                 except Exception as error3:
                     print(error3)
                     return 'GPT не ответил.'
-                
+
                 # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
                 if resp:
                     new_messages = new_messages + [{"role":    "assistant",
@@ -362,12 +361,15 @@ def is_admin_member(message: telebot.types.Message):
     return True if 'creator' in member or 'administrator' in member else False
 
 
-def get_keyboard(kbd: str, chat_id = None, message = None) -> telebot.types.InlineKeyboardMarkup:
+def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> telebot.types.InlineKeyboardMarkup:
     """создает и возвращает клавиатуру по текстовому описанию
-    'chat' - клавиатура для чата с 3 кнопками Дальше, Забудь, Скрой
+    'chat' - клавиатура для чата
     'mem' - клавиатура для команды mem, с кнопками Забудь и Скрой
     'hide' - клавиатура с одной кнопкой Скрой
+    ...
     """
+    chat_id_full = get_topic_id(message)
+
     if kbd == 'chat':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button1 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
@@ -455,8 +457,8 @@ def get_keyboard(kbd: str, chat_id = None, message = None) -> telebot.types.Inli
     elif kbd == 'config':
         global TTS_GENDER, BING_MODE, BARD_MODE, BLOCKS
 
-        if chat_id and chat_id in TTS_GENDER:
-            voice = f'tts_{TTS_GENDER[chat_id]}'
+        if chat_id_full in TTS_GENDER:
+            voice = f'tts_{TTS_GENDER[chat_id_full]}'
         else:
             voice = 'tts_female'
 
@@ -469,11 +471,11 @@ def get_keyboard(kbd: str, chat_id = None, message = None) -> telebot.types.Inli
         voice_title = voices[voice]
 
         # бард по умолчанию
-        if chat_id not in BARD_MODE and chat_id not in BING_MODE:
-            BARD_MODE[chat_id] = 'on'
+        if chat_id_full not in BARD_MODE and chat_id_full not in BING_MODE:
+            BARD_MODE[chat_id_full] = 'on'
 
-        bing_mode = BING_MODE[chat_id] if chat_id in BING_MODE else 'off'
-        bard_mode = BARD_MODE[chat_id] if chat_id in BARD_MODE else 'off'
+        bing_mode = BING_MODE[chat_id_full] if chat_id_full in BING_MODE else 'off'
+        bard_mode = BARD_MODE[chat_id_full] if chat_id_full in BARD_MODE else 'off'
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
@@ -503,10 +505,10 @@ def get_keyboard(kbd: str, chat_id = None, message = None) -> telebot.types.Inli
         button = telebot.types.InlineKeyboardButton(f'📢Голос: {voice_title}', callback_data=voice)
         markup.add(button)
 
-        if chat_id not in BLOCKS:
-            BLOCKS[chat_id] = 1
+        if chat_id_full not in BLOCKS:
+            BLOCKS[chat_id_full] = 1
 
-        if BLOCKS[chat_id] == 1:
+        if BLOCKS[chat_id_full] == 1:
             button = telebot.types.InlineKeyboardButton(f'✅Автопереводы', callback_data='autotranslate_disable')
         else:
             button = telebot.types.InlineKeyboardButton(f'☑️Автопереводы', callback_data='autotranslate_enable')
@@ -519,10 +521,10 @@ def get_keyboard(kbd: str, chat_id = None, message = None) -> telebot.types.Inli
         button = telebot.types.InlineKeyboardButton('🔍История ChatGPT', callback_data='chatGPT_memory_debug')
         markup.add(button)
 
-        if message == 'admin' or is_admin_member(message):
-            if chat_id not in SUPER_CHAT:
-                SUPER_CHAT[chat_id] = 0
-            if SUPER_CHAT[chat_id] == 1:
+        if flag == 'admin' or is_admin_member(message) or message.from_user.id in cfg.admins:
+            if chat_id_full not in SUPER_CHAT:
+                SUPER_CHAT[chat_id_full] = 0
+            if SUPER_CHAT[chat_id_full] == 1:
                 button = telebot.types.InlineKeyboardButton('✅Автоответы в чате', callback_data='admin_chat')
             else:
                 button = telebot.types.InlineKeyboardButton('☑️Автоответы в чате', callback_data='admin_chat')
@@ -550,6 +552,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         is_private = message.chat.type == 'private'
         is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
         chat_id = message.chat.id
+        chat_id_full = get_topic_id(message)
         global DIALOGS_DB, TTS_GENDER, BING_MODE
 
         if call.data == 'image_gallery_prev_prompt':
@@ -591,7 +594,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
             #bot.edit_message_reply_markup(message.chat.id, message.message_id)
-            DIALOGS_DB[chat_id] = []
+            DIALOGS_DB[chat_id_full] = []
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
@@ -599,21 +602,22 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             return
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
-            DIALOGS_DB[chat_id] = []
+            DIALOGS_DB[chat_id_full] = []
         elif call.data == 'cancel_command':
             # обработка нажатия кнопки "Отменить ввод команды"
             global COMMAND_MODE
-            COMMAND_MODE[chat_id] = ''
+            COMMAND_MODE[chat_id_full] = ''
             bot.delete_message(message.chat.id, message.message_id)
         # режим автоответов в чате, бот отвечает на все реплики всех участников
         # комната для разговоров с ботом Ж)
         elif call.data == 'admin_chat':
             #bot.reply_to(message, 'Автоответы в чате активированы, бот будет отвечать на все реплики всех участников')
-            if chat_id in SUPER_CHAT:
-                SUPER_CHAT[chat_id] = 1 if SUPER_CHAT[chat_id] == 0 else 0
+            if chat_id_full in SUPER_CHAT:
+                SUPER_CHAT[chat_id_full] = 1 if SUPER_CHAT[chat_id_full] == 0 else 0
             else:
-                SUPER_CHAT[chat_id] = 1
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id, 'admin'))
+                SUPER_CHAT[chat_id_full] = 1
+            bot.edit_message_text(chat_id=chat_id, parse_mode='Markdown', message_id=message.message_id,
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message, 'admin'))
         elif call.data == 'erase_answer':
             # обработка нажатия кнопки "Стереть ответ"
             bot.delete_message(message.chat.id, message.message_id)
@@ -641,77 +645,92 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             with ShowAction(message, 'typing'):
                 translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
-                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('translate'))
+                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
+                                      reply_markup=get_keyboard('translate', message))
         elif call.data == 'translate_chat':
             # реакция на клавиатуру для Чата кнопка перевести текст
             with ShowAction(message, 'typing'):
                 translated = my_trans.translate_text2(message.text)
             if translated and translated != message.text:
-                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, reply_markup=get_keyboard('chat'))
+                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
+                                      reply_markup=get_keyboard('chat', message))
         elif call.data == 'restart_bard':
-            my_bard.reset_bard_chat(chat_id)
+            my_bard.reset_bard_chat(chat_id_full)
             msg = 'История диалога с бардом отчищена.'
-            bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
         elif call.data == 'restart_bing':
-            bingai.reset_bing_chat(chat_id)
+            bingai.reset_bing_chat(chat_id_full)
             msg = 'История диалога с бингом отчищена.'
-            bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
         elif call.data == 'tts_female':
-            TTS_GENDER[chat_id] = 'male'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            TTS_GENDER[chat_id_full] = 'male'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'tts_male':
-            TTS_GENDER[chat_id] = 'google_female'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            TTS_GENDER[chat_id_full] = 'google_female'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'tts_google_female':
-            TTS_GENDER[chat_id] = 'silero_xenia'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            TTS_GENDER[chat_id_full] = 'silero_xenia'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'tts_silero_xenia':
-            TTS_GENDER[chat_id] = 'silero_aidar'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            TTS_GENDER[chat_id_full] = 'silero_aidar'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'tts_silero_aidar':
-            TTS_GENDER[chat_id] = 'female'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            TTS_GENDER[chat_id_full] = 'female'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_mode_disable':
-            BING_MODE[chat_id] = 'off'
-            BARD_MODE[chat_id] = 'on'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            BING_MODE[chat_id_full] = 'off'
+            BARD_MODE[chat_id_full] = 'on'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_mode_enable':
-            BING_MODE[chat_id] = 'off'
-            BARD_MODE[chat_id] = 'off'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            BING_MODE[chat_id_full] = 'off'
+            BARD_MODE[chat_id_full] = 'off'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bing_mode_enable':
-            BING_MODE[chat_id] = 'on'
-            BARD_MODE[chat_id] = 'off'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            BING_MODE[chat_id_full] = 'on'
+            BARD_MODE[chat_id_full] = 'off'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bing_mode_disable':
-            BING_MODE[chat_id] = 'off'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            BING_MODE[chat_id_full] = 'off'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bard_mode_enable':
-            BARD_MODE[chat_id] = 'on'
-            BING_MODE[chat_id] = 'off'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            BARD_MODE[chat_id_full] = 'on'
+            BING_MODE[chat_id_full] = 'off'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bard_mode_disable':
-            BARD_MODE[chat_id] = 'off'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            BARD_MODE[chat_id_full] = 'off'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'autotranslate_disable':
-            BLOCKS[chat_id] = 0
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            BLOCKS[chat_id_full] = 0
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'autotranslate_enable':
-            BLOCKS[chat_id] = 1
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id))
+            BLOCKS[chat_id_full] = 1
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_reset':
-            DIALOGS_DB[chat_id] = []
+            DIALOGS_DB[chat_id_full] = []
         elif call.data == 'bingAI_reset':
-            bingai.reset_bing_chat(chat_id)
+            bingai.reset_bing_chat(chat_id_full)
         elif call.data == 'bardAI_reset':
-            my_bard.reset_bard_chat(chat_id)
+            my_bard.reset_bard_chat(chat_id_full)
         elif call.data == 'chatGPT_memory_debug':
             send_debug_history(message)
 
 
-def check_blocks(chat_id: int) -> bool:
+def check_blocks(chat_id: str) -> bool:
     global BLOCKS
     if chat_id not in BLOCKS:
         BLOCKS[chat_id] = 1
@@ -728,7 +747,7 @@ def handle_voice_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
-    if check_blocks(message.chat.id):
+    if check_blocks(get_topic_id(message)):
         return
 
     with semaphore_talks:
@@ -758,10 +777,10 @@ def handle_voice_thread(message: telebot.types.Message):
                 if len(text) > 500:
                     text = my_bard.clear_voice_message_text(text)
                     my_log.log2(f'[ASR after bard] {text}')
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
+                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, f'[ASR] {text}')
             else:
-                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, '[ASR] no results')
 
             # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
@@ -781,8 +800,9 @@ def handle_document_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
 
-    if chat_id in COMMAND_MODE and COMMAND_MODE[chat_id] == 'wait_for_file':
+    if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'wait_for_file':
         with semaphore_talks:
             with ShowAction(message, 'typing'):
                 # скачиваем файл во временный файл
@@ -803,25 +823,25 @@ def handle_document_thread(message: telebot.types.Message):
                 os.remove(output_file)
 
                 if not text:
-                    bot.reply_to(message, 'Не удалось прочитать текст из файла.', reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, 'Не удалось прочитать текст из файла.', reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, '[FILE UPLOAD FAILED] не удалось прочитать текст из файла')
                     return
                 file_size = len(downloaded_file)
 
-                FILES_DB[chat_id] = {}
-                FILES_DB[chat_id]['text'] = text
-                FILES_DB[chat_id]['size'] = file_size
-                FILES_DB[chat_id]['name'] = file_name
-                FILES_DB[chat_id]['original_bytes'] = downloaded_file
+                FILES_DB[chat_id_full] = {}
+                FILES_DB[chat_id_full]['text'] = text
+                FILES_DB[chat_id_full]['size'] = file_size
+                FILES_DB[chat_id_full]['name'] = file_name
+                FILES_DB[chat_id_full]['original_bytes'] = downloaded_file
 
                 msg = f'Загружен файл: {file_name} ({file_size} байт, {len(text)} символов)\n\nЗадавайте вопрос по этому файлу или отправьте другой'
-                bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode'))
+                bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode', message))
                 my_log.log_echo(message, f'[FILE UPLOADED] {msg}')
 
                 return
 
 
-    if check_blocks(chat_id):
+    if check_blocks(chat_id_full):
         return
 
     with semaphore_talks:
@@ -845,11 +865,11 @@ def handle_document_thread(message: telebot.types.Message):
 
                 if text.strip():
                     summary = my_sum.summ_text(text)
-                    reply_to_long_message(message, summary, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    reply_to_long_message(message, summary, disable_web_page_preview = True, reply_markup=get_keyboard('translate', message))
                     my_log.log_echo(message, summary)
                 else:
                     help = 'Не удалось получить никакого текста из документа.'
-                    bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, help, reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, help)
                 return
 
@@ -870,15 +890,15 @@ def handle_document_thread(message: telebot.types.Message):
                         print(error2)
                     # Озвучиваем текст
                     global TTS_GENDER
-                    if chat_id in TTS_GENDER:
-                        gender = TTS_GENDER[chat_id]
+                    if chat_id_full in TTS_GENDER:
+                        gender = TTS_GENDER[chat_id_full]
                     else:
                         gender = 'female'    
                     audio = my_tts.tts(text, lang, gender=gender)
                     if message.chat.type != 'private':
-                        bot.send_voice(chat_id, audio, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide'))
+                        bot.send_voice(chat_id, audio, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide', message))
                     else:
-                        bot.send_voice(chat_id, audio, reply_markup=get_keyboard('hide'))
+                        bot.send_voice(chat_id, audio, reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, f'[tts file] {text}')
                     return
 
@@ -900,14 +920,14 @@ def handle_document_thread(message: telebot.types.Message):
                         text = my_ocr.get_text_from_image(fp.read())
                         # отправляем распознанный текст пользователю
                         if text.strip() != '':
-                            reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
+                            reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
                             my_log.log_echo(message, '[OCR] ' + text)
                         else:
-                            reply_to_long_message(message, 'Не смог распознать текст.', reply_markup=get_keyboard('translate'))
+                            reply_to_long_message(message, 'Не смог распознать текст.', reply_markup=get_keyboard('translate', message))
                             my_log.log_echo(message, '[OCR] no results')
                     return
                 if document.mime_type != 'application/pdf':
-                    bot.reply_to(message, f'Это не PDF-файл. {document.mime_type}', reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, f'Это не PDF-файл. {document.mime_type}', reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, f'Это не PDF-файл. {document.mime_type}')
                     return
                 # скачиваем документ в байтовый поток
@@ -925,11 +945,13 @@ def handle_document_thread(message: telebot.types.Message):
                     if len(text) > 4096:
                         with io.StringIO(text) as f:
                             if message.chat.type != 'private':
-                                bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide'))
+                                bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
+                                                  reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide', message))
                             else:
-                                bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, reply_markup=get_keyboard('hide'))
+                                bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
+                                                  reply_markup=get_keyboard('hide', message))
                     else:
-                        bot.reply_to(message, text, reply_markup=get_keyboard('translate'))
+                        bot.reply_to(message, text, reply_markup=get_keyboard('translate', message))
                     my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
 
 
@@ -946,18 +968,19 @@ def file_command_thread(message: telebot.types.Message):
     global DIALOGS_DB
 
     chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
 
-    if chat_id in FILES_DB and FILES_DB[chat_id]:
-        file_name = FILES_DB[chat_id]['name']
-        file_size = FILES_DB[chat_id]['size']
-        file_text = FILES_DB[chat_id]['text']
+    if chat_id_full in FILES_DB and FILES_DB[chat_id_full]:
+        file_name = FILES_DB[chat_id_full]['name']
+        file_size = FILES_DB[chat_id_full]['size']
+        file_text = FILES_DB[chat_id_full]['text']
         text_size = len(file_text)
 
         query = message.text
 
         if not query:
             msg = f'Загружен файл: {file_name} ({file_size} байт, {text_size} символов)\n\nЗадавайте вопрос по этому файлу или отправьте другой'
-            bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode'))
+            bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode', message))
             return
 
         # делаем запрос по тексту
@@ -965,11 +988,11 @@ def file_command_thread(message: telebot.types.Message):
             result = gpt_basic.query_file(query, file_name, file_size, file_text)
 
             if result:
-                bot.reply_to(message, result, reply_markup=get_keyboard('command_mode'))
+                bot.reply_to(message, result, reply_markup=get_keyboard('command_mode', message))
                 my_log.log_echo(message, result)
-                if chat_id not in DIALOGS_DB:
-                    DIALOGS_DB[chat_id] = []
-                    DIALOGS_DB[chat_id] += [{"role":    'system',
+                if chat_id_full not in DIALOGS_DB:
+                    DIALOGS_DB[chat_id_full] = []
+                    DIALOGS_DB[chat_id_full] += [{"role":    'system',
                                 "content": f'user попросил сделал запрос по содержанию файла: {query}'},
                                 {"role":    'system',
                                 "content": f'assistant ответил: {result}'}
@@ -977,20 +1000,20 @@ def file_command_thread(message: telebot.types.Message):
                 return
             else:
                 msg = f'Нет ответа по запросу: {query}'
-                bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode'))
+                bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode', message))
                 my_log.log_echo(message, msg)
-                if chat_id not in DIALOGS_DB:
-                    DIALOGS_DB[chat_id] = []
-                    DIALOGS_DB[chat_id] += [{"role":    'system',
+                if chat_id_full not in DIALOGS_DB:
+                    DIALOGS_DB[chat_id_full] = []
+                    DIALOGS_DB[chat_id_full] += [{"role":    'system',
                                 "content": f'user попросил сделал запрос по содержанию файла: {query}'},
                                 {"role":    'system',
                                 "content": f'assistant не ответил'}
                                 ]
                 return
     else:
-        COMMAND_MODE[chat_id] = 'wait_for_file'
+        COMMAND_MODE[chat_id_full] = 'wait_for_file'
         bot.reply_to(message, 'Пришлите мне файл или ссылку и я буду отвечать на запросы по тексту из этого файла',
-                     reply_markup=get_keyboard('command_mode'))
+                     reply_markup=get_keyboard('command_mode', message))
         return
 
 
@@ -1005,9 +1028,10 @@ def handle_photo_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     chat_id = message.chat.id
-    if chat_id in COMMAND_MODE:
-        if COMMAND_MODE[chat_id] == 'bardimage':
-            COMMAND_MODE[chat_id] = ''
+    chat_id_full = get_topic_id(message)
+    if chat_id_full in COMMAND_MODE:
+        if COMMAND_MODE[chat_id_full] == 'bardimage':
+            COMMAND_MODE[chat_id_full] = ''
             with semaphore_talks:
                 with ShowAction(message, 'typing'):
                     # скачиваем документ в байтовый поток
@@ -1015,14 +1039,14 @@ def handle_photo_thread(message: telebot.types.Message):
                     file_id = message.photo[-1].file_id
                     file_info = bot.get_file(file_id)
                     image = bot.download_file(file_info.file_path)
-                    description = my_bard.chat_image('What is in the image? Ответь по-русски.', chat_id, image)
+                    description = my_bard.chat_image('What is in the image? Ответь по-русски.', chat_id_full, image)
                     if description:
-                        bot.reply_to(message, description, parse_mode='Markdown', reply_markup=get_keyboard('translate'))
+                        bot.reply_to(message, description, parse_mode='Markdown', reply_markup=get_keyboard('translate', message))
                     else:
-                        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('translate'))
+                        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('translate', message))
                 return
 
-    if check_blocks(message.chat.id):
+    if check_blocks(get_topic_id(message)):
         return
 
     with semaphore_talks:
@@ -1033,7 +1057,7 @@ def handle_photo_thread(message: telebot.types.Message):
             with ShowAction(message, 'typing'):
                 text = my_trans.translate(message.caption)
             if text:
-                bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, text, reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, text)
             else:
                 my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
@@ -1056,7 +1080,7 @@ def handle_photo_thread(message: telebot.types.Message):
             text = my_ocr.get_text_from_image(fp.read())
             # отправляем распознанный текст пользователю
             if text.strip() != '':
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
+                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, '[OCR] ' + text)
             else:
                 my_log.log_echo(message, '[OCR] no results')
@@ -1072,7 +1096,7 @@ def handle_video_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
-    if check_blocks(message.chat.id):
+    if check_blocks(get_topic_id(message)):
         return
 
     with semaphore_talks:
@@ -1081,7 +1105,7 @@ def handle_video_thread(message: telebot.types.Message):
             # у видео нет текста но есть заголовок caption. его и будем переводить
             text = my_trans.translate(message.caption)
             if text:
-                bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, text, reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, text)
             else:
                 my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
@@ -1104,10 +1128,10 @@ def handle_video_thread(message: telebot.types.Message):
             os.remove(file_path)
             # Отправляем распознанный текст 
             if text.strip() != '':
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))
+                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, f'[ASR] {text}')
             else:
-                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, '[ASR] no results')
 
 
@@ -1142,10 +1166,13 @@ def config(message: telebot.types.Message):
         my_log.log2(f'config:{error}')
 
     my_log.log_echo(message)
-    chat_id = message.chat.id
+
+
+    my_log.log2(get_topic_id(message))
+
 
     try:
-        bot.reply_to(message, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id, message))
+        bot.reply_to(message, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', message))
     except Exception as error:
         my_log.log2(f'config:{error}')
 
@@ -1168,11 +1195,12 @@ def change_mode(message: telebot.types.Message):
     global PROMPTS
 
     chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
 
     # в каждом чате свой собственный промт
-    if chat_id not in PROMPTS:
+    if chat_id_full not in PROMPTS:
         # по умолчанию формальный стиль
-        PROMPTS[chat_id] = [{"role": "system", "content": utils.gpt_start_message1}]
+        PROMPTS[chat_id_full] = [{"role": "system", "content": utils.gpt_start_message1}]
 
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
@@ -1186,14 +1214,14 @@ def change_mode(message: telebot.types.Message):
             new_prompt = utils.gpt_start_message4
         else:
             new_prompt = arg[0]
-        PROMPTS[chat_id] =  [{"role": "system", "content": new_prompt}]
+        PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
         msg =  f'[Новая роль установлена] `{new_prompt}`'
-        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, msg)
     else:
         msg = f"""Текущий стиль
         
-`{PROMPTS[message.chat.id][0]['content']}`
+`{PROMPTS[chat_id_full][0]['content']}`
         
 Меняет роль бота, строку с указаниями что и как говорить. Работает только для ChatGPT.
 
@@ -1210,8 +1238,8 @@ def change_mode(message: telebot.types.Message):
 Напишите свой текст или цифру одного из готовых стилей
     """
         global COMMAND_MODE
-        COMMAND_MODE[message.chat.id] = 'style'
-        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode'))
+        COMMAND_MODE[chat_id_full] = 'style'
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
         my_log.log_echo(message, msg)
 
 
@@ -1229,15 +1257,15 @@ def send_debug_history(message: telebot.types.Message):
     
     global DIALOGS_DB
         
-    chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
         
     # создаем новую историю диалогов с юзером из старой если есть
     messages = []
-    if chat_id in DIALOGS_DB:
-        messages = DIALOGS_DB[chat_id]
+    if chat_id_full in DIALOGS_DB:
+        messages = DIALOGS_DB[chat_id_full]
     prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
     my_log.log_echo(message, prompt)
-    reply_to_long_message(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
+    reply_to_long_message(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
 @bot.message_handler(commands=['restart']) 
@@ -1246,7 +1274,7 @@ def restart(message: telebot.types.Message):
     if message.from_user.id in cfg.admins:
         bot.stop_polling()
     else:
-        bot.reply_to(message, 'Эта команда только для админов.', reply_markup=get_keyboard('hide'))
+        bot.reply_to(message, 'Эта команда только для админов.', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['ttsmale']) 
@@ -1263,9 +1291,9 @@ def tts_male_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     global TTS_GENDER
-    TTS_GENDER[message.chat.id] = 'male'
+    TTS_GENDER[get_topic_id(message)] = 'male'
     
-    bot.reply_to(message, 'Голос TTS теперь мужской', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, 'Голос TTS теперь мужской', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['ttsfemale']) 
@@ -1282,9 +1310,9 @@ def tts_female_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     global TTS_GENDER
-    TTS_GENDER[message.chat.id] = 'female'
+    TTS_GENDER[get_topic_id(message)] = 'female'
     
-    bot.reply_to(message, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['bingreset']) 
@@ -1300,9 +1328,9 @@ def bingreset_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
     
-    chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
 
-    bingai.reset_bing_chat(chat_id)
+    bingai.reset_bing_chat(chat_id_full)
 
     msg = 'История диалога с бингом отчищена.'
     bot.reply_to(message, msg)
@@ -1314,9 +1342,10 @@ def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
 
     chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
 
-    if chat_id in gpt_basic.CUSTOM_MODELS:
-        current_model = gpt_basic.CUSTOM_MODELS[chat_id]
+    if chat_id_full in gpt_basic.CUSTOM_MODELS:
+        current_model = gpt_basic.CUSTOM_MODELS[chat_id_full]
     else:
         current_model = cfg.model
 
@@ -1336,22 +1365,22 @@ def set_new_model(message: telebot.types.Message):
 `/model claude-instant-100k`
 `/model claude-2-100k`
 """
-        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide')) 
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message)) 
         my_log.log_echo(message, msg)
         return
 
     if not (message.from_user.id in cfg.admins or is_admin_member(message)):
        msg = 'Эта команда только для админов.'
-       bot.reply_to(message, msg, reply_markup=get_keyboard('hide')) 
+       bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
        my_log.log_echo(message, msg)
        return
 
     model = message.text.split()[1]
     msg0 = f'Старая модель `{current_model}`.'
     msg = f'Установлена новая модель `{model}`.'
-    gpt_basic.CUSTOM_MODELS[chat_id] = model
-    bot.reply_to(message, msg0, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+    gpt_basic.CUSTOM_MODELS[chat_id_full] = model
+    bot.reply_to(message, msg0, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
+    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, msg0)
     my_log.log_echo(message, msg)
 
@@ -1370,9 +1399,9 @@ def tts_google_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     global TTS_GENDER
-    TTS_GENDER[message.chat.id] = 'google_female'
+    TTS_GENDER[get_topic_id(message)] = 'google_female'
     
-    bot.reply_to(message, 'Голос TTS теперь женский от Гугла', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, 'Голос TTS теперь женский от Гугла', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['ttssileroxenia'])
@@ -1389,9 +1418,9 @@ def tts_silero_xenia_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     global TTS_GENDER
-    TTS_GENDER[message.chat.id] = 'silero_xenia'
-    
-    bot.reply_to(message, 'Голос TTS теперь женский от Silero [xenia]', reply_markup=get_keyboard('hide'))
+    TTS_GENDER[get_topic_id(message)] = 'silero_xenia'
+
+    bot.reply_to(message, 'Голос TTS теперь женский от Silero [xenia]', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['ttssileroaidar'])
@@ -1408,9 +1437,9 @@ def tts_silero_aidar_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     global TTS_GENDER
-    TTS_GENDER[message.chat.id] = 'silero_aidar'
-    
-    bot.reply_to(message, 'Голос TTS теперь мужской от Silero [aidar]', reply_markup=get_keyboard('hide'))
+    TTS_GENDER[get_topic_id(message)] = 'silero_aidar'
+
+    bot.reply_to(message, 'Голос TTS теперь мужской от Silero [aidar]', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['tts']) 
@@ -1428,6 +1457,8 @@ def tts_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
+    chat_id_full = get_topic_id(message)
+
     urls = re.findall(r'^/tts\s*(https?://[^\s]+)?$', message.text.lower())
 
     # обрабатываем урл, просто достаем текст и показываем с клавиатурой для озвучки
@@ -1439,7 +1470,7 @@ def tts_thread(message: telebot.types.Message):
         else:
             text = my_google.download_text([url, ], 100000, no_links = True)
         if text:
-            reply_to_long_message(message, text, reply_markup=get_keyboard('translate'), disable_web_page_preview=True)
+            reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message), disable_web_page_preview=True)
         return
 
     # разбираем параметры
@@ -1473,31 +1504,32 @@ def tts_thread(message: telebot.types.Message):
 """
 
         global COMMAND_MODE
-        COMMAND_MODE[message.chat.id] = 'tts'
-        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode'))
+
+        COMMAND_MODE[chat_id_full] = 'tts'
+        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
         my_log.log_echo(message, help)
         return
 
     with semaphore_talks:
         with ShowAction(message, 'record_audio'):
             global TTS_GENDER
-            if message.chat.id in TTS_GENDER:
-                gender = TTS_GENDER[message.chat.id]
+            if chat_id_full in TTS_GENDER:
+                gender = TTS_GENDER[chat_id_full]
             else:
                 gender = 'female'
             audio = my_tts.tts(text, lang, rate, gender=gender)
             if audio:
                 if message.chat.type != 'private':
-                    bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide'))
+                    bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide', message))
                 else:
-                    bot.send_voice(message.chat.id, audio, reply_markup=get_keyboard('hide'))
+                    bot.send_voice(message.chat.id, audio, reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, '[Отправил голосовое сообщение]')
             else:
                 msg = 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.'
                 if message.chat.type != 'private':
-                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
                 else:
-                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, msg)
 
 
@@ -1516,6 +1548,7 @@ def google_thread(message: telebot.types.Message):
 
     global DIALOGS_DB
     chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
 
     try:
         q = message.text.split(maxsplit=1)[1]
@@ -1540,22 +1573,22 @@ def google_thread(message: telebot.types.Message):
 Напишите запрос в гугл
 """
         global COMMAND_MODE
-        COMMAND_MODE[message.chat.id] = 'google'
-        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode'))
+        COMMAND_MODE[chat_id_full] = 'google'
+        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
         return
         
     with ShowAction(message, 'typing'):
         r = my_google.search(q)
         try:
-            bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
-            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
         my_log.log_echo(message, r)
         
-        if chat_id not in DIALOGS_DB:
-            DIALOGS_DB[chat_id] = []
-        DIALOGS_DB[chat_id] += [{"role":    'system',
+        if chat_id_full not in DIALOGS_DB:
+            DIALOGS_DB[chat_id_full] = []
+        DIALOGS_DB[chat_id_full] += [{"role":    'system',
                                 "content": f'user попросил сделать запрос в Google: {q}'},
                                 {"role":    'system',
                                 "content": f'assistant поискал в Google и ответил: {r}'}
@@ -1577,6 +1610,7 @@ def ddg_thread(message: telebot.types.Message):
 
     global DIALOGS_DB
     chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
 
     try:
         q = message.text.split(maxsplit=1)[1]
@@ -1601,22 +1635,22 @@ def ddg_thread(message: telebot.types.Message):
 Напишите свой запрос в DuckDuckGo
 """
         global COMMAND_MODE
-        COMMAND_MODE[message.chat.id] = 'ddg'
-        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode'))
+        COMMAND_MODE[chat_id_full] = 'ddg'
+        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
         return
 
     with ShowAction(message, 'typing'):
         r = my_google.search_ddg(q)
         try:
-            bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
-            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
         my_log.log_echo(message, r)
         
-        if chat_id not in DIALOGS_DB:
-            DIALOGS_DB[chat_id] = []
-        DIALOGS_DB[chat_id] += [{"role":    'system',
+        if chat_id_full not in DIALOGS_DB:
+            DIALOGS_DB[chat_id_full] = []
+        DIALOGS_DB[chat_id_full] += [{"role":    'system',
                                 "content": f'user попросил сделать запрос в Google: {q}'},
                                 {"role":    'system',
                                 "content": f'assistant поискал в Google и ответил: {r}'}
@@ -1649,7 +1683,7 @@ def images_thread(message: telebot.types.Message):
         show_gallery(message, ttl, update = False)
     else:
         msg = 'В галерее пусто'
-        bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, msg)
 
 
@@ -1669,14 +1703,15 @@ def show_gallery(message: telebot.types.Message, cur: int, update: bool):
 
         if update:
             try:
-                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
+                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=msg, 
+                reply_markup=get_keyboard('image_gallery', message), parse_mode = 'HTML')
             except telebot.apihelper.ApiTelegramException as error:
                 if 'message is not modified:' in str(error):
                     pass
                 else:
                     raise error
         else:
-            bot.reply_to(message, msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
+            bot.reply_to(message, msg, reply_markup=get_keyboard('image_gallery', message), parse_mode = 'HTML')
 
 
 @bot.message_handler(commands=['gallery','gal'])
@@ -1737,7 +1772,7 @@ def html_gallery_thread(message: telebot.types.Message):
     bytes_io = io.BytesIO(html.encode('utf-8'))
     bytes_io.seek(0)
     bytes_io.name = f'gallery {current_time}.html'
-    bot.send_document(message.chat.id, bytes_io, caption=f'gallery {current_time}.html', reply_markup=get_keyboard('hide'))
+    bot.send_document(message.chat.id, bytes_io, caption=f'gallery {current_time}.html', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['bardimage',])
@@ -1756,8 +1791,8 @@ def bardimage(message: telebot.types.Message):
     help = """Отправьте картинку и я попытаюсь понять что на ней изображено"""
     
     global COMMAND_MODE
-    COMMAND_MODE[message.chat.id] = 'bardimage'
-    bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
+    COMMAND_MODE[get_topic_id(message)] = 'bardimage'
+    bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
 @bot.message_handler(commands=['image','img'])
@@ -1772,6 +1807,8 @@ def image_thread(message: telebot.types.Message):
     else: return
 
     my_log.log_echo(message)
+
+    chat_id_full = message.chat.id
 
     with semaphore_talks:
         help = """/image <текстовое описание картинки, что надо нарисовать>
@@ -1812,27 +1849,29 @@ def image_thread(message: telebot.types.Message):
                         caption += f'{i.message_id} '
                     caption += '\n'
                     caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
-                    bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
+                    bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
+                    reply_markup=get_keyboard('hide_image', message))
                     my_log.log_echo(message, '[image gen] ')
 
                     n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
-                    if chat_id in DIALOGS_DB:
-                        DIALOGS_DB[chat_id] += n
+                    if chat_id_full in DIALOGS_DB:
+                        DIALOGS_DB[chat_id_full] += n
                     else:
-                        DIALOGS_DB[chat_id] = n
+                        DIALOGS_DB[chat_id_full] = n
                     
                 else:
-                    bot.reply_to(message, 'Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, 'Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', 
+                    reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, '[image gen error] ')
                     n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant не захотел или не смог нарисовать это с помощью DALL-E'}]
-                    if chat_id in DIALOGS_DB:
-                        DIALOGS_DB[chat_id] += n
+                    if chat_id_full in DIALOGS_DB:
+                        DIALOGS_DB[chat_id_full] += n
                     else:
-                        DIALOGS_DB[chat_id] = n
+                        DIALOGS_DB[chat_id_full] = n
         else:
             global COMMAND_MODE
-            COMMAND_MODE[message.chat.id] = 'image'
-            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
+            COMMAND_MODE[chat_id_full] = 'image'
+            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
             my_log.log_echo(message, help)
 
 
@@ -1848,6 +1887,7 @@ def summ_text_thread(message: telebot.types.Message):
 
     global SUM_CACHE, DIALOGS_DB
     chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
 
     my_log.log_echo(message)
 
@@ -1867,11 +1907,11 @@ def summ_text_thread(message: telebot.types.Message):
                 if url in SUM_CACHE:
                     r = SUM_CACHE[url]
                 if r:
-                    reply_to_long_message(message, r, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                    reply_to_long_message(message, r, disable_web_page_preview = True, reply_markup=get_keyboard('translate', message))
                     my_log.log_echo(message, r)
-                    if chat_id not in DIALOGS_DB:
-                        DIALOGS_DB[chat_id] = []
-                    DIALOGS_DB[chat_id] += [{"role":    'system',
+                    if chat_id_full not in DIALOGS_DB:
+                        DIALOGS_DB[chat_id_full] = []
+                    DIALOGS_DB[chat_id_full] += [{"role":    'system',
                                 "content": f'user попросил кратко пересказать содержание текста по ссылке/из файла'},
                                 {"role":    'system',
                                 "content": f'assistant прочитал и ответил: {r}'}
@@ -1885,16 +1925,16 @@ def summ_text_thread(message: telebot.types.Message):
                     except Exception as error2:
                         print(error2)
                         m = 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`'
-                        bot.reply_to(message, m, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+                        bot.reply_to(message, m, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
                         my_log.log_echo(message, m)
                         return
                     if res:
-                        reply_to_long_message(message, res, disable_web_page_preview = True, reply_markup=get_keyboard('translate'))
+                        reply_to_long_message(message, res, disable_web_page_preview = True, reply_markup=get_keyboard('translate', message))
                         my_log.log_echo(message, res)
                         SUM_CACHE[url] = res
-                        if chat_id not in DIALOGS_DB:
-                            DIALOGS_DB[chat_id] = []
-                        DIALOGS_DB[chat_id] += [{"role":    'system',
+                        if chat_id_full not in DIALOGS_DB:
+                            DIALOGS_DB[chat_id_full] = []
+                        DIALOGS_DB[chat_id_full] += [{"role":    'system',
                                 "content": f'user попросил кратко пересказать содержание текста по ссылке/из файла'},
                                 {"role":    'system',
                                 "content": f'assistant прочитал и ответил: {res}'}
@@ -1902,15 +1942,15 @@ def summ_text_thread(message: telebot.types.Message):
                         return
                     else:
                         error = 'Не смог прочитать текст с этой страницы.'
-                        bot.reply_to(message, error, reply_markup=get_keyboard('hide'))
+                        bot.reply_to(message, error, reply_markup=get_keyboard('hide', message))
                         my_log.log_echo(message, error)
                         return
     help = """Пример: /sum https://youtu.be/3i123i6Bf-U
 
 Давайте вашу ссылку и я перескажу содержание"""
     global COMMAND_MODE
-    COMMAND_MODE[message.chat.id] = 'sum'
-    bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
+    COMMAND_MODE[chat_id_full] = 'sum'
+    bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
     my_log.log_echo(message, help)
 
 
@@ -1973,7 +2013,7 @@ def trans_thread(message: telebot.types.Message):
         else:
             global COMMAND_MODE
             COMMAND_MODE[message.chat.id] = 'trans'
-            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
+            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
             my_log.log_echo(message, help)
             return
         lang = lang.strip()
@@ -1982,11 +2022,11 @@ def trans_thread(message: telebot.types.Message):
         with ShowAction(message, 'typing'):
             translated = my_trans.translate_text2(text, lang)
             if translated:
-                bot.reply_to(message, translated, reply_markup=get_keyboard('translate'))
+                bot.reply_to(message, translated, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, translated)
             else:
                 msg = 'Ошибка перевода'
-                bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, msg)
 
 
@@ -2003,6 +2043,8 @@ def last_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
+    chat_id_full = get_topic_id(message)
+
     with semaphore_talks:
         args = message.text.split()
         help = """/last [X] - показать сумморизацию истории чата за последние Х сообщений, либо все какие есть в памяти. X = от 1 до 60000
@@ -2016,23 +2058,23 @@ def last_thread(message: telebot.types.Message):
                 limit = x
             except Exception as error:
                 print(error)
-                bot.reply_to(message, help, reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, help, reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, help)
                 return
         elif len(args) > 2:
             global COMMAND_MODE
-            COMMAND_MODE[message.chat.id] = 'last'
-            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode'))
+            COMMAND_MODE[chat_id_full] = 'last'
+            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
             my_log.log_echo(message, help)
             return
         else:
             limit = 60000
 
-        if message.chat.id in CHAT_LOGS:
-            messages = CHAT_LOGS[message.chat.id]
+        if chat_id_full in CHAT_LOGS:
+            messages = CHAT_LOGS[chat_id_full]
         else:
             mes = 'История пуста'
-            bot.reply_to(message, mes, reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, mes, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, mes)
             return
 
@@ -2047,15 +2089,15 @@ def last_thread(message: telebot.types.Message):
                 resp = f'Сумморизация последних {limit} сообщений в чате {message.chat.username or message.chat.first_name or message.chat.title or "unknown"}\n\n' + resp
                 # пробуем отправить в приват а если не получилось то в общий чат
                 try:
-                    bot.send_message(message.from_user.id, resp, disable_web_page_preview=True, reply_markup=get_keyboard('translate'))
+                    bot.send_message(message.from_user.id, resp, disable_web_page_preview=True, reply_markup=get_keyboard('translate', message))
                 except Exception as error:
                     print(error)
                     my_log.log2(str(error))
-                    bot.reply_to(message, resp, disable_web_page_preview=True, reply_markup=get_keyboard('translate'))
+                    bot.reply_to(message, resp, disable_web_page_preview=True, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, resp)
             else:
                 mes = 'Бинг не ответил'
-                bot.reply_to(message, mes, reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, mes, reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, mes)
 
 
@@ -2069,6 +2111,8 @@ def send_name(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
+    chat_id_full = get_topic_id(message)
+
     BAD_NAMES = ('бинг', 'гугл', 'утка', 'нарисуй')
     args = message.text.split()
     if len(args) > 1:
@@ -2079,21 +2123,21 @@ def send_name(message: telebot.types.Message):
         if re.match(regex, new_name) and len(new_name) <= 10 \
                     and new_name.lower() not in BAD_NAMES:
             global BOT_NAMES
-            BOT_NAMES[message.chat.id] = new_name.lower()
+            BOT_NAMES[chat_id_full] = new_name.lower()
             msg = f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.'
-            bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
         else:
             msg = f"Неправильное имя, можно только русские и английские буквы и цифры после букв, \
 не больше 10 всего. Имена {', '.join(BAD_NAMES) if BAD_NAMES else ''} уже заняты."
-            bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
     else:
         help = f"Напишите новое имя бота и я поменяю его, только русские и английские буквы и цифры после букв, \
 не больше 10 всего. Имена {', '.join(BAD_NAMES) if BAD_NAMES else ''} уже заняты."
         global COMMAND_MODE
-        COMMAND_MODE[message.chat.id] = 'name'
-        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode'))
+        COMMAND_MODE[chat_id_full] = 'name'
+        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
 @bot.message_handler(commands=['start'])
@@ -2115,7 +2159,7 @@ def send_welcome_start(message: telebot.types.Message):
 Спасибо, что выбрали меня в качестве своего помощника! Я буду стараться быть максимально полезным для вас.
 
 Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп."""
-    bot.reply_to(message, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('start'))
+    bot.reply_to(message, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
     my_log.log_echo(message, help)
 
 
@@ -2157,7 +2201,7 @@ def send_welcome_help(message: telebot.types.Message):
 
 """ + '\n'.join(open('commands.txt', encoding='utf8').readlines()) + '\n\n⚙️ https://github.com/theurs/tb1\n\n💬 https://t.me/theurs'
 
-    bot.reply_to(message, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, help)
     my_log.log2(str(message))
 
@@ -2174,19 +2218,20 @@ def bard_mode(message: telebot.types.Message):
     global BARD_MODE
 
     chat_id = message.chat.id
+    chat_id_full = get_topic_id(chat_id)
 
     mode = 'off'
-    if chat_id in BARD_MODE:
-        mode = BARD_MODE[chat_id]
+    if chat_id_full in BARD_MODE:
+        mode = BARD_MODE[chat_id_full]
 
     if mode == 'off': mode = 'on'
     else: mode = 'off'
 
-    BARD_MODE[chat_id] = mode
+    BARD_MODE[chat_id_full] = mode
 
     msg = f'Режим диалога с BARD AI {mode}'
 
-    bot.reply_to(message, msg, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, msg, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
 
     my_log.log_echo(message, msg)
 
@@ -2203,24 +2248,25 @@ def bing_mode(message: telebot.types.Message):
     global BING_MODE
 
     chat_id = message.chat.id
+    chat_id_full = get_topic_id(message)
 
     mode = 'off'
-    if chat_id in BING_MODE:
-        mode = BING_MODE[chat_id]
+    if chat_id_full in BING_MODE:
+        mode = BING_MODE[chat_id_full]
 
     if mode == 'off': mode = 'on'
     else: mode = 'off'
 
-    BING_MODE[chat_id] = mode
+    BING_MODE[chat_id_full] = mode
 
     msg = f'Режим диалога с BING AI {mode}'
 
-    bot.reply_to(message, msg, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, msg, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
 
     my_log.log_echo(message, msg)
 
 
-def send_long_message(chat_id: int, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
+def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
                       reply_markup: telebot.types.InlineKeyboardMarkup = None):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
     if len(resp) < 20000:
@@ -2314,6 +2360,7 @@ def do_task(message, custom_prompt: str = ''):
         is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
         # id куда писать ответ
         chat_id = message.chat.id
+        chat_id_full = get_topic_id(message)
 
         # удаляем пробелы в конце каждой строки
         message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
@@ -2323,40 +2370,40 @@ def do_task(message, custom_prompt: str = ''):
         global BLOCKS, BOT_NAMES, CHAT_LOGS, DIALOGS_DB, BING_MODE, BARD_MODE, COMMAND_MODE
 
         # если предварительно была введена какая то команда то этот текст надо отправить в неё
-        if chat_id in COMMAND_MODE:
-            if COMMAND_MODE[chat_id]:
-                if COMMAND_MODE[chat_id] == 'image':
+        if chat_id_full in COMMAND_MODE:
+            if COMMAND_MODE[chat_id_full]:
+                if COMMAND_MODE[chat_id_full] == 'image':
                     message.text = f'/image {message.text}'
                     image(message)
-                elif COMMAND_MODE[chat_id] == 'tts':
+                elif COMMAND_MODE[chat_id_full] == 'tts':
                     message.text = f'/tts {message.text}'
                     tts(message)
-                elif COMMAND_MODE[chat_id] == 'trans':
+                elif COMMAND_MODE[chat_id_full] == 'trans':
                     message.text = f'/trans {message.text}'
                     trans(message)
-                elif COMMAND_MODE[chat_id] == 'google':
+                elif COMMAND_MODE[chat_id_full] == 'google':
                     message.text = f'/google {message.text}'
                     google(message)
-                elif COMMAND_MODE[chat_id] == 'ddg':
+                elif COMMAND_MODE[chat_id_full] == 'ddg':
                     message.text = f'/ddg {message.text}'
                     ddg(message)
-                elif COMMAND_MODE[chat_id] == 'name':
+                elif COMMAND_MODE[chat_id_full] == 'name':
                     message.text = f'/name {message.text}'
                     send_name(message)
-                elif COMMAND_MODE[chat_id] == 'style':
+                elif COMMAND_MODE[chat_id_full] == 'style':
                     message.text = f'/style {message.text}'
                     change_mode(message)
-                elif COMMAND_MODE[chat_id] == 'last':
+                elif COMMAND_MODE[chat_id_full] == 'last':
                     message.text = f'/last {message.text}'
                     last(message)
-                elif COMMAND_MODE[chat_id] == 'sum':
+                elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
-                elif COMMAND_MODE[chat_id] == 'wait_for_file':
+                elif COMMAND_MODE[chat_id_full] == 'wait_for_file':
                     file_command(message)
                     # возврат что бы не отключать файловый режим
                     return
-                COMMAND_MODE[chat_id] = ''
+                COMMAND_MODE[chat_id_full] = ''
                 return
 
         # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
@@ -2364,43 +2411,43 @@ def do_task(message, custom_prompt: str = ''):
             #time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
             time_now = datetime.datetime.now().strftime('%H:%M')
             user_name = message.from_user.first_name or message.from_user.username or 'unknown'
-            if chat_id in CHAT_LOGS:
-                m = CHAT_LOGS[chat_id]
+            if chat_id_full in CHAT_LOGS:
+                m = CHAT_LOGS[chat_id_full]
             else:
                 m = utils.MessageList()
             m.append(f'[{time_now}] [{user_name}] {message.text}')
-            CHAT_LOGS[chat_id] = m
+            CHAT_LOGS[chat_id_full] = m
     
         # определяем какое имя у бота в этом чате, на какое слово он отзывается
-        if chat_id in BOT_NAMES:
-            bot_name = BOT_NAMES[chat_id]
+        if chat_id_full in BOT_NAMES:
+            bot_name = BOT_NAMES[chat_id_full]
         else:
             bot_name = BOT_NAME_DEFAULT
-            BOT_NAMES[chat_id] = bot_name 
+            BOT_NAMES[chat_id_full] = bot_name 
         # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
         if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
-            BLOCKS[chat_id] = 1
-            bot.reply_to(message, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            BLOCKS[chat_id_full] = 1
+            bot.reply_to(message, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
             return
         # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
         if (msg.startswith('вернись') and (is_private or is_reply)) or msg.startswith((f'{bot_name} вернись', f'{bot_name}, вернись')):
-            BLOCKS[chat_id] = 0
-            bot.reply_to(message, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            BLOCKS[chat_id_full] = 0
+            bot.reply_to(message, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
             return
         # если сообщение начинается на 'забудь' то стираем историю общения GPT
         if (msg.startswith('забудь') and (is_private or is_reply)) or msg.startswith((f'{bot_name} забудь', f'{bot_name}, забудь')):
-            if chat_id in BARD_MODE and BARD_MODE[chat_id] == 'on':
-                my_bard.reset_bard_chat(chat_id)
+            if chat_id_full in BARD_MODE and BARD_MODE[chat_id_full] == 'on':
+                my_bard.reset_bard_chat(chat_id_full)
                 my_log.log_echo(message, 'История барда принудительно отчищена')
-            elif chat_id in BING_MODE and BING_MODE[chat_id] == 'on':
-                my_bing.reset_bing_chat(chat_id)
+            elif chat_id_full in BING_MODE and BING_MODE[chat_id_full] == 'on':
+                my_bing.reset_bing_chat(chat_id_full)
                 my_log.log_echo(message, 'История бинга принудительно отчищена')
             else:
-                DIALOGS_DB[chat_id] = []
+                DIALOGS_DB[chat_id_full] = []
                 my_log.log_echo(message, 'История GPT принудительно отчищена')
-            bot.reply_to(message, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
             return
 
         # если в сообщении только ссылка и она отправлена боту в приват
@@ -2419,10 +2466,10 @@ def do_task(message, custom_prompt: str = ''):
                     message.text = f'/image {prompt}'
                     image_thread(message)
                     n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
-                    if chat_id in DIALOGS_DB:
-                        DIALOGS_DB[chat_id] += n
+                    if chat_id_full in DIALOGS_DB:
+                        DIALOGS_DB[chat_id_full] += n
                     else:
-                        DIALOGS_DB[chat_id] = n
+                        DIALOGS_DB[chat_id_full] = n
                     return
         regex = fr'^(бинг|{bot_name})\,?\s+нарисуй\s+(.+)$'
         match = re.match(regex, msg, re.DOTALL)
@@ -2441,14 +2488,15 @@ def do_task(message, custom_prompt: str = ''):
                 return
             with ShowAction(message, 'typing'):
                 # добавляем новый запрос пользователя в историю диалога пользователя
-                resp = dialog_add_user_request(chat_id, message.text[5:], 'bing')
+                resp = dialog_add_user_request(chat_id_full, message.text[5:], 'bing')
                 if resp:
                     try:
-                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, 
+                        reply_markup=get_keyboard('chat', message))
                     except Exception as error:
                         print(error)
                         my_log.log2(resp)
-                        bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                        bot.reply_to(message, resp, disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
                     my_log.log_echo(message, resp)
 
         # можно перенаправить запрос к гуглу, но он долго отвечает
@@ -2465,10 +2513,10 @@ def do_task(message, custom_prompt: str = ''):
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         # или если в чате активирован режим суперчата
-        if chat_id not in SUPER_CHAT:
-            SUPER_CHAT[chat_id] = 0
+        if chat_id_full not in SUPER_CHAT:
+            SUPER_CHAT[chat_id_full] = 0
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private \
-            or (not is_private and SUPER_CHAT[chat_id] == 1):
+            or (not is_private and SUPER_CHAT[chat_id_full] == 1):
             if len(msg) > cfg.max_message_from_user:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
@@ -2477,31 +2525,33 @@ def do_task(message, custom_prompt: str = ''):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
 
             # если активирован режим общения с бинг чатом
-            if chat_id in BING_MODE and BING_MODE[chat_id] == 'on':
+            if chat_id_full in BING_MODE and BING_MODE[chat_id_full] == 'on':
                 with ShowAction(message, 'typing'):
                     try:
-                        answer = bingai.chat(message.text, chat_id)
+                        answer = bingai.chat(message.text, chat_id_full)
                         if answer:
                             messages_left = str(answer['messages_left'])
                             text = f"{answer['text']}\n\n{messages_left}/30"
                             try:
-                                reply_to_long_message(message, text, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('bing_chat'))
+                                reply_to_long_message(message, text, parse_mode='Markdown', disable_web_page_preview = True, 
+                                reply_markup=get_keyboard('bing_chat', message))
                             except Exception as error:
                                 print(error)
-                                reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('bing_chat'))
+                                reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, 
+                                reply_markup=get_keyboard('bing_chat', message))
                             if int(messages_left) == 1:
-                                bingai.reset_bing_chat(chat_id)
+                                bingai.reset_bing_chat(chat_id_full)
                             my_log.log_echo(message, answer['text'])
                     except Exception as error:
                         print(error)
                     return
 
             # по умолчанию всех в барда
-            if chat_id not in BARD_MODE:
-                BARD_MODE[chat_id] = 'on'
+            if chat_id_full not in BARD_MODE:
+                BARD_MODE[chat_id_full] = 'on'
 
             # если активирован режим общения с бинг чатом
-            if chat_id in BARD_MODE and BARD_MODE[chat_id] == 'on':
+            if chat_id_full in BARD_MODE and BARD_MODE[chat_id_full] == 'on':
                 if len(msg) > my_bard.MAX_REQUEST:
                     bot.reply_to(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
@@ -2510,13 +2560,15 @@ def do_task(message, custom_prompt: str = ''):
                     try:
                         # имя пользователя если есть или ник
                         user_name = message.from_user.first_name or message.from_user.username or ''
-                        answer = my_bard.chat(message.text, chat_id, user_name = user_name)
+                        answer = my_bard.chat(message.text, chat_id_full, user_name = user_name)
                         if answer:
                             try:
-                                reply_to_long_message(message, answer, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('bard_chat'))
+                                reply_to_long_message(message, answer, parse_mode='Markdown', disable_web_page_preview = True, 
+                                reply_markup=get_keyboard('bard_chat', message))
                             except Exception as error:
                                 print(error)
-                                reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('bard_chat'))
+                                reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                reply_markup=get_keyboard('bard_chat', message))
                             my_log.log_echo(message, answer)
                     except Exception as error:
                         print(error)
@@ -2525,29 +2577,33 @@ def do_task(message, custom_prompt: str = ''):
 
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, 'typing'):
-                resp = dialog_add_user_request(chat_id, message.text, 'gpt')
+                resp = dialog_add_user_request(chat_id_full, message.text, 'gpt')
                 if resp:
                     if is_private:
                         try:
-                            send_long_message(chat_id, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            send_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, 
+                            reply_markup=get_keyboard('chat', message))
                         except Exception as error2:    
                             print(error2)
                             my_log.log2(resp)
-                            send_long_message(chat_id, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            send_long_message(message, resp, parse_mode='', disable_web_page_preview = True, 
+                                                reply_markup=get_keyboard('chat', message))
                     else:
                         try:
-                            reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, 
+                            reply_markup=get_keyboard('chat', message))
                         except Exception as error2:    
                             print(error2)
                             my_log.log2(resp)
-                            reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, reply_markup=get_keyboard('chat'))
+                            reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, 
+                            reply_markup=get_keyboard('chat', message))
                     my_log.log_echo(message, resp)
         else: # смотрим надо ли переводить текст
-            if check_blocks(message.chat.id):
+            if check_blocks(get_topic_id(message)):
                 return
             text = my_trans.translate(message.text)
             if text:
-                bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('translate'))
+                bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, text)
 
 

@@ -1118,13 +1118,19 @@ def is_for_me(cmd: str):
 def config(message: telebot.types.Message):
     """Меню настроек"""
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
+    try:
+        if is_for_me(message.text): message.text = is_for_me(message.text)[1]
+        else: return
+    except Exception as error:
+        my_log.log2(f'config:{error}')
 
     my_log.log_echo(message)
     chat_id = message.chat.id
 
-    bot.send_message(chat_id, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id, message))
+    try:
+        bot.send_message(chat_id, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id, message))
+    except Exception as error:
+        my_log.log2(f'config:{error}')
 
 
 @bot.message_handler(commands=['style'])
@@ -1137,15 +1143,15 @@ def change_mode(message: telebot.types.Message):
     """
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
 
     global PROMPTS
-    
+
     chat_id = message.chat.id
-    
+
     # в каждом чате свой собственный промт
     if chat_id not in PROMPTS:
         # по умолчанию формальный стиль
@@ -1199,7 +1205,7 @@ def send_debug_history(message: telebot.types.Message):
     """
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1234,7 +1240,7 @@ def tts_male_thread(message: telebot.types.Message):
     """Переключает голос TTS на мужской"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1253,7 +1259,7 @@ def tts_female_thread(message: telebot.types.Message):
     """Переключает голос TTS на женский"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1272,7 +1278,7 @@ def bingreset_thread(message: telebot.types.Message):
     """Принудительно сбросить диалог с бингом, обнулить историю"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1341,7 +1347,7 @@ def tts_google_thread(message: telebot.types.Message):
     """Переключает голос TTS на женский"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1360,7 +1366,7 @@ def tts_silero_xenia_thread(message: telebot.types.Message):
     """Переключает голос TTS на silero xenia"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1379,7 +1385,7 @@ def tts_silero_aidar_thread(message: telebot.types.Message):
     """Переключает голос TTS на silero aidar"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1400,7 +1406,7 @@ def tts_thread(message: telebot.types.Message):
     """
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1486,7 +1492,7 @@ def google_thread(message: telebot.types.Message):
     """ищет в гугле перед ответом"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1547,7 +1553,7 @@ def ddg_thread(message: telebot.types.Message):
     """ищет в DuckDuckGo перед ответом"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1608,7 +1614,7 @@ def images_thread(message: telebot.types.Message):
     """показывает что было нагенерировано ранее"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1664,7 +1670,7 @@ def html_gallery_thread(message: telebot.types.Message):
     """генерирует картинку по описанию"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1722,7 +1728,7 @@ def bardimage(message: telebot.types.Message):
     """генерировать описание картинки с помощью гугл бард"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     # не работает нормально, всегда врёт, и зависает еще после одного запроса
@@ -1745,7 +1751,7 @@ def image_thread(message: telebot.types.Message):
     """генерирует картинку по описанию"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1820,7 +1826,7 @@ def summ_text(message: telebot.types.Message):
 def summ_text_thread(message: telebot.types.Message):
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     global SUM_CACHE, DIALOGS_DB
@@ -1921,7 +1927,7 @@ def trans(message: telebot.types.Message):
 def trans_thread(message: telebot.types.Message):
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -1975,7 +1981,7 @@ def last_thread(message: telebot.types.Message):
     """делает сумморизацию истории чата, берет последние X сообщений из чата и просит бинг сделать сумморизацию"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -2041,7 +2047,7 @@ def send_name(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -2078,7 +2084,7 @@ def send_welcome_start(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -2101,7 +2107,7 @@ def send_welcome_help(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -2132,7 +2138,7 @@ def send_welcome_help(message: telebot.types.Message):
 
 Команды и запросы можно делать голосовыми сообщениями, если отправить голосовое сообщение которое начинается на кодовое слово то бот отработает его как текстовую команду.
 
-""" + '\n'.join(open('commands.txt').readlines()) + '\n\n⚙️ https://github.com/theurs/tb1\n\n💬 https://t.me/theurs'
+""" + '\n'.join(open('commands.txt', encoding='utf8').readlines()) + '\n\n⚙️ https://github.com/theurs/tb1\n\n💬 https://t.me/theurs'
 
     bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
     my_log.log_echo(message, help)
@@ -2142,7 +2148,7 @@ def send_welcome_help(message: telebot.types.Message):
 def bard_mode(message: telebot.types.Message):
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)
@@ -2171,7 +2177,7 @@ def bard_mode(message: telebot.types.Message):
 def bing_mode(message: telebot.types.Message):
 
     # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    if is_for_me(message.text): message.text = is_for_me(message.text)[1]
     else: return
 
     my_log.log_echo(message)

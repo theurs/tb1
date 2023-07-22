@@ -16,31 +16,6 @@ import my_ckt1031GPT
 
 CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
 
-def ai_test() -> str:
-    """
-    """
-    openai.api_key = cfg.key_test
-    openai.api_base = cfg.openai_api_base_test
-    
-    #   text = open('1.txt', 'r').read()[:20000]
-    text = 'Привет как дела'
-    
-    messages = [{"role": "system", "content": "Ты искусственный интеллект отвечающий на запросы юзера."},
-                {"role": "user", "content": text}]
-
-    current_model = cfg.model_test
-
-    # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
-    сompletion = openai.ChatCompletion.create(
-        model = current_model,
-        messages=messages,
-        max_tokens=2000,
-        temperature=0.5,
-        timeout=180,
-        stream=False
-    )
-    return сompletion["choices"][0]["message"]["content"]
-
 
 def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages = None,
        second = False, chat_id = None, model_to_use: str = '') -> str:
@@ -338,12 +313,46 @@ def query_file(query: str, file_name: str, file_size: int, file_text: str) -> st
     return result
 
 
+def ai_test() -> str:
+    """
+    Generates a response using the testing OpenAI ChatCompletion API.
+
+    Returns:
+        str: The generated response.
+    """
+    openai.api_key = cfg.key_test
+    openai.api_base = cfg.openai_api_base_test
+
+    # for i in openai.Model.list()['data']:
+    #     print(i['id'])
+    # return
+
+    #   text = open('1.txt', 'r').read()[:20000]
+    text = 'Привет как дела'
+
+    messages = [{"role": "system", "content": "Ты искусственный интеллект отвечающий на запросы юзера."},
+                {"role": "user", "content": text}]
+
+    current_model = cfg.model_test
+
+    # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
+    сompletion = openai.ChatCompletion.create(
+        model = current_model,
+        messages=messages,
+        max_tokens=2000,
+        temperature=0.5,
+        timeout=180,
+        stream=False
+    )
+    return сompletion["choices"][0]["message"]["content"]
+
+
 if __name__ == '__main__':
     if cfg.all_proxy:
         os.environ['all_proxy'] = cfg.all_proxy
     
-    #print(ai_test())
-    print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
+    print(ai_test())
+    #print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
     sys.exit()
 
     if len(sys.argv) != 2:

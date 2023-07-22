@@ -103,6 +103,10 @@ IMAGES_DB = my_dic.PersistentDict('db/images_db.pkl')
 # хранилище для файлов. для вопросов к чатботам по содержимому файлов
 FILES_DB = my_dic.PersistentDict('db/files_db.pkl')
 
+# в каких чатах активирован режим суперчата, когда бот отвечает на все реплики всех участников
+# {chat_id:0|1}
+SUPER_CHAT = my_dic.PersistentDict('db/super_chat.pkl')
+
 # в каких чатах какая команда дана, как обрабатывать последующий текст
 # например после команды /image ожидаем описание картинки
 # COMMAND_MODE[chat_id] = 'google'|'image'|...
@@ -331,7 +335,17 @@ def dialog_add_user_request(chat_id: int, text: str, engine: str = 'gpt') -> str
     return resp
 
 
-def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup:
+def is_admin_member(message: telebot.types.Message):
+    """Checks if the user is an admin member of the chat."""
+    if not message:
+        return False
+    chat_id = message.chat.id
+    user_id = message.from_user.id
+    member = bot.get_chat_member(chat_id, user_id).status.lower()
+    return True if 'creator' in member or 'administrator' in member else False
+
+
+def get_keyboard(kbd: str, chat_id = None, message = None) -> telebot.types.InlineKeyboardMarkup:
     """создает и возвращает клавиатуру по текстовому описанию
     'chat' - клавиатура для чата с 3 кнопками Дальше, Забудь, Скрой
     'mem' - клавиатура для команды mem, с кнопками Забудь и Скрой
@@ -488,6 +502,15 @@ def get_keyboard(kbd: str, chat_id = None) -> telebot.types.InlineKeyboardMarkup
         button = telebot.types.InlineKeyboardButton('🔍История ChatGPT', callback_data='chatGPT_memory_debug')
         markup.add(button)
 
+        if message == 'admin' or is_admin_member(message):
+            if chat_id not in SUPER_CHAT:
+                SUPER_CHAT[chat_id] = 0
+            if SUPER_CHAT[chat_id] == 1:
+                button = telebot.types.InlineKeyboardButton('✅Автоответы в чате', callback_data='admin_chat')
+            else:
+                button = telebot.types.InlineKeyboardButton('☑️Автоответы в чате', callback_data='admin_chat')
+            markup.add(button)
+
         button = telebot.types.InlineKeyboardButton('🙈Закрыть меню', callback_data='erase_answer')
         markup.add(button)
 
@@ -565,6 +588,15 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             global COMMAND_MODE
             COMMAND_MODE[chat_id] = ''
             bot.delete_message(message.chat.id, message.message_id)
+        # режим автоответов в чате, бот отвечает на все реплики всех участников
+        # комната для разговоров с ботом Ж)
+        elif call.data == 'admin_chat':
+            #bot.reply_to(message, 'Автоответы в чате активированы, бот будет отвечать на все реплики всех участников')
+            if chat_id in SUPER_CHAT:
+                SUPER_CHAT[chat_id] = 1 if SUPER_CHAT[chat_id] == 0 else 0
+            else:
+                SUPER_CHAT[chat_id] = 1
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, text = MSG_CONFIG, reply_markup=get_keyboard('config', chat_id, 'admin'))
         elif call.data == 'erase_answer':
             # обработка нажатия кнопки "Стереть ответ"
             bot.delete_message(message.chat.id, message.message_id)
@@ -1092,7 +1124,7 @@ def config(message: telebot.types.Message):
     my_log.log_echo(message)
     chat_id = message.chat.id
 
-    bot.send_message(chat_id, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id))
+    bot.send_message(chat_id, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id, message))
 
 
 @bot.message_handler(commands=['style'])
@@ -2408,7 +2440,9 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
-        elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
+        # или если в чате активирован режим суперчата
+        elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private \
+            or (not is_private and SUPER_CHAT[chat_id] == 1):
             if len(msg) > cfg.max_message_from_user:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')

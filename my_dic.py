@@ -74,5 +74,5 @@ class PersistentDict(dict):
 
 
 if __name__ == '__main__':
-    my_dict = PersistentDict('db/blocks.pkl')
+    my_dict = PersistentDict('db/super_chat.pkl')
     pprint(my_dict)

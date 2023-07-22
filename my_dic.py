@@ -5,6 +5,8 @@ import pickle
 import threading
 from pprint import pprint
 
+import my_log
+
 
 class PersistentDict(dict):
     """Словарь который хранит состояние в файле на диске, данные сохраняются между

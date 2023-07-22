@@ -1114,7 +1114,7 @@ def is_for_me(cmd: str):
         return (True, cmd)
 
 
-@bot.message_handler(commands=['config'])
+@bot.message_handler(commands=['config', 'uibkhhkljs'])
 def config(message: telebot.types.Message):
     """Меню настроек"""
     # не обрабатывать команды к другому боту /cmd@botname args

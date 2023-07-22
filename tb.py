@@ -706,7 +706,7 @@ def handle_voice_thread(message: telebot.types.Message):
             text = text.strip()
             # Отправляем распознанный текст
             if text:
-                if len(text) > 300:
+                if len(text) > 500:
                     text = my_bard.clear_voice_message_text(text)
                     my_log.log2(f'[ASR after bard] {text}')
                 reply_to_long_message(message, text, reply_markup=get_keyboard('translate'))

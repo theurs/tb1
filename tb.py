@@ -1168,8 +1168,8 @@ def config(message: telebot.types.Message):
     my_log.log_echo(message)
 
 
-    my_log.log2(get_topic_id(message))
-    my_log.log2(str(message))
+    #my_log.log2(get_topic_id(message))
+    #my_log.log2(str(message))
 
 
     try:

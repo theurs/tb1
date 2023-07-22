@@ -634,12 +634,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'restart_bard':
             my_bard.reset_bard_chat(chat_id)
             msg = 'История диалога с бардом отчищена.'
-            bot.send_message(chat_id, msg, reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
         elif call.data == 'restart_bing':
             bingai.reset_bing_chat(chat_id)
             msg = 'История диалога с бингом отчищена.'
-            bot.send_message(chat_id, msg, reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
         elif call.data == 'tts_female':
             TTS_GENDER[chat_id] = 'male'
@@ -1016,7 +1016,7 @@ def handle_photo_thread(message: telebot.types.Message):
             with ShowAction(message.chat.id, 'typing'):
                 text = my_trans.translate(message.caption)
             if text:
-                bot.send_message(message.chat.id, text, reply_markup=get_keyboard('hide'))
+                bot.reply_to(message, text, reply_markup=get_keyboard('hide'))
                 my_log.log_echo(message, text)
             else:
                 my_log.log_echo(message, """Не удалось/понадобилось перевести.""")
@@ -1129,7 +1129,6 @@ def config(message: telebot.types.Message):
 
     try:
         bot.reply_to(message, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id, message))
-        #bot.send_message(chat_id, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', chat_id, message))
     except Exception as error:
         my_log.log2(f'config:{error}')
 
@@ -1221,7 +1220,7 @@ def send_debug_history(message: telebot.types.Message):
         messages = DIALOGS_DB[chat_id]
     prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or 'Пусто'
     my_log.log_echo(message, prompt)
-    send_long_message(chat_id, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
+    reply_to_long_message(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem'))
 
 
 @bot.message_handler(commands=['restart']) 
@@ -1249,7 +1248,7 @@ def tts_male_thread(message: telebot.types.Message):
     global TTS_GENDER
     TTS_GENDER[message.chat.id] = 'male'
     
-    bot.send_message(message.chat.id, 'Голос TTS теперь мужской', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, 'Голос TTS теперь мужской', reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['ttsfemale']) 
@@ -1268,7 +1267,7 @@ def tts_female_thread(message: telebot.types.Message):
     global TTS_GENDER
     TTS_GENDER[message.chat.id] = 'female'
     
-    bot.send_message(message.chat.id, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['bingreset']) 
@@ -1289,7 +1288,7 @@ def bingreset_thread(message: telebot.types.Message):
     bingai.reset_bing_chat(chat_id)
 
     msg = 'История диалога с бингом отчищена.'
-    bot.send_message(chat_id, msg)
+    bot.reply_to(message, msg)
     my_log.log_echo(message, msg)
 
 
@@ -1334,8 +1333,8 @@ def set_new_model(message: telebot.types.Message):
     msg0 = f'Старая модель `{current_model}`.'
     msg = f'Установлена новая модель `{model}`.'
     gpt_basic.CUSTOM_MODELS[chat_id] = model
-    bot.send_message(chat_id, msg0, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
-    bot.send_message(chat_id, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, msg0, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide'))
     my_log.log_echo(message, msg0)
     my_log.log_echo(message, msg)
 
@@ -1356,7 +1355,7 @@ def tts_google_thread(message: telebot.types.Message):
     global TTS_GENDER
     TTS_GENDER[message.chat.id] = 'google_female'
     
-    bot.send_message(message.chat.id, 'Голос TTS теперь женский от Гугла', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, 'Голос TTS теперь женский от Гугла', reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['ttssileroxenia'])
@@ -1375,7 +1374,7 @@ def tts_silero_xenia_thread(message: telebot.types.Message):
     global TTS_GENDER
     TTS_GENDER[message.chat.id] = 'silero_xenia'
     
-    bot.send_message(message.chat.id, 'Голос TTS теперь женский от Silero [xenia]', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, 'Голос TTS теперь женский от Silero [xenia]', reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['ttssileroaidar'])
@@ -1394,7 +1393,7 @@ def tts_silero_aidar_thread(message: telebot.types.Message):
     global TTS_GENDER
     TTS_GENDER[message.chat.id] = 'silero_aidar'
     
-    bot.send_message(message.chat.id, 'Голос TTS теперь мужской от Silero [aidar]', reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, 'Голос TTS теперь мужской от Silero [aidar]', reply_markup=get_keyboard('hide'))
 
 
 @bot.message_handler(commands=['tts']) 
@@ -1481,7 +1480,7 @@ def tts_thread(message: telebot.types.Message):
                 if message.chat.type != 'private':
                     bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
                 else:
-                    bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('hide'))
+                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
                     my_log.log_echo(message, msg)
 
 
@@ -1660,7 +1659,7 @@ def show_gallery(message: telebot.types.Message, cur: int, update: bool):
                 else:
                     raise error
         else:
-            bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
+            bot.reply_to(message, msg, reply_markup=get_keyboard('image_gallery'), parse_mode = 'HTML')
 
 
 @bot.message_handler(commands=['gallery','gal'])
@@ -1773,7 +1772,7 @@ def image_thread(message: telebot.types.Message):
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                     if pics_group:
                         try:
-                            bot.send_message(pics_group, prompt, disable_web_page_preview = True)
+                            bot.reply_to(message, prompt, disable_web_page_preview = True)
                             bot.send_media_group(pics_group, medias)
                         except Exception as error2:
                             print(error2)
@@ -1796,9 +1795,9 @@ def image_thread(message: telebot.types.Message):
                         caption += f'{i.message_id} '
                     caption += '\n'
                     caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
-                    bot.send_message(message.chat.id, caption, parse_mode = 'HTML', disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
+                    bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, reply_markup=get_keyboard('hide_image'))
                     my_log.log_echo(message, '[image gen] ')
-                    
+
                     n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
                     if chat_id in DIALOGS_DB:
                         DIALOGS_DB[chat_id] += n
@@ -2065,7 +2064,7 @@ def send_name(message: telebot.types.Message):
             global BOT_NAMES
             BOT_NAMES[message.chat.id] = new_name.lower()
             msg = f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.'
-            bot.send_message(message.chat.id, msg, reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, msg)
         else:
             msg = f"Неправильное имя, можно только русские и английские буквы и цифры после букв, \
@@ -2099,7 +2098,7 @@ def send_welcome_start(message: telebot.types.Message):
 Спасибо, что выбрали меня в качестве своего помощника! Я буду стараться быть максимально полезным для вас.
 
 Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп."""
-    bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('start'))
+    bot.reply_to(message, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('start'))
     my_log.log_echo(message, help)
 
 
@@ -2141,7 +2140,7 @@ def send_welcome_help(message: telebot.types.Message):
 
 """ + '\n'.join(open('commands.txt', encoding='utf8').readlines()) + '\n\n⚙️ https://github.com/theurs/tb1\n\n💬 https://t.me/theurs'
 
-    bot.send_message(message.chat.id, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
+    bot.reply_to(message, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide'))
     my_log.log_echo(message, help)
 
 
@@ -2211,10 +2210,10 @@ def send_long_message(chat_id: int, resp: str, parse_mode:str = None, disable_we
         counter = len(chunks)
         for chunk in chunks:
             try:
-                bot.send_message(chat_id, chunk, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                bot.reply_to(message, chunk, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
             except Exception as e:
                 print(e)
-                bot.send_message(chat_id, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
             counter -= 1
             if counter < 0:
                 break
@@ -2363,13 +2362,13 @@ def do_task(message, custom_prompt: str = ''):
         # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
         if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
             BLOCKS[chat_id] = 1
-            bot.send_message(chat_id, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
             return
         # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
         if (msg.startswith('вернись') and (is_private or is_reply)) or msg.startswith((f'{bot_name} вернись', f'{bot_name}, вернись')):
             BLOCKS[chat_id] = 0
-            bot.send_message(chat_id, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
             my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
             return
         # если сообщение начинается на 'забудь' то стираем историю общения GPT
@@ -2383,7 +2382,7 @@ def do_task(message, custom_prompt: str = ''):
             else:
                 DIALOGS_DB[chat_id] = []
                 my_log.log_echo(message, 'История GPT принудительно отчищена')
-            bot.send_message(chat_id, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
+            bot.reply_to(message, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide'))
             return
 
         # если в сообщении только ссылка и она отправлена боту в приват

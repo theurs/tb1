@@ -338,11 +338,9 @@ def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str
     return resp
 
 
-def get_topic_id(message: telebot.types.Message):
+def get_topic_id(message: telebot.types.Message) -> str:
     """
     Get the topic ID from a Telegram message.
-    просто id недостаточно для определения группы и подгруппы (топик / тред / тема форума)
-    если треда нет то будет None
 
     Parameters:
         message (telebot.types.Message): The Telegram message object.
@@ -527,7 +525,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button = telebot.types.InlineKeyboardButton('🔍История ChatGPT', callback_data='chatGPT_memory_debug')
         markup.add(button)
 
-        if flag == 'admin' or is_admin_member(message) or chat_id in cfg.admins:
+        is_admin_of_group = False
+        if message.reply_to_message:
+            is_admin_of_group = is_admin_member(message.reply_to_message)
+            from_user = message.reply_to_message.from_user.id
+        else:
+            from_user = message.from_user.id
+            is_admin_of_group = is_admin_member(message)
+
+        if flag == 'admin' or is_admin_of_group or from_user in cfg.admins:
             if chat_id_full not in SUPER_CHAT:
                 SUPER_CHAT[chat_id_full] = 0
             if SUPER_CHAT[chat_id_full] == 1:
@@ -1182,6 +1188,7 @@ def config(message: telebot.types.Message):
         bot.reply_to(message, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', message))
     except Exception as error:
         my_log.log2(f'config:{error}')
+        print(error)
 
 
 @bot.message_handler(commands=['style'])

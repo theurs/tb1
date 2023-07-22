@@ -16,8 +16,9 @@ class PersistentDict(dict):
             with open(self.file_path, 'rb') as f:
                 try:
                     data = pickle.load(f)
-                except Exception as e:
-                    print(e, 'Empty message history')
+                except Exception as error:
+                    print(error, 'Empty message history')
+                    my_log.log2(f'my_dic:init:{str(error)}')
                     data = []
             self.update(data)
         except FileNotFoundError:
@@ -71,5 +72,5 @@ class PersistentDict(dict):
 
 
 if __name__ == '__main__':
-    my_dict = PersistentDict('db/dialogs.pkl')
+    my_dict = PersistentDict('db/blocks.pkl')
     pprint(my_dict)

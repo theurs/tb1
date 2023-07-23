@@ -666,9 +666,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             with ShowAction(message, 'typing'):
                 translated = my_bard.bard_clear_text_chunk_voice(message.text)
             if translated and translated != message.text:
-                # bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
-                # 
-                bot.reply_to(message, translated, reply_markup=get_keyboard('translate', message))
+                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated,
+                                      reply_markup=get_keyboard('translate', message))
+                # bot.reply_to(message, translated, reply_markup=get_keyboard('translate', message))
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):

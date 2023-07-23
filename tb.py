@@ -803,7 +803,7 @@ def handle_voice_thread(message: telebot.types.Message):
             if text:
                 if len(text) > 500:
                     text = my_bard.clear_voice_message_text(text)
-                if len(lext) <= 500:
+                if len(text) <= 500:
                     reply_to_long_message(message, text, reply_markup=get_keyboard('translate_and_repair', message))
                 else:
                     reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))

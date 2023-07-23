@@ -40,7 +40,7 @@ def catto(prompt: str):
             return my_cattoGPT.image_gen(prompt, amount = 4)
         except Exception as error_catto_img:
             print(error_catto_img)
-            #my_log.log2(error_catto_img)
+            # my_log.log2(error_catto_img)
 
     return []
 

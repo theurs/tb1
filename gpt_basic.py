@@ -347,13 +347,26 @@ def ai_test() -> str:
     return сompletion["choices"][0]["message"]["content"]
 
 
+def stt_after_repair(text: str) -> str:
+    query = f"""Исправь текст, это аудиозапись, в ней могут быть ошибки распознавания речи.
+Надо переписать так что бы было понятно что хотел сказать человек и оформить удобно для чтения, разделить на абзацы,
+добавить комментарии в неоднозначные места.
+
+
+{text}
+"""
+    result = ai(query, model_to_use = 'gpt-3.5-turbo-16k')
+    return result
+
+
 if __name__ == '__main__':
     if cfg.all_proxy:
         os.environ['all_proxy'] = cfg.all_proxy
     
-    print(ai_test())
-    #print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
-    sys.exit()
+    # print(ai_test())
+    # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
+    
+    # sys.exit()
 
     if len(sys.argv) != 2:
         print("Usage: gptbasic.py filename|'request to qpt'")

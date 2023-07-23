@@ -399,6 +399,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button1 = telebot.types.InlineKeyboardButton("Отмена", callback_data='cancel_command')
         markup.add(button1)
         return markup
+    elif kbd == 'translate_and_repair':
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+        button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button3 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate')
+        button4 = telebot.types.InlineKeyboardButton("✨Исправить✨", callback_data='voice_repair')
+        markup.row(button1, button2, button3)
+        markup.row(button4)
+        return markup
     elif kbd == 'translate':
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
@@ -652,6 +661,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             message.text = f'/image {p}'
             # рисуем еще картинки с тем же запросом
             image(message)
+        elif call.data == 'voice_repair':
+            # реакция на клавиатуру для исправить текст после распознавания
+            with ShowAction(message, 'typing'):
+                translated = my_bard.bard_clear_text_chunk_voice(message.text)
+            if translated and translated != message.text:
+                # bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
+                # 
+                bot.reply_to(message, translated, reply_markup=get_keyboard('translate', message))
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):
@@ -786,7 +803,10 @@ def handle_voice_thread(message: telebot.types.Message):
             if text:
                 if len(text) > 500:
                     text = my_bard.clear_voice_message_text(text)
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
+                if len(lext) <= 500:
+                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate_and_repair', message))
+                else:
+                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, f'[ASR] {text}')
             else:
                 bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide', message))
@@ -1135,14 +1155,18 @@ def handle_video_thread(message: telebot.types.Message):
             # Распознаем текст из аудио 
             text = my_stt.stt(file_path)
             os.remove(file_path)
-            # Отправляем распознанный текст 
-            if text.strip() != '':
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
+            # Отправляем распознанный текст
+            if text:
+                if len(text) > 500:
+                    text = my_bard.clear_voice_message_text(text)
+                if len(text) <= 500:
+                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate_and_repair', message))
+                else:
+                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, f'[ASR] {text}')
             else:
                 bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, '[ASR] no results')
-
 
 def is_for_me(cmd: str):
     """Checks who the command is addressed to, this bot or another one.

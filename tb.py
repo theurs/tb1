@@ -801,12 +801,7 @@ def handle_voice_thread(message: telebot.types.Message):
             text = text.strip()
             # Отправляем распознанный текст
             if text:
-                if len(text) > 500:
-                    text = my_bard.clear_voice_message_text(text)
-                if len(text) <= 500:
-                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate_and_repair', message))
-                else:
-                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
+                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, f'[ASR] {text}')
             else:
                 bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide', message))
@@ -1157,12 +1152,7 @@ def handle_video_thread(message: telebot.types.Message):
             os.remove(file_path)
             # Отправляем распознанный текст
             if text:
-                if len(text) > 500:
-                    text = my_bard.clear_voice_message_text(text)
-                if len(text) <= 500:
-                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate_and_repair', message))
-                else:
-                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
+                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, f'[ASR] {text}')
             else:
                 bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide', message))

@@ -45,6 +45,17 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:
     user_name = message.from_user.first_name or message.from_user.username or ''
 
     logname = f'logs/[{chat_name}] [{private_or_chat}] [{message.chat.type}] [{message.chat.id}].log'.replace('[private] [private]', '[private]').replace('[chat] [supergroup]', '[chat]')
+
+    topic_id = 0
+
+    if message.reply_to_message and message.reply_to_message.is_topic_message:
+        topic_id = message.reply_to_message.message_thread_id
+    elif message.is_topic_message:
+        topic_id = message.message_thread_id
+
+    if topic_id:
+        log_file_path = log_file_path[:-4] + ' [topic_id].log'
+
     log_file_path = logname
 
     with lock:

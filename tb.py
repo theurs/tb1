@@ -832,8 +832,15 @@ def handle_document_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
-    chat_id = message.chat.id
     chat_id_full = get_topic_id(message)
+
+    is_private = message.chat.type == 'private'
+    if chat_id_full not in SUPER_CHAT:
+        SUPER_CHAT[chat_id_full] = 0
+    if SUPER_CHAT[chat_id_full] == 1:
+        is_private = True
+
+    chat_id = message.chat.id
 
     if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'wait_for_file':
         with semaphore_talks:
@@ -908,7 +915,7 @@ def handle_document_thread(message: telebot.types.Message):
 
         # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
         caption = message.caption or ''
-        if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
+        if is_private or caption.lower() in ['прочитай', 'читай']:
             # если текстовый файл то пытаемся озвучить как книгу. русский голос
             if message.document.mime_type == 'text/plain':
                 with ShowAction(message, 'record_audio'):
@@ -928,7 +935,7 @@ def handle_document_thread(message: telebot.types.Message):
                     else:
                         gender = 'female'    
                     audio = my_tts.tts(text, lang, gender=gender)
-                    if message.chat.type != 'private':
+                    if not is_private:
                         bot.send_voice(chat_id, audio, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide', message))
                     else:
                         bot.send_voice(chat_id, audio, reply_markup=get_keyboard('hide', message))
@@ -936,7 +943,7 @@ def handle_document_thread(message: telebot.types.Message):
                     return
 
         # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
-        if message.chat.type == 'private' or caption.lower() in ['прочитай', 'читай']:
+        if is_private or caption.lower() in ['прочитай', 'читай']:
             with ShowAction(message, 'upload_document'):
                 # получаем самый большой документ из списка
                 document = message.document
@@ -977,7 +984,7 @@ def handle_document_thread(message: telebot.types.Message):
                     # если текст слишком длинный, отправляем его в виде текстового файла
                     if len(text) > 4096:
                         with io.StringIO(text) as f:
-                            if message.chat.type != 'private':
+                            if not is_private:
                                 bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
                                                   reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide', message))
                             else:

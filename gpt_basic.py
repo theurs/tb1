@@ -56,7 +56,7 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
             if response:
                 break
         except Exception as unknown_error1:
-            if server[0] == 'https://openai-api.ckt1031.xyz/v1' and \
+            if server[0] in ('https://openai-api.ckt1031.xyz/v1', 'https://api.waveai.link/v1') and \
                str(unknown_error1).startswith('HTTP code 200 from API'):
                     # ошибка парсера json https://openai-api.ckt1031.xyz/v1?
                     text = str(unknown_error1)[24:]
@@ -460,9 +460,10 @@ if __name__ == '__main__':
     # print(ai_test())
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 
-    #print(ai('1+1='))
+    for x in range(5, 15):
+        print(ai(f'1+{x}='))
     #print(image_gen('большой бадабум'))
-    print(get_list_of_models())
+    #print(get_list_of_models())
     sys.exit()
 
     if len(sys.argv) != 2:

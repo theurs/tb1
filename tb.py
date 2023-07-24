@@ -1060,8 +1060,17 @@ def handle_photo_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
-    chat_id = message.chat.id
     chat_id_full = get_topic_id(message)
+
+    is_private = message.chat.type == 'private'
+    if chat_id_full not in SUPER_CHAT:
+        SUPER_CHAT[chat_id_full] = 0
+    if SUPER_CHAT[chat_id_full] == 1:
+        is_private = True
+
+
+    chat_id = message.chat.id
+
     if chat_id_full in COMMAND_MODE:
         if COMMAND_MODE[chat_id_full] == 'bardimage':
             COMMAND_MODE[chat_id_full] = ''
@@ -1097,8 +1106,8 @@ def handle_photo_thread(message: telebot.types.Message):
             return
 
         # распознаем текст только если есть команда для этого или если прислали в приват
-        if not message.caption and message.chat.type != 'private': return
-        if message.chat.type != 'private' and not gpt_basic.detect_ocr_command(message.caption.lower()): return
+        if not message.caption and not is_private: return
+        if not is_private and not gpt_basic.detect_ocr_command(message.caption.lower()): return
 
         with ShowAction(message, 'typing'):
             # получаем самую большую фотографию из списка

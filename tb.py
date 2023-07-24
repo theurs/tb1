@@ -2354,6 +2354,8 @@ def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
 def do_task(message, custom_prompt: str = ''):
     """функция обработчик сообщений работающая в отдельном потоке"""
 
+    global BLOCKS, BOT_NAMES, CHAT_LOGS, DIALOGS_DB, BING_MODE, BARD_MODE, COMMAND_MODE, SUPER_CHAT
+
     if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '📎Файл', '⚙️Настройки']:
         if message.text == '🎨Нарисуй':
             message.text = '/image'
@@ -2390,6 +2392,11 @@ def do_task(message, custom_prompt: str = ''):
 
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
+        if chat_id_full not in SUPER_CHAT:
+            SUPER_CHAT[chat_id_full] = 0
+        # если бот должен отвечать всем в этом чате то пусть ведет себя как в привате
+        if SUPER_CHAT[chat_id_full] == 1:
+            is_private = True
         # является ли это ответом на наше сообщение
         is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
         # id куда писать ответ
@@ -2400,8 +2407,6 @@ def do_task(message, custom_prompt: str = ''):
         message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
 
         msg = message.text.lower()
-
-        global BLOCKS, BOT_NAMES, CHAT_LOGS, DIALOGS_DB, BING_MODE, BARD_MODE, COMMAND_MODE
 
         # если предварительно была введена какая то команда то этот текст надо отправить в неё
         if chat_id_full in COMMAND_MODE:
@@ -2491,12 +2496,9 @@ def do_task(message, custom_prompt: str = ''):
             summ_text(message)
             return
 
-        if chat_id_full not in SUPER_CHAT:
-            SUPER_CHAT[chat_id_full] = 0
-
         # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # проверяем просят ли нарисовать что-нибудь
-        if is_private or SUPER_CHAT[chat_id_full] == 1:
+        if is_private:
             if msg.startswith(('нарисуй ', 'нарисуй,')):
                 prompt = msg[8:]
                 if prompt:
@@ -2549,9 +2551,7 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
-        # или если в чате активирован режим суперчата
-        elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private \
-            or (not is_private and SUPER_CHAT[chat_id_full] == 1):
+        elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
             if len(msg) > cfg.max_message_from_user:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')

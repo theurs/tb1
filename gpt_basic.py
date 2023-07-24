@@ -432,6 +432,27 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
     return []
 
 
+def get_list_of_models():
+    """
+    Retrieves a list of models from the OpenAI servers.
+
+    Returns:
+        list: A list of model IDs.
+    """
+    result = []
+    for server in cfg.openai_servers:
+        openai.api_base = server[0]
+        openai.api_key = server[1]
+        try:
+            model_lst = openai.Model.list()
+            for i in model_lst['data']:
+                result += [i['id'],]
+        except Exception as error:
+            print(error)
+            my_log.log2(f'gpt_basic:get_list_of_models: {error}\n\nServer: {server[0]}')
+    return sorted(list(set(result)))
+
+
 if __name__ == '__main__':
     if cfg.all_proxy:
         os.environ['all_proxy'] = cfg.all_proxy
@@ -440,7 +461,8 @@ if __name__ == '__main__':
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 
     #print(ai('1+1='))
-    print(image_gen('большой бадабум'))
+    #print(image_gen('большой бадабум'))
+    print(get_list_of_models())
     sys.exit()
 
     if len(sys.argv) != 2:

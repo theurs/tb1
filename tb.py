@@ -1400,6 +1400,9 @@ def set_new_model(message: telebot.types.Message):
         current_model = cfg.model
 
     if len(message.text.split()) < 2:
+        available_models = ''
+        for m in gpt_basic.get_list_of_models():
+            available_models += f'`/model {m}`\n'
         msg = f"""Меняет модель для chatGPT.
 
 Выбрано: `/model {current_model}`
@@ -1408,12 +1411,8 @@ def set_new_model(message: telebot.types.Message):
 
 `/model gpt-4`
 `/model gpt-3.5-turbo-16k`
-`/model gpt-3.5-turbo-8k`
-`/model gpt-3.5-turbo`
-`/model sage`
-`/model сlaude-instant`
-`/model claude-instant-100k`
-`/model claude-2-100k`
+
+{available_models}
 """
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message)) 
         my_log.log_echo(message, msg)

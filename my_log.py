@@ -56,7 +56,7 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:
     log_file_path = logname
 
     if topic_id:
-        log_file_path = log_file_path[:-4] + ' [topic_id].log'
+        log_file_path = log_file_path[:-4] + f' [{topic_id}].log'
 
     with lock:
         with open(log_file_path, 'a', encoding="utf-8") as log_file:

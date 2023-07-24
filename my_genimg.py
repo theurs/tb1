@@ -3,6 +3,7 @@
 
 import bingai
 import gpt_basic
+import my_log
 
 
 def bing(prompt: str):
@@ -12,13 +13,20 @@ def bing(prompt: str):
         if type(images) == list:
             return images
     except Exception as error_bing_img:
-        print(error_bing_img)
+        print(f'my_genimg:bing: {error_bing_img}')
+        my_log.log2(f'my_genimg:bing: {error_bing_img}')
     return []
 
 
 def openai(prompt: str):
     """рисует 6 картинок с помощью openai и возвращает сколько смог нарисовать"""
-    return gpt_basic.image_gen(prompt, amount = 6)
+    images = []
+    try:
+        images = gpt_basic.image_gen(prompt, amount = 6)
+    except Exception as error_openai_img:
+        print(f'my_genimg:openai: {error_openai_img}')
+        my_log.log2(f'my_genimg:openai: {error_openai_img}')
+    return images
 
 
 def gen_images(prompt: str):

@@ -22,7 +22,6 @@ import my_dic
 import my_log
 import my_ocr
 import my_google
-import my_pandoc
 import my_stt
 import my_sum
 import my_trans

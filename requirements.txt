@@ -3,7 +3,6 @@ chardet
 duckduckgo_search
 edge_tts
 EdgeGPT
-#EdgeGPT==0.8.0
 fake_useragent
 fuzzywuzzy
 google
@@ -12,9 +11,6 @@ html2text
 langdetect
 openai
 openai-whisper
-# sudo apt install pandoc texlive-latex-recommended
-# ? pandoc==2.4b0
-pandoc
 pdflatex
 Pillow
 py_trans
@@ -26,7 +22,6 @@ pytesseract
 python-Levenshtein
 python-magic
 #python-magic-bin
-#selenium
 SpeechRecognition
 telebot
 # python -m textblob.download_corpora

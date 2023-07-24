@@ -13,7 +13,7 @@ import my_log
 
 # https://discord.gg/CFkw3UfR
 openai.api_key = cfg.key_chimeraGPT
-openai.api_base = "https://chimeragpt.adventblocks.cc/v1"
+openai.api_base = "https://chimeragpt.adventblocks.cc/api/v1"
 
 
 def ai(prompt: str, messages = None, max_token: int = 2000, timeout: int = 120, model: str = 'claude-instant-100k') -> str:

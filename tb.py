@@ -518,7 +518,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup.add(button)
 
         if chat_id_full not in BLOCKS:
-            BLOCKS[chat_id_full] = 1
+            BLOCKS[chat_id_full] = 0
 
         if BLOCKS[chat_id_full] == 1:
             button = telebot.types.InlineKeyboardButton(f'✅Автопереводы', callback_data='autotranslate_disable')
@@ -761,7 +761,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 def check_blocks(chat_id: str) -> bool:
     global BLOCKS
     if chat_id not in BLOCKS:
-        BLOCKS[chat_id] = 1
+        BLOCKS[chat_id] = 0
     return False if BLOCKS[chat_id] == 1 else True
 
 

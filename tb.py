@@ -2390,6 +2390,7 @@ def do_task(message, custom_prompt: str = ''):
 
         my_log.log_echo(message)
 
+        chat_id_full = get_topic_id(message)
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
         if chat_id_full not in SUPER_CHAT:
@@ -2401,7 +2402,6 @@ def do_task(message, custom_prompt: str = ''):
         is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
         # id куда писать ответ
         chat_id = message.chat.id
-        chat_id_full = get_topic_id(message)
 
         # удаляем пробелы в конце каждой строки
         message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])

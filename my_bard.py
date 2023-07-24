@@ -156,7 +156,7 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '') ->
         if current_token >= len(cfg.bard_tokens):
             current_token = 0
         print(links_error)
-        my_log.log2(f'my_bard.py:chat_request:{links_error}')
+        my_log.log2(f'my_bard.py:chat_request:bard token rotated:current_token: {current_token}\n\n{links_error}')
         chat_request(query, dialog, reset = True, user_name = user_name)
         return chat_request(query, dialog, reset, user_name)
 

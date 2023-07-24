@@ -346,12 +346,21 @@ def get_topic_id(message: telebot.types.Message) -> str:
         message (telebot.types.Message): The Telegram message object.
 
     Returns:
-        str: '[chat.id] [thread.id]'
+        str: '[chat.id] [topic.id]'
     """
-    #thread_id = message.message_thread_id
-    thread_id = 0
+
     chat_id = message.chat.id
-    return f'[{chat_id}] [{thread_id}]'
+    # topic_id = 'not topic'
+    topic_id = 0
+
+    if message.reply_to_message and message.reply_to_message.is_topic_message:
+        topic_id = message.reply_to_message.message_thread_id
+    elif message.is_topic_message:
+        topic_id = message.message_thread_id
+
+    # bot.reply_to(message, f'DEBUG: [{chat_id}] [{topic_id}]')
+
+    return f'[{chat_id}] [{topic_id}]'
 
 
 def is_admin_member(message: telebot.types.Message):

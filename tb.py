@@ -754,7 +754,7 @@ def handle_document_thread(message: telebot.types.Message):
 
     chat_id = message.chat.id
 
-    if check_blocks(chat_id_full):
+    if check_blocks(chat_id_full) and message.chat.type != 'private':
         return
 
     with semaphore_talks:
@@ -885,24 +885,7 @@ def handle_photo_thread(message: telebot.types.Message):
     if SUPER_CHAT[chat_id_full] == 1:
         is_private = True
 
-    if chat_id_full in COMMAND_MODE:
-        if COMMAND_MODE[chat_id_full] == 'bardimage':
-            COMMAND_MODE[chat_id_full] = ''
-            with semaphore_talks:
-                with ShowAction(message, 'typing'):
-                    # скачиваем документ в байтовый поток
-                    msg = 'Бард не ответил'
-                    file_id = message.photo[-1].file_id
-                    file_info = bot.get_file(file_id)
-                    image = bot.download_file(file_info.file_path)
-                    description = my_bard.chat_image('What is in the image? Ответь по-русски.', chat_id_full, image)
-                    if description:
-                        bot.reply_to(message, description, parse_mode='Markdown', reply_markup=get_keyboard('translate', message))
-                    else:
-                        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('translate', message))
-                return
-
-    if check_blocks(get_topic_id(message)):
+    if check_blocks(get_topic_id(message)) and message.chat.type != 'private':
         return
 
     with semaphore_talks:
@@ -952,7 +935,7 @@ def handle_video_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
-    if check_blocks(get_topic_id(message)):
+    if check_blocks(get_topic_id(message)) and message.chat.type != 'private':
         return
 
     with semaphore_talks:

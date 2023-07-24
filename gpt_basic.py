@@ -56,9 +56,8 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
             if response:
                 break
         except Exception as unknown_error1:
-            if server[0] in ('https://openai-api.ckt1031.xyz/v1', 'https://api.waveai.link/v1') and \
-               str(unknown_error1).startswith('HTTP code 200 from API'):
-                    # ошибка парсера json https://openai-api.ckt1031.xyz/v1?
+            if str(unknown_error1).startswith('HTTP code 200 from API'):
+                    # ошибка парсера json?
                     text = str(unknown_error1)[24:]
                     lines = [x[6:] for x in text.split('\n') if x.startswith('data:') and ':{"content":"' in x]
                     content = ''

@@ -84,6 +84,7 @@ openai_servers = [
     ['https://yyy.com/v1', 'sk-yyy', False, False]
 ]
 
+# токены для google bard
 # искать __Secure-1PSID в куках с сайта https://bard.google.com/
 # можно указать только 1
 bard_tokens = ['xxx',
@@ -94,7 +95,6 @@ bard_tokens = ['xxx',
 whisper_model = 'small' # ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small', 'medium.en', 'medium', 'large-v1', 'large-v2', 'large']
 stt = 'vosk'
 
-# id телеграм группы куда скидываются все сгенерированные картинки
 # id телеграм группы куда скидываются все сгенерированные картинки
 #pics_group = 0
 #pics_group_url = ''

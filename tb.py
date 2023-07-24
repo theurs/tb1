@@ -94,16 +94,6 @@ CHAT_LOGS = my_dic.PersistentDict('db/chat_logs.pkl')
 # для запоминания ответов на команду /sum
 SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
 
-# для запоминания всех сгенерированных изображений и запросов
-# тут есть ключ 'total' в котором хранится счетчик записей
-# записи состоят из counter_id: (prompt, images) где
-# counter_id - порядковый номер для возможности перечисления последних записей в обратном порядке
-# prompt - строка запроса, что хотел нарисовать юзер
-# images - веб адреса картинок которые нарисовал ИИ по запросу
-#          пока что в этом списке по 1 картинке, выводить по несколько сразу не получается
-#          телеграм не дает прикреплять кнопки к нескольким картинкам
-IMAGES_DB = my_dic.PersistentDict('db/images_db.pkl')
-
 # хранилище для файлов. для вопросов к чатботам по содержимому файлов
 FILES_DB = my_dic.PersistentDict('db/files_db.pkl')
 
@@ -995,68 +985,6 @@ def handle_document_thread(message: telebot.types.Message):
                     my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
 
 
-@bot.message_handler(commands=['file'])
-def file_command(message: telebot.types.Message):
-    """Режим работы с файлами для чат ботов"""
-    thread = threading.Thread(target=file_command_thread, args=(message,))
-    thread.start()
-def file_command_thread(message: telebot.types.Message):
-    """Режим работы с файлами для чат ботов"""
-    return
-    my_log.log_media(message)
-
-    global DIALOGS_DB
-
-    chat_id = message.chat.id
-    chat_id_full = get_topic_id(message)
-
-    if chat_id_full in FILES_DB and FILES_DB[chat_id_full]:
-        file_name = FILES_DB[chat_id_full]['name']
-        file_size = FILES_DB[chat_id_full]['size']
-        file_text = FILES_DB[chat_id_full]['text']
-        text_size = len(file_text)
-
-        query = message.text
-
-        if not query:
-            msg = f'Загружен файл: {file_name} ({file_size} байт, {text_size} символов)\n\nЗадавайте вопрос по этому файлу или отправьте другой'
-            bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode', message))
-            return
-
-        # делаем запрос по тексту
-        with ShowAction(message, 'typing'):
-            result = gpt_basic.query_file(query, file_name, file_size, file_text)
-
-            if result:
-                bot.reply_to(message, result, reply_markup=get_keyboard('command_mode', message))
-                my_log.log_echo(message, result)
-                if chat_id_full not in DIALOGS_DB:
-                    DIALOGS_DB[chat_id_full] = []
-                    DIALOGS_DB[chat_id_full] += [{"role":    'system',
-                                "content": f'user попросил сделал запрос по содержанию файла: {query}'},
-                                {"role":    'system',
-                                "content": f'assistant ответил: {result}'}
-                                ]
-                return
-            else:
-                msg = f'Нет ответа по запросу: {query}'
-                bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode', message))
-                my_log.log_echo(message, msg)
-                if chat_id_full not in DIALOGS_DB:
-                    DIALOGS_DB[chat_id_full] = []
-                    DIALOGS_DB[chat_id_full] += [{"role":    'system',
-                                "content": f'user попросил сделал запрос по содержанию файла: {query}'},
-                                {"role":    'system',
-                                "content": f'assistant не ответил'}
-                                ]
-                return
-    else:
-        COMMAND_MODE[chat_id_full] = 'wait_for_file'
-        bot.reply_to(message, 'Пришлите мне файл или ссылку и я буду отвечать на запросы по тексту из этого файла',
-                     reply_markup=get_keyboard('command_mode', message))
-        return
-
-
 @bot.message_handler(content_types = ['photo'])
 def handle_photo(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
@@ -1706,144 +1634,6 @@ def ddg_thread(message: telebot.types.Message):
                                 ]
 
 
-@bot.message_handler(commands=['images','imgs'])
-def images(message: telebot.types.Message):
-    thread = threading.Thread(target=images_thread, args=(message,))
-    thread.start()
-def images_thread(message: telebot.types.Message):
-    """показывает что было нагенерировано ранее"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    global IMAGES_DB
-    if not IMAGES_DB:
-        return
-    
-    ttl = 0
-    
-    if 'total' in IMAGES_DB:
-        ttl = IMAGES_DB['total']
-    
-    if ttl:
-        show_gallery(message, ttl, update = False)
-    else:
-        msg = 'В галерее пусто'
-        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, msg)
-
-
-def show_gallery(message: telebot.types.Message, cur: int, update: bool):
-    """показывает картинки из базы, cur - номер который надо показать"""
-    with semaphore_talks:
-        ttl = IMAGES_DB['total']
-        if cur < 1:
-            cur = 1
-        if cur > ttl:
-            cur = ttl
-        
-        prompt = IMAGES_DB[cur-1][0]
-        images = IMAGES_DB[cur-1][1]
-
-        msg = f'{cur} из {ttl}\n\n<a href="{images[0]}">{html.escape(prompt)}</a>'
-
-        if update:
-            try:
-                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=msg, 
-                reply_markup=get_keyboard('image_gallery', message), parse_mode = 'HTML')
-            except telebot.apihelper.ApiTelegramException as error:
-                if 'message is not modified:' in str(error):
-                    pass
-                else:
-                    raise error
-        else:
-            bot.reply_to(message, msg, reply_markup=get_keyboard('image_gallery', message), parse_mode = 'HTML')
-
-
-@bot.message_handler(commands=['gallery','gal'])
-def html_gallery(message: telebot.types.Message):
-    thread = threading.Thread(target=html_gallery_thread, args=(message,))
-    thread.start()
-def html_gallery_thread(message: telebot.types.Message):
-    """генерирует картинку по описанию"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    global IMAGES_DB
-    if not IMAGES_DB:
-        return
-
-    header = """<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>Заголовок страницы</title>
-</head>
-<body>
-
-
-<table>
-"""
-
-    footer = """
-</table>
-
-
-
-</body>
-</html>
-"""
-
-    with semaphore_talks:
-        body = ''
-        ttl = IMAGES_DB['total']
-        c = 4
-        while ttl > 0:
-            if c == 4:
-                body += '<tr>\n'
-            cap = IMAGES_DB[ttl-1][0]
-            ref = IMAGES_DB[ttl-1][1][0]
-            body += f'<td><figure><a href="{ref}" target="_blank"><img src="{ref}" style="max-width: 256px; max-height: 256px;"></a><figcaption>{cap}</figcaption></figure></td>\n'
-            c = c-1
-            if c == 0:
-                c = 4
-                body += '</tr>\n'
-            ttl -= 1
-    html = header + body + footer
-    current_time = datetime.datetime.now().strftime('%d-%m-%Y %H：%M')
-    bytes_io = io.BytesIO(html.encode('utf-8'))
-    bytes_io.seek(0)
-    bytes_io.name = f'gallery {current_time}.html'
-    bot.send_document(message.chat.id, bytes_io, caption=f'gallery {current_time}.html', reply_markup=get_keyboard('hide', message))
-
-
-@bot.message_handler(commands=['bardimage',])
-def bardimage(message: telebot.types.Message):
-    """генерировать описание картинки с помощью гугл бард"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    # не работает нормально, всегда врёт, и зависает еще после одного запроса
-    return
-
-    my_log.log_echo(message)
-
-    help = """Отправьте картинку и я попытаюсь понять что на ней изображено"""
-    
-    global COMMAND_MODE
-    COMMAND_MODE[get_topic_id(message)] = 'bardimage'
-    bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
-
-
 @bot.message_handler(commands=['image','img'])
 def image(message: telebot.types.Message):
     thread = threading.Thread(target=image_thread, args=(message,))
@@ -1865,7 +1655,6 @@ def image_thread(message: telebot.types.Message):
 Напишите что надо нарисовать, как это выглядит
 """
         prompt = message.text.split(maxsplit = 1)
-        chat_id = message.chat.id
         if len(prompt) > 1:
             prompt = prompt[1]
             with ShowAction(message, 'upload_photo'):
@@ -1882,16 +1671,7 @@ def image_thread(message: telebot.types.Message):
                     caption = ''
                     # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
                     # что бы можно было их потом просматривать отдельно
-                    global IMAGE_PROMPTS, IMAGES_DB, DIALOGS_DB
-                    if 'total' in IMAGES_DB:
-                        ttl = IMAGES_DB['total']
-                    else:
-                        ttl = 0
-                        IMAGES_DB['total'] = 0
-                    for i in images:
-                        IMAGES_DB[ttl] = (prompt, (i,))
-                        ttl += 1
-                    IMAGES_DB['total'] = ttl
+                    global IMAGE_PROMPTS, DIALOGS_DB
                     IMAGE_PROMPTS[msgs_ids[0].message_id] = prompt
 
                     for i in msgs_ids:

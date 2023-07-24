@@ -77,8 +77,18 @@ def log_media(message: telebot.types.Message) -> None:
     caption = message.caption or ''
 
     logname = f'logs/[{chat_name}] [{private_or_chat}] [{message.chat.type}] [{message.chat.id}].log'.replace('[private] [private]', '[private]').replace('[chat] [supergroup]', '[chat]')
+
+    topic_id = 0
+
+    if message.reply_to_message and message.reply_to_message.is_topic_message:
+        topic_id = message.reply_to_message.message_thread_id
+    elif message.is_topic_message:
+        topic_id = message.message_thread_id
+
     log_file_path = logname
-    #log_file_path = os.path.join(os.getcwd(), logname)
+
+    if topic_id:
+        log_file_path = log_file_path[:-4] + f' [{topic_id}].log'
 
     if message.audio:
         file_name = message.audio.file_name

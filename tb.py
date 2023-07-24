@@ -697,7 +697,7 @@ def handle_voice_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
-    if check_blocks(get_topic_id(message)):
+    if check_blocks(get_topic_id(message)) and message.chat.type != 'private':
         return
 
     with semaphore_talks:

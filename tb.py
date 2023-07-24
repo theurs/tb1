@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import io
-import html
-import logging
 import os
 import re
 import tempfile
@@ -32,9 +30,6 @@ import my_tts
 import utils
 
 
-#telebot.logger.setLevel(logging.DEBUG)
-
-
 # использовать прокси (пиратские сайты обычно лочат ваш ип, так что смотрите за этим)
 #cfg.all_proxy = ''
 #cfg.all_proxy = 'socks5://172.28.1.5:1080'
@@ -52,13 +47,8 @@ _bot_name = bot.get_me().username
 
 
 # телеграм группа для отправки сгенерированных картинок
-try:
-    pics_group = cfg.pics_group
-    pics_group_url = cfg.pics_group_url
-except Exception as error123:
-    print(error123)
-    pics_group = 0
-    pics_group_url
+pics_group = cfg.pics_group
+pics_group_url = cfg.pics_group_url
 
 # до 40 одновременных потоков для чата с гпт и бингом
 semaphore_talks = threading.Semaphore(40)
@@ -93,9 +83,6 @@ CHAT_LOGS = my_dic.PersistentDict('db/chat_logs.pkl')
 
 # для запоминания ответов на команду /sum
 SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
-
-# хранилище для файлов. для вопросов к чатботам по содержимому файлов
-FILES_DB = my_dic.PersistentDict('db/files_db.pkl')
 
 # в каких чатах активирован режим суперчата, когда бот отвечает на все реплики всех участников
 # {chat_id:0|1}
@@ -208,7 +195,6 @@ def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str
     Returns:
         str: возвращает ответ который бот может показать, возможно '' или None
     """
-    global DIALOGS_DB, PROMPTS
 
     # в каждом чате свой собственный промт
     if chat_id in PROMPTS:
@@ -285,7 +271,6 @@ def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str
                 return 'GPT не ответил.'
     else:
         # для бинга
-        hist = '\n'.join([f"{i['role']}: {i['content']}" for i in new_messages])
         hist_compressed = ''
         bing_prompt = hist_compressed + '\n\n' + 'Отвечай по-русски\n\n' + text
 
@@ -371,7 +356,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
     ...
     """
     chat_id_full = get_topic_id(message)
-    chat_id = message.chat.id
 
     if kbd == 'chat':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
@@ -427,11 +411,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button3 = telebot.types.KeyboardButton('📋Перескажи')
         button4 = telebot.types.KeyboardButton('🎧Озвучь')
         button5 = telebot.types.KeyboardButton('🈶Переведи')
-        button6 = telebot.types.KeyboardButton('📎Файл')
-        button7 = telebot.types.KeyboardButton('⚙️Настройки')
+        button6 = telebot.types.KeyboardButton('⚙️Настройки')
         markup.row(button1, button2, button3)
-        markup.row(button4, button5, button7)
-        # markup.row(button4, button6, button7)
+        markup.row(button4, button5, button6)
         return markup
     elif kbd == 'bing_chat':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
@@ -451,24 +433,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
         markup.add(button0, button1, button2, button3, button4)
         return markup
-    elif kbd == 'image_gallery':
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
-        button1 = telebot.types.InlineKeyboardButton("-1", callback_data='image_gallery_prev_prompt')
-        button2 = telebot.types.InlineKeyboardButton("+1", callback_data='image_gallery_next_prompt')
-        button3 = telebot.types.InlineKeyboardButton("-10", callback_data='image_gallery_prev_prompt10')
-        button4 = telebot.types.InlineKeyboardButton("+10", callback_data='image_gallery_next_prompt10')
-        button5 = telebot.types.InlineKeyboardButton("-100", callback_data='image_gallery_prev_prompt100')
-        button6 = telebot.types.InlineKeyboardButton("+100", callback_data='image_gallery_next_prompt100')
-        button7 = telebot.types.InlineKeyboardButton("X",  callback_data='erase_answer')
-        if pics_group:
-            button8 = telebot.types.InlineKeyboardButton("↗",  url = pics_group_url)
-            markup.add(button1, button2, button3, button4, button5, button6, button7, button8)
-        else:
-            markup.add(button1, button2, button3, button4, button5, button6, button7)
-        return markup
     elif kbd == 'config':
-        global TTS_GENDER, BING_MODE, BARD_MODE, BLOCKS
-
         if chat_id_full in TTS_GENDER:
             voice = f'tts_{TTS_GENDER[chat_id_full]}'
         else:
@@ -565,53 +530,13 @@ def callback_inline(call: telebot.types.CallbackQuery):
     thread.start()
 def callback_inline_thread(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
-    
+
     with semaphore_talks:
-        global IMAGE_PROMPTS
         message = call.message
-        is_private = message.chat.type == 'private'
-        is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
         chat_id = message.chat.id
         chat_id_full = get_topic_id(message)
-        global DIALOGS_DB, TTS_GENDER, BING_MODE
 
-        if call.data == 'image_gallery_prev_prompt':
-            # переходим к предыдущему промпту в базе галереи
-            cur = int(message.text.split()[0])
-            cur -= 1
-            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
-            thread.start()
-        elif call.data == 'image_gallery_next_prompt':
-            # переходим к следующему промпту в базе галереи
-            cur = int(message.text.split()[0])
-            cur += 1
-            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
-            thread.start()
-        elif call.data == 'image_gallery_prev_prompt10':
-            # переходим к предыдущему (-10) промпту в базе галереи
-            cur = int(message.text.split()[0])
-            cur -= 10
-            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
-            thread.start()
-        elif call.data == 'image_gallery_next_prompt10':
-            # переходим к следующему (+10) промпту в базе галереи
-            cur = int(message.text.split()[0])
-            cur += 10
-            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
-            thread.start()
-        elif call.data == 'image_gallery_prev_prompt100':
-            # переходим к предыдущему (-100) промпту в базе галереи
-            cur = int(message.text.split()[0])
-            cur -= 100
-            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
-            thread.start()
-        elif call.data == 'image_gallery_next_prompt100':
-            # переходим к следующему (+100) промпту в базе галереи
-            cur = int(message.text.split()[0])
-            cur += 100
-            thread = threading.Thread(target=show_gallery, args=(message, cur, True))
-            thread.start()
-        elif call.data == 'clear_history':
+        if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
             #bot.edit_message_reply_markup(message.chat.id, message.message_id)
             DIALOGS_DB[chat_id_full] = []
@@ -625,7 +550,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             DIALOGS_DB[chat_id_full] = []
         elif call.data == 'cancel_command':
             # обработка нажатия кнопки "Отменить ввод команды"
-            global COMMAND_MODE
             COMMAND_MODE[chat_id_full] = ''
             bot.delete_message(message.chat.id, message.message_id)
         # режим автоответов в чате, бот отвечает на все реплики всех участников
@@ -759,7 +683,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
 
 def check_blocks(chat_id: str) -> bool:
-    global BLOCKS
     if chat_id not in BLOCKS:
         BLOCKS[chat_id] = 0
     return False if BLOCKS[chat_id] == 1 else True
@@ -832,45 +755,6 @@ def handle_document_thread(message: telebot.types.Message):
 
     chat_id = message.chat.id
 
-    if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'wait_for_file':
-        with semaphore_talks:
-            with ShowAction(message, 'typing'):
-                # скачиваем файл во временный файл
-                file_info = bot.get_file(message.document.file_id)
-                file_name = message.document.file_name
-
-                # временный файл
-                temp_file = tempfile.NamedTemporaryFile(suffix=file_name, delete=False)
-                temp_file.close()
-                output_file = temp_file.name
-                os.remove(output_file)
-
-                downloaded_file = bot.download_file(file_info.file_path)
-                with open(output_file, 'wb') as file_handler:
-                    file_handler.write(downloaded_file)
-
-                text = my_pandoc.get_text_from_file(output_file)
-                os.remove(output_file)
-
-                if not text:
-                    bot.reply_to(message, 'Не удалось прочитать текст из файла.', reply_markup=get_keyboard('hide', message))
-                    my_log.log_echo(message, '[FILE UPLOAD FAILED] не удалось прочитать текст из файла')
-                    return
-                file_size = len(downloaded_file)
-
-                FILES_DB[chat_id_full] = {}
-                FILES_DB[chat_id_full]['text'] = text
-                FILES_DB[chat_id_full]['size'] = file_size
-                FILES_DB[chat_id_full]['name'] = file_name
-                FILES_DB[chat_id_full]['original_bytes'] = downloaded_file
-
-                msg = f'Загружен файл: {file_name} ({file_size} байт, {len(text)} символов)\n\nЗадавайте вопрос по этому файлу или отправьте другой'
-                bot.reply_to(message, msg, reply_markup=get_keyboard('command_mode', message))
-                my_log.log_echo(message, f'[FILE UPLOADED] {msg}')
-
-                return
-
-
     if check_blocks(chat_id_full):
         return
 
@@ -919,7 +803,6 @@ def handle_document_thread(message: telebot.types.Message):
                         lang = 'ru'
                         print(error2)
                     # Озвучиваем текст
-                    global TTS_GENDER
                     if chat_id_full in TTS_GENDER:
                         gender = TTS_GENDER[chat_id_full]
                     else:
@@ -1002,9 +885,6 @@ def handle_photo_thread(message: telebot.types.Message):
         SUPER_CHAT[chat_id_full] = 0
     if SUPER_CHAT[chat_id_full] == 1:
         is_private = True
-
-
-    chat_id = message.chat.id
 
     if chat_id_full in COMMAND_MODE:
         if COMMAND_MODE[chat_id_full] == 'bardimage':
@@ -1170,9 +1050,6 @@ def change_mode(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
-    global PROMPTS
-
-    chat_id = message.chat.id
     chat_id_full = get_topic_id(message)
 
     # в каждом чате свой собственный промт
@@ -1215,7 +1092,6 @@ def change_mode(message: telebot.types.Message):
 
 Напишите свой текст или цифру одного из готовых стилей
     """
-        global COMMAND_MODE
         COMMAND_MODE[chat_id_full] = 'style'
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
         my_log.log_echo(message, msg)
@@ -1233,10 +1109,8 @@ def send_debug_history(message: telebot.types.Message):
 
     my_log.log_echo(message)
     
-    global DIALOGS_DB
-        
     chat_id_full = get_topic_id(message)
-        
+
     # создаем новую историю диалогов с юзером из старой если есть
     messages = []
     if chat_id_full in DIALOGS_DB:
@@ -1255,71 +1129,10 @@ def restart(message: telebot.types.Message):
         bot.reply_to(message, 'Эта команда только для админов.', reply_markup=get_keyboard('hide', message))
 
 
-@bot.message_handler(commands=['ttsmale']) 
-def tts_male(message: telebot.types.Message):
-    thread = threading.Thread(target=tts_male_thread, args=(message,))
-    thread.start()
-def tts_male_thread(message: telebot.types.Message):
-    """Переключает голос TTS на мужской"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    global TTS_GENDER
-    TTS_GENDER[get_topic_id(message)] = 'male'
-    
-    bot.reply_to(message, 'Голос TTS теперь мужской', reply_markup=get_keyboard('hide', message))
-
-
-@bot.message_handler(commands=['ttsfemale']) 
-def tts_female(message: telebot.types.Message):
-    thread = threading.Thread(target=tts_female_thread, args=(message,))
-    thread.start()
-def tts_female_thread(message: telebot.types.Message):
-    """Переключает голос TTS на женский"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    global TTS_GENDER
-    TTS_GENDER[get_topic_id(message)] = 'female'
-    
-    bot.reply_to(message, 'Голос TTS теперь женский', reply_markup=get_keyboard('hide', message))
-
-
-@bot.message_handler(commands=['bingreset']) 
-def bingreset(message: telebot.types.Message):
-    thread = threading.Thread(target=bingreset_thread, args=(message,))
-    thread.start()
-def bingreset_thread(message: telebot.types.Message):
-    """Принудительно сбросить диалог с бингом, обнулить историю"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-    
-    chat_id_full = get_topic_id(message)
-
-    bingai.reset_bing_chat(chat_id_full)
-
-    msg = 'История диалога с бингом отчищена.'
-    bot.reply_to(message, msg)
-    my_log.log_echo(message, msg)
-
-
 @bot.message_handler(commands=['model']) 
 def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
 
-    chat_id = message.chat.id
     chat_id_full = get_topic_id(message)
 
     if chat_id_full in gpt_basic.CUSTOM_MODELS:
@@ -1360,63 +1173,6 @@ def set_new_model(message: telebot.types.Message):
     bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, msg0)
     my_log.log_echo(message, msg)
-
-
-@bot.message_handler(commands=['ttsgoogle']) 
-def tts_google(message: telebot.types.Message):
-    thread = threading.Thread(target=tts_google_thread, args=(message,))
-    thread.start()
-def tts_google_thread(message: telebot.types.Message):
-    """Переключает голос TTS на женский"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    global TTS_GENDER
-    TTS_GENDER[get_topic_id(message)] = 'google_female'
-    
-    bot.reply_to(message, 'Голос TTS теперь женский от Гугла', reply_markup=get_keyboard('hide', message))
-
-
-@bot.message_handler(commands=['ttssileroxenia'])
-def tts_silero_xenia(message: telebot.types.Message):
-    thread = threading.Thread(target=tts_silero_xenia_thread, args=(message,))
-    thread.start()
-def tts_silero_xenia_thread(message: telebot.types.Message):
-    """Переключает голос TTS на silero xenia"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    global TTS_GENDER
-    TTS_GENDER[get_topic_id(message)] = 'silero_xenia'
-
-    bot.reply_to(message, 'Голос TTS теперь женский от Silero [xenia]', reply_markup=get_keyboard('hide', message))
-
-
-@bot.message_handler(commands=['ttssileroaidar'])
-def tts_silero_aidar(message: telebot.types.Message):
-    thread = threading.Thread(target=tts_silero_aidar_thread, args=(message,))
-    thread.start()
-def tts_silero_aidar_thread(message: telebot.types.Message):
-    """Переключает голос TTS на silero aidar"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    global TTS_GENDER
-    TTS_GENDER[get_topic_id(message)] = 'silero_aidar'
-
-    bot.reply_to(message, 'Голос TTS теперь мужской от Silero [aidar]', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['tts']) 
@@ -1480,8 +1236,6 @@ def tts_thread(message: telebot.types.Message):
 Напишите что надо произнести, чтобы получить голосовое сообщение
 """
 
-        global COMMAND_MODE
-
         COMMAND_MODE[chat_id_full] = 'tts'
         bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
         my_log.log_echo(message, help)
@@ -1489,7 +1243,6 @@ def tts_thread(message: telebot.types.Message):
 
     with semaphore_talks:
         with ShowAction(message, 'record_audio'):
-            global TTS_GENDER
             if chat_id_full in TTS_GENDER:
                 gender = TTS_GENDER[chat_id_full]
             else:
@@ -1523,8 +1276,6 @@ def google_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
-    global DIALOGS_DB
-    chat_id = message.chat.id
     chat_id_full = get_topic_id(message)
 
     try:
@@ -1549,11 +1300,10 @@ def google_thread(message: telebot.types.Message):
 
 Напишите запрос в гугл
 """
-        global COMMAND_MODE
         COMMAND_MODE[chat_id_full] = 'google'
         bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
         return
-        
+
     with ShowAction(message, 'typing'):
         r = my_google.search(q)
         try:
@@ -1562,7 +1312,7 @@ def google_thread(message: telebot.types.Message):
             my_log.log2(error2)
             bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
         my_log.log_echo(message, r)
-        
+
         if chat_id_full not in DIALOGS_DB:
             DIALOGS_DB[chat_id_full] = []
         DIALOGS_DB[chat_id_full] += [{"role":    'system',
@@ -1585,8 +1335,6 @@ def ddg_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
-    global DIALOGS_DB
-    chat_id = message.chat.id
     chat_id_full = get_topic_id(message)
 
     try:
@@ -1611,7 +1359,6 @@ def ddg_thread(message: telebot.types.Message):
 
 Напишите свой запрос в DuckDuckGo
 """
-        global COMMAND_MODE
         COMMAND_MODE[chat_id_full] = 'ddg'
         bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
         return
@@ -1671,7 +1418,6 @@ def image_thread(message: telebot.types.Message):
                     caption = ''
                     # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
                     # что бы можно было их потом просматривать отдельно
-                    global IMAGE_PROMPTS, DIALOGS_DB
                     IMAGE_PROMPTS[msgs_ids[0].message_id] = prompt
 
                     for i in msgs_ids:
@@ -1698,7 +1444,6 @@ def image_thread(message: telebot.types.Message):
                     else:
                         DIALOGS_DB[chat_id_full] = n
         else:
-            global COMMAND_MODE
             COMMAND_MODE[chat_id_full] = 'image'
             bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
             my_log.log_echo(message, help)
@@ -1714,8 +1459,6 @@ def summ_text_thread(message: telebot.types.Message):
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
     else: return
 
-    global SUM_CACHE, DIALOGS_DB
-    chat_id = message.chat.id
     chat_id_full = get_topic_id(message)
 
     my_log.log_echo(message)
@@ -1777,7 +1520,6 @@ def summ_text_thread(message: telebot.types.Message):
     help = """Пример: /sum https://youtu.be/3i123i6Bf-U
 
 Давайте вашу ссылку и я перескажу содержание"""
-    global COMMAND_MODE
     COMMAND_MODE[chat_id_full] = 'sum'
     bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
     my_log.log_echo(message, help)
@@ -1787,12 +1529,10 @@ def summ_text_thread(message: telebot.types.Message):
 def summ2_text(message: telebot.types.Message):
     # убирает запрос из кеша если он там есть и делает запрос снова
 
-    global SUM_CACHE
-
     #my_log.log_echo(message)
 
     text = message.text
-    
+
     if len(text.split(' ', 1)) == 2:
         url = text.split(' ', 1)[1].strip()
         if my_sum.is_valid_url(url):
@@ -1840,7 +1580,6 @@ def trans_thread(message: telebot.types.Message):
             lang = match.group(1) or "ru"  # если lang не указан, то по умолчанию 'ru'
             text = match.group(2) or ''
         else:
-            global COMMAND_MODE
             COMMAND_MODE[message.chat.id] = 'trans'
             bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
             my_log.log_echo(message, help)
@@ -1891,7 +1630,6 @@ def last_thread(message: telebot.types.Message):
                 my_log.log_echo(message, help)
                 return
         elif len(args) > 2:
-            global COMMAND_MODE
             COMMAND_MODE[chat_id_full] = 'last'
             bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
             my_log.log_echo(message, help)
@@ -1951,7 +1689,6 @@ def send_name(message: telebot.types.Message):
         regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
         if re.match(regex, new_name) and len(new_name) <= 10 \
                     and new_name.lower() not in BAD_NAMES:
-            global BOT_NAMES
             BOT_NAMES[chat_id_full] = new_name.lower()
             msg = f'Кодовое слово для обращения к боту изменено на ({args[1]}) для этого чата.'
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
@@ -1964,7 +1701,6 @@ def send_name(message: telebot.types.Message):
     else:
         help = f"Напишите новое имя бота и я поменяю его, только русские и английские буквы и цифры после букв, \
 не больше 10 всего. Имена {', '.join(BAD_NAMES) if BAD_NAMES else ''} уже заняты."
-        global COMMAND_MODE
         COMMAND_MODE[chat_id_full] = 'name'
         bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
 
@@ -2035,66 +1771,6 @@ def send_welcome_help(message: telebot.types.Message):
     my_log.log2(str(message))
 
 
-@bot.message_handler(commands=['bardmode'])
-def bard_mode(message: telebot.types.Message):
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    global BARD_MODE
-
-    chat_id = message.chat.id
-    chat_id_full = get_topic_id(message)
-
-    mode = 'off'
-    if chat_id_full in BARD_MODE:
-        mode = BARD_MODE[chat_id_full]
-
-    if mode == 'off': mode = 'on'
-    else: mode = 'off'
-
-    BARD_MODE[chat_id_full] = mode
-
-    msg = f'Режим диалога с BARD AI {mode}'
-
-    bot.reply_to(message, msg, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
-
-    my_log.log_echo(message, msg)
-
-
-@bot.message_handler(commands=['bingmode'])
-def bing_mode(message: telebot.types.Message):
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    global BING_MODE
-
-    chat_id = message.chat.id
-    chat_id_full = get_topic_id(message)
-
-    mode = 'off'
-    if chat_id_full in BING_MODE:
-        mode = BING_MODE[chat_id_full]
-
-    if mode == 'off': mode = 'on'
-    else: mode = 'off'
-
-    BING_MODE[chat_id_full] = mode
-
-    msg = f'Режим диалога с BING AI {mode}'
-
-    bot.reply_to(message, msg, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
-
-    my_log.log_echo(message, msg)
-
-
 def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
                       reply_markup: telebot.types.InlineKeyboardMarkup = None):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
@@ -2103,9 +1779,11 @@ def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str 
         counter = len(chunks)
         for chunk in chunks:
             try:
-                bot.reply_to(message, chunk, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
-            except Exception as e:
-                print(e)
+                bot.reply_to(message, chunk, parse_mode=parse_mode,
+                             disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+            except Exception as error:
+                print(error)
+                my_log.log2(f'tb:send_long_message: {error}')
                 bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
             counter -= 1
             if counter < 0:
@@ -2115,7 +1793,7 @@ def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str 
         buf = io.BytesIO()
         buf.write(resp.encode())
         buf.seek(0)
-        bot.send_document(chat_id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
+        bot.send_document(message.chat.id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
 
 
 def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str = None,
@@ -2126,9 +1804,11 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         counter = len(chunks)
         for chunk in chunks:
             try:
-                bot.reply_to(message, chunk, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
-            except Exception as e:
-                print(e)
+                bot.reply_to(message, chunk, parse_mode=parse_mode,
+                             disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+            except Exception as error:
+                print(error)
+                my_log.log2(f'tb:reply_to_long_message: {error}')
                 bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
             counter -= 1
             if counter < 0:
@@ -2149,9 +1829,7 @@ def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
 def do_task(message, custom_prompt: str = ''):
     """функция обработчик сообщений работающая в отдельном потоке"""
 
-    global BLOCKS, BOT_NAMES, CHAT_LOGS, DIALOGS_DB, BING_MODE, BARD_MODE, COMMAND_MODE, SUPER_CHAT
-
-    if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '📎Файл', '⚙️Настройки']:
+    if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '⚙️Настройки']:
         if message.text == '🎨Нарисуй':
             message.text = '/image'
             image(message)
@@ -2167,9 +1845,6 @@ def do_task(message, custom_prompt: str = ''):
         if message.text == '🈶Переведи':
             message.text = '/trans'
             trans(message)
-        if message.text == '📎Файл':
-            message.text = '/file'
-            file_command(message)
         if message.text == '⚙️Настройки':
             message.text = '/config'
             config(message)
@@ -2233,10 +1908,6 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
-                elif COMMAND_MODE[chat_id_full] == 'wait_for_file':
-                    file_command(message)
-                    # возврат что бы не отключать файловый режим
-                    return
                 COMMAND_MODE[chat_id_full] = ''
                 return
 
@@ -2251,7 +1922,7 @@ def do_task(message, custom_prompt: str = ''):
                 m = utils.MessageList()
             m.append(f'[{time_now}] [{user_name}] {message.text}')
             CHAT_LOGS[chat_id_full] = m
-    
+
         # определяем какое имя у бота в этом чате, на какое слово он отзывается
         if chat_id_full in BOT_NAMES:
             bot_name = BOT_NAMES[chat_id_full]

@@ -71,142 +71,83 @@
 
 6. Создайте файл cfg.py и добавьте в него строку
 ```
-# список админов, кому можно использовать команды /restart /model
+# список админов, кому можно использовать команды /restart и вкл-выкл автоответы в чатах
 admins = [xxx,]
 
-token = 'токен телеграм бота'
-key = 'openai api key'
-# второй ключ для больших запросов, если нет то можно просто продублировать
-key2 = 'openai api key'
+# telegram bot token
+token   = "xxx"
 
+# openai tokens and addresses
+# список  серверов для chatGPT [['address', 'token', True/False(распознавание голоса), True/False(рисование)], [], ...]
+openai_servers = [
+    ['https://xxx.com/v1', 'sk-xxx', False, False],
+    ['https://yyy.com/v1', 'sk-yyy', False, False]
+]
 
-# токены от барда (да кончаются на точку). надо установить cookie editor в браузере, зайти на сайт барда
-# https://bard.google.com/ нажать F12 найти там раздел cookie editor
 # искать __Secure-1PSID в куках с сайта https://bard.google.com/
-# 2 или больше для надежности, автопереключение при ошибке. но 1 тоже можно
-bard_tokens = ['token1', 'token2']
+# можно указать только 1
+bard_tokens = ['xxx',
+               'yyy']
 
+# локальное разпознавание голоса, виспер лучше но требует много памяти и мощного процессора или видеокарту
+#stt = 'whisper'
+whisper_model = 'small' # ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small', 'medium.en', 'medium', 'large-v1', 'large-v2', 'large']
+stt = 'vosk'
 
-# ключ для рисования через сайт химеры (рисует кандинский)
-#https://discord.gg/CFkw3UfR
-#ChimeraGPT - The best API for chat completions with free GPT-4 access! Friendly community, free GPT-4, etc. only here! | 2510 members
-#cfg.key_chimeraGPT = ''
-key_chimeraGPT = 'xxx'
-
-
-# https://discord.gg/cattogpt
-# команда /info боту что бы получить ключ и статистику
-# дают до 8т запросов
-#key_cattoGPT = ''
-key_cattoGPT = 'xxx'
-
-
-# разпознавание голоса, виспер лучше но требует много памяти и мощного процессора или видеокарту
-stt = 'whisper'
-whisper_model = 'medium' # ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small', 'medium.en', 'medium', 'large-v1', 'large-v2', 'large']
-#stt = 'vosk'
-
-# если хочется иметь канал(не группа) в котором будут все сгенерированные фотки то надо добавить туда бота
-# id телеграм канала куда скидываются все сгенерированные картинки
+# id телеграм группы куда скидываются все сгенерированные картинки
+# id телеграм группы куда скидываются все сгенерированные картинки
 #pics_group = 0
 #pics_group_url = ''
 pics_group = xxx
-pics_group_url = 'https://t.me/yyy'
+pics_group_url = 'https://t.me/xxx'
+
 
 # размер буфера для поиска в гугле, чем больше тем лучше ищет и отвечает
 # и тем больше токенов жрет
 # для модели с 4к памяти
-max_request = 1800
-max_google_answer = 1000
+#max_request = 2800
+#max_google_answer = 1000
 # для модели с 16к памяти
-#max_request = 15000
-#max_google_answer = 2000
+max_request = 15000
+max_google_answer = 2000
+
 
 # насколько большие сообщения от юзера принимать
 # если у gpt всего 4к памяти то 1500
-#max_message_from_user = 4000
-max_message_from_user = 1500
-
+#max_message_from_user = 1500
+max_message_from_user = 4000
 
 
 # 16k
-#max_hist_lines = 18
-#max_hist_bytes = 12000
-#max_hist_compressed=1500
-#max_hist_mem = 4000
+max_hist_lines = 10
+max_hist_bytes = 8000
+max_hist_compressed=1500
+max_hist_mem = 2500
 
 # 4k
-max_hist_lines = 10
-max_hist_bytes = 2000
-max_hist_compressed=700
-max_hist_mem=300
+#max_hist_lines = 10
+#max_hist_bytes = 2000
+#max_hist_compressed=700
+#max_hist_mem=300
 
-
-
-# используем другой сервер, openai нас не пускает и ключей не продает, приходится заходить черз задний вход
-# бесплатные ключи у дискорд бота https://github.com/PawanOsman/ChatGPT#use-our-hosted-api-reverse-proxy
-# To use our hosted ChatGPT API, you can use the following steps:
-# * Join our Discord server.
-# * Get your API key from the #Bot channel by sending /key command.
-# * Use the API Key in your requests to the following endpoints.
-# * Присоединитесь к нашему серверу Discord.
-# * Получите свой API-ключ в канале #Bot, отправив команду /key.
-# * Используйте API-ключ в ваших запросах к следующим конечным точкам.
-# * Если у бота поменялся адрес надо в дискорде боту написать /resetip
-
-#openai_api_base = 'https://api.pawan.krd/v1'
-# x2 price :(
-openai_api_base = 'https://api.pawan.krd/unfiltered/v1'
-
-
-# отдельный второй гейт если есть иначе продублировать. нужен для.. больших запросов в гугл
-# https://discord.gg/cattogpt
-# команда /info боту что бы получить ключ и статистику
-# дают до 8т запросов
-openai_api_base2 = 'https://free.catto.codes/v1'
-
-
-#https://discord.gg/CFkw3UfR
-#ChimeraGPT - The best API for chat completions with free GPT-4 access! Friendly community, free GPT-4, etc. only here! | 2510 members
-#openai_api_base = 'https://chimeragpt.adventblocks.cc/v1'
-#openai_api_base2  = 'https://chimeragpt.adventblocks.cc/v1'
-
-
-# local poe.com proxy
-# должен быть настроен и запущен https://github.com/juzeon/poe-openai-proxy
-#openai_api_base = 'http://127.0.0.1:3700/v1'
-
-#model = 'gpt-4'
 model = 'gpt-3.5-turbo-16k'
 #model = 'gpt-3.5-turbo-8k'
 #model = 'gpt-3.5-turbo'
-#model="sage"
-#model = 'сlaude-instant'
+#model = "sage"
+#model = 'claude-instant'
 #model = 'claude-instant-100k'
 #model = 'claude-2-100k'
 
-
-# запасной прокси и ключ на случай если основной упал, если не то продублировать. должен быть совместим с основным
-reserve_openai_api_base = 'xxx'
-reserve_key = 'yyy'
-
-#еще вариант https://gptfreeee.tech/ создаешь себе ключ
-#openai.api_base = "https://gptfreeee.tech/v1
-
 # использовать прокси (пиратские сайты обычно лочат ваш ип, так что смотрите за этим)
-#all_proxy = ''
-all_proxy = 'socks5://172.28.1.5:1080'
+all_proxy = ''
+#all_proxy =   'http://172.28.1.4:3128'
+#all_proxy = 'socks5://172.28.1.5:1080'
 
 
-key_test = 'xxx'
-openai_api_base_test = 'xxx'
+key_test = ''
+openai_api_base_test = ''
 model_test = 'gpt-3.5-turbo-16k'
 
-
-# https://openai-api.ckt1031.xyz/
-key_ckt1031 = 'xxx'
-openai_api_base_ckt1031 = 'https://openai-api.ckt1031.xyz/v1'
-model_ckt1031 = 'gpt-3.5-turbo-16k'
 ```
 
 Для работы распознавания голосовых сообщений надо установить vosk сервер.

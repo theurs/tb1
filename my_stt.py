@@ -11,8 +11,6 @@ import speech_recognition as sr
 
 import cfg
 import gpt_basic
-import my_cattoGPT
-import my_chimera
 import my_log
 import my_whisper
 
@@ -118,20 +116,9 @@ def stt(input_file: str) -> str:
 
     if not text:
         try:
-            # затем химера
-            assert cfg.key_chimeraGPT != '', 'No chimera key'
+            # затем opanai
             assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
-            text = my_chimera.stt(input_file)
-        except Exception as error:
-            print(error, text)
-            my_log.log2(f'{error}\n\n{text}')
-
-    if not text:
-        try:
-            # затем cattoGPT
-            assert cfg.key_cattoGPT != '', 'No cattoGPT key'
-            assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
-            text = my_cattoGPT.stt(input_file)
+            text = gpt_basic.stt(input_file)
         except Exception as error:
             print(error, text)
             my_log.log2(f'{error}\n\n{text}')
@@ -141,7 +128,8 @@ def stt(input_file: str) -> str:
     elif cfg.stt == 'vosk':
         if not text:
             with vosk_lock:
-                subprocess.run([vosk_cmd, "--server", "--input", input_file, "--output", output_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run([vosk_cmd, "--server", "--input", input_file, "--output", output_file], 
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 with open(output_file, "r") as f:
                     text = f.read()
             os.remove(output_file)

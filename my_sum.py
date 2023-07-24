@@ -17,9 +17,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import bingai
 import cfg
 import gpt_basic
-import my_chimera
-import my_ckt1031GPT
-import utils
+import my_log
 
 
 def get_text_from_youtube(url: str) -> str:
@@ -113,22 +111,12 @@ BEGIN:
 
     if len(prompt) < 15000:
         try:
-            result = f'{gpt_basic.ai(prompt, second = True)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
+            result = f'{gpt_basic.ai(prompt)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
         except Exception as error:
             print(error)
+            my_log.log2(f'my_sum:summ_text_worker: {error}')
 
-    try:
-        if cfg.key_ckt1031:
-            pass
-        if not result and len(prompt) < 25000:
-            try:
-                result = f'{my_ckt1031GPT.ai(prompt)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
-            except Exception as error:
-                print(error)
-    except AttributeError as error:
-        pass
-
-    if not result and len(prompt) < 32000:
+    if not result:
         prompt_bing = shrink_text_for_bing(prompt)
         try:
             result_2 = bingai.ai(prompt_bing, 1)
@@ -136,27 +124,7 @@ BEGIN:
                 result = f'{result_2}\n\n--\nBing AI [{len(prompt_bing)} символов]'
         except Exception as error2:
             print(error2)
-
-    if not result:
-        if cfg.key_chimeraGPT != '':
-            try:
-                result = f'{my_chimera.ai(prompt_ru[:99000])}\n\n--\nClaude-instant-100k [{len(prompt[:99000])} символов]'
-            except Exception as chimera_error:
-                print(chimera_error)
-    if not result:
-        print('chimera failed')
-        try:
-            result_2 = bingai.ai(prompt_bing, 1)
-            if result_2:
-                result = f'{result_2}\n\n--\nBing AI [{len(prompt_bing)} символов]'
-        except Exception as error2:
-            print(error2)
-
-    if not result:
-        try:
-            result = f'{gpt_basic.ai(prompt[:15000], second = True)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:15000])} символов]'
-        except Exception as error:
-            print(error)
+            my_log.log2(f'my_sum:summ_text_worker: {error2}')
 
     return result
 

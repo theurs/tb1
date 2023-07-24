@@ -15,7 +15,6 @@ import trafilatura
 
 import gpt_basic
 import cfg
-import my_chimera
 import my_log
 
 
@@ -124,8 +123,7 @@ def ask_gpt(query: str, max_req: int, history: str, result: str, engine: str) ->
 
 {result}"""
 
-    result = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
-    #result = my_chimera.ai(text[:max_req], max_token=cfg.max_google_answer)
+    result = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer)
     my_log.log_google(text[:max_req], result)
     return result
 
@@ -157,7 +155,7 @@ def ask_gpt2(query: str, max_req: int, history: str, result: str, engine: str) -
 {result}
 """
     try:
-        result2 = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True).lower()
+        result2 = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer).lower()
         
         if 'true' in result2:
             result3 = ask_gpt3(query, max_req, history, result, engine)
@@ -199,8 +197,7 @@ def ask_gpt3(query: str, max_req: int, history: str, result: str, engine: str) -
 
 {result}"""
 
-    result = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer, second = True)
-    #result = my_chimera.ai(text[:max_req], max_token=cfg.max_google_answer)
+    result = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer)
     my_log.log_google(text[:max_req], result)
     return result
 

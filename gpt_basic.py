@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import os
+import json
 import re
 import sys
+from pathlib import Path
 
 import enchant
 from fuzzywuzzy import fuzz
@@ -11,26 +13,17 @@ import openai
 import cfg
 import utils
 import my_dic
-import my_ckt1031GPT
+import my_log
 
 
 CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
 
 
 def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages = None,
-       second = False, chat_id = None, model_to_use: str = '') -> str:
+       chat_id = None, model_to_use: str = '') -> str:
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
-    second - использовать ли второй гейт и ключ, для больших запросов
     """
     global CUSTOM_MODELS
-
-    print(cfg.model, len(prompt))
-    if second:
-        openai.api_key = cfg.key2
-        openai.api_base = cfg.openai_api_base2
-    else:
-        openai.api_key = cfg.key
-        openai.api_base = cfg.openai_api_base
 
     if messages == None:
         assert prompt != '', 'prompt не может быть пустым'
@@ -45,22 +38,13 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
     current_model = current_model if not model_to_use else model_to_use
 
     response = ''
-    try:
-        # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
-        completion = openai.ChatCompletion.create(
-            model = current_model,
-            messages=messages,
-            max_tokens=max_tok,
-            temperature=temp,
-            timeout=timeou
-        )
-        response = completion.choices[0].message.content
-    except Exception as unknown_error1:
-        print(unknown_error1)
+
+    for server in cfg.openai_servers:
+        openai.api_base = server[0]
+        openai.api_key = server[1]
+
         try:
             # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
-            openai.api_key = cfg.reserve_key
-            openai.api_base = cfg.reserve_openai_api_base
             completion = openai.ChatCompletion.create(
                 model = current_model,
                 messages=messages,
@@ -69,17 +53,23 @@ def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 1
                 timeout=timeou
             )
             response = completion.choices[0].message.content
-
-            # меняем местами основной и резервный сервер что бы в следующий раз не натыкаться на упавший сервер
-            # cfg.openai_api_base,         cfg.reserve_openai_api_base, cfg.key,         cfg.reserve_key = \
-            # cfg.reserve_openai_api_base, cfg.openai_api_base,         cfg.reserve_key, cfg.key
-        except Exception as unknown_error2:
-            # если основной и резервный не сработали то последний вариант, он использует только модель из конфига
-            print(unknown_error2)
-            try:
-                response = my_ckt1031GPT.ai(prompt, temp, max_tok, timeou, messages)
-            except Exception as unknown_error3:
-                print(unknown_error3)
+            if response:
+                break
+        except Exception as unknown_error1:
+            if server[0] == 'https://openai-api.ckt1031.xyz/v1' and \
+               str(unknown_error1).startswith('HTTP code 200 from API'):
+                    # ошибка парсера json https://openai-api.ckt1031.xyz/v1?
+                    text = str(unknown_error1)[24:]
+                    lines = [x[6:] for x in text.split('\n') if x.startswith('data:') and ':{"content":"' in x]
+                    content = ''
+                    for line in lines:
+                        parsed_data = json.loads(line)
+                        content += parsed_data["choices"][0]["delta"]["content"]
+                    if content:
+                        response = content
+                        break
+            print(unknown_error1)
+            my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.api_base}')
 
     return check_and_fix_text(response)
 
@@ -211,7 +201,10 @@ def clear_after_stt(text):
 
 
 def check_and_fix_text(text):
-    """пытаемся исправить странную особенность пиратского GPT сервера (только pawan?), он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
+    """пытаемся исправить странную особенность пиратского GPT сервера (только pawan?),
+    он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
+
+    # для винды нет enchant?
     if 'Windows' in utils.platform():
         return text
 
@@ -359,20 +352,102 @@ def stt_after_repair(text: str) -> str:
     return result
 
 
+def stt(audio_file: str) -> str:
+    """
+    Transcribes an audio file to text using OpenAI API.
+
+    Args:
+        audio_file (str): The path to the audio file.
+
+    Returns:
+        str: The transcribed text.
+
+    Raises:
+        FileNotFoundError: If the audio file does not exist.
+    """
+
+    #список серверов на которых доступен whisper
+    servers = [x for x in cfg.openai_servers if x[2]]
+
+    assert len(servers) > 0, 'No openai whisper servers configured'
+
+    audio_file_new = Path(utils.convert_to_mp3(audio_file))
+    audio_file_bytes = open(audio_file_new, "rb")
+
+    for server in servers:
+        openai.api_base = server[0]
+        openai.api_key = server[1]
+        try:
+            translation = openai.Audio.transcribe("whisper-1", audio_file_bytes)
+            if translation:
+                break
+        except Exception as error:
+            print(error)
+            my_log.log2(f'gpt_basic:stt: {error}\n\nServer: {server[0]}')
+
+    try:
+        audio_file_new.unlink()
+    except PermissionError:
+        print(f'gpt_basic:stt: PermissionError \n\nDelete file: {audio_file_new}')
+        my_log.log2(f'gpt_basic:stt: PermissionError \n\nDelete file: {audio_file_new}')
+
+    return json.loads(json.dumps(translation, ensure_ascii=False))['text']
+
+
+def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
+    """
+    Generates a specified number of images based on a given prompt.
+
+    Parameters:
+        - prompt (str): The text prompt used to generate the images.
+        - amount (int, optional): The number of images to generate. Defaults to 10.
+        - size (str, optional): The size of the generated images. Must be one of '1024x1024', '512x512', or '256x256'. Defaults to '1024x1024'.
+
+    Returns:
+        - list: A list of URLs pointing to the generated images.
+    """
+
+    #список серверов на которых доступен whisper
+    servers = [x for x in cfg.openai_servers if x[3]]
+
+    assert len(servers) > 0, 'No openai servers with image_gen=True configured'
+
+    assert amount <= 10, 'Too many images to gen'
+    assert size in ('1024x1024','512x512','256x256'), 'Wrong image size'
+
+    for server in servers:
+        openai.api_base = server[0]
+        openai.api_key = server[1]
+        try:
+            response = openai.Image.create(
+                prompt = prompt,
+                n = amount,
+                size=size,
+            )
+            if response:
+                return [x['url'] for x in response["data"]]
+        except Exception as error:
+            print(error)
+            my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
+    return []
+
+
 if __name__ == '__main__':
     if cfg.all_proxy:
         os.environ['all_proxy'] = cfg.all_proxy
-    
+
     # print(ai_test())
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
-    
-    # sys.exit()
+
+    #print(ai('1+1='))
+    print(image_gen('большой бадабум'))
+    sys.exit()
 
     if len(sys.argv) != 2:
         print("Usage: gptbasic.py filename|'request to qpt'")
         sys.exit(1)
     t = sys.argv[1]
     if os.path.exists(t):
-        print(ai(open(t).read(), max_tok = 2000, second = True))
+        print(ai(open(t).read(), max_tok = 2000))
     else:
         print(ai(t, max_tok = 2000))

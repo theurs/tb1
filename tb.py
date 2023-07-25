@@ -698,6 +698,7 @@ def handle_voice_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     is_private = message.chat.type == 'private'
+    chat_id_full = get_topic_id(message)
     if chat_id_full not in SUPER_CHAT:
         SUPER_CHAT[chat_id_full] = 0
     if SUPER_CHAT[chat_id_full] == 1:
@@ -941,6 +942,7 @@ def handle_video_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
+    chat_id_full = get_topic_id(message)
     is_private = message.chat.type == 'private'
     if chat_id_full not in SUPER_CHAT:
         SUPER_CHAT[chat_id_full] = 0
@@ -1823,6 +1825,8 @@ def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
 def do_task(message, custom_prompt: str = ''):
     """функция обработчик сообщений работающая в отдельном потоке"""
 
+    chat_id_full = get_topic_id(message)
+
     if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '⚙️Настройки']:
         if message.text == '🎨Нарисуй':
             message.text = '/image'
@@ -1854,7 +1858,6 @@ def do_task(message, custom_prompt: str = ''):
 
         my_log.log_echo(message)
 
-        chat_id_full = get_topic_id(message)
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
         if chat_id_full not in SUPER_CHAT:

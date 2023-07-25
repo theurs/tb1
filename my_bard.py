@@ -389,7 +389,7 @@ def convert_markdown(text: str) -> str:
         text = re.sub('```(.*?)\n(.*?)```', '<code>\\2</code>', text, flags=re.DOTALL)
         text = re.sub('```(.*?)```', '<code>\\1</code>', text, flags=re.DOTALL)
         # экранировать то что внутри <code></code>
-        text = re.sub(r"<code>(.*?)</code>", lambda m: "<code>" + re.sub(r"[<>&]", lambda n: {"<": "&lt;", ">": "&gt;", "&": "&amp;"}[n.group()], m.group(1)) + "</code>", text, flags=re.DOTALL)
+        #text = re.sub(r"<code>(.*?)</code>", lambda m: "<code>" + re.sub(r"[<>&]", lambda n: {"<": "&lt;", ">": "&gt;", "&": "&amp;"}[n.group()], m.group(1)) + "</code>", text, flags=re.DOTALL)
     except Exception as error:
         print(f'my_bard.py:convert_markdown:{error}')
         my_log.log2(f'my_bard.py:convert_markdown:{error}')

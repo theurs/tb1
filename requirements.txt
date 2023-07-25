@@ -9,6 +9,7 @@ google
 gTTS
 html2text
 langdetect
+markdown2
 openai
 openai-whisper
 pdflatex

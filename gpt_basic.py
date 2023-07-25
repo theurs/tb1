@@ -312,13 +312,8 @@ def ai_test() -> str:
     Returns:
         str: The generated response.
     """
-    try:
-        openai.api_key = cfg.key_test
-        openai.api_base = cfg.openai_api_base_test
-    except Exception as error:
-        print(f'gpt_basic:ai_test: {error}')
-        my_log.log2(f'gpt_basic:ai_test: {error}')
-        return
+    openai.api_key = cfg.key_test
+    openai.api_base = cfg.openai_api_base_test
 
     # for i in openai.Model.list()['data']:
     #     print(i['id'])

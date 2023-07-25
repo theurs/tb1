@@ -5,6 +5,7 @@ import threading
 import re
 import requests
 
+import markdown2
 from bardapi import Bard
 from textblob import TextBlob
 
@@ -369,23 +370,55 @@ def clear_voice_message_text(text: str) -> str:
 
 
 def convert_markdown(text: str) -> str:
-    # ищет в тексте фрагменты которые начинаются на '* **' и заканчиваются на '**'
-    # и заменяет на '* ***' и '***'
-    # '* **любовь** = 爱 (ài)' -> '* ***любовь*** = 爱 (ài)'
+    """
+    Converts a given `text` from Markdown format to HTML format for telegram parser.
+    
+    Args:
+        text (str): The input text in Markdown format.
+        
+    Returns:
+        str: The converted text in HTML format.
+    """
     try:
-        new_text = re.sub(r"\*\*(.*?)\*\*", r"* ***\1***", text)
+        text = markdown2.markdown(text)
+        text = re.sub('<p>(.*?)</p>', '\\1', text, flags=re.DOTALL)
+        text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
+        text = re.sub('<li>(.*?)</li>', '• \\1', text, flags=re.DOTALL)
+        text = re.sub('~~(.*?)~~', '<s>\\1</s>', text)
+        text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
+        text = re.sub('```(.*?)\n(.*?)```', '<code>\\2</code>', text, flags=re.DOTALL)
+        text = re.sub('```(.*?)```', '<code>\\1</code>', text, flags=re.DOTALL)
     except Exception as error:
-        print(error)
+        print(f'my_bard.py:convert_markdown:{error}')
         my_log.log2(f'my_bard.py:convert_markdown:{error}')
-        return text
-    return new_text
+    return text
 
 
 if __name__ == "__main__":
 
+    text = """Конечно, вот список игр, которые я считаю лучшими, с жирным шрифтом и кодом, который вы можете использовать, чтобы создать свой собственный список:
 
-    print(clear_voice_message_text(test_text))
+```python
+games = [
+    "The Legend of Zelda: Breath of the Wild",
+    "Red Dead Redemption 2",
+    "The Witcher 3: Wild Hunt",
+    "Grand Theft Auto V",
+    "The Elder Scrolls V: Skyrim",
+    "Super Mario Odyssey",
+    "Super Mario Galaxy",
+    "Super Mario World",
+    "Super Metroid"
+]
 
+for game in games:
+    print(f"<strong>{game}</strong>")
+```
+
+Этот код создаст список из 10 игр, а затем распечатает каждую игру с жирным шрифтом. Вы можете изменить список игр, добавив или удалив игры из списка <code>games</code>. Вы также можете изменить текст, который печатается для каждой игры, изменив строку <code>print(f"**{game}**")</code>."""
+    text = re.sub('```(.*?)\n(.*?)```', '<code>\\2</code>', text, flags=re.DOTALL)
+    text = re.sub('```(.*?)```', '<code>\\1</code>', text, flags=re.DOTALL)
+    print(text)
 
     # for i in split_text(test_text, 2500):
     #     print(i)

@@ -697,7 +697,13 @@ def handle_voice_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
-    if check_blocks(get_topic_id(message)) and message.chat.type != 'private':
+    is_private = message.chat.type == 'private'
+    if chat_id_full not in SUPER_CHAT:
+        SUPER_CHAT[chat_id_full] = 0
+    if SUPER_CHAT[chat_id_full] == 1:
+        is_private = True
+
+    if check_blocks(get_topic_id(message)) and not is_private:
         return
 
     with semaphore_talks:
@@ -754,7 +760,7 @@ def handle_document_thread(message: telebot.types.Message):
 
     chat_id = message.chat.id
 
-    if check_blocks(chat_id_full) and message.chat.type != 'private':
+    if check_blocks(chat_id_full) and not is_private:
         return
 
     with semaphore_talks:
@@ -885,7 +891,7 @@ def handle_photo_thread(message: telebot.types.Message):
     if SUPER_CHAT[chat_id_full] == 1:
         is_private = True
 
-    if check_blocks(get_topic_id(message)) and message.chat.type != 'private' and message.caption not in ('ocr', 'прочитай'):
+    if check_blocks(get_topic_id(message)) and not is_private and message.caption not in ('ocr', 'прочитай'):
         return
 
     with semaphore_talks:
@@ -935,7 +941,13 @@ def handle_video_thread(message: telebot.types.Message):
 
     my_log.log_media(message)
 
-    if check_blocks(get_topic_id(message)) and message.chat.type != 'private':
+    is_private = message.chat.type == 'private'
+    if chat_id_full not in SUPER_CHAT:
+        SUPER_CHAT[chat_id_full] = 0
+    if SUPER_CHAT[chat_id_full] == 1:
+        is_private = True
+
+    if check_blocks(get_topic_id(message)) and not is_private:
         return
 
     with semaphore_talks:

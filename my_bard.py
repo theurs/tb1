@@ -392,6 +392,7 @@ def convert_markdown(text: str) -> str:
         text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
         text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
         text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
+        text = re.sub('<ol>(.*?)</ol>', '\\1', text, flags=re.DOTALL)
         text = re.sub('```(.*?)\n(.*?)```', '<code>\\2</code>', text, flags=re.DOTALL)
         text = re.sub('```(.*?)```', '<code>\\1</code>', text, flags=re.DOTALL)
         # экранировать то что внутри <code></code>

@@ -388,6 +388,8 @@ def convert_markdown(text: str) -> str:
         text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
         text = re.sub('```(.*?)\n(.*?)```', '<code>\\2</code>', text, flags=re.DOTALL)
         text = re.sub('```(.*?)```', '<code>\\1</code>', text, flags=re.DOTALL)
+        # экранировать то что внутри <code></code>
+        text = re.sub(r"<code>(.*?)</code>", lambda m: "<code>" + re.sub(r"[<>&]", lambda n: {"<": "&lt;", ">": "&gt;", "&": "&amp;"}[n.group()], m.group(1)) + "</code>", text, flags=re.DOTALL)
     except Exception as error:
         print(f'my_bard.py:convert_markdown:{error}')
         my_log.log2(f'my_bard.py:convert_markdown:{error}')
@@ -396,28 +398,50 @@ def convert_markdown(text: str) -> str:
 
 if __name__ == "__main__":
 
-    text = """Конечно, вот список игр, которые я считаю лучшими, с жирным шрифтом и кодом, который вы можете использовать, чтобы создать свой собственный список:
+    text = """
 
-```python
-games = [
-    "The Legend of Zelda: Breath of the Wild",
-    "Red Dead Redemption 2",
-    "The Witcher 3: Wild Hunt",
-    "Grand Theft Auto V",
-    "The Elder Scrolls V: Skyrim",
-    "Super Mario Odyssey",
-    "Super Mario Galaxy",
-    "Super Mario World",
-    "Super Metroid"
+Конечно, вот программа, которая перечисляет HTML-теги:
+
+<code>html_tags = [
+    "<html>",
+    "<head>",
+    "<title>",
+    "<body>",
+    "<h1>",
+    "<h2>",
+    "<h3>",
+    "<p>",
+    "<b>",
+    "<i>",
+    "<u>",
+    "<em>",
+    "<strong>",
+    "<a>",
+    "<img>",
+    "<table>",
+    "<tr>",
+    "<td>",
+    "<th>",
+    "<ul>",
+    "<li>",
+    "<ol>",
+    "<dl>",
+    "<dt>",
+    "<dd>",
+    "<form>",
+    "<meta>",
+    "<link>",
+    "<script>",
 ]
 
-for game in games:
-    print(f"<strong>{game}</strong>")
-```
+for tag in html_tags:
+    print(tag)
+</code>
 
-Этот код создаст список из 10 игр, а затем распечатает каждую игру с жирным шрифтом. Вы можете изменить список игр, добавив или удалив игры из списка <code>games</code>. Вы также можете изменить текст, который печатается для каждой игры, изменив строку <code>print(f"**{game}**")</code>."""
-    text = re.sub('```(.*?)\n(.*?)```', '<code>\\2</code>', text, flags=re.DOTALL)
-    text = re.sub('```(.*?)```', '<code>\\1</code>', text, flags=re.DOTALL)
+
+Вот и всё
+"""
+    text = convert_markdown(text)
     print(text)
 
     # for i in split_text(test_text, 2500):

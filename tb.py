@@ -820,7 +820,7 @@ def handle_document_thread(message: telebot.types.Message):
                 # получаем самый большой документ из списка
                 document = message.document
                 # если документ не является PDF-файлом, отправляем сообщение об ошибке
-                if document.mime_type == 'image/jpeg':
+                if document.mime_type in ('image/jpeg', 'image/png'):
                     with ShowAction(message, 'typing'):
                         # скачиваем документ в байтовый поток
                         file_id = message.document.file_id

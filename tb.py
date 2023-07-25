@@ -2059,11 +2059,11 @@ def do_task(message, custom_prompt: str = ''):
                         # имя пользователя если есть или ник
                         user_name = message.from_user.first_name or message.from_user.username or ''
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name)
-                        answer = my_bard.convert_markdown(answer)
+                        #answer = my_bard.convert_markdown(answer)
                         if answer:
                             try:
-                                # reply_to_long_message(message, answer, parse_mode='Markdown', disable_web_page_preview = True, 
-                                reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
+                                reply_to_long_message(message, answer, parse_mode='Markdown', disable_web_page_preview = True, 
+                                # reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                 reply_markup=get_keyboard('bard_chat', message))
                             except Exception as error:
                                 print(error)

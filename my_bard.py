@@ -368,6 +368,19 @@ def clear_voice_message_text(text: str) -> str:
     return result
 
 
+def convert_markdown(text: str) -> str:
+    # ищет в тексте фрагменты которые начинаются на '* **' и заканчиваются на '**'
+    # и заменяет на '* ***' и '***'
+    # '* **любовь** = 爱 (ài)' -> '* ***любовь*** = 爱 (ài)'
+    try:
+        new_text = re.sub(r"\*\*(.*?)\*\*", r"* ***\1***", text)
+    except Exception as error:
+        print(error)
+        my_log.log2(f'my_bard.py:convert_markdown:{error}')
+        return text
+    return new_text
+
+
 if __name__ == "__main__":
 
 

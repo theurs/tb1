@@ -459,11 +459,11 @@ if __name__ == '__main__':
     # print(ai_test())
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 
-    # for x in range(5, 15):
-    #     print(ai(f'1+{x}='))
+    for x in range(5, 15):
+        print(ai(f'1+{x}='))
 
-    #print(image_gen('большой бадабум'))
-    print(get_list_of_models())
+    # print(image_gen('большой бадабум'))
+    # print(get_list_of_models())
 
     #print(ai(open('1.txt', 'r', encoding='utf-8').read()[:15000], max_tok = 2000))
 

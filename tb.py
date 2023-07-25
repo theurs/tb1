@@ -885,7 +885,7 @@ def handle_photo_thread(message: telebot.types.Message):
     if SUPER_CHAT[chat_id_full] == 1:
         is_private = True
 
-    if check_blocks(get_topic_id(message)) and message.chat.type != 'private':
+    if check_blocks(get_topic_id(message)) and message.chat.type != 'private' and message.caption not in ('ocr', 'прочитай'):
         return
 
     with semaphore_talks:

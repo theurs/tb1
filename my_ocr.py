@@ -56,7 +56,7 @@ def find_words(text):
 
 
 #распознаем  текст с картинки из байтовой строки
-def get_text_from_image(data: bytes) -> str:
+def get_text_from_image(data: bytes, language: str = 'rus+eng') -> str:
     """
     Extracts text from an image.
 
@@ -67,8 +67,6 @@ def get_text_from_image(data: bytes) -> str:
         str: The extracted text from the image.
     """
 
-    #language = 'rus+eng+ukr'
-    language = 'rus+eng'
     f = io.BytesIO(data)
 
     with lock:
@@ -86,15 +84,15 @@ def get_text_from_image(data: bytes) -> str:
 
     result = result[:-1]
 
-    if 'Windows' not in utils.platform():
-        if find_words(result) < 4: return ''
+    # if 'Windows' not in utils.platform():
+    #     if find_words(result) < 4: return ''
 
     result_cleared = gpt_basic.clear_after_ocr(result)
     return result_cleared
 
 
 # Определяем функцию для извлечения текста из PDF-файла
-def get_text(fileobj):
+def get_text(fileobj, language: str = 'rus+eng') -> str:
     """
     Extracts text from a PDF file.
 
@@ -114,7 +112,7 @@ def get_text(fileobj):
 
             p = page.get_pixmap()
             b = p.tobytes()
-            text += get_text_from_image(b)
+            text += get_text_from_image(b, language)
     return text
 
 

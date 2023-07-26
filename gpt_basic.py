@@ -109,7 +109,7 @@ def translate_text(text, fr = 'autodetect', to = 'ru'):
     """переводит текст с помощью GPT-чата, возвращает None при ошибке"""
 
     # если нет ключа то сразу отбой
-    if not openai.api_key: return None
+    # if not openai.api_key: return None
     
     prompt = f'Исправь явные опечатки в тексте и разорванные строки которые там могли появиться после плохого OCR, переведи текст с языка ({fr}) на язык ({to}), \
 разбей переведенный текст на абзацы для удобного чтения по возможности сохранив оригинальное разбиение на строки и абзацы. \
@@ -132,7 +132,7 @@ def clear_after_ocr(text):
     # return text
 
     # если нет ключа то сразу отбой
-    if not openai.api_key: return text
+    # if not openai.api_key: return text
 
     prompt = 'Исправь явные ошибки и опечатки в тексте которые там могли появиться после плохого OCR. \
 То что совсем плохо распозналось, бессмысленные символы, надо убрать. \
@@ -142,8 +142,9 @@ def clear_after_ocr(text):
     prompt += text
     try:
         r = ai(prompt)
-    except Exception as e:
-        print(e)
+    except Exception as error:
+        print(f'gpt_basic.ai:clear_after_ocr: {error}')
+        my_log.log2(f'gpt_basic.ai:clear_after_ocr: {error}')
         return text
     return r
 
@@ -163,7 +164,7 @@ def detect_ocr_command(text):
     # пока что без GPT - ложные срабатывания ни к чему
     return False
 
-    if not openai.api_key: return False
+    # if not openai.api_key: return False
     
     k = ', '.join(keywords)
     p = f'Пользователь прислал в телеграм чат картинку с подписью ({text}). В чате есть бот которые распознает текст с картинок по просьбе пользователей. \
@@ -183,7 +184,7 @@ def clear_after_stt(text):
     return text
 
     # если нет ключа то сразу отбой
-    if not openai.api_key: return text
+    # if not openai.api_key: return text
 
     prompt = f'Исправь явные ошибки распознавания голосового сообщения. \
 Важна точность, лучше оставить ошибку неисправленной если нет уверенности в том что это ошибка и её надо исправить именно так. \

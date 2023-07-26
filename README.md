@@ -151,6 +151,12 @@ key_test = ''
 openai_api_base_test = ''
 model_test = 'gpt-3.5-turbo-16k'
 
+# язык для распознавания, в том виде в котором принимает tesseract
+# 'eng', 'ukr', 'rus+eng+ukr'
+# можно указывать несколько через + но чем больше чем хуже, может путать буквы из разных языков даже в одном слове
+# пакет для tesseract с этими языками должен быть установлен 
+# https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html
+ocr_language = 'rus'
 ```
 
 Для работы распознавания голосовых сообщений надо установить vosk сервер.

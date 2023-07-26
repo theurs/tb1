@@ -80,6 +80,9 @@ IMAGE_PROMPTS = my_dic.PersistentDict('db/image_prompts.pkl')
 # выдать краткое содержание
 CHAT_LOGS = my_dic.PersistentDict('db/chat_logs.pkl')
 
+# запоминаем у какого юзера какой язык OCR выбран
+OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
+
 # для запоминания ответов на команду /sum
 SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
 
@@ -310,6 +313,21 @@ def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str
     DIALOGS_DB[chat_id] = new_messages or []
 
     return resp
+
+
+def get_ocr_language(message) -> str:
+    """Возвращает настройки языка OCR для этого чата"""
+    chat_id_full = get_topic_id(message)
+
+    if chat_id_full in OCR_DB:
+        lang = OCR_DB[chat_id_full]
+    else:
+        try:
+            OCR_DB[chat_id_full] = cfg.ocr_language
+        except:
+            OCR_DB[chat_id_full] = 'rus+eng'
+        lang = OCR_DB[chat_id_full]
+    return lang
 
 
 def get_topic_id(message: telebot.types.Message) -> str:
@@ -836,10 +854,10 @@ def handle_document_thread(message: telebot.types.Message):
                         file = bot.download_file(file_info.file_path)
                         fp = io.BytesIO(file)
                         # распознаем текст на фотографии с помощью pytesseract
-                        text = my_ocr.get_text_from_image(fp.read())
+                        text = my_ocr.get_text_from_image(fp.read(), get_ocr_language(message))
                         # отправляем распознанный текст пользователю
                         if text.strip() != '':
-                            reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
+                            reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message), disable_web_page_preview = True)
                             my_log.log_echo(message, '[OCR] ' + text)
                         else:
                             reply_to_long_message(message, 'Не смог распознать текст.', reply_markup=get_keyboard('translate', message))
@@ -857,7 +875,7 @@ def handle_document_thread(message: telebot.types.Message):
                 fp = io.BytesIO(file)
 
                 # распознаем текст в документе с помощью функции get_text
-                text = my_ocr.get_text(fp)
+                text = my_ocr.get_text(fp, get_ocr_language(message))
                 # отправляем распознанный текст пользователю
                 if text.strip() != '':
                     # если текст слишком длинный, отправляем его в виде текстового файла
@@ -923,10 +941,10 @@ def handle_photo_thread(message: telebot.types.Message):
             fp.write(downloaded_file)
             fp.seek(0)
             # распознаем текст на фотографии с помощью pytesseract
-            text = my_ocr.get_text_from_image(fp.read())
+            text = my_ocr.get_text_from_image(fp.read(), get_ocr_language(message))
             # отправляем распознанный текст пользователю
             if text.strip() != '':
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
+                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message), disable_web_page_preview = True)
                 my_log.log_echo(message, '[OCR] ' + text)
             else:
                 my_log.log_echo(message, '[OCR] no results')
@@ -1694,6 +1712,34 @@ def send_name(message: telebot.types.Message):
 не больше 10 всего. Имена {', '.join(BAD_NAMES) if BAD_NAMES else ''} уже заняты."
         COMMAND_MODE[chat_id_full] = 'name'
         bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
+
+
+@bot.message_handler(commands=['ocr'])
+def ocr_setup(message: telebot.types.Message):
+    """меняет настройки ocr"""
+
+    chat_id_full = get_topic_id(message)
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    try:
+        arg = message.text.split(maxsplit=1)[1]
+    except IndexError as error:
+        print(f'tb:ocr_setup: {error}')
+        my_log.log2(f'tb:ocr_setup: {error}')
+        bot.reply_to(message, f'Меняет настройки OCR\n\nНе указан параметр, какой язык (код) или сочетание кодов например rus+eng+ukr\n\nСейчас выбран: {get_ocr_language(message)}\n\nhttps://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html')
+        return
+
+    lang = get_ocr_language(message)
+
+    msg = f'Старые настройки: {lang}\n\nНовые настройки: {arg}'
+    OCR_DB[chat_id_full] = arg
+    
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['start'])

@@ -166,7 +166,7 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '') ->
         if links:
             for url in links:
                 if url:
-                    result += f"\n\n{url}"
+                    result += f"\n\n[url]({url})"
     except Exception as error:
         print(error)
         my_log.log2(str(error))
@@ -447,8 +447,7 @@ def fix_markdown(text):
         text = text.replace(line, line.replace(line, new_line))
 
     text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
-    
-    text = re.sub("(https?://.*?)( |$)?", "[Ссылка](\\1)", text)
+
     return text
 
 
@@ -484,6 +483,12 @@ Overall, LZ4 is a powerful and versatile compression algorithm that can be used 
 https://en.wikipedia.org/wiki/LZ4_(compression_algorithm) hi there
 https://en.wikipedia.org/wiki/LZ4_(compression_algorithm)
 https://en.wikipedia.org/wiki/LZ4_(compression_algorithm) dfgdfg
+                                                                                                                                                                              * https://google.com
+* https://www.wikipedia.org
+* https://www.youtube.com
+* https://www.facebook.com
+* https://www.twitter.com
+
 
 """
     text = fix_markdown(text)

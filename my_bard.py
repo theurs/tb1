@@ -5,7 +5,6 @@ import threading
 import re
 import requests
 
-import markdown2
 from bardapi import Bard
 from textblob import TextBlob
 
@@ -379,76 +378,83 @@ def convert_markdown(text: str) -> str:
     Returns:
         str: The converted text in HTML format.
     """
-    try:
-        text = markdown2.markdown(text)
-        text = re.sub('<p>(.*?)</p>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('<blockquote>(.*?)</blockquote>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('<blockquote>(.*?)</blockquote>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('<blockquote>(.*?)</blockquote>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('<blockquote>(.*?)</blockquote>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('<li>(.*?)</li>', '• \\1', text, flags=re.DOTALL)
-        text = re.sub('~~(.*?)~~', '<s>\\1</s>', text)
-        text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('<ul>(.*?)</ul>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('<ol>(.*?)</ol>', '\\1', text, flags=re.DOTALL)
-        text = re.sub('```(.*?)\n(.*?)```', '<code>\\2</code>', text, flags=re.DOTALL)
-        text = re.sub('```(.*?)```', '<code>\\1</code>', text, flags=re.DOTALL)
-        # экранировать то что внутри <code></code>
-        #text = re.sub(r"<code>(.*?)</code>", lambda m: "<code>" + re.sub(r"[<>&]", lambda n: {"<": "&lt;", ">": "&gt;", "&": "&amp;"}[n.group()], m.group(1)) + "</code>", text, flags=re.DOTALL)
-    except Exception as error:
-        print(f'my_bard.py:convert_markdown:{error}')
-        my_log.log2(f'my_bard.py:convert_markdown:{error}')
+    text = markdown2.markdown(text)
+
+    # сразу удаляем <p>
+    text = re.sub('<p>(.*?)</p>', '\\1', text, flags=re.DOTALL)
+
+    # блоки кода markdown2 не понимает?
+    text = re.sub('```(.*?)\n(.*?)```', '<code>\\2</code>', text, flags=re.DOTALL)
+    text = re.sub('```(.*?)```', '<code>\\1</code>', text, flags=re.DOTALL)
+    text = re.sub('`(.*?)`', '<code>\\1</code>', text)
+
+    # Найти все вхождения <code>...</code>
+    pattern = r'<code>(.*?)</code>'
+    # Экранировать теги внутри найденных фрагментов 
+    text = re.sub(pattern, lambda m: f"<code>{html.escape(m.group(1))}</code>", text, flags=re.DOTALL)
+
+    soup = BeautifulSoup(text,'html.parser')
+
+    # Сохранить только разрешенные теги
+    allowed_tags = ['b', 'strong', 'em', 'i', 'code', 'pre', 's', 'strike', 'del', 'u']
+    for e in soup.find_all():
+        if e.name not in allowed_tags:
+            e.unwrap()
+
+    text = str(soup)
+
+    # теги-каменты удалить отдельно
+    text = re.sub('(<!--.*?-->)', '', text, flags=re.DOTALL)
+
+    return str(text)
+
+
+def fix_markdown(text):
+    """
+    Generates a fixed version of the given Markdown text by performing the following steps:
+    1. Identifies the lines in the text that start with "* ".
+    2. Replaces each identified line with a new line that starts with "•" instead of "* ".
+    3. Replaces any occurrences of bold or italic markdown formatting with triple asterisks.
+
+    Args:
+        text (str): The original Markdown text.
+
+    Returns:
+        str: The fixed version of the Markdown text.
+    """
+    def find_lines(text):
+        lines = text.splitlines()
+        results = []
+        for line in lines:
+            if line.startswith("* "):
+                results.append(line)
+        return list(set(results))
+
+    for line in find_lines(text):
+        new_line = '•' + line[1:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
     return text
 
 
 if __name__ == "__main__":
 
     text = """
+Вот список обязательных качеств ниндзя-медика Конохи:
 
-Конечно, вот программа, которая перечисляет HTML-теги:
+* **Знание медицинских практик:** Ниндзя-медики должны обладать обширными знаниями о человеческом теле и различных медицинских практиках. Они должны уметь диагностировать и лечить различные заболевания и травмы, а также проводить операции.
+* **Навыки тайдзюцу:** Ниндзя-медики должны быть достаточно сильными и ловкими, чтобы защитить себя и своих союзников. Они должны уметь сражаться как в ближнем, так и в дальнем бою.
+* **Навыки гендзюцу:** Ниндзя-медики должны уметь использовать гендзюцу для защиты себя и своих союзников, а также для оказания помощи раненым.
+* **Навыки ниндзюцу:** Ниндзя-медики должны уметь использовать ниндзюцу для лечения своих союзников и нанесения вреда своим врагам.
+* **Хладнокровие:** Ниндзя-медики должны уметь сохранять спокойствие даже в самых стрессовых ситуациях. Они должны уметь быстро принимать решения и действовать в соответствии с ними.
+* **Сострадание:** Ниндзя-медики должны быть сострадательны и готовы помочь другим. Они должны быть готовы рисковать своей жизнью, чтобы спасти жизни других.
 
-<code>html_tags = [
-    "<html>",
-    "<head>",
-    "<title>",
-    "<body>",
-    "<h1>",
-    "<h2>",
-    "<h3>",
-    "<p>",
-    "<b>",
-    "<i>",
-    "<u>",
-    "<em>",
-    "<strong>",
-    "<a>",
-    "<img>",
-    "<table>",
-    "<tr>",
-    "<td>",
-    "<th>",
-    "<ul>",
-    "<li>",
-    "<ol>",
-    "<dl>",
-    "<dt>",
-    "<dd>",
-    "<form>",
-    "<meta>",
-    "<link>",
-    "<script>",
-]
+* *тест одиночный*
 
-for tag in html_tags:
-    print(tag)
-</code>
-
-
-Вот и всё
+Ниндзя-медики - одни из самых важных членов деревни Коноха. Они несут ответственность за здоровье и благополучие своих сограждан. Чтобы стать ниндзя-медиком, нужно обладать всеми вышеперечисленными качествами.
 """
-    text = convert_markdown(text)
+    text = fix_markdown(text)
     print(text)
 
     # for i in split_text(test_text, 2500):

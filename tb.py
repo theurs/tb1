@@ -1019,15 +1019,10 @@ def config(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
-
-    #my_log.log2(get_topic_id(message))
-    #my_log.log2(str(message))
-
-
     try:
         bot.reply_to(message, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', message))
     except Exception as error:
-        my_log.log2(f'config:{error}')
+        my_log.log2(f'tb:config:{error}')
         print(error)
 
 
@@ -2059,20 +2054,37 @@ def do_task(message, custom_prompt: str = ''):
                         # имя пользователя если есть или ник
                         user_name = message.from_user.first_name or message.from_user.username or ''
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name)
-                        #answer = my_bard.convert_markdown(answer)
+                        # answer = my_bard.convert_markdown(answer)
+                        my_log.log_echo(message, answer)
+                        answer = my_bard.fix_markdown(answer)
+                        my_log.log_echo(message, answer)
                         if answer:
                             try:
                                 reply_to_long_message(message, answer, parse_mode='Markdown', disable_web_page_preview = True, 
-                                # reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
-                                reply_markup=get_keyboard('bard_chat', message))
+                                                      reply_markup=get_keyboard('bard_chat', message))
                             except Exception as error:
-                                print(error)
+                                print(f'tb:do_task: error')
+                                my_log.log2(f'tb:do_task: error')
                                 reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                reply_markup=get_keyboard('bard_chat', message))
-                            my_log.log_echo(message, answer)
-                    except Exception as error:
-                        print(error)
-                        my_log.log2(str(error))
+                                                      reply_markup=get_keyboard('bard_chat', message))
+                        # if answer:
+                        #     try:
+                        #         reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
+                        #                               reply_markup=get_keyboard('bard_chat', message))
+                        #     except Exception as error:
+                        #         print(error)
+                        #         my_log.log2(str(error))
+                        #         try:
+                        #             reply_to_long_message(message, answer, parse_mode='Markdown', disable_web_page_preview = True, 
+                        #                                   reply_markup=get_keyboard('bard_chat', message))
+                        #         except Exception as error2: 
+                        #             print(error2)
+                        #             my_log.log2(str(error2))
+                        #             reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
+                        #             reply_markup=get_keyboard('bard_chat', message))
+                    except Exception as error3:
+                        print(error3)
+                        my_log.log2(str(error3))
                     return
 
             # добавляем новый запрос пользователя в историю диалога пользователя

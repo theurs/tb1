@@ -1731,7 +1731,11 @@ def ocr_setup(message: telebot.types.Message):
     except IndexError as error:
         print(f'tb:ocr_setup: {error}')
         my_log.log2(f'tb:ocr_setup: {error}')
-        bot.reply_to(message, f'Меняет настройки OCR\n\nНе указан параметр, какой язык (код) или сочетание кодов например rus+eng+ukr\n\nСейчас выбран: {get_ocr_language(message)}\n\nhttps://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html', reply_markup=get_keyboard('hide', message))
+        bot.reply_to(message,
+                     f'Меняет настройки OCR\n\nНе указан параметр, какой язык (код) \
+или сочетание кодов например rus+eng+ukr\n\nСейчас выбран: \
+{get_ocr_language(message)}\n\nhttps://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html',
+                     reply_markup=get_keyboard('hide', message), disable_web_page_preview=True)
         return
 
     lang = get_ocr_language(message)

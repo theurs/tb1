@@ -2055,7 +2055,7 @@ def do_task(message, custom_prompt: str = ''):
                         user_name = message.from_user.first_name or message.from_user.username or ''
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name)
                         # answer = my_bard.convert_markdown(answer)
-                        my_log.log_echo(message, answer)
+                        my_log.log_echo(message, answer, debug = True)
                         answer = my_bard.fix_markdown(answer)
                         my_log.log_echo(message, answer)
                         if answer:

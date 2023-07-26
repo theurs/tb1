@@ -36,7 +36,7 @@ def log2(text: str) -> None:
     open(log_file_path, 'a', encoding="utf-8").write(f'{text}\n=========================================================================================\n')
 
 
-def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:
+def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bool = False) -> None:
     """записывает в журнал сообщение полученное обработчиком обычных сообщений либо ответ бота"""
     global lock
     time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
@@ -54,6 +54,9 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '') -> None:
         topic_id = message.message_thread_id
 
     log_file_path = logname
+    
+    if debug:
+        log_file_path = log_file_path + '.debug.log'
 
     if topic_id:
         log_file_path = log_file_path[:-4] + f' [{topic_id}].log'

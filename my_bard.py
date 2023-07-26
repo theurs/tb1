@@ -438,12 +438,36 @@ def fix_markdown(text):
                 results.append(line)
         return list(set(results))
 
+    def find_lines3(text):
+        lines = text.splitlines()
+        results = []
+        for line in lines:
+            if line.startswith("        * "):
+                results.append(line)
+        return list(set(results))
+
+    def find_lines4(text):
+        lines = text.splitlines()
+        results = []
+        for line in lines:
+            if line.startswith("            * "):
+                results.append(line)
+        return list(set(results))
+
     for line in find_lines(text):
         new_line = '•' + line[1:]
         text = text.replace(line, line.replace(line, new_line))
 
     for line in find_lines2(text):
         new_line = '    •' + line[5:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines3(text):
+        new_line = '        •' + line[9:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines4(text):
+        new_line = '            •' + line[13:]
         text = text.replace(line, line.replace(line, new_line))
 
     text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)

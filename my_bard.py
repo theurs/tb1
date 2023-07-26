@@ -166,7 +166,7 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '') ->
         if links:
             for url in links:
                 if url:
-                    result += f"\n\n[url]({url})"
+                    result += f"\n\n[{url}]({url})"
     except Exception as error:
         print(error)
         my_log.log2(str(error))

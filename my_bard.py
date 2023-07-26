@@ -447,6 +447,8 @@ def fix_markdown(text):
         text = text.replace(line, line.replace(line, new_line))
 
     text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
+    
+    text = re.sub("(https?://.*?)( |$)?", "[Ссылка](\\1)", text)
     return text
 
 
@@ -477,6 +479,11 @@ if __name__ == "__main__":
 Эти формулы являются лишь некоторыми из многих, которые используются в теории относительности. Они описывают различные аспекты теории, от взаимосвязи между энергией и массой>
 
 Я надеюсь, это было интересно!
+
+Overall, LZ4 is a powerful and versatile compression algorithm that can be used to improve the performance of a wide variety of applications. It is fast, efficient, and versatile, but it is not as good as some other algorithms for some data types.
+https://en.wikipedia.org/wiki/LZ4_(compression_algorithm) hi there
+https://en.wikipedia.org/wiki/LZ4_(compression_algorithm)
+https://en.wikipedia.org/wiki/LZ4_(compression_algorithm) dfgdfg
 
 """
     text = fix_markdown(text)

@@ -502,12 +502,15 @@ def fix_markdown(text):
     text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
 
     # tex в unicode
-    matches = re.findall("\$\$(.*?)\$\$", text, flags=re.DOTALL)
+    matches = re.findall("\$\$?(.*?)\$\$?", text, flags=re.DOTALL)
     for match in matches:
         new_match = latex_to_unicode(match)
         text = text.replace(f'$${match}$$', new_match)
-    
+        text = text.replace(f'${match}$', new_match)
+
+    text = text.replace('***', '★★★★★★')
     text = re.sub("\*", "\*", text, flags=re.DOTALL)
+    text = text.replace('★★★★★★', '***')
 
     # заменить все ссылки на маркдаун версию пропустив те которые уже так оформлены
     text = re.sub(r'(?<!\[)\b(https?://\S+)\b(?!])', r'[\1](\1)', text)
@@ -595,11 +598,13 @@ $$\text{ширина в пикселях} = \frac{316.4 \times 10^6}{200} \appro
 
 Итак, ширина фотографии составляет 1920 пикселей.
 
+\binom{n}{k} = \frac{n!}{k!(n-k)!}
+
 """
     text = fix_markdown(text)
     print(text)
     
-    # print(LatexNodes2Text().latex_to_text(r'\frac{316.4 \times 10^6}{300} \approx 1.1 \times 10^6'))
+    # print(LatexNodes2Text().latex_to_text(r'(x + y)^n = \sum_{k=0}^n \binom{n}{k} x^k y^{n-k}'))
 
     # for i in split_text(test_text, 2500):
     #     print(i)

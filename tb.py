@@ -1079,15 +1079,17 @@ def change_mode(message: telebot.types.Message):
         else:
             new_prompt = arg[0]
         PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
-        msg =  f'[Новая роль установлена] `{new_prompt}`'
+        msg =  f'[Новая роль установлена] `{new_prompt}`\n\n***Роли работают только с chatGPT, используйте команду /config что бы выбрать chatGPT***'
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, msg)
     else:
         msg = f"""Текущий стиль
-        
+
 `{PROMPTS[chat_id_full][0]['content']}`
-        
+
 Меняет роль бота, строку с указаниями что и как говорить. Работает только для ChatGPT.
+
+***Роли работают только с chatGPT, используйте команду /config что бы выбрать chatGPT***
 
 `/style <1|2|3|4|свой текст>`
 
@@ -1903,15 +1905,17 @@ def do_task(message, custom_prompt: str = ''):
 
         my_log.log_echo(message)
 
+        # является ли это ответом на наше сообщение
+        is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
+        is_reply_to_other = message.reply_to_message is not None and message.reply_to_message.from_user.id != bot.get_me().id
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
         if chat_id_full not in SUPER_CHAT:
             SUPER_CHAT[chat_id_full] = 0
         # если бот должен отвечать всем в этом чате то пусть ведет себя как в привате
-        if SUPER_CHAT[chat_id_full] == 1:
+        # но если это ответ на чье-то сообщение то игнорируем
+        if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
             is_private = True
-        # является ли это ответом на наше сообщение
-        is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
         # id куда писать ответ
         chat_id = message.chat.id
 

@@ -480,6 +480,7 @@ def fix_markdown(text):
         return list(set(results))
 
     # найти все куски кода между ``` и заменить на хеши
+    # спрятать код на время преобразований
     matches = re.findall('```(.*?)```', text, flags=re.DOTALL)
     list_of_code_blocks = []
     for match in matches:
@@ -526,12 +527,16 @@ def fix_markdown(text):
     # экранировать символ _
     text = text.replace('_', '\\_')
 
+    # заменить все ссылки на маркдаун версию пропустив те которые уже так оформлены
+    text = re.sub(r'(?<!\[)\b(https?://\S+)\b(?!])', r'[\1](\1)', text)
+
+    #найти все ссылки и отменить в них экранирование символа _
+    for i in re.findall(r'(https?://\S+)', text):
+        text = text.replace(i, i.replace(r'\_', '_'))
+
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks:
         text = text.replace(random_string, f'```{match}```')
-
-    # заменить все ссылки на маркдаун версию пропустив те которые уже так оформлены
-    text = re.sub(r'(?<!\[)\b(https?://\S+)\b(?!])', r'[\1](\1)', text)
 
     return text
 

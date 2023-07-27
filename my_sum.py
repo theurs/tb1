@@ -116,6 +116,20 @@ BEGIN:
             print(error)
             my_log.log2(f'my_sum:summ_text_worker: {error}')
 
+    if not result and len(prompt) > 32000:
+        try:
+            result = f'{gpt_basic.ai(prompt, model_to_use="claude-instant-100k")}\n\n--\nclaude-instant-100k [{len(prompt)} символов]'
+        except Exception as error:
+            print(error)
+            my_log.log2(f'my_sum:summ_text_worker: {error}')
+
+    if not result and len(prompt) > 32000:
+        try:
+            result = f'{gpt_basic.ai(prompt, model_to_use="claude-2-100k")}\n\n--\nclaude-2-100k [{len(prompt)} символов]'
+        except Exception as error:
+            print(error)
+            my_log.log2(f'my_sum:summ_text_worker: {error}')
+
     if not result:
         prompt_bing = shrink_text_for_bing(prompt)
         try:
@@ -125,6 +139,15 @@ BEGIN:
         except Exception as error2:
             print(error2)
             my_log.log2(f'my_sum:summ_text_worker: {error2}')
+
+    if not result:
+        try:
+            prompt2 = prompt[:15000]
+            result = f'{gpt_basic.ai(prompt2)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt2)} символов]'
+        except Exception as error:
+            print(error)
+            my_log.log2(f'my_sum:summ_text_worker: {error}')
+
 
     return result
 

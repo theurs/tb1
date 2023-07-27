@@ -123,13 +123,13 @@ def stt(input_file: str) -> str:
             print(error, text)
             my_log.log2(f'{error}\n\n{text}')
 
-    if cfg.stt == 'whisper':
-        my_whisper.get_text(input_file)
-    elif cfg.stt == 'vosk':
-        if not text:
+    if not text:
+        if cfg.stt == 'whisper':
+            my_whisper.get_text(input_file)
+        elif cfg.stt == 'vosk':
             with vosk_lock:
                 subprocess.run([vosk_cmd, "--server", "--input", input_file, "--output", output_file], 
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 with open(output_file, "r") as f:
                     text = f.read()
             os.remove(output_file)
@@ -143,5 +143,5 @@ def stt(input_file: str) -> str:
 if __name__ == "__main__":
     os.environ['all_proxy'] = cfg.all_proxy
     #print(vosk_cmd)
-    text = stt('1.ogg')
+    text = stt('1.opus')
     print(text)

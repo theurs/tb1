@@ -511,6 +511,8 @@ def fix_markdown(text):
     text = text.replace('***', '★★★★★★')
     text = re.sub("\*", "\*", text, flags=re.DOTALL)
     text = text.replace('★★★★★★', '***')
+    
+    text = text.replace('_', '\_')
 
     # заменить все ссылки на маркдаун версию пропустив те которые уже так оформлены
     text = re.sub(r'(?<!\[)\b(https?://\S+)\b(?!])', r'[\1](\1)', text)

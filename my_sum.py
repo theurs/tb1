@@ -111,21 +111,27 @@ BEGIN:
 
     if len(prompt) < 15000:
         try:
-            result = f'{gpt_basic.ai(prompt)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
+            r = gpt_basic.ai(prompt)
+            if r:
+                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
         except Exception as error:
             print(error)
             my_log.log2(f'my_sum:summ_text_worker: {error}')
 
     if not result and len(prompt) > 32000:
         try:
-            result = f'{gpt_basic.ai(prompt, model_to_use="claude-instant-100k")}\n\n--\nclaude-instant-100k [{len(prompt)} символов]'
+            r = gpt_basic.ai(prompt, model_to_use="claude-instant-100k")
+            if r:
+                result = f'{r}\n\n--\nclaude-instant-100k [{len(prompt)} символов]'
         except Exception as error:
             print(error)
             my_log.log2(f'my_sum:summ_text_worker: {error}')
 
     if not result and len(prompt) > 32000:
         try:
-            result = f'{gpt_basic.ai(prompt, model_to_use="claude-2-100k")}\n\n--\nclaude-2-100k [{len(prompt)} символов]'
+            r = gpt_basic.ai(prompt, model_to_use="claude-2-100k")
+            if r:
+                result = f'{r}\n\n--\nclaude-2-100k [{len(prompt)} символов]'
         except Exception as error:
             print(error)
             my_log.log2(f'my_sum:summ_text_worker: {error}')
@@ -133,21 +139,21 @@ BEGIN:
     if not result:
         prompt_bing = shrink_text_for_bing(prompt)
         try:
-            result_2 = bingai.ai(prompt_bing, 1)
-            if result_2:
-                result = f'{result_2}\n\n--\nBing AI [{len(prompt_bing)} символов]'
+            r = bingai.ai(prompt_bing, 1)
+            if r:
+                result = f'{r}\n\n--\nBing AI [{len(prompt_bing)} символов]'
         except Exception as error2:
             print(error2)
             my_log.log2(f'my_sum:summ_text_worker: {error2}')
 
     if not result:
         try:
-            prompt2 = prompt[:15000]
-            result = f'{gpt_basic.ai(prompt2)}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt2)} символов]'
+            r = gpt_basic.ai(prompt[:15000])
+            if r:
+                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:15000])} символов]'
         except Exception as error:
             print(error)
             my_log.log2(f'my_sum:summ_text_worker: {error}')
-
 
     return result
 

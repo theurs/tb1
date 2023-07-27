@@ -6,6 +6,7 @@ import re
 import requests
 
 from bardapi import Bard
+from pylatexenc.latex2text import LatexNodes2Text
 from textblob import TextBlob
 
 import cfg
@@ -409,6 +410,20 @@ def convert_markdown(text: str) -> str:
     return str(text)
 
 
+def latex_to_unicode(text: str) -> str:
+    """
+    Converts the given LaTeX text to Unicode text.
+    
+    Args:
+        text (str): The input text in LaTeX format.
+        
+    Returns:
+        str: The converted text in Unicode format.
+    """
+    new_text = LatexNodes2Text().latex_to_text(text)
+    return new_text
+
+
 def fix_markdown(text):
     """
     Generates a fixed version of the given Markdown text by performing the following steps:
@@ -482,8 +497,16 @@ def fix_markdown(text):
         new_line = ' •' + line[2:]
         text = text.replace(line, line.replace(line, new_line))
 
+    # 1 или 2 * в 3 звездочки
+    # *bum* -> ***bum***
     text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
-    
+
+    # tex в unicode
+    matches = re.findall("\$\$(.*?)\$\$", text, flags=re.DOTALL)
+    for match in matches:
+        new_match = latex_to_unicode(match)
+        text = text.replace(f'$${match}$$', new_match)
+
     # заменить все ссылки на маркдаун версию пропустив те которые уже так оформлены
     text = re.sub(r'(?<!\[)\b(https?://\S+)\b(?!])', r'[\1](\1)', text)
 
@@ -492,7 +515,7 @@ def fix_markdown(text):
 
 if __name__ == "__main__":
 
-    text = """
+    text = r"""
 Вот список обязательных качеств ниндзя-медика Конохи:
 
 * **Знание медицинских практик:** Ниндзя-медики должны обладать обширными знаниями о человеческом теле и различных медицинских практиках. Они должны уметь диагностировать и лечить различные заболевания и травмы, а также проводить операции.
@@ -548,9 +571,21 @@ https://en.wikipedia.org/wiki/LZ4_(compression_algorithm) dfgdfg
 
 [test](https://en.wikipedia.org/wiki/LZ4_(compression_algorithm))
 
+- Если разрешение 72 PPI, то ширина в пикселях равна $$\frac{316.4 \times 10^6}{72} \approx 4.4 \times 10^6$$
+- Если разрешение 150 PPI, то ширина в пикселях равна $$\frac{316.4 \times 10^6}{150} \approx 2.1 \times 10^6$$
+- Если разрешение 300 PPI, то ширина в пикселях равна $$\frac{316.4 \times 10^6}{300} \approx 1.1 \times 10^6$$
+
+$$\text{ширина в пикселях} = \frac{\text{количество пикселей по горизонтали}}{\text{разрешение}}$$
+
+где количество пикселей по горизонтали мы уже нашли ранее и оно равно примерно 316.4 миллиона. Например, если вы хотите знать ширину в пикселях для разрешения 200 PPI, то вы можете подставить эти значения в формулу и получить:
+
+$$\text{ширина в пикселях} = \frac{316.4 \times 10^6}{200} \approx 1.6 \times 10^6$$
+
 """
     text = fix_markdown(text)
     print(text)
+    
+    # print(LatexNodes2Text().latex_to_text(r'\frac{316.4 \times 10^6}{300} \approx 1.1 \times 10^6'))
 
     # for i in split_text(test_text, 2500):
     #     print(i)

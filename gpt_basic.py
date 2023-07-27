@@ -146,6 +146,7 @@ def clear_after_ocr(text):
         print(f'gpt_basic.ai:clear_after_ocr: {error}')
         my_log.log2(f'gpt_basic.ai:clear_after_ocr: {error}')
         return text
+    my_log.log2(f'gpt_basic.ai:clear_after_ocr:ok: {r}')
     return r
 
 

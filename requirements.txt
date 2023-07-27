@@ -16,6 +16,7 @@ pdflatex
 Pillow
 py_trans
 pyenchant
+pylatexenc
 PyMuPDF
 PyPDF2
 pysocks

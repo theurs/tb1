@@ -481,12 +481,12 @@ def fix_markdown(text):
 
     # найти все куски кода между ``` и заменить на хеши
     # спрятать код на время преобразований
-    matches = re.findall('```(.*?)```', text, flags=re.DOTALL)
+    matches = re.findall('`(.*?)`', text, flags=re.DOTALL)
     list_of_code_blocks = []
     for match in matches:
         random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
         list_of_code_blocks.append([match, random_string])
-        text = text.replace(f'```{match}```', random_string)
+        text = text.replace(f'`{match}`', random_string)
 
     for line in find_lines(text):
         new_line = '•' + line[1:]
@@ -536,7 +536,7 @@ def fix_markdown(text):
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks:
-        text = text.replace(random_string, f'```{match}```')
+        text = text.replace(random_string, f'`{match}`')
 
     return text
 

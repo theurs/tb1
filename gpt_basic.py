@@ -125,15 +125,19 @@ def translate_text(text, fr = 'autodetect', to = 'ru'):
     return r
 
 
-def clear_after_ocr(text):
-    """Получает текст после распознавания с картинки, пытается его восстановить, исправить ошибки распознавания"""
+def clear_after_ocr(text: str) -> str:
+    """
+	Clears the text after performing OCR to fix obvious errors and typos that may have occurred during the OCR process. 
+	Removes completely misrecognized characters and meaningless symbols. 
+	Accuracy is important, so it is better to leave an error uncorrected if there is uncertainty about whether it is an error and how to fix it. 
+	Preserves the original line and paragraph breaks. 
+	Displays the result without formatting and debug information. 
 
-    # не работает пока что нормально
-    # return text
-
-    # если нет ключа то сразу отбой
-    # if not openai.api_key: return text
-
+	:param text: The text to be cleared after OCR.
+	:type text: str
+	:return: The cleared text.
+	:rtype: str
+    """
     prompt = 'Исправь явные ошибки и опечатки в тексте которые там могли появиться после плохого OCR. \
 То что совсем плохо распозналось, бессмысленные символы, надо убрать. \
 Важна точность, лучше оставить ошибку неисправленной если нет уверенности в том что это ошибка и её надо исправить именно так. \
@@ -146,7 +150,7 @@ def clear_after_ocr(text):
         print(f'gpt_basic.ai:clear_after_ocr: {error}')
         my_log.log2(f'gpt_basic.ai:clear_after_ocr: {error}')
         return text
-    my_log.log2(f'gpt_basic.ai:clear_after_ocr:ok: {r}')
+    my_log.log2(f'gpt_basic.ai:clear_after_ocr:ok: {text}\n\n{r}')
     return r
 
 

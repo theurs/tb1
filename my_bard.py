@@ -2,8 +2,10 @@
 
 
 import threading
+import random
 import re
 import requests
+import string
 
 from bardapi import Bard
 from pylatexenc.latex2text import LatexNodes2Text
@@ -477,6 +479,14 @@ def fix_markdown(text):
                 results.append(line)
         return list(set(results))
 
+    # найти все куски кода между ``` и заменить на хеши
+    matches = re.findall('```(.*?)```', text, flags=re.DOTALL)
+    list_of_code_blocks = []
+    for match in matches:
+        random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+        list_of_code_blocks.append([match, random_string])
+        text = text.replace(f'```{match}```', random_string)
+
     for line in find_lines(text):
         new_line = '•' + line[1:]
         text = text.replace(line, line.replace(line, new_line))
@@ -508,11 +518,17 @@ def fix_markdown(text):
         text = text.replace(f'$${match}$$', new_match)
         text = text.replace(f'${match}$', new_match)
 
-    text = text.replace('***', '★★★★★★')
+    # экранируем * если это не ***
+    text = text.replace('***', '★-=+★★★★?:★')
     text = re.sub("\*", "\*", text, flags=re.DOTALL)
-    text = text.replace('★★★★★★', '***')
-    
-    text = text.replace('_', '\_')
+    text = text.replace('★-=+★★★★?:★', '***')
+
+    # экранировать символ _
+    text = text.replace('_', '\\_')
+
+    # меняем обратно хеши на блоки кода
+    for match, random_string in list_of_code_blocks:
+        text = text.replace(random_string, f'```{match}```')
 
     # заменить все ссылки на маркдаун версию пропустив те которые уже так оформлены
     text = re.sub(r'(?<!\[)\b(https?://\S+)\b(?!])', r'[\1](\1)', text)
@@ -601,6 +617,12 @@ $$\text{ширина в пикселях} = \frac{316.4 \times 10^6}{200} \appro
 Итак, ширина фотографии составляет 1920 пикселей.
 
 \binom{n}{k} = \frac{n!}{k!(n-k)!}
+
+_тест_
+
+```
+print(hello_world)
+```
 
 """
     text = fix_markdown(text)

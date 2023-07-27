@@ -494,22 +494,19 @@ def fix_markdown(text):
         list_of_code_blocks2.append([match, random_string])
         text = text.replace(f'`{match}`', random_string)
 
+    # замена звездочек в списках
     for line in find_lines(text):
         new_line = '•' + line[1:]
         text = text.replace(line, line.replace(line, new_line))
-
     for line in find_lines2(text):
         new_line = '    •' + line[5:]
         text = text.replace(line, line.replace(line, new_line))
-
     for line in find_lines3(text):
         new_line = '        •' + line[9:]
         text = text.replace(line, line.replace(line, new_line))
-
     for line in find_lines4(text):
         new_line = '            •' + line[13:]
         text = text.replace(line, line.replace(line, new_line))
-
     for line in find_lines5(text):
         new_line = ' •' + line[2:]
         text = text.replace(line, line.replace(line, new_line))

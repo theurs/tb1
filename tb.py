@@ -2063,7 +2063,7 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
-        my_log.log2(f'{is_reply} {is_private} {SUPER_CHAT[chat_id_full]}')
+        my_log.log2(f'{is_reply} {is_private} {SUPER_CHAT[chat_id_full]} {chat_id_full}')
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
             if len(msg) > cfg.max_message_from_user:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')

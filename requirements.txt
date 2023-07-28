@@ -32,3 +32,4 @@ trafilatura
 transliterate
 vosk
 youtube_transcript_api
+attrs==23.1.0

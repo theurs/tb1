@@ -1907,14 +1907,15 @@ def do_task(message, custom_prompt: str = ''):
 
         # является ли это ответом на наше сообщение
         is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
-        is_reply_to_other = message.reply_to_message is not None and message.reply_to_message.from_user.id != bot.get_me().id
+        # is_reply_to_other = message.reply_to_message is not None and message.reply_to_message.from_user.id != bot.get_me().id
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
         if chat_id_full not in SUPER_CHAT:
             SUPER_CHAT[chat_id_full] = 0
         # если бот должен отвечать всем в этом чате то пусть ведет себя как в привате
         # но если это ответ на чье-то сообщение то игнорируем
-        if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
+        # if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
+        if SUPER_CHAT[chat_id_full] == 1:
             is_private = True
         # id куда писать ответ
         chat_id = message.chat.id
@@ -2031,7 +2032,7 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # можно перенаправить запрос к бингу, но он долго отвечает
-        my_log.log2(f'{is_reply} {is_private} {SUPER_CHAT[chat_id_full]} {chat_id_full}')
+        # my_log.log2(f'{is_reply} {is_private} {SUPER_CHAT[chat_id_full]} {chat_id_full}')
         if msg.startswith(('бинг ', 'бинг,', 'бинг\n')):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
             if len(msg) > cfg.max_message_from_user:

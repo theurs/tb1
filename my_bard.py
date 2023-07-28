@@ -541,9 +541,19 @@ def fix_markdown(text):
     # меняем все ссылки на ссылки в хтмл теге кроме мех кто уже так оформлен
     text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
 
+    # allowed_tags = ['a','b','code']
+    # pattern = r'<(?!\/?(?:{})\b)[^>]*>'.format('|'.join(allowed_tags))
+    # text = re.sub(pattern, '&lt;\g<0>&gt;', text)
+
     #найти все ссылки и отменить в них экранирование символа _
     # for i in re.findall(r'(https?://\S+)', text):
     #     text = text.replace(i, i.replace(r'\_', '_'))
+
+    # ищем вме теги и экранирует те которые запрещены
+    for i in re.findall(r'<\w+\b[^>]*>', text):
+        if i[:2] not in ('<a', '<b', '<code'):
+            new_i = html.escape(i)
+            text = text.replace(i, new_i)
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
@@ -645,6 +655,7 @@ _тест_
 ```
 print('<b>hello_world</b>')
 ```
+Как видите, программа успешно заменила теги <b> на теги <i>.
 
 """
     text = fix_markdown(text)

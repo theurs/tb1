@@ -193,7 +193,7 @@ def bot_markdown_to_html(text):
     # tex в unicode
     matches = re.findall("\$\$?(.*?)\$\$?", text, flags=re.DOTALL)
     for match in matches:
-        new_match = LatexNodes2Text().latex_to_text(match)
+        new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
         text = text.replace(f'$${match}$$', new_match)
         text = text.replace(f'${match}$', new_match)
 
@@ -218,6 +218,7 @@ def bot_markdown_to_html(text):
 
 if __name__ == '__main__':
     text = r"""
+$$\\frac{16}{9} = \\frac{x}{178}$$
 Вот список обязательных качеств ниндзя-медика Конохи:
 
 * **Знание медицинских практик:** Ниндзя-медики должны обладать обширными знаниями о человеческом теле и различных медицинских практиках. Они должны уметь диагностировать и лечить различные заболевания и травмы, а также проводить операции.
@@ -308,6 +309,8 @@ print('<b>hello_world</b>')
 * ** Если вам нужен способ подключить 
 
 * *тест одиночный* 2*2=4 2*3=6
+
+$$\\frac{16}{9} = \\frac{x}{178}$$
 """
     text = bot_markdown_to_html(text)
     print(text)

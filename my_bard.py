@@ -481,6 +481,9 @@ def fix_markdown(text):
                 results.append(line)
         return list(set(results))
 
+    # экранируем весь текст для html
+    text = html.escape(text)
+    
     # найти все куски кода между ``` и заменить на хеши
     # спрятать код на время преобразований
     matches = re.findall('```(.*?)```', text, flags=re.DOTALL)
@@ -497,9 +500,9 @@ def fix_markdown(text):
         text = text.replace(f'`{match}`', random_string)
 
     # ищем все теги и экранирует
-    for i in re.findall(r'<\w+\b[^>]*>|<\/\w+>', text):
-        new_i = html.escape(i)
-        text = text.replace(i, new_i)
+    # for i in re.findall(r'<\w+\b[^>]*>|<\/\w+>', text):
+    #     new_i = html.escape(i)
+    #     text = text.replace(i, new_i)
 
     # замена звездочек в списках
     for line in find_lines(text):
@@ -543,7 +546,7 @@ def fix_markdown(text):
 
     # меняем маркдаун ссылки на хтмл
     text = re.sub(r'\[([^]]+)\]\((https?://\S+)\)', r'<a href="\2">\1</a>', text)
-    # меняем все ссылки на ссылки в хтмл теге кроме мех кто уже так оформлен
+    # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
     text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
 
     # allowed_tags = ['a','b','code']
@@ -556,12 +559,13 @@ def fix_markdown(text):
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
-        new_match = html.escape(match)
+        # new_match = html.escape(match)
+        new_match = match
         text = text.replace(random_string, f'<code>{new_match}</code>')
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks:
-        new_match = html.escape(match)
+        new_match = match
         text = text.replace(random_string, f'<code>{new_match}</code>')
 
     return text

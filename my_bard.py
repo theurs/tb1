@@ -557,6 +557,7 @@ def fix_markdown(text):
     # for i in re.findall(r'(https?://\S+)', text):
     #     text = text.replace(i, i.replace(r'\_', '_'))
 
+
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
         # new_match = html.escape(match)

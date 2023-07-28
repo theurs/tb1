@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
 
+import html
 import os
+import random
 import re
+import string
 import subprocess
 import tempfile
 import platform as platform_module
+
+from pylatexenc.latex2text import LatexNodes2Text
 
 import my_log
 
@@ -142,31 +147,198 @@ def convert_to_mp3(input_file: str) -> str:
         return None
 
 
+def bot_markdown_to_html(text):
+    # переделывает маркдаун от чатботов в хтмл для телеграма
+    # сначала делается полное экранирование
+    # затем меняются маркдаун теги и оформление на аналогичное в хтмл
+    # при этом не затрагивается то что внутри тегов код, там только экранирование
+    # латекс код в тегах $ и $$ меняется на юникод текст
+    def find_lines(text, sample):
+        lines = text.splitlines()
+        results = []
+        for line in lines:
+            if line.startswith(sample):
+                results.append(line)
+        return list(set(results))
+
+    # экранируем весь текст для html
+    text = html.escape(text)
+    
+    # найти все куски кода между ``` и заменить на хеши
+    # спрятать код на время преобразований
+    matches = re.findall('```(.*?)```', text, flags=re.DOTALL)
+    list_of_code_blocks = []
+    for match in matches:
+        random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+        list_of_code_blocks.append([match, random_string])
+        text = text.replace(f'```{match}```', random_string)
+    matches = re.findall('`(.*?)`', text, flags=re.DOTALL)
+    list_of_code_blocks2 = []
+    for match in matches:
+        random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+        list_of_code_blocks2.append([match, random_string])
+        text = text.replace(f'`{match}`', random_string)
+
+    # замена звездочек в списках
+    for line in find_lines(text, '*'):
+        new_line = '•' + line[1:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, '    *'):
+        new_line = '    •' + line[5:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, '        *'):
+        new_line = '        •' + line[9:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, '            *'):
+        new_line = '            •' + line[13:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, ' *'):
+        new_line = ' •' + line[2:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, '-'):
+        new_line = '•' + line[1:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, ' -'):
+        new_line = ' •' + line[2:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, '    -'):
+        new_line = '    •' + line[5:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, '        -'):
+        new_line = '        •' + line[9:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, '            -'):
+        new_line = '            •' + line[13:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    # 1 или 2 * в 3 звездочки
+    # *bum* -> ***bum***
+    # text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
+    text = re.sub('\*\*?(.*?)\*\*?', '<b>\\1</b>', text)
+
+    # tex в unicode
+    matches = re.findall("\$\$?(.*?)\$\$?", text, flags=re.DOTALL)
+    for match in matches:
+        new_match = LatexNodes2Text().latex_to_text(match)
+        text = text.replace(f'$${match}$$', new_match)
+        text = text.replace(f'${match}$', new_match)
+
+    # меняем маркдаун ссылки на хтмл
+    text = re.sub(r'\[([^]]+)\]\((https?://\S+)\)', r'<a href="\2">\1</a>', text)
+    # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
+    text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
+
+    # меняем обратно хеши на блоки кода
+    for match, random_string in list_of_code_blocks2:
+        # new_match = html.escape(match)
+        new_match = match
+        text = text.replace(random_string, f'<code>{new_match}</code>')
+
+    # меняем обратно хеши на блоки кода
+    for match, random_string in list_of_code_blocks:
+        new_match = match
+        text = text.replace(random_string, f'<code>{new_match}</code>')
+
+    return text
+
+
 if __name__ == '__main__':
-    pass
-    text="""
-Не судите строго, это моя первая статья, наверное если бы я был гуру Nginx и "Линуха", то скорее всего боли и страданий бы не было.
+    text = r"""
+Вот список обязательных качеств ниндзя-медика Конохи:
 
-С чего все началось?
+* **Знание медицинских практик:** Ниндзя-медики должны обладать обширными знаниями о человеческом теле и различных медицинских практиках. Они должны уметь диагностировать и лечить различные заболевания и травмы, а также проводить операции.
+* **Навыки тайдзюцу:** Ниндзя-медики должны быть достаточно сильными и ловкими, чтобы защитить себя и своих союзников. Они должны уметь сражаться как в ближнем, так и в дальнем бою.
+* **Навыки гендзюцу:** Ниндзя-медики должны уметь использовать гендзюцу для защиты себя и своих союзников, а также для оказания помощи раненым.
+* **Навыки ниндзюцу:** Ниндзя-медики должны уметь использовать ниндзюцу для лечения своих союзников и нанесения вреда своим врагам.
+* **Хладнокровие:** Ниндзя-медики должны уметь сохранять спокойствие даже в самых стрессовых ситуациях. Они должны уметь быстро принимать решения и действовать в соответствии с ними.
+* **Сострадание:** Ниндзя-медики должны быть сострадательны и готовы помочь другим. Они должны быть готовы рисковать своей жизнью, чтобы спасти жизни других.
 
-Одним днем мне понадобилось реализовать довольно не тривиальную задачу:
+* *тест одиночный*
 
-Есть множество сервисов с которых нужно собирать данные для обработки и дальнейшей аналитики, модуль который это все собирает может быть установлен на множество серверов (пока 40, но в горизонте года это 1000), но хочется чтобы все обращения от этих серверов шли на один ip , а с него уже распределялись в зависимости от типа запроса или конечной точки обращения. Условно мы обращаемся к серваку 100.1.2.101 по порту 8080 и просим от него данные о всех домах на определенной территории ,он в свою очередь по заданному сценарию коннектится к определенному proxy (Допустим squid, он нужен так как некоторые api залочены по ip) и через него получает данные из конечного api.
+Ниндзя-медики - одни из самых важных членов деревни Коноха. Они несут ответственность за здоровье и благополучие своих сограждан. Чтобы стать ниндзя-медиком, нужно обладать всеми вышеперечисленными качествами.
 
-P.S. Данные нельзя хранить на промежуточном сервере, так как они слишком часто обновляются :(
+Хорошо, вот некоторые формулы, связанные с теорией относительности:
 
-В итоге я решил эту задачу разделить на несколько этапов одна из них это распределение нагрузки...
+* **Специальная теория относительности:**
+    * **Уравнение Эйнштейна:** $E = mc^2$, где E — энергия, m — масса, а c — скорость света в вакууме.
+    * **Уравнение Лоренца:** $t' = \frac{t}{\sqrt{1 - \frac{v^2}{c^2}}}$, где t' — время, измеренное в движущейся системе, а t — время, измеренное в неподвижной системе.
+* **Общая теория относительности:**
+    * **Уравнение Эйнштейна:** $R_{\mu \nu} - \frac{1}{2} R g_{\mu \nu} = \kappa T_{\mu \nu}$, где R — тензор кривизны, g — метрический тензор, T — тензор энергии-импульса, >    * **Уравнение Шварцшильда:** $r = \frac{2GM}{c^2}$, где r — радиус Шварцшильда, G — гравитационная постоянная, M — масса объекта, а c — скорость света в вакууме.
+
+Эти формулы являются лишь некоторыми из многих, которые используются в теории относительности. Они описывают различные аспекты теории, от взаимосвязи между энергией и массой>
+
+Я надеюсь, это было интересно!
+
+Overall, LZ4 is a powerful and versatile compression algorithm that can be used to improve the performance of a wide variety of applications. It is fast, efficient, and versatile, but it is not as good as some other algorithms for some data types.
+https://en.wikipedia.org/wiki/LZ4_(compression_algorithm) hi there
+https://en.wikipedia.org/wiki/LZ4_(compression_algorithm)
+https://en.wikipedia.org/wiki/LZ4_(compression_algorithm) dfgdfg
+                                                                                                                                                                              * https://google.com
+* https://www.wikipedia.org
+* https://www.youtube.com
+* https://www.facebook.com
+* https://www.twitter.com
+
+[26-07-2023 20:56:55] [BOT]: Кольца Сатурна — одно из самых впечатляющих и загадочных явлений в Солнечной системе. Они состоят из миллиардов ледяных и каменных частиц, котор>
+
+Кольца Сатурна были открыты в 1610 году итальянским астрономом Галилео Галилеем. Он использовал телескоп, чтобы впервые увидеть кольца планеты. Позже, в 1789 году, английски>
+
+Кольца Сатурна постоянно движутся и изменяются. Частицы, из которых они состоят, сталкиваются друг с другом и разрушаются. Это приводит к образованию новых частиц и формиров>
+
+Кольца Сатурна — одна из самых удивительных и загадочных загадок Солнечной системы. Ученые до сих пор не могут полностью объяснить, как они образовались и как эволюционируют>
+
+Вот несколько фотографий колец Сатурна, которые были сделаны космическими аппаратами НАСА:
+
+Фотография колец Сатурна, сделанная космическим аппаратом "Кассини": https://www.nasa.gov/multimedia/imagegallery/image_feature_404.html
+
+Фотография колец Сатурна, сделанная космическим аппаратом "Вояджер-1": https://www.nasa.gov/multimedia/imagegallery/image_feature_402.html
+
+Фотография колец Сатурна, сделанная космическим аппаратом "Хопи": https://www.nasa.gov/multimedia/imagegallery/image_feature_403.html
+
+Эти фотографии показывают красоту и сложность колец Сатурна. Они являются напоминанием о том, что Солнечная система — это удивительное место, полное загадок и чудес.
+
+[test](https://en.wikipedia.org/wiki/LZ4_(compression_algorithm))
+
+- Если разрешение 72 PPI, то ширина в пикселях равна $$\frac{316.4 \times 10^6}{72} \approx 4.4 \times 10^6$$
+- Если разрешение 150 PPI, то ширина в пикселях равна $$\frac{316.4 \times 10^6}{150} \approx 2.1 \times 10^6$$
+- Если разрешение 300 PPI, то ширина в пикселях равна $$\frac{316.4 \times 10^6}{300} \approx 1.1 \times 10^6$$
+
+$$\text{ширина в пикселях} = \frac{\text{количество пикселей по горизонтали}}{\text{разрешение}}$$
+
+где количество пикселей по горизонтали мы уже нашли ранее и оно равно примерно 316.4 миллиона. Например, если вы хотите знать ширину в пикселях для разрешения 200 PPI, то вы можете подставить эти значения в формулу и получить:
+
+$$\text{ширина в пикселях} = \frac{316.4 \times 10^6}{200} \approx 1.6 \times 10^6$$
+
+
+Общее количество пикселей в фотографии составляет 178 миллионов. Соотношение сторон 16 к 9 означает, что соотношение ширины к высоте составляет 1
+
+* Ширина (пиксели) = Общее количество пикселей * (Ширина / Высота)
+
+Подставив значения, мы получим:
+
+* Ширина (пиксели) = 178 миллионов * (16 / 9)
+* Ширина (пиксели) = 1920 пикселей
+
+Итак, ширина фотографии составляет 1920 пикселей.
+
+\binom{n}{k} = \frac{n!}{k!(n-k)!}
+
+_тест_
+
+```
+print('<b>hello_world</b>')
+```
+Как видите, программа успешно заменила теги <body> <b> </b> на теги <i> </i>.
 
 """
-    for i in split_text(text, 200):
-        print(i, '\n==============\n')
-
-    """
-    #import gpt_basic
-    import my_trans
-    for i in split_text(open('1.txt').read()):
-        #t = gpt_basic.ai('переведи на русский язык\n\n' + i)
-        t = my_trans.translate(i)
-        print(t)
-        print('======================')
-    """
+    text = bot_markdown_to_html(text)
+    print(text)

@@ -2079,10 +2079,13 @@ def do_task(message, custom_prompt: str = ''):
                     try:
                         answer = bingai.chat(message.text, chat_id_full)
                         if answer:
+                            my_log.log_echo(message, answer['text'], debug = True)
+                            answer['text'] = utils.bot_markdown_to_html(answer)
+                            my_log.log_echo(message, answer['text'])
                             messages_left = str(answer['messages_left'])
                             text = f"{answer['text']}\n\n{messages_left}/30"
                             try:
-                                reply_to_long_message(message, text, parse_mode='Markdown', disable_web_page_preview = True, 
+                                reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True, 
                                 reply_markup=get_keyboard('bing_chat', message))
                             except Exception as error:
                                 print(error)
@@ -2090,7 +2093,6 @@ def do_task(message, custom_prompt: str = ''):
                                 reply_markup=get_keyboard('bing_chat', message))
                             if int(messages_left) == 1:
                                 bingai.reset_bing_chat(chat_id_full)
-                            my_log.log_echo(message, answer['text'])
                     except Exception as error:
                         print(error)
                     return
@@ -2112,7 +2114,7 @@ def do_task(message, custom_prompt: str = ''):
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name)
                         # answer = my_bard.convert_markdown(answer)
                         my_log.log_echo(message, answer, debug = True)
-                        answer = my_bard.fix_markdown(answer)
+                        answer = utils.bot_markdown_to_html(answer)
                         my_log.log_echo(message, answer)
                         if answer:
                             try:
@@ -2132,9 +2134,12 @@ def do_task(message, custom_prompt: str = ''):
             with ShowAction(message, 'typing'):
                 resp = dialog_add_user_request(chat_id_full, message.text, 'gpt')
                 if resp:
+                    my_log.log_echo(message, resp, debug = True)
+                    resp = utils.bot_markdown_to_html(resp)
+                    my_log.log_echo(message, resp)
                     if is_private:
                         try:
-                            send_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, 
+                            send_long_message(message, resp, parse_mode='HTML', disable_web_page_preview = True, 
                             reply_markup=get_keyboard('chat', message))
                         except Exception as error2:    
                             print(error2)
@@ -2143,14 +2148,13 @@ def do_task(message, custom_prompt: str = ''):
                                                 reply_markup=get_keyboard('chat', message))
                     else:
                         try:
-                            reply_to_long_message(message, resp, parse_mode='Markdown', disable_web_page_preview = True, 
+                            reply_to_long_message(message, resp, parse_mode='HTML', disable_web_page_preview = True, 
                             reply_markup=get_keyboard('chat', message))
                         except Exception as error2:    
                             print(error2)
                             my_log.log2(resp)
                             reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, 
                             reply_markup=get_keyboard('chat', message))
-                    my_log.log_echo(message, resp)
         else: # смотрим надо ли переводить текст
             if check_blocks(get_topic_id(message)):
                 return

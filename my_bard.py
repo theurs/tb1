@@ -496,6 +496,11 @@ def fix_markdown(text):
         list_of_code_blocks2.append([match, random_string])
         text = text.replace(f'`{match}`', random_string)
 
+    # ищем все теги и экранирует
+    for i in re.findall(r'<\w+\b[^>]*>|<\/\w+>', text):
+        new_i = html.escape(i)
+        text = text.replace(i, new_i)
+
     # замена звездочек в списках
     for line in find_lines(text):
         new_line = '•' + line[1:]
@@ -548,12 +553,6 @@ def fix_markdown(text):
     #найти все ссылки и отменить в них экранирование символа _
     # for i in re.findall(r'(https?://\S+)', text):
     #     text = text.replace(i, i.replace(r'\_', '_'))
-
-    # ищем вме теги и экранирует те которые запрещены
-    for i in re.findall(r'<\w+\b[^>]*>', text):
-        if i[:2] not in ('<a', '<b', '<code'):
-            new_i = html.escape(i)
-            text = text.replace(i, new_i)
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
@@ -655,7 +654,7 @@ _тест_
 ```
 print('<b>hello_world</b>')
 ```
-Как видите, программа успешно заменила теги <b> на теги <i>.
+Как видите, программа успешно заменила теги <body> <b> </b> на теги <i> </i>.
 
 """
     text = fix_markdown(text)

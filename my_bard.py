@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import html
 import threading
 import random
 import re
@@ -169,7 +170,8 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '') ->
         if links:
             for url in links:
                 if url:
-                    result += f"\n\n[{url}]({url})"
+                    # result += f"\n\n[{url}]({url})"
+                    result += f"\n\n{url}"
     except Exception as error:
         print(error)
         my_log.log2(str(error))
@@ -513,7 +515,8 @@ def fix_markdown(text):
 
     # 1 или 2 * в 3 звездочки
     # *bum* -> ***bum***
-    text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
+    # text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
+    text = re.sub('\*\*?(.*?)\*\*?', '<b>\\1</b>', text)
 
     # tex в unicode
     matches = re.findall("\$\$?(.*?)\$\$?", text, flags=re.DOTALL)
@@ -522,28 +525,35 @@ def fix_markdown(text):
         text = text.replace(f'$${match}$$', new_match)
         text = text.replace(f'${match}$', new_match)
 
-    # экранируем * если это не ***
-    text = text.replace('***', '★-=+★★★★?:★')
-    text = re.sub("\*", "\*", text, flags=re.DOTALL)
-    text = text.replace('★-=+★★★★?:★', '***')
+    # # экранируем * если это не ***
+    # text = text.replace('***', '★-=+★★★★?:★')
+    # text = re.sub("\*", "\*", text, flags=re.DOTALL)
+    # text = text.replace('★-=+★★★★?:★', '***')
 
     # экранировать символ _
-    text = text.replace('_', '\\_')
+    # text = text.replace('_', '\\_')
 
     # заменить все ссылки на маркдаун версию пропустив те которые уже так оформлены
-    text = re.sub(r'(?<!\[)\b(https?://\S+)\b(?!])', r'[\1](\1)', text)
+    # text = re.sub(r'(?<!\[)\b(https?://\S+)\b(?!])', r'[\1](\1)', text)
+
+    # меняем маркдаун ссылки на хтмл
+    text = re.sub(r'\[([^]]+)\]\((https?://\S+)\)', r'<a href="\2">\1</a>', text)
+    # меняем все ссылки на ссылки в хтмл теге кроме мех кто уже так оформлен
+    text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
 
     #найти все ссылки и отменить в них экранирование символа _
-    for i in re.findall(r'(https?://\S+)', text):
-        text = text.replace(i, i.replace(r'\_', '_'))
+    # for i in re.findall(r'(https?://\S+)', text):
+    #     text = text.replace(i, i.replace(r'\_', '_'))
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
-        text = text.replace(random_string, f'`{match}`')
+        new_match = html.escape(match)
+        text = text.replace(random_string, f'`{new_match}`')
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks:
-        text = text.replace(random_string, f'```{match}```')
+        new_match = html.escape(match)
+        text = text.replace(random_string, f'```{new_match}```')
 
     return text
 
@@ -633,7 +643,7 @@ $$\text{ширина в пикселях} = \frac{316.4 \times 10^6}{200} \appro
 _тест_
 
 ```
-print(hello_world)
+print('<b>hello_world</b>')
 ```
 
 """

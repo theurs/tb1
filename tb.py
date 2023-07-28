@@ -1907,7 +1907,7 @@ def do_task(message, custom_prompt: str = ''):
 
         # является ли это ответом на наше сообщение
         is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
-        # is_reply_to_other = message.reply_to_message is not None and message.reply_to_message.from_user.id != bot.get_me().id
+        # is_reply_to_other = message.reply_to_message and message.reply_to_message.from_user.id != bot.get_me().id
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
         if chat_id_full not in SUPER_CHAT:
@@ -2116,7 +2116,7 @@ def do_task(message, custom_prompt: str = ''):
                         my_log.log_echo(message, answer)
                         if answer:
                             try:
-                                reply_to_long_message(message, answer, parse_mode='Markdown', disable_web_page_preview = True, 
+                                reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message))
                             except Exception as error:
                                 print(f'tb:do_task: error')

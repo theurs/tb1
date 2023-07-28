@@ -803,7 +803,17 @@ def handle_document_thread(message: telebot.types.Message):
 
                 if text.strip():
                     summary = my_sum.summ_text(text)
-                    reply_to_long_message(message, summary, disable_web_page_preview = True, reply_markup=get_keyboard('translate', message))
+                    summary = utils.bot_markdown_to_html(summary)
+                    try:
+                        reply_to_long_message(message, summary, parse_mode='HTML',
+                                          disable_web_page_preview = True,
+                                          reply_markup=get_keyboard('translate', message))
+                    except Exception as error:
+                        reply_to_long_message(message, summary, parse_mode='',
+                                          disable_web_page_preview = True,
+                                          reply_markup=get_keyboard('translate', message))
+                        print(f'tb:handle_document_thread: {error}')
+                        my_log.log2(f'tb:handle_document_thread: {error}')
                     my_log.log_echo(message, summary)
                 else:
                     help = 'Не удалось получить никакого текста из документа.'
@@ -1214,7 +1224,17 @@ def tts_thread(message: telebot.types.Message):
         else:
             text = my_google.download_text([url, ], 100000, no_links = True)
         if text:
-            reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message), disable_web_page_preview=True)
+            text = utils.bot_markdown_to_html(text)
+            try:
+                reply_to_long_message(message, text, parse_mode='HTML',
+                                      reply_markup=get_keyboard('translate', message),
+                                      disable_web_page_preview=True)
+            except Exception as error:
+                reply_to_long_message(message, text, parse_mode='',
+                                      reply_markup=get_keyboard('translate', message),
+                                      disable_web_page_preview=True)
+                my_log.log2(f'tb:tts:ytb:{error}')
+                my_log.log2(f'tb:tts:ytb:{error}')
         return
 
     # разбираем параметры
@@ -1512,7 +1532,17 @@ def summ_text_thread(message: telebot.types.Message):
                         my_log.log_echo(message, m)
                         return
                     if res:
-                        reply_to_long_message(message, res, disable_web_page_preview = True, reply_markup=get_keyboard('translate', message))
+                        res = utils.bot_markdown_to_html(res)
+                        try:
+                            reply_to_long_message(message, res, parse_mode='HTML',
+                                                  disable_web_page_preview = True,
+                                                  reply_markup=get_keyboard('translate', message))
+                        except Exception as error:
+                            reply_to_long_message(message, res, parse_mode='',
+                                                  disable_web_page_preview = True,
+                                                  reply_markup=get_keyboard('translate', message))
+                            print(f'tb:summ_text_thread: {error}')
+                            my_log.log2(f'tb:summ_text_thread: {error}')
                         my_log.log_echo(message, res)
                         SUM_CACHE[url] = res
                         if chat_id_full not in DIALOGS_DB:

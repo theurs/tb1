@@ -208,7 +208,15 @@ def bot_markdown_to_html(text):
         new_line = ' •' + line[2:]
         text = text.replace(line, line.replace(line, new_line))
 
+    for line in find_lines(text, '  -'):
+        new_line = '    •' + line[5:]
+        text = text.replace(line, line.replace(line, new_line))
+
     for line in find_lines(text, '    -'):
+        new_line = '    •' + line[5:]
+        text = text.replace(line, line.replace(line, new_line))
+
+    for line in find_lines(text, '      -'):
         new_line = '    •' + line[5:]
         text = text.replace(line, line.replace(line, new_line))
 
@@ -216,8 +224,8 @@ def bot_markdown_to_html(text):
         new_line = '        •' + line[9:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '            -'):
-        new_line = '            •' + line[13:]
+    for line in find_lines(text, '          -'):
+        new_line = '        •' + line[9:]
         text = text.replace(line, line.replace(line, new_line))
 
     # 1 или 2 * в 3 звездочки

@@ -558,12 +558,12 @@ def fix_markdown(text):
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
         new_match = html.escape(match)
-        text = text.replace(random_string, f'`{new_match}`')
+        text = text.replace(random_string, f'<code>{new_match}</code>')
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks:
         new_match = html.escape(match)
-        text = text.replace(random_string, f'```{new_match}```')
+        text = text.replace(random_string, f'<code>{new_match}</code>')
 
     return text
 

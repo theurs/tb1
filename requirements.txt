@@ -13,7 +13,6 @@ langdetect
 markdown2
 openai
 openai-whisper
-pdflatex
 Pillow
 py_trans
 pyenchant

@@ -2063,6 +2063,7 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
+        my_log.log2(f'{is_reply} {is_private} {SUPER_CHAT[chat_id_full]}')
         elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
             if len(msg) > cfg.max_message_from_user:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
@@ -2121,21 +2122,6 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log2(f'tb:do_task: error')
                                 reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message))
-                        # if answer:
-                        #     try:
-                        #         reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
-                        #                               reply_markup=get_keyboard('bard_chat', message))
-                        #     except Exception as error:
-                        #         print(error)
-                        #         my_log.log2(str(error))
-                        #         try:
-                        #             reply_to_long_message(message, answer, parse_mode='Markdown', disable_web_page_preview = True, 
-                        #                                   reply_markup=get_keyboard('bard_chat', message))
-                        #         except Exception as error2: 
-                        #             print(error2)
-                        #             my_log.log2(str(error2))
-                        #             reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
-                        #             reply_markup=get_keyboard('bard_chat', message))
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))

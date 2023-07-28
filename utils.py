@@ -175,7 +175,7 @@ def bot_markdown_to_html(text):
     # 1 или 2 * в 3 звездочки
     # *bum* -> ***bum***
     # text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
-    text = re.sub('\*\*?(.*?)\*\*?', '<b>\\1</b>', text)
+    text = re.sub('\*\*(.*?)\*\*', '<b>\\1</b>', text)
 
     # tex в unicode
     matches = re.findall("\$\$?(.*?)\$\$?", text, flags=re.DOTALL)

@@ -2080,10 +2080,10 @@ def do_task(message, custom_prompt: str = ''):
                         answer = bingai.chat(message.text, chat_id_full)
                         if answer:
                             my_log.log_echo(message, answer['text'], debug = True)
-                            answer['text'] = utils.bot_markdown_to_html(answer)
-                            my_log.log_echo(message, answer['text'])
+                            text = utils.bot_markdown_to_html(answer['text'])
+                            my_log.log_echo(message, text)
                             messages_left = str(answer['messages_left'])
-                            text = f"{answer['text']}\n\n{messages_left}/30"
+                            text = f"{text}\n\n{messages_left}/30"
                             try:
                                 reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True, 
                                 reply_markup=get_keyboard('bing_chat', message))

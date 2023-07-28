@@ -153,13 +153,6 @@ def bot_markdown_to_html(text):
     # затем меняются маркдаун теги и оформление на аналогичное в хтмл
     # при этом не затрагивается то что внутри тегов код, там только экранирование
     # латекс код в тегах $ и $$ меняется на юникод текст
-    def find_lines(text, sample):
-        lines = text.splitlines()
-        results = []
-        for line in lines:
-            if line.startswith(sample):
-                results.append(line)
-        return list(set(results))
 
     # экранируем весь текст для html
     text = html.escape(text)
@@ -178,55 +171,6 @@ def bot_markdown_to_html(text):
         random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
         list_of_code_blocks2.append([match, random_string])
         text = text.replace(f'`{match}`', random_string)
-
-    # замена звездочек в списках
-    for line in find_lines(text, '* '):
-        new_line = '• ' + line[2:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, '    * '):
-        new_line = '    • ' + line[6:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, '        * '):
-        new_line = '        • ' + line[10:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, '            * '):
-        new_line = '            • ' + line[14:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, ' * '):
-        new_line = ' • ' + line[3:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, '- '):
-        new_line = '• ' + line[2:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, ' - '):
-        new_line = ' • ' + line[3:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, '  - '):
-        new_line = '    • ' + line[4:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, '    - '):
-        new_line = '    • ' + line[6:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, '      - '):
-        new_line = '    • ' + line[8:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, '        - '):
-        new_line = '        • ' + line[10:]
-        text = text.replace(line, line.replace(line, new_line))
-
-    for line in find_lines(text, '          - '):
-        new_line = '        • ' + line[12:]
-        text = text.replace(line, line.replace(line, new_line))
 
     # 1 или 2 * в 3 звездочки
     # *bum* -> ***bum***

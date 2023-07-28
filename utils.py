@@ -197,35 +197,35 @@ def bot_markdown_to_html(text):
         text = text.replace(line, line.replace(line, new_line))
 
     for line in find_lines(text, ' * '):
-        new_line = ' •' + line[3:]
+        new_line = ' • ' + line[3:]
         text = text.replace(line, line.replace(line, new_line))
 
     for line in find_lines(text, '- '):
-        new_line = '•' + line[2:]
+        new_line = '• ' + line[2:]
         text = text.replace(line, line.replace(line, new_line))
 
     for line in find_lines(text, ' - '):
-        new_line = ' •' + line[3:]
+        new_line = ' • ' + line[3:]
         text = text.replace(line, line.replace(line, new_line))
 
     for line in find_lines(text, '  - '):
-        new_line = '    •' + line[4:]
+        new_line = '    • ' + line[4:]
         text = text.replace(line, line.replace(line, new_line))
 
     for line in find_lines(text, '    - '):
-        new_line = '    •' + line[6:]
+        new_line = '    • ' + line[6:]
         text = text.replace(line, line.replace(line, new_line))
 
     for line in find_lines(text, '      - '):
-        new_line = '    •' + line[8:]
+        new_line = '    • ' + line[8:]
         text = text.replace(line, line.replace(line, new_line))
 
     for line in find_lines(text, '        - '):
-        new_line = '        •' + line[10:]
+        new_line = '        • ' + line[10:]
         text = text.replace(line, line.replace(line, new_line))
 
     for line in find_lines(text, '          - '):
-        new_line = '        •' + line[12:]
+        new_line = '        • ' + line[12:]
         text = text.replace(line, line.replace(line, new_line))
 
     # 1 или 2 * в 3 звездочки

@@ -180,52 +180,52 @@ def bot_markdown_to_html(text):
         text = text.replace(f'`{match}`', random_string)
 
     # замена звездочек в списках
-    for line in find_lines(text, '*'):
-        new_line = '•' + line[1:]
+    for line in find_lines(text, '* '):
+        new_line = '• ' + line[2:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '    *'):
-        new_line = '    •' + line[5:]
+    for line in find_lines(text, '    * '):
+        new_line = '    • ' + line[6:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '        *'):
-        new_line = '        •' + line[9:]
+    for line in find_lines(text, '        * '):
+        new_line = '        • ' + line[10:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '            *'):
-        new_line = '            •' + line[13:]
+    for line in find_lines(text, '            * '):
+        new_line = '            • ' + line[14:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, ' *'):
-        new_line = ' •' + line[2:]
+    for line in find_lines(text, ' * '):
+        new_line = ' •' + line[3:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '-'):
-        new_line = '•' + line[1:]
+    for line in find_lines(text, '- '):
+        new_line = '•' + line[2:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, ' -'):
-        new_line = ' •' + line[2:]
+    for line in find_lines(text, ' - '):
+        new_line = ' •' + line[3:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '  -'):
-        new_line = '    •' + line[5:]
+    for line in find_lines(text, '  - '):
+        new_line = '    •' + line[4:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '    -'):
-        new_line = '    •' + line[5:]
+    for line in find_lines(text, '    - '):
+        new_line = '    •' + line[6:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '      -'):
-        new_line = '    •' + line[5:]
+    for line in find_lines(text, '      - '):
+        new_line = '    •' + line[8:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '        -'):
-        new_line = '        •' + line[9:]
+    for line in find_lines(text, '        - '):
+        new_line = '        •' + line[10:]
         text = text.replace(line, line.replace(line, new_line))
 
-    for line in find_lines(text, '          -'):
-        new_line = '        •' + line[9:]
+    for line in find_lines(text, '          - '):
+        new_line = '        •' + line[12:]
         text = text.replace(line, line.replace(line, new_line))
 
     # 1 или 2 * в 3 звездочки
@@ -346,6 +346,8 @@ _тест_
 print('<b>hello_world</b>')
 ```
 Как видите, программа успешно заменила теги <body> <b> </b> на теги <i> </i>.
+
+**В конечном счете, решение о том, покупать ли роутер или нет, зависит от конкретных потребностей пользователя.** Если вам нужен способ подключить к интернету несколько устройств, защитить свои данные и фильтровать трафик, то роутер - это хороший вариант. Однако, если вы не нуждаетесь в этих функциях, то роутер может быть для вас излишней тратой средств.
 
 """
     text = bot_markdown_to_html(text)

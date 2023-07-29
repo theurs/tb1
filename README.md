@@ -157,6 +157,17 @@ model_test = 'gpt-3.5-turbo-16k'
 # пакет для tesseract с этими языками должен быть установлен 
 # https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html
 ocr_language = 'rus'
+
+
+# сокс прокси для команды ask. сервис perplexity.ai на случай если напрямую не работает
+# perplexity_proxies = None
+# работает только так, с обязательным именем паролем адресом и портом
+perplexity_proxies = [
+    'socks5://user1:passwd@1.2.3.4:1234',
+    'socks5://user1:passwd@example.ru:54821',
+    ...
+    ]
+
 ```
 
 Для работы распознавания голосовых сообщений надо установить vosk сервер.

@@ -404,7 +404,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
         button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
         button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button3 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate')
+        button3 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_perplexity')
         button4 = telebot.types.InlineKeyboardButton("⛔️Выход", callback_data='cancel_command_not_hide')
         markup.row(button1, button2, button3, button4)
         return markup       
@@ -630,6 +630,13 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
                                       reply_markup=get_keyboard('translate', message))
+        elif call.data == 'translate_perplexity':
+            # реакция на клавиатуру для OCR кнопка перевести текст
+            with ShowAction(message, 'typing'):
+                translated = my_trans.translate_text2(message.text)
+            if translated and translated != message.text:
+                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
+                                      reply_markup=get_keyboard('perplexity', message))
         elif call.data == 'translate_chat':
             # реакция на клавиатуру для Чата кнопка перевести текст
             with ShowAction(message, 'typing'):

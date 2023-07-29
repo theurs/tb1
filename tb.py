@@ -581,7 +581,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'cancel_command_not_hide':
             # обработка нажатия кнопки "Отменить ввод команды, но не скрывать"
             COMMAND_MODE[chat_id_full] = ''
-            bot.delete_message(message.chat.id, message.message_id)
+            # bot.delete_message(message.chat.id, message.message_id)
+            bot.reply_to(message, 'Режим гугления отключен')
         # режим автоответов в чате, бот отвечает на все реплики всех участников
         # комната для разговоров с ботом Ж)
         elif call.data == 'admin_chat':

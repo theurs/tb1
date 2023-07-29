@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
 
-import os
 import time
 import threading
 
-import cfg
 import utils
 import my_log
 from Perplexity import Perplexity
@@ -64,7 +62,6 @@ def ask(query: str, search_focus: str = 'internet') -> str:
 
 
 if __name__ == '__main__':
-    # os.environ['all_proxy'] = cfg.all_proxy
 
     print(ask('курс доллара'))
     while 1:

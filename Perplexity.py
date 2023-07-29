@@ -11,6 +11,7 @@ from Answer import Answer, Details
 import logging, traceback
 logger = logging.getLogger()
 
+
 class Perplexity:
     """A class to interact with the Perplexity website.
     To get started you need to create an instance of this class.
@@ -50,10 +51,12 @@ class Perplexity:
         return format(getrandbits(32), "08x")
 
     def get_sid(self) -> str:
-        response = loads(self.session.get(
+        r = self.session.get(
             url=f"https://www.perplexity.ai/socket.io/?EIO=4&transport=polling&t={self.t}",
-            headers=self.user_agent
-        ).text[1:])
+            headers=self.user_agent)
+        import my_log
+        my_log.log2(str(r))
+        response = loads(r.text[1:])
 
         return response["sid"]
 
@@ -213,3 +216,4 @@ class Perplexity:
             sleep(0.1)
         
         return self.answer
+

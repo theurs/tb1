@@ -12,12 +12,21 @@ import logging, traceback
 logger = logging.getLogger()
 
 
+import cfg
+
+
+
+
+
 class Perplexity:
     """A class to interact with the Perplexity website.
     To get started you need to create an instance of this class.
     For now this class only support one Answer at a time.
     """
-    def __init__(self) -> None:
+    def __init__(self, proxy = None) -> None:
+
+        self.proxies = proxy
+
         self.ws_connecting = False
         self.ws_connected = False
         self.user_agent: dict = { "User-Agent": "" }
@@ -43,7 +52,7 @@ class Perplexity:
         session: Session = Session()
 
         uuid: str = str(uuid4())
-        session.get(url=f"https://www.perplexity.ai/search/{uuid}", headers=self.user_agent)
+        session.get(url=f"https://www.perplexity.ai/search/{uuid}", headers=self.user_agent, proxies=self.proxies)
 
         return session
     
@@ -53,7 +62,8 @@ class Perplexity:
     def get_sid(self) -> str:
         r = self.session.get(
             url=f"https://www.perplexity.ai/socket.io/?EIO=4&transport=polling&t={self.t}",
-            headers=self.user_agent)
+            headers=self.user_agent,
+            proxies=self.proxies)
         # import my_log
         # my_log.log2(str(r))
         response = loads(r.text[1:])
@@ -64,7 +74,8 @@ class Perplexity:
         response = self.session.post(
             url=f"https://www.perplexity.ai/socket.io/?EIO=4&transport=polling&t={self.t}&sid={self.sid}",
             data="40{\"jwt\":\"anonymous-ask-user\"}",
-            headers=self.user_agent
+            headers=self.user_agent,
+            proxies=self.proxies
         ).text
 
         return response == "OK"

@@ -1,12 +1,31 @@
 #!/usr/bin/env python3
 
 
+import random
 import time
 import threading
 
-import utils
+import cfg
 import my_log
+import utils
 from Perplexity import Perplexity
+
+
+def get_proxy():
+    try:
+        if cfg.perplexity_proxies:
+            p = random.choice(cfg.perplexity_proxies)
+            proxies = {
+                'http': p,
+                'https': p
+            }
+        else:
+            proxies = None
+    except Exception as error:
+        print(f'my_perplexity.py:get_proxy: {error}')
+        my_log.log2(f'my_perplexity.py:get_proxy: {error}')
+        proxies = None
+    return proxies
 
 
 perplexity = None
@@ -17,7 +36,7 @@ def ask(query: str, search_focus: str = 'internet') -> str:
     global perplexity
 
     query += ' (отвечай на русском языке)'
-    
+
     assert search_focus in ["internet", "scholar", "news", "youtube", "reddit", "wikipedia"], "Invalid search focus"
 
     # пробуем 3 раза получить ответ
@@ -25,7 +44,7 @@ def ask(query: str, search_focus: str = 'internet') -> str:
         try:
             with lock:
                 if not perplexity:
-                    perplexity = Perplexity()
+                    perplexity = Perplexity(get_proxy())
                 answer = perplexity.search(query, search_focus)
         except Exception as error:
             answer = ''
@@ -55,7 +74,7 @@ def ask(query: str, search_focus: str = 'internet') -> str:
         else:
             with lock:
                 # переподключение
-                perplexity = Perplexity()
+                perplexity = None
                 time.sleep(1)
 
     return ''

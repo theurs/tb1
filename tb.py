@@ -1942,12 +1942,12 @@ def do_task(message, custom_prompt: str = ''):
         if message.text == '🎨Нарисуй':
             message.text = '/image'
             image(message)
-        if message.text == '🌐Найди':
-            message.text = '/google'
-            google(message)
         # if message.text == '🌐Найди':
-        #     message.text = '/ask'
-        #     ask(message)
+        #     message.text = '/google'
+        #     google(message)
+        if message.text == '🌐Найди':
+            message.text = '/ask'
+            ask(message)
         if message.text == '📋Перескажи':
             message.text = '/sum'
             summ_text(message)

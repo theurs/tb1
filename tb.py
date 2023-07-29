@@ -2000,9 +2000,9 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'trans':
                     message.text = f'/trans {message.text}'
                     trans(message)
-                # elif COMMAND_MODE[chat_id_full] == 'google':
-                #     message.text = f'/google {message.text}'
-                #     google(message)
+                elif COMMAND_MODE[chat_id_full] == 'google':
+                    message.text = f'/google {message.text}'
+                    google(message)
                 elif COMMAND_MODE[chat_id_full] == 'perplexity':
                     message.text = f'/ask {message.text}'
                     ask(message)

@@ -19,9 +19,10 @@ import gpt_basic
 import my_bard
 import my_genimg
 import my_dic
+import my_google
 import my_log
 import my_ocr
-import my_google
+import my_perplexity
 import my_stt
 import my_sum
 import my_trans
@@ -1278,6 +1279,57 @@ def tts_thread(message: telebot.types.Message):
                     my_log.log_echo(message, msg)
 
 
+@bot.message_handler(commands=['ask', 'perplexity'])
+def ask(message: telebot.types.Message):
+    thread = threading.Thread(target=ask_thread, args=(message,))
+    thread.start()
+def ask_thread(message: telebot.types.Message):
+    """ищет в perplexity.ai ответ"""
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    chat_id_full = get_topic_id(message)
+
+    try:
+        query = message.text.split(maxsplit=1)[1]
+    except Exception as error2:
+        print(error2)
+        help = """/ask <текст запроса>
+
+Нажмите ***Отмена*** что бы выйти из режима поиска
+
+Напишите что надо найти в интернете:
+"""
+        COMMAND_MODE[chat_id_full] = 'perplexity'
+        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
+        return
+
+    with ShowAction(message, 'typing'):
+        with semaphore_talks:
+            response = my_perplexity.ask(query)
+        if not response:
+            bot.reply_to(message, 'Интернет вам не ответил, перезвоните позже', parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
+            return
+        try:
+            reply_to_long_message(message, response, parse_mode = 'HTML', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
+        except Exception as error2:
+            my_log.log2(error2)
+            reply_to_long_message(message, response, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
+        my_log.log_echo(message, response)
+
+        if chat_id_full not in DIALOGS_DB:
+            DIALOGS_DB[chat_id_full] = []
+        DIALOGS_DB[chat_id_full] += [{"role":    'system',
+                                   "content": f'user попросил сделать запрос в Интернет: {query}'},
+                                     {"role":    'system',
+                                   "content": f'assistant поискал в интернете и ответил: {response}'}
+                                ]
+
+
 @bot.message_handler(commands=['google',])
 def google(message: telebot.types.Message):
     thread = threading.Thread(target=google_thread, args=(message,))
@@ -1320,7 +1372,8 @@ def google_thread(message: telebot.types.Message):
         return
 
     with ShowAction(message, 'typing'):
-        r = my_google.search(q)
+        with semaphore_talks:
+            r = my_google.search(q)
         try:
             bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
         except Exception as error2:
@@ -1331,9 +1384,9 @@ def google_thread(message: telebot.types.Message):
         if chat_id_full not in DIALOGS_DB:
             DIALOGS_DB[chat_id_full] = []
         DIALOGS_DB[chat_id_full] += [{"role":    'system',
-                                "content": f'user попросил сделать запрос в Google: {q}'},
-                                {"role":    'system',
-                                "content": f'assistant поискал в Google и ответил: {r}'}
+                                   "content": f'user попросил сделать запрос в Google: {q}'},
+                                     {"role":    'system',
+                                   "content": f'assistant поискал в Google и ответил: {r}'}
                                 ]
 
 
@@ -1379,7 +1432,8 @@ def ddg_thread(message: telebot.types.Message):
         return
 
     with ShowAction(message, 'typing'):
-        r = my_google.search_ddg(q)
+        with semaphore_talks:
+            r = my_google.search_ddg(q)
         try:
             bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
         except Exception as error2:
@@ -1390,9 +1444,9 @@ def ddg_thread(message: telebot.types.Message):
         if chat_id_full not in DIALOGS_DB:
             DIALOGS_DB[chat_id_full] = []
         DIALOGS_DB[chat_id_full] += [{"role":    'system',
-                                "content": f'user попросил сделать запрос в Google: {q}'},
-                                {"role":    'system',
-                                "content": f'assistant поискал в Google и ответил: {r}'}
+                                   "content": f'user попросил сделать запрос в Google: {q}'},
+                                     {"role":    'system',
+                                   "content": f'assistant поискал в Google и ответил: {r}'}
                                 ]
 
 
@@ -1884,9 +1938,12 @@ def do_task(message, custom_prompt: str = ''):
         if message.text == '🎨Нарисуй':
             message.text = '/image'
             image(message)
+        # if message.text == '🌐Найди':
+        #     message.text = '/google'
+        #     google(message)
         if message.text == '🌐Найди':
-            message.text = '/google'
-            google(message)
+            message.text = '/ask'
+            ask(message)
         if message.text == '📋Перескажи':
             message.text = '/sum'
             summ_text(message)
@@ -1943,9 +2000,12 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'trans':
                     message.text = f'/trans {message.text}'
                     trans(message)
-                elif COMMAND_MODE[chat_id_full] == 'google':
-                    message.text = f'/google {message.text}'
-                    google(message)
+                # elif COMMAND_MODE[chat_id_full] == 'google':
+                #     message.text = f'/google {message.text}'
+                #     google(message)
+                elif COMMAND_MODE[chat_id_full] == 'perplexity':
+                    message.text = f'/ask {message.text}'
+                    ask(message)
                 elif COMMAND_MODE[chat_id_full] == 'ddg':
                     message.text = f'/ddg {message.text}'
                     ddg(message)
@@ -1961,7 +2021,9 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
-                COMMAND_MODE[chat_id_full] = ''
+                # из режима поиска не выходим после первого запроса а ждем команды на отмену
+                if COMMAND_MODE[chat_id_full] != 'perplexity':
+                    COMMAND_MODE[chat_id_full] = ''
                 return
 
         # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга

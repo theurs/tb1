@@ -12,6 +12,7 @@ langdetect
 markdown2
 openai
 openai-whisper
+websocket-client
 Pillow
 py_trans
 pyenchant

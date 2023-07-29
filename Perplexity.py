@@ -12,8 +12,7 @@ import logging, traceback
 logger = logging.getLogger()
 
 
-import cfg
-
+from urllib.parse import urlparse
 
 
 
@@ -138,8 +137,21 @@ class Perplexity:
             on_close=self.on_ws_close
         )
         self.ws = ws
+
         if self.proxies:
-            ws_thread: Thread = Thread(target=ws.run_forever, args = (None, None, 0, None, "", '95.154.64.17', 37929, None, ('user1', '448QQAutzJvUqIsAZ',), None, False, None, None, None, False, 'socks5', None))
+            proxy_string = self.proxies['http']
+            parsed_proxy = urlparse(proxy_string)
+            p_type =        parsed_proxy.scheme
+            p_user =        parsed_proxy.username
+            p_password =    parsed_proxy.password
+            p_host =        parsed_proxy.hostname
+            p_port =        parsed_proxy.port
+            my_args = (None, None, 0, None, "",
+                       p_host, p_port, None,
+                       (p_user, p_password),
+                       None, False, None, None, None, False,
+                       p_type, None)
+            ws_thread: Thread = Thread(target=ws.run_forever, args = my_args)
         else:
             ws_thread: Thread = Thread(target=ws.run_forever)
         ws_thread.daemon = True

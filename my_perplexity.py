@@ -11,6 +11,10 @@ import utils
 from Perplexity import Perplexity
 
 
+perplexity = None
+lock = threading.Lock()
+
+
 def get_proxy():
     try:
         if cfg.perplexity_proxies:
@@ -26,10 +30,6 @@ def get_proxy():
         my_log.log2(f'my_perplexity.py:get_proxy: {error}')
         proxies = None
     return proxies
-
-
-perplexity = None
-lock = threading.Lock()
 
 
 def ask(query: str, search_focus: str = 'internet') -> str:

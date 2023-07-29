@@ -1285,7 +1285,7 @@ def ask(message: telebot.types.Message):
     thread.start()
 def ask_thread(message: telebot.types.Message):
     """ищет в perplexity.ai ответ"""
-
+    return
     # не обрабатывать команды к другому боту /cmd@botname args
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
     else: return

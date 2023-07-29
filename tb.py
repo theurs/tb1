@@ -405,8 +405,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
         button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
         button3 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_perplexity')
-        button4 = telebot.types.InlineKeyboardButton("⛔️Выход", callback_data='cancel_command_not_hide')
-        markup.row(button1, button2, button3, button4)
+        if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 1:
+            button4 = telebot.types.InlineKeyboardButton("⛔️Выход", callback_data='cancel_command_not_hide')
+            markup.row(button1, button2, button3, button4)
+        else:
+            markup.row(button1, button2, button3)
         return markup       
     elif kbd == 'translate_and_repair':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=4)

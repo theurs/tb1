@@ -22,7 +22,7 @@ import my_dic
 import my_google
 import my_log
 import my_ocr
-#import my_perplexity
+import my_perplexity
 import my_stt
 import my_sum
 import my_trans
@@ -1285,7 +1285,6 @@ def ask(message: telebot.types.Message):
     thread.start()
 def ask_thread(message: telebot.types.Message):
     """ищет в perplexity.ai ответ"""
-    return
     # не обрабатывать команды к другому боту /cmd@botname args
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
     else: return
@@ -1310,7 +1309,12 @@ def ask_thread(message: telebot.types.Message):
 
     with ShowAction(message, 'typing'):
         with semaphore_talks:
-            response = my_perplexity.ask(query)
+            try:
+                response = my_perplexity.ask(query)
+            except Exception as error2:
+                my_log.log2(f'tb:ask: {error2}')
+                f'tb:ask: {error2}'
+                response = ''
         if not response:
             bot.reply_to(message, 'Интернет вам не ответил, перезвоните позже', parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
             return

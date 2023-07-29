@@ -11,7 +11,7 @@ import my_log
 from Perplexity import Perplexity
 
 
-perplexity = Perplexity()
+perplexity = None
 lock = threading.Lock()
 
 
@@ -26,6 +26,8 @@ def ask(query: str, search_focus: str = 'internet') -> str:
     for _ in range(3):
         try:
             with lock:
+                if not perplexity:
+                    perplexity = Perplexity()
                 answer = perplexity.search(query, search_focus)
         except Exception as error:
             answer = ''

@@ -400,6 +400,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button1 = telebot.types.InlineKeyboardButton("Отмена", callback_data='cancel_command')
         markup.add(button1)
         return markup
+    elif kbd == 'perplexity':
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+        button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button3 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate')
+        button4 = telebot.types.InlineKeyboardButton("⛔️Выход", callback_data='cancel_command_not_hide')
+        markup.row(button1, button2, button3, button4)
+        return markup       
     elif kbd == 'translate_and_repair':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
         button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
@@ -568,6 +576,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             DIALOGS_DB[chat_id_full] = []
         elif call.data == 'cancel_command':
             # обработка нажатия кнопки "Отменить ввод команды"
+            COMMAND_MODE[chat_id_full] = ''
+            bot.delete_message(message.chat.id, message.message_id)
+        elif call.data == 'cancel_command_not_hide':
+            # обработка нажатия кнопки "Отменить ввод команды, но не скрывать"
             COMMAND_MODE[chat_id_full] = ''
             bot.delete_message(message.chat.id, message.message_id)
         # режим автоответов в чате, бот отвечает на все реплики всех участников
@@ -1319,10 +1331,10 @@ def ask_thread(message: telebot.types.Message):
             bot.reply_to(message, 'Интернет вам не ответил, перезвоните позже', parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
             return
         try:
-            reply_to_long_message(message, response, parse_mode = 'HTML', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
+            reply_to_long_message(message, response, parse_mode = 'HTML', disable_web_page_preview = True, reply_markup=get_keyboard('perplexity', message))
         except Exception as error2:
             my_log.log2(error2)
-            reply_to_long_message(message, response, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
+            reply_to_long_message(message, response, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('perplexity', message))
         my_log.log_echo(message, response)
 
         if chat_id_full not in DIALOGS_DB:

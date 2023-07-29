@@ -138,7 +138,10 @@ class Perplexity:
             on_close=self.on_ws_close
         )
         self.ws = ws
-        ws_thread: Thread = Thread(target=ws.run_forever)
+        if self.proxies:
+            ws_thread: Thread = Thread(target=ws.run_forever, args = (None, None, 0, None, "", '95.154.64.17', 37929, None, ('user1', '448QQAutzJvUqIsAZ',), None, False, None, None, None, False, 'socks5', None))
+        else:
+            ws_thread: Thread = Thread(target=ws.run_forever)
         ws_thread.daemon = True
         ws_thread.start()
 

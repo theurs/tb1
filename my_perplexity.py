@@ -82,7 +82,7 @@ def ask(query: str, search_focus: str = 'internet') -> str:
 
 if __name__ == '__main__':
 
-    print(ask('курс доллара'))
+    print(ask('1+1'))
     while 1:
         query = input('> ')
         print(ask(query))

@@ -54,8 +54,8 @@ class Perplexity:
         r = self.session.get(
             url=f"https://www.perplexity.ai/socket.io/?EIO=4&transport=polling&t={self.t}",
             headers=self.user_agent)
-        import my_log
-        my_log.log2(str(r))
+        # import my_log
+        # my_log.log2(str(r))
         response = loads(r.text[1:])
 
         return response["sid"]

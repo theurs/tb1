@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 
 
+import html
 import random
-import time
-import threading
 
 import cfg
 import my_log
 import utils
 from Perplexity import Perplexity
-
-
-perplexity = None
-lock = threading.Lock()
 
 
 def get_proxy():
@@ -33,8 +28,6 @@ def get_proxy():
 
 
 def ask(query: str, search_focus: str = 'internet') -> str:
-    global perplexity
-
     query += ' (отвечай на русском языке)'
 
     assert search_focus in ["internet", "scholar", "news", "youtube", "reddit", "wikipedia"], "Invalid search focus"
@@ -42,10 +35,8 @@ def ask(query: str, search_focus: str = 'internet') -> str:
     # пробуем 3 раза получить ответ
     for _ in range(3):
         try:
-            with lock:
-                if not perplexity:
-                    perplexity = Perplexity(get_proxy())
-                answer = perplexity.search(query, search_focus)
+            perplexity = Perplexity(get_proxy())
+            answer = perplexity.search(query, search_focus)
         except Exception as error:
             answer = ''
             print(error)
@@ -66,16 +57,11 @@ def ask(query: str, search_focus: str = 'internet') -> str:
             # меняем ссылки из текста
             n = 0
             for link in links:
-                text = text.replace(f'[{n + 1}]', f'<a href = "{link[1]}" title = "{link[0]}">[{n + 1}]</a>')
+                text = text.replace(f'[{n + 1}]', f'<a href = "{link[1]}" title = "{html.escape(link[0])}">[{n + 1}]</a>')
                 n += 1
             for link in links2:
-                text += '\n\n' + f'<a href = "{link[1]}">{link[0]}</a>'
+                text += '\n\n' + f'<a href = "{link[1]}">{html.escape(link[0])}</a>'
             return text
-        else:
-            with lock:
-                # переподключение
-                perplexity = None
-                time.sleep(1)
 
     return ''
 

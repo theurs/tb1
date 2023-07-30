@@ -43,6 +43,7 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
 _bot_name = bot.get_me().username
+BOT_ID = bot.get_me().id
 #telebot.apihelper.proxy = cfg.proxy_settings
 
 
@@ -1992,9 +1993,21 @@ def do_task(message, custom_prompt: str = ''):
 
         my_log.log_echo(message)
 
-        # является ли это ответом на наше сообщение
-        is_reply = message.reply_to_message is not None and message.reply_to_message.from_user.id == bot.get_me().id
-        # is_reply_to_other = message.reply_to_message and message.reply_to_message.from_user.id != bot.get_me().id
+        # является ли это сообщение топика, темы (особые чаты внутри чатов)
+        is_topic = message.is_topic_message or (message.reply_to_message and message.reply_to_message.is_topic_message)
+        # является ли это ответом на сообщение бота
+        is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
+
+        # не отвечать если это ответ юзера другому юзеру
+        if is_topic: # в топиках всё не так как в обычных чатах
+            # если ответ не мне либо запрос ко всем(в топике он выглядит как ответ с content_type == 'forum_topic_created')
+            if not (is_reply or message.reply_to_message.content_type == 'forum_topic_created'):
+                return
+        else:
+            # если это ответ в обычном чате но ответ не мне то выход
+            if message.reply_to_message and not is_reply:
+                return
+
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
         if chat_id_full not in SUPER_CHAT:

@@ -168,7 +168,7 @@ class ShowAction(threading.Thread):
             try:
                 bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)
             except Exception as error:
-                my_log.log2(str(error))
+                my_log.log2(f'tb:show_action: {error}')
             n = 50
             while n > 0:
                 time.sleep(0.1)
@@ -177,7 +177,10 @@ class ShowAction(threading.Thread):
     def stop(self):
         self.timerseconds = 50
         self.is_running = False
-        bot.send_chat_action(self.chat_id, 'cancel', message_thread_id = self.thread_id)
+        try:
+            bot.send_chat_action(self.chat_id, 'cancel', message_thread_id = self.thread_id)
+        except Exception as error:
+            my_log.log2(f'tb:show_action: {error}')
 
     def __enter__(self):
         self.start()
@@ -570,7 +573,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
-            message.reply_to_message = None
+            message.dont_check_topic = True
             echo_all(message, 'Продолжай')
             return
         elif call.data == 'forget_all':
@@ -2002,14 +2005,19 @@ def do_task(message, custom_prompt: str = ''):
         is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
 
         # не отвечать если это ответ юзера другому юзеру
-        if is_topic: # в топиках всё не так как в обычных чатах
-            # если ответ не мне либо запрос ко всем(в топике он выглядит как ответ с content_type == 'forum_topic_created')
-            if not (is_reply or message.reply_to_message.content_type == 'forum_topic_created'):
-                return
-        else:
-            # если это ответ в обычном чате но ответ не мне то выход
-            if message.reply_to_message and not is_reply:
-                return
+        try:
+            _ = message.dont_check_topic
+        except AttributeError:
+            message.dont_check_topic = False
+        if not message.dont_check_topic:
+            if is_topic: # в топиках всё не так как в обычных чатах
+                # если ответ не мне либо запрос ко всем(в топике он выглядит как ответ с content_type == 'forum_topic_created')
+                if not (is_reply or message.reply_to_message.content_type == 'forum_topic_created'):
+                    return
+            else:
+                # если это ответ в обычном чате но ответ не мне то выход
+                if message.reply_to_message and not is_reply:
+                    return
 
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
@@ -2229,8 +2237,8 @@ def do_task(message, custom_prompt: str = ''):
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message))
                             except Exception as error:
-                                print(f'tb:do_task: error')
-                                my_log.log2(f'tb:do_task: error')
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
                                 reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message))
                     except Exception as error3:

@@ -570,6 +570,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
+            message.reply_to_message = None
             echo_all(message, 'Продолжай')
             return
         elif call.data == 'forget_all':
@@ -1652,6 +1653,8 @@ def trans_thread(message: telebot.types.Message):
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
     else: return
 
+    chat_id_full = get_topic_id(message)
+
     my_log.log_echo(message)
 
     with semaphore_talks:
@@ -1676,7 +1679,7 @@ def trans_thread(message: telebot.types.Message):
             lang = match.group(1) or "ru"  # если lang не указан, то по умолчанию 'ru'
             text = match.group(2) or ''
         else:
-            COMMAND_MODE[message.chat.id] = 'trans'
+            COMMAND_MODE[chat_id_full] = 'trans'
             bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
             my_log.log_echo(message, help)
             return

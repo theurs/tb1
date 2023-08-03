@@ -1507,7 +1507,7 @@ def image_thread(message: telebot.types.Message):
             prompt = prompt[1]
             with ShowAction(message, 'upload_photo'):
                 is_porn = gpt_basic.is_image_prompt_about_porn(prompt)
-                if is_porn:
+                if is_porn and (0==1): # слишком сильно давит на процессор, отключено пока
                     images = my_p_hub.get_screenshots(prompt)
                     medias = images
                 else:

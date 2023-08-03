@@ -30,7 +30,7 @@ def get_screenshots(query: str):
 
     vids = []
     for vid in videos:
-        if len(vids) > 9:
+        if len(vids) > 3:
             break
         try:
             h, m, s = vid.duration.split(':')

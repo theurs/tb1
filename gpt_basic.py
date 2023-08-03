@@ -459,11 +459,29 @@ def get_list_of_models():
     return sorted(list(set(result)))
 
 
+def is_image_prompt_about_porn(prompt: str) -> bool:
+    """True/False похоже ли что человек попросил нарисовать что то связанное с эротикой или порнографией"""
+    query = f"""Пользователь написал что он хочет нарисовать с помощью ИИ который рисует по текстовому описанию,
+определи связано ли это с эротикой/порнографией, ответ начни со слова ДА или НЕТ. Запрос пользователя:
+
+{prompt}
+"""
+    try:
+        result = ai(query, max_tok=10).lower()
+    except Exception as error:
+        print(f'gpt_basic:is_image_prompt_about_porn: {error}\n\nQuery: {query}')
+        my_log.log2(f'gpt_basic:is_image_prompt_about_porn: {error}\n\nQuery: {query}')
+        return False
+
+    if 'да' in result:
+        return True
+    return False
+
+
 if __name__ == '__main__':
     if cfg.all_proxy:
         os.environ['all_proxy'] = cfg.all_proxy
 
-    # print(ai_test())
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 
     for x in range(5, 15):

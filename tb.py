@@ -22,6 +22,7 @@ import my_dic
 import my_google
 import my_log
 import my_ocr
+import my_p_hub
 import my_perplexity
 import my_stt
 import my_sum
@@ -1499,13 +1500,20 @@ def image_thread(message: telebot.types.Message):
 
 Напишите что надо нарисовать, как это выглядит
 """
+        is_private = message.chat.type == 'private'
+
         prompt = message.text.split(maxsplit = 1)
         if len(prompt) > 1:
             prompt = prompt[1]
             with ShowAction(message, 'upload_photo'):
-                images = my_genimg.gen_images(prompt)
-                if len(images) > 0:
+                is_porn = gpt_basic.is_image_prompt_about_porn(prompt)
+                if is_porn:
+                    images = my_p_hub.get_screenshots(prompt)
+                    medias = images
+                else:
+                    images = my_genimg.gen_images(prompt)
                     medias = [telebot.types.InputMediaPhoto(i) for i in images]
+                if len(medias) > 0:
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                     if pics_group:
                         try:
@@ -1521,7 +1529,8 @@ def image_thread(message: telebot.types.Message):
                     for i in msgs_ids:
                         caption += f'{i.message_id} '
                     caption += '\n'
-                    caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
+                    if not is_porn:
+                        caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
                     bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
                     reply_markup=get_keyboard('hide_image', message))
                     my_log.log_echo(message, '[image gen] ')

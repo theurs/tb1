@@ -1,3 +1,4 @@
+attrs==23.1.0
 bardapi
 chardet
 duckduckgo_search
@@ -14,6 +15,7 @@ openai
 openai-whisper
 websocket-client
 Pillow
+pornhub_api
 py_trans
 pyenchant
 pylatexenc
@@ -33,4 +35,4 @@ trafilatura
 transliterate
 vosk
 youtube_transcript_api
-attrs==23.1.0
+yt_dlp

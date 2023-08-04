@@ -4,6 +4,7 @@
 import threading
 import re
 import requests
+from urllib.parse import urlparse
 
 from bardapi import Bard
 from textblob import TextBlob
@@ -166,8 +167,10 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '') ->
         if links:
             for url in links:
                 if url:
-                    # result += f"\n\n[{url}]({url})"
-                    result += f"\n\n{url}"
+                    parsed_url = urlparse(url)
+                    domain = parsed_url.netloc
+                    result += f"\n\n[{domain}]({url})"
+                    # result += f"\n\n{url}"
     except Exception as error:
         print(error)
         my_log.log2(str(error))

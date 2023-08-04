@@ -2204,7 +2204,7 @@ def do_task(message, custom_prompt: str = ''):
                     try:
                         answer = bingai.chat(message.text, chat_id_full)
                         if answer:
-                            my_log.log_echo(message, answer['text'], debug = True)
+                            # my_log.log_echo(message, answer['text'], debug = True)
                             text = utils.bot_markdown_to_html(answer['text'])
                             my_log.log_echo(message, text)
                             messages_left = str(answer['messages_left'])
@@ -2238,7 +2238,7 @@ def do_task(message, custom_prompt: str = ''):
                         user_name = message.from_user.first_name or message.from_user.username or ''
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name)
                         # answer = my_bard.convert_markdown(answer)
-                        my_log.log_echo(message, answer, debug = True)
+                        # my_log.log_echo(message, answer, debug = True)
                         answer = utils.bot_markdown_to_html(answer)
                         my_log.log_echo(message, answer)
                         if answer:
@@ -2259,7 +2259,7 @@ def do_task(message, custom_prompt: str = ''):
             with ShowAction(message, 'typing'):
                 resp = dialog_add_user_request(chat_id_full, message.text, 'gpt')
                 if resp:
-                    my_log.log_echo(message, resp, debug = True)
+                    # my_log.log_echo(message, resp, debug = True)
                     resp = utils.bot_markdown_to_html(resp)
                     my_log.log_echo(message, resp)
                     if is_private:

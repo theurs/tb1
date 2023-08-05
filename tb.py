@@ -159,6 +159,7 @@ class ShowAction(threading.Thread):
         assert action in self.actions, f'Допустимые actions = {self.actions}'
         self.chat_id = message.chat.id
         self.thread_id = message.message_thread_id
+        self.is_topic = message.is_topic_message
         self.action = action
         self.is_running = True
         self.timerseconds = 1
@@ -166,9 +167,12 @@ class ShowAction(threading.Thread):
     def run(self):
         while self.is_running:
             try:
-                bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)
+                if self.is_topic:
+                    bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)
+                else:
+                    bot.send_chat_action(self.chat_id, self.action)
             except Exception as error:
-                my_log.log2(f'tb:show_action: {error}')
+                my_log.log2(f'tb:show_action:run: {error}')
             n = 50
             while n > 0:
                 time.sleep(0.1)

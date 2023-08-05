@@ -165,11 +165,12 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '') ->
         links = links[:6]
     try:
         if links:
+            result += '\n'
             for url in links:
                 if url:
                     parsed_url = urlparse(url)
                     domain = parsed_url.netloc
-                    result += f"\n\n[{domain}]({url})"
+                    result += f"\n[{domain}]({url})"
                     # result += f"\n\n{url}"
     except Exception as error:
         print(error)

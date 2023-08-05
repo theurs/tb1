@@ -17,6 +17,7 @@ import bingai
 import cfg
 import gpt_basic
 import my_bard
+import my_claude
 import my_genimg
 import my_dic
 import my_google
@@ -59,11 +60,9 @@ semaphore_talks = threading.Semaphore(40)
 if not os.path.exists('db'):
     os.mkdir('db')
 
-# в каких чатах включен/выключен режим общения с бингом 'off' | 'on'
-BING_MODE = my_dic.PersistentDict('db/bing_mode.pkl')
-
-# в каких чатах включен/выключен режим общения с бингом 'off' | 'on'
-BARD_MODE = my_dic.PersistentDict('db/bard_mode.pkl')
+# в каких чатах какой чатбот отвечает {chat_id_full(str):chatbot(str)}
+# 'bard', 'claude', 'chatgpt', 'bing'
+CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 
 # история диалогов для GPT chat
 DIALOGS_DB = my_dic.PersistentDict('db/dialogs.pkl')
@@ -479,33 +478,38 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         voice_title = voices[voice]
 
         # бард по умолчанию
-        if chat_id_full not in BARD_MODE and chat_id_full not in BING_MODE:
-            BARD_MODE[chat_id_full] = 'on'
-
-        bing_mode = BING_MODE[chat_id_full] if chat_id_full in BING_MODE else 'off'
-        bard_mode = BARD_MODE[chat_id_full] if chat_id_full in BARD_MODE else 'off'
+        if chat_id_full not in CHAT_MODE:
+            CHAT_MODE[chat_id_full] = 'bard'
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
-        if bard_mode == 'off' and bing_mode == 'off':
+        if CHAT_MODE[chat_id_full] == 'chatgpt':
             button1 = telebot.types.InlineKeyboardButton('✅ChatGPT', callback_data='chatGPT_mode_disable')
         else:
             button1 = telebot.types.InlineKeyboardButton('☑️ChatGPT', callback_data='chatGPT_mode_enable')
         button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='chatGPT_reset')
         markup.row(button1, button2)
 
-        if bard_mode == 'off':
-            button1 = telebot.types.InlineKeyboardButton('☑️Bard AI', callback_data='bard_mode_enable')
-        else:
+        if CHAT_MODE[chat_id_full] == 'bard':
             button1 = telebot.types.InlineKeyboardButton('✅Bard AI', callback_data='bard_mode_disable')
+        else:
+            button1 = telebot.types.InlineKeyboardButton('☑️Bard AI', callback_data='bard_mode_enable')
 
         button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='bardAI_reset')
         markup.row(button1, button2)
 
-        if bing_mode == 'off':
-            button1 = telebot.types.InlineKeyboardButton('☑️Bing AI', callback_data='bing_mode_enable')
+        if CHAT_MODE[chat_id_full] == 'claude':
+            button1 = telebot.types.InlineKeyboardButton('✅Claude AI', callback_data='claude_mode_disable')
         else:
+            button1 = telebot.types.InlineKeyboardButton('☑️Claude AI', callback_data='claude_mode_enable')
+
+        button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='claudeAI_reset')
+        markup.row(button1, button2)
+
+        if CHAT_MODE[chat_id_full] == 'bing':
             button1 = telebot.types.InlineKeyboardButton('✅Bing AI', callback_data='bing_mode_disable')
+        else:
+            button1 = telebot.types.InlineKeyboardButton('☑️Bing AI', callback_data='bing_mode_enable')
 
         button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='bingAI_reset')
         markup.row(button1, button2)
@@ -681,31 +685,35 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_mode_disable':
-            BING_MODE[chat_id_full] = 'off'
-            BARD_MODE[chat_id_full] = 'on'
+            CHAT_MODE[chat_id_full] = 'bard'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_mode_enable':
-            BING_MODE[chat_id_full] = 'off'
-            BARD_MODE[chat_id_full] = 'off'
+            CHAT_MODE[chat_id_full] = 'chatgpt'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bing_mode_enable':
-            BING_MODE[chat_id_full] = 'on'
-            BARD_MODE[chat_id_full] = 'off'
+            CHAT_MODE[chat_id_full] = 'bing'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bing_mode_disable':
-            BING_MODE[chat_id_full] = 'off'
+            CHAT_MODE[chat_id_full] = 'bard'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bard_mode_enable':
-            BARD_MODE[chat_id_full] = 'on'
-            BING_MODE[chat_id_full] = 'off'
+            CHAT_MODE[chat_id_full] = 'bard'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bard_mode_disable':
-            BARD_MODE[chat_id_full] = 'off'
+            CHAT_MODE[chat_id_full] = 'chatgpt'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'claude_mode_enable':
+            CHAT_MODE[chat_id_full] = 'claude'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'claude_mode_disable':
+            CHAT_MODE[chat_id_full] = 'bard'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'autotranslate_disable':
@@ -2095,6 +2103,12 @@ def do_task(message, custom_prompt: str = ''):
             m.append(f'[{time_now}] [{user_name}] {message.text}')
             CHAT_LOGS[chat_id_full] = m
 
+
+        # по умолчанию отвечает бард
+        if chat_id_full not in CHAT_MODE:
+            CHAT_MODE[chat_id_full] = 'bard'
+
+
         # определяем какое имя у бота в этом чате, на какое слово он отзывается
         if chat_id_full in BOT_NAMES:
             bot_name = BOT_NAMES[chat_id_full]
@@ -2115,13 +2129,16 @@ def do_task(message, custom_prompt: str = ''):
             return
         # если сообщение начинается на 'забудь' то стираем историю общения GPT
         if (msg.startswith('забудь') and (is_private or is_reply)) or msg.startswith((f'{bot_name} забудь', f'{bot_name}, забудь')):
-            if chat_id_full in BARD_MODE and BARD_MODE[chat_id_full] == 'on':
+            if CHAT_MODE[chat_id_full] == 'bard':
                 my_bard.reset_bard_chat(chat_id_full)
                 my_log.log_echo(message, 'История барда принудительно отчищена')
-            elif chat_id_full in BING_MODE and BING_MODE[chat_id_full] == 'on':
-                my_bing.reset_bing_chat(chat_id_full)
+            elif CHAT_MODE[chat_id_full] == 'bing':
+                bingai.reset_bing_chat(chat_id_full)
                 my_log.log_echo(message, 'История бинга принудительно отчищена')
-            else:
+            elif CHAT_MODE[chat_id_full] == 'claude':
+                my_claude.reset_claude_chat(chat_id_full)
+                my_log.log_echo(message, 'История клода принудительно отчищена')
+            elif CHAT_MODE[chat_id_full] == 'chatgpt':
                 DIALOGS_DB[chat_id_full] = []
                 my_log.log_echo(message, 'История GPT принудительно отчищена')
             bot.reply_to(message, 'Ок', parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
@@ -2199,7 +2216,7 @@ def do_task(message, custom_prompt: str = ''):
                 message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
 
             # если активирован режим общения с бинг чатом
-            if chat_id_full in BING_MODE and BING_MODE[chat_id_full] == 'on':
+            if CHAT_MODE[chat_id_full] == 'bing':
                 with ShowAction(message, 'typing'):
                     try:
                         answer = bingai.chat(message.text, chat_id_full)
@@ -2222,12 +2239,8 @@ def do_task(message, custom_prompt: str = ''):
                         print(error)
                     return
 
-            # по умолчанию всех в барда
-            if chat_id_full not in BARD_MODE:
-                BARD_MODE[chat_id_full] = 'on'
-
-            # если активирован режим общения с бинг чатом
-            if chat_id_full in BARD_MODE and BARD_MODE[chat_id_full] == 'on':
+            # если активирован режим общения с бард чатом
+            if CHAT_MODE[chat_id_full] == 'bard':
                 if len(msg) > my_bard.MAX_REQUEST:
                     bot.reply_to(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
@@ -2239,6 +2252,27 @@ def do_task(message, custom_prompt: str = ''):
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name)
                         # answer = my_bard.convert_markdown(answer)
                         # my_log.log_echo(message, answer, debug = True)
+                        answer = utils.bot_markdown_to_html(answer)
+                        my_log.log_echo(message, answer)
+                        if answer:
+                            try:
+                                reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('bard_chat', message))
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('bard_chat', message))
+                    except Exception as error3:
+                        print(error3)
+                        my_log.log2(str(error3))
+                    return
+
+            # если активирован режим общения с клод чатом
+            if CHAT_MODE[chat_id_full] == 'claude':
+                with ShowAction(message, 'typing'):
+                    try:
+                        answer = my_claude.chat(message.text, chat_id_full)
                         answer = utils.bot_markdown_to_html(answer)
                         my_log.log_echo(message, answer)
                         if answer:

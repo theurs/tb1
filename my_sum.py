@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 
 
-import chardet
 import io
-import magic
 import os
-import PyPDF2
 import re
-import requests
 import sys
-import trafilatura
-from langdetect import detect
 from urllib.parse import urlparse
 from youtube_transcript_api import YouTubeTranscriptApi
+
+import chardet
+import magic
+import PyPDF2
+import requests
+import trafilatura
 
 import bingai
 import cfg
 import gpt_basic
 import my_log
+import my_claude
 
 
 def get_text_from_youtube(url: str) -> str:
@@ -72,12 +73,7 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
 -------------
 BEGIN:
 """
-        prompt_ru = f"""Обобщите следующее, кратко ответьте на русском языке с удобным для чтения форматированием:
--------------
-{text}
--------------
-НАЧИНАЙТЕ:
-"""
+
     elif subj == 'chat_log':
         prompt = f"""Summarize the following telegram chat log, briefly answer in Russian with easy-to-read formatting:
 -------------
@@ -85,24 +81,12 @@ BEGIN:
 -------------
 BEGIN:
 """
-        prompt_ru = f"""Обобщите следующий лог телеграмм чата, кратко ответьте на русском языке с удобным для чтения форматированием:
--------------
-{text}
--------------
-НАЧИНАЙТЕ:
-"""
+
     elif subj == 'youtube_video':
         prompt = f"""Summarize the following video subtitles extracted from youtube, briefly answer in Russian with easy-to-read formatting:
 -------------
 {text}
 -------------
-"""
-        prompt_ru = f"""Обобщите следующие видео субтитры, извлеченные из youtube, кратко ответьте на русском языке с удобным для чтения форматированием:
--------------
-{text}
--------------
-НАЧИНАЙТЕ:
-
 """
 
     if type(text) != str or len(text) < 1: return ''
@@ -115,45 +99,45 @@ BEGIN:
             if r:
                 result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
         except Exception as error:
-            print(error)
-            my_log.log2(f'my_sum:summ_text_worker: {error}')
-
-    if not result and len(prompt) > 32000:
-        try:
-            r = gpt_basic.ai(prompt, model_to_use="claude-instant-100k")
-            if r:
-                result = f'{r}\n\n--\nclaude-instant-100k [{len(prompt)} символов]'
-        except Exception as error:
-            print(error)
-            my_log.log2(f'my_sum:summ_text_worker: {error}')
-
-    if not result and len(prompt) > 32000:
-        try:
-            r = gpt_basic.ai(prompt, model_to_use="claude-2-100k")
-            if r:
-                result = f'{r}\n\n--\nclaude-2-100k [{len(prompt)} символов]'
-        except Exception as error:
-            print(error)
-            my_log.log2(f'my_sum:summ_text_worker: {error}')
-
-    if not result:
-        prompt_bing = shrink_text_for_bing(prompt)
-        try:
-            r = bingai.ai(prompt_bing, 1)
-            if r:
-                result = f'{r}\n\n--\nBing AI [{len(prompt_bing)} символов]'
-        except Exception as error2:
-            print(error2)
-            my_log.log2(f'my_sum:summ_text_worker: {error2}')
+            print(f'my_sum:summ_text_worker:gpt: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
 
     if not result:
         try:
-            r = gpt_basic.ai(prompt[:15000])
+            r = my_claude.chat(prompt[:99000], 'my_summ')
             if r:
-                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:15000])} символов]'
+                result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt)} символов]'
         except Exception as error:
-            print(error)
-            my_log.log2(f'my_sum:summ_text_worker: {error}')
+            print(f'my_sum:summ_text_worker:claude: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:claude: {error}')
+
+    # if not result and len(prompt) > 32000:
+    #     try:
+    #         r = gpt_basic.ai(prompt, model_to_use="claude-2-100k")
+    #         if r:
+    #             result = f'{r}\n\n--\nclaude-2-100k [{len(prompt)} символов]'
+    #     except Exception as error:
+    #         print(error)
+    #         my_log.log2(f'my_sum:summ_text_worker: {error}')
+
+    # if not result:
+    #     prompt_bing = shrink_text_for_bing(prompt)
+    #     try:
+    #         r = bingai.ai(prompt_bing, 1)
+    #         if r:
+    #             result = f'{r}\n\n--\nBing AI [{len(prompt_bing)} символов]'
+    #     except Exception as error2:
+    #         print(error2)
+    #         my_log.log2(f'my_sum:summ_text_worker: {error2}')
+
+    # if not result:
+    #     try:
+    #         r = gpt_basic.ai(prompt[:15000])
+    #         if r:
+    #             result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:15000])} символов]'
+    #     except Exception as error:
+    #         print(error)
+    #         my_log.log2(f'my_sum:summ_text_worker: {error}')
 
     return result
 

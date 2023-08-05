@@ -2062,9 +2062,10 @@ def do_task(message, custom_prompt: str = ''):
             bot_name = BOT_NAME_DEFAULT
             BOT_NAMES[chat_id_full] = bot_name
 
+        # убираем из запроса кодовое слово
         if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
             bot_name_used = True
-            message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
+            message.text = message.text[len(f'{bot_name} '):].strip()
         else:
             bot_name_used = False
 

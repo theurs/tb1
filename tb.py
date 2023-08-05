@@ -1926,6 +1926,19 @@ def send_welcome_help(message: telebot.types.Message):
     my_log.log2(str(message))
 
 
+@bot.message_handler(commands=['id']) 
+def id_cmd_handler(message: telebot.types.Message):
+    """показывает id юзера и группы в которой сообщение отправлено"""
+
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    user_id = message.from_user.id
+    chat_id_full = get_topic_id(message)
+    bot.reply_to(message, f'ID пользователя: {user_id}\n\nID группы: {chat_id_full}')
+
+
 def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
                       reply_markup: telebot.types.InlineKeyboardMarkup = None):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""

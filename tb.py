@@ -2049,11 +2049,24 @@ def do_task(message, custom_prompt: str = ''):
         # if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
         if SUPER_CHAT[chat_id_full] == 1:
             is_private = True
-        # id куда писать ответ
-        chat_id = message.chat.id
 
         # удаляем пробелы в конце каждой строки
         message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
+
+        msg = message.text.lower()
+
+        # определяем какое имя у бота в этом чате, на какое слово он отзывается
+        if chat_id_full in BOT_NAMES:
+            bot_name = BOT_NAMES[chat_id_full]
+        else:
+            bot_name = BOT_NAME_DEFAULT
+            BOT_NAMES[chat_id_full] = bot_name
+
+        if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
+            bot_name_used = True
+            message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
+        else:
+            bot_name_used = False
 
         msg = message.text.lower()
 
@@ -2097,7 +2110,6 @@ def do_task(message, custom_prompt: str = ''):
 
         # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
         if not is_private:
-            #time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
             time_now = datetime.datetime.now().strftime('%H:%M')
             user_name = message.from_user.first_name or message.from_user.username or 'unknown'
             if chat_id_full in CHAT_LOGS:
@@ -2107,32 +2119,24 @@ def do_task(message, custom_prompt: str = ''):
             m.append(f'[{time_now}] [{user_name}] {message.text}')
             CHAT_LOGS[chat_id_full] = m
 
-
         # по умолчанию отвечает бард
         if chat_id_full not in CHAT_MODE:
             CHAT_MODE[chat_id_full] = 'bard'
 
-
-        # определяем какое имя у бота в этом чате, на какое слово он отзывается
-        if chat_id_full in BOT_NAMES:
-            bot_name = BOT_NAMES[chat_id_full]
-        else:
-            bot_name = BOT_NAME_DEFAULT
-            BOT_NAMES[chat_id_full] = bot_name 
         # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
-        if ((msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply))) or msg.startswith((f'{bot_name} замолчи', f'{bot_name}, замолчи')) or msg.startswith((f'{bot_name}, заткнись', f'{bot_name} заткнись')):
+        if msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply):
             BLOCKS[chat_id_full] = 1
             bot.reply_to(message, 'Автоперевод выключен', parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
             return
         # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
-        if (msg.startswith('вернись') and (is_private or is_reply)) or msg.startswith((f'{bot_name} вернись', f'{bot_name}, вернись')):
+        if msg.startswith('вернись') and (is_private or is_reply):
             BLOCKS[chat_id_full] = 0
             bot.reply_to(message, 'Автоперевод включен', parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
             return
         # если сообщение начинается на 'забудь' то стираем историю общения GPT
-        if (msg.startswith('забудь') and (is_private or is_reply)) or msg.startswith((f'{bot_name} забудь', f'{bot_name}, забудь')):
+        if msg.startswith('забудь') and (is_private or is_reply):
             if CHAT_MODE[chat_id_full] == 'bard':
                 my_bard.reset_bard_chat(chat_id_full)
                 my_log.log_echo(message, 'История барда принудительно отчищена')
@@ -2155,26 +2159,16 @@ def do_task(message, custom_prompt: str = ''):
             summ_text(message)
             return
 
-        # определяем нужно ли реагировать. надо реагировать если сообщение начинается на 'бот ' или 'бот,' в любом регистре
         # проверяем просят ли нарисовать что-нибудь
-        if is_private:
-            if msg.startswith(('нарисуй ', 'нарисуй,')):
-                prompt = msg[8:]
-                if prompt:
-                    message.text = f'/image {prompt}'
-                    image_thread(message)
-                    n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
-                    if chat_id_full in DIALOGS_DB:
-                        DIALOGS_DB[chat_id_full] += n
-                    else:
-                        DIALOGS_DB[chat_id_full] = n
-                    return
-        regex = fr'^(бинг|{bot_name})\,?\s+нарисуй\s+(.+)$'
-        match = re.match(regex, msg, re.DOTALL)
-        if match:
-            prompt = match.group(2)
+        if msg.startswith(('нарисуй ', 'нарисуй,')):
+            prompt = message.text[8:]
             message.text = f'/image {prompt}'
             image_thread(message)
+            n = [{'role':'system', 'content':f'user попросил нарисовать\n{prompt}'}, {'role':'system', 'content':'assistant нарисовал с помощью DALL-E'}]
+            if chat_id_full in DIALOGS_DB:
+                DIALOGS_DB[chat_id_full] += n
+            else:
+                DIALOGS_DB[chat_id_full] = n
             return
 
         # можно перенаправить запрос к бингу, но он долго отвечает
@@ -2211,13 +2205,11 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
-        elif msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')) or is_reply or is_private:
+        elif is_reply or is_private or bot_name_used:
             if len(msg) > cfg.max_message_from_user:
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
-            if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
-                message.text = message.text[len(f'{bot_name} '):] # убираем из запроса кодовое слово
 
             # если активирован режим общения с бинг чатом
             if CHAT_MODE[chat_id_full] == 'bing':

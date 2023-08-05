@@ -218,6 +218,7 @@ def bot_markdown_to_html(text):
 
 
 def split_html(html: str, chunk_size: int):
+    """пока не работает. надо доделать и использовать вместо обычного split_text для хтмл текста"""
     soup = BeautifulSoup(html, 'html.parser')
     chunks = []
     current_chunk = ''

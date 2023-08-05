@@ -106,7 +106,7 @@ BEGIN:
         try:
             r = my_claude.chat(prompt[:99000], 'my_summ')
             if r:
-                result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt)} символов]'
+                result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:99000])} символов]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:claude: {error}')
             my_log.log2(f'my_sum:summ_text_worker:claude: {error}')

@@ -169,7 +169,7 @@ perplexity_proxies = [
     ]
 
 # ключи для клауда 'sessionKey=sk....' искать на сайте claude.ai через американский прокси
-claudeai_keys = ['sessionKey=sk-xxxxxxxxxx',]
+claudeai_keys = ['sessionKey=sk-xxxxxxxxxx',] или None
 # прокси для клода, американский. либо = None
 claude_proxy = None
 #claude_proxy = {

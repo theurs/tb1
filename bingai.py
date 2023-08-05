@@ -198,7 +198,7 @@ if __name__ == "__main__":
 
     #print(chat('1+1=', '[0] [None]'))
 
-    sys.exit()
+    #sys.exit()
 
     """Usage ./bingai.py 'list 10 japanese dishes"""
 

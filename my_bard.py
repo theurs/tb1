@@ -70,9 +70,8 @@ def get_new_session(user_name: str = ''):
     if user_name:
         rules += f" Ты общаешься с человеком по имени {user_name}, обращай внимание на его пол, \
 если не понятно по имени то определяй по словам которые использует человек, людям нравится когда ты правильно говоришь с учетом пола."
-    #my_log.log2(str(rules))
+
     r = bard.get_answer(rules)
-    #my_log.log2(str(r))
 
     return bard
 
@@ -161,20 +160,20 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '') ->
         chat_request(query, dialog, reset = True, user_name = user_name)
         return chat_request(query, dialog, reset, user_name)
 
-    if len(links) > 6:
-        links = links[:6]
-    try:
-        if links:
-            result += '\n'
-            for url in links:
-                if url:
-                    parsed_url = urlparse(url)
-                    domain = parsed_url.netloc
-                    result += f"\n[{domain}]({url})"
-                    # result += f"\n\n{url}"
-    except Exception as error:
-        print(error)
-        my_log.log2(str(error))
+    # if len(links) > 6:
+    #     links = links[:6]
+    # try:
+    #     if links:
+    #         result += '\n'
+    #         for url in links:
+    #             if url:
+    #                 parsed_url = urlparse(url)
+    #                 domain = parsed_url.netloc
+    #                 result += f"\n[{domain}]({url})"
+    #                 # result += f"\n\n{url}"
+    # except Exception as error:
+    #     print(error)
+    #     my_log.log2(str(error))
 
     # images = response['images']
     # if len(images) > 6:

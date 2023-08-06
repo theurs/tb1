@@ -12,6 +12,7 @@ import platform as platform_module
 
 from bs4 import BeautifulSoup
 from pylatexenc.latex2text import LatexNodes2Text
+import telebot
 
 import my_log
 
@@ -91,28 +92,21 @@ class MessageList:
 
 
 def split_text(text: str, chunk_limit: int = 1500):
+    """ Splits one string into multiple strings, with a maximum amount of chars_per_string
+        characters per string. This is very useful for splitting one giant message into multiples.
+        If chars_per_string > 4096: chars_per_string = 4096. Splits by '\n', '. ' or ' ' in exactly
+        this priority.
+
+        :param text: The text to split
+        :type text: str
+
+        :param chars_per_string: The number of maximum characters per part the text is split to.
+        :type chars_per_string: int
+
+        :return: The splitted text as a list of strings.
+        :rtype: list of str
     """
-    Splits a text into chunks of a specified length without breaking words.
-
-    Args:
-        text (str): The text to be split.
-        chunk_limit (int, optional): The maximum length of each chunk. Defaults to 1500.
-
-    Returns:
-        list: A list of chunks of the text.
-
-    Note:
-        If no spaces are found in the text, the chunks may be larger than the specified limit.
-    """
-    chunks = []
-    position = 0
-    while position < len(text):
-        space_index = text.find(" ", position + chunk_limit)
-        if space_index == -1:
-            space_index = len(text)
-        chunks.append(text[position:space_index])
-        position = space_index + 1
-    return chunks
+    return telebot.util.smart_split(text, chunk_limit)
 
 
 def platform() -> str:
@@ -217,52 +211,89 @@ def bot_markdown_to_html(text):
     return text
 
 
-def split_html(text, max_length):
-    chunks = []
-    current_chunk = []
-    for i in range(len(text)):
-        if len(current_chunk) + 1 > max_length:
-            chunks.append(''.join(current_chunk))
-            current_chunk = []
-        current_chunk.append(text[i])
-    chunks.append(''.join(current_chunk))
+def split_html(text: str, max_length: int = 1500) -> list:
+    """
+    Split the given HTML text into chunks of maximum length, while preserving the integrity
+    of HTML tags. The function takes two arguments:
+    
+    Parameters:
+        - text (str): The HTML text to be split.
+        - max_length (int): The maximum length of each chunk. Default is 1500.
+        
+    Returns:
+        - list: A list of chunks, where each chunk is a part of the original text.
+        
+    Raises:
+        - AssertionError: If the length of the text is less than or equal to 299.
+    """
 
-    return chunks
+    assert len(text) > 299, 'Длина текста должна быть больше 299'
 
-def add_closing_tags(text):
-    pattern = re.compile(r'<(b|code|a)[^>]*>')
-    result = pattern.sub(r'<\1></\1>', text)
-    return result
+    #найти и заменить все ссылки (тэг <a>) на рандомные слова с такой же длиной
+    links = []
+    soup = BeautifulSoup(text, 'html.parser')
+    a_tags = soup.find_all('a')
+    for tag in a_tags:
+        tag = str(tag)
+        random_string = ''.join(random.choice(string.ascii_uppercase+string.ascii_lowercase) for _ in range(len(tag)))
+        links.append((random_string, tag))
+        text = text.replace(tag, random_string)
 
-def split_and_add_closing_tags(text, max_length):
-    chunks = split_html(text, max_length)
-    for i in range(len(chunks)):
-        chunks[i] = add_closing_tags(chunks[i])
-    return chunks
+    # разбить текст на части
+    chunks = telebot.util.smart_split(text, max_length)
+    chunks2 = []
+    next_chunk_is_b = False
+    next_chunk_is_code = False
+    # в каждом куске проверить совпадение количества открывающих и закрывающих
+    # тэгов <b> <code> и заменить рандомные слова обратно на ссылки
+    for chunk in chunks:
+        for random_string, tag in links:
+            chunk = chunk.replace(random_string, tag)
+
+        b_tags = chunk.count('<b>')
+        b_close_tags = chunk.count('</b>')
+        code_tags = chunk.count('<code>')
+        code_close_tags = chunk.count('</code>')
+
+        if b_tags > b_close_tags:
+            chunk += '</b>'
+            next_chunk_is_b = True
+        elif b_tags < b_close_tags:
+            chunk = '<b>' + chunk
+            next_chunk_is_b = False
+
+        if code_tags > code_close_tags:
+            chunk += '</code>'
+            next_chunk_is_code = True
+        elif code_tags < code_close_tags:
+            chunk = '<code>' + chunk
+            next_chunk_is_code = False
+
+        # если нет открывающих и закрывающих тегов <code> а в предыдущем чанке 
+        # был добавлен закрывающий тег значит этот чанк целиком - код
+        if code_close_tags == 0 and code_tags == 0 and next_chunk_is_code:
+            chunk = '<code>' + chunk
+            chunk += '</code>'
+
+        # если нет открывающих и закрывающих тегов <b> а в предыдущем чанке 
+        # был добавлен закрывающий тег значит этот чанк целиком - <b>
+        if b_close_tags == 0 and b_tags == 0 and next_chunk_is_b:
+            chunk = '<b>' + chunk
+            chunk += '</b>'
+
+        chunks2.append(chunk)
+
+    return chunks2
 
 
 if __name__ == '__main__':
-    text = r"""
-Причины и окончание югославской войны
-----------------------------------------
-Югославские войны были серией конфликтов, которые происходили в бывшей Югославии с 1991 по 1999 год. Они привели к распаду страны и образованию новых государств: Словении, Хорватии, Боснии и Герцеговины, Сербии, Черногории и Македонии.
+    text = '**Google Bard**'
 
-Причины югославских войн были многофакторными. Среди них можно выделить следующие:
-
-• <b>Этнические и религиозные противоречия.</b> В Югославии проживало множество различных этнических групп, которые имели свои собственные религиозные традиции. Это привело к многочисленным конфликтам между этими группами.
-• <b>Экономические проблемы.</b> Югославия была в состоянии экономического кризиса, который привел к росту безработицы и бедности. Это создало благодатную почву для социальных волнений.
-• <b>Политические разногласия.</b> В Югославии не было единой политической системы, которая бы устраивала все этнические группы. Это привело к многочисленным конфликтам между различными политическими партиями.
-
-Югославские войны закончились в 1999 году подписанием Охридских соглашений. Эти соглашения установили мир в Македонии и положили конец югославским войнам.
-
-Югославские войны были одними из самых кровопролитных конфликтов в Европе после Второй мировой войны. В них погибло более 100 000 человек, а еще более 2 миллиона человек были вынуждены покинуть свои дома. Югославские войны оказали огромное влияние на развитие региона, и их последствия до сих пор ощущаются.
-
-[Google Bard]
-"""
-    # text = split_html(text, 50)
-    # for x in text:
-    #     print('\n\n')
-    #     print(x)
+    text = bot_markdown_to_html(text)
+    text = split_html(text, 1500)
+    for x in text:
+        print('=============================CUT=============================')
+        print(x)
 
     # soup = BeautifulSoup(text)
     # print(soup)

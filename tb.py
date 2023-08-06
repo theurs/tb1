@@ -1942,7 +1942,10 @@ def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str 
                       reply_markup: telebot.types.InlineKeyboardMarkup = None):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
     if len(resp) < 20000:
-        chunks = utils.split_text(resp, 3500)
+        if parse_mode == 'HTML':
+            chunks = utils.split_html(resp, 4000)
+        else:
+            chunks = utils.split_text(resp, 4000)
         counter = len(chunks)
         for chunk in chunks:
             try:

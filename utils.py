@@ -217,67 +217,54 @@ def bot_markdown_to_html(text):
     return text
 
 
-def split_html(html: str, chunk_size: int):
-    """пока не работает. надо доделать и использовать вместо обычного split_text для хтмл текста"""
-    soup = BeautifulSoup(html, 'html.parser')
+def split_html(text, max_length):
     chunks = []
-    current_chunk = ''
-    current_size = 0
+    current_chunk = []
+    for i in range(len(text)):
+        if len(current_chunk) + 1 > max_length:
+            chunks.append(''.join(current_chunk))
+            current_chunk = []
+        current_chunk.append(text[i])
+    chunks.append(''.join(current_chunk))
 
-    for tag in soup.recursiveChildGenerator():
-        if tag.name:
-            tag_html = str(tag)
-            tag_size = len(tag_html)
-            if current_size + tag_size <= chunk_size:
-                current_chunk += tag_html
-                current_size += tag_size
-            else:
-                chunks.append(current_chunk)
-                current_chunk = tag_html
-                current_size = tag_size
+    return chunks
 
-    if current_chunk:
-        chunks.append(current_chunk)
+def add_closing_tags(text):
+    pattern = re.compile(r'<(b|code|a)[^>]*>')
+    result = pattern.sub(r'<\1></\1>', text)
+    return result
 
+def split_and_add_closing_tags(text, max_length):
+    chunks = split_html(text, max_length)
+    for i in range(len(chunks)):
+        chunks[i] = add_closing_tags(chunks[i])
     return chunks
 
 
 if __name__ == '__main__':
     text = r"""
-<br/>
-<blockquote>Traceback (most recent call last):<br/>
-  File "/home/master/PycharmProjects/example/main.py", line 1, in <br/>
-    from Article import Article<br/>
-  File "/home/master/PycharmProjects/example/Article.py", line 1, in <br/>
-    from User import User<br/>
-  File "/home/master/PycharmProjects/example/User.py", line 1, in <br/>
-    from Article import Article<br/>
-ImportError: cannot import name 'Article' from partially initialized module 'Article' (most likely due to a circular import) (/home/master/PycharmProjects/example/Article.py)</blockquote><br/>
-<br/>
-Собственно простая задача, есть статьи, есть пользователи которые их написали, и для примера мы хотим добавить <br/>
-в модель пользователя метод который дергает все написанные им статьи. <br/>
-Как цивилизованный человек я всегда указываю типы данных которые ожидаю на входе, и которые ожидаю на выходе. <br/>
-Это нормальная практика, я пишу не на одном языке, и обычно это не вызывает  проблем например в том же PHP ибо там есть магические __autoload.php который помогает избегать циклических импортов. Однако в питоне такой штуки нету. <br/>
-А отказываться от явного указания типов аргументов я не хочу. Это дурной тон, грязный код, и ворох багов в будущем, да еще и призрение тестировщика... Короче хочу спросить у бородатых и опытных, как вы разруливаете данные проблемы в проекте? какие средства для этого есть? Ведь сказать что с точки зрения написания чистого кода, код выше неправильный нельзя.  </div>
-      <ul class="question__attrs inline-list">
-      <li class="inline-list__item inline-list__item_bullet">
-        <span class="question__pub-date">
-          Вопрос задан
-          <time pubdate="" itemprop="dateCreated" datetime="2023-08-03 14:28:21" title="Дата публикации: 03 авг. 2023, в 14:28">
-            17 часов назад          </time>
-                  </span>
-      </li>
-              <li class="inline-list__item inline-list__item_bullet">
-          <span class="question__views-count question__views-count_full">
-            <meta itemprop="interactionCount" content="261 views">
-            261             просмотр          </span>
-        </li>
-                </ul>
-    </div>
-                        <div class="dropdown dropdown_share" role="dropdown">
-  <button class="btn btn_share" role="dropdown_trigger" data-toggle="dropdown" type="button" title="Поделиться вопросом">
+Причины и окончание югославской войны
+----------------------------------------
+Югославские войны были серией конфликтов, которые происходили в бывшей Югославии с 1991 по 1999 год. Они привели к распаду страны и образованию новых государств: Словении, Хорватии, Боснии и Герцеговины, Сербии, Черногории и Македонии.
+
+Причины югославских войн были многофакторными. Среди них можно выделить следующие:
+
+• <b>Этнические и религиозные противоречия.</b> В Югославии проживало множество различных этнических групп, которые имели свои собственные религиозные традиции. Это привело к многочисленным конфликтам между этими группами.
+• <b>Экономические проблемы.</b> Югославия была в состоянии экономического кризиса, который привел к росту безработицы и бедности. Это создало благодатную почву для социальных волнений.
+• <b>Политические разногласия.</b> В Югославии не было единой политической системы, которая бы устраивала все этнические группы. Это привело к многочисленным конфликтам между различными политическими партиями.
+
+Югославские войны закончились в 1999 году подписанием Охридских соглашений. Эти соглашения установили мир в Македонии и положили конец югославским войнам.
+
+Югославские войны были одними из самых кровопролитных конфликтов в Европе после Второй мировой войны. В них погибло более 100 000 человек, а еще более 2 миллиона человек были вынуждены покинуть свои дома. Югославские войны оказали огромное влияние на развитие региона, и их последствия до сих пор ощущаются.
+
+[Google Bard]
 """
-    text = split_html(text, 500)
-    for x in text:
-        print('\n\n')
-        print(x)
+    # text = split_html(text, 50)
+    # for x in text:
+    #     print('\n\n')
+    #     print(x)
+
+    # soup = BeautifulSoup(text)
+    # print(soup)
+    # for i in soup.sp
+    #     print(i)

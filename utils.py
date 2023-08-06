@@ -193,7 +193,8 @@ def bot_markdown_to_html(text):
         text = text.replace(f'${match}$', new_match)
 
     # меняем маркдаун ссылки на хтмл
-    text = re.sub(r'\[([^]]+)\]\((https?://\S+)\)', r'<a href="\2">\1</a>', text)
+    # text = re.sub(r'\[([^]]+)\]\((https?://\S+)\)', r'<a href="\2">\1</a>', text)
+    text = re.sub(r'\[([^\]]*)\]\(([^\)]*)\)', r'<a href="\2">\1</a>', text)
     # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
     text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
 
@@ -288,12 +289,19 @@ def split_html(text: str, max_length: int = 1500) -> list:
 
 if __name__ == '__main__':
     text = '**Google Bard**'
+    md_url = '[Google Bard](https://google.com/search?q=google+bard)'
+    
+    # меняем маркдаун ссылки на хтмл
+    result = re.sub(r'\[([^\]]*)\]\(([^\)]*)\)', r'<a href="\2">\1</a>', md_url)
+    
+    print(result)
+    
 
-    text = bot_markdown_to_html(text)
-    text = split_html(text, 1500)
-    for x in text:
-        print('=============================CUT=============================')
-        print(x)
+    # text = bot_markdown_to_html(text)
+    # text = split_html(text, 1500)
+    # for x in text:
+    #     print('=============================CUT=============================')
+    #     print(x)
 
     # soup = BeautifulSoup(text)
     # print(soup)

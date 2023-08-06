@@ -1923,7 +1923,6 @@ def send_welcome_help(message: telebot.types.Message):
 
     bot.reply_to(message, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, help)
-    my_log.log2(str(message))
 
 
 @bot.message_handler(commands=['id']) 

@@ -228,7 +228,8 @@ def split_html(text: str, max_length: int = 1500) -> list:
         - AssertionError: If the length of the text is less than or equal to 299.
     """
 
-    assert len(text) > 299, 'Длина текста должна быть больше 299'
+    if len(text) < 300:
+        return [text,]
 
     #найти и заменить все ссылки (тэг <a>) на рандомные слова с такой же длиной
     links = []

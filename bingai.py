@@ -12,6 +12,7 @@ from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 from BingImageCreator import ImageGen
 
 import cfg
+import my_log
 
 
 DIALOGS = {}

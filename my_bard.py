@@ -258,6 +258,7 @@ def chat(query: str, dialog: str, reset: bool = False, user_name: str = '') -> s
     else:
         lock = threading.Lock()
         CHAT_LOCKS[dialog] = lock
+    result = ''
     with lock:
         try:
             result = chat_request(query, dialog, reset, user_name)
@@ -269,7 +270,7 @@ def chat(query: str, dialog: str, reset: bool = False, user_name: str = '') -> s
             except Exception as error2:
                 print(f'my_bard:chat:2: {error2}')
                 my_log.log2(f'my_bard:chat:2: {error2}')
-      return result
+    return result
 
 
 def chat_image(query: str, dialog: str, image: bytes, reset: bool = False) -> str:

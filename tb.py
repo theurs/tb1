@@ -2260,7 +2260,7 @@ def do_task(message, custom_prompt: str = ''):
                         bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
                                         reply_markup=get_keyboard('chat', message))
                         my_log.log_echo(message, 'Бинг не хочет об этом говорить')
-                        return
+                    return
 
             # если активирован режим общения с бард чатом
             if CHAT_MODE[chat_id_full] == 'bard':

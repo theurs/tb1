@@ -82,12 +82,20 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
     def replace_links(match):
         index = int(match.group(1)) - 1
         if index < len(urls2):
-            return urls2[index]
+            return f'({urls2[index]})'
+        else:
+            return match.group(0)
+
+    def replace_links2(match):
+        index = int(match.group(1)) - 1
+        if index < len(urls2):
+            return f'[{index+1}]({urls2[index]})'
         else:
             return match.group(0)
 
     my_log.log2(text)
-    text = re.sub(r'\^(\d{1,2})\^', replace_links, text)
+    text = re.sub(r'\[\^(\d{1,2})\^\]', replace_links2, text)
+    text = re.sub(r'\(\^(\d{1,2})\^\)', replace_links, text)
     my_log.log2(text)
 
     return {'text': text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}

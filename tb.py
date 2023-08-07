@@ -100,7 +100,7 @@ COMMAND_MODE = {}
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
-BOT_NAME_DEFAULT = 'бот'
+BOT_NAME_DEFAULT = cfg.default_bot_name
 
 supported_langs_trans = [
         "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
@@ -2361,6 +2361,13 @@ def set_default_commands():
             except Exception as error:
                 print(error)
     bot.set_my_commands(commands)
+
+    if not bot.set_my_description(cfg.bot_description):
+        my_log.log2(f'Не удалось установить описание бота: {cfg.bot_description}')
+    if not bot.set_my_short_description(cfg.bot_short_description):
+        my_log.log2(f'Не удалось установить короткое описание бота: {cfg.bot_short_description}')
+    if not bot.set_my_name(cfg.bot_name):
+        my_log.log2(f'Не удалось установить имя бота: {cfg.bot_name}')
 
 
 def main():

@@ -2234,7 +2234,15 @@ def do_task(message, custom_prompt: str = ''):
             if CHAT_MODE[chat_id_full] == 'bing':
                 with ShowAction(message, 'typing'):
                     try:
-                        answer = bingai.chat(message.text, chat_id_full)
+                        try:
+                            answer = bingai.chat(message.text, chat_id_full)
+                        except Exception as bingerror:
+                            print(f'tb:do_task:bing answer: {bingerror}')
+                            my_log.log2(f'tb:do_task:bing answer: {bingerror}')
+                            bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
+                                         reply_markup=get_keyboard('chat', message))
+                            my_log.log_echo('Бинг не хочет об этом говорить', text)
+                            return
                         if answer:
                             # my_log.log_echo(message, answer['text'], debug = True)
                             text = utils.bot_markdown_to_html(answer['text'])

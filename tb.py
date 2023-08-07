@@ -2238,18 +2238,22 @@ def do_task(message, custom_prompt: str = ''):
                         if answer:
                             # my_log.log_echo(message, answer['text'], debug = True)
                             text = utils.bot_markdown_to_html(answer['text'])
-                            my_log.log_echo(message, text)
                             messages_left = str(answer['messages_left'])
                             text = f"{text}\n\n{messages_left}/30"
                             try:
                                 reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True, 
-                                reply_markup=get_keyboard('bing_chat', message))
+                                                      reply_markup=get_keyboard('bing_chat', message))
                             except Exception as error:
                                 print(error)
                                 reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, 
-                                reply_markup=get_keyboard('bing_chat', message))
+                                                      reply_markup=get_keyboard('bing_chat', message))
+                            my_log.log_echo(message, text)
                             if int(messages_left) == 1:
                                 bingai.reset_bing_chat(chat_id_full)
+                        else:
+                            bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
+                                         reply_markup=get_keyboard('chat', message))
+                            my_log.log_echo('Бинг не хочет об этом говорить', text)
                     except Exception as error:
                         print(error)
                     return

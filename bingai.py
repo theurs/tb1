@@ -26,7 +26,7 @@ def reset_bing_chat(chat_id: str):
         chat('', chat_id, reset=True)
     except Exception as error2:
         my_log.log2(f'bingai.reset_bing_chat: {error2}')
-        print(error2)
+        print(f'bingai.reset_bing_chat: {error2}')
 
 
 async def chat_async(query: str, dialog: str, style = 3, reset = False):
@@ -35,11 +35,13 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         try:
             await DIALOGS[dialog].close()
         except KeyError:
-            print(f'no such key in DIALOGS: {dialog}')
+            print(f'bingai.chat_async:1:no such key in DIALOGS: {dialog}')
+            my_log.log2(f'bingai.chat_async:1:no such key in DIALOGS: {dialog}')
         try:
             del DIALOGS[dialog]
         except KeyError:
-            print(f'no such key in DIALOGS: {dialog}')    
+            print(f'bingai.chat_async:2:no such key in DIALOGS: {dialog}')
+            my_log.log2(f'bingai.chat_async:2:no such key in DIALOGS: {dialog}')
         return
 
     if style == 1:
@@ -57,15 +59,18 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
     except Exception as error:
         #sys.stdout, sys.stderr = orig_stdout, orig_stderr
-        print(error)
+        print(f'bingai.chat_async:1: {error}')
+        my_log.log2(f'bingai.chat_async:1: {error}')
         try:
             await DIALOGS[dialog].close()
         except KeyError:
-            print(f'no such key in DIALOGS: {dialog}')
+            print(f'bingai.chat_async:3:no such key in DIALOGS: {dialog}')
+            my_log.log2(f'bingai.chat_async:3:no such key in DIALOGS: {dialog}')
         try:
             del DIALOGS[dialog]
         except KeyError:
-            print(f'no such key in DIALOGS: {dialog}')
+            print(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
+            my_log.log2(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
         return error
     text = r['text']
     suggestions = r['suggestions']
@@ -119,8 +124,8 @@ def chat(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
             try:
                 result = asyncio.run(chat_async(query, dialog, style, reset))
             except Exception as error2:
-                print(f'my_bingai.chat:2: {error}')
-                my_log.log2(f'my_bingai.chat:2: {error}')
+                print(f'my_bingai.chat:2: {error2}')
+                my_log.log2(f'my_bingai.chat:2: {error2}')
                 result = asyncio.run(chat_async(query, dialog, style, reset))
     return result
 
@@ -176,7 +181,8 @@ async def main(prompt1: str, style: int = 3) -> str:
         r = await bot.ask(prompt=prompt1, conversation_style=st, simplify_response=True)
     except Exception as error:
         #sys.stdout, sys.stderr = orig_stdout, orig_stderr
-        print(error)
+        print(f'my_bingai.main: {error}')
+        my_log.log2(f'my_bingai.main: {error}')
         return ''
     await bot.close()
 
@@ -240,7 +246,8 @@ def gen_imgs(prompt: str):
             except Exception as error:
                 if 'Your prompt has been blocked by Bing. Try to change any bad words and try again.' in str(error):
                     return 'Бинг отказался это рисовать.'
-                print(error)
+                print(f'my_bingai.gen_imgs: {error}')
+                my_log.log2(f'my_bingai.gen_imgs: {error}')
                 return str(error)
 
             return images

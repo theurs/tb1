@@ -70,9 +70,24 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
     suggestions = r['suggestions']
     messages_left = r['messages_left']
     messages_max = r['max_messages']
-    pattern = r'\[\^\d{1,2}\^]'
-    cleaned_text = re.sub(pattern, '', text).replace(' .', '.')
-    return {'text': cleaned_text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
+
+    sources_text = r['sources_text']
+
+    urls = re.findall(r'\[(.*?)\]\((.*?)\)', sources_text)
+    urls2 = []
+    for _, url in urls:
+        urls2.append(url.strip())
+
+    def replace_links(match):
+        index = int(match.group(1)) - 1
+        if index < len(urls2):
+            return urls2[index]
+        else:
+            return match.group(0)
+
+    text = re.sub(r'\^(\d{1,2})\^', replace_links, text)
+
+    return {'text': text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
 
 
 def chat(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
@@ -143,9 +158,23 @@ async def main(prompt1: str, style: int = 3) -> str:
     await bot.close()
 
     text = r['text']
-    pattern = r'\[\^\d{1,2}\^]'
-    cleaned_text = re.sub(pattern, '', text)
-    return cleaned_text.replace(' .', '.')
+    sources_text = r['sources_text']
+
+    urls = re.findall(r'\[(.*?)\]\((.*?)\)', sources_text)
+    urls2 = []
+    for _, url in urls:
+        urls2.append(url.strip())
+
+    def replace_links(match):
+        index = int(match.group(1)) - 1
+        if index < len(urls2):
+            return urls2[index]
+        else:
+            return match.group(0)
+
+    text = re.sub(r'\^(\d{1,2})\^', replace_links, text)
+
+    return text
 
 
 def ai(prompt: str, style: int = 3) -> str:
@@ -190,13 +219,32 @@ def gen_imgs(prompt: str):
 
 if __name__ == "__main__":
 
+    # text = open('text.txt', 'r', encoding='utf-8').read()
+    # sources_text = open('sources_text.txt', 'r', encoding='utf-8').read()
+    
+    # urls = re.findall(r'\[(.*?)\]\((.*?)\)', sources_text)
+    # urls2 = []
+    # for i, url in urls:
+    #     num = i.split('. ', maxsplit=1)[1].strip()
+    #     urls2.append(url.strip())
+    
+    
+    # def replace_links(match):
+    #     index = int(match.group(1)) - 1
+    #     if index < len(urls2):
+    #         return urls2[index]
+    #     else:
+    #         return match.group(0)
+
+    # new_text = re.sub(r'\^(\d{1,2})\^', replace_links, text)
+    
+    # print(new_text)
+
     #prompt = 'anime резонанс душ'
     #print(gen_imgs(prompt))
 
-    #print(ai('курс доллара на сегодня во владивостоке'))
+    # print(ai('с чего начать изучение питона'))
     #sys.exit()
-
-    #print(chat('1+1=', '[0] [None]'))
 
     #sys.exit()
 

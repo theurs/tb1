@@ -59,8 +59,8 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
     except Exception as error:
         #sys.stdout, sys.stderr = orig_stdout, orig_stderr
-        print(f'bingai.chat_async:1: {error}')
-        my_log.log2(f'bingai.chat_async:1: {error}')
+        print(f'bingai.chat_async:2: {error}')
+        my_log.log2(f'bingai.chat_async:2: {error}')
         try:
             await DIALOGS[dialog].close()
         except KeyError:

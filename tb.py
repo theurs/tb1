@@ -2253,13 +2253,13 @@ def do_task(message, custom_prompt: str = ''):
                         else:
                             bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
                                         reply_markup=get_keyboard('chat', message))
-                            my_log.log_echo('Бинг не хочет об этом говорить', text)
+                            my_log.log_echo(message, 'Бинг не хочет об этом говорить')
                     except Exception as error:
                         print(f'tb:do_task:bing answer: {error}')
                         my_log.log2(f'tb:do_task:bing answer: {error}')
                         bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
                                         reply_markup=get_keyboard('chat', message))
-                        my_log.log_echo('Бинг не хочет об этом говорить', text)
+                        my_log.log_echo(message, 'Бинг не хочет об этом говорить')
                         return
 
             # если активирован режим общения с бард чатом

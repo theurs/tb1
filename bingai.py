@@ -93,10 +93,10 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         else:
             return match.group(0)
 
-    # my_log.log2(text)
+    my_log.log2(text)
     text = re.sub(r'\[\^(\d{1,2})\^\]', replace_links2, text)
     text = re.sub(r'\(\^(\d{1,2})\^\)', replace_links, text)
-    # my_log.log2(text)
+    my_log.log2(text)
 
     return {'text': text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
 

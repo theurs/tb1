@@ -109,7 +109,19 @@ def chat(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
         lock = threading.Lock()
         CHAT_LOCKS[dialog] = lock
     with lock:
-        result = asyncio.run(chat_async(query, dialog, style, reset))
+        try:
+            result = asyncio.run(chat_async(query, dialog, style, reset))
+        except Exception as error:
+            print(f'my_bingai.chat: {error}')
+            my_log.log2(f'my_bingai.chat: {error}')
+            result = asyncio.run(chat_async(query, dialog, style, reset))
+        if not result:
+            try:
+                result = asyncio.run(chat_async(query, dialog, style, reset))
+            except Exception as error2:
+                print(f'my_bingai.chat:2: {error}')
+                my_log.log2(f'my_bingai.chat:2: {error}')
+                result = asyncio.run(chat_async(query, dialog, style, reset))
     return result
 
 

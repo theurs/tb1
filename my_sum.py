@@ -93,16 +93,7 @@ BEGIN:
 
     result = ''
 
-    if len(prompt) < 15000:
-        try:
-            r = gpt_basic.ai(prompt)
-            if r:
-                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt)} символов]'
-        except Exception as error:
-            print(f'my_sum:summ_text_worker:gpt: {error}')
-            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
-
-    if not result:
+    if len(prompt) > cfg.max_request:
         try:
             r = my_claude.chat(prompt[:99000], 'my_summ')
             if r:
@@ -111,33 +102,14 @@ BEGIN:
             print(f'my_sum:summ_text_worker:claude: {error}')
             my_log.log2(f'my_sum:summ_text_worker:claude: {error}')
 
-    # if not result and len(prompt) > 32000:
-    #     try:
-    #         r = gpt_basic.ai(prompt, model_to_use="claude-2-100k")
-    #         if r:
-    #             result = f'{r}\n\n--\nclaude-2-100k [{len(prompt)} символов]'
-    #     except Exception as error:
-    #         print(error)
-    #         my_log.log2(f'my_sum:summ_text_worker: {error}')
-
-    # if not result:
-    #     prompt_bing = shrink_text_for_bing(prompt)
-    #     try:
-    #         r = bingai.ai(prompt_bing, 1)
-    #         if r:
-    #             result = f'{r}\n\n--\nBing AI [{len(prompt_bing)} символов]'
-    #     except Exception as error2:
-    #         print(error2)
-    #         my_log.log2(f'my_sum:summ_text_worker: {error2}')
-
     if not result:
         try:
-            r = gpt_basic.ai(prompt[:15000])
+            r = gpt_basic.ai(prompt[:cfg.max_request])
             if r:
-                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:15000])} символов]'
+                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:cfg.max_request])} символов]'
         except Exception as error:
-            print(f'my_sum:summ_text_worker:gpt:2 {error}')
-            my_log.log2(f'my_sum:summ_text_worker:gpt:2: {error}')
+            print(f'my_sum:summ_text_worker:gpt: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
 
     return result
 

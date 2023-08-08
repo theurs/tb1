@@ -130,14 +130,14 @@ BEGIN:
     #         print(error2)
     #         my_log.log2(f'my_sum:summ_text_worker: {error2}')
 
-    # if not result:
-    #     try:
-    #         r = gpt_basic.ai(prompt[:15000])
-    #         if r:
-    #             result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:15000])} символов]'
-    #     except Exception as error:
-    #         print(error)
-    #         my_log.log2(f'my_sum:summ_text_worker: {error}')
+    if not result:
+        try:
+            r = gpt_basic.ai(prompt[:15000])
+            if r:
+                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:15000])} символов]'
+        except Exception as error:
+            print(f'my_sum:summ_text_worker:gpt:2 {error}')
+            my_log.log2(f'my_sum:summ_text_worker:gpt:2: {error}')
 
     return result
 

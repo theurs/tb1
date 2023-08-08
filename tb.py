@@ -97,6 +97,9 @@ SUPER_CHAT = my_dic.PersistentDict('db/super_chat.pkl')
 # COMMAND_MODE[chat_id] = 'google'|'image'|...
 COMMAND_MODE = {}
 
+# в каких чатах включен режим только голосовые сообщения {'chat_id_full':True/False}
+VOICE_ONLY_MODE = my_dic.PersistentDict('db/voice_only_mode.pkl')
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -473,11 +476,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         else:
             voice = 'tts_female'
 
-        voices = {'tts_female': 'Микрософт жен.',
-                  'tts_male': 'Микрософт муж.',
+        voices = {'tts_female': 'MS жен.',
+                  'tts_male': 'MS муж.',
                   'tts_google_female': 'Google',
-                  'tts_silero_xenia': 'Силеро - xenia',
-                  'tts_silero_aidar': 'Силеро - aidar'
+                  'tts_silero_xenia': 'Xenia',
+                  'tts_silero_aidar': 'Aidar'
                   }
         voice_title = voices[voice]
 
@@ -518,8 +521,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button2 = telebot.types.InlineKeyboardButton('❌Стереть', callback_data='bingAI_reset')
         markup.row(button1, button2)
 
-        button = telebot.types.InlineKeyboardButton(f'📢Голос: {voice_title}', callback_data=voice)
-        markup.add(button)
+        button1 = telebot.types.InlineKeyboardButton(f'📢Голос: {voice_title}', callback_data=voice)
+        if chat_id_full not in VOICE_ONLY_MODE:
+            VOICE_ONLY_MODE[chat_id_full] = False
+        if VOICE_ONLY_MODE[chat_id_full]:
+            button2 = telebot.types.InlineKeyboardButton('✅Только голос', callback_data='voice_only_mode_disable')
+        else:
+            button2 = telebot.types.InlineKeyboardButton('☑️Только голос', callback_data='voice_only_mode_enable')
+        markup.row(button1, button2)
 
         if chat_id_full not in BLOCKS:
             BLOCKS[chat_id_full] = 0
@@ -688,6 +697,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             TTS_GENDER[chat_id_full] = 'female'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'voice_only_mode_disable':
+            VOICE_ONLY_MODE[chat_id_full] = False
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'voice_only_mode_enable':
+            VOICE_ONLY_MODE[chat_id_full] = True
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_mode_disable':
             CHAT_MODE[chat_id_full] = 'bard'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
@@ -778,7 +795,11 @@ def handle_voice_thread(message: telebot.types.Message):
             new_file.write(downloaded_file)
 
         # Распознаем текст из аудио
-        with ShowAction(message, 'typing'):
+        if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
+            action = 'record_audio'
+        else:
+            action = 'typing'
+        with ShowAction(message, action):
             text = my_stt.stt(file_path)
 
             os.remove(file_path)
@@ -786,11 +807,19 @@ def handle_voice_thread(message: telebot.types.Message):
             text = text.strip()
             # Отправляем распознанный текст
             if text:
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
-                my_log.log_echo(message, f'[ASR] {text}')
+                if VOICE_ONLY_MODE[chat_id_full]:
+                    # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
+                    pass
+                else:
+                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
+                    my_log.log_echo(message, f'[ASR] {text}')
             else:
-                bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide', message))
-                my_log.log_echo(message, '[ASR] no results')
+                if VOICE_ONLY_MODE[chat_id_full]:
+                    message.text = '/tts ' + 'Очень интересно, но ничего не понятно.'
+                    tts(message)
+                else:
+                    bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide', message))
+                    my_log.log_echo(message, '[ASR] no results')
 
             # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
             if text:
@@ -1969,6 +1998,9 @@ def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str 
 def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str = None,
                           disable_web_page_preview: bool = None, reply_markup: telebot.types.InlineKeyboardMarkup = None):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
+
+    chat_id_full = get_topic_id(message)
+
     if len(resp) < 20000:
         if parse_mode == 'HTML':
             chunks = utils.split_html(resp, 4000)
@@ -1976,13 +2008,20 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
             chunks = utils.split_text(resp, 4000)
         counter = len(chunks)
         for chunk in chunks:
-            try:
-                bot.reply_to(message, chunk, parse_mode=parse_mode,
-                             disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
-            except Exception as error:
-                print(error)
-                my_log.log2(f'tb:reply_to_long_message: {error}')
-                bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+            # в режиме только голоса ответы идут голосом без текста
+            # чат боты только отвечают так что такое есть только в reply_to_long_message но нет в send_long_message
+            # скорее всего будет всего 1 чанк, не слишком длинный текст
+            if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
+                message.text = '/tts ' + chunk
+                tts(message)
+            else:
+                try:
+                    bot.reply_to(message, chunk, parse_mode=parse_mode,
+                                disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                except Exception as error:
+                    print(error)
+                    my_log.log2(f'tb:reply_to_long_message: {error}')
+                    bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
             counter -= 1
             if counter < 0:
                 break
@@ -2230,9 +2269,16 @@ def do_task(message, custom_prompt: str = ''):
                 my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
 
+            if chat_id_full not in VOICE_ONLY_MODE:
+                VOICE_ONLY_MODE[chat_id_full] = False
+            if VOICE_ONLY_MODE[chat_id_full]:
+                action = 'record_audio'
+            else:
+                action = 'typing'
+
             # если активирован режим общения с бинг чатом
             if CHAT_MODE[chat_id_full] == 'bing':
-                with ShowAction(message, 'typing'):
+                with ShowAction(message, action):
                     try:
                         answer = bingai.chat(message.text, chat_id_full)
                         if answer:
@@ -2242,23 +2288,23 @@ def do_task(message, custom_prompt: str = ''):
                             text = f"{text}\n\n{messages_left}/30"
                             try:
                                 reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True, 
-                                                    reply_markup=get_keyboard('bing_chat', message))
+                                                      reply_markup=get_keyboard('bing_chat', message))
                             except Exception as error:
                                 print(error)
                                 reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, 
-                                                    reply_markup=get_keyboard('bing_chat', message))
+                                                      reply_markup=get_keyboard('bing_chat', message))
                             my_log.log_echo(message, text)
                             if int(messages_left) == 1:
                                 bingai.reset_bing_chat(chat_id_full)
                         else:
                             bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
-                                        reply_markup=get_keyboard('chat', message))
+                                         reply_markup=get_keyboard('chat', message))
                             my_log.log_echo(message, 'Бинг не хочет об этом говорить')
                     except Exception as error:
                         print(f'tb:do_task:bing answer: {error}')
                         my_log.log2(f'tb:do_task:bing answer: {error}')
                         bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
-                                        reply_markup=get_keyboard('chat', message))
+                                     reply_markup=get_keyboard('chat', message))
                         my_log.log_echo(message, 'Бинг не хочет об этом говорить')
                     return
 
@@ -2268,7 +2314,7 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     return
-                with ShowAction(message, 'typing'):
+                with ShowAction(message, action):
                     try:
                         # имя пользователя если есть или ник
                         user_name = message.from_user.first_name or message.from_user.username or ''
@@ -2293,7 +2339,7 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с клод чатом
             if CHAT_MODE[chat_id_full] == 'claude':
-                with ShowAction(message, 'typing'):
+                with ShowAction(message, action):
                     try:
                         answer = my_claude.chat(message.text, chat_id_full)
                         answer = utils.bot_markdown_to_html(answer)
@@ -2313,7 +2359,7 @@ def do_task(message, custom_prompt: str = ''):
                     return
 
             # добавляем новый запрос пользователя в историю диалога пользователя
-            with ShowAction(message, 'typing'):
+            with ShowAction(message, action):
                 resp = dialog_add_user_request(chat_id_full, message.text, 'gpt')
                 if resp:
                     # my_log.log_echo(message, resp, debug = True)
@@ -2322,21 +2368,21 @@ def do_task(message, custom_prompt: str = ''):
                     if is_private:
                         try:
                             send_long_message(message, resp, parse_mode='HTML', disable_web_page_preview = True, 
-                            reply_markup=get_keyboard('chat', message))
+                                              reply_markup=get_keyboard('chat', message))
                         except Exception as error2:    
                             print(error2)
                             my_log.log2(resp)
                             send_long_message(message, resp, parse_mode='', disable_web_page_preview = True, 
-                                                reply_markup=get_keyboard('chat', message))
+                                              reply_markup=get_keyboard('chat', message))
                     else:
                         try:
                             reply_to_long_message(message, resp, parse_mode='HTML', disable_web_page_preview = True, 
-                            reply_markup=get_keyboard('chat', message))
+                                                  reply_markup=get_keyboard('chat', message))
                         except Exception as error2:    
                             print(error2)
                             my_log.log2(resp)
                             reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, 
-                            reply_markup=get_keyboard('chat', message))
+                                                  reply_markup=get_keyboard('chat', message))
         else: # смотрим надо ли переводить текст
             if check_blocks(get_topic_id(message)):
                 return

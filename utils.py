@@ -142,7 +142,34 @@ def convert_to_mp3(input_file: str) -> str:
         return None
 
 
-def bot_markdown_to_html(text):
+def bot_markdown_to_tts(text: str) -> str:
+    """меняет текст от ботов так что бы можно было зачитать с помощью функции TTS"""
+    
+    # переделываем списки на более красивые
+    new_text = ''
+    for i in text.split('\n'):
+        ii = i.strip()
+        if ii.startswith('* '):
+            i = i.replace('* ', '• ', 1)
+        if ii.startswith('- '):
+            i = i.replace('- ', '• ', 1)
+        new_text += i + '\n'
+    text = new_text.strip()
+
+    # 1 или 2 * в 0 звездочек *bum* -> bum
+    text = re.sub('\*\*?(.*?)\*\*?', '\\1', text)
+
+    # tex в unicode
+    matches = re.findall("\$\$?(.*?)\$\$?", text, flags=re.DOTALL)
+    for match in matches:
+        new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
+        text = text.replace(f'$${match}$$', new_match)
+        text = text.replace(f'${match}$', new_match)
+
+    return text
+
+
+def bot_markdown_to_html(text: str) -> str:
     # переделывает маркдаун от чатботов в хтмл для телеграма
     # сначала делается полное экранирование
     # затем меняются маркдаун теги и оформление на аналогичное в хтмл

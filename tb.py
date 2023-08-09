@@ -2284,9 +2284,11 @@ def do_task(message, custom_prompt: str = ''):
                         answer = bingai.chat(message.text, chat_id_full)
                         if answer:
                             # my_log.log_echo(message, answer['text'], debug = True)
-                            text = utils.bot_markdown_to_html(answer['text'])
+                            if not VOICE_ONLY_MODE[chat_id_full]:
+                                text = utils.bot_markdown_to_html(answer['text'])
                             messages_left = str(answer['messages_left'])
-                            text = f"{text}\n\n{messages_left}/30"
+                            if not VOICE_ONLY_MODE[chat_id_full]:
+                                text = f"{text}\n\n{messages_left}/30"
                             try:
                                 reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bing_chat', message))
@@ -2322,7 +2324,8 @@ def do_task(message, custom_prompt: str = ''):
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name)
                         # answer = my_bard.convert_markdown(answer)
                         # my_log.log_echo(message, answer, debug = True)
-                        answer = utils.bot_markdown_to_html(answer)
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer = utils.bot_markdown_to_html(answer)
                         my_log.log_echo(message, answer)
                         if answer:
                             try:
@@ -2343,7 +2346,8 @@ def do_task(message, custom_prompt: str = ''):
                 with ShowAction(message, action):
                     try:
                         answer = my_claude.chat(message.text, chat_id_full)
-                        answer = utils.bot_markdown_to_html(answer)
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer = utils.bot_markdown_to_html(answer)
                         my_log.log_echo(message, answer)
                         if answer:
                             try:
@@ -2364,7 +2368,8 @@ def do_task(message, custom_prompt: str = ''):
                 resp = dialog_add_user_request(chat_id_full, message.text, 'gpt')
                 if resp:
                     # my_log.log_echo(message, resp, debug = True)
-                    resp = utils.bot_markdown_to_html(resp)
+                    if not VOICE_ONLY_MODE[chat_id_full]:
+                        resp = utils.bot_markdown_to_html(resp)
                     my_log.log_echo(message, resp)
                     if is_private:
                         try:

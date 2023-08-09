@@ -2419,12 +2419,11 @@ def set_default_commands():
     bot_name = bot.get_my_name().name.strip()
     description = bot.get_my_description().description.strip()
     short_description = str(bot.get_my_short_description().short_description).strip()
-    
+
     new_bot_name = cfg.bot_name.strip()
     new_description = cfg.bot_description.strip()
     new_short_description = cfg.bot_short_description.strip()
-    
-    
+
     if bot_name != new_bot_name:
         if not bot.set_my_name(cfg.bot_name):
             my_log.log2(f'Не удалось установить имя бота: {cfg.bot_name}')

@@ -927,7 +927,9 @@ def handle_document_thread(message: telebot.types.Message):
                         text = my_ocr.get_text_from_image(fp.read(), get_ocr_language(message))
                         # отправляем распознанный текст пользователю
                         if text.strip() != '':
-                            reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message), disable_web_page_preview = True)
+                            reply_to_long_message(message, text, parse_mode='',
+                                                  reply_markup=get_keyboard('translate', message),
+                                                  disable_web_page_preview = True)
                             my_log.log_echo(message, '[OCR] ' + text)
                         else:
                             reply_to_long_message(message, 'Не смог распознать текст.', reply_markup=get_keyboard('translate', message))
@@ -1014,7 +1016,7 @@ def handle_photo_thread(message: telebot.types.Message):
             text = my_ocr.get_text_from_image(fp.read(), get_ocr_language(message))
             # отправляем распознанный текст пользователю
             if text.strip() != '':
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message), disable_web_page_preview = True)
+                reply_to_long_message(message, text, parse_mode='', reply_markup=get_keyboard('translate', message), disable_web_page_preview = True)
                 my_log.log_echo(message, '[OCR] ' + text)
             else:
                 my_log.log_echo(message, '[OCR] no results')

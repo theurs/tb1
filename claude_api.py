@@ -28,6 +28,7 @@ class Client:
     }
 
     response = requests.request("GET", url, headers=headers, proxies=self.proxy)
+    # print(response.text)
     res = json.loads(response.text)
     uuid = res[0]['uuid']
 

@@ -2273,6 +2273,7 @@ def do_task(message, custom_prompt: str = ''):
                 VOICE_ONLY_MODE[chat_id_full] = False
             if VOICE_ONLY_MODE[chat_id_full]:
                 action = 'record_audio'
+                message.text = '[голосовое сообщение, возможны ошибки распознавания речи]: ' + message.text
             else:
                 action = 'typing'
 

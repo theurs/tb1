@@ -2416,15 +2416,15 @@ def set_default_commands():
                 print(error)
     bot.set_my_commands(commands)
 
-    if cfg.bot_description.strip() != str(bot.get_my_description()).strip():
-        if not bot.set_my_description(cfg.bot_description):
-            my_log.log2(f'Не удалось установить описание бота: {cfg.bot_description}')
-    if cfg.bot_short_description.strip() != str(bot.get_my_short_description()).strip():
-        if not bot.set_my_short_description(cfg.bot_short_description):
-            my_log.log2(f'Не удалось установить короткое описание бота: {cfg.bot_short_description}')
-    if cfg.bot_name.strip() != str(bot.get_my_name()).strip():
-        if not bot.set_my_name(cfg.bot_name):
-            my_log.log2(f'Не удалось установить имя бота: {cfg.bot_name}')
+    # if cfg.bot_description.strip() != str(bot.get_my_description()).strip():
+    #     if not bot.set_my_description(cfg.bot_description):
+    #         my_log.log2(f'Не удалось установить описание бота: {cfg.bot_description}')
+    # if cfg.bot_short_description.strip() != str(bot.get_my_short_description()).strip():
+    #     if not bot.set_my_short_description(cfg.bot_short_description):
+    #         my_log.log2(f'Не удалось установить короткое описание бота: {cfg.bot_short_description}')
+    # if cfg.bot_name.strip() != str(bot.get_my_name()).strip():
+    #     if not bot.set_my_name(cfg.bot_name):
+    #         my_log.log2(f'Не удалось установить имя бота: {cfg.bot_name}')
 
 
 def main():

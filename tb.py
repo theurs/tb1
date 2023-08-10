@@ -484,9 +484,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                   }
         voice_title = voices[voice]
 
-        # бард по умолчанию
+        # кто по умолчанию
         if chat_id_full not in CHAT_MODE:
-            CHAT_MODE[chat_id_full] = 'bard'
+            CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
@@ -706,7 +706,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_mode_disable':
-            CHAT_MODE[chat_id_full] = 'bard'
+            del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_mode_enable':
@@ -718,7 +718,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bing_mode_disable':
-            CHAT_MODE[chat_id_full] = 'bard'
+            del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bard_mode_enable':
@@ -726,7 +726,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'bard_mode_disable':
-            CHAT_MODE[chat_id_full] = 'chatgpt'
+            del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'claude_mode_enable':
@@ -734,7 +734,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'claude_mode_disable':
-            CHAT_MODE[chat_id_full] = 'bard'
+            del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'autotranslate_disable':
@@ -2181,9 +2181,9 @@ def do_task(message, custom_prompt: str = ''):
             m.append(f'[{time_now}] [{user_name}] {message.text}')
             CHAT_LOGS[chat_id_full] = m
 
-        # по умолчанию отвечает бард
+        # кто по умолчанию отвечает
         if chat_id_full not in CHAT_MODE:
-            CHAT_MODE[chat_id_full] = 'bard'
+            CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
         # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
         if msg.startswith(('замолчи', 'заткнись')) and (is_private or is_reply):

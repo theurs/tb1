@@ -2288,8 +2288,9 @@ def do_task(message, custom_prompt: str = ''):
                         answer = bingai.chat(message.text, chat_id_full)
                         if answer:
                             # my_log.log_echo(message, answer['text'], debug = True)
+                            text = answer['text']
                             if not VOICE_ONLY_MODE[chat_id_full]:
-                                text = utils.bot_markdown_to_html(answer['text'])
+                                text = utils.bot_markdown_to_html(text)
                             messages_left = str(answer['messages_left'])
                             if not VOICE_ONLY_MODE[chat_id_full]:
                                 text = f"{text}\n\n{messages_left}/30"

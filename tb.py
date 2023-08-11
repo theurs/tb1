@@ -2375,24 +2375,14 @@ def do_task(message, custom_prompt: str = ''):
                     if not VOICE_ONLY_MODE[chat_id_full]:
                         resp = utils.bot_markdown_to_html(resp)
                     my_log.log_echo(message, resp)
-                    if is_private:
-                        try:
-                            send_long_message(message, resp, parse_mode='HTML', disable_web_page_preview = True, 
-                                              reply_markup=get_keyboard('chat', message))
-                        except Exception as error2:    
-                            print(error2)
-                            my_log.log2(resp)
-                            send_long_message(message, resp, parse_mode='', disable_web_page_preview = True, 
-                                              reply_markup=get_keyboard('chat', message))
-                    else:
-                        try:
-                            reply_to_long_message(message, resp, parse_mode='HTML', disable_web_page_preview = True, 
-                                                  reply_markup=get_keyboard('chat', message))
-                        except Exception as error2:    
-                            print(error2)
-                            my_log.log2(resp)
-                            reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, 
-                                                  reply_markup=get_keyboard('chat', message))
+                    try:
+                        reply_to_long_message(message, resp, parse_mode='HTML', disable_web_page_preview = True, 
+                                                reply_markup=get_keyboard('chat', message))
+                    except Exception as error2:    
+                        print(error2)
+                        my_log.log2(resp)
+                        reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, 
+                                                reply_markup=get_keyboard('chat', message))
         else: # смотрим надо ли переводить текст
             if check_blocks(get_topic_id(message)):
                 return

@@ -1974,34 +1974,15 @@ def id_cmd_handler(message: telebot.types.Message):
 def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
                       reply_markup: telebot.types.InlineKeyboardMarkup = None):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
-    if len(resp) < 20000:
-        if parse_mode == 'HTML':
-            chunks = utils.split_html(resp, 4000)
-        else:
-            chunks = utils.split_text(resp, 4000)
-        counter = len(chunks)
-        for chunk in chunks:
-            try:
-                bot.reply_to(message, chunk, parse_mode=parse_mode,
-                             disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
-            except Exception as error:
-                print(error)
-                my_log.log2(f'tb:send_long_message: {error}')
-                bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
-            counter -= 1
-            if counter < 0:
-                break
-            time.sleep(2)
-    else:
-        buf = io.BytesIO()
-        buf.write(resp.encode())
-        buf.seek(0)
-        bot.send_document(message.chat.id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
+    reply_to_long_message(message=message, resp=resp, parse_mode=parse_mode,
+                          disable_web_page_preview=disable_web_page_preview,
+                          reply_markup=reply_markup, send_message = True)
 
 
 def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str = None,
-                          disable_web_page_preview: bool = None, reply_markup: telebot.types.InlineKeyboardMarkup = None):
-    """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
+                          disable_web_page_preview: bool = None,
+                          reply_markup: telebot.types.InlineKeyboardMarkup = None, send_message: bool = False):
+    # отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл
 
     chat_id_full = get_topic_id(message)
 
@@ -2013,19 +1994,26 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         counter = len(chunks)
         for chunk in chunks:
             # в режиме только голоса ответы идут голосом без текста
-            # чат боты только отвечают так что такое есть только в reply_to_long_message но нет в send_long_message
             # скорее всего будет всего 1 чанк, не слишком длинный текст
             if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
                 message.text = '/tts ' + chunk
                 tts(message)
             else:
                 try:
-                    bot.reply_to(message, chunk, parse_mode=parse_mode,
+                    if send_message:
+                        bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode=parse_mode,
+                                         disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                    else:
+                        bot.reply_to(message, chunk, parse_mode=parse_mode,
                                 disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
                 except Exception as error:
                     print(error)
                     my_log.log2(f'tb:reply_to_long_message: {error}')
-                    bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                    if send_message:
+                        bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
+                                         disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                    else:
+                        bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
             counter -= 1
             if counter < 0:
                 break

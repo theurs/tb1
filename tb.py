@@ -1618,6 +1618,27 @@ def flip_text(message: telebot.types.Message):
         bot.reply_to(message, utils.flip_text(text))
 
 
+@bot.message_handler(commands=['qr'])
+def qrcode_text(message: telebot.types.Message):
+    """переводит текст в qrcode"""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    text = message.text[3:]
+    if text:
+        image = utils.text_to_qrcode(text)
+        if image:
+            bio = io.BytesIO()
+            bio.name = 'qr.png'
+            image.save(bio, 'PNG')
+            bio.seek(0)
+            bot.send_photo(chat_id = message.chat.id, message_thread_id = message.message_thread_id, photo=bio)
+            return
+
+    bot.reply_to(message, '/qr текст который надо перевести в qrcode')
+
+
 @bot.message_handler(commands=['sum'])
 def summ_text(message: telebot.types.Message):
     thread = threading.Thread(target=summ_text_thread, args=(message,))

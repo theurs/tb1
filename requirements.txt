@@ -28,6 +28,7 @@ pytesseract
 python-Levenshtein
 python-magic
 #python-magic-bin
+qrcode
 SpeechRecognition
 telebot
 # python -m textblob.download_corpora

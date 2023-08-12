@@ -1332,6 +1332,11 @@ def tts_thread(message: telebot.types.Message):
                 gender = TTS_GENDER[chat_id_full]
             else:
                 gender = 'female'
+
+            # микрософт не умеет в латинский язык
+            if lang == 'la':
+                gender = 'google'
+
             if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
                 text = utils.bot_markdown_to_tts(text)
             audio = my_tts.tts(text, lang, rate, gender=gender)

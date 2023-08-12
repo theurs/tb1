@@ -1619,11 +1619,15 @@ def flip_text(message: telebot.types.Message):
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
     else: return
 
+    my_log.log_echo(message)
     text = message.text[6:]
     if text:
         bot.reply_to(message, utils.flip_text(text), reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, utils.flip_text(text))
     else:
-        bot.reply_to(message, '/flip текст который надо qɯʎнdǝʚǝdǝu', reply_markup=get_keyboard('hide', message))
+        msg = '/flip текст который надо qɯʎнdǝʚǝdǝu'
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['qr'])
@@ -1633,6 +1637,7 @@ def qrcode_text(message: telebot.types.Message):
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
     else: return
 
+    my_log.log_echo(message)
     text = message.text[3:]
     if text:
         image = utils.text_to_qrcode(text)
@@ -1643,9 +1648,12 @@ def qrcode_text(message: telebot.types.Message):
             bio.seek(0)
             bot.send_photo(chat_id = message.chat.id, message_thread_id = message.message_thread_id, photo=bio,
                            reply_markup=get_keyboard('hide', message))
+            my_log.log_echo(message, '[QR code]')
             return
 
-    bot.reply_to(message, '/qr текст который надо перевести в qrcode', reply_markup=get_keyboard('hide', message))
+    msg = '/qr текст который надо перевести в qrcode'
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['sum'])

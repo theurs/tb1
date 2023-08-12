@@ -1636,7 +1636,7 @@ def qrcode_text(message: telebot.types.Message):
             bot.send_photo(chat_id = message.chat.id, message_thread_id = message.message_thread_id, photo=bio)
             return
 
-    bot.reply_to(message, '/qr текст который надо перевести в qrcode')
+    bot.reply_to(message, '/qr текст который надо перевести в qrcode', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['sum'])

@@ -1606,6 +1606,18 @@ def image_thread(message: telebot.types.Message):
             my_log.log_echo(message, help)
 
 
+@bot.message_handler(commands=['flip'])
+def flip_text(message: telebot.types.Message):
+    """эхо с переворотом текста вверх ногами"""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    text = message.text[6:]
+    if text:
+        bot.reply_to(message, utils.flip_text(text))
+
+
 @bot.message_handler(commands=['sum'])
 def summ_text(message: telebot.types.Message):
     thread = threading.Thread(target=summ_text_thread, args=(message,))

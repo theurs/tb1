@@ -315,23 +315,22 @@ def split_html(text: str, max_length: int = 1500) -> list:
     return chunks2
 
 
+def flip_text(text: str) -> str:
+    """переворачивает текст вверх ногами"""
+    a = 'йцукенгшщзхъфвапролджэячсмитьбё?!.qwertyuiopasdfghjklzxcvbnm'
+    b = 'ņǹʎʞǝнɹmmεхqȸʚɐudоvɓжєʁҺɔwиɯqƍǝ¿¡˙ᕹʍǝɹʇʎnıodɐspɟƃɥɾʞlzxɔʌquɯ'
+    
+    # ы-ıq ю-oı
+    
+    # Создание таблицы перевода символов
+    translation_table = str.maketrans(a, b)
+    
+    text = text[::-1].lower()
+    text = text.translate(translation_table)
+    text = text.replace('ы', 'ıq')
+    text = text.replace('ю', 'oı')
+    return text
+
+
 if __name__ == '__main__':
-    text = '**Google Bard**'
-    md_url = '[Google Bard](https://google.com/search?q=google+bard)'
-    
-    # меняем маркдаун ссылки на хтмл
-    result = re.sub(r'\[([^\]]*)\]\(([^\)]*)\)', r'<a href="\2">\1</a>', md_url)
-    
-    print(result)
-    
-
-    # text = bot_markdown_to_html(text)
-    # text = split_html(text, 1500)
-    # for x in text:
-    #     print('=============================CUT=============================')
-    #     print(x)
-
-    # soup = BeautifulSoup(text)
-    # print(soup)
-    # for i in soup.sp
-    #     print(i)
+    print(flip_text('а ну докажи что ты не робот! fuck you'))

@@ -1337,6 +1337,12 @@ def tts_thread(message: telebot.types.Message):
             if lang == 'la':
                 gender = 'google_female'
 
+            # это голоса только по русски могут
+            if gender == 'silero_xenia' and lang != 'ru':
+                gender = 'female'
+            if gender == 'silero_aidar' and lang != 'ru':
+                gender = 'male'
+
             if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
                 text = utils.bot_markdown_to_tts(text)
             audio = my_tts.tts(text, lang, rate, gender=gender)

@@ -19,6 +19,7 @@ websocket-client
 Pillow
 pornhub_api
 py_trans
+pydantic==1.10.9
 pyenchant
 pylatexenc
 PyMuPDF

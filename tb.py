@@ -1633,11 +1633,15 @@ def flip_text(message: telebot.types.Message):
 
 @bot.message_handler(commands=['stats'])
 def stats(message: telebot.types.Message):
+    """Показывает статистику использования бота."""
     thread = threading.Thread(target=stats_thread, args=(message,))
     thread.start()
 def stats_thread(message: telebot.types.Message):
-    """Показывает статистику использования бота.
-    """
+    """Показывает статистику использования бота."""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
     my_log.log_echo(message)
     if message.chat.id in cfg.admins:
         users = [x for x in CHAT_MODE.keys()]
@@ -1651,15 +1655,21 @@ def stats_thread(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-
 @bot.message_handler(commands=['alert'])
 def alert(message: telebot.types.Message):
+    """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
+       а она появляется в первом же сообщении.
+    """
     thread = threading.Thread(target=alert_thread, args=(message,))
     thread.start()
 def alert_thread(message: telebot.types.Message):
     """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
        а она появляется в первом же сообщении.
     """
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
     my_log.log_echo(message)
     if message.chat.id in cfg.admins:
         text = message.text[7:]

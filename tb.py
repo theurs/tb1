@@ -1630,6 +1630,42 @@ def flip_text(message: telebot.types.Message):
         my_log.log_echo(message, msg)
 
 
+@bot.message_handler(commands=['alert'])
+def alert(message: telebot.types.Message):
+    thread = threading.Thread(target=alert_thread, args=(message,))
+    thread.start()
+def alert_thread(message: telebot.types.Message):
+    """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
+       а она появляется в первом же сообщении.
+    """
+    my_log.log_echo(message)
+    if message.chat.id in cfg.admins:
+        text = message.text[7:]
+        if text:
+            text = utils.bot_markdown_to_html(text)
+            text = '<b>Широковещательное сообщение от Верховного Адмнистратора, не обращайте внимания</b>\n\n\n' + text
+
+            for x, _ in CHAT_MODE.items():
+                x = x.replace('[','').replace(']','')
+                chat = int(x.split()[0])
+                # if chat not in cfg.admins:
+                #     return
+                thread = int(x.split()[1])
+                try:
+                    bot.send_message(chat_id = chat, message_thread_id=thread, text = text, parse_mode='HTML',
+                                    disable_notification = True, disable_web_page_preview = True,
+                                    reply_markup=get_keyboard('translate', message))
+                except Exception as error2:
+                    print(f'tb:alert: {error2}')
+                    my_log.log2(f'tb:alert: {error2}')
+                time.sleep(0.3)
+            return
+
+    msg = '/alert <текст сообщения которое бот отправит всем кого знает, форматирование маркдаун>\n\nТолько администраторы могут использовать эту команду.'
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
+
+
 @bot.message_handler(commands=['qr'])
 def qrcode_text(message: telebot.types.Message):
     """переводит текст в qrcode"""

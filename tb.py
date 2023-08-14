@@ -1642,7 +1642,7 @@ def stats_thread(message: telebot.types.Message):
     if message.chat.id in cfg.admins:
         users = [x for x in CHAT_MODE.keys()]
         users_sorted = natsorted(users)
-        users_text = '\n'.join(users_sorted) + '\n\nTotal: ' + len(users_sorted)
+        users_text = '\n'.join(users_sorted) + '\n\nTotal: ' + str(len(users_sorted))
         reply_to_long_message(message, f'Статистика бота:\n\n{users_text}', reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, users_text)
         return

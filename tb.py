@@ -61,6 +61,10 @@ semaphore_talks = threading.Semaphore(40)
 if not os.path.exists('db'):
     os.mkdir('db')
 
+
+# заблокированные юзера {id:True/False}
+BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
+
 # в каких чатах какой чатбот отвечает {chat_id_full(str):chatbot(str)}
 # 'bard', 'claude', 'chatgpt', 'bing'
 CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
@@ -584,6 +588,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         message = call.message
         chat_id = message.chat.id
         chat_id_full = get_topic_id(message)
+        check_blocked_user(chat_id_full)
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
@@ -774,6 +779,7 @@ def handle_voice_thread(message: telebot.types.Message):
 
     is_private = message.chat.type == 'private'
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
     if chat_id_full not in SUPER_CHAT:
         SUPER_CHAT[chat_id_full] = 0
     if SUPER_CHAT[chat_id_full] == 1:
@@ -839,6 +845,7 @@ def handle_document_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     is_private = message.chat.type == 'private'
     if chat_id_full not in SUPER_CHAT:
@@ -976,6 +983,7 @@ def handle_photo_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     is_private = message.chat.type == 'private'
     if chat_id_full not in SUPER_CHAT:
@@ -1034,6 +1042,7 @@ def handle_video_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
     is_private = message.chat.type == 'private'
     if chat_id_full not in SUPER_CHAT:
         SUPER_CHAT[chat_id_full] = 0
@@ -1133,6 +1142,7 @@ def change_mode(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     # в каждом чате свой собственный промт
     if chat_id_full not in PROMPTS:
@@ -1194,6 +1204,7 @@ def send_debug_history(message: telebot.types.Message):
     my_log.log_echo(message)
     
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     # создаем новую историю диалогов с юзером из старой если есть
     messages = []
@@ -1218,6 +1229,7 @@ def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     if chat_id_full in gpt_basic.CUSTOM_MODELS:
         current_model = gpt_basic.CUSTOM_MODELS[chat_id_full]
@@ -1275,6 +1287,7 @@ def tts_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     urls = re.findall(r'^/tts\s*(https?://[^\s]+)?$', message.text.lower())
 
@@ -1375,6 +1388,7 @@ def ask_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     try:
         query = message.text.split(maxsplit=1)[1]
@@ -1431,6 +1445,7 @@ def google_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     try:
         q = message.text.split(maxsplit=1)[1]
@@ -1491,6 +1506,7 @@ def ddg_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     try:
         q = message.text.split(maxsplit=1)[1]
@@ -1551,6 +1567,7 @@ def image_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     with semaphore_talks:
         help = """/image <текстовое описание картинки, что надо нарисовать>
@@ -1655,6 +1672,73 @@ def stats_thread(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
+def check_blocked_user(id: str):
+    """Вызывает ошибку если юзер заблокирован и ему не надо отвечать"""
+    if id in BAD_USERS:
+        my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован')
+        raise Exception('user in stop list, ignoring')
+
+
+@bot.message_handler(commands=['blockadd'])
+def block_user_add(message: telebot.types.Message):
+    """Добавить юзера в стоп список"""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+    if message.chat.id in cfg.admins:
+        user_id = message.text[10:].strip()
+        if user_id:
+            BAD_USERS[user_id] = True
+            bot.reply_to(message, f'Пользователь {user_id} добавлен в стоп-лист', reply_markup=get_keyboard('hide', message))
+            my_log.log_echo(message, f'Пользователь {user_id} добавлен в стоп-лист')
+    else:
+        bot.reply_to(message, 'Только администраторы могут использовать эту команду.', reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, 'Только администраторы могут использовать эту команду.')
+
+
+@bot.message_handler(commands=['blockdel'])
+def block_user_del(message: telebot.types.Message):
+    """Убрать юзера из стоп списка"""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+    if message.chat.id in cfg.admins:
+        user_id = message.text[10:].strip()
+        if user_id:
+            if user_id in BAD_USERS:
+                del BAD_USERS[user_id]
+                bot.reply_to(message, f'Пользователь {user_id} удален из стоп-листа', reply_markup=get_keyboard('hide', message))
+                my_log.log_echo(message, f'Пользователь {user_id} удален из стоп-листа')
+            else:
+                bot.reply_to(message, f'Пользователь {user_id} не найден в стоп-листе', reply_markup=get_keyboard('hide', message))
+                my_log.log_echo(message, f'Пользователь {user_id} не найден в стоп-листе')
+    else:
+        bot.reply_to(message, 'Только администраторы могут использовать эту команду.', reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, 'Только администраторы могут использовать эту команду.')
+
+
+@bot.message_handler(commands=['blocklist'])
+def block_user_list(message: telebot.types.Message):
+    """Показывает список заблокированных юзеров"""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+    if message.chat.id in cfg.admins:
+        users = [x for x in BAD_USERS.keys() if x]
+        if users:
+            reply_to_long_message(message, '\n'.join(users), reply_markup=get_keyboard('hide', message))
+            my_log.log_echo(message, '\n'.join(users))
+    else:
+        bot.reply_to(message, 'Только администраторы могут использовать эту команду.', reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, 'Только администраторы могут использовать эту команду.')
+
+
 @bot.message_handler(commands=['alert'])
 def alert(message: telebot.types.Message):
     """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
@@ -1735,6 +1819,7 @@ def summ_text_thread(message: telebot.types.Message):
     else: return
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     my_log.log_echo(message)
 
@@ -1834,6 +1919,7 @@ def trans_thread(message: telebot.types.Message):
     else: return
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     my_log.log_echo(message)
 
@@ -1891,6 +1977,7 @@ def last_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     with semaphore_talks:
         args = message.text.split()
@@ -1958,6 +2045,7 @@ def send_name(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     BAD_NAMES = ('бинг', 'гугл', 'утка', 'нарисуй')
     args = message.text.split()
@@ -1989,6 +2077,7 @@ def ocr_setup(message: telebot.types.Message):
     """меняет настройки ocr"""
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     # не обрабатывать команды к другому боту /cmd@botname args
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
@@ -2157,6 +2246,7 @@ def do_task(message, custom_prompt: str = ''):
     """функция обработчик сообщений работающая в отдельном потоке"""
 
     chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
 
     if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '⚙️Настройки']:
         if message.text == '🎨Нарисуй':

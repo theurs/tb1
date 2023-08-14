@@ -12,6 +12,7 @@ import openai
 import PyPDF2
 import telebot
 from langdetect import detect_langs
+from natsort import natsorted
 
 import bingai
 import cfg
@@ -1628,6 +1629,27 @@ def flip_text(message: telebot.types.Message):
         msg = '/flip текст который надо qɯʎнdǝʚǝdǝu'
         bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, msg)
+
+
+@bot.message_handler(commands=['stats'])
+def stats(message: telebot.types.Message):
+    thread = threading.Thread(target=stats_thread, args=(message,))
+    thread.start()
+def stats_thread(message: telebot.types.Message):
+    """Показывает статистику использования бота.
+    """
+    my_log.log_echo(message)
+    if message.chat.id in cfg.admins:
+        users = [x for x in CHAT_MODE.keys()]
+        users_sorted = natsorted(users)
+        users_text = '\n'.join(users_sorted) + '\n\nTotal: ' + len(users_sorted)
+        reply_to_long_message(message, f'Статистика бота:\n\n{users_text}', reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, users_text)
+        return
+    msg = '/stats показывает статистику бота.\n\nТолько администраторы могут использовать эту команду.'
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
+
 
 
 @bot.message_handler(commands=['alert'])

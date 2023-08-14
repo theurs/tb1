@@ -13,6 +13,7 @@ gTTS
 html2text
 langdetect
 markdown2
+natsort
 openai
 openai-whisper
 websocket-client

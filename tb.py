@@ -1674,9 +1674,13 @@ def stats_thread(message: telebot.types.Message):
 
 def check_blocked_user(id: str):
     """Вызывает ошибку если юзер заблокирован и ему не надо отвечать"""
-    if id in BAD_USERS:
-        my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован')
-        raise Exception('user in stop list, ignoring')
+    user_id = id.replace('[','').replace(']','').split()[0]
+    for i in BAD_USERS:
+        u_id = i.replace('[','').replace(']','').split()[0]
+        if u_id == user_id:
+            if BAD_USERS[id]:
+                my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован')
+                raise Exception('user in stop list, ignoring')
 
 
 @bot.message_handler(commands=['blockadd'])

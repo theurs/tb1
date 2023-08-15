@@ -4,18 +4,22 @@
 import telebot
 
 import cfg
-import my_p_hub
+import my_images
 
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
 
 
+@bot.message_handler(content_types = ['photo'])
+def handle_photo(message: telebot.types.Message):
+    """получает несколько фотографий и склеивает в 1"""
+    pass
+
+
 @bot.message_handler(func=lambda message: True)
 def do_task(message):
     """функция обработчик сообщений работающая в отдельном потоке"""
-    images = my_p_hub.get_screenshots(message.text)
-
-    bot.send_media_group(message.chat.id, images)
+    bot.reply_to(message, message.text)
 
 
 def main():

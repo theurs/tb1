@@ -352,5 +352,10 @@ def text_to_qrcode(text: str) -> str:
     return None
 
 
+def get_tmp_fname():
+    with tempfile.NamedTemporaryFile(delete=True) as temp_file:
+        return temp_file.name
+
+
 if __name__ == '__main__':
     pic = text_to_qrcode('Тест https://example.com/')

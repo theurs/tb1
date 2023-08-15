@@ -3,9 +3,11 @@
 
 
 import os
+import io
 import subprocess
 
 import magic
+import aspose.words as aw
 
 import utils
 
@@ -35,6 +37,13 @@ def fb2_to_text(data: bytes) -> str:
     elif 'plain' in book_type:
         os.remove(input_file)
         return data.decode('utf-8')
+    elif 'msword' in book_type:
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        doc = aw.Document(fp)
+        text = doc.save()
+        os.remove(input_file)
+        return text
     else:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
     output = proc.stdout.decode('utf-8')
@@ -62,7 +71,7 @@ def split_text_of_book(text: str, chunk_size: int) -> list:
 
 
 if __name__ == '__main__':
-    result = fb2_to_text(open('1.txt', 'rb').read())
+    result = fb2_to_text(open('1.doc', 'rb').read())
     
     for i in split_text_of_book(result, 5000):
         print(i)

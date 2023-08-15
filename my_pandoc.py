@@ -3,16 +3,15 @@
 
 
 import os
-import io
 import subprocess
 
 import magic
-import aspose.words as aw
 
 import utils
 
 
 pandoc_cmd = 'pandoc'
+catdoc_cmd = 'catdoc'
 
 
 def fb2_to_text(data: bytes) -> str:
@@ -38,12 +37,7 @@ def fb2_to_text(data: bytes) -> str:
         os.remove(input_file)
         return data.decode('utf-8')
     elif 'msword' in book_type:
-        fp = io.BytesIO(data)
-        fp.seek(0)
-        doc = aw.Document(fp)
-        text = doc.save()
-        os.remove(input_file)
-        return text
+        proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
     else:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
     output = proc.stdout.decode('utf-8')

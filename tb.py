@@ -882,7 +882,7 @@ def handle_document_thread(message: telebot.types.Message):
     
         # если прислали fb2 в приват то озвучить ее (msword)
         mimes = ('fictionbook', 'epub' ,'plain' , 'vnd.openxmlformats-officedocument.wordprocessingml.document',
-                 'html', 'vnd.oasis.opendocument.text', 'rtf')
+                 'html', 'msword', 'vnd.oasis.opendocument.text', 'rtf', 'x-mobipocket-ebook')
         if is_private and any([x for x in mimes if x in message.document.mime_type]):
             with ShowAction(message, 'typing'):
                 file_name = message.document.file_name
@@ -2207,7 +2207,7 @@ def send_welcome_help(message: telebot.types.Message):
 
 Если отправить картинку или .pdf с подписью ***прочитай*** то вытащит текст из них.
 
-Если отправить fb2 или epub (odt txt docx rtf) то прочитает книгу голосом.
+Если отправить fb2 или epub (odt txt doc docx rtf) то прочитает книгу голосом.
 
 Если отправить ссылку в приват то попытается прочитать текст из неё и выдать краткое содержание.
 

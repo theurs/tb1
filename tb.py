@@ -25,6 +25,7 @@ import my_google
 import my_log
 import my_ocr
 import my_p_hub
+import my_pandoc
 import my_perplexity
 import my_stt
 import my_sum
@@ -92,6 +93,9 @@ OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
 
 # для запоминания ответов на команду /sum
 SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
+
+# запоминаем книги присланные юзерами {user_id:(chunks, lang, name)}
+BOOKS = my_dic.PersistentDict('db/books.pkl')
 
 # в каких чатах активирован режим суперчата, когда бот отвечает на все реплики всех участников
 # {chat_id:0|1}
@@ -572,6 +576,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup.add(button)
 
         return markup
+    elif kbd == 'book_tts':
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=2)
+        counter = 0
+        for _ in BOOKS[chat_id_full][0]:
+            button = telebot.types.InlineKeyboardButton(f'📢 Часть #{counter + 1}', callback_data=f'tts_book:{counter}')
+            markup.add(button)
+            counter += 1
+        return markup
+
     else:
         raise f"Неизвестная клавиатура '{kbd}'"
 
@@ -759,6 +772,13 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_bard.reset_bard_chat(chat_id_full)
         elif call.data == 'chatGPT_memory_debug':
             send_debug_history(message)
+        elif call.data.startswith('tts_book:'):
+            chunk_number = int(call.data.split(':')[1])
+            text = BOOKS[chat_id_full][0][chunk_number]
+            lang = BOOKS[chat_id_full][1]
+            name = BOOKS[chat_id_full][2]
+            message.text = f'/tts {lang} {text}'
+            tts(message, f'Книга: {name}\n\nЧасть: {chunk_number+1}\n\nЯзык: {lang}')
 
 
 def check_blocks(chat_id: str) -> bool:
@@ -860,6 +880,29 @@ def handle_document_thread(message: telebot.types.Message):
 
     with semaphore_talks:
     
+        # если прислали fb2 в приват то озвучить ее (msword)
+        mimes = ('fictionbook', 'epub' ,'plain' , 'vnd.openxmlformats-officedocument.wordprocessingml.document',
+                 'html', 'vnd.oasis.opendocument.text', 'rtf')
+        if is_private and any([x for x in mimes if x in message.document.mime_type]):
+            with ShowAction(message, 'typing'):
+                file_name = message.document.file_name
+                file_info = bot.get_file(message.document.file_id)
+                file = bot.download_file(file_info.file_path)
+                text = my_pandoc.fb2_to_text(file)
+                if text:
+                    try:
+                        lang = detect_langs(text)[0].lang
+                    except Exception as error_fb2:
+                        lang = 'ru'
+                        print(f'tb:handle_document_thread:fb2: {error_fb2}')
+                        my_log.log2(f'tb:handle_document_thread:fb2: {error_fb2}')
+
+                    chunks = my_pandoc.split_text_of_book(text, 40000)
+                    BOOKS[chat_id_full] = (chunks, lang, file_name)
+                    msg = f'Книга\n\n{file_name}\n\nОзвучивание занимает много времени\n\nВсего символов {len(text)}, язык: {lang}, количество частей: {len(chunks)}'
+                    bot.reply_to(message, msg, reply_markup=get_keyboard('book_tts', message))
+            return
+
         # если прислали текстовый файл или pdf с подписью перескажи
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
         if message.caption \
@@ -1272,10 +1315,10 @@ def set_new_model(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['tts']) 
-def tts(message: telebot.types.Message):
-    thread = threading.Thread(target=tts_thread, args=(message,))
+def tts(message: telebot.types.Message, caption = None):
+    thread = threading.Thread(target=tts_thread, args=(message,caption))
     thread.start()
-def tts_thread(message: telebot.types.Message):
+def tts_thread(message: telebot.types.Message, caption = None):
     """ /tts [ru|en|uk|...] [+-XX%] <текст>
         /tts <URL>
     """
@@ -1362,9 +1405,11 @@ def tts_thread(message: telebot.types.Message):
             audio = my_tts.tts(text, lang, rate, gender=gender)
             if audio:
                 if message.chat.type != 'private':
-                    bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide', message))
+                    bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id,
+                                   reply_markup=get_keyboard('hide', message), caption=caption)
                 else:
-                    bot.send_voice(message.chat.id, audio, reply_markup=get_keyboard('hide', message))
+                    bot.send_voice(message.chat.id, audio, reply_markup=get_keyboard('hide', message),
+                                   caption=caption)
                 my_log.log_echo(message, '[Отправил голосовое сообщение]')
             else:
                 msg = 'Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.'
@@ -2161,6 +2206,8 @@ def send_welcome_help(message: telebot.types.Message):
 Если отправить текстовый файл в приват или с подписью ***прочитай*** то попытается озвучить его как книгу, ожидает .txt utf8 язык пытается определить автоматически (русский если не получилось)
 
 Если отправить картинку или .pdf с подписью ***прочитай*** то вытащит текст из них.
+
+Если отправить fb2 или epub (odt txt docx rtf) то прочитает книгу голосом.
 
 Если отправить ссылку в приват то попытается прочитать текст из неё и выдать краткое содержание.
 

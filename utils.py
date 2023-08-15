@@ -110,6 +110,28 @@ def split_text(text: str, chunk_limit: int = 1500):
     return telebot.util.smart_split(text, chunk_limit)
 
 
+def split_text_my(text: str, chunk_limit: int = 1500):
+    """разбивает текст на части заданной длины не разрывая слова,
+    в результате куски могут быть больше чем задано, если в тексте нет пробелов то намного больше Ж)"""
+    # создаем пустой список для хранения частей текста
+    chunks = []
+    # создаем переменную для хранения текущей позиции в тексте
+    position = 0
+    # пока позиция меньше длины текста
+    while position < len(text):
+        # находим индекс пробела после лимита
+        space_index = text.find(" ", position + chunk_limit)
+        # если пробел не найден, то берем весь оставшийся текст
+        if space_index == -1:
+            space_index = len(text)
+        # добавляем часть текста от текущей позиции до пробела в список
+        chunks.append(text[position:space_index])
+        # обновляем текущую позицию на следующий символ после пробела
+        position = space_index + 1
+    # возвращаем список частей текста
+    return chunks
+
+
 def platform() -> str:
     """
     Return the platform information.

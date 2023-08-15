@@ -4,27 +4,65 @@
 
 import os
 import subprocess
-import sys
-from pathlib import Path
+
+import magic
 
 import utils
 
 
-# сработает если бот запущен питоном из этого venv
-pandoc_cmd = Path(Path(sys.executable).parent, 'pandoc')
+pandoc_cmd = 'pandoc'
 
 
-def fb2_to_txt(data: bytes) -> str:
+def fb2_to_text(data: bytes) -> str:
+    """convert from fb2 or epub (bytes) to string"""
     input_file = utils.get_tmp_fname()
-    output_file = utils.get_tmp_fname()
+
     open(input_file, 'wb').write(data)
-    subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file, output_file], 
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    result = open(output_file, 'r').read()
+
+    mime = magic.Magic(mime=True)
+    book_type = mime.from_buffer(data)
+
+    if 'epub' in book_type:
+        proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+    elif 'vnd.openxmlformats-officedocument.wordprocessingml.document' in book_type:
+        proc = subprocess.run([pandoc_cmd, '-f', 'docx', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+    elif 'html' in book_type:
+        proc = subprocess.run([pandoc_cmd, '-f', 'html', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+    elif 'vnd.oasis.opendocument.text' in book_type:
+        proc = subprocess.run([pandoc_cmd, '-f', 'odt', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+    elif 'rtf' in book_type:
+        proc = subprocess.run([pandoc_cmd, '-f', 'rtf', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+    elif 'plain' in book_type:
+        os.remove(input_file)
+        return data.decode('utf-8')
+    else:
+        proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+    output = proc.stdout.decode('utf-8')
+
+    result = output.replace(u'\xa0', u' ')
     os.remove(input_file)
-    os.remove(output_file)
+
     return result
 
 
+def split_text_of_book(text: str, chunk_size: int) -> list:
+    text = text.replace('\r', '')
+    # сначала делим на абзацы
+    new_text = ''
+    for p in [x for x in text.split('\n\n')]:
+        p = p.replace('\n', ' ')
+        p = p.replace('  ', ' ')
+        new_text = new_text + p + '\n\n'
+
+    new_text = new_text.strip()
+
+    return utils.split_text_my(new_text, chunk_size)
+        
+
+
+
 if __name__ == '__main__':
-    print(fb2_to_txt(open('1.fb2', 'rb').read()))
+    result = fb2_to_text(open('1.txt', 'rb').read())
+    
+    for i in split_text_of_book(result, 5000):
+        print(i)

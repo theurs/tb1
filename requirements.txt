@@ -17,7 +17,6 @@ natsort
 openai
 openai-whisper
 websocket-client
-pandoc
 Pillow
 pornhub_api
 py_trans

@@ -4,7 +4,6 @@
 import telebot
 
 import cfg
-import my_images
 
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)

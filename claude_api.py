@@ -27,7 +27,7 @@ class Client:
         'Cookie': f'{self.cookie}'
     }
 
-    response = requests.get(url, headers=headers,impersonate="chrome110")
+    response = requests.get(url, headers=headers,impersonate="chrome110", timeout=90)
     res = json.loads(response.text)
     uuid = res[0]['uuid']
 
@@ -63,7 +63,7 @@ class Client:
         'Cookie': f'{self.cookie}'
     }
 
-    response = requests.get(url, headers=headers,impersonate="chrome110")
+    response = requests.get(url, headers=headers,impersonate="chrome110", timeout=90)
     conversations = response.json()
 
     # Returns all conversation information in a list
@@ -118,7 +118,7 @@ class Client:
       'TE': 'trailers'
     }
 
-    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110")
+    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110", timeout=90)
     decoded_data = response.content.decode("utf-8")
     decoded_data = re.sub('\n+', '\n', decoded_data).strip()
     data_strings = decoded_data.split('\n')
@@ -155,7 +155,7 @@ class Client:
         'TE': 'trailers'
     }
 
-    response = requests.delete( url, headers=headers, data=payload,impersonate="chrome110")
+    response = requests.delete( url, headers=headers, data=payload,impersonate="chrome110", timeout=90)
 
     # Returns True if deleted or False if any error in deleting
     if response.status_code == 204:
@@ -180,7 +180,7 @@ class Client:
         'Cookie': f'{self.cookie}'
     }
 
-    response = requests.get( url, headers=headers,impersonate="chrome110")
+    response = requests.get( url, headers=headers,impersonate="chrome110", timeout=90)
     
 
     # List all the conversations in JSON
@@ -213,7 +213,7 @@ class Client:
         'TE': 'trailers'
     }
 
-    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110")
+    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110", timeout=90)
 
     # Returns JSON of the newly created conversation information
     return response.json()
@@ -265,7 +265,7 @@ class Client:
         'orgUuid': (None, self.organization_id)
     }
 
-    response = requests.post(url, headers=headers, files=files,impersonate="chrome110")
+    response = requests.post(url, headers=headers, files=files,impersonate="chrome110", timeout=90)
     if response.status_code == 200:
       return response.json()
     else:
@@ -297,7 +297,7 @@ class Client:
         'TE': 'trailers'
     }
 
-    response = requests.post(url, headers=headers, data=payload,impersonate="chrome110")
+    response = requests.post(url, headers=headers, data=payload,impersonate="chrome110", timeout=90)
 
     if response.status_code == 200:
       return True

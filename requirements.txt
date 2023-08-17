@@ -3,6 +3,7 @@ bardapi
 bs4
 chardet
 # claude-api
+curl_cffi
 duckduckgo_search
 edge_tts
 EdgeGPT

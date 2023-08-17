@@ -1,13 +1,13 @@
-import requests
 import json
 import os
 import uuid
+from curl_cffi import requests
+import re
 
 
 class Client:
 
-  def __init__(self, cookie, proxy=None):
-    self.proxy = proxy
+  def __init__(self, cookie, proxy = None):
     self.cookie = cookie
     self.organization_id = self.get_organization_id()
 
@@ -27,8 +27,7 @@ class Client:
         'Cookie': f'{self.cookie}'
     }
 
-    response = requests.request("GET", url, headers=headers, proxies=self.proxy)
-    # print(response.text)
+    response = requests.get(url, headers=headers,impersonate="chrome110")
     res = json.loads(response.text)
     uuid = res[0]['uuid']
 
@@ -64,7 +63,7 @@ class Client:
         'Cookie': f'{self.cookie}'
     }
 
-    response = requests.get(url, headers=headers, proxies=self.proxy)
+    response = requests.get(url, headers=headers,impersonate="chrome110")
     conversations = response.json()
 
     # Returns all conversation information in a list
@@ -119,16 +118,16 @@ class Client:
       'TE': 'trailers'
     }
 
-    response = requests.post(url, headers=headers, data=payload, stream=True, proxies=self.proxy)
+    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110")
     decoded_data = response.content.decode("utf-8")
-    data_strings = decoded_data.strip().split('\n')
-    data_strings = [item for item in data_strings if item != '']
+    decoded_data = re.sub('\n+', '\n', decoded_data).strip()
+    data_strings = decoded_data.split('\n')
     completions = []
     for data_string in data_strings:
-        json_str = data_string[6:].strip()
-        data = json.loads(json_str)
-        if 'completion' in data:
-            completions.append(data['completion'])
+      json_str = data_string[6:].strip()
+      data = json.loads(json_str)
+      if 'completion' in data:
+        completions.append(data['completion'])
 
     answer = ''.join(completions)
 
@@ -156,7 +155,7 @@ class Client:
         'TE': 'trailers'
     }
 
-    response = requests.request("DELETE", url, headers=headers, data=payload, proxies=self.proxy)
+    response = requests.delete( url, headers=headers, data=payload,impersonate="chrome110")
 
     # Returns True if deleted or False if any error in deleting
     if response.status_code == 204:
@@ -181,8 +180,8 @@ class Client:
         'Cookie': f'{self.cookie}'
     }
 
-    response = requests.request("GET", url, headers=headers, proxies=self.proxy)
-    print(type(response))
+    response = requests.get( url, headers=headers,impersonate="chrome110")
+    
 
     # List all the conversations in JSON
     return response.json()
@@ -214,7 +213,7 @@ class Client:
         'TE': 'trailers'
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload, proxies=self.proxy)
+    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110")
 
     # Returns JSON of the newly created conversation information
     return response.json()
@@ -230,6 +229,19 @@ class Client:
     return True
 
   def upload_attachment(self, file_path):
+    if file_path.endswith('.txt'):
+      file_name = os.path.basename(file_path)
+      file_size = os.path.getsize(file_path)
+      file_type = "text/plain"
+      with open(file_path, 'r', encoding='utf-8') as file:
+        file_content = file.read()
+
+      return {
+          "file_name": file_name,
+          "file_type": file_type,
+          "file_size": file_size,
+          "extracted_content": file_content
+      }
     url = 'https://claude.ai/api/convert_document'
     headers = {
         'User-Agent':
@@ -253,7 +265,7 @@ class Client:
         'orgUuid': (None, self.organization_id)
     }
 
-    response = requests.post(url, headers=headers, files=files, proxies=self.proxy)
+    response = requests.post(url, headers=headers, files=files,impersonate="chrome110")
     if response.status_code == 200:
       return response.json()
     else:
@@ -285,7 +297,7 @@ class Client:
         'TE': 'trailers'
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload, proxies=self.proxy)
+    response = requests.post(url, headers=headers, data=payload,impersonate="chrome110")
 
     if response.status_code == 200:
       return True

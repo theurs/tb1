@@ -583,6 +583,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button = telebot.types.InlineKeyboardButton(f'📢 Часть #{counter + 1}', callback_data=f'tts_book:{counter}')
             markup.add(button)
             counter += 1
+        markup.add(telebot.types.InlineKeyboardButton(f'Скачать текст', callback_data=f'tts_book:get_text'))
         return markup
 
     else:
@@ -773,10 +774,17 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'chatGPT_memory_debug':
             send_debug_history(message)
         elif call.data.startswith('tts_book:'):
-            chunk_number = int(call.data.split(':')[1])
-            text = BOOKS[chat_id_full][0][chunk_number]
             lang = BOOKS[chat_id_full][1]
             name = BOOKS[chat_id_full][2]
+
+            if 'get_text' in call.data:
+                text = ''.join(BOOKS[chat_id_full][0])
+                reply_to_long_message(message, text)
+                return
+
+            chunk_number = int(call.data.split(':')[1])
+            text = BOOKS[chat_id_full][0][chunk_number]
+
             message.text = f'/tts {lang} {text}'
             tts(message, f'Книга: {name}\n\nЧасть: {chunk_number+1}\n\nЯзык: {lang}')
 

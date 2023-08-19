@@ -576,9 +576,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         if chat_id_full not in DISABLED_KBD:
             DISABLED_KBD[chat_id_full] = False
         if DISABLED_KBD[chat_id_full]:
-            button2 = telebot.types.InlineKeyboardButton(f'✅Чат-кнопки', callback_data='disable_chat_kbd')
+            button2 = telebot.types.InlineKeyboardButton(f'☑️Чат-кнопки', callback_data='disable_chat_kbd')
         else:
-            button2 = telebot.types.InlineKeyboardButton(f'☑️Чат-кнопки', callback_data='enable_chat_kbd')
+            button2 = telebot.types.InlineKeyboardButton(f'✅Чат-кнопки', callback_data='enable_chat_kbd')
         markup.row(button1, button2)
 
         if cfg.pics_group_url:

@@ -8,7 +8,8 @@ import re
 import sys
 import threading
 
-from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
+# from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
+from re_edge_gpt import Chatbot, ConversationStyle
 from BingImageCreator import ImageGen
 
 import cfg
@@ -278,13 +279,12 @@ if __name__ == "__main__":
     
     # print(new_text)
 
-    #prompt = 'anime резонанс душ'
-    #print(gen_imgs(prompt))
+    # prompt = 'anime резонанс душ'
+    # print(gen_imgs(prompt))
 
     # print(ai('с чего начать изучение питона'))
-    #sys.exit()
 
-    #sys.exit()
+    # sys.exit()
 
     """Usage ./bingai.py 'list 10 japanese dishes"""
 

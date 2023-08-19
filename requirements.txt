@@ -32,6 +32,7 @@ pytesseract
 python-Levenshtein
 python-magic
 #python-magic-bin
+re_edge_gpt
 qrcode
 SpeechRecognition
 telebot

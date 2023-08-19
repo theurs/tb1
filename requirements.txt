@@ -6,7 +6,7 @@ chardet
 curl_cffi
 duckduckgo_search
 edge_tts
-EdgeGPT
+# EdgeGPT
 fake_useragent
 fuzzywuzzy
 google

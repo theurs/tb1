@@ -9,8 +9,8 @@ import sys
 import threading
 
 # from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
-from re_edge_gpt import Chatbot, ConversationStyle
-from BingImageCreator import ImageGen
+from re_edge_gpt import Chatbot, ConversationStyle, ImageGen
+#from BingImageCreator import ImageGen
 
 import cfg
 import my_log

@@ -112,6 +112,10 @@ VOICE_ONLY_MODE = my_dic.PersistentDict('db/voice_only_mode.pkl')
 # в каких чатах отключена клавиатура {'chat_id_full':True/False}
 DISABLED_KBD = my_dic.PersistentDict('db/disabled_kbd.pkl')
 
+# автоматически заблокированные за слишком частые обращения к боту 
+# {user_id:Time to release in seconds - дата когда можно выпускать из бана} 
+DDOS_BLOCKED_USERS = my_dic.PersistentDict('db/ddos_blocked_users.pkl')
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -151,6 +155,42 @@ MSG_CONFIG = """***Панель управления***
 Настройки стиля /style и история /mem ***относятся только к chatGPT***
 У Барда и Бинга свои особенные правила, которые не могут быть изменены
 """
+
+class RequestCounter:
+    """Ограничитель числа запросов к боту
+    не дает делать больше 10 в минуту, банит на сутки после превышения"""
+    def __init__(self):
+        self.counts = {}
+
+    def check_limit(self, user_id):
+        """Возвращает True если лимит не превышен, False если превышен или юзер уже забанен"""
+        current_time = time.time()
+
+        if user_id in DDOS_BLOCKED_USERS:
+            if DDOS_BLOCKED_USERS[user_id] > current_time:
+                return False
+            else:
+                del DDOS_BLOCKED_USERS[user_id]
+
+        if user_id not in self.counts:
+            self.counts[user_id] = [current_time]
+            return True
+        else:
+            timestamps = self.counts[user_id]
+            # Удаляем старые временные метки, которые находятся за пределами 1 минуты
+            timestamps = [timestamp for timestamp in timestamps if timestamp >= current_time - 60]
+            if len(timestamps) < cfg.DDOS_MAX_PER_MINUTE:
+                timestamps.append(current_time)
+                self.counts[user_id] = timestamps
+                return True
+            else:
+                DDOS_BLOCKED_USERS[user_id] = current_time + cfg.DDOS_BAN_TIME
+                my_log.log2(f'tb:request_counter:check_limit: user blocked {user_id}')
+                return False
+
+
+request_counter = RequestCounter()
+
 
 class ShowAction(threading.Thread):
     """Поток который можно остановить. Беспрерывно отправляет в чат уведомление об активности.
@@ -1774,12 +1814,15 @@ def stats_thread(message: telebot.types.Message):
 def check_blocked_user(id: str):
     """Вызывает ошибку если юзер заблокирован и ему не надо отвечать"""
     user_id = id.replace('[','').replace(']','').split()[0]
+    if not request_counter.check_limit(user_id):
+        my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован за DDOS')
+        raise Exception(f'user {user_id} in ddos stop list, ignoring')
     for i in BAD_USERS:
         u_id = i.replace('[','').replace(']','').split()[0]
         if u_id == user_id:
             if BAD_USERS[id]:
                 my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован')
-                raise Exception('user in stop list, ignoring')
+                raise Exception(f'user {user_id} in stop list, ignoring')
 
 
 @bot.message_handler(commands=['blockadd'])

@@ -117,6 +117,11 @@ chat_mode_default = 'chatgpt'
 # список админов, кому можно использовать команды /restart и вкл-выкл автоответы в чатах
 admins = [xxx,]
 
+# сколько раз раз в минуту можно обращаться к боту до бана
+DDOS_MAX_PER_MINUTE = 10
+# на сколько секунд банить
+DDOS_BAN_TIME = 86400
+
 # telegram bot token
 token   = "xxx"
 

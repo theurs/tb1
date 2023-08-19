@@ -109,6 +109,9 @@ COMMAND_MODE = {}
 # в каких чатах включен режим только голосовые сообщения {'chat_id_full':True/False}
 VOICE_ONLY_MODE = my_dic.PersistentDict('db/voice_only_mode.pkl')
 
+# в каких чатах отключена клавиатура {'chat_id_full':True/False}
+DISABLED_KBD = my_dic.PersistentDict('db/disabled_kbd.pkl')
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -386,6 +389,13 @@ def is_admin_member(message: telebot.types.Message):
     return True if 'creator' in member or 'administrator' in member else False
 
 
+def disabled_kbd(chat_id_full):
+    """проверяет не отключена ли тут клавиатура"""
+    if chat_id_full not in DISABLED_KBD:
+        DISABLED_KBD[chat_id_full] = False
+    return DISABLED_KBD[chat_id_full]
+
+
 def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> telebot.types.InlineKeyboardMarkup:
     """создает и возвращает клавиатуру по текстовому описанию
     'chat' - клавиатура для чата
@@ -396,6 +406,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
     chat_id_full = get_topic_id(message)
 
     if kbd == 'chat':
+        if disabled_kbd(chat_id_full):
+            return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button1 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
         button2 = telebot.types.InlineKeyboardButton("♻️", callback_data='forget_all')
@@ -462,18 +474,33 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup.row(button4, button5, button6)
         return markup
     elif kbd == 'bing_chat':
+        if disabled_kbd(chat_id_full):
+            return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='restart_bing')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='bingAI_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+    elif kbd == 'claude_chat':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='claudeAI_reset')
         button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
         button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
         button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
         markup.add(button0, button1, button2, button3, button4)
         return markup
     elif kbd == 'bard_chat':
+        if disabled_kbd(chat_id_full):
+            return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='restart_bard')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='bardAI_reset')
         button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
         button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
         button4 = telebot.types.InlineKeyboardButton("🇷🇺", callback_data='translate_chat')
@@ -543,10 +570,16 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             BLOCKS[chat_id_full] = 0
 
         if BLOCKS[chat_id_full] == 1:
-            button = telebot.types.InlineKeyboardButton(f'✅Автопереводы', callback_data='autotranslate_disable')
+            button1 = telebot.types.InlineKeyboardButton(f'✅Автопереводы', callback_data='autotranslate_disable')
         else:
-            button = telebot.types.InlineKeyboardButton(f'☑️Автопереводы', callback_data='autotranslate_enable')
-        markup.add(button)
+            button1 = telebot.types.InlineKeyboardButton(f'☑️Автопереводы', callback_data='autotranslate_enable')
+        if chat_id_full not in DISABLED_KBD:
+            DISABLED_KBD[chat_id_full] = False
+        if DISABLED_KBD[chat_id_full]:
+            button2 = telebot.types.InlineKeyboardButton(f'✅Чат-кнопки', callback_data='disable_chat_kbd')
+        else:
+            button2 = telebot.types.InlineKeyboardButton(f'☑️Чат-кнопки', callback_data='enable_chat_kbd')
+        markup.row(button1, button2)
 
         if cfg.pics_group_url:
             button_pics = telebot.types.InlineKeyboardButton("🖼️Галерея",  url = cfg.pics_group_url)
@@ -687,12 +720,22 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
                                       reply_markup=get_keyboard('chat', message))
-        elif call.data == 'restart_bard':
+        elif call.data == 'bardAI_reset':
             my_bard.reset_bard_chat(chat_id_full)
             msg = 'История диалога с бардом отчищена.'
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
-        elif call.data == 'restart_bing':
+        elif call.data == 'claudeAI_reset':
+            my_claude.reset_claude_chat(chat_id_full)
+            msg = 'История диалога с клодом отчищена.'
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+            my_log.log_echo(message, msg)
+        elif call.data == 'chatGPT_reset':
+            DIALOGS_DB[chat_id_full] = []
+            msg = 'История диалога с chatGPT отчищена.'
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+            my_log.log_echo(message, msg)
+        elif call.data == 'bingAI_reset':
             bingai.reset_bing_chat(chat_id_full)
             msg = 'История диалога с бингом отчищена.'
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
@@ -765,12 +808,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             BLOCKS[chat_id_full] = 1
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'chatGPT_reset':
-            DIALOGS_DB[chat_id_full] = []
-        elif call.data == 'bingAI_reset':
-            bingai.reset_bing_chat(chat_id_full)
-        elif call.data == 'bardAI_reset':
-            my_bard.reset_bard_chat(chat_id_full)
         elif call.data == 'chatGPT_memory_debug':
             send_debug_history(message)
         elif call.data.startswith('tts_book:'):
@@ -787,6 +824,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
             message.text = f'/tts {lang} {text}'
             tts(message, f'Книга: {name}\n\nЧасть: {chunk_number+1}\n\nЯзык: {lang}')
+        elif call.data == 'disable_chat_kbd':
+            DISABLED_KBD[chat_id_full] = False
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'enable_chat_kbd':
+            DISABLED_KBD[chat_id_full] = True
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
 
 
 def check_blocks(chat_id: str) -> bool:
@@ -2618,12 +2663,12 @@ def do_task(message, custom_prompt: str = ''):
                         if answer:
                             try:
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('bard_chat', message))
+                                                      reply_markup=get_keyboard('claude_chat', message))
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('bard_chat', message))
+                                                      reply_markup=get_keyboard('claude_chat', message))
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))

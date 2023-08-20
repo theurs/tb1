@@ -3,21 +3,22 @@
 
 import asyncio
 import json
-import os
 import re
-import sys
 import threading
+import time
+import queue
 
-# from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 from re_edge_gpt import Chatbot, ConversationStyle, ImageGen
-#from BingImageCreator import ImageGen
 
-import cfg
 import my_log
 
 
 DIALOGS = {}
 CHAT_LOCKS = {}
+# {id:fifo queue}
+DIALOGS_QUEUE = {}
+FINAL_SIGN = '85db82jbdv9874h5896sdjf7598lng07234bhlkjh'
+
 
 lock_gen_img = threading.Lock()
 
@@ -131,37 +132,6 @@ def chat(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
     return result
 
 
-async def main_stream(prompt1: str, style: int = 3) -> str:
-    """
-    Выполняет запрос к бингу.
-    style: 1 - precise, 2 - balanced, 3 - creative
-    """
-
-    if style == 1:
-        st = ConversationStyle.precise
-    elif style == 2:
-        st = ConversationStyle.balanced
-    elif style == 3:
-        st = ConversationStyle.creative
-
-    cookies = json.loads(open("cookies.json", encoding="utf-8").read())
-    
-    bot = await Chatbot.create(cookies=cookies)
-    #r = await bot.ask_stream(prompt=prompt1, conversation_style=st, simplify_response=True)
-    wrote = 0
-    async for final, response in bot.ask_stream(prompt=prompt1, conversation_style=st, search_result=False, locale='ru'):
-        if not final:
-            if response[wrote:].startswith('```json'):
-                wrote = len(response)
-                continue
-        if not final:
-            # print(response[wrote:], end='')
-            yield response[wrote:]
-        wrote = len(response)
-
-    await bot.close()
-
-
 async def main(prompt1: str, style: int = 3) -> str:
     """
     Выполняет запрос к бингу.
@@ -221,13 +191,6 @@ def ai(prompt: str, style: int = 3) -> str:
     return asyncio.run(main(prompt, style))
 
 
-def ai_stream(prompt: str, timer: float = 1) -> str:
-    """сырой запрос к бингу, ответ выдается каждые timer секунд по мере поступления"""
-    print('bing', len(prompt))
-    x = asyncio.run(main_stream(prompt, 3))
-    print(x)
-
-
 def gen_imgs(prompt: str):
     """генерирует список картинок по описанию с помощью бинга
     возвращает список ссылок на картинки или сообщение об ошибке"""
@@ -256,38 +219,100 @@ def gen_imgs(prompt: str):
         return 'No auth provided'
 
 
+
+
+async def chat_async_stream(query: str, dialog: str, style = 3, reset = False) -> str:
+    """
+    Выполняет запрос к бингу.
+    style: 1 - precise, 2 - balanced, 3 - creative
+    """
+    if reset:
+        try:
+            await DIALOGS[dialog].close()
+        except KeyError:
+            print(f'bingai.chat_async_stream:1:no such key in DIALOGS: {dialog}')
+            my_log.log2(f'bingai.chat_async_stream:1:no such key in DIALOGS: {dialog}')
+        try:
+            del DIALOGS[dialog]
+        except KeyError:
+            print(f'bingai.chat_async_stream:2:no such key in DIALOGS: {dialog}')
+            my_log.log2(f'bingai.chat_async_stream:2:no such key in DIALOGS: {dialog}')
+        return
+
+    if style == 1:
+        st = ConversationStyle.precise
+    elif style == 2:
+        st = ConversationStyle.balanced
+    elif style == 3:
+        st = ConversationStyle.creative
+
+    if dialog not in DIALOGS:
+        cookies = json.loads(open("cookies.json", encoding="utf-8").read())
+        DIALOGS[dialog] = await Chatbot.create(cookies=cookies)
+        DIALOGS_QUEUE[dialog] = queue.Queue()
+
+    try:
+        wrote = 0
+        async for final, response in DIALOGS[dialog].ask_stream(prompt=query, conversation_style=st, search_result=False, locale='ru'):
+            if not final:
+                if response[wrote:].startswith('```json'):
+                    wrote = len(response)
+                    continue
+            if not final:
+                # print(response[wrote:], end='')
+                # yield response[wrote:]
+                DIALOGS_QUEUE[dialog].put_nowait(response[wrote:])
+            wrote = len(response)
+        DIALOGS_QUEUE[dialog].put_nowait(FINAL_SIGN)
+    except Exception as error:
+        print(f'bingai.chat_async_stream:2: {error}')
+        my_log.log2(f'bingai.chat_async_stream:2: {error}')
+
+
+def chat_stream(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
+
+    if dialog in CHAT_LOCKS:
+        lock = CHAT_LOCKS[dialog]
+    else:
+        lock = threading.Lock()
+        CHAT_LOCKS[dialog] = lock
+
+    with lock:
+        try:
+            asyncio.run(chat_async_stream(query, dialog, style, reset))
+        except Exception as error:
+            print(f'my_bingai.chat_stream: {error}')
+            my_log.log2(f'my_bingai.chat_stream: {error}')
+            asyncio.run(chat_async_stream(query, dialog, style, reset))
+
+
+def stream_sync_request(query: str):
+    thread = threading.Thread(target=chat_stream, args=(query, '0', 3, False))
+    thread.start()
+    
+    while thread.is_alive():
+        time.sleep(0.1)
+        try:
+            chunk = DIALOGS_QUEUE['0'].get_nowait()
+            if FINAL_SIGN in chunk:
+                chunk = chunk.replace(FINAL_SIGN, '')
+                print(chunk, end='')
+                break
+            print(chunk, end='')
+        except KeyError:
+            pass
+        except queue.Empty:
+            pass
+
+
 if __name__ == "__main__":
 
-    # text = open('text.txt', 'r', encoding='utf-8').read()
-    # sources_text = open('sources_text.txt', 'r', encoding='utf-8').read()
-    
-    # urls = re.findall(r'\[(.*?)\]\((.*?)\)', sources_text)
-    # urls2 = []
-    # for i, url in urls:
-    #     num = i.split('. ', maxsplit=1)[1].strip()
-    #     urls2.append(url.strip())
-    
-    
-    # def replace_links(match):
-    #     index = int(match.group(1)) - 1
-    #     if index < len(urls2):
-    #         return urls2[index]
-    #     else:
-    #         return match.group(0)
-
-    # new_text = re.sub(r'\^(\d{1,2})\^', replace_links, text)
-    
-    # print(new_text)
+    stream_sync_request('шалом алейхем')
 
     # prompt = 'anime резонанс душ'
     # print(gen_imgs(prompt))
 
-    # print(ai('с чего начать изучение питона'))
 
-    # sys.exit()
-
-    """Usage ./bingai.py 'list 10 japanese dishes"""
-
-    t = sys.argv[1]
-
-    print(ai(t))
+    # """Usage ./bingai.py 'list 10 japanese dishes"""
+    # t = sys.argv[1]
+    # print(ai(t))

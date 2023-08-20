@@ -7,6 +7,7 @@ import tempfile
 import datetime
 import threading
 import time
+import queue
 
 import openai
 import PyPDF2
@@ -115,6 +116,9 @@ DISABLED_KBD = my_dic.PersistentDict('db/disabled_kbd.pkl')
 # автоматически заблокированные за слишком частые обращения к боту 
 # {user_id:Time to release in seconds - дата когда можно выпускать из бана} 
 DDOS_BLOCKED_USERS = my_dic.PersistentDict('db/ddos_blocked_users.pkl')
+
+# замки для блокировки одновременных ответов бинга в режиме стриминга
+BING_LOCKS_STREAMING_MODE = {}
 
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
@@ -2630,40 +2634,141 @@ def do_task(message, custom_prompt: str = ''):
             else:
                 action = 'typing'
 
+
             # если активирован режим общения с бинг чатом
+            # вариант со стримингом
             if CHAT_MODE[chat_id_full] == 'bing':
-                with ShowAction(message, action):
-                    try:
-                        answer = bingai.chat(message.text, chat_id_full)
-                        if answer:
-                            # my_log.log_echo(message, answer['text'], debug = True)
-                            text = answer['text']
-                            if not VOICE_ONLY_MODE[chat_id_full]:
-                                text = utils.bot_markdown_to_html(text)
-                            messages_left = str(answer['messages_left'])
-                            if not VOICE_ONLY_MODE[chat_id_full]:
-                                text = f"{text}\n\n{messages_left}/30"
-                            try:
-                                reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('bing_chat', message))
-                            except Exception as error:
-                                print(error)
-                                reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('bing_chat', message))
+                # не даем делать больше 1 запроса за раз, ждем пока ответит
+                if chat_id_full in BING_LOCKS_STREAMING_MODE:
+                    lock = BING_LOCKS_STREAMING_MODE[chat_id_full]
+                else:
+                    lock = threading.Lock()
+                    BING_LOCKS_STREAMING_MODE[chat_id_full] = lock
+                with lock:
+                    with ShowAction(message, action):
+                        updated_message = None
+                        try:
+                            thread = threading.Thread(target=bingai.chat_stream, args=(message.text, chat_id_full, 3, False))
+                            thread.start()
+                            text_clean = ''
+                            while thread.is_alive():
+                                time.sleep(2)
+                                try:
+                                    chunk = ''
+                                    while 1:
+                                        try:
+                                            chunk += bingai.DIALOGS_QUEUE[chat_id_full].get_nowait()
+                                        except queue.Empty:
+                                            break
+
+                                    if chunk == '' or chunk.startswith('Searching the web for:') or \
+                                    str(chunk).startswith('{"web_search_results":'):
+                                        continue
+                                    if bingai.FINAL_SIGN in chunk:
+                                        # если это последний кусочек
+                                        chunk = chunk.replace(bingai.FINAL_SIGN, '')
+                                        if chunk == '':
+                                            break
+                                        text_clean += chunk
+                                        if text_clean.startswith('Generating answers for you...'):
+                                            text_clean = text_clean.replace('Generating answers for you...', '', 1).strip()
+                                        text = utils.bot_markdown_to_html(text_clean)
+                                        if len(text) <= 4000:
+                                            if updated_message:
+                                                updated_message_text = updated_message.text
+                                            else:
+                                                updated_message_text = ''
+                                            if text != updated_message_text:
+                                                if updated_message:
+                                                    bot.edit_message_text(text, chat_id = message.chat.id, 
+                                                                          message_id = updated_message.message_id,
+                                                                          parse_mode='HTML', disable_web_page_preview=True)
+                                                else:
+                                                    updated_message = bot.reply_to(message, text, parse_mode='HTML', 
+                                                                                  disable_web_page_preview=True)
+                                        break
+
+                                    text_clean += chunk
+                                    if text_clean.startswith('Generating answers for you...'):
+                                        text_clean = text_clean.replace('Generating answers for you...', '', 1).strip()
+                                    text = utils.bot_markdown_to_html(text_clean)
+                                    # если текст меньше 4к
+                                    if len(text) <= 4000:
+                                        if updated_message:
+                                            updated_message_text = updated_message.text
+                                        else:
+                                            updated_message_text = ''
+                                        if text != updated_message_text:
+                                            if updated_message:
+                                                bot.edit_message_text(text, chat_id = message.chat.id,
+                                                                      message_id = updated_message.message_id,
+                                                                      parse_mode='HTML', disable_web_page_preview=True)
+                                            else:
+                                                updated_message = bot.reply_to(message, text, parse_mode='HTML', 
+                                                                               disable_web_page_preview=True)
+                                except KeyError:
+                                    pass
+                                except queue.Empty:
+                                    pass
+
+                            if len(text) <= 4000:
+                                if chat_id_full in DISABLED_KBD and DISABLED_KBD[chat_id_full] == False:
+                                    bot.edit_message_reply_markup(chat_id = message.chat.id, message_id = updated_message.message_id,
+                                                                reply_markup=get_keyboard('bing_chat', message))
+                            else:
+                                bot.delete_message(chat_id = message.chat.id, message_id = updated_message.message_id)
+                                if chat_id_full in DISABLED_KBD and DISABLED_KBD[chat_id_full] == False:
+                                    reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True,
+                                                            reply_markup=get_keyboard('bing_chat', message))
+                                else:
+                                    reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True)
                             my_log.log_echo(message, text)
-                            if int(messages_left) == 1:
-                                bingai.reset_bing_chat(chat_id_full)
-                        else:
+                            my_log.log2(text_clean)
+                            my_log.log2(text)
+                        except Exception as error:
+                            print(f'tb:do_task:bing answer:0: {error}')
+                            my_log.log2(f'tb:do_task:bing answer:0: {error}')
                             bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
-                                         reply_markup=get_keyboard('chat', message))
+                                        reply_markup=get_keyboard('chat', message))
                             my_log.log_echo(message, 'Бинг не хочет об этом говорить')
-                    except Exception as error:
-                        print(f'tb:do_task:bing answer: {error}')
-                        my_log.log2(f'tb:do_task:bing answer: {error}')
-                        bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
-                                     reply_markup=get_keyboard('chat', message))
-                        my_log.log_echo(message, 'Бинг не хочет об этом говорить')
-                    return
+                return
+
+
+            # # если активирован режим общения с бинг чатом
+            # вариант без стриминга
+            # if CHAT_MODE[chat_id_full] == 'bing':
+            #     with ShowAction(message, action):
+            #         try:
+            #             answer = bingai.chat(message.text, chat_id_full)
+            #             if answer:
+            #                 # my_log.log_echo(message, answer['text'], debug = True)
+            #                 text = answer['text']
+            #                 if not VOICE_ONLY_MODE[chat_id_full]:
+            #                     text = utils.bot_markdown_to_html(text)
+            #                 messages_left = str(answer['messages_left'])
+            #                 if not VOICE_ONLY_MODE[chat_id_full]:
+            #                     text = f"{text}\n\n{messages_left}/30"
+            #                 try:
+            #                     reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True, 
+            #                                           reply_markup=get_keyboard('bing_chat', message))
+            #                 except Exception as error:
+            #                     print(error)
+            #                     reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, 
+            #                                           reply_markup=get_keyboard('bing_chat', message))
+            #                 my_log.log_echo(message, text)
+            #                 if int(messages_left) == 1:
+            #                     bingai.reset_bing_chat(chat_id_full)
+            #             else:
+            #                 bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
+            #                              reply_markup=get_keyboard('chat', message))
+            #                 my_log.log_echo(message, 'Бинг не хочет об этом говорить')
+            #         except Exception as error:
+            #             print(f'tb:do_task:bing answer: {error}')
+            #             my_log.log2(f'tb:do_task:bing answer: {error}')
+            #             bot.reply_to(message, 'Бинг не хочет об этом говорить', parse_mode='Markdown', disable_web_page_preview = True, 
+            #                          reply_markup=get_keyboard('chat', message))
+            #             my_log.log_echo(message, 'Бинг не хочет об этом говорить')
+            #         return
 
             # если активирован режим общения с бард чатом
             if CHAT_MODE[chat_id_full] == 'bard':

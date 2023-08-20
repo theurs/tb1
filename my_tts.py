@@ -354,16 +354,27 @@ def translit_word(word: str) -> str:
 def translit_sentence(sentence: str) -> str:
     """Транслитерирует целое предложение eng->rus. Есть проблемы с пунктуацией,
     скобки, кавычки итп лучше убрать заранее"""
-    tokenized_text = nltk.word_tokenize(sentence)
+    tokenized_text = nltk.wordpunct_tokenize(sentence)
     result = ''
     for token in tokenized_text:
         if '-' in token:
             result += ' ' + '-'.join([translit_word(word) for word in token.split('-')])
             continue
         if token in string.punctuation:
-            result += token + ' '
+            result += ' ' + token
         else:
             result += ' ' + translit_word(token)
+    result = result.replace('( ', '(')
+    result = result.replace(' )', ')')
+    result = result.replace('{ ', '{')
+    result = result.replace(' }', '}')
+    result = result.replace('[ ', '[')
+    result = result.replace(' ]', ']')
+    result = result.replace('" ', '"')
+    # result = result.replace(' "', '" ')
+    result = result.replace(' .', '.')
+    result = result.replace(' ,', ',')
+    
     result = result.replace('  ', ' ')
     return result.strip()
 

@@ -5,16 +5,18 @@ import asyncio
 import io
 import glob
 import os
+import string
 import subprocess
 import tempfile
 import threading
-from transliterate import translit
 import sys
-from urllib.parse import urlparse
 
 import edge_tts
 import gtts
+import nltk
+import pronouncing
 import torch #silero
+from transliterate import translit
 
 import cfg
 import gpt_basic
@@ -306,40 +308,65 @@ def tts_text_with_gpt(text: str) -> str:
 {text}
 """
         chunk_result = gpt_basic.ai(prompt)
-        #chunk_result = translit(chunk_result, 'ru')
-        #chunk_result = replace_numbers(chunk_result)
         result += chunk_result
     return result
 
 
+def translit_word(word: str) -> str:
+    """
+    Translates a word from English to Russian using a phonetic transcription and a mapping table.
+
+    Args:
+        word (str): The word to be translated.
+
+    Returns:
+        str: The translated word in Russian.
+    """
+    EN_RU_TABLE = {
+    "AA": "о", "AE": "э", "AH": "а", "AO": "о", "AW": "ау", "AY": "ай",
+    "B": "б", "CH": "ч", "D": "д", "DH": "з", "EH": "э", "ER": "эр",
+    "EY": "эй", "F": "ф", "G": "г", "HH": "х", "IH": "и", "IY": "и",
+    "JH": "дж", "K": "к", "L": "л", "M": "м", "N": "н", "NG": "нг",
+    "OW": "о", "OY": "ой", "P": "п", "R": "р", "S": "с", "SH": "ш",
+    "T": "т", "TH": "т", "UH": "у", "UW": "у", "V": "в", "W": "в",
+    "Y": "й", "Z": "з", "ZH": "ж"}
+    word = word.strip()
+    if word == '':
+        return ''
+    
+    transcription = pronouncing.phones_for_word(word)
+    if len(transcription) == 0:
+        return translit(word, 'ru')
+    result = ''
+    for phoneme in transcription[0].split():
+        stress = ''
+        if '1' in phoneme or '2' in phoneme:
+            stress = '+'
+            phoneme = phoneme.replace('1', '')
+            phoneme = phoneme.replace('2', '')
+        if '0' in phoneme:
+            phoneme = phoneme.replace('0', '')
+        result += stress + EN_RU_TABLE[phoneme]
+    
+    return result
+
+
+def translit_sentence(sentence: str) -> str:
+    """Транслитерирует целое предложение eng->rus. Есть проблемы с пунктуацией,
+    скобки, кавычки итп лучше убрать заранее"""
+    tokenized_text = nltk.word_tokenize(sentence)
+    result = ''
+    for token in tokenized_text:
+        if '-' in token:
+            result += ' ' + '-'.join([translit_word(word) for word in token.split('-')])
+            continue
+        if token in string.punctuation:
+            result += token + ' '
+        else:
+            result += ' ' + translit_word(token)
+    result = result.replace('  ', ' ')
+    return result.strip()
+
+
 if __name__ == "__main__":
-    #print(type(tts('Привет, как дела!', 'ru')))
-
-    #print(get_voice('ru', 'male'))
-
-    #sys.exit()
-    
-    os.environ['all_proxy'] = cfg.all_proxy
-    
-    text = """
-Определяйте свою категорию:
-- Безработные
-- Мамы в декрете с детьми до 3 лет
-- Неработающие мамы в декрете с детьми до 7 лет
-- Граждане старше 50 лет
-- др. категории граждан (https://trud.dvfu.ru/?utm_source=tg+svodka25&utm_medium=post&utm_campaign=promo#rules)
-
-Отправляйте заявку, (https://trud.dvfu.ru/?utm_source=tg+svodka25&utm_medium=post&utm_campaign=promo) подтверждайте вашу категорию, учитесь дистанционно и получите удостоверение повышения квалификации до конца лета!
-
-Срок обучения: 1-2 месяца 
-Количество мест ограничено. 
-
-По вопросам: 
-📲 8(924)731-88-85 с 10 до 18:00
-🌐https://trud.dvfu.ru/ (https://trud.dvfu.ru/?utm_source=tg+svodka25&utm_medium=post&utm_campaign=promo)
-"""
-
-    print(tts_text_with_gpt(text))
-    print('\n\n')
-
-    #open('1.ogg', 'wb').write(tts_silero(text))
+    print(translit_sentence('''This thing (seemed) to "overpower" [and] {astonish} the little dark-brown dog, and wounded him to the heart. He sank down in despair at the child's feet. When the blow was repeated, together with an admonition in childish sentences, he turned over upon his back, and held his paws in a peculiar manner. At the same time with his ears and his eyes he offered a small prayer to the child.'''))

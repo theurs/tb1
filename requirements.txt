@@ -15,11 +15,13 @@ html2text
 langdetect
 markdown2
 natsort
+nltk
 openai
 openai-whisper
 websocket-client
 Pillow
 pornhub_api
+pronouncing
 py_trans
 # for pornhub_api
 pydantic==1.10.9

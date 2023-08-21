@@ -32,6 +32,7 @@ import my_stt
 import my_sum
 import my_trans
 import my_tts
+import my_wikipedia
 import utils
 
 
@@ -1409,6 +1410,36 @@ def set_new_model(message: telebot.types.Message):
     bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, msg0)
     my_log.log_echo(message, msg)
+
+
+@bot.message_handler(commands=['wikipedia','wiki']) 
+def wikipedia(message: telebot.types.Message):
+    """показывает текст из википедии"""
+    thread = threading.Thread(target=wikipedia_thread, args=(message,))
+    thread.start()
+def wikipedia_thread(message: telebot.types.Message):
+    """показывает текст из википедии"""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
+
+    args = message.text.split(maxsplit=1)
+    if len(args) == 2:
+        query = args[1]
+        with semaphore_talks:
+            with ShowAction(message, 'typing'):
+                result = my_wikipedia.get_content(query)
+                reply_to_long_message(message, result, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
+                my_log.log_echo(message, result)
+    else:
+        msg = '/wikipedia <что найти>'
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['tts']) 

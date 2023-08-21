@@ -32,7 +32,33 @@ def reset_bing_chat(chat_id: str):
 
 
 async def chat_async(query: str, dialog: str, style = 3, reset = False):
-    """возвращает список, объект для поддержания диалога и ответ"""
+    """
+    Asynchronously chats with a chatbot using the specified query and dialog.
+
+    Args:
+        query (str): The query to send to the chatbot.
+        dialog (str): The identifier of the dialog to use.
+        style (int, optional): The conversation style to use. Defaults to 3.
+        reset (bool, optional): Whether to reset the dialog before sending the query. Defaults to False.
+
+    Returns:
+        dict: A dictionary containing the chatbot's response, including the text, suggestions, 
+              number of messages left, and maximum number of messages.
+
+    Raises:
+        KeyError: If the specified dialog does not exist in the DIALOGS dictionary.
+        Exception: If an error occurs while communicating with the chatbot.
+
+    Note:
+        The function first checks if the `reset` flag is set to `True`. If so, it closes the dialog, 
+        removes it from the DIALOGS dictionary, and returns. If the specified dialog does 
+        not exist in the DIALOGS dictionary, the function creates a new chatbot instance using the 
+        cookies loaded from the "cookies.json" file. It then sends the query to the chatbot and 
+        retrieves the response. The function replaces any reference links in the response text with 
+        actual URLs from the `sources_text` field. Finally, it returns a dictionary containing the 
+        chatbot's response, including the text, suggestions, number of messages left, and maximum number 
+        of messages.
+    """
     if reset:
         try:
             await DIALOGS[dialog].close()
@@ -109,7 +135,19 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
 
 
 def chat(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
-    """возвращает ответ"""
+    """
+    This function is used to chat with a bing. It takes in a query string,
+    a dialog id, and optional parameters for style and reset. It returns a string as the chat response.
+    
+    Parameters:
+    - query (str): The input query for the dialog system.
+    - dialog (str): The current dialog id.
+    - style (int, optional): The style parameter for the chat. Defaults to 3.
+    - reset (bool, optional): Whether to reset the dialog. Defaults to False.
+    
+    Returns:
+    - str: The chat response as a string.
+    """
     if dialog in CHAT_LOCKS:
         lock = CHAT_LOCKS[dialog]
     else:
@@ -134,10 +172,15 @@ def chat(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
 
 async def main(prompt1: str, style: int = 3) -> str:
     """
-    Выполняет запрос к бингу.
-    style: 1 - precise, 2 - balanced, 3 - creative
-    """
+    Asynchronous function that takes a prompt and a style as input and returns a string.
 
+    Args:
+        prompt1 (str): The prompt for the chatbot.
+        style (int, optional): The style of the conversation. Defaults to 3.
+
+    Returns:
+        str: The response text from the chatbot.
+    """
     if style == 1:
         st = ConversationStyle.precise
     elif style == 2:
@@ -186,14 +229,23 @@ async def main(prompt1: str, style: int = 3) -> str:
 
 
 def ai(prompt: str, style: int = 3) -> str:
-    """сырой запрос к бингу"""
     print('bing', len(prompt))
     return asyncio.run(main(prompt, style))
 
 
 def gen_imgs(prompt: str):
-    """генерирует список картинок по описанию с помощью бинга
-    возвращает список ссылок на картинки или сообщение об ошибке"""
+    """
+    Generates images based on a prompt.
+
+    Args:
+        prompt (str): The prompt used to generate the images.
+
+    Returns:
+        Union[str, List[str]]: The generated images as a list of strings, or an error message if the generation fails.
+
+    Raises:
+        None
+    """
     with lock_gen_img:
         with open("cookies.json") as f:
             c = json.load(f)
@@ -219,12 +271,18 @@ def gen_imgs(prompt: str):
         return 'No auth provided'
 
 
-
-
-async def chat_async_stream(query: str, dialog: str, style = 3, reset = False) -> str:
+async def chat_async_stream(query: str, dialog: str, style = 3, reset = False):
     """
-    Выполняет запрос к бингу.
-    style: 1 - precise, 2 - balanced, 3 - creative
+    Asynchronously streams a chat response based on a given query and dialog.
+
+    Args:
+        query (str): The query string for the chat.
+        dialog (str): The dialog identifier.
+        style (int, optional): The conversation style. Defaults to 3.
+        reset (bool, optional): Whether to reset the dialog. Defaults to False.
+
+    Returns:
+
     """
     if reset:
         try:
@@ -253,7 +311,8 @@ async def chat_async_stream(query: str, dialog: str, style = 3, reset = False) -
 
     try:
         wrote = 0
-        async for final, response in DIALOGS[dialog].ask_stream(prompt=query, conversation_style=st, search_result=False, locale='ru'):
+        async for final, response in DIALOGS[dialog].ask_stream(prompt=query, conversation_style=st, search_result=False,
+                                                                simplify_response=True, locale='ru'):
             if not final:
                 if response[wrote:].startswith('```json'):
                     wrote = len(response)
@@ -270,7 +329,6 @@ async def chat_async_stream(query: str, dialog: str, style = 3, reset = False) -
 
 
 def chat_stream(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
-
     if dialog in CHAT_LOCKS:
         lock = CHAT_LOCKS[dialog]
     else:
@@ -287,6 +345,7 @@ def chat_stream(query: str, dialog: str, style: int = 3, reset: bool = False) ->
 
 
 def stream_sync_request(query: str):
+    """test for chat_stream"""
     thread = threading.Thread(target=chat_stream, args=(query, '0', 3, False))
     thread.start()
     
@@ -307,9 +366,11 @@ def stream_sync_request(query: str):
 
 if __name__ == "__main__":
 
+    # print(chat('brent oil price', 'test-chat-id', 3, False)['text'])
+    
     stream_sync_request('brent oil price')
 
-    # prompt = 'anime резонанс душ'
+    # prompt = 'dogs'
     # print(gen_imgs(prompt))
 
 

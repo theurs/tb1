@@ -312,7 +312,7 @@ async def chat_async_stream(query: str, dialog: str, style = 3, reset = False):
     try:
         wrote = 0
         async for final, response in DIALOGS[dialog].ask_stream(prompt=query, conversation_style=st, search_result=False,
-                                                                simplify_response=True, locale='ru'):
+                                                                locale='ru'):
             if not final:
                 if response[wrote:].startswith('```json'):
                     wrote = len(response)

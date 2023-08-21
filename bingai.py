@@ -307,7 +307,7 @@ def stream_sync_request(query: str):
 
 if __name__ == "__main__":
 
-    stream_sync_request('шалом алейхем')
+    stream_sync_request('brent oil price')
 
     # prompt = 'anime резонанс душ'
     # print(gen_imgs(prompt))

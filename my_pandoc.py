@@ -6,6 +6,7 @@ import os
 import subprocess
 
 import magic
+import PyPDF2
 
 import utils
 import my_yo
@@ -16,7 +17,7 @@ catdoc_cmd = 'catdoc'
 
 
 def fb2_to_text(data: bytes) -> str:
-    """convert from fb2 or epub (bytes) to string"""
+    """convert from fb2 or epub (bytes) and other types of books file to string"""
     input_file = utils.get_tmp_fname()
 
     open(input_file, 'wb').write(data)
@@ -39,6 +40,13 @@ def fb2_to_text(data: bytes) -> str:
         return my_yo.yo_text(data.decode('utf-8').replace(u'\xa0', u' '))
     elif 'msword' in book_type:
         proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
+    elif 'pdf' in book_type:
+        pdf_reader = PyPDF2.PdfReader(input_file)
+        text = ''
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+        os.remove(input_file)
+        return text
     else:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
 
@@ -64,12 +72,10 @@ def split_text_of_book(text: str, chunk_size: int) -> list:
     new_text = new_text.strip()
 
     return utils.split_text_my(new_text, chunk_size)
-        
-
 
 
 if __name__ == '__main__':
-    result = fb2_to_text(open('1.txt', 'rb').read())
+    result = fb2_to_text(open('1.pdf', 'rb').read())
     
     for i in split_text_of_book(result, 5000):
         print(i)

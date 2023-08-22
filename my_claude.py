@@ -73,7 +73,7 @@ def reset_claude_chat(dialog: str):
     return
 
 
-def chat_request(query: str, dialog: str, reset = False) -> str:
+def chat_request(query: str, dialog: str, reset = False, attachment = None) -> str:
     """
     Generates a response to a chat request.
 
@@ -81,7 +81,7 @@ def chat_request(query: str, dialog: str, reset = False) -> str:
         query (str): The user's query.
         dialog (str): The dialog number.
         reset (bool, optional): Whether to reset the dialog. Defaults to False.
-
+        attachment (str, optional): The attachment, path to file. Defaults to None.
     Returns:
         str: The generated response.
     """
@@ -99,7 +99,7 @@ def chat_request(query: str, dialog: str, reset = False) -> str:
 
     try:
         api = get_api(dialog)
-        resp = api.send_message(query, session)
+        resp = api.send_message(query, session, attachment)
     except Exception as error:
         print(f'my_claude:chat_request: {error}')
         my_log.log2(f'my_claude:chat_request: {error}')
@@ -109,7 +109,7 @@ def chat_request(query: str, dialog: str, reset = False) -> str:
             session = get_new_session(dialog)
             DIALOGS[dialog] = session
             api = get_api(dialog)
-            resp = api.send_message(query, session)
+            resp = api.send_message(query, session, attachment)
         except Exception as error2:
             print(f'my_claude:chat_request:error2: {error2}')
             my_log.log2(f'my_claude:chat_request:error2: {error2}')
@@ -117,7 +117,7 @@ def chat_request(query: str, dialog: str, reset = False) -> str:
     return resp
 
 
-def chat(query: str, dialog: str, reset: bool = False) -> str:
+def chat(query: str, dialog: str, reset: bool = False, attachment = None) -> str:
     """
     Executes a chat request with the given query and dialog ID.
 
@@ -125,6 +125,7 @@ def chat(query: str, dialog: str, reset: bool = False) -> str:
         query (str): The query to be sent to the chat API.
         dialog (str): The ID of the dialog to send the request to.
         reset (bool, optional): Whether to reset the conversation. Defaults to False.
+        attachment (str, optional): The attachment, path to file. Defaults to None.
 
     Returns:
         str: The response from the chat API.
@@ -135,7 +136,7 @@ def chat(query: str, dialog: str, reset: bool = False) -> str:
         lock = threading.Lock()
         CHAT_LOCKS[dialog] = lock
     with lock:
-        result = chat_request(query, dialog, reset)
+        result = chat_request(query, dialog, reset, attachment)
     return result
 
 
@@ -144,7 +145,9 @@ if __name__ == '__main__':
     # prompt = open('1.txt', 'r', encoding='utf-8').read()[:99000]
     # print(chat(prompt, '0'))
 
-    print(chat('1+1=', 'test'))
+    # print(chat('о чем это', 'test', False, 'C:/Users/user/Downloads/Writing Book Description.pdf'))
+    # print(chat('переведи первый абзац на русский', 'test'))
+    print(chat('дальше', 'test'))
 
     # while True:
     #     prompt = input("> ")

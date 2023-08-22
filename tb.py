@@ -2,9 +2,11 @@
 
 import io
 import os
+import random
 import re
 import tempfile
 import datetime
+import string
 import threading
 import time
 import queue
@@ -977,7 +979,50 @@ def handle_document_thread(message: telebot.types.Message):
         return
 
     with semaphore_talks:
-    
+        # если в режиме клауда чата то закидываем файл прямо в него
+        if chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] == 'claude':
+            with ShowAction(message, 'typing'):
+                file_name = message.document.file_name
+                file_info = bot.get_file(message.document.file_id)
+                file = bot.download_file(file_info.file_path)
+                # сгенерировать случайное имя папки во временной папке для этого файла
+                folder_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+                # создать эту папку во временной папке. как получить путь до временной папки в системе?
+                folder_path = os.path.join(tempfile.gettempdir(), folder_name)
+                os.mkdir(folder_path)
+                # сохранить файл в этой папке
+                if file_name.endswith(('.pdf', '.txt', '.csv')):
+                    full_path = os.path.join(folder_path, file_name)
+                    with open(full_path, 'wb') as new_file:
+                        new_file.write(file)
+                else:
+                    file_name += '.txt'
+                    text = my_pandoc.fb2_to_text(file)
+                    full_path = os.path.join(folder_path, file_name)
+                    with open(full_path, 'w', encoding='utf-8') as new_file:
+                        new_file.write(text)
+                caption = message.caption or 'Вот файл'
+                message.text = f'[File uploaded for Claude] [{file_name}] ' + caption
+                my_log.log_echo(message)
+                try:
+                    response = my_claude.chat(caption, chat_id_full, False, full_path)
+                    response = utils.bot_markdown_to_html(response)
+                except Exception as error:
+                    print(f'tb:handle_document_thread:claude: {error}')
+                    my_log.log2(f'tb:handle_document_thread:claude: {error}')
+                    msg = f'Что-то пошло не так'
+                    bot.reply_to(message, msg)
+                    my_log.log2(msg)
+                    os.remove(full_path)
+                    os.rmdir(folder_path)
+                    return
+                # удалить сначала файл а потом и эту папку
+                os.remove(full_path)
+                os.rmdir(folder_path)
+                my_log.log_echo(message, response)
+                reply_to_long_message(message, response, parse_mode='HTML', reply_markup=get_keyboard('claude_chat', message))
+            return
+
         # если прислали fb2 в приват то озвучить ее (msword)
         mimes = ('fictionbook', 'epub' ,'plain' , 'vnd.openxmlformats-officedocument.wordprocessingml.document',
                  'html', 'msword', 'vnd.oasis.opendocument.text', 'rtf', 'x-mobipocket-ebook')
@@ -2345,6 +2390,8 @@ def send_welcome_help(message: telebot.types.Message):
 
 Если отправить текстовый файл или пдф с подписью ***что там*** или ***перескажи*** то выдаст краткое содержание.
 
+При общении с Claude загруженные файлы отправляются прямо к нему и в дальнейшем он может отвечать по их содержанию.
+
 Команды и запросы можно делать голосовыми сообщениями, если отправить голосовое сообщение которое начинается на кодовое слово то бот отработает его как текстовую команду.
 
 """ + '\n'.join(open('commands.txt', encoding='utf8').readlines()) + '\n\n⚙️ https://github.com/theurs/tb1\n\n💬 https://t.me/theurs'
@@ -2652,7 +2699,7 @@ def do_task(message, custom_prompt: str = ''):
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif is_reply or is_private or bot_name_used:
-            if len(msg) > cfg.max_message_from_user:
+            if len(msg) > cfg.max_message_from_user and (chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] != 'claude'):
                 bot.reply_to(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
                 return

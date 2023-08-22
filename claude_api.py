@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 from curl_cffi import requests
+import requests as req
 import re
 
 
@@ -27,7 +28,7 @@ class Client:
         'Cookie': f'{self.cookie}'
     }
 
-    response = requests.get(url, headers=headers,impersonate="chrome110", timeout=90)
+    response = requests.get(url, headers=headers,impersonate="chrome110")
     res = json.loads(response.text)
     uuid = res[0]['uuid']
 
@@ -63,7 +64,7 @@ class Client:
         'Cookie': f'{self.cookie}'
     }
 
-    response = requests.get(url, headers=headers,impersonate="chrome110", timeout=90)
+    response = requests.get(url, headers=headers,impersonate="chrome110")
     conversations = response.json()
 
     # Returns all conversation information in a list
@@ -73,7 +74,7 @@ class Client:
       print(f"Error: {response.status_code} - {response.text}")
 
   # Send Message to Claude
-  def send_message(self, prompt, conversation_id, attachment=None):
+  def send_message(self, prompt, conversation_id, attachment=None,timeout=500):
     url = "https://claude.ai/api/append_message"
 
     # Upload attachment if provided
@@ -118,7 +119,7 @@ class Client:
       'TE': 'trailers'
     }
 
-    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110", timeout=90)
+    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110",timeout=500)
     decoded_data = response.content.decode("utf-8")
     decoded_data = re.sub('\n+', '\n', decoded_data).strip()
     data_strings = decoded_data.split('\n')
@@ -155,7 +156,7 @@ class Client:
         'TE': 'trailers'
     }
 
-    response = requests.delete( url, headers=headers, data=payload,impersonate="chrome110", timeout=90)
+    response = requests.delete( url, headers=headers, data=payload,impersonate="chrome110")
 
     # Returns True if deleted or False if any error in deleting
     if response.status_code == 204:
@@ -180,7 +181,7 @@ class Client:
         'Cookie': f'{self.cookie}'
     }
 
-    response = requests.get( url, headers=headers,impersonate="chrome110", timeout=90)
+    response = requests.get( url, headers=headers,impersonate="chrome110")
     
 
     # List all the conversations in JSON
@@ -213,7 +214,7 @@ class Client:
         'TE': 'trailers'
     }
 
-    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110", timeout=90)
+    response = requests.post( url, headers=headers, data=payload,impersonate="chrome110")
 
     # Returns JSON of the newly created conversation information
     return response.json()
@@ -265,7 +266,7 @@ class Client:
         'orgUuid': (None, self.organization_id)
     }
 
-    response = requests.post(url, headers=headers, files=files,impersonate="chrome110", timeout=90)
+    response = req.post(url, headers=headers, files=files)
     if response.status_code == 200:
       return response.json()
     else:
@@ -297,7 +298,7 @@ class Client:
         'TE': 'trailers'
     }
 
-    response = requests.post(url, headers=headers, data=payload,impersonate="chrome110", timeout=90)
+    response = requests.post(url, headers=headers, data=payload,impersonate="chrome110")
 
     if response.status_code == 200:
       return True

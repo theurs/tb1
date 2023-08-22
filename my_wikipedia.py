@@ -40,7 +40,7 @@ def get_content(query: str) -> str:
         if not result:
             result = "Ничего не найдено"
     except wikipedia.exceptions.DisambiguationError as error:
-        result = get_content(error.options[0]) + '\n\n**Возможные варианты:**\n' + '\n'.join([f'`/wikipedia {x}`' for x in error.options])
+        result = get_content(error.options[0]) + '\n\n<b>Возможные варианты:</b>\n' + '\n'.join([f'`/wikipedia {x}`' for x in error.options])
 
     result = re.sub('=== (.*) ===', '<b>\\1</b>', result)
     result = re.sub('== (.*) ==', '<b>\\1</b>', result)

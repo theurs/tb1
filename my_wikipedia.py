@@ -36,7 +36,7 @@ def get_content(query: str) -> str:
         else:
             result = wikipedia.summary(query)
     except wikipedia.exceptions.PageError:
-        result = str(wikipedia.search(query))
+        result = '\n'.join([f'<code>/wikipedia {x}</code>' for x in wikipedia.search(query)])
         if not result:
             result = "Ничего не найдено"
     except wikipedia.exceptions.DisambiguationError as error:

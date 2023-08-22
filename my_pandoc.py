@@ -2,11 +2,13 @@
 #pip install pandoc
 
 
+import io
 import os
 import subprocess
 
 import magic
 import PyPDF2
+import pandas as pd
 
 import utils
 import my_yo
@@ -47,6 +49,12 @@ def fb2_to_text(data: bytes) -> str:
             text += page.extract_text()
         os.remove(input_file)
         return text
+    elif 'ms-excel' in book_type or 'vnd.openxmlformats-officedocument.spreadsheetml.sheet' in book_type:
+        df = pd.DataFrame(pd.read_excel(data))
+        buffer = io.StringIO()
+        df.to_csv(buffer)
+        os.remove(input_file)
+        return buffer.getvalue()
     else:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
 
@@ -75,7 +83,9 @@ def split_text_of_book(text: str, chunk_size: int) -> list:
 
 
 if __name__ == '__main__':
-    result = fb2_to_text(open('1.pdf', 'rb').read())
-    
-    for i in split_text_of_book(result, 5000):
-        print(i)
+    result = fb2_to_text(open('1.xls', 'rb').read())
+
+    # for i in split_text_of_book(result, 5000):
+    #     print(i)
+
+    print(result)

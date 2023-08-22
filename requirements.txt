@@ -19,6 +19,7 @@ nltk
 openai
 openai-whisper
 websocket-client
+pandas
 Pillow
 pornhub_api
 pronouncing
@@ -47,3 +48,4 @@ vosk
 youtube_transcript_api
 yt_dlp
 wikipedia
+xlrd

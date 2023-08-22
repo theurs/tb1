@@ -991,7 +991,7 @@ def handle_document_thread(message: telebot.types.Message):
                 folder_path = os.path.join(tempfile.gettempdir(), folder_name)
                 os.mkdir(folder_path)
                 # сохранить файл в этой папке
-                if file_name.endswith(('.pdf', '.txt', '.csv')):
+                if file_name.endswith(('.pdf', '.txt')):
                     full_path = os.path.join(folder_path, file_name)
                     with open(full_path, 'wb') as new_file:
                         new_file.write(file)

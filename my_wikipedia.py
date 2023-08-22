@@ -41,13 +41,13 @@ def get_content(query: str) -> str:
             result = "Ничего не найдено"
     except wikipedia.exceptions.DisambiguationError as error:
         result = get_content(error.options[0]) + '\n\n**Возможные варианты:**\n' + '\n'.join([f'`/wikipedia {x}`' for x in error.options])
-    # заменить всё что находится между двумя ==  на две **
-    result = re.sub('=== (.*) ===', '**\\1**', result)
-    result = re.sub('== (.*) ==', '**\\1**', result)
-    result = utils.bot_markdown_to_html(result)
+
+    result = re.sub('=== (.*) ===', '<b>\\1</b>', result)
+    result = re.sub('== (.*) ==', '<b>\\1</b>', result)
+    # result = utils.bot_markdown_to_html(result)
     return result
 
 
 if __name__ == '__main__':
-    p = get_content("hack")
+    p = get_content("сво")
     print(p)

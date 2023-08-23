@@ -682,7 +682,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         message = call.message
         chat_id = message.chat.id
         chat_id_full = get_topic_id(message)
-        check_blocked_user(chat_id_full)
+        # check_blocked_user(chat_id_full)
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"

@@ -225,9 +225,13 @@ class ShowAction(threading.Thread):
         self.action = action
         self.is_running = True
         self.timerseconds = 1
+        self.started = time.time()
 
     def run(self):
         while self.is_running:
+            # больше 3 минут не работаем, иногда что то там зависает хз
+            if self.started + 180 > time.time():
+                break
             try:
                 if self.is_topic:
                     bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)

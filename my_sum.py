@@ -166,7 +166,7 @@ def summ_url(url:str, download_only: bool = False) -> str:
    
     if download_only:
         if youtube:
-            r = f'URL: {url}\nСубтитры из видео на ютубе:\n\n{text}'
+            r = f'URL: {url}\nСубтитры из видео на ютубе (полное содержание, отметки времени были удалены):\n\n{text}'
         else:
             r = f'URL: {url}\nРаспознанное содержание веб страницы:\n\n{text}'
         return r

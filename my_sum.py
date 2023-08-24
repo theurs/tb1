@@ -121,9 +121,10 @@ def summ_text(text: str, subj: str = 'text') -> str:
     return summ_text_worker(text, subj)
 
 
-def summ_url(url:str) -> str:
+def summ_url(url:str, download_only: bool = False) -> str:
     """скачивает веб страницу, просит гптчат или бинг сделать краткое изложение текста, возвращает текст
-    если в ссылке ютуб то скачивает субтитры к видео вместо текста"""
+    если в ссылке ютуб то скачивает субтитры к видео вместо текста
+    может просто скачать текст без саммаризации, для другой обработки"""
     youtube = False
     pdf = False
     if '/youtu.be/' in url or 'youtube.com/' in url:
@@ -163,14 +164,20 @@ def summ_url(url:str) -> str:
             newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
             text = trafilatura.extract(content, config=newconfig)
    
-    #return text
-    if youtube:
-        r = summ_text(text, 'youtube_video')
-    elif pdf:
-        r = summ_text(text, 'pdf')
+    if download_only:
+        if youtube:
+            r = f'URL: {url}\nСубтитры из видео на ютубе:\n\n{text}'
+        else:
+            r = f'URL: {url}\nРаспознанное содержание веб страницы:\n\n{text}'
+        return r
     else:
-        r = summ_text(text, 'text')
-    return r
+        if youtube:
+            r = summ_text(text, 'youtube_video')
+        elif pdf:
+            r = summ_text(text, 'pdf')
+        else:
+            r = summ_text(text, 'text')
+        return r
 
 
 def is_valid_url(url: str) -> bool:

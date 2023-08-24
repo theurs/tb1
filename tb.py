@@ -2648,6 +2648,44 @@ def do_task(message, custom_prompt: str = ''):
         # если в сообщении только ссылка и она отправлена боту в приват
         # тогда сумморизируем текст из неё
         if my_sum.is_valid_url(message.text) and is_private:
+            # если в режиме клауда чата то закидываем веб страницу как файл прямо в него
+            if chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] == 'claude':
+                with ShowAction(message, 'typing'):
+                    file_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10)) + '.txt'
+                    text = my_sum.summ_url(message.text, True)
+                    # сгенерировать случайное имя папки во временной папке для этого файла
+                    folder_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+                    # создать эту папку во временной папке. как получить путь до временной папки в системе?
+                    folder_path = os.path.join(tempfile.gettempdir(), folder_name)
+                    os.mkdir(folder_path)
+                    # сохранить файл в этой папке
+                    full_path = os.path.join(folder_path, file_name)
+                    with open(full_path, 'w', encoding='utf-8') as new_file:
+                        new_file.write(text)
+                    caption = message.caption or 'Вот файл'
+                    message.text = f'[File uploaded for Claude] [{file_name}] ' + caption
+                    my_log.log_echo(message)
+                    try:
+                        response = my_claude.chat(caption, chat_id_full, False, full_path)
+                        response = utils.bot_markdown_to_html(response)
+                    except Exception as error:
+                        print(f'tb:handle_document_thread:claude: {error}')
+                        my_log.log2(f'tb:handle_document_thread:claude: {error}')
+                        msg = f'Что-то пошло не так'
+                        bot.reply_to(message, msg)
+                        my_log.log2(msg)
+                        os.remove(full_path)
+                        os.rmdir(folder_path)
+                        return
+                    # удалить сначала файл а потом и эту папку
+                    os.remove(full_path)
+                    os.rmdir(folder_path)
+                    my_log.log_echo(message, response)
+                    reply_to_long_message(message, response, parse_mode='HTML', reply_markup=get_keyboard('claude_chat', message))
+                return
+
+        
+            
             message.text = '/sum ' + message.text
             summ_text(message)
             return

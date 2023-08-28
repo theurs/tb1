@@ -2541,7 +2541,6 @@ def do_task(message, custom_prompt: str = ''):
     """функция обработчик сообщений работающая в отдельном потоке"""
 
     chat_id_full = get_topic_id(message)
-    check_blocked_user(chat_id_full)
 
     if message.text in ['🎨Нарисуй', '🌐Найди', '📋Перескажи', '🎧Озвучь', '🈶Переведи', '⚙️Настройки']:
         if message.text == '🎨Нарисуй':
@@ -2607,6 +2606,8 @@ def do_task(message, custom_prompt: str = ''):
         if SUPER_CHAT[chat_id_full] == 1:
             is_private = True
 
+        check_blocked_user(chat_id_full)
+        
         # удаляем пробелы в конце каждой строки
         message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
 

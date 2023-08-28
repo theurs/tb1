@@ -44,7 +44,7 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
         openai.api_key = server[1]
 
         try:
-            # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
+            # тут можно добавить степень творчества(бреда) от 0 до 2 дефолт - temperature = 1
             completion = openai.ChatCompletion.create(
                 model = current_model,
                 messages=messages,

@@ -380,4 +380,5 @@ def translit_sentence(sentence: str) -> str:
 
 
 if __name__ == "__main__":
-    print(translit_sentence('''This thing (seemed) to "overpower" [and] {astonish} the little dark-brown dog, and wounded him to the heart. He sank down in despair at the child's feet. When the blow was repeated, together with an admonition in childish sentences, he turned over upon his back, and held his paws in a peculiar manner. At the same time with his ears and his eyes he offered a small prayer to the child.'''))
+    a = tts_google('привет')
+    print(a)

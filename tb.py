@@ -1786,7 +1786,7 @@ def image_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
-    check_blocked_user(chat_id_full)
+    # check_blocked_user(chat_id_full)
 
     with semaphore_talks:
         help = """/image <текстовое описание картинки, что надо нарисовать>

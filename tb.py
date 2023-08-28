@@ -88,6 +88,11 @@ PROMPTS = my_dic.PersistentDict('db/prompts.pkl')
 # запоминаем промпты для повторения рисования
 IMAGE_PROMPTS = my_dic.PersistentDict('db/image_prompts.pkl')
 
+# температура для chatGPT, от 0 до 1, чем больше чем больше бреда и вранья будет
+# по умолчанию - авто
+# {id:float [0:1]}
+TEMPERATURE = my_dic.PersistentDict('db/temperature.pkl')
+
 # запоминаем диалоги в чатах для того что бы потом можно было сделать самморизацию,
 # выдать краткое содержание
 CHAT_LOGS = my_dic.PersistentDict('db/chat_logs.pkl')
@@ -269,6 +274,12 @@ def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str
         str: возвращает ответ который бот может показать, возможно '' или None
     """
 
+    # в каждом чате своя температура
+    if chat_id in TEMPERATURE:
+        temp = TEMPERATURE[chat_id]
+    else:
+        temp = 0
+
     # в каждом чате свой собственный промт
     if chat_id in PROMPTS:
         current_prompt = PROMPTS[chat_id]
@@ -300,7 +311,7 @@ def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str
     if engine == 'gpt':
         # пытаемся получить ответ
         try:
-            resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages, chat_id=chat_id)
+            resp = gpt_basic.ai(prompt = text, temp = temp, messages = current_prompt + new_messages, chat_id=chat_id)
             if resp:
                 new_messages = new_messages + [{"role":    "assistant",
                                                     "content": resp}]
@@ -328,7 +339,7 @@ def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str
                     new_messages = new_messages[2:]
 
                 try:
-                    resp = gpt_basic.ai(prompt = text, messages = current_prompt + new_messages, chat_id=chat_id)
+                    resp = gpt_basic.ai(prompt = text, temp=temp, messages = current_prompt + new_messages, chat_id=chat_id)
                 except Exception as error3:
                     print(error3)
                     return 'GPT не ответил.'
@@ -1418,7 +1429,53 @@ def restart(message: telebot.types.Message):
         bot.reply_to(message, 'Эта команда только для админов.', reply_markup=get_keyboard('hide', message))
 
 
-@bot.message_handler(commands=['model']) 
+@bot.message_handler(commands=['temperature', 'temp'])
+def set_new_temperature(message: telebot.types.Message):
+    """меняет температуру для chatGPT
+    /temperature <0...2>
+    по умолчанию 0 - автоматическая
+    чем меньше температура тем менее творчейский ответ, меньше бреда и вранья,
+    и желания давать ответ
+    """
+
+    chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
+
+    if len(message.text.split()) == 2:
+        try:
+            new_temp = float(message.text.split()[1])
+        except ValueError:
+            new_temp = -1
+    else:
+        new_temp = -1
+
+    if new_temp < 0 or new_temp > 2:
+        new_temp = -1
+
+    if len(message.text.split()) < 2 or new_temp == -1:
+        help = """/temperature <0-1>
+
+меняет температуру для chatGPT
+
+Температура у ChatGPT - это параметр, который контролирует степень случайности генерируемого текста. Чем выше температура, тем более случайным и креативным будет текст. Чем ниже температура, тем более точным и сфокусированным будет текст.
+
+Например, если вы хотите, чтобы ChatGPT сгенерировал стихотворение, вы можете установить температуру выше 1,5. Это будет способствовать тому, что ChatGPT будет выбирать более неожиданные и уникальные слова. Однако, если вы хотите, чтобы ChatGPT сгенерировал текст, который является более точным и сфокусированным, вы можете установить температуру ниже 0,5. Это будет способствовать тому, что ChatGPT будет выбирать более вероятные и ожидаемые слова.
+
+По-умолчанию 0 - автоматическая
+
+`/temperature 0.1`
+`/temperature 1`
+`/temperature 1.9` На таких высоких значения он пишет один сплошной бред
+"""
+        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
+        return
+
+    TEMPERATURE[chat_id_full] = new_temp
+    bot.reply_to(message, f'Новая температура для chatGPT установлена: {new_temp}', parse_mode='Markdown',
+                 reply_markup=get_keyboard('hide', message))
+
+
+@bot.message_handler(commands=['model'])
 def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
 

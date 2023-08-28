@@ -19,7 +19,7 @@ import my_log
 CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
 
 
-def ai(prompt: str = '', temp: float = 0.5, max_tok: int = 2000, timeou: int = 120, messages = None,
+def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 120, messages = None,
        chat_id = None, model_to_use: str = '') -> str:
     """Сырой текстовый запрос к GPT чату, возвращает сырой ответ
     """

@@ -965,7 +965,6 @@ def handle_document_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     chat_id_full = get_topic_id(message)
-    check_blocked_user(chat_id_full)
 
     is_private = message.chat.type == 'private'
     if chat_id_full not in SUPER_CHAT:
@@ -981,6 +980,7 @@ def handle_document_thread(message: telebot.types.Message):
     with semaphore_talks:
         # если в режиме клауда чата то закидываем файл прямо в него
         if chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] == 'claude':
+            check_blocked_user(chat_id_full)
             with ShowAction(message, 'typing'):
                 file_name = message.document.file_name
                 file_info = bot.get_file(message.document.file_id)
@@ -1027,6 +1027,7 @@ def handle_document_thread(message: telebot.types.Message):
         mimes = ('fictionbook', 'epub' ,'plain' , 'vnd.openxmlformats-officedocument.wordprocessingml.document',
                  'html', 'msword', 'vnd.oasis.opendocument.text', 'rtf', 'x-mobipocket-ebook')
         if is_private and any([x for x in mimes if x in message.document.mime_type]):
+            check_blocked_user(chat_id_full)
             with ShowAction(message, 'typing'):
                 file_name = message.document.file_name
                 file_info = bot.get_file(message.document.file_id)
@@ -1051,6 +1052,7 @@ def handle_document_thread(message: telebot.types.Message):
         if message.caption \
         and message.caption.startswith(('что там','перескажи','краткое содержание', 'кратко')) \
         and message.document.mime_type in ('text/plain', 'application/pdf'):
+            check_blocked_user(chat_id_full)
             with ShowAction(message, 'typing'):
                 file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
@@ -1078,6 +1080,7 @@ def handle_document_thread(message: telebot.types.Message):
         # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
         caption = message.caption or ''
         if is_private or caption.lower() in ['прочитай', 'читай']:
+            check_blocked_user(chat_id_full)
             # если текстовый файл то пытаемся озвучить как книгу. русский голос
             if message.document.mime_type == 'text/plain':
                 with ShowAction(message, 'record_audio'):
@@ -1105,6 +1108,7 @@ def handle_document_thread(message: telebot.types.Message):
 
         # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
         if is_private or caption.lower() in ['прочитай', 'читай']:
+            check_blocked_user(chat_id_full)
             with ShowAction(message, 'upload_document'):
                 # получаем самый большой документ из списка
                 document = message.document
@@ -1169,7 +1173,6 @@ def handle_photo_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     chat_id_full = get_topic_id(message)
-    check_blocked_user(chat_id_full)
 
     is_private = message.chat.type == 'private'
     if chat_id_full not in SUPER_CHAT:
@@ -1185,6 +1188,7 @@ def handle_photo_thread(message: telebot.types.Message):
         # новости в телеграме часто делают как картинка + длинная подпись к ней
         if message.forward_from_chat and message.caption:
             # у фотографий нет текста но есть заголовок caption. его и будем переводить
+            check_blocked_user(chat_id_full)
             with ShowAction(message, 'typing'):
                 text = my_trans.translate(message.caption)
             if text:
@@ -1199,6 +1203,7 @@ def handle_photo_thread(message: telebot.types.Message):
         if not is_private and not gpt_basic.detect_ocr_command(message.caption.lower()): return
 
         with ShowAction(message, 'typing'):
+            check_blocked_user(chat_id_full)
             # получаем самую большую фотографию из списка
             photo = message.photo[-1]
             fp = io.BytesIO()
@@ -1228,7 +1233,7 @@ def handle_video_thread(message: telebot.types.Message):
     my_log.log_media(message)
 
     chat_id_full = get_topic_id(message)
-    check_blocked_user(chat_id_full)
+
     is_private = message.chat.type == 'private'
     if chat_id_full not in SUPER_CHAT:
         SUPER_CHAT[chat_id_full] = 0
@@ -1241,6 +1246,7 @@ def handle_video_thread(message: telebot.types.Message):
     with semaphore_talks:
         # пересланные сообщения пытаемся перевести даже если в них видео
         if message.forward_from_chat:
+            check_blocked_user(chat_id_full)
             # у видео нет текста но есть заголовок caption. его и будем переводить
             text = my_trans.translate(message.caption)
             if text:
@@ -1251,6 +1257,7 @@ def handle_video_thread(message: telebot.types.Message):
 
     with semaphore_talks:
         with ShowAction(message, 'typing'):
+            check_blocked_user(chat_id_full)
             # Создание временного файла 
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 file_path = temp_file.name
@@ -1272,6 +1279,7 @@ def handle_video_thread(message: telebot.types.Message):
             else:
                 bot.reply_to(message, 'Очень интересно, но ничего не понятно.', reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, '[ASR] no results')
+
 
 def is_for_me(cmd: str):
     """Checks who the command is addressed to, this bot or another one.
@@ -1786,7 +1794,7 @@ def image_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
-    # check_blocked_user(chat_id_full)
+    check_blocked_user(chat_id_full)
 
     with semaphore_talks:
         help = """/image <текстовое описание картинки, что надо нарисовать>

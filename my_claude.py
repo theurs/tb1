@@ -147,12 +147,12 @@ if __name__ == '__main__':
 
     # print(chat('о чем это', 'test', False, 'C:/Users/user/Downloads/Writing Book Description.pdf'))
     # print(chat('переведи первый абзац на русский', 'test'))
-    print(chat('дальше', 'test'))
+    #print(chat('дальше', 'test'))
 
-    # while True:
-    #     prompt = input("> ")
-    #     if prompt.strip() == 'забудь':
-    #         reset_claude_chat('01')
-    #         continue
-    #     response = chat(prompt, '01')
-    #     print('bot:', response)
+    while True:
+        prompt = input("> ")
+        if prompt.strip() == 'забудь':
+            reset_claude_chat('01')
+            continue
+        response = chat(prompt, '01')
+        print('bot:', response)

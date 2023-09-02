@@ -475,12 +475,16 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup.add(button1, button2, button3, button4, button5)
         return markup
     elif kbd == 'mem':
+        if disabled_kbd(chat_id_full):
+            return None
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Стереть историю", callback_data='clear_history')
         button2 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
         markup.add(button1, button2)
         return markup
     elif kbd == 'hide':
+        if disabled_kbd(chat_id_full):
+            return None
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
         markup.add(button1)
@@ -499,6 +503,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup.row(button1, button2, button3, button4)
         return markup       
     elif kbd == 'translate_and_repair':
+        if disabled_kbd(chat_id_full):
+            return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
         button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
         button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
@@ -508,6 +514,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup.row(button4)
         return markup
     elif kbd == 'translate':
+        if disabled_kbd(chat_id_full):
+            return None
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton("Скрыть", callback_data='erase_answer')
         button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')

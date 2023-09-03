@@ -11,6 +11,10 @@ from py_trans import PyTranslator
 import utils
 
 
+# keep in memory the translation
+TRANSLATE_CACHE = {}
+
+
 def count_russian_words_not_in_ukrainian_dict(text):
     """Считаем количество русских слов в тексте, эти слова не должны быть в украинском и белорусском"""
     platform = utils.platform().lower()
@@ -82,22 +86,38 @@ def detect_lang(text):
 
 
 def translate_text(text, lang = 'ru'):
-    """ Возвращает None если не удалось перевести и текст перевода если удалось """
+    key = str((text, lang))
+    if key in TRANSLATE_CACHE:
+        return TRANSLATE_CACHE[key]
     x = PyTranslator()
-    r = x.translate(text, lang)
-    if r['status'] == 'success':
-        return r['translation']
+    result = x.translate(text, lang)
+    if result['status'] == 'success':
+        TRANSLATE_CACHE[key] = result['translation']
+        return result['translation']
     return None
-    
+
 
 def translate_text2(text, lang = 'ru'):
-    """ Переводит text на язык lang с помощью утилиты trans. Возвращает None если не удалось перевести и текст перевода если удалось """
+    text = text.strip()
+    startswithslash = False
+    if text.startswith('/'):
+        text[0] = '@'
+        startswithslash = True
+    key = str((text, lang))
+    if key in TRANSLATE_CACHE:
+        return TRANSLATE_CACHE[key]
+    if 'windows' in utils.platform().lower():
+        return translate_text(text, lang)
     process = subprocess.Popen(['trans', f':{lang}', '-b', text], stdout = subprocess.PIPE)
     output, error = process.communicate()
-    r = output.decode('utf-8').strip()
+    result = output.decode('utf-8').strip()
     if error != None:
         return None
-    return r
+    if startswithslash:
+        if result.startswith('@'):
+            result[0] = '/'
+    TRANSLATE_CACHE[key] = result
+    return result
 
 
 def translate(text):
@@ -119,17 +139,17 @@ def translate(text):
     
 
 if __name__ == "__main__":
-    text = "Вітаю! Я - інфармацыйная сістэма, якая можа адказаць на запытанні ў вас. Я не магу размаўляць на людскай мове, але вы можаце пісаць мне паведамленні на любой мове, якую вы ведаеце. Дзякуй за карыстанне мной!"
-
+    # text = "Вітаю! Я - інфармацыйная сістэма, якая можа адказаць на запытанні ў вас. Я не магу размаўляць на людскай мове, але вы можаце пісаць мне паведамленні на любой мове, якую вы ведаеце. Дзякуй за карыстанне мной!"
+    text = '/trans me'
     
     #print(translate_text2(text, 'en'))
     
-    #print(translate_text(text))
-    #print(translate_text2(text))
+    # print(translate_text(text))
+    print(translate_text2(text))
 
     #print(translate(text))
 
     #print(detect_lang('історією та культурою. Только не говори что надо'))
     #print(detect_langs(text)[0].lang)
 
-    print(translate_text('@', 'en'))
+    # print(translate_text('@', 'en'))

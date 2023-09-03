@@ -101,7 +101,7 @@ def translate_text2(text, lang = 'ru'):
     text = text.strip()
     startswithslash = False
     if text.startswith('/'):
-        text[0] = '@'
+        text = text.replace('/', '@', 1)
         startswithslash = True
     key = str((text, lang))
     if key in TRANSLATE_CACHE:
@@ -115,7 +115,7 @@ def translate_text2(text, lang = 'ru'):
         return None
     if startswithslash:
         if result.startswith('@'):
-            result[0] = '/'
+            result = result.replace('@', '/', 1)
     TRANSLATE_CACHE[key] = result
     return result
 

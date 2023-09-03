@@ -8,6 +8,7 @@ import enchant
 from langdetect import detect, detect_langs
 from py_trans import PyTranslator
 
+import my_log
 import utils
 
 
@@ -86,6 +87,16 @@ def detect_lang(text):
 
 
 def translate_text(text, lang = 'ru'):
+    """
+    Translates the given text into the specified language.
+
+    Parameters:
+        text (str): The text to be translated.
+        lang (str, optional): The language code to translate the text into. Defaults to 'ru'.
+
+    Returns:
+        str or None: The translated text if successful, or None if the translation fails.
+    """
     key = str((text, lang))
     if key in TRANSLATE_CACHE:
         return TRANSLATE_CACHE[key]
@@ -94,10 +105,24 @@ def translate_text(text, lang = 'ru'):
     if result['status'] == 'success':
         TRANSLATE_CACHE[key] = result['translation']
         return result['translation']
+    my_log.log2(f'my_trans:translate_text: {result["status"]}\n\n{text}\n\n{lang}')
     return None
 
 
 def translate_text2(text, lang = 'ru'):
+    """
+    Translates the given text into the specified language using an external 
+    translation service. Requires the `trans` command to be installed.
+
+    Args:
+        text (str): The text to be translated.
+        lang (str, optional): The language to translate the text to. Defaults to 'ru'.
+    
+    Returns:
+        str: The translated text.
+    """
+    if 'windows' in utils.platform().lower():
+        return translate_text(text, lang)
     text = text.strip()
     startswithslash = False
     if text.startswith('/'):
@@ -106,12 +131,11 @@ def translate_text2(text, lang = 'ru'):
     key = str((text, lang))
     if key in TRANSLATE_CACHE:
         return TRANSLATE_CACHE[key]
-    if 'windows' in utils.platform().lower():
-        return translate_text(text, lang)
     process = subprocess.Popen(['trans', f':{lang}', '-b', text], stdout = subprocess.PIPE)
     output, error = process.communicate()
     result = output.decode('utf-8').strip()
-    if error != None:
+    if error:
+        my_log.log2(f'my_trans:translate_text2: {error}\n\n{text}\n\n{lang}')
         return None
     if startswithslash:
         if result.startswith('@'):
@@ -129,27 +153,14 @@ def translate(text):
         return None
     # переводим если язык не русский но определился успешно
     if d and d != 'ru':
-        # этот вариант почему то заметно хуже работает, хотя вроде бы тот же самый гугл переводчик
-        #return translate_text(text)
-        
-        #return gpt_basic.translate_text(text) or translate_text2(text) or None
-        # отключил ГПТ, он часто включает цензуру
         return translate_text2(text) or translate_text(text) or None
     return None
-    
+
 
 if __name__ == "__main__":
-    # text = "Вітаю! Я - інфармацыйная сістэма, якая можа адказаць на запытанні ў вас. Я не магу размаўляць на людскай мове, але вы можаце пісаць мне паведамленні на любой мове, якую вы ведаеце. Дзякуй за карыстанне мной!"
+    # text = "Вітаю! Я - інфармацыйная сістэма, якая можа адказаць на запытанні ў вас."
     text = '/trans me'
     
-    #print(translate_text2(text, 'en'))
+    print(translate_text2(text, 'ru'))
     
     # print(translate_text(text))
-    print(translate_text2(text))
-
-    #print(translate(text))
-
-    #print(detect_lang('історією та культурою. Только не говори что надо'))
-    #print(detect_langs(text)[0].lang)
-
-    # print(translate_text('@', 'en'))

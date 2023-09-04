@@ -85,7 +85,7 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     return text
 
 
-def stt(input_file: str) -> str:
+def stt(input_file: str, lang: str = 'ru') -> str:
     """
     This function takes an input file path as a parameter and returns the transcribed text from the audio file.
     
@@ -101,7 +101,7 @@ def stt(input_file: str) -> str:
     text = ''
 
     try: # сначала пробуем через гугл
-       text = stt_google(input_file)
+        text = stt_google(input_file, lang)
     except AssertionError:
         pass
     except sr.UnknownValueError as unknown_value_error:
@@ -118,6 +118,7 @@ def stt(input_file: str) -> str:
         try:
             # затем opanai
             assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
+            # auto detect language?
             text = gpt_basic.stt(input_file)
         except Exception as error:
             print(error, text)

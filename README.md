@@ -118,6 +118,9 @@ default_bot_name = 'бот'
 # 'bard', 'claude', 'chatgpt', 'bing'
 chat_mode_default = 'chatgpt'
 
+# default locale, язык на который переводятся все сообщения
+DEFAULT_LANGUAGE = 'ru'
+
 # список админов, кому можно использовать команды /restart и вкл-выкл автоответы в чатах
 admins = [xxx,]
 

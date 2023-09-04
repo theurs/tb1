@@ -2629,9 +2629,13 @@ def id_cmd_handler(message: telebot.types.Message):
 
     user_id = message.from_user.id
     chat_id_full = get_topic_id(message)
+    reported_language = message.from_user.language_code
     bot.reply_to(message, f'''{tr("ID пользователя:", lang)} {user_id}
                  
-{tr("ID группы:", lang)} {chat_id_full}''')
+{tr("ID группы:", lang)} {chat_id_full}
+
+{tr("Reported language:", lang)} {reported_language}
+''')
 
 
 def set_default_commands(message: telebot.types.Message):

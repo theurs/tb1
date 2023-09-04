@@ -2634,7 +2634,7 @@ def id_cmd_handler(message: telebot.types.Message):
                  
 {tr("ID группы:", lang)} {chat_id_full}
 
-{tr("Язык в телеграме:", lang)} {reported_language}
+{tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
 ''')
 
 

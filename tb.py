@@ -2694,7 +2694,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             msg_bot_names += '[OK] Установлено имя бота для языка ' + lang + '\n'
         else:
             msg_bot_names += '[FAIL] Установлено имя бота для языка ' + lang + '\n'
-    reply_to_long_message((message, msg_bot_names)
+    reply_to_long_message(message, msg_bot_names)
 
     msg_descriptions = ''
     for lang in most_used_langs:
@@ -2709,7 +2709,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             msg_descriptions += '[OK] Установлено новое описание бота для языка ' + lang + '\n'
         else:
             msg_descriptions += '[FAIL] Установлено новое описание бота для языка ' + lang + '\n'
-    reply_to_long_message((message, msg_descriptions)
+    reply_to_long_message(message, msg_descriptions)
 
     msg_descriptions = ''
     for lang in most_used_langs:
@@ -2724,7 +2724,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             msg_descriptions += '[OK] Установлено новое короткое описание бота для языка ' + lang + '\n'
         else:
             msg_descriptions += '[FAIL] Установлено новое короткое описание бота для языка ' + lang + '\n'
-    reply_to_long_message((message, msg_descriptions)
+    reply_to_long_message(message, msg_descriptions)
 
 
 def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,

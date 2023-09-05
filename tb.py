@@ -2702,7 +2702,7 @@ def set_default_commands_thread(message: telebot.types.Message):
         try:
             result = bot.set_my_description(tr(new_description, lang), language_code=lang)
         except Exception as error_set_description:
-            my_log.log2(f'Не удалось установить описание бота {lang}: {tr(new_description, lang)}')
+            my_log.log2(f'Не удалось установить описание бота {lang}: {tr(new_description, lang)}'+'\n\n'+str(error_set_description))
             msg_descriptions += '[FAIL] Установлено новое описание бота для языка ' + lang + '\n'
             continue
         if result:
@@ -2717,7 +2717,7 @@ def set_default_commands_thread(message: telebot.types.Message):
         try:
             result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
         except Exception as error_set_short_description:
-            my_log.log2(f'Не удалось установить короткое описание бота: {tr(new_short_description, lang)}')
+            my_log.log2(f'Не удалось установить короткое описание бота: {tr(new_short_description, lang)}'+'\n\n'+str(error_set_short_description))
             msg_descriptions += '[FAIL] Установлено новое короткое описание бота для языка ' + lang + '\n'
             continue
         if result:

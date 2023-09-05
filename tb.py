@@ -3119,7 +3119,10 @@ def do_task(message, custom_prompt: str = ''):
                     try:
                         # имя пользователя если есть или ник
                         user_name = message.from_user.first_name or message.from_user.username or ''
-                        answer = my_bard.chat(message.text, chat_id_full, user_name = user_name)
+                        chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
+                        if chat_name:
+                            chat_name = chat_name
+                        answer = my_bard.chat(message.text, chat_id_full, user_name = user_name, lang = lang, is_private = is_private)
                         # answer = my_bard.convert_markdown(answer)
                         # my_log.log_echo(message, answer, debug = True)
                         if not VOICE_ONLY_MODE[chat_id_full]:

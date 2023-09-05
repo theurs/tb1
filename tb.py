@@ -2638,16 +2638,16 @@ def id_cmd_handler(message: telebot.types.Message):
 ''')
 
 
+@bot.message_handler(commands=['init'])
 def set_default_commands(message: telebot.types.Message):
     thread = threading.Thread(target=set_default_commands_thread, args=(message,))
     thread.start()
-@bot.message_handler(commands=['init'])
 def set_default_commands_thread(message: telebot.types.Message):
     """
     Reads a file containing a list of commands and their descriptions,
     and sets the default commands for the bot.
     """
-    most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'es', 'fa', 'fi', 'fr', 'hi', 'hu', 'id', 'in', 'it',
+    most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr', 'hi', 'hu', 'id', 'in', 'it',
                        'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro', 'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'ur',
                        'vi', 'zh']
 

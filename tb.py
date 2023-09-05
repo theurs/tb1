@@ -2647,9 +2647,10 @@ def set_default_commands_thread(message: telebot.types.Message):
     Reads a file containing a list of commands and their descriptions,
     and sets the default commands for the bot.
     """
-    most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr', 'hi', 'hu', 'id', 'in', 'it',
-                       'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro', 'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'ur',
-                       'vi', 'zh']
+    # most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr', 'hi',
+    #                    'hu', 'id', 'in', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro',
+    #                    'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'ur', 'vi', 'zh']
+    most_used_langs = supported_langs_trans
 
     msg_commands = ''
     for lang in most_used_langs:
@@ -2682,15 +2683,18 @@ def set_default_commands_thread(message: telebot.types.Message):
     new_description = cfg.bot_description.strip()
     new_short_description = cfg.bot_short_description.strip()
 
-    try:
-        result = bot.set_my_name(new_bot_name)
-    except Exception as error_set_name:
-        my_log.log2(f'Не удалось установить имя бота: {new_bot_name}')
-        bot.reply_to(message, 'Не удалось установить имя бота')
-    if result:
-        bot.reply_to(message, f'Установлено новое имя бота {new_bot_name}')
-    else:
-        bot.reply_to(message, f'Не удалось установить имя бота {new_bot_name}')
+    msg_bot_names = ''
+    for lang in most_used_langs:
+        result = False
+        try:
+            result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+        except Exception as error_set_name:
+            my_log.log2(f'Не удалось установить имя бота: {tr(new_bot_name, lang)}'+'\n\n'+str(error_set_name))
+        if result:
+            msg_bot_names += '[OK] Установлено имя бота для языка ' + lang + '\n'
+        else:
+            msg_bot_names += '[FAIL] Установлено имя бота для языка ' + lang + '\n'
+    bot.reply_to(message, msg_bot_names)
 
     msg_descriptions = ''
     for lang in most_used_langs:

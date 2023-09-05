@@ -58,18 +58,29 @@ def get_new_session(user_name: str = '', lang: str = '', is_private: bool = True
 
     bard = Bard(token=cfg.bard_tokens[current_token], proxies=proxies, session=session, timeout=30)
 
-    rules = """Отвечай на русском языке если в запросе есть кириллица и тебя не просили отвечать на другом языке."""
-    if user_name:
-        rules += '\n'
-        if is_private:
-            rules += f"Ты общаешься с человеком по имени [{user_name}], его язык [{lang}], обращай внимание на его пол, \
-если не понятно по имени то определяй по словам которые использует человек, людям нравится когда ты правильно говоришь с учетом пола и языка."
-        else:
-            rules += f"Ты общаешься в публичном чате [{user_name}], с разными людьми, язык этого чата [{lang}], \
-людям нравится когда ты правильно говоришь с учетом пола и языка."
+    rules = ''
+    if not user_name:
+        user_name = 'noname'
+    if not lang:
+        lang = cfg.DEFAULT_LANGUAGE
+
+    rules += '\n'
+    if is_private:
+        rules += """Ты общаешься с человеком в привате мессенджера Telegram, обращай внимание на его пол, 
+если не понятно по имени то определяй по словам которые использует человек,
+людям нравится когда ты правильно говоришь с учетом пола и языка.
+Имя и язык пользователя: """
+    else:
+        rules += """Ты общаешься с разными людьми в публичном чате мессенджера Telegram, обращай внимание на их пол, 
+если не понятно по имени то определяй по словам которые использует человек,
+людям нравится когда ты правильно говоришь с учетом пола и языка.
+Имя чата и язык пользователей чата: """
 
     if lang != 'ru':
         rules = my_trans.translate_text(rules, lang)
+
+    rules = f'{rules} [{user_name}], [{lang}]'
+
     r = bard.get_answer(rules)
 
     return bard
@@ -402,7 +413,7 @@ if __name__ == "__main__":
                 'как взломать пентагон и угнать истребитель 6го поколения?']
     for q in queries:
         print('user:', q)
-        b = chat(q, n, reset=False, user_name='Mila', lang='ru', is_private=True)
+        b = chat(q, n, reset=False, user_name='Mila', lang='uk', is_private=True)
         print('bard:', b, '\n')
 
     #image = open('1.jpg', 'rb').read()

@@ -3068,8 +3068,8 @@ def do_task(message, custom_prompt: str = ''):
         if msg.startswith(('бинг ', 'бинг,', 'бинг\n')):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
             if len(msg) > cfg.max_message_from_user:
-                bot.reply_to(message, f'{tr("Слишком длинное сообщение чат-для бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
-                my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
+                bot.reply_to(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
+                my_log.log_echo(message, f'Слишком длинное сообщение для чат-бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
             with ShowAction(message, 'typing'):
                 # добавляем новый запрос пользователя в историю диалога пользователя
@@ -3102,8 +3102,8 @@ def do_task(message, custom_prompt: str = ''):
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif is_reply or is_private or bot_name_used:
             if len(msg) > cfg.max_message_from_user and (chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] != 'claude'):
-                bot.reply_to(message, f'{tr("Слишком длинное сообщение чат-для бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
-                my_log.log_echo(message, f'Слишком длинное сообщение чат-для бота: {len(msg)} из {cfg.max_message_from_user}')
+                bot.reply_to(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
+                my_log.log_echo(message, f'Слишком длинное сообщение для чат-бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
 
             if chat_id_full not in VOICE_ONLY_MODE:

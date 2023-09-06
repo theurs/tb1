@@ -2532,7 +2532,11 @@ def ocr_setup(message: telebot.types.Message):
         print(f'tb:ocr_setup: {error}')
         my_log.log2(f'tb:ocr_setup: {error}')
 
-        msg = f'''{tr("""Меняет настройки OCR
+        msg = f'''/ocr langs
+
+<code>/ocr rus+eng</code>
+
+{tr("""Меняет настройки OCR
 
 Не указан параметр, какой язык (код) или сочетание кодов например""", lang)} rus+eng+ukr
 
@@ -2550,7 +2554,7 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
     msg = f'{tr("Старые настройки:", lang)} {llang}\n\n{tr("Новые настройки:", lang)} {arg}'
     OCR_DB[chat_id_full] = arg
     
-    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+    bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['start'])

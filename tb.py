@@ -2679,6 +2679,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             result = False
             try:
                 result = bot.set_my_commands(commands, language_code=lang)
+                time.sleep(2)
             except Exception as error_set_command:
                 my_log.log2(f'Не удалось установить команды по умолчанию для языка {lang}: {error_set_command} ')
             if result:
@@ -2699,6 +2700,8 @@ def set_default_commands_thread(message: telebot.types.Message):
             result = False
             try:
                 result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+                # нет ограничений на установку имени?
+                # time.sleep(2)
             except Exception as error_set_name:
                 my_log.log2(f'Не удалось установить имя бота: {tr(new_bot_name, lang)}'+'\n\n'+str(error_set_name))
             if result:
@@ -2712,6 +2715,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             result = False
             try:
                 result = bot.set_my_description(tr(new_description, lang), language_code=lang)
+                time.sleep(2)
             except Exception as error_set_description:
                 my_log.log2(f'Не удалось установить описание бота {lang}: {tr(new_description, lang)}'+'\n\n'+str(error_set_description))
                 msg_descriptions += '[FAIL] Установлено новое описание бота для языка ' + lang + '\n'
@@ -2727,6 +2731,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             result = False
             try:
                 result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
+                time.sleep(2)
             except Exception as error_set_short_description:
                 my_log.log2(f'Не удалось установить короткое описание бота: {tr(new_short_description, lang)}'+'\n\n'+str(error_set_short_description))
                 msg_descriptions += '[FAIL] Установлено новое короткое описание бота для языка ' + lang + '\n'

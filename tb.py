@@ -2683,7 +2683,7 @@ def set_default_commands_thread(message: telebot.types.Message):
                         description = tr(description, lang)
                         commands.append(telebot.types.BotCommand(command, description))
                 except Exception as error:
-                    print(error)
+                    my_log.log2(f'Не удалось прочитать команды по умолчанию для языка {lang}: {error}')
         result = False
         try:
             result = bot.set_my_commands(commands, language_code=lang)

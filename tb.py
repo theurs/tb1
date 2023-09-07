@@ -1807,6 +1807,8 @@ def ask_thread(message: telebot.types.Message):
 
     try:
         query = message.text.split(maxsplit=1)[1]
+        formatted_date = datetime.datetime.now().strftime("%d %B %Y %H:%M")
+        query = f'[{formatted_date}] {query}'
     except Exception as error2:
         print(error2)
         help = f"""/ask <{tr("текст запроса", lang)}>
@@ -3069,6 +3071,13 @@ def do_task(message, custom_prompt: str = ''):
                 DIALOGS_DB[chat_id_full] = n
             return
 
+        # Получить строку с локализованной датой
+        formatted_date = datetime.datetime.now().strftime("%d %B %Y %H:%M")
+        from_user_name = ((message.from_user.first_name or '') + ' ' + (message.from_user.last_name or '')).strip()
+        if not from_user_name:
+            from_user_name = message.from_user.username or 'unknown'
+        # message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
+
         # можно перенаправить запрос к бингу, но он долго отвечает
         # my_log.log2(f'{is_reply} {is_private} {SUPER_CHAT[chat_id_full]} {chat_id_full}')
         # это не локализуем
@@ -3105,10 +3114,10 @@ def do_task(message, custom_prompt: str = ''):
             message.text = f'/ddg {msg[5:]}'
             ddg(message)
             return
-
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif is_reply or is_private or bot_name_used:
-            if len(msg) > cfg.max_message_from_user and (chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] != 'claude'):
+            # if len(msg) > cfg.max_message_from_user and (chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] != 'claude'):
+            if len(msg) > cfg.max_message_from_user:
                 bot.reply_to(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
                 my_log.log_echo(message, f'Слишком длинное сообщение для чат-бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
@@ -3165,6 +3174,7 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     return
+                message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
                 with ShowAction(message, action):
                     try:
                         # имя пользователя если есть или ник
@@ -3194,6 +3204,7 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с клод чатом
             if CHAT_MODE[chat_id_full] == 'claude':
+                message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
                 with ShowAction(message, action):
                     try:
                         answer = my_claude.chat(message.text, chat_id_full)
@@ -3217,6 +3228,7 @@ def do_task(message, custom_prompt: str = ''):
             # chatGPT
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, action):
+                message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
                 resp = dialog_add_user_request(chat_id_full, message.text, 'gpt')
                 if resp:
                     # my_log.log_echo(message, resp, debug = True)

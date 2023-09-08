@@ -2910,12 +2910,12 @@ def do_task(message, custom_prompt: str = ''):
         if message.text in (tr('🎨 Нарисуй', lang), '🎨 Нарисуй'):
             message.text = '/image'
             image(message)
-        # if message.text in (tr('🌐 Найди', lang), '🌐 Найди'):
-        #     message.text = '/google'
-        #     google(message)
         if message.text in (tr('🌐 Найди', lang), '🌐 Найди'):
-            message.text = '/ask'
-            ask(message)
+            message.text = '/google'
+            google(message)
+        # if message.text in (tr('🌐 Найди', lang), '🌐 Найди'):
+        #     message.text = '/ask'
+        #     ask(message)
         if message.text in (tr('📋 Перескажи', lang), '📋 Перескажи'):
             message.text = '/sum'
             summ_text(message)

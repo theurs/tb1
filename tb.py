@@ -1088,7 +1088,6 @@ def handle_document_thread(message: telebot.types.Message):
                     bot.reply_to(message, msg)
                     my_log.log2(msg)
                     return
-                
                 return
         # если в режиме клауда чата то закидываем файл прямо в него
         if chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] == 'claude':

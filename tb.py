@@ -2908,25 +2908,28 @@ def do_task(message, custom_prompt: str = ''):
                         '🎨 Нарисуй',               '🌐 Найди',
                         '📋 Перескажи',             '🎧 Озвучь',
                         '🈶 Перевод',               '⚙️ Настройки']:
-        if message.text in (tr('🎨 Нарисуй', lang), '🎨 Нарисуй'):
+                        '🎨Нарисуй',                '🌐Найди',
+                        '📋Перескажи',              '🎧Озвучь',
+                        '🈶 еревод',                '⚙️Настройки'
+        if message.text in (tr('🎨 Нарисуй', lang), '🎨 Нарисуй', '🎨Нарисуй'):
             message.text = '/image'
             image(message)
-        if message.text in (tr('🌐 Найди', lang), '🌐 Найди'):
+        if message.text in (tr('🌐 Найди', lang), '🌐 Найди', '🌐Найди'):
             message.text = '/google'
             google(message)
-        # if message.text in (tr('🌐 Найди', lang), '🌐 Найди'):
+        # if message.text in (tr('🌐 Найди', lang), '🌐 Найди', '🌐Найди'):
         #     message.text = '/ask'
         #     ask(message)
-        if message.text in (tr('📋 Перескажи', lang), '📋 Перескажи'):
+        if message.text in (tr('📋 Перескажи', lang), '📋 Перескажи', '📋Перескажи'):
             message.text = '/sum'
             summ_text(message)
-        if message.text in (tr('🎧 Озвучь', lang), '🎧 Озвучь'):
+        if message.text in (tr('🎧 Озвучь', lang), '🎧 Озвучь', '🎧Озвучь'):
             message.text = '/tts'
             tts(message)
-        if message.text in (tr('🈶 Перевод', lang), '🈶 Перевод'):
+        if message.text in (tr('🈶 Перевод', lang), '🈶 Перевод', '🈶Перевод'):
             message.text = '/trans'
             trans(message)
-        if message.text in (tr('⚙️ Настройки', lang), '⚙️ Настройки'):
+        if message.text in (tr('⚙️ Настройки', lang), '⚙️ Настройки', '⚙️Настройки'):
             message.text = '/config'
             config(message)
         return

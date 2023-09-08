@@ -1071,13 +1071,15 @@ def handle_document_thread(message: telebot.types.Message):
                         new_file.write(file)
                     global AUTO_TRANSLATIONS
                     with open('AUTO_TRANSLATIONS.json', 'r', encoding='utf-8') as f:
-                        AUTO_TRANSLATIONS = json.load(f)
+                        a = json.load(f)
+                        for key, value in a.items():
+                            AUTO_TRANSLATIONS[key] = value
                     try:
                         os.remove('AUTO_TRANSLATIONS.json')
                     except Exception as error:
                         print(f'tb:handle_document_thread: {error}')
                         my_log.log2(f'tb:handle_document_thread: {error}')
-                       
+
                     bot.reply_to(message, tr('Переводы загружены', lang))
                 except Exception as error:
                     print(f'tb:handle_document_thread: {error}')

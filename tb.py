@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import io
+import json
 import os
 import random
 import re
@@ -9,7 +10,6 @@ import datetime
 import string
 import threading
 import time
-import queue
 
 import openai
 import PyPDF2
@@ -133,6 +133,9 @@ AUTO_TRANSLATIONS = my_dic.PersistentDict('db/auto_translations.pkl')
 
 # замки для блокировки одновременных ответов бинга в режиме стриминга
 BING_LOCKS_STREAMING_MODE = {}
+
+# замок для выполнения дампа переводов
+DUMP_TRANSLATION_LOCK = threading.Lock()
 
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
@@ -1058,6 +1061,33 @@ def handle_document_thread(message: telebot.types.Message):
         return
 
     with semaphore_talks:
+        # если прислали файл с исправленными переводами
+        if 'AUTO_TRANSLATIONS' in message.document.file_name and '.json' in message.document.file_name:
+            if message.from_user.id in cfg.admins:
+                try:
+                    file_info = bot.get_file(message.document.file_id)
+                    file = bot.download_file(file_info.file_path)
+                    with open('AUTO_TRANSLATIONS.json', 'wb') as new_file:
+                        new_file.write(file)
+                    global AUTO_TRANSLATIONS
+                    with open('AUTO_TRANSLATIONS.json', 'r', encoding='utf-8') as f:
+                        AUTO_TRANSLATIONS = json.load(f)
+                    try:
+                        os.remove('AUTO_TRANSLATIONS.json')
+                    except Exception as error:
+                        print(f'tb:handle_document_thread: {error}')
+                        my_log.log2(f'tb:handle_document_thread: {error}')
+                       
+                    bot.reply_to(message, tr('Переводы загружены', lang))
+                except Exception as error:
+                    print(f'tb:handle_document_thread: {error}')
+                    my_log.log2(f'tb:handle_document_thread: {error}')
+                    msg = tr('Не удалось принять файл автопереводов ' + str(error), lang)
+                    bot.reply_to(message, msg)
+                    my_log.log2(msg)
+                    return
+                
+                return
         # если в режиме клауда чата то закидываем файл прямо в него
         if chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] == 'claude':
             check_blocked_user(chat_id_full)
@@ -2642,6 +2672,37 @@ def id_cmd_handler(message: telebot.types.Message):
 
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
 ''')
+
+
+@bot.message_handler(commands=['dump_translation'])
+def dump_translation(message: telebot.types.Message):
+    thread = threading.Thread(target=dump_translation_thread, args=(message,))
+    thread.start()
+def dump_translation_thread(message: telebot.types.Message):
+    """
+    Dump automatically translated messages as json file
+    """
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+
+    my_log.log_echo(message)
+
+    with ShowAction(message, 'upload_document'):
+        # dump AUTO_TRANSLATIONS as json file
+        with DUMP_TRANSLATION_LOCK:
+            # сохранить AUTO_TRANSLATIONS в файл AUTO_TRANSLATIONS.json
+            with open('AUTO_TRANSLATIONS.json', 'w', encoding='utf-8') as f:
+                json.dump(AUTO_TRANSLATIONS, f, indent=4, sort_keys=True, ensure_ascii=False)
+            # отправить файл пользователю
+            bot.send_document(message.chat.id, open('AUTO_TRANSLATIONS.json', 'rb'))
+            try:
+                os.remove('AUTO_TRANSLATIONS.json')
+            except Exception as error:
+                my_log.log2(f'ERROR: {error}')
 
 
 @bot.message_handler(commands=['init'])

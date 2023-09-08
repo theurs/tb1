@@ -507,7 +507,7 @@ def is_admin_member(message: telebot.types.Message):
 def disabled_kbd(chat_id_full):
     """проверяет не отключена ли тут клавиатура"""
     if chat_id_full not in DISABLED_KBD:
-        DISABLED_KBD[chat_id_full] = False
+        DISABLED_KBD[chat_id_full] = True
     return DISABLED_KBD[chat_id_full]
 
 

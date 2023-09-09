@@ -386,19 +386,18 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
                       'stable-diffusion-2.1', 'stable-diffusion 2.1'):
             if len(results) >= amount:
                 break
-            if 'kandinsky' in model or 'DALL-E' in model or 'stable-diffusion' in model:
-                try:
-                    response = openai.Image.create(
-                        prompt = prompt,
-                        n = 1,
-                        size=size,
-                        model = model,
-                    )
-                    if response:
-                        results += [x['url'] for x in response["data"]]
-                except Exception as error:
-                    print(error)
-                    my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
+            try:
+                response = openai.Image.create(
+                    prompt = prompt,
+                    n = 1,
+                    size=size,
+                    model = model,
+                )
+                if response:
+                    results += [x['url'] for x in response["data"]]
+            except Exception as error:
+                print(error)
+                my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
     return results
 
 

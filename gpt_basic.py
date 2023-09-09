@@ -383,7 +383,8 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
             print(error)
             my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
         for model in ('DALL-E', 'kandinsky-2', 'kandinsky-2.2',
-                      'stable-diffusion-2.1', 'stable-diffusion 2.1'):
+                      'stable-diffusion-2.1', 'stable-diffusion 2.1',
+                      'midjourney'):
             if len(results) >= amount:
                 break
             try:

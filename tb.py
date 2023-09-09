@@ -1527,6 +1527,10 @@ def language(message: telebot.types.Message):
 @bot.message_handler(commands=['model'])
 def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
+    thread = threading.Thread(target=set_new_model_thread, args=(message,))
+    thread.start()
+def set_new_model_thread(message: telebot.types.Message):
+    """меняет модель для гпт, никаких проверок не делает"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
@@ -1556,7 +1560,7 @@ def set_new_model(message: telebot.types.Message):
 
 {available_models}
 """
-        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message)) 
+        reply_to_long_message(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message)) 
         my_log.log_echo(message, msg)
         return
 

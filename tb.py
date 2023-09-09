@@ -88,9 +88,6 @@ OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
 # для запоминания ответов на команду /sum
 SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
 
-# запоминаем книги присланные юзерами {user_id:(chunks, lang, name)}
-BOOKS = my_dic.PersistentDict('db/books.pkl')
-
 # в каких чатах активирован режим суперчата, когда бот отвечает на все реплики всех участников
 # {chat_id:0|1}
 SUPER_CHAT = my_dic.PersistentDict('db/super_chat.pkl')
@@ -719,16 +716,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup.add(button)
 
         return markup
-    elif kbd == 'book_tts':
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=2)
-        counter = 0
-        for _ in BOOKS[chat_id_full][0]:
-            button = telebot.types.InlineKeyboardButton(tr(f'📢 Часть #{counter + 1}', lang), callback_data=f'tts_book:{counter}')
-            markup.add(button)
-            counter += 1
-        markup.add(telebot.types.InlineKeyboardButton(tr(f'Скачать текст', lang), callback_data=f'tts_book:get_text'))
-        return markup
-
     else:
         raise f"Неизвестная клавиатура '{kbd}'"
 
@@ -913,20 +900,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_memory_debug':
             send_debug_history(message)
-        elif call.data.startswith('tts_book:'):
-            llang = BOOKS[chat_id_full][1]
-            name = BOOKS[chat_id_full][2]
-
-            if 'get_text' in call.data:
-                text = ''.join(BOOKS[chat_id_full][0])
-                reply_to_long_message(message, text)
-                return
-
-            chunk_number = int(call.data.split(':')[1])
-            text = BOOKS[chat_id_full][0][chunk_number]
-
-            message.text = f'/tts {llang} {text}'
-            tts(message, tr(f'Книга: {name}\n\nЧасть: {chunk_number+1}\n\nЯзык: {llang}', lang))
         elif call.data == 'disable_chat_kbd':
             DISABLED_KBD[chat_id_full] = False
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 

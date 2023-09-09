@@ -382,7 +382,8 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
         except Exception as error:
             print(error)
             my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
-        for model in get_list_of_models():
+        for model in ('DALL-E', 'kandinsky-2', 'kandinsky-2.2',
+                      'stable-diffusion-2.1', 'stable-diffusion 2.1'):
             if len(results) >= amount:
                 break
             if 'kandinsky' in model or 'DALL-E' in model or 'stable-diffusion' in model:

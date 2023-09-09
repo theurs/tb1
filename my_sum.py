@@ -192,9 +192,6 @@ def is_valid_url(url: str) -> bool:
 
 if __name__ == "__main__":
     """Usage ./summarize.py '|URL|filename"""
-    
-    os.environ['all_proxy'] = cfg.all_proxy
-    
     r = summ_url('https://habr.com/ru/articles/748266/')
     print(r)
     sys.exit(0)

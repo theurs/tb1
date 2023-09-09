@@ -10,23 +10,6 @@ import utils
 from Perplexity import Perplexity
 
 
-def get_proxy():
-    try:
-        if cfg.perplexity_proxies:
-            p = random.choice(cfg.perplexity_proxies)
-            proxies = {
-                'http': p,
-                'https': p
-            }
-        else:
-            proxies = None
-    except Exception as error:
-        print(f'my_perplexity.py:get_proxy: {error}')
-        my_log.log2(f'my_perplexity.py:get_proxy: {error}')
-        proxies = None
-    return proxies
-
-
 def ask(query: str, search_focus: str = 'internet') -> str:
     query += ' (отвечай на русском языке)'
 
@@ -35,7 +18,7 @@ def ask(query: str, search_focus: str = 'internet') -> str:
     # пробуем 3 раза получить ответ
     for _ in range(3):
         try:
-            perplexity = Perplexity(get_proxy())
+            perplexity = Perplexity()
             answer = perplexity.search(query, search_focus)
         except Exception as error:
             answer = ''

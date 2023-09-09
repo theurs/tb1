@@ -14,7 +14,6 @@ import time
 import openai
 import PyPDF2
 import telebot
-from langdetect import detect_langs
 from natsort import natsorted
 
 import bingai
@@ -27,22 +26,13 @@ import my_dic
 import my_google
 import my_log
 import my_ocr
-import my_p_hub
 import my_pandoc
 import my_perplexity
 import my_stt
 import my_sum
 import my_trans
 import my_tts
-import my_wikipedia
 import utils
-
-
-# использовать прокси (пиратские сайты обычно лочат ваш ип, так что смотрите за этим)
-#cfg.all_proxy = ''
-#cfg.all_proxy = 'socks5://172.28.1.5:1080'
-if cfg.all_proxy:
-    os.environ['all_proxy'] = cfg.all_proxy
 
 
 # устанавливаем рабочую папку = папке в которой скрипт лежит
@@ -52,7 +42,6 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
 _bot_name = bot.get_me().username
 BOT_ID = bot.get_me().id
-#telebot.apihelper.proxy = cfg.proxy_settings
 
 
 # телеграм группа для отправки сгенерированных картинок
@@ -92,10 +81,6 @@ IMAGE_PROMPTS = my_dic.PersistentDict('db/image_prompts.pkl')
 # по умолчанию - авто
 # {id:float [0:1]}
 TEMPERATURE = my_dic.PersistentDict('db/temperature.pkl')
-
-# запоминаем диалоги в чатах для того что бы потом можно было сделать самморизацию,
-# выдать краткое содержание
-CHAT_LOGS = my_dic.PersistentDict('db/chat_logs.pkl')
 
 # запоминаем у какого юзера какой язык OCR выбран
 OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
@@ -642,8 +627,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         voices = {'tts_female': tr('MS жен.', lang),
                   'tts_male': tr('MS муж.', lang),
                   'tts_google_female': 'Google',
-                  'tts_silero_xenia': 'Xenia',
-                  'tts_silero_aidar': 'Aidar'
                   }
         voice_title = voices[voice]
 
@@ -813,9 +796,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'repeat_image':
             # получаем номер сообщения с картинками (первый из группы)
             for i in message.text.split('\n')[0].split():
-                id = int(i)
+                p_id = int(i)
                 break
-            p = IMAGE_PROMPTS[id]
+            p = IMAGE_PROMPTS[p_id]
             message.text = f'/image {p}'
             # рисуем еще картинки с тем же запросом
             image(message)
@@ -877,14 +860,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
         elif call.data == 'tts_google_female':
-            TTS_GENDER[chat_id_full] = 'silero_xenia'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
-                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_silero_xenia':
-            TTS_GENDER[chat_id_full] = 'silero_aidar'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
-                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_silero_aidar':
             TTS_GENDER[chat_id_full] = 'female'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
@@ -1134,30 +1109,6 @@ def handle_document_thread(message: telebot.types.Message):
                 reply_to_long_message(message, response, parse_mode='HTML', reply_markup=get_keyboard('claude_chat', message))
             return
 
-        # если прислали fb2 в приват то озвучить ее (msword)
-        mimes = ('fictionbook', 'epub' ,'plain' , 'vnd.openxmlformats-officedocument.wordprocessingml.document',
-                 'html', 'msword', 'vnd.oasis.opendocument.text', 'rtf', 'x-mobipocket-ebook')
-        if is_private and any([x for x in mimes if x in message.document.mime_type]):
-            check_blocked_user(chat_id_full)
-            with ShowAction(message, 'typing'):
-                file_name = message.document.file_name
-                file_info = bot.get_file(message.document.file_id)
-                file = bot.download_file(file_info.file_path)
-                text = my_pandoc.fb2_to_text(file)
-                if text:
-                    try:
-                        llang = detect_langs(text)[0].lang
-                    except Exception as error_fb2:
-                        llang = cfg.DEFAULT_LANGUAGE
-                        print(f'tb:handle_document_thread:fb2: {error_fb2}')
-                        my_log.log2(f'tb:handle_document_thread:fb2: {error_fb2}')
-
-                    chunks = my_pandoc.split_text_of_book(text, 40000)
-                    BOOKS[chat_id_full] = (chunks, llang, file_name)
-                    msg = tr(f'Книга\n\n{file_name}\n\nОзвучивание занимает много времени\n\nВсего символов {len(text)}, язык: {llang}, количество частей: {len(chunks)}', lang)
-                    bot.reply_to(message, msg, reply_markup=get_keyboard('book_tts', message))
-            return
-
         # если прислали текстовый файл или pdf с подписью перескажи
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
         if message.caption \
@@ -1187,35 +1138,6 @@ def handle_document_thread(message: telebot.types.Message):
                     bot.reply_to(message, help, reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, help)
                 return
-
-        # начитываем текстовый файл только если его прислали в привате или с указанием прочитай/читай
-        caption = message.caption or ''
-        if is_private or caption.lower() in ['прочитай', 'читай']:
-            check_blocked_user(chat_id_full)
-            # если текстовый файл то пытаемся озвучить как книгу. русский голос
-            if message.document.mime_type == 'text/plain':
-                with ShowAction(message, 'record_audio'):
-                    file_name = message.document.file_name + '.ogg'
-                    file_info = bot.get_file(message.document.file_id)
-                    file = bot.download_file(file_info.file_path)
-                    text = file.decode('utf-8')
-                    try:
-                        llang = detect_langs(text)[0].lang
-                    except Exception as error2:
-                        llang = cfg.DEFAULT_LANGUAGE
-                        print(error2)
-                    # Озвучиваем текст
-                    if chat_id_full in TTS_GENDER:
-                        gender = TTS_GENDER[chat_id_full]
-                    else:
-                        gender = 'female'    
-                    audio = my_tts.tts(text, llang, gender=gender)
-                    if not is_private:
-                        bot.send_voice(chat_id, audio, reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide', message))
-                    else:
-                        bot.send_voice(chat_id, audio, reply_markup=get_keyboard('hide', message))
-                    my_log.log_echo(message, f'[tts file] {text}')
-                    return
 
         # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
         if is_private or caption.lower() in [tr('прочитай', lang), tr('читай', lang)]:
@@ -1681,37 +1603,6 @@ def set_new_model(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['wikipedia','wiki']) 
-def wikipedia(message: telebot.types.Message):
-    """показывает текст из википедии"""
-    thread = threading.Thread(target=wikipedia_thread, args=(message,))
-    thread.start()
-def wikipedia_thread(message: telebot.types.Message):
-    """показывает текст из википедии"""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
-
-    args = message.text.split(maxsplit=1)
-    if len(args) == 2:
-        query = args[1]
-        with semaphore_talks:
-            with ShowAction(message, 'typing'):
-                result = my_wikipedia.get_content(query)
-                reply_to_long_message(message, result, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
-                my_log.log_echo(message, result)
-    else:
-        msg = f'/wikipedia <{tr("что найти", lang)}>'
-        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, msg)
-
-
 @bot.message_handler(commands=['tts']) 
 def tts(message: telebot.types.Message, caption = None):
     thread = threading.Thread(target=tts_thread, args=(message,caption))
@@ -1792,12 +1683,6 @@ def tts_thread(message: telebot.types.Message, caption = None):
             # микрософт не умеет в латинский язык
             if llang == 'la':
                 gender = 'google_female'
-
-            # это голоса только по русски могут
-            if gender == 'silero_xenia' and llang != 'ru':
-                gender = 'female'
-            if gender == 'silero_aidar' and llang != 'ru':
-                gender = 'male'
 
             if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
                 text = utils.bot_markdown_to_tts(text)
@@ -2016,19 +1901,12 @@ def image_thread(message: telebot.types.Message):
 
 {tr('Напишите что надо нарисовать, как это выглядит', lang)}
 """
-        is_private = message.chat.type == 'private'
-
         prompt = message.text.split(maxsplit = 1)
         if len(prompt) > 1:
             prompt = prompt[1]
             with ShowAction(message, 'upload_photo'):
-                is_porn = gpt_basic.is_image_prompt_about_porn(prompt)
-                if is_porn and (0==1): # слишком сильно давит на процессор, отключено пока
-                    images = my_p_hub.get_screenshots(prompt)
-                    medias = images
-                else:
-                    images = my_genimg.gen_images(prompt)
-                    medias = [telebot.types.InputMediaPhoto(i) for i in images]
+                images = my_genimg.gen_images(prompt)
+                medias = [telebot.types.InputMediaPhoto(i) for i in images]
                 if len(medias) > 0:
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                     if pics_group:
@@ -2045,8 +1923,7 @@ def image_thread(message: telebot.types.Message):
                     for i in msgs_ids:
                         caption += f'{i.message_id} '
                     caption += '\n'
-                    if not is_porn:
-                        caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
+                    caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
                     bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
                     reply_markup=get_keyboard('hide_image', message))
                     my_log.log_echo(message, '[image gen] ')
@@ -2071,25 +1948,6 @@ def image_thread(message: telebot.types.Message):
             COMMAND_MODE[chat_id_full] = 'image'
             bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
             my_log.log_echo(message, help)
-
-
-@bot.message_handler(commands=['flip'])
-def flip_text(message: telebot.types.Message):
-    """эхо с переворотом текста вверх ногами
-    переворачивает только русский и английский текст"""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-    text = message.text[6:]
-    if text:
-        bot.reply_to(message, utils.flip_text(text), reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, utils.flip_text(text))
-    else:
-        msg = '/flip текст который надо qɯʎнdǝʚǝdǝu'
-        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['stats'])
@@ -2432,78 +2290,6 @@ def trans_thread(message: telebot.types.Message):
                 msg = 'Ошибка перевода'
                 bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, msg)
-
-
-@bot.message_handler(commands=['last'])
-def last(message: telebot.types.Message):
-    thread = threading.Thread(target=last_thread, args=(message,))
-    thread.start()
-def last_thread(message: telebot.types.Message):
-    """делает сумморизацию истории чата, берет последние X сообщений из чата и просит бинг сделать сумморизацию"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
-
-    with semaphore_talks:
-        args = message.text.split()
-        help = f"""/last [X] - {tr('''показать кратский пересказ истории чата за последние Х сообщений, либо все какие есть в памяти. X = от 1 до 60000
-
-Напишите цифру''', lang)}
-"""
-        if len(args) == 2:
-            try:
-                x = int(args[1])
-                assert x > 0 and x < 60000
-                limit = x
-            except Exception as error:
-                print(error)
-                bot.reply_to(message, help, reply_markup=get_keyboard('hide', message))
-                my_log.log_echo(message, help)
-                return
-        elif len(args) > 2:
-            COMMAND_MODE[chat_id_full] = 'last'
-            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
-            my_log.log_echo(message, help)
-            return
-        else:
-            limit = 60000
-
-        if chat_id_full in CHAT_LOGS:
-            messages = CHAT_LOGS[chat_id_full]
-        else:
-            mes = tr('История пуста', lang)
-            bot.reply_to(message, mes, reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, mes)
-            return
-
-        if limit > len(messages.messages):
-            limit = len(messages.messages)
-
-        with ShowAction(message, 'typing'):
-
-            resp = my_sum.summ_text_worker('\n'.join(messages.messages[-limit:]), 'chat_log')
-
-            if resp:
-                resp = f'{tr("Кратский пересказ последних", lang)} {limit} {tr("сообщений в чате", lang)} {message.chat.username or message.chat.first_name or message.chat.title or "unknown"}\n\n' + resp
-                # пробуем отправить в приват а если не получилось то в общий чат
-                try:
-                    bot.send_message(message.from_user.id, resp, disable_web_page_preview=True, reply_markup=get_keyboard('translate', message))
-                except Exception as error:
-                    print(error)
-                    my_log.log2(str(error))
-                    bot.reply_to(message, resp, disable_web_page_preview=True, reply_markup=get_keyboard('translate', message))
-                my_log.log_echo(message, resp)
-            else:
-                mes = tr('Ошибка', lang)
-                bot.reply_to(message, mes, reply_markup=get_keyboard('hide', message))
-                my_log.log_echo(message, mes)
 
 
 @bot.message_handler(commands=['name'])
@@ -3034,17 +2820,6 @@ def do_task(message, custom_prompt: str = ''):
                 if COMMAND_MODE[chat_id_full] != 'perplexity':
                     COMMAND_MODE[chat_id_full] = ''
                 return
-
-        # если мы в чате то добавляем новое сообщение в историю чата для суммаризации с помощью бинга
-        if not is_private:
-            time_now = datetime.datetime.now().strftime('%H:%M')
-            user_name = message.from_user.first_name or message.from_user.username or 'unknown'
-            if chat_id_full in CHAT_LOGS:
-                m = CHAT_LOGS[chat_id_full]
-            else:
-                m = utils.MessageList()
-            m.append(f'[{time_now}] [{user_name}] {message.text}')
-            CHAT_LOGS[chat_id_full] = m
 
         # кто по умолчанию отвечает
         if chat_id_full not in CHAT_MODE:

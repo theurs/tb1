@@ -35,13 +35,7 @@ loop_detector = {}
 
 
 def get_new_session(user_name: str = '', lang: str = '', is_private: bool = True):
-    if cfg.all_proxy:
-        proxies = {
-            'http': cfg.all_proxy,
-            'https': cfg.all_proxy
-                }
-    else:
-        proxies = None
+    proxies = None
 
     session = requests.Session()
 

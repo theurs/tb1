@@ -14,11 +14,7 @@
 
 В чате бот будет автоматически переводить иностранные тексты на русский и распознавать голосовые сообщения, отключить это можно кодовым словом `бот замолчи`, включить обратно `бот вернись`
 
-Если отправить текстовый файл в приват или с подписью `прочитай` то попытается озвучить его как книгу, ожидает .txt utf8 язык пытается определить автоматически (русский если не получилось)
-
 Если отправить картинку или .pdf с подписью `прочитай` то вытащит текст из них.
-
-Если отправить fb2 или epub (odt txt doc docx rtf) то прочитает книгу голосом.
 
 Если отправить ссылку в приват то попытается прочитать текст из неё и выдать краткое содержание.
 
@@ -70,7 +66,7 @@
     sudo apt install tesseract-ocr tesseract-ocr-eng \
     tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd
     ```
-4. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc enchant-2 ffmpeg chromium-browser chromium-chromedriver pandoc python3-venv sox`
+4. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc enchant-2 ffmpeg pandoc python3-venv sox`
 5. Клонируйте репозиторий с помощью команды:
 
    ```
@@ -150,10 +146,6 @@ openai_servers = [
 bard_tokens = ['xxx',
                'yyy']
 
-# локальное разпознавание голоса, виспер лучше но требует много памяти и мощного процессора или видеокарту
-#stt = 'whisper'
-whisper_model = 'small' # ['tiny.en', 'tiny', 'base.en', 'base', 'small.en', 'small', 'medium.en', 'medium', 'large-v1', 'large-v2', 'large']
-stt = 'vosk'
 
 # id телеграм группы куда скидываются все сгенерированные картинки
 #pics_group = 0
@@ -198,15 +190,6 @@ model = 'gpt-3.5-turbo-16k'
 #model = 'claude-instant-100k'
 #model = 'claude-2-100k'
 
-# использовать прокси (пиратские сайты обычно лочат ваш ип, так что смотрите за этим)
-all_proxy = ''
-#all_proxy =   'http://172.28.1.4:3128'
-#all_proxy = 'socks5://172.28.1.5:1080'
-
-
-key_test = ''
-openai_api_base_test = ''
-model_test = 'gpt-3.5-turbo-16k'
 
 # язык для распознавания, в том виде в котором принимает tesseract
 # 'eng', 'ukr', 'rus+eng+ukr'
@@ -229,22 +212,7 @@ perplexity_proxies = [
 claudeai_keys = ['sessionKey=sk-xxxxxxxxxx',] или None
 # прокси для клода не получилось сделать, так что надо использовать впн туннель, 
 # перенаправить в него адреса которые резолвятся из nslookup claude.ai
-claude_proxy = None
 ```
-
-Для работы распознавания голосовых сообщений надо установить vosk сервер.
-
-`https://github.com/alphacep/vosk-server`
-
-В докере.
-
-`docker run -d -p 2700:2700 --name kaldi-ru --restart always -v /home/ubuntu/vosk/vosk-model-small-ru-0.22:/opt/vosk-model-en/model alphacep/kaldi-en:latest` тут путь заменить и модель скачать в эту папку
-
-Eсли на сервере много оперативки то можно по другому
-
-`docker run -d -p 2700:2700 --name kaldi-ru --restart always  alphacep/kaldi-ru:latest`
-
-Надо несколько 4+ гигабайт на диске и несколько гигабайт оперативной памяти (не знаю сколько но много).
 
 Что бы работал бинг аи надо сохранить свои куки с сайта bing.com раздел чат, попасть туда можно только с ип приличных стран и с аккаунтом в микрософте.
 Сохранить куки можно с помощью браузерного расширения cookie editor. Формат json, имя cookies.json
@@ -256,7 +224,6 @@ Eсли на сервере много оперативки то можно по
 Можно собрать и запустить докер образ. Ну или нельзя Ж) давно не проверял.
 
 В докер файл можно добавить свой файл cfg.py
-Как в него засунуть vosk сервер я не знаю.
 
 
 ```

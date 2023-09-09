@@ -71,27 +71,6 @@ def remove_vowels(text: str) -> str:
     return text
 
 
-class MessageList:
-    """список последних сообщений в чате с заданным максимальным размером в байтах
-    это нужно для суммаризации событий в чате с помощью бинга
-    """
-    def __init__(self, max_size=60000):
-        self.max_size = max_size
-        self.messages = []
-        self.size = 0
-
-    def append(self, message: str):
-        assert len(message) < (4*1024)+1
-        message_bytes = message.encode('utf-8')
-        message_size = len(message_bytes)
-        if self.size + message_size > self.max_size:
-            while self.size + message_size > self.max_size:
-                oldest_message = self.messages.pop(0)
-                self.size -= len(oldest_message.encode('utf-8'))
-        self.messages.append(message)
-        self.size += message_size
-
-
 def split_text(text: str, chunk_limit: int = 1500):
     """ Splits one string into multiple strings, with a maximum amount of chars_per_string
         characters per string. This is very useful for splitting one giant message into multiples.
@@ -336,23 +315,6 @@ def split_html(text: str, max_length: int = 1500) -> list:
         chunks2.append(chunk)
 
     return chunks2
-
-
-def flip_text(text: str) -> str:
-    """переворачивает текст вверх ногами"""
-    a = 'йцукенгшщзхъфвапролджэячсмитьбё?!.qwertyuiopasdfghjklzxcvbnm'
-    b = 'ņǹʎʞǝнɹmmεхqȸʚɐudоvɓжєʁҺɔwиɯqƍǝ¿¡˙ᕹʍǝɹʇʎnıodɐspɟƃɥɾʞlzxɔʌquɯ'
-    
-    # ы-ıq ю-oı
-    
-    # Создание таблицы перевода символов
-    translation_table = str.maketrans(a, b)
-    
-    text = text[::-1].lower()
-    text = text.translate(translation_table)
-    text = text.replace('ы', 'ıq')
-    text = text.replace('ю', 'oı')
-    return text
 
 
 def text_to_qrcode(text: str) -> str:

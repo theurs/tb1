@@ -186,29 +186,6 @@ def detect_ocr_command(text):
     return False
 
 
-def clear_after_stt(text):
-    """Получает текст после распознавания из голосового сообщения, пытается его восстановить, исправить ошибки распознавания"""
-
-    # не работает пока что нормально
-    return text
-
-    # если нет ключа то сразу отбой
-    # if not openai.api_key: return text
-
-    prompt = f'Исправь явные ошибки распознавания голосового сообщения. \
-Важна точность, лучше оставить ошибку неисправленной если нет уверенности в том что это ошибка и её надо исправить именно так. \
-Если в тексте есть ошибки согласования надо сделать что бы не было. \
-Маты и другой неприемлимый для тебя контент переделай так что бы смысл передать другими словами. \
-Грубый текст исправь. \
-Покажи результат без оформления и своих комментариев. Текст:{prompt}'
-    try:
-        r = ai(prompt)
-    except Exception as e:
-        print(e)
-        return text
-    return r
-
-
 def check_and_fix_text(text):
     """пытаемся исправить странную особенность пиратского GPT сервера (только pawan?),
     он часто делает ошибку в слове, вставляет 2 вопросика вместо буквы"""
@@ -313,40 +290,6 @@ def query_file(query: str, file_name: str, file_size: int, file_text: str) -> st
             my_log.log2(f'gpt_basic:query_file: {error}')
 
     return result
-
-
-def ai_test() -> str:
-    """
-    Generates a response using the testing OpenAI ChatCompletion API.
-
-    Returns:
-        str: The generated response.
-    """
-    openai.api_key = cfg.key_test
-    openai.api_base = cfg.openai_api_base_test
-
-    # for i in openai.Model.list()['data']:
-    #     print(i['id'])
-    # return
-
-    #   text = open('1.txt', 'r').read()[:20000]
-    text = 'Привет как дела'
-
-    messages = [{"role": "system", "content": "Ты искусственный интеллект отвечающий на запросы юзера."},
-                {"role": "user", "content": text}]
-
-    current_model = cfg.model_test
-
-    # тут можно добавить степень творчества(бреда) от 0 до 1 дефолт - temperature=0.5
-    сompletion = openai.ChatCompletion.create(
-        model = current_model,
-        messages=messages,
-        max_tokens=2000,
-        temperature=0.5,
-        timeout=180,
-        stream=False
-    )
-    return сompletion["choices"][0]["message"]["content"]
 
 
 def stt_after_repair(text: str) -> str:
@@ -462,28 +405,8 @@ def get_list_of_models():
     return sorted(list(set(result)))
 
 
-def is_image_prompt_about_porn(prompt: str) -> bool:
-    """True/False похоже ли что человек попросил нарисовать что то связанное с эротикой или порнографией"""
-    query = f"""Пользователь написал что он хочет нарисовать с помощью ИИ который рисует по текстовому описанию,
-определи связано ли это с эротикой/порнографией, ответ начни со слова ДА или НЕТ. Запрос пользователя:
-
-{prompt}
-"""
-    try:
-        result = ai(query, max_tok=10).lower()
-    except Exception as error:
-        print(f'gpt_basic:is_image_prompt_about_porn: {error}\n\nQuery: {query}')
-        my_log.log2(f'gpt_basic:is_image_prompt_about_porn: {error}\n\nQuery: {query}')
-        return False
-
-    if 'да' in result:
-        return True
-    return False
-
-
 if __name__ == '__main__':
-    if cfg.all_proxy:
-        os.environ['all_proxy'] = cfg.all_proxy
+
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 

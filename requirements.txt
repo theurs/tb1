@@ -13,19 +13,13 @@ google
 gTTS
 html2text
 langdetect
-markdown2
 natsort
-nltk
 openai
 openai-whisper
 websocket-client
 pandas
 Pillow
-pornhub_api
-pronouncing
 py_trans
-# for pornhub_api
-pydantic==1.10.9
 pyenchant
 pylatexenc
 PyMuPDF
@@ -43,9 +37,5 @@ telebot
 textblob
 #trafilatura==1.6.1
 trafilatura
-transliterate
-vosk
 youtube_transcript_api
-yt_dlp
-wikipedia
 xlrd

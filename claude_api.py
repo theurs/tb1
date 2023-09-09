@@ -8,7 +8,7 @@ import re
 
 class Client:
 
-  def __init__(self, cookie, proxy = None):
+  def __init__(self, cookie):
     self.cookie = cookie
     self.organization_id = self.get_organization_id()
 

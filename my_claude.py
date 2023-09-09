@@ -31,7 +31,7 @@ def get_api(chat_id: str):
     """возвращает объект api. создает новый если не было раньше или был удален"""
     if chat_id not in APIS:
         random.shuffle(cfg.claudeai_keys)
-        api = claude_api.Client(cfg.claudeai_keys[0], cfg.claude_proxy)
+        api = claude_api.Client(cfg.claudeai_keys[0])
         APIS[chat_id] = api
     else:
         api = APIS[chat_id]

@@ -5,22 +5,10 @@ import asyncio
 import io
 import glob
 import os
-import string
-import subprocess
 import tempfile
-import threading
-import sys
 
 import edge_tts
 import gtts
-import nltk
-import pronouncing
-import torch #silero
-from transliterate import translit
-
-import cfg
-import gpt_basic
-import utils
 
 
 # cleanup
@@ -31,94 +19,6 @@ for filePath in [x for x in glob.glob('*.wav') + glob.glob('*.ogg') if 'temp_tts
         print("Error while deleting file : ", filePath)
 
 
-lock = threading.Lock()
-# отложенная инициализация, только при вызове функции
-DEVICE, MODEL = None, None
-
-
-def tts_silero(text: str, voice: str = 'xenia') -> bytes:
-    with lock:
-        tmp_fname = 'temp_tts_file.ogg'
-        tmp_wav_file = 'temp_tts_file.wav'
-        try:
-            os.remove(tmp_fname)
-        except OSError:
-            pass
-        try:
-            os.remove(tmp_wav_file)
-        except OSError:
-            pass
-
-        result_files = []
-        n = 1
-        base_n = 'temp_tts_file-'
-        
-        for chunk in utils.split_text(text, 800):
-            data = tts_silero_chunk(chunk, voice=voice)
-            new_chunkfile = f'{base_n}{n}.wav'
-            with open(new_chunkfile, 'wb') as f:
-                f.write(data)
-            result_files.append(new_chunkfile)
-            n += 1
-
-        subprocess.run(['sox'] + result_files + [tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(['ffmpeg', '-i', tmp_wav_file, '-c:a', 'libvorbis', tmp_fname], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        data = open(tmp_fname, 'rb').read()
-
-        for i in result_files:
-            os.remove(i)
-        os.remove(tmp_fname)
-        os.remove(tmp_wav_file)
-
-        return data
-
-
-def tts_silero_chunk(text: str, voice: str = 'xenia') -> bytes:
-    """
-    Generate an audio file (WAV) from the given text using the Silero TTS model.
-
-    Args:
-        text (str): The input text to convert into speech.
-        voice (str, optional): The voice to use for the speech. Defaults to 'xenia'.
-                               Available voices: aidar, baya, kseniya, xenia, eugene, random.
-
-    Returns:
-        bytes: The audio data in bytes format.
-    """
-
-    global DEVICE, MODEL
-    if not DEVICE:
-        DEVICE = torch.device('cpu')
-        local_file = 'tts_model/v3_1_ru.pt'
-        # MODEL, _ = torch.hub.load(repo_or_dir='snakers4/silero-models',
-        #                                 model='silero_tts',
-        #                                 language='ru',
-        #                                 speaker='v3_1_ru')
-        # MODEL.to('cpu')
-        MODEL = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
-
-    sample_rate = 48000
-    speaker = voice # aidar, baya, kseniya, xenia, eugene, random
-
-    # замена английских букв и цифр на русские буквы и слова
-    text = tts_text_with_gpt(text)
-    #print(text, '\n')
-    
-
-    audio_path = MODEL.save_wav(text=text,
-                                speaker=speaker,
-                                put_accent=True,
-                                put_yo=True,
-                                sample_rate=sample_rate
-                                )
-
-    data = open(audio_path, 'rb').read()
-    os.remove(audio_path)
-
-    return data
-   
-
 def tts_google(text: str, lang: str = 'ru') -> bytes:
     """
     Converts the given text to speech using the Google Text-to-Speech (gTTS) API.
@@ -128,7 +28,7 @@ def tts_google(text: str, lang: str = 'ru') -> bytes:
         lang (str, optional): The language of the text. Defaults to 'ru'.
 
     Returns:
-        bytes: The audio file in the form of bytes.
+        bytes: The generated audio as a bytes object.
     """
     mp3_fp = io.BytesIO()
     result = gtts.gTTS(text, lang=lang)
@@ -138,28 +38,23 @@ def tts_google(text: str, lang: str = 'ru') -> bytes:
 
 
 def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
-    """Генерирует аудио из текста с помощью edge-tts и возвращает байтовый поток
+    """
+    Generates text-to-speech audio from the given input text using the specified voice, 
+    speech rate, and gender.
 
-    Эта функция принимает:
+    Args:
+        text (str): The input text to convert to speech.
+        voice (str, optional): The voice to use for the speech. Defaults to 'ru'.
+        rate (str, optional): The speech rate. Defaults to '+0%'.
+        gender (str, optional): The gender of the voice. Defaults to 'female'.
 
-    text: Строку с текстом для озвучивания
-
-    voice: Необязательный параметр, указывает голос для синтеза речи. По умолчанию используется русский голос. Можно указать любой другой голос, доступный в edge-tts.
-
-    rate: Необязательный параметр, указывает скорость речи. По умолчанию '+50%' - повышенная скорость. Можно указать любую скорость речи, поддерживаемую edge-tts.
-
-    gender: Необязательный параметр, 'female' или 'male' или другой голосовой движок
-
-    Функция возвращает байтовый поток с сгенерированным аудио.
+    Returns:
+        bytes: The generated audio as a bytes object.
     """
     lang = voice
 
     if gender == 'google_female':
         return tts_google(text, lang)
-    elif gender == 'silero_xenia':
-        return tts_silero(text, 'xenia')
-    elif gender == 'silero_aidar':
-        return tts_silero(text, 'aidar')
 
     voice = get_voice(voice, gender)
 
@@ -207,7 +102,7 @@ def get_voice(language_code: str, gender: str = 'female'):
  'da': {'female': 'da-DK-ChristelNeural', 'male': 'da-DK-JeppeNeural'},
  'de': {'female': 'de-DE-KatjaNeural', 'male': 'de-DE-KillianNeural'},
  'el': {'female': 'el-GR-AthinaNeural', 'male': 'el-GR-NestorasNeural'},
- 'en': {'female': 'en-ZA-LeahNeural', 'male': 'en-ZA-LukeNeural'},
+ 'en': {'female': 'en-US-AriaNeural', 'male': 'en-US-ChristopherNeural'},
  'es': {'female': 'es-VE-PaolaNeural', 'male': 'es-VE-SebastianNeural'},
  'et': {'female': 'et-EE-AnuNeural', 'male': 'et-EE-KertNeural'},
  'fa': {'female': 'fa-IR-DilaraNeural', 'male': 'fa-IR-FaridNeural'},
@@ -271,114 +166,6 @@ def get_voice(language_code: str, gender: str = 'female'):
     return voices[language_code][gender]
 
 
-def replace_numbers(text: str) -> str:
-    number_words = {
-        '0': 'ноль', '1': 'один', '2': 'два', '3': 'три',
-        '4': 'четыре', '5': 'пять', '6': 'шесть', '7': 'семь',
-        '8': 'восемь', '9': 'девять'}
-
-    result = ''
-    for char in text:
-        if char.isdigit():
-            result += ' ' + number_words[char] + ' '
-        else:
-            result += char
-
-    return result.strip()
-
-
-def tts_text_with_gpt(text: str) -> str:
-    result = ''
-    for chunk in utils.split_text(text, 2500):
-        prompt = f"""Исправь текст,
-смайлики и необычные символы надо записать русскими словами,
-все цифры надо заменить на полные русские слова,
-иностранные слова надо транслитерировать на русский с учётом звучания,
-иностранные абревиатуры и сокращения транслитерировать на русский и разворачивать в полные слова,
-русские сокращения надо развернуть в полные слова,
-веб ссылки надо заменить на русские слова описывающие домен,
-после ссылки надо добавлять запятую для создания паузы,
-номера телефонов, время и любую другую информацию с цифрами надо записывать полными русскими словами,
-в твоём ответе должен быть только исправленный текст.
-
-
-Текст:
-
-
-{text}
-"""
-        chunk_result = gpt_basic.ai(prompt)
-        result += chunk_result
-    return result
-
-
-def translit_word(word: str) -> str:
-    """
-    Translates a word from English to Russian using a phonetic transcription and a mapping table.
-
-    Args:
-        word (str): The word to be translated.
-
-    Returns:
-        str: The translated word in Russian.
-    """
-    EN_RU_TABLE = {
-    "AA": "о", "AE": "э", "AH": "а", "AO": "о", "AW": "ау", "AY": "ай",
-    "B": "б", "CH": "ч", "D": "д", "DH": "з", "EH": "э", "ER": "эр",
-    "EY": "эй", "F": "ф", "G": "г", "HH": "х", "IH": "и", "IY": "и",
-    "JH": "дж", "K": "к", "L": "л", "M": "м", "N": "н", "NG": "нг",
-    "OW": "о", "OY": "ой", "P": "п", "R": "р", "S": "с", "SH": "ш",
-    "T": "т", "TH": "т", "UH": "у", "UW": "у", "V": "в", "W": "в",
-    "Y": "й", "Z": "з", "ZH": "ж"}
-    word = word.strip()
-    if word == '':
-        return ''
-    
-    transcription = pronouncing.phones_for_word(word)
-    if len(transcription) == 0:
-        return translit(word, 'ru')
-    result = ''
-    for phoneme in transcription[0].split():
-        stress = ''
-        if '1' in phoneme or '2' in phoneme:
-            stress = '+'
-            phoneme = phoneme.replace('1', '')
-            phoneme = phoneme.replace('2', '')
-        if '0' in phoneme:
-            phoneme = phoneme.replace('0', '')
-        result += stress + EN_RU_TABLE[phoneme]
-    
-    return result
-
-
-def translit_sentence(sentence: str) -> str:
-    """Транслитерирует целое предложение eng->rus. Есть проблемы с пунктуацией,
-    скобки, кавычки итп лучше убрать заранее"""
-    tokenized_text = nltk.wordpunct_tokenize(sentence)
-    result = ''
-    for token in tokenized_text:
-        if '-' in token:
-            result += ' ' + '-'.join([translit_word(word) for word in token.split('-')])
-            continue
-        if token in string.punctuation:
-            result += ' ' + token
-        else:
-            result += ' ' + translit_word(token)
-    result = result.replace('( ', '(')
-    result = result.replace(' )', ')')
-    result = result.replace('{ ', '{')
-    result = result.replace(' }', '}')
-    result = result.replace('[ ', '[')
-    result = result.replace(' ]', ']')
-    result = result.replace('" ', '"')
-    # result = result.replace(' "', '" ')
-    result = result.replace(' .', '.')
-    result = result.replace(' ,', ',')
-    
-    result = result.replace('  ', ' ')
-    return result.strip()
-
-
 if __name__ == "__main__":
-    a = tts_google('привет')
+    a = tts('1', 'en', '+0%', 'female')
     print(a)

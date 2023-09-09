@@ -3,23 +3,11 @@
 
 import os
 import subprocess
-import sys
-import threading
 import tempfile
-from pathlib import Path
 import speech_recognition as sr
 
-import cfg
 import gpt_basic
 import my_log
-import my_whisper
-
-
-# сработает если бот запущен питоном из этого venv
-vosk_cmd = Path(Path(sys.executable).parent, 'vosk-transcriber')
-
-# запрещаем запускать больше чем 1 процесс распознавания голоса в одно время (только для vosk)
-vosk_lock = threading.Lock()
 
 
 def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
@@ -34,7 +22,6 @@ def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
     """
     with tempfile.NamedTemporaryFile() as temp_file:
         tmp_wav_file = temp_file.name + '.wav'
-    #subprocess.run(['ffmpeg', '-i', audio_file, '-t', '00:00:50', tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.run(['ffmpeg', '-i', audio_file, tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return tmp_wav_file
 
@@ -95,9 +82,6 @@ def stt(input_file: str, lang: str = 'ru') -> str:
     Returns:
         str: The transcribed text from the audio file.
     """
-    with tempfile.NamedTemporaryFile() as temp_file:
-        output_file = temp_file.name
-
     text = ''
 
     try: # сначала пробуем через гугл
@@ -124,25 +108,9 @@ def stt(input_file: str, lang: str = 'ru') -> str:
             print(error, text)
             my_log.log2(f'{error}\n\n{text}')
 
-    if not text:
-        if cfg.stt == 'whisper':
-            my_whisper.get_text(input_file)
-        elif cfg.stt == 'vosk':
-            with vosk_lock:
-                subprocess.run([vosk_cmd, "--server", "--input", input_file, "--output", output_file], 
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                with open(output_file, "r") as f:
-                    text = f.read()
-            os.remove(output_file)
-
-    if text:
-        cleared = gpt_basic.clear_after_stt(text)
-        return cleared
     return text
 
 
 if __name__ == "__main__":
-    os.environ['all_proxy'] = cfg.all_proxy
-    #print(vosk_cmd)
     text = stt('1.opus')
     print(text)

@@ -176,9 +176,6 @@ def search(query: str) -> str:
 
 
 if __name__ == "__main__":
-
-    os.environ['all_proxy'] = cfg.all_proxy
-    
     #text, links = shorten_links(text)
     #print(text)
     #print(links, text)

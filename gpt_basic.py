@@ -367,6 +367,7 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
     assert amount <= 10, 'Too many images to gen'
     assert size in ('1024x1024','512x512','256x256'), 'Wrong image size'
 
+    results = []
     for server in servers:
         openai.api_base = server[0]
         openai.api_key = server[1]
@@ -377,11 +378,27 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
                 size=size,
             )
             if response:
-                return [x['url'] for x in response["data"]]
+                results += [x['url'] for x in response["data"]]
         except Exception as error:
             print(error)
             my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
-    return []
+        for model in get_list_of_models():
+            if len(results) >= amount:
+                break
+            if 'kandinsky' in model or 'DALL-E' in model or 'stable-diffusion' in model:
+                try:
+                    response = openai.Image.create(
+                        prompt = prompt,
+                        n = 1,
+                        size=size,
+                        model = model,
+                    )
+                    if response:
+                        results += [x['url'] for x in response["data"]]
+                except Exception as error:
+                    print(error)
+                    my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
+    return results
 
 
 def get_list_of_models():
@@ -410,11 +427,12 @@ if __name__ == '__main__':
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 
-    for x in range(5, 15):
-        print(ai(f'1+{x}='))
+    # for x in range(5, 15):
+        # print(ai(f'1+{x}='))
 
-    # print(image_gen('большой бадабум'))
-    # print(get_list_of_models())
+    print(image_gen('большой бадабум'))
+    # for i in get_list_of_models():
+        # print(i)
 
     #print(ai(open('1.txt', 'r', encoding='utf-8').read()[:15000], max_tok = 2000))
 

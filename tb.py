@@ -306,7 +306,8 @@ def get_lang(id: str, message: telebot.types.Message = None) -> str:
         return cfg.DEFAULT_LANGUAGE
 
 
-def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str:
+def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt',
+                            user_name: str = 'noname', is_private: bool = True) -> str:
     """добавляет в историю переписки с юзером его новый запрос и ответ от чатбота
     делает запрос и возвращает ответ
 
@@ -319,6 +320,7 @@ def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str
         str: возвращает ответ который бот может показать, возможно '' или None
     """
     lang = get_lang(chat_id)
+    formatted_date = datetime.datetime.now().strftime("%d %B %Y %H:%M")
 
     # в каждом чате своя температура
     if chat_id in TEMPERATURE:
@@ -327,12 +329,15 @@ def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt') -> str
         temp = 0
 
     # в каждом чате свой собственный промт
+    curr_place = tr('приватный телеграм чат', lang) if is_private else tr('публичный телеграм чат', lang)
+    sys_prompt = f'{tr("Сейчас ", lang)} {formatted_date} , {tr("ты находишься в ", lang)} {curr_place} {tr("и отвечаешь пользователю с ником", lang)} {user_name}, {tr("его локаль: ", lang)} {lang}'
     if chat_id in PROMPTS:
         current_prompt = PROMPTS[chat_id]
     else:
         # по умолчанию формальный стиль
         PROMPTS[chat_id] = [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
         current_prompt =   [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
+    current_prompt = [{"role": "system", "content": sys_prompt}] + current_prompt
 
     # создаем новую историю диалогов с юзером из старой если есть
     # в истории диалогов не храним системный промпт
@@ -2998,7 +3003,7 @@ def do_task(message, custom_prompt: str = ''):
                         user_name = message.from_user.first_name or message.from_user.username or ''
                         chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
                         if chat_name:
-                            chat_name = chat_name
+                            user_name = chat_name
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name, lang = lang, is_private = is_private)
                         # answer = my_bard.convert_markdown(answer)
                         # my_log.log_echo(message, answer, debug = True)
@@ -3045,8 +3050,12 @@ def do_task(message, custom_prompt: str = ''):
             # chatGPT
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, action):
-                message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
-                resp = dialog_add_user_request(chat_id_full, message.text, 'gpt')
+                # имя пользователя если есть или ник
+                user_name = message.from_user.first_name or message.from_user.username or ''
+                chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
+                if chat_name:
+                    user_name = chat_name
+                resp = dialog_add_user_request(chat_id_full, message.text, 'gpt', user_name, is_private)
                 if resp:
                     # my_log.log_echo(message, resp, debug = True)
                     if not VOICE_ONLY_MODE[chat_id_full]:

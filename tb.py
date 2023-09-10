@@ -11,7 +11,6 @@ import string
 import threading
 import time
 
-import openai
 import PyPDF2
 import telebot
 from natsort import natsorted
@@ -63,24 +62,14 @@ BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
 # 'bard', 'claude', 'chatgpt', 'bing'
 CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 
-# история диалогов для GPT chat
-DIALOGS_DB = my_dic.PersistentDict('db/dialogs.pkl')
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
 BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
 
 # каким голосом озвучивать, мужским или женским
 TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
 
-# в каких чатах какой промт
-PROMPTS = my_dic.PersistentDict('db/prompts.pkl')
-
 # запоминаем промпты для повторения рисования
 IMAGE_PROMPTS = my_dic.PersistentDict('db/image_prompts.pkl')
-
-# температура для chatGPT, от 0 до 1, чем больше чем больше бреда и вранья будет
-# по умолчанию - авто
-# {id:float [0:1]}
-TEMPERATURE = my_dic.PersistentDict('db/temperature.pkl')
 
 # запоминаем у какого юзера какой язык OCR выбран
 OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
@@ -304,147 +293,6 @@ def get_lang(id: str, message: telebot.types.Message = None) -> str:
             LANGUAGE_DB[id] = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
             return LANGUAGE_DB[id]
         return cfg.DEFAULT_LANGUAGE
-
-
-def dialog_add_user_request(chat_id: str, text: str, engine: str = 'gpt',
-                            user_name: str = 'noname', is_private: bool = True) -> str:
-    """добавляет в историю переписки с юзером его новый запрос и ответ от чатбота
-    делает запрос и возвращает ответ
-
-    Args:
-        chat_id (str): номер чата или юзера, нужен для хранения истории переписки
-        text (str): новый запрос от юзера
-        engine (str, optional): 'gpt' или 'bing'. Defaults to 'gpt'.
-
-    Returns:
-        str: возвращает ответ который бот может показать, возможно '' или None
-    """
-    lang = get_lang(chat_id)
-    formatted_date = datetime.datetime.now().strftime("%d %B %Y %H:%M")
-
-    # в каждом чате своя температура
-    if chat_id in TEMPERATURE:
-        temp = TEMPERATURE[chat_id]
-    else:
-        temp = 0
-
-    # в каждом чате свой собственный промт
-    curr_place = tr('приватный телеграм чат', lang) if is_private else tr('публичный телеграм чат', lang)
-    sys_prompt = f'{tr("Сейчас ", lang)} {formatted_date} , {tr("ты находишься в ", lang)} {curr_place} {tr("и отвечаешь пользователю с ником", lang)} {user_name}, {tr("его локаль: ", lang)} {lang}'
-    if chat_id in PROMPTS:
-        current_prompt = PROMPTS[chat_id]
-    else:
-        # по умолчанию формальный стиль
-        PROMPTS[chat_id] = [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
-        current_prompt =   [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
-    current_prompt = [{"role": "system", "content": sys_prompt}] + current_prompt
-
-    # создаем новую историю диалогов с юзером из старой если есть
-    # в истории диалогов не храним системный промпт
-    if chat_id in DIALOGS_DB:
-        new_messages = DIALOGS_DB[chat_id]
-    else:
-        new_messages = []
-
-    # теперь ее надо почистить что бы влезла в запрос к GPT
-    # просто удаляем все кроме max_hist_lines последних
-    if len(new_messages) > cfg.max_hist_lines:
-        new_messages = new_messages[cfg.max_hist_lines:]
-    # удаляем первую запись в истории до тех пор пока общее количество токенов не станет меньше cfg.max_hist_bytes
-    # удаляем по 2 сразу так как первая - промпт для бота
-    while (utils.count_tokens(new_messages) > cfg.max_hist_bytes):
-        new_messages = new_messages[2:]
-
-    # добавляем в историю новый запрос и отправляем
-    new_messages = new_messages + [{"role":    "user",
-                                    "content": text}]
-
-    if engine == 'gpt':
-        # пытаемся получить ответ
-        try:
-            resp = gpt_basic.ai(prompt = text, temp = temp, messages = current_prompt + new_messages, chat_id=chat_id)
-            if resp:
-                new_messages = new_messages + [{"role":    "assistant",
-                                                    "content": resp}]
-            else:
-                # не сохраняем диалог, нет ответа
-                # если в последнем сообщении нет текста (глюк) то убираем его
-                if new_messages[-1]['content'].strip() == '':
-                    new_messages = new_messages[:-1]
-                DIALOGS_DB[chat_id] = new_messages or []
-                return tr('GPT не ответил.', lang)
-        # бот не ответил или обиделся
-        except AttributeError:
-            # не сохраняем диалог, нет ответа
-            return tr('Не хочу говорить об этом. Или не могу.', lang)
-        # произошла ошибка переполнения ответа
-        except openai.error.InvalidRequestError as error2:
-            if """This model's maximum context length is""" in str(error2):
-                # чистим историю, повторяем запрос
-                p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in new_messages) or tr('Пусто', lang)
-                # сжимаем весь предыдущий разговор до cfg.max_hist_compressed символов
-                r = gpt_basic.ai_compress(p, cfg.max_hist_compressed, 'dialog')
-                new_messages = [{'role':'system','content':r}] + new_messages[-1:]
-                # и на всякий случай еще
-                while (utils.count_tokens(new_messages) > cfg.max_hist_compressed):
-                    new_messages = new_messages[2:]
-
-                try:
-                    resp = gpt_basic.ai(prompt = text, temp=temp, messages = current_prompt + new_messages, chat_id=chat_id)
-                except Exception as error3:
-                    print(error3)
-                    return tr('GPT не ответил.', lang)
-
-                # добавляем в историю новый запрос и отправляем в GPT, если он не пустой, иначе удаляем запрос юзера из истории
-                if resp:
-                    new_messages = new_messages + [{"role":    "assistant",
-                                                    "content": resp}]
-                else:
-                    return tr('GPT не ответил.', lang)
-            else:
-                print(error2)
-                return tr('GPT не ответил.', lang)
-    else:
-        # для бинга
-        hist_compressed = ''
-        bing_prompt = hist_compressed + '\n\n' + 'Отвечай по-русски\n\n' + text
-
-        msg_bing_no_answer = tr('Бинг не ответил.', lang)
-        try:
-            resp = bingai.ai(bing_prompt, 1)
-        except Exception as error2:
-            print(error2)
-            my_log.log2(error2)
-            return msg_bing_no_answer
-        if resp:
-            new_messages = new_messages + [{"role":    "assistant",
-                                            "content": resp}]
-        else:
-            # не сохраняем диалог, нет ответа
-            return msg_bing_no_answer
-
-    # сохраняем диалог, на данном этапе в истории разговора должны быть 2 последних записи несжатыми
-    new_messages = new_messages[:-2]
-    # если запрос юзера был длинным то в истории надо сохранить его коротко
-    if len(text) > cfg.max_hist_mem:
-        new_text = gpt_basic.ai_compress(text, cfg.max_hist_mem, 'user')
-        # заменяем запрос пользователя на сокращенную версию
-        new_messages += [{"role":    "user",
-                             "content": new_text}]
-    else:
-        new_messages += [{"role":    "user",
-                            "content": text}]
-    # если ответ бота был длинным то в истории надо сохранить его коротко
-    if len(resp) > cfg.max_hist_mem:
-        new_resp = gpt_basic.ai_compress(resp, cfg.max_hist_mem, 'assistant')
-        new_messages += [{"role":    "assistant",
-                             "content": new_resp}]
-    else:
-        new_messages += [{"role":    "assistant",
-                             "content": resp}]
-    DIALOGS_DB[chat_id] = new_messages or []
-
-    return resp
 
 
 def get_ocr_language(message) -> str:
@@ -742,8 +590,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
-            #bot.edit_message_reply_markup(message.chat.id, message.message_id)
-            DIALOGS_DB[chat_id_full] = []
+            gpt_basic.chat_reset(chat_id_full)
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
@@ -752,7 +599,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             return
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
-            DIALOGS_DB[chat_id_full] = []
+            gpt_basic.chat_reset(chat_id_full)
         elif call.data == 'cancel_command':
             # обработка нажатия кнопки "Отменить ввод команды"
             COMMAND_MODE[chat_id_full] = ''
@@ -834,7 +681,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
         elif call.data == 'chatGPT_reset':
-            DIALOGS_DB[chat_id_full] = []
+            gpt_basic.chat_reset(chat_id_full)
             msg = tr('История диалога с chatGPT отчищена.', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
@@ -1361,9 +1208,9 @@ def change_mode(message: telebot.types.Message):
     check_blocked_user(chat_id_full)
 
     # в каждом чате свой собственный промт
-    if chat_id_full not in PROMPTS:
+    if chat_id_full not in gpt_basic.PROMPTS:
         # по умолчанию формальный стиль
-        PROMPTS[chat_id_full] = [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
+        gpt_basic.PROMPTS[chat_id_full] = [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
 
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
@@ -1377,14 +1224,14 @@ def change_mode(message: telebot.types.Message):
             new_prompt = tr(utils.gpt_start_message4, lang)
         else:
             new_prompt = arg[0]
-        PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
+        gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
         msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`\n\n***{tr("Роли работают только с chatGPT, используйте команду /config что бы выбрать chatGPT", lang)}***'
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, msg)
     else:
         msg = f"""{tr('Текущий стиль', lang)}
 
-`{PROMPTS[chat_id_full][0]['content']}`
+`{gpt_basic.PROMPTS[chat_id_full][0]['content']}`
 
 {tr('Меняет роль бота, строку с указаниями что и как говорить. Работает только для ChatGPT.', lang)}
 
@@ -1425,8 +1272,8 @@ def send_debug_history(message: telebot.types.Message):
 
     # создаем новую историю диалогов с юзером из старой если есть
     messages = []
-    if chat_id_full in DIALOGS_DB:
-        messages = DIALOGS_DB[chat_id_full]
+    if chat_id_full in gpt_basic.CHATS:
+        messages = gpt_basic.CHATS[chat_id_full]
     prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or tr('Пусто', lang)
     my_log.log_echo(message, prompt)
     reply_to_long_message(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
@@ -1485,7 +1332,7 @@ def set_new_temperature(message: telebot.types.Message):
         bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
         return
 
-    TEMPERATURE[chat_id_full] = new_temp
+    gpt_basic.TEMPERATURE[chat_id_full] = new_temp
     bot.reply_to(message, f'{tr("Новая температура для chatGPT установлена:", lang)} {new_temp}',
                  parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
 
@@ -1745,9 +1592,9 @@ def ask_thread(message: telebot.types.Message):
                                   reply_markup=get_keyboard('perplexity', message))
         my_log.log_echo(message, response)
 
-        if chat_id_full not in DIALOGS_DB:
-            DIALOGS_DB[chat_id_full] = []
-        DIALOGS_DB[chat_id_full] += [{"role":    'system',
+        if chat_id_full not in gpt_basic.CHATS:
+            gpt_basic.CHATS[chat_id_full] = []
+        gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
                                    "content": f'user {tr("попросил сделать запрос в Интернет:", lang)} {query}'},
                                      {"role":    'system',
                                    "content": f'assistant {tr("поискал в интернете и ответил:", lang)} {response}'}
@@ -1797,13 +1644,13 @@ def google_thread(message: telebot.types.Message):
             bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
         my_log.log_echo(message, r)
 
-        if chat_id_full not in DIALOGS_DB:
-            DIALOGS_DB[chat_id_full] = []
-        DIALOGS_DB[chat_id_full] += [{"role":    'system',
-                                   "content": f'user {tr("попросил сделать запрос в Google:", lang)} {q}'},
-                                     {"role":    'system',
-                                   "content": f'assistant {tr("поискал в Google и ответил:", lang)} {r}'}
-                                ]
+        if chat_id_full not in gpt_basic.CHATS:
+            gpt_basic.CHATS[chat_id_full] = []
+        gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
+                "content": f'user {tr("попросил сделать запрос в Google:", lang)} {q}'},
+                {"role":    'system',
+                "content": f'assistant {tr("поискал в Google и ответил:", lang)} {r}'}
+            ]
 
 
 @bot.message_handler(commands=['ddg',])
@@ -1852,13 +1699,13 @@ def ddg_thread(message: telebot.types.Message):
             bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
         my_log.log_echo(message, r)
         
-        if chat_id_full not in DIALOGS_DB:
-            DIALOGS_DB[chat_id_full] = []
-        DIALOGS_DB[chat_id_full] += [{"role":    'system',
-                                   "content": f'user {tr("попросил сделать запрос в Google:", lang)} {q}'},
-                                     {"role":    'system',
-                                   "content": f'assistant {tr("поискал в Google и ответил:", lang)} {r}'}
-                                ]
+        if chat_id_full not in gpt_basic.CHATS:
+            gpt_basic.CHATS[chat_id_full] = []
+        gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
+                "content": f'user {tr("попросил сделать запрос в Google:", lang)} {q}'},
+                {"role":    'system',
+                "content": f'assistant {tr("поискал в Google и ответил:", lang)} {r}'}
+            ]
 
 
 @bot.message_handler(commands=['image','img'])
@@ -1912,20 +1759,20 @@ def image_thread(message: telebot.types.Message):
 
                     n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 
                          {'role':'system', 'content':f'assistant {tr("нарисовал с помощью DALL-E", lang)}'}]
-                    if chat_id_full in DIALOGS_DB:
-                        DIALOGS_DB[chat_id_full] += n
+                    if chat_id_full in gpt_basic.CHATS:
+                        gpt_basic.CHATS[chat_id_full] += n
                     else:
-                        DIALOGS_DB[chat_id_full] = n
+                        gpt_basic.CHATS[chat_id_full] = n
                 else:
                     bot.reply_to(message, tr('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', lang), 
                                  reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, '[image gen error] ')
                     n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 
                          {'role':'system', 'content':f'assistant {tr("не захотел или не смог нарисовать это с помощью DALL-E", lang)}'}]
-                    if chat_id_full in DIALOGS_DB:
-                        DIALOGS_DB[chat_id_full] += n
+                    if chat_id_full in gpt_basic.CHATS:
+                        gpt_basic.CHATS[chat_id_full] += n
                     else:
-                        DIALOGS_DB[chat_id_full] = n
+                        gpt_basic.CHATS[chat_id_full] = n
         else:
             COMMAND_MODE[chat_id_full] = 'image'
             bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
@@ -2152,9 +1999,9 @@ def summ_text_thread(message: telebot.types.Message):
                     reply_to_long_message(message, r, disable_web_page_preview = True,
                                           reply_markup=get_keyboard('translate', message))
                     my_log.log_echo(message, r)
-                    if chat_id_full not in DIALOGS_DB:
-                        DIALOGS_DB[chat_id_full] = []
-                    DIALOGS_DB[chat_id_full] += [{"role":    'system',
+                    if chat_id_full not in gpt_basic.CHATS:
+                        gpt_basic.CHATS[chat_id_full] = []
+                    gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
                                 "content": f'user {tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang)}'},
                                 {"role":    'system',
                                 "content": f'assistant {tr("прочитал и ответил:", lang)} {r}'}
@@ -2177,9 +2024,9 @@ def summ_text_thread(message: telebot.types.Message):
                                               reply_markup=get_keyboard('translate', message))
                         my_log.log_echo(message, res)
                         SUM_CACHE[url] = res
-                        if chat_id_full not in DIALOGS_DB:
-                            DIALOGS_DB[chat_id_full] = []
-                        DIALOGS_DB[chat_id_full] += [{"role":    'system',
+                        if chat_id_full not in gpt_basic.CHATS:
+                            gpt_basic.CHATS[chat_id_full] = []
+                        gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
                                 "content": f'user {tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang)}'},
                                 {"role":    'system',
                                 "content": f'assistant {tr("прочитал и ответил:", lang)} {r}'}
@@ -2831,7 +2678,7 @@ def do_task(message, custom_prompt: str = ''):
                 my_claude.reset_claude_chat(chat_id_full)
                 my_log.log_echo(message, 'История клода принудительно отчищена')
             elif CHAT_MODE[chat_id_full] == 'chatgpt':
-                DIALOGS_DB[chat_id_full] = []
+                gpt_basic.chat_reset(chat_id_full)
                 my_log.log_echo(message, 'История GPT принудительно отчищена')
             bot.reply_to(message, tr('Ок', lang), reply_markup=get_keyboard('hide', message))
             return
@@ -2887,10 +2734,10 @@ def do_task(message, custom_prompt: str = ''):
             image_thread(message)
             n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'},
                  {'role':'system', 'content':f'assistant {tr("нарисовал с помощью DALL-E", lang)}'}]
-            if chat_id_full in DIALOGS_DB:
-                DIALOGS_DB[chat_id_full] += n
+            if chat_id_full in gpt_basic.CHATS:
+                gpt_basic.CHATS[chat_id_full] += n
             else:
-                DIALOGS_DB[chat_id_full] = n
+                gpt_basic.CHATS[chat_id_full] = n
             return
 
         # Получить строку с локализованной датой
@@ -2910,8 +2757,7 @@ def do_task(message, custom_prompt: str = ''):
                 my_log.log_echo(message, f'Слишком длинное сообщение для чат-бота: {len(msg)} из {cfg.max_message_from_user}')
                 return
             with ShowAction(message, 'typing'):
-                # добавляем новый запрос пользователя в историю диалога пользователя
-                resp = dialog_add_user_request(chat_id_full, message.text[5:], 'bing')
+                resp = bingai.chat(message.text[5:], chat_id_full)['text']
                 if resp:
                     try:
                         bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, 
@@ -3055,20 +2901,28 @@ def do_task(message, custom_prompt: str = ''):
                 chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
                 if chat_name:
                     user_name = chat_name
-                resp = dialog_add_user_request(chat_id_full, message.text, 'gpt', user_name, is_private)
+                if chat_name:
+                    resp = gpt_basic.chat(chat_id_full, message.text,
+                                          user_name = user_name, lang=lang,
+                                          is_private = False, chat_name=chat_name)
+                else:
+                    resp = gpt_basic.chat(chat_id_full, message.text,
+                                          user_name = user_name, lang=lang,
+                                          is_private = is_private, chat_name=chat_name)
                 if resp:
-                    # my_log.log_echo(message, resp, debug = True)
                     if not VOICE_ONLY_MODE[chat_id_full]:
                         resp = utils.bot_markdown_to_html(resp)
                     my_log.log_echo(message, resp)
                     try:
-                        reply_to_long_message(message, resp, parse_mode='HTML', disable_web_page_preview = True, 
-                                                reply_markup=get_keyboard('chat', message))
+                        reply_to_long_message(message, resp, parse_mode='HTML',
+                                              disable_web_page_preview = True,
+                                              reply_markup=get_keyboard('chat', message))
                     except Exception as error2:    
                         print(error2)
                         my_log.log2(resp)
-                        reply_to_long_message(message, resp, parse_mode='', disable_web_page_preview = True, 
-                                                reply_markup=get_keyboard('chat', message))
+                        reply_to_long_message(message, resp, parse_mode='',
+                                              disable_web_page_preview = True,
+                                              reply_markup=get_keyboard('chat', message))
         else: # смотрим надо ли переводить текст
             if check_blocks(get_topic_id(message)):
                 return

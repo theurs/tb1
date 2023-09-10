@@ -134,7 +134,7 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
     return {'text': text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
 
 
-def chat(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
+def chat(query: str, dialog: str, style: int = 3, reset: bool = False):
     """
     This function is used to chat with a bing. It takes in a query string,
     a dialog id, and optional parameters for style and reset. It returns a string as the chat response.
@@ -146,7 +146,7 @@ def chat(query: str, dialog: str, style: int = 3, reset: bool = False) -> str:
     - reset (bool, optional): Whether to reset the dialog. Defaults to False.
     
     Returns:
-    - str: The chat response as a string.
+    - Dictionary: The chat response as a dictionary with the keys 'text', 'suggestions', 'messages_left', and 'messages_max'.
     """
     if dialog in CHAT_LOCKS:
         lock = CHAT_LOCKS[dialog]

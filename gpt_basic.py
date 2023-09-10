@@ -22,10 +22,10 @@ import my_trans
 CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
 
 # память диалогов {id:messages: list}
-CHATS = {}
+CHATS = my_dic.PersistentDict('db/dialogs.pkl')
 # системные промты для чатов, роли или инструкции что и как делать в этом чате
 # {id:prompt}
-PROMPTS = {}
+PROMPTS = my_dic.PersistentDict('db/prompts.pkl')
 # температура chatGPT {id:float(0-2)}
 TEMPERATURE = {}
 # замки диалогов {id:lock}

@@ -2115,10 +2115,13 @@ def trans_thread(message: telebot.types.Message):
             translated = my_trans.translate_text2(text, llang)
             if translated:
                 detected_langs = []
-                for x in my_trans.detect_langs(text):
-                    l = my_trans.lang_name_by_code(x.lang)
-                    p = round(x.prob*100, 2)
-                    detected_langs.append(f'{tr(l, lang)} {p}%')
+                try:
+                    for x in my_trans.detect_langs(text):
+                        l = my_trans.lang_name_by_code(x.lang)
+                        p = round(x.prob*100, 2)
+                        detected_langs.append(f'{tr(l, lang)} {p}%')
+                except Exception as detect_error:
+                    my_log.log2(f'tb:trans:detect_langs: {detect_error}')
                 if match and match.group(1):
                     bot.reply_to(message, translated,
                                  reply_markup=get_keyboard('translate', message))

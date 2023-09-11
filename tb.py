@@ -257,9 +257,9 @@ def tr(text: str, lang: str) -> str:
 
     """
     # на русский не переводим
-    lang = lang.lower()
-    if lang == 'ru':
-        return text
+    # lang = lang.lower()
+    # if lang == 'ru':
+    #     return text
 
     key = str((text, lang))
     if key in AUTO_TRANSLATIONS:
@@ -2100,11 +2100,12 @@ def trans_thread(message: telebot.types.Message):
         match = re.match(pattern, message.text, re.DOTALL)
         # извлечение параметров из найденных совпадений
         if match:
-            llang = match.group(1) or lang  # если lang не указан, то по умолчанию 'ru'
+            llang = match.group(1) or lang  # если lang не указан, то по умолчанию язык юзера
             text = match.group(2) or ''
         else:
             COMMAND_MODE[chat_id_full] = 'trans'
-            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
+            bot.reply_to(message, help, parse_mode = 'Markdown',
+                         reply_markup=get_keyboard('command_mode', message))
             my_log.log_echo(message, help)
             return
         llang = llang.strip()
@@ -2113,7 +2114,19 @@ def trans_thread(message: telebot.types.Message):
         with ShowAction(message, 'typing'):
             translated = my_trans.translate_text2(text, llang)
             if translated:
-                bot.reply_to(message, translated, reply_markup=get_keyboard('translate', message))
+                detected_langs = []
+                for x in my_trans.detect_langs(text):
+                    l = my_trans.lang_name_by_code(x.lang)
+                    p = round(x.prob*100, 2)
+                    detected_langs.append(f'{tr(l, lang)} {p}%')
+                if match and match.group(1):
+                    bot.reply_to(message, translated,
+                                 reply_markup=get_keyboard('translate', message))
+                else:
+                    bot.reply_to(message,
+                                 translated + '\n\n' + tr('Распознанные языки:', lang) \
+                                 + ' ' + str(', '.join(detected_langs)).strip(', '),
+                                 reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, translated)
             else:
                 msg = 'Ошибка перевода'
@@ -2123,7 +2136,8 @@ def trans_thread(message: telebot.types.Message):
 
 @bot.message_handler(commands=['name'])
 def send_name(message: telebot.types.Message):
-    """Меняем имя если оно подходящее, содержит только русские и английские буквы и не слишком длинное"""
+    """Меняем имя если оно подходящее, содержит только русские и английские буквы и не
+    слишком длинное"""
 
     # не обрабатывать команды к другому боту /cmd@botname args
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]

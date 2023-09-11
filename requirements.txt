@@ -20,6 +20,7 @@ websocket-client
 pandas
 Pillow
 py_trans
+pycountry
 pyenchant
 pylatexenc
 PyMuPDF

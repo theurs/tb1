@@ -5,6 +5,7 @@ import re
 import subprocess
 
 import enchant
+import pycountry
 from langdetect import detect, detect_langs
 from py_trans import PyTranslator
 
@@ -157,10 +158,31 @@ def translate(text):
     return None
 
 
+def lang_name_by_code(code: str) -> str:
+    """
+    Returns the name of a language based on its two-letter code.
+
+    Args:
+        code (str): The two-letter code representing the language.
+
+    Returns:
+        str: The name of the language if it is found, otherwise None.
+    """
+    try:
+        lang = pycountry.languages.get(alpha_2=code).name 
+    except AttributeError:
+        lang = None
+    return lang
+
+
 if __name__ == "__main__":
+
+    code = 'ja'
+    print(lang_name_by_code(code))
+
     # text = "Вітаю! Я - інфармацыйная сістэма, якая можа адказаць на запытанні ў вас."
-    text = '/trans me'
-    
-    print(translate_text2(text, 'ru'))
-    
+    # text = '/trans me'
+
+    # print(translate_text2(text, 'ru'))
+
     # print(translate_text(text))

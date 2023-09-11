@@ -392,6 +392,8 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
             )
             if response:
                 results += [x['url'] for x in response["data"]]
+        except AttributeError:
+            pass
         except Exception as error:
             print(error)
             my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
@@ -409,6 +411,8 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
                 )
                 if response:
                     results += [x['url'] for x in response["data"]]
+            except AttributeError:
+                pass
             except Exception as error:
                 print(error)
                 my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')

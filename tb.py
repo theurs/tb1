@@ -2700,6 +2700,22 @@ def do_task(message, custom_prompt: str = ''):
             bot.reply_to(message, tr('Ок', lang), reply_markup=get_keyboard('hide', message))
             return
 
+        # если это номер телефона
+        # удалить из текста все символы кроме цифр
+        number = re.sub(r'[^0-9]', '', msg)
+        if number:
+            if number.startswith(('7', '8')):
+                number = number[1:]
+            if len(number) == 10:
+                with ShowAction(message, 'typing'):
+                    response = gpt_basic.check_phone_number(number)
+                    if response:
+                        response = utils.bot_markdown_to_html(response)
+                        reply_to_long_message(message, response, parse_mode='HTML',
+                                              reply_markup=get_keyboard('hide', message))
+                        my_log.log_echo(message, response)
+                        return
+
         # если в сообщении только ссылка и она отправлена боту в приват
         # тогда сумморизируем текст из неё
         if my_sum.is_valid_url(message.text) and is_private:

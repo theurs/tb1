@@ -15,6 +15,7 @@ import openai
 import cfg
 import utils
 import my_dic
+import my_google
 import my_log
 import my_trans
 
@@ -644,6 +645,26 @@ def console_chat_test():
         print(response)
 
 
+def check_phone_number(number: str) -> str:
+    """проверяет чей номер, откуда звонили"""
+    url = f'https://zvonili.com/phone/{number}'
+    urls = [url,]
+    text = my_google.download_text(urls, no_links=True)
+    query = f'''
+Определи по тексту какой регион, какой оператор, и не связан ли он с мошенничеством,
+ответь в удобной для чтения форме с разделением на абзацы и с использованием
+жирного текста для акцентирования внимания,
+ответь кратко.
+
+Номер +7{number}
+
+Текст:
+
+{text}
+'''
+    response = ai(query)
+    return response
+
 if __name__ == '__main__':
 
 
@@ -658,7 +679,8 @@ if __name__ == '__main__':
 
     #print(ai(open('1.txt', 'r', encoding='utf-8').read()[:15000], max_tok = 2000))
 
-    console_chat_test()
+    print(check_phone_number('9284655834'))
+    # console_chat_test()
 
     sys.exit()
 

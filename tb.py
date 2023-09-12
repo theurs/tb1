@@ -2355,7 +2355,8 @@ def set_default_commands_thread(message: telebot.types.Message):
     user_lang = get_lang(chat_full_id, message)
 
     if message.from_user.id not in cfg.admins:
-        bot.reply_to(message, tr("Эта команда доступна только администраторам", user_lang))
+        bot.reply_to(message, tr("Эта команда доступна только администраторам",
+                                 user_lang))
         return
 
     def get_seconds(s):
@@ -2367,7 +2368,7 @@ def set_default_commands_thread(message: telebot.types.Message):
 
     bot.reply_to(message, tr("Локализация займет много времени, не повторяйте эту команду", user_lang))
     
-    # most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr', 'hi',
+    # most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr','hi',
     #                    'hu', 'id', 'in', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro',
     #                    'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'ur', 'vi', 'zh']
     most_used_langs = [x for x in supported_langs_trans if len(x) == 2]
@@ -2386,12 +2387,18 @@ def set_default_commands_thread(message: telebot.types.Message):
                     my_log.log2(f'Не удалось прочитать команды по умолчанию для языка {lang}: {error}')
         result = False
         try:
-            result = bot.set_my_commands(commands, language_code=lang)
+            if bot.get_my_commands(language_code=lang) != commands:
+                result = bot.set_my_commands(commands, language_code=lang)
+            else:
+                result = True
         except Exception as error_set_command:
             my_log.log2(f'Не удалось установить команды по умолчанию для языка {lang}: {error_set_command} ')
             time.sleep(get_seconds(str(error_set_command)))
             try:
-                result = bot.set_my_commands(commands, language_code=lang)
+                if bot.get_my_commands(language_code=lang) != commands:
+                    result = bot.set_my_commands(commands, language_code=lang)
+                else:
+                    result = True
             except Exception as error_set_command2:
                 my_log.log2(f'Не удалось установить команды по умолчанию для языка {lang}: {error_set_command2}')
         if result:
@@ -2411,12 +2418,18 @@ def set_default_commands_thread(message: telebot.types.Message):
     for lang in most_used_langs:
         result = False
         try:
-            result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+            if bot.get_my_name(language_code=lang) != tr(new_bot_name, lang):
+                result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+            else:
+                result = True
         except Exception as error_set_name:
             my_log.log2(f'Не удалось установить имя бота: {tr(new_bot_name, lang)}'+'\n\n'+str(error_set_name))
             time.sleep(get_seconds(str(error_set_name)))
             try:
-                result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+                if bot.get_my_name(language_code=lang) != tr(new_bot_name, lang):
+                    result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+                else:
+                    result = True
             except Exception as error_set_name2:
                 my_log.log2(f'Не удалось установить имя бота: {tr(new_bot_name, lang)}'+'\n\n'+str(error_set_name2))
         if result:
@@ -2429,12 +2442,18 @@ def set_default_commands_thread(message: telebot.types.Message):
     for lang in most_used_langs:
         result = False
         try:
-            result = bot.set_my_description(tr(new_description, lang), language_code=lang)
+            if bot.get_my_description(language_code=lang) != tr(new_description, lang):
+                result = bot.set_my_description(tr(new_description, lang), language_code=lang)
+            else:
+                result = bot.set_my_description(tr(new_description, lang), language_code=lang)
         except Exception as error_set_description:
             my_log.log2(f'Не удалось установить описание бота {lang}: {tr(new_description, lang)}'+'\n\n'+str(error_set_description))
             time.sleep(get_seconds(str(error_set_description)))
             try:
-                result = bot.set_my_description(tr(new_description, lang), language_code=lang)
+                if bot.get_my_description(language_code=lang) != tr(new_description, lang):
+                    result = bot.set_my_description(tr(new_description, lang), language_code=lang)
+                else:
+                    result = bot.set_my_description(tr(new_description, lang), language_code=lang)
             except Exception as error_set_description2:
                 my_log.log2(f'Не удалось установить описание бота {lang}: {tr(new_description, lang)}'+'\n\n'+str(error_set_description2))
                 msg_descriptions += '❌ Установлено новое описание бота для языка ' + lang + '\n'
@@ -2449,12 +2468,18 @@ def set_default_commands_thread(message: telebot.types.Message):
     for lang in most_used_langs:
         result = False
         try:
-            result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
+            if bot.get_my_short_description(language_code=lang) != tr(new_short_description, lang):
+                result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
+            else:
+                result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
         except Exception as error_set_short_description:
             my_log.log2(f'Не удалось установить короткое описание бота: {tr(new_short_description, lang)}'+'\n\n'+str(error_set_short_description))
             time.sleep(get_seconds(str(error_set_short_description)))
             try:
-                result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
+                if bot.get_my_short_description(language_code=lang) != tr(new_short_description, lang):
+                    result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
+                else:
+                    result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
             except Exception as error_set_short_description2:
                 my_log.log2(f'Не удалось установить короткое описание бота: {tr(new_short_description, lang)}'+'\n\n'+str(error_set_short_description2))
                 msg_descriptions += '❌ Установлено новое короткое описание бота для языка ' + lang + '\n'

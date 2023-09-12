@@ -2727,7 +2727,7 @@ def do_task(message, custom_prompt: str = ''):
 
         # если это номер телефона
         # удалить из текста все символы кроме цифр
-        if len(msg) < 18:
+        if len(msg) < 17 and len(msg) > 9:
             number = re.sub(r'[^0-9]', '', msg)
             if number:
                 if number.startswith(('7', '8')):

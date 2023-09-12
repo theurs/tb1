@@ -2,9 +2,7 @@
 
 
 import html
-import random
 
-import cfg
 import my_log
 import utils
 from Perplexity import Perplexity

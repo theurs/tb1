@@ -365,9 +365,9 @@ def stream_sync_request(query: str):
 
 
 if __name__ == "__main__":
-
     # print(chat('brent oil price', 'test-chat-id', 3, False)['text'])
-    
+    #print(ai('hi'))
+
     stream_sync_request('brent oil price')
 
     # prompt = 'dogs'

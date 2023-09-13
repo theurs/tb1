@@ -2631,8 +2631,6 @@ def do_task(message, custom_prompt: str = ''):
         if SUPER_CHAT[chat_id_full] == 1:
             is_private = True
 
-        check_blocked_user(chat_id_full)
-        
         # удаляем пробелы в конце каждой строки
         message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
 
@@ -2733,6 +2731,7 @@ def do_task(message, custom_prompt: str = ''):
                 if number.startswith(('7', '8')):
                     number = number[1:]
                 if len(number) == 10:
+                    check_blocked_user(chat_id_full)
                     with ShowAction(message, 'typing'):
                         response = gpt_basic.check_phone_number(number)
                         if response:
@@ -2787,6 +2786,7 @@ def do_task(message, custom_prompt: str = ''):
 
         # проверяем просят ли нарисовать что-нибудь
         if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',')):
+            check_blocked_user(chat_id_full)
             # prompt = message.text[8:]
             prompt = message.text.split(' ', 1)[1]
             message.text = f'/image {prompt}'
@@ -2811,6 +2811,7 @@ def do_task(message, custom_prompt: str = ''):
         # это не локализуем
         if msg.startswith(('бинг ', 'бинг,', 'бинг\n')):
             # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
+            check_blocked_user(chat_id_full)
             if len(msg) > cfg.max_message_from_user:
                 bot.reply_to(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
                 my_log.log_echo(message, f'Слишком длинное сообщение для чат-бота: {len(msg)} из {cfg.max_message_from_user}')
@@ -2860,6 +2861,7 @@ def do_task(message, custom_prompt: str = ''):
             # если активирован режим общения с бинг чатом
             # вариант без стриминга
             if CHAT_MODE[chat_id_full] == 'bing':
+                check_blocked_user(chat_id_full)
                 with ShowAction(message, action):
                     try:
                         answer = bingai.chat(message.text, chat_id_full)
@@ -2897,6 +2899,7 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с бард чатом
             if CHAT_MODE[chat_id_full] == 'bard':
+                check_blocked_user(chat_id_full)
                 if len(msg) > my_bard.MAX_REQUEST:
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
@@ -2931,6 +2934,7 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с клод чатом
             if CHAT_MODE[chat_id_full] == 'claude':
+                check_blocked_user(chat_id_full)
                 message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
                 with ShowAction(message, action):
                     try:
@@ -2955,6 +2959,7 @@ def do_task(message, custom_prompt: str = ''):
             # chatGPT
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, action):
+                check_blocked_user(chat_id_full)
                 # имя пользователя если есть или ник
                 user_name = message.from_user.first_name or message.from_user.username or ''
                 chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
@@ -2983,11 +2988,10 @@ def do_task(message, custom_prompt: str = ''):
                                               disable_web_page_preview = True,
                                               reply_markup=get_keyboard('chat', message))
         else: # смотрим надо ли переводить текст
-            if check_blocks(get_topic_id(message)):
-                return
             text = my_trans.translate(message.text)
             if text:
-                bot.reply_to(message, text, parse_mode='Markdown', reply_markup=get_keyboard('translate', message))
+                bot.reply_to(message, text, parse_mode='Markdown',
+                             reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, text)
 
 

@@ -2741,6 +2741,7 @@ def do_task(message, custom_prompt: str = ''):
                         with ShowAction(message, 'typing'):
                             response = gpt_basic.check_phone_number(number)
                     if response:
+                        CACHE_CHECK_PHONE[number] = response
                         response = utils.bot_markdown_to_html(response)
                         reply_to_long_message(message, response, parse_mode='HTML',
                                             reply_markup=get_keyboard('hide', message))

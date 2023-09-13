@@ -96,6 +96,9 @@ DISABLED_KBD = my_dic.PersistentDict('db/disabled_kbd.pkl')
 # {user_id:Time to release in seconds - дата когда можно выпускать из бана} 
 DDOS_BLOCKED_USERS = my_dic.PersistentDict('db/ddos_blocked_users.pkl')
 
+# кешировать запросы типа кто звонил {number:result}
+CACHE_CHECK_PHONE = {}
+
 # {user_id:lang(2 symbol codes)}
 LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
 
@@ -2731,15 +2734,18 @@ def do_task(message, custom_prompt: str = ''):
                 if number.startswith(('7', '8')):
                     number = number[1:]
                 if len(number) == 10:
-                    check_blocked_user(chat_id_full)
-                    with ShowAction(message, 'typing'):
-                        response = gpt_basic.check_phone_number(number)
-                        if response:
-                            response = utils.bot_markdown_to_html(response)
-                            reply_to_long_message(message, response, parse_mode='HTML',
-                                                reply_markup=get_keyboard('hide', message))
-                            my_log.log_echo(message, response)
-                            return
+                    if number in CACHE_CHECK_PHONE:
+                        response = CACHE_CHECK_PHONE[number]
+                    else:
+                        check_blocked_user(chat_id_full)
+                        with ShowAction(message, 'typing'):
+                            response = gpt_basic.check_phone_number(number)
+                    if response:
+                        response = utils.bot_markdown_to_html(response)
+                        reply_to_long_message(message, response, parse_mode='HTML',
+                                            reply_markup=get_keyboard('hide', message))
+                        my_log.log_echo(message, response)
+                        return
 
         # если в сообщении только ссылка и она отправлена боту в приват
         # тогда сумморизируем текст из неё

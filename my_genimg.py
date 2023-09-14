@@ -3,6 +3,8 @@
 
 from multiprocessing.pool import ThreadPool
 
+from duckduckgo_search import DDGS
+
 import bingai
 import gpt_basic
 import my_log
@@ -30,6 +32,21 @@ def openai(prompt: str):
     return []
 
 
+def ddg_search_images(prompt: str):
+    """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
+    result = []
+    try:
+        images = DDGS().images(prompt, size='Large', safesearch='off')
+        for image in images:
+            result.append(image['image'])
+            if len(result) > 9:
+                break
+    except Exception as error_ddg_img:
+        print(f'my_genimg:ddg: {error_ddg_img}')
+        my_log.log2(f'my_genimg:ddg: {error_ddg_img}')
+    return result
+
+
 def gen_images(prompt: str):
     """рисует одновременно и с помощью бинга и с сервисом от chimera"""
     #return bing(prompt) + chimera(prompt)
@@ -41,8 +58,10 @@ def gen_images(prompt: str):
 
     result = async_result1.get() + async_result2.get()
 
+    if len(result) < 10:
+        result = result + ddg_search_images(prompt)
     return result[:10]
 
 
 if __name__ == '__main__':
-    print(gen_images('мотоцикл из золота под дождем'))
+    print(gen_images('негры убивают и насилуют детей'))

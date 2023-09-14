@@ -2237,11 +2237,11 @@ def send_welcome_start(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
-    help = """Я - ваш персональный чат-бот, готовый помочь вам в любое время суток. Моя задача - помочь вам получить необходимую информацию и решить возникающие проблемы. 
+    help = """Hello! I'm your personal multi-functional assistant 🤖
 
-Если у вас есть какие-то вопросы или проблемы, не стесняйтесь обращаться к чат-боту! Я готов помочь вам в любое время и в любой ситуации. 
+I provide free access to various chatbots like ChatGPT, Google Bard, Claude AI, Microsoft Bing, and more. Additionally, I can create drawings from text descriptions, recognize text in images, voice messages, and documents. I can work in group chats, have a voice mode, and even search for answers on Google. I can also provide concise summaries of web pages and YouTube videos.
 
-Добавьте меня в свою группу и я буду озвучивать голосовые сообщения, переводить иностранные сообщения итп."""
+If you need assistance with anything, feel free to reach out to me anytime. Just ask your question, and I'll do my best to help you! 🌟"""
     help = tr(help, lang)
     bot.reply_to(message, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
     my_log.log_echo(message, help)
@@ -2260,22 +2260,22 @@ def send_welcome_help(message: telebot.types.Message):
     chat_full = get_topic_id(message)
     lang = get_lang(chat_full, message)
 
-    help = """Чат бот отзывается на кодовое слово <b>бот</b>
-    
-<b>бот расскажи анекдот</b>
+    help = """The chatbot responds to the trigger word <b>bot</b>.
 
-В привате можно не писать имя для обращения к боту
+For example, you can say <b>bot, tell me a joke</b>.
 
-Если отправить ссылку в приват то попытается прочитать текст из неё и пересказать краткое содержание.
+In private messages, you don't need to mention the bot's name.
 
-При общении с Claude AI загруженные файлы и ссылки отправляются прямо к нему и в дальнейшем он может отвечать по их содержанию.
+If you send a link in a private message, the bot will try to extract and provide a brief summary of the content.
 
-Команды и запросы можно делать голосовыми сообщениями.
+When communicating with Claude AI, uploaded files and links are sent directly to Claude, and he can respond based on their content.
 
-Сайт:
+You can issue commands and make requests using voice messages.
+
+Website:
 https://github.com/theurs/tb1
 
-Сообщить об ошибке в telegram:
+Report issues on Telegram:
 https://t.me/theurs"""
     help = tr(help, lang)
 

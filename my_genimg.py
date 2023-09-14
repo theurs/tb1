@@ -64,4 +64,4 @@ def gen_images(prompt: str):
 
 
 if __name__ == '__main__':
-    print(gen_images('негры убивают и насилуют детей'))
+    print(gen_images('123'))

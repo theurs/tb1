@@ -345,11 +345,12 @@ def get_tmp_fname():
 
 
 def replace_tables(text: str) -> str:
+    text += '\n'
     state = 0
     table = ''
     results = []
     for line in text.split('\n'):
-        if line.count('| ') + line.count(' |') + line.count('|-') + line.count('-|') > 2:
+        if line.count('|') > 2 and len(line) > 4:
             if state == 0:
                 state = 1
             table += line + '\n'
@@ -367,10 +368,18 @@ def replace_tables(text: str) -> str:
         
         lines = table.split('\n')
         header = [x.strip() for x in lines[0].split('|') if x]
-        x.field_names = header
+        try:
+            x.field_names = header
+        except Exception as error:
+            my_log.log2(f'tb:replace_tables: {error}')
+            continue
         for line in lines[2:]:
             row = [x.strip() for x in line.split('|') if x]
-            x.add_row(row)
+            try:
+                x.add_row(row)
+            except Exception as error2:
+                my_log.log2(f'tb:replace_tables: {error2}')
+                continue
         new_table = x.get_string()
         text = text.replace(table, f'<code>{new_table}</code>')
 
@@ -390,31 +399,13 @@ if __name__ == '__main__':
 
 Сравнение характеристик
 
-| Характеристика | Skoda Octavia | Toyota Avensis |
+|Характеристика|Skoda Octavia|Toyota Avensis|
 |---|---|---|
-| Цена | От 1,6 млн рублей | От 1,7 млн рублей |
+|Цена|От 1,6 млн рублей|От 1,7 млн рублей|
 | Двигатель | 1.4 TSI (150 л.с.), 1.6 TDI (110 л.с.), 2.0 TSI (180 л.с.) | 1.6 Valvematic (122 л.с.), 2.0 Valvematic (152 л.с.) |
 | Коробка передач | Механическая, автоматическая | Механическая, автоматическая |
 | Расход топлива | 5,2-7,3 л/100 км | 6,2-7,8 л/100 км |
 | Размеры | 4689x1814x1460 мм | 4695x1770x1470 мм |
 | Объем багажника | 566 л | 520 л |
-| Гарантия | 5 лет | 3 года |
-
-Вывод
-
-Сравнение автомобилей Skoda Octavia и Toyota Avensis
-
-| Характеристика | Skoda Octavia | Toyota Avensis |
-|---|---|---|
-| Цена | От 1,6 млн рублей | От 1,7 млн рублей |
-| Двигатель | 1.4 TSI (150 л.с.), 1.6 TDI (110 л.с.), 2.0 TSI (180 л.с.) | 1.6 Valvematic (122 л.с.), 2.0 Valvematic (152 л.с.) |
-| Коробка передач | Механическая, автоматическая | Механическая, автоматическая |
-| Расход топлива | 5,2-7,3 л/100 км | 6,2-7,8 л/100 км |
-| Размеры | 4689x1814x1460 мм | 4695x1770x1470 мм |
-| Объем багажника | 566 л | 520 л |
-| Гарантия | 5 лет | 3 года |
-
-Сравнительный анализ
-
-"""
+| Гарантия | 5 лет | 3 года |"""
     print(replace_tables(text))

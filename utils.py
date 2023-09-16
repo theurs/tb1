@@ -181,6 +181,7 @@ def bot_markdown_to_html(text: str) -> str:
     # латекс код в тегах $ и $$ меняется на юникод текст
 
     # экранируем весь текст для html
+    text = replace_tables(text)
     text = html.escape(text)
     
     # найти все куски кода между ``` и заменить на хеши
@@ -240,7 +241,6 @@ def bot_markdown_to_html(text: str) -> str:
         new_match = match
         text = text.replace(random_string, f'<code>{new_match}</code>')
 
-    text = replace_tables(text)
     return text
 
 

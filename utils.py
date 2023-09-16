@@ -181,7 +181,6 @@ def bot_markdown_to_html(text: str) -> str:
     # латекс код в тегах $ и $$ меняется на юникод текст
 
     # экранируем весь текст для html
-    text = replace_tables(text)
     text = html.escape(text)
     
     # найти все куски кода между ``` и заменить на хеши
@@ -241,6 +240,7 @@ def bot_markdown_to_html(text: str) -> str:
         new_match = match
         text = text.replace(random_string, f'<code>{new_match}</code>')
 
+    text = replace_tables(text)
     return text
 
 
@@ -367,14 +367,14 @@ def replace_tables(text: str) -> str:
                                     junction_char = '|')
         
         lines = table.split('\n')
-        header = [x.strip() for x in lines[0].split('|') if x]
+        header = [x.strip().replace('<b>','').replace('</b>','') for x in lines[0].split('|') if x]
         try:
             x.field_names = header
         except Exception as error:
             my_log.log2(f'tb:replace_tables: {error}')
             continue
         for line in lines[2:]:
-            row = [x.strip() for x in line.split('|') if x]
+            row = [x.strip().replace('<b>','').replace('</b>','') for x in line.split('|') if x]
             try:
                 x.add_row(row)
             except Exception as error2:
@@ -406,6 +406,6 @@ if __name__ == '__main__':
 | Коробка передач | Механическая, автоматическая | Механическая, автоматическая |
 | Расход топлива | 5,2-7,3 л/100 км | 6,2-7,8 л/100 км |
 | Размеры | 4689x1814x1460 мм | 4695x1770x1470 мм |
-| Объем багажника | 566 л | 520 л |
+| Объем багажника | 566 л | <b>520 л</b> |
 | Гарантия | 5 лет | 3 года |"""
     print(replace_tables(text))

@@ -19,6 +19,7 @@ openai-whisper
 websocket-client
 pandas
 Pillow
+prettytable
 py_trans
 pycountry
 pyenchant

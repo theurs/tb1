@@ -3003,6 +3003,8 @@ def do_task(message, custom_prompt: str = ''):
                                               disable_web_page_preview = True,
                                               reply_markup=get_keyboard('chat', message))
         else: # смотрим надо ли переводить текст
+            if check_blocks(chat_id_full) and not is_private:
+                return
             text = my_trans.translate(message.text)
             if text:
                 bot.reply_to(message, text, parse_mode='Markdown',

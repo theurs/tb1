@@ -2135,7 +2135,7 @@ def send_welcome_start(message: telebot.types.Message):
 
     help = """Hello! I'm your personal multi-functional assistant 🤖
 
-I provide free access to various chatbots like ChatGPT, Google Bard, Claude AI, Microsoft Bing, and more. Additionally, I can create drawings from text descriptions, recognize text in images, voice messages, and documents. I can work in group chats, have a voice mode, and even search for answers on Google. I can also provide concise summaries of web pages and YouTube videos.
+I provide free access to various chatbots like ChatGPT, Google Bard, Claude AI, and more. Additionally, I can create drawings from text descriptions, recognize text in images, voice messages, and documents. I can work in group chats, have a voice mode, and even search for answers on Google. I can also provide concise summaries of web pages and YouTube videos.
 
 If you need assistance with anything, feel free to reach out to me anytime. Just ask your question, and I'll do my best to help you! 🌟"""
     help = tr(help, lang)

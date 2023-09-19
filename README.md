@@ -4,8 +4,6 @@
 
 Кодовое слово `гугл`(нельзя изменить) позволит получить более актуальную информацию, бот будет гуглить перед ответом `гугл, сколько людей на земле осталось`
 
-Кодовое слово `бинг`(нельзя изменить) позволит получить более актуальную информацию, бот будет дооолго гуглить перед ответом `бинг курс биткоина`
-
 В привате можно не писать кодовые слова для обращения к боту
 
 Если он забился в угол и не хочет отвечать то возможно надо почистить ему память командой `бот забудь`
@@ -97,7 +95,7 @@
 # описание бота, которое отображается в чате с ботом, если чат пуст. До 512 символов.
 bot_description = """Free chat bot
 
-ChatGPT | Google Bard | Claude AI | MS Bing | Perplexity
+ChatGPT | Google Bard | Claude AI
 
 Голосовое управление, озвучивание текстов, пересказ веб страниц и видеороликов на Youtube, распознавание текста с картинок и из PDF."""
 
@@ -105,7 +103,7 @@ ChatGPT | Google Bard | Claude AI | MS Bing | Perplexity
 # вместе со ссылкой, когда пользователи делятся ботом. До 120 символов.
 bot_short_description = """Free chat bot
 
-ChatGPT | Google Bard | Claude AI | MS Bing | Perplexity"""
+ChatGPT | Google Bard | Claude AI"""
 
 # Имя бота (псевдоним), это не уникальное имя, можно назвать как угодно,
 # это не имя бота на которое он отзывается. До 64 символов.
@@ -115,7 +113,7 @@ bot_name = "Бот"
 default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
-# 'bard', 'claude', 'chatgpt', 'bing'
+# 'bard', 'claude', 'chatgpt'
 chat_mode_default = 'chatgpt'
 
 # default locale, язык на который переводятся все сообщения
@@ -200,15 +198,6 @@ model = 'gpt-3.5-turbo-16k'
 # https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html
 ocr_language = 'rus'
 
-
-# сокс прокси для команды ask. сервис perplexity.ai на случай если напрямую не работает
-# perplexity_proxies = None
-# работает только так, с обязательным именем паролем адресом и портом
-perplexity_proxies = [
-    'socks5://user1:passwd@1.2.3.4:1234',
-    'socks5://user1:passwd@example.ru:54821',
-    ...
-    ]
 
 # ключи для клауда 'sessionKey=sk....' искать на сайте claude.ai через американский прокси
 claudeai_keys = ['sessionKey=sk-xxxxxxxxxx',] или None

@@ -15,7 +15,6 @@ import PyPDF2
 import telebot
 from natsort import natsorted
 
-import bingai
 import cfg
 import gpt_basic
 import my_bard
@@ -26,7 +25,6 @@ import my_google
 import my_log
 import my_ocr
 import my_pandoc
-import my_perplexity
 import my_stt
 import my_sum
 import my_trans
@@ -47,7 +45,7 @@ BOT_ID = bot.get_me().id
 pics_group = cfg.pics_group
 pics_group_url = cfg.pics_group_url
 
-# до 40 одновременных потоков для чата с гпт и бингом
+# до 40 одновременных потоков для чата с гпт
 semaphore_talks = threading.Semaphore(40)
 
 # папка для постоянных словарей, памяти бота
@@ -59,7 +57,7 @@ if not os.path.exists('db'):
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
 
 # в каких чатах какой чатбот отвечает {chat_id_full(str):chatbot(str)}
-# 'bard', 'claude', 'chatgpt', 'bing'
+# 'bard', 'claude', 'chatgpt'
 CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
@@ -104,9 +102,6 @@ LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
 
 # хранилище для переводов сообщений сделанных гугл переводчиком
 AUTO_TRANSLATIONS = my_dic.PersistentDict('db/auto_translations.pkl')
-
-# замки для блокировки одновременных ответов бинга в режиме стриминга
-BING_LOCKS_STREAMING_MODE = {}
 
 # замок для выполнения дампа переводов
 DUMP_TRANSLATION_LOCK = threading.Lock()
@@ -438,17 +433,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup.row(button1, button2, button3)
         markup.row(button4, button5, button6)
         return markup
-    elif kbd == 'bing_chat':
-        if disabled_kbd(chat_id_full):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='bingAI_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
     elif kbd == 'claude_chat':
         if disabled_kbd(chat_id_full):
             return None
@@ -510,14 +494,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button1 = telebot.types.InlineKeyboardButton('☑️Claude AI', callback_data='claude_mode_enable')
 
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='claudeAI_reset')
-        markup.row(button1, button2)
-
-        if CHAT_MODE[chat_id_full] == 'bing':
-            button1 = telebot.types.InlineKeyboardButton('✅Bing AI', callback_data='bing_mode_disable')
-        else:
-            button1 = telebot.types.InlineKeyboardButton('☑️Bing AI', callback_data='bing_mode_enable')
-
-        button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='bingAI_reset')
         markup.row(button1, button2)
 
         button1 = telebot.types.InlineKeyboardButton(tr(f'📢Голос: {voice_title}', lang), callback_data=voice)
@@ -688,11 +664,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             msg = tr('История диалога с chatGPT отчищена.', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
-        elif call.data == 'bingAI_reset':
-            bingai.reset_bing_chat(chat_id_full)
-            msg = tr('История диалога с бингом отчищена.', lang)
-            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, msg)
         elif call.data == 'tts_female':
             TTS_GENDER[chat_id_full] = 'male'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
@@ -719,14 +690,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_mode_enable':
             CHAT_MODE[chat_id_full] = 'chatgpt'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
-                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'bing_mode_enable':
-            CHAT_MODE[chat_id_full] = 'bing'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
-                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'bing_mode_disable':
-            del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
         elif call.data == 'bard_mode_enable':
@@ -1537,73 +1500,6 @@ def tts_thread(message: telebot.types.Message, caption = None):
                     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['ask', 'perplexity'])
-def ask(message: telebot.types.Message):
-    thread = threading.Thread(target=ask_thread, args=(message,))
-    thread.start()
-def ask_thread(message: telebot.types.Message):
-    """ищет в perplexity.ai ответ"""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
-
-    try:
-        query = message.text.split(maxsplit=1)[1]
-        formatted_date = datetime.datetime.now().strftime("%d %B %Y %H:%M")
-        query = f'[{formatted_date}] {query}'
-    except Exception as error2:
-        print(error2)
-        help = f"""/ask <{tr("текст запроса", lang)}>
-
-{tr('Нажмите ***Отмена*** что бы выйти из режима поиска', lang)}
-
-{tr('Напишите что надо найти в интернете:', lang)}
-"""
-        COMMAND_MODE[chat_id_full] = 'perplexity'
-        bot.reply_to(message, help, parse_mode = 'Markdown',
-                     disable_web_page_preview = True,
-                     reply_markup=get_keyboard('command_mode', message))
-        return
-
-    with ShowAction(message, 'typing'):
-        with semaphore_talks:
-            try:
-                response = my_perplexity.ask(query)
-            except Exception as error2:
-                my_log.log2(f'tb:ask: {error2}')
-                f'tb:ask: {error2}'
-                response = ''
-        if not response:
-            bot.reply_to(message, tr('Интернет вам не ответил, попробуйте позже', lang), 
-                         parse_mode = '', disable_web_page_preview = True,
-                         reply_markup=get_keyboard('command_mode', message))
-            return
-        try:
-            reply_to_long_message(message, response, parse_mode = 'HTML',
-                                  disable_web_page_preview = True,
-                                  reply_markup=get_keyboard('perplexity', message))
-        except Exception as error2:
-            my_log.log2(error2)
-            reply_to_long_message(message, response, parse_mode = '',
-                                  disable_web_page_preview = True,
-                                  reply_markup=get_keyboard('perplexity', message))
-        my_log.log_echo(message, response)
-
-        if chat_id_full not in gpt_basic.CHATS:
-            gpt_basic.CHATS[chat_id_full] = []
-        gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
-                                   "content": f'user {tr("попросил сделать запрос в Интернет:", lang)} {query}'},
-                                     {"role":    'system',
-                                   "content": f'assistant {tr("поискал в интернете и ответил:", lang)} {response}'}
-                                ]
-
-
 @bot.message_handler(commands=['google',])
 def google(message: telebot.types.Message):
     thread = threading.Thread(target=google_thread, args=(message,))
@@ -2155,8 +2051,8 @@ def send_name(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     check_blocked_user(chat_id_full)
 
-    BAD_NAMES = (tr('бинг', lang).lower(), tr('гугл', lang).lower(), 
-                 tr('утка', lang).lower(), tr('нарисуй', lang).lower())
+    BAD_NAMES = (tr('гугл', lang).lower(), tr('утка', lang).lower(),
+                 tr('нарисуй', lang).lower())
     args = message.text.split()
     if len(args) > 1:
         new_name = args[1]
@@ -2722,9 +2618,6 @@ def do_task(message, custom_prompt: str = ''):
             if CHAT_MODE[chat_id_full] == 'bard':
                 my_bard.reset_bard_chat(chat_id_full)
                 my_log.log_echo(message, 'История барда принудительно отчищена')
-            elif CHAT_MODE[chat_id_full] == 'bing':
-                bingai.reset_bing_chat(chat_id_full)
-                my_log.log_echo(message, 'История бинга принудительно отчищена')
             elif CHAT_MODE[chat_id_full] == 'claude':
                 my_claude.reset_claude_chat(chat_id_full)
                 my_log.log_echo(message, 'История клода принудительно отчищена')
@@ -2821,32 +2714,9 @@ def do_task(message, custom_prompt: str = ''):
             from_user_name = message.from_user.username or 'unknown'
         # message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
 
-        # можно перенаправить запрос к бингу, но он долго отвечает
-        # my_log.log2(f'{is_reply} {is_private} {SUPER_CHAT[chat_id_full]} {chat_id_full}')
-        # это не локализуем
-        if msg.startswith(('бинг ', 'бинг,', 'бинг\n')):
-            # message.text = message.text[len(f'бинг '):] # убираем из запроса кодовое слово
-            check_blocked_user(chat_id_full)
-            if len(msg) > cfg.max_message_from_user:
-                bot.reply_to(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
-                my_log.log_echo(message, f'Слишком длинное сообщение для чат-бота: {len(msg)} из {cfg.max_message_from_user}')
-                return
-            with ShowAction(message, 'typing'):
-                resp = bingai.chat(message.text[5:], chat_id_full)['text']
-                if resp:
-                    try:
-                        bot.reply_to(message, resp, parse_mode='Markdown', disable_web_page_preview = True, 
-                        reply_markup=get_keyboard('chat', message))
-                    except Exception as error:
-                        print(error)
-                        my_log.log2(resp)
-                        bot.reply_to(message, resp, disable_web_page_preview = True,
-                                     reply_markup=get_keyboard('chat', message))
-                    my_log.log_echo(message, resp)
-
         # можно перенаправить запрос к гуглу, но он долго отвечает
         # не локализуем
-        elif msg.startswith(('гугл ', 'гугл,', 'гугл\n')):
+        if msg.startswith(('гугл ', 'гугл,', 'гугл\n')):
             message.text = f'/google {msg[5:]}'
             google(message)
             return
@@ -2872,45 +2742,6 @@ def do_task(message, custom_prompt: str = ''):
                 message.text = f'[{tr("голосовое сообщение, возможны ошибки распознавания речи, отвечай коротко и просто без форматирования текста - ответ будет зачитан вслух", lang)}]: ' + message.text
             else:
                 action = 'typing'
-
-            # если активирован режим общения с бинг чатом
-            # вариант без стриминга
-            if CHAT_MODE[chat_id_full] == 'bing':
-                check_blocked_user(chat_id_full)
-                with ShowAction(message, action):
-                    try:
-                        answer = bingai.chat(message.text, chat_id_full)
-                        if answer:
-                            # my_log.log_echo(message, answer['text'], debug = True)
-                            text = answer['text']
-                            if not VOICE_ONLY_MODE[chat_id_full]:
-                                text = utils.bot_markdown_to_html(text)
-                            messages_left = str(answer['messages_left'])
-                            if not VOICE_ONLY_MODE[chat_id_full]:
-                                text = f"{text}\n\n{messages_left}/30"
-                            try:
-                                reply_to_long_message(message, text, parse_mode='HTML', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('bing_chat', message))
-                            except Exception as error:
-                                print(error)
-                                reply_to_long_message(message, text, parse_mode='', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('bing_chat', message))
-                            my_log.log_echo(message, text)
-                            if int(messages_left) == 1:
-                                bingai.reset_bing_chat(chat_id_full)
-                        else:
-                            bot.reply_to(message, tr('Бинг не хочет об этом говорить', lang), 
-                                         parse_mode='Markdown', disable_web_page_preview = True,
-                                         reply_markup=get_keyboard('chat', message))
-                            my_log.log_echo(message, 'Бинг не хочет об этом говорить')
-                    except Exception as error:
-                        print(f'tb:do_task:bing answer: {error}')
-                        my_log.log2(f'tb:do_task:bing answer: {error}')
-                        bot.reply_to(message, tr('Бинг не хочет об этом говорить', lang),
-                                     parse_mode='Markdown', disable_web_page_preview = True, 
-                                     reply_markup=get_keyboard('chat', message))
-                        my_log.log_echo(message, 'Бинг не хочет об этом говорить')
-                    return
 
             # если активирован режим общения с бард чатом
             if CHAT_MODE[chat_id_full] == 'bard':

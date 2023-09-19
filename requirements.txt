@@ -11,7 +11,6 @@ fake_useragent
 fuzzywuzzy
 google
 gTTS
-html2text
 langdetect
 natsort
 openai

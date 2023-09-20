@@ -1256,19 +1256,6 @@ def restart(message: telebot.types.Message):
         bot.reply_to(message, tr('Эта команда только для админов.', lang), reply_markup=get_keyboard('hide', message))
 
 
-@bot.message_handler(commands=['fixdb']) 
-def fixdb(message: telebot.types.Message):
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
-    if message.from_user.id in cfg.admins:
-        for key, _ in CHAT_MODE.items():
-            if CHAT_MODE[key] == 'bing':
-                del CHAT_MODE[key]
-        bot.reply_to(message, tr('OK.', lang), reply_markup=get_keyboard('hide', message))
-    else:
-        bot.reply_to(message, tr('Эта команда только для админов.', lang), reply_markup=get_keyboard('hide', message))
-
-
 @bot.message_handler(commands=['temperature', 'temp'])
 def set_new_temperature(message: telebot.types.Message):
     """меняет температуру для chatGPT

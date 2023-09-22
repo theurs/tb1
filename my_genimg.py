@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import random
 from multiprocessing.pool import ThreadPool
 
 from duckduckgo_search import DDGS
@@ -32,19 +33,20 @@ def openai(prompt: str):
     return []
 
 
-def ddg_search_images(prompt: str):
-    """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
+def ddg_search_images(prompt: str, max_results: int = 10):
+    """ищет картинки в поисковике"""
     result = []
     try:
         images = DDGS().images(prompt, size='Large', safesearch='on', license_image='Share')
         for image in images:
             result.append(image['image'])
-            if len(result) > 9:
+            if len(result) > 20:
                 break
     except Exception as error_ddg_img:
         print(f'my_genimg:ddg: {error_ddg_img}')
         my_log.log2(f'my_genimg:ddg: {error_ddg_img}')
-    return result
+    random.shuffle(result)
+    return result[:max_results]
 
 
 def gen_images(prompt: str):

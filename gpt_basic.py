@@ -648,7 +648,8 @@ def console_chat_test():
 def check_phone_number(number: str) -> str:
     """проверяет чей номер, откуда звонили"""
     url = f'https://zvonili.com/phone/{number}'
-    urls = [url,]
+    url2= 'https://abonentik.ru/7{number}'
+    urls = [url, url2]
     text = my_google.download_text(urls, no_links=True)
     query = f'''
 Определи по тексту какой регион, какой оператор, и не связан ли он с мошенничеством,

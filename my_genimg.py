@@ -36,7 +36,7 @@ def ddg_search_images(prompt: str):
     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
     result = []
     try:
-        images = DDGS().images(prompt, size='Large', safesearch='off')
+        images = DDGS().images(prompt, size='Large', safesearch='on', license_image='Share')
         for image in images:
             result.append(image['image'])
             if len(result) > 9:
@@ -64,4 +64,4 @@ def gen_images(prompt: str):
 
 
 if __name__ == '__main__':
-    print(gen_images('123'))
+    print(ddg_search_images('сочная малина'))

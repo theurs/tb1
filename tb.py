@@ -106,6 +106,11 @@ AUTO_TRANSLATIONS = my_dic.PersistentDict('db/auto_translations.pkl')
 # замок для выполнения дампа переводов
 DUMP_TRANSLATION_LOCK = threading.Lock()
 
+# запоминаем прилетающие сообщения, если они слишком длинные и
+# были отправлены клеинтом по кускам {id:[messages]}
+# ловим сообщение и ждем полсекунды не прилетит ли еще кусок
+MESSAGE_QUEUE = {}
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -2466,6 +2471,24 @@ def do_task(message, custom_prompt: str = ''):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
+    # отлавливаем слишком длинные сообщения
+    if chat_id_full not in MESSAGE_QUEUE:
+        MESSAGE_QUEUE[chat_id_full] = message.text
+        last_state = MESSAGE_QUEUE[chat_id_full]
+        n = 5
+        while n > 0:
+            n -= 1
+            time.sleep(0.1)
+            new_state = MESSAGE_QUEUE[chat_id_full]
+            if last_state != new_state:
+                last_state = new_state
+                n = 5
+        message.text = last_state
+        del MESSAGE_QUEUE[chat_id_full]
+    else:
+        MESSAGE_QUEUE[chat_id_full] += message.text + '\n\n'
+        return
+
     if message.text in [tr('🎨 Нарисуй', lang),     tr('🌐 Найди', lang), 
                         tr('📋 Перескажи', lang),   tr('🎧 Озвучь', lang),
                         tr('🈶 Перевод', lang),     tr('⚙️ Настройки', lang),
@@ -2806,6 +2829,10 @@ def do_task(message, custom_prompt: str = ''):
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, action):
                 check_blocked_user(chat_id_full)
+                if len(msg) > cfg.CHATGPT_MAX_REQUEST:
+                    bot.reply_to(message, f'{tr("Слишком длинное сообщение для chatGPT:", lang)} {len(msg)} {tr("из", lang)} {cfg.CHATGPT_MAX_REQUEST}')
+                    my_log.log_echo(message, f'Слишком длинное сообщение для chatGPT: {len(msg)} из {cfg.CHATGPT_MAX_REQUEST}')
+                    return
                 # имя пользователя если есть или ник
                 user_name = message.from_user.first_name or message.from_user.username or ''
                 chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''

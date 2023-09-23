@@ -168,15 +168,18 @@ max_google_answer = 2000
 
 # насколько большие сообщения от юзера принимать
 # если у gpt всего 4к памяти то 1500
-#max_message_from_user = 1500
-max_message_from_user = 4000
+#max_message_from_user = 4000
+max_message_from_user = 90000
 
 
 # 16k
 max_hist_lines = 10
-max_hist_bytes = 8000
+max_hist_bytes = 9000
 max_hist_compressed=1500
 max_hist_mem = 2500
+# максимальный запрос от юзера к chatGPT. длинные сообщения телеграм бьет на части но
+# бот склеивает их обратно и может получиться слишком много
+CHATGPT_MAX_REQUEST = 7000
 
 # 4k
 #max_hist_lines = 10

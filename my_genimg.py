@@ -60,8 +60,8 @@ def gen_images(prompt: str):
 
     result = async_result1.get() + async_result2.get()
 
-    if len(result) < 10:
-        result = result + ddg_search_images(prompt)
+    # if len(result) < 10:
+    #     result = result + ddg_search_images(prompt)
     return result[:10]
 
 

@@ -344,19 +344,11 @@ def get_tmp_fname():
         return temp_file.name
 
 
-def split_long_string(long_string: str, MAX_LENGTH = 24) -> str:
-    """
-    Splits a long string into multiple smaller strings of maximum length `MAX_LENGTH`.
-
-    Parameters:
-        long_string (str): The long string to be split.
-        MAX_LENGTH (int, optional): The maximum length of each split string. Defaults to 24.
-
-    Returns:
-        str: The resulting string after splitting the long string into smaller strings.
-    """
+def split_long_string(long_string: str, header = False, MAX_LENGTH = 24) -> str:
     if len(long_string) <= MAX_LENGTH:
         return long_string
+    if header:
+        return long_string[:MAX_LENGTH-2] + '..'
     split_strings = []
     while len(long_string) > MAX_LENGTH:
         split_strings.append(long_string[:MAX_LENGTH])
@@ -385,7 +377,6 @@ def replace_tables(text: str) -> str:
                 table = ''
                 state = 0
 
-
     for table in results:
         x = prettytable.PrettyTable(align = "l",
                                     set_style = prettytable.MSWORD_FRIENDLY,
@@ -394,7 +385,7 @@ def replace_tables(text: str) -> str:
         
         lines = table.split('\n')
         header = [x.strip().replace('<b>', '').replace('</b>', '') for x in lines[0].split('|') if x]
-        header = [split_long_string(x) for x in header]
+        header = [split_long_string(x, header = True) for x in header]
         try:
             x.field_names = header
         except Exception as error:
@@ -427,7 +418,7 @@ if __name__ == '__main__':
 
 Сравнение характеристик
 
-|Характеристика|Skoda Octavia|Toyota Avensis|
+|Характеристика|Skoda Octavia|Toyota1111111111111111111 Avensis|
 |---|---|---|
 |Цена|От 1,6 млн рублей|От 1,7 млн рублей|
 | Двигатель | 1.4 TSI (150 л.с.), 1.6 TDI (110 л.с.), 2.0 TSI (180 л.с.) | 1.6 Valvematic (122 л.с.), 2.0 Valvematic (152 л.с.) |

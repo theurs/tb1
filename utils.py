@@ -385,8 +385,7 @@ def replace_tables(text: str) -> str:
                 table = ''
                 state = 0
 
-    b_open = '🗺️'
-    b_close = '🧬'
+
     for table in results:
         x = prettytable.PrettyTable(align = "l",
                                     set_style = prettytable.MSWORD_FRIENDLY,
@@ -394,7 +393,7 @@ def replace_tables(text: str) -> str:
                                     junction_char = '|')
         
         lines = table.split('\n')
-        header = [x.strip().replace('<b>', b_open).replace('</b>', b_close) for x in lines[0].split('|') if x]
+        header = [x.strip().replace('<b>', '').replace('</b>', '') for x in lines[0].split('|') if x]
         header = [split_long_string(x) for x in header]
         try:
             x.field_names = header
@@ -402,7 +401,7 @@ def replace_tables(text: str) -> str:
             my_log.log2(f'tb:replace_tables: {error}')
             continue
         for line in lines[2:]:
-            row = [x.strip().replace('<b>', b_open).replace('</b>', b_close) for x in line.split('|') if x]
+            row = [x.strip().replace('<b>', '').replace('</b>', '') for x in line.split('|') if x]
             row = [split_long_string(x) for x in row]
             try:
                 x.add_row(row)
@@ -412,7 +411,6 @@ def replace_tables(text: str) -> str:
         new_table = x.get_string()
         text = text.replace(table, f'<code>{new_table}</code>')
 
-    text = text.replace(b_open, ' <b>').replace(b_close, '</b> ')
     return text
 
 

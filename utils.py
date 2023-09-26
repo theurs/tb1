@@ -344,6 +344,31 @@ def get_tmp_fname():
         return temp_file.name
 
 
+def split_long_string(long_string: str, MAX_LENGTH = 24) -> str:
+    """
+    Splits a long string into multiple smaller strings of maximum length `MAX_LENGTH`.
+
+    Parameters:
+        long_string (str): The long string to be split.
+        MAX_LENGTH (int, optional): The maximum length of each split string. Defaults to 24.
+
+    Returns:
+        str: The resulting string after splitting the long string into smaller strings.
+    """
+    if len(long_string) <= MAX_LENGTH:
+        return long_string
+    split_strings = []
+    while len(long_string) > MAX_LENGTH:
+        split_strings.append(long_string[:MAX_LENGTH])
+        long_string = long_string[MAX_LENGTH:]
+
+    if long_string:
+        split_strings.append(long_string)
+
+    result = "\n".join(split_strings) 
+    return result
+
+
 def replace_tables(text: str) -> str:
     text += '\n'
     state = 0
@@ -360,6 +385,8 @@ def replace_tables(text: str) -> str:
                 table = ''
                 state = 0
 
+    b_open = '🗺️'
+    b_close = '🧬'
     for table in results:
         x = prettytable.PrettyTable(align = "l",
                                     set_style = prettytable.MSWORD_FRIENDLY,
@@ -367,14 +394,16 @@ def replace_tables(text: str) -> str:
                                     junction_char = '|')
         
         lines = table.split('\n')
-        header = [x.strip().replace('<b>','').replace('</b>','') for x in lines[0].split('|') if x]
+        header = [x.strip().replace('<b>', b_open).replace('</b>', b_close) for x in lines[0].split('|') if x]
+        header = [split_long_string(x) for x in header]
         try:
             x.field_names = header
         except Exception as error:
             my_log.log2(f'tb:replace_tables: {error}')
             continue
         for line in lines[2:]:
-            row = [x.strip().replace('<b>','').replace('</b>','') for x in line.split('|') if x]
+            row = [x.strip().replace('<b>', b_open).replace('</b>', b_close) for x in line.split('|') if x]
+            row = [split_long_string(x) for x in row]
             try:
                 x.add_row(row)
             except Exception as error2:
@@ -383,6 +412,7 @@ def replace_tables(text: str) -> str:
         new_table = x.get_string()
         text = text.replace(table, f'<code>{new_table}</code>')
 
+    text = text.replace(b_open, ' <b>').replace(b_close, '</b> ')
     return text
 
 

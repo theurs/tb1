@@ -647,9 +647,10 @@ def console_chat_test():
 
 def check_phone_number(number: str) -> str:
     """проверяет чей номер, откуда звонили"""
-    url = f'https://zvonili.com/phone/{number}'
-    url2= 'https://abonentik.ru/7{number}'
-    urls = [url, url2]
+    urls = [f'https://zvonili.com/phone/{number}',
+            f'https://abonentik.ru/7{number}',
+            f'https://www.list-org.com/search?type=phone&val=%2B7{number}'
+            ]
     text = my_google.download_text(urls, no_links=True)
     query = f'''
 Определи по тексту какой регион, какой оператор, и не связан ли он с мошенничеством,
@@ -665,6 +666,7 @@ def check_phone_number(number: str) -> str:
 '''
     response = ai(query)
     return response
+
 
 if __name__ == '__main__':
 

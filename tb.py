@@ -148,22 +148,7 @@ MSG_CONFIG = f"""***Панель управления***
 - выключить авто переводы иностранных текстов на канале и перевод голосовых сообщений в текст
 
 Настройки стиля /style и история /mem ***относятся только к chatGPT***
-У Google Bard и Claude AI есть свои особенные правила, которые не могут быть изменены.
-
-
-ChatGPT имеет особый режим работы когда отвечает не чат а модель заточенная под четкие ответы, что бы использовать его надо просто начинать запрос на точку
-
-.напиши все дни недели через запятую
-
-Обычный чат кроме дней добавит еще какие то посторонние слова типа Хорошо я попробую, а эта модель сделает ровно то что просили
-
-
-Можно отправлять тексты больше чем 4096 символов, телеграм клиент их автоматически разбивает на части а бот собирает обратно, ограничения для чат-ботов такие:
-
-ChatGPT: {cfg.CHATGPT_MAX_REQUEST}
-Google Bard: 3100
-ClaudeAI: 90000
-"""
+У Google Bard и Claude AI есть свои особенные правила, которые не могут быть изменены."""
 
 class RequestCounter:
     """Ограничитель числа запросов к боту
@@ -2175,7 +2160,7 @@ def send_welcome_help(message: telebot.types.Message):
     chat_full = get_topic_id(message)
     lang = get_lang(chat_full, message)
 
-    help = """The chatbot responds to the trigger word <b>bot</b>.
+    help = f"""The chatbot responds to the trigger word <b>bot</b>.
 
 For example, you can say <b>bot, tell me a joke</b>.
 
@@ -2186,6 +2171,21 @@ If you send a link in a private message, the bot will try to extract and provide
 When communicating with Claude AI, uploaded files and links are sent directly to Claude, and he can respond based on their content.
 
 You can issue commands and make requests using voice messages.
+
+
+ChatGPT has a special mode of operation where a model trained for concise answers responds instead of the chat. To use it, simply start your query with a period.
+
+.Write all days of the week separated by commas
+
+The usual chat will add some extraneous words such as "Okay, I'll try," in addition to the days, while this model will do exactly what you asked for.
+
+
+You can send texts longer than 4096 characters. The Telegram client automatically breaks them down into parts, and the bot reassembles them. The restrictions for chatbots are as follows:
+
+ChatGPT: {cfg.CHATGPT_MAX_REQUEST}
+Google Bard: 3100
+ClaudeAI: 90000
+
 
 Website:
 https://github.com/theurs/tb1

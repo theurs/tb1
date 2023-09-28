@@ -150,6 +150,14 @@ MSG_CONFIG = f"""***Панель управления***
 Настройки стиля /style и история /mem ***относятся только к chatGPT***
 У Google Bard и Claude AI есть свои особенные правила, которые не могут быть изменены.
 
+
+ChatGPT имеет особый режим работы когда отвечает не чат а модель заточенная под четкие ответы, что бы использовать его надо просто начинать запрос на точку
+
+.напиши все дни недели через запятую
+
+Обычный чат кроме дней добавит еще какие то посторонние слова типа Хорошо я попробую, а эта модель сделает ровно то что просили
+
+
 Можно отправлять тексты больше чем 4096 символов, телеграм клиент их автоматически разбивает на части а бот собирает обратно, ограничения для чат-ботов такие:
 
 ChatGPT: {cfg.CHATGPT_MAX_REQUEST}
@@ -2572,6 +2580,18 @@ def do_task(message, custom_prompt: str = ''):
 
         msg = message.text.lower()
 
+        # кто по умолчанию отвечает
+        if chat_id_full not in CHAT_MODE:
+            CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+
+        # если сообщение начинается на точку и режим чатГПТ то делаем запрос к модели
+        # gpt-3.5-turbo-instruct
+        FIRST_DOT = False
+        if msg.startswith('.') and CHAT_MODE[chat_id_full] == 'chatgpt':
+            msg = msg[1:]
+            message.text = message.text[1:]
+            FIRST_DOT = True
+
         # определяем какое имя у бота в этом чате, на какое слово он отзывается
         if chat_id_full in BOT_NAMES:
             bot_name = BOT_NAMES[chat_id_full]
@@ -2603,9 +2623,6 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'google':
                     message.text = f'/google {message.text}'
                     google(message)
-                elif COMMAND_MODE[chat_id_full] == 'perplexity':
-                    message.text = f'/ask {message.text}'
-                    ask(message)
                 elif COMMAND_MODE[chat_id_full] == 'ddg':
                     message.text = f'/ddg {message.text}'
                     ddg(message)
@@ -2615,9 +2632,6 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'style':
                     message.text = f'/style {message.text}'
                     change_mode(message)
-                elif COMMAND_MODE[chat_id_full] == 'last':
-                    message.text = f'/last {message.text}'
-                    last(message)
                 elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
@@ -2625,10 +2639,6 @@ def do_task(message, custom_prompt: str = ''):
                 if COMMAND_MODE[chat_id_full] != 'perplexity':
                     COMMAND_MODE[chat_id_full] = ''
                 return
-
-        # кто по умолчанию отвечает
-        if chat_id_full not in CHAT_MODE:
-            CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
         # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
         if msg.startswith((tr('замолчи', lang), tr('заткнись', lang))) and (is_private or is_reply):
@@ -2844,14 +2854,18 @@ def do_task(message, custom_prompt: str = ''):
                 chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
                 if chat_name:
                     user_name = chat_name
-                if chat_name:
-                    resp = gpt_basic.chat(chat_id_full, message.text,
-                                          user_name = user_name, lang=lang,
-                                          is_private = False, chat_name=chat_name)
+                # если это запрос к модели instruct
+                if FIRST_DOT:
+                    resp = gpt_basic.ai_instruct(message.text)
                 else:
-                    resp = gpt_basic.chat(chat_id_full, message.text,
-                                          user_name = user_name, lang=lang,
-                                          is_private = is_private, chat_name=chat_name)
+                    if chat_name:
+                        resp = gpt_basic.chat(chat_id_full, message.text,
+                                            user_name = user_name, lang=lang,
+                                            is_private = False, chat_name=chat_name)
+                    else:
+                        resp = gpt_basic.chat(chat_id_full, message.text,
+                                            user_name = user_name, lang=lang,
+                                            is_private = is_private, chat_name=chat_name)
                 if resp:
                     if not VOICE_ONLY_MODE[chat_id_full]:
                         resp = utils.bot_markdown_to_html(resp)

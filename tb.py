@@ -2587,7 +2587,7 @@ def do_task(message, custom_prompt: str = ''):
         # если сообщение начинается на точку и режим чатГПТ то делаем запрос к модели
         # gpt-3.5-turbo-instruct
         FIRST_DOT = False
-        if msg.startswith('.') and CHAT_MODE[chat_id_full] == 'chatgpt':
+        if msg.startswith('.'):
             msg = msg[1:]
             message.text = message.text[1:]
             FIRST_DOT = True

@@ -2783,7 +2783,7 @@ def do_task(message, custom_prompt: str = ''):
                 action = 'typing'
 
             # если активирован режим общения с бард чатом
-            if CHAT_MODE[chat_id_full] == 'bard':
+            if CHAT_MODE[chat_id_full] == 'bard' and not FIRST_DOT:
                 check_blocked_user(chat_id_full)
                 if len(msg) > my_bard.MAX_REQUEST:
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
@@ -2818,7 +2818,7 @@ def do_task(message, custom_prompt: str = ''):
                     return
 
             # если активирован режим общения с клод чатом
-            if CHAT_MODE[chat_id_full] == 'claude':
+            if CHAT_MODE[chat_id_full] == 'claude' and not FIRST_DOT:
                 check_blocked_user(chat_id_full)
                 message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
                 with ShowAction(message, action):

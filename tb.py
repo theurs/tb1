@@ -645,11 +645,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # реакция на клавиатуру для tiktok
             with ShowAction(message, 'upload_video'):
                 tmp = my_tiktok.download_video(message.text)
-                bot.send_video(chat_id=message.chat.id, video=open(tmp, 'rb'))
+                try:
+                    bot.send_video(chat_id=message.chat.id, video=open(tmp, 'rb'))
+                except Exception as bot_send_tiktok_video_error:
+                    my_log.log2(f'tb:callback_inline_thread:download_tiktok:{bot_send_tiktok_video_error}')
                 try:
                     os.unlink(tmp)
                 except Exception as unlink_error:
-                    my_log.log2(f'tb:callback_inline_thread:{unlink_error}\n\nunlink {tmp}')
+                    my_log.log2(f'tb:callback_inline_thread:download_tiktok:{unlink_error}\n\nunlink {tmp}')
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):

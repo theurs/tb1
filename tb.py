@@ -1932,7 +1932,7 @@ def summ_text_thread(message: telebot.types.Message):
                 with ShowAction(message, 'typing'):
                     res = ''
                     try:
-                        res = my_sum.summ_url(url)
+                        res = my_sum.summ_url(url, lang = lang)
                     except Exception as error2:
                         print(error2)
                         m = tr('Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', lang)
@@ -2720,7 +2720,7 @@ def do_task(message, custom_prompt: str = ''):
             if chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] == 'claude':
                 with ShowAction(message, 'typing'):
                     file_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10)) + '.txt'
-                    text = my_sum.summ_url(message.text, True)
+                    text = my_sum.summ_url(message.text, True, lang)
                     # сгенерировать случайное имя папки во временной папке для этого файла
                     folder_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
                     # создать эту папку во временной папке. как получить путь до временной папки в системе?

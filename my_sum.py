@@ -55,7 +55,7 @@ def shrink_text_for_bing(text: str, max_size = 60000) -> str:
     return text2
 
 
-def summ_text_worker(text: str, subj: str = 'text') -> str:
+def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru') -> str:
     """параллельный воркер для summ_text
        subj == 'text' or 'pdf'  - обычный текст о котором ничего не известно
        subj == 'chat_log'       - журнал чата
@@ -67,7 +67,7 @@ def summ_text_worker(text: str, subj: str = 'text') -> str:
         text, subj, cont = text[0], text[1], text[2]
 
     if subj == 'text' or subj == 'pdf':
-        prompt = f"""Summarize the following, briefly answer in Russian language with easy-to-read formatting:
+        prompt = f"""Summarize the following, briefly answer in [{lang}] language with easy-to-read formatting:
 -------------
 {text}
 -------------
@@ -75,7 +75,7 @@ BEGIN:
 """
 
     elif subj == 'chat_log':
-        prompt = f"""Summarize the following telegram chat log, briefly answer in Russian language with easy-to-read formatting:
+        prompt = f"""Summarize the following telegram chat log, briefly answer in [{lang}] language with easy-to-read formatting:
 -------------
 {text}
 -------------
@@ -83,7 +83,7 @@ BEGIN:
 """
 
     elif subj == 'youtube_video':
-        prompt = f"""Summarize the following video subtitles extracted from youtube, briefly answer in Russian language with easy-to-read formatting:
+        prompt = f"""Summarize the following video subtitles extracted from youtube, briefly answer in [{lang}] language with easy-to-read formatting:
 -------------
 {text}
 -------------
@@ -114,14 +114,14 @@ BEGIN:
     return result
 
 
-def summ_text(text: str, subj: str = 'text') -> str:
+def summ_text(text: str, subj: str = 'text', lang: str = 'ru') -> str:
     """сумморизирует текст с помощью бинга или гптчата или клод-100к, возвращает краткое содержание, только первые 30(60)(99)т символов
     subj - смотрите summ_text_worker()
     """
-    return summ_text_worker(text, subj)
+    return summ_text_worker(text, subj, lang)
 
 
-def summ_url(url:str, download_only: bool = False) -> str:
+def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
     """скачивает веб страницу, просит гптчат или бинг сделать краткое изложение текста, возвращает текст
     если в ссылке ютуб то скачивает субтитры к видео вместо текста
     может просто скачать текст без саммаризации, для другой обработки"""
@@ -172,11 +172,11 @@ def summ_url(url:str, download_only: bool = False) -> str:
         return r
     else:
         if youtube:
-            r = summ_text(text, 'youtube_video')
+            r = summ_text(text, 'youtube_video', lang)
         elif pdf:
-            r = summ_text(text, 'pdf')
+            r = summ_text(text, 'pdf', lang)
         else:
-            r = summ_text(text, 'text')
+            r = summ_text(text, 'text', lang)
         return r
 
 

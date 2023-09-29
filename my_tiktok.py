@@ -17,6 +17,8 @@ def is_valid_url(url: str) -> bool:
     Returns:
           bool: True if the URL is a valid TikTok link, False otherwise.
     """
+    if url.startswith('https://vt.tiktok.com/'):
+        return True
     if not url.startswith("https://www.tiktok.com/") or '/video/' not in url:
         return False
     return True

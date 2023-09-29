@@ -339,7 +339,13 @@ def text_to_qrcode(text: str) -> str:
     return None
 
 
-def get_tmp_fname():
+def get_tmp_fname() -> str:
+    """
+    Generate a temporary file name.
+
+    Returns:
+        str: The name of the temporary file.
+    """
     with tempfile.NamedTemporaryFile(delete=True) as temp_file:
         return temp_file.name
 

@@ -12,7 +12,7 @@ import gtts
 
 
 # cleanup
-for filePath in [x for x in glob.glob('*.wav') + glob.glob('*.ogg') if 'temp_tts_file' in x]:
+for filePath in [x for x in glob.glob('*.wav') + glob.glob('*.ogg') + glob.glob('*.mp4') + glob.glob('*.mp3') if 'temp_tts_file' in x]:
     try:
         os.remove(filePath)
     except:

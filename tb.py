@@ -27,6 +27,7 @@ import my_ocr
 import my_pandoc
 import my_stt
 import my_sum
+import my_tiktok
 import my_trans
 import my_tts
 import utils
@@ -420,6 +421,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button3 = telebot.types.InlineKeyboardButton(tr("Перевод", lang), callback_data='translate')
         markup.add(button1, button2, button3)
         return markup
+    elif kbd == 'download_tiktok':
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(tr("Скачать видео", lang),
+                                                     callback_data='download_tiktok')
+        button2 = telebot.types.InlineKeyboardButton(tr("Отмена", lang),
+                                                     callback_data='erase_answer')
+        markup.add(button1, button2)
+        return markup
     elif kbd == 'hide_image':
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_image')
@@ -632,6 +641,15 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated,
                                       reply_markup=get_keyboard('translate', message))
                 # bot.reply_to(message, translated, reply_markup=get_keyboard('translate', message))
+        elif call.data == 'download_tiktok':
+            # реакция на клавиатуру для tiktok
+            with ShowAction(message, 'upload_video'):
+                tmp = my_tiktok.download_video(message.text)
+                bot.send_video(chat_id=message.chat.id, video=open(tmp, 'rb'))
+                try:
+                    os.unlink(tmp)
+                except Exception as unlink_error:
+                    my_log.log2(f'tb:callback_inline_thread:{unlink_error}\n\nunlink {tmp}')
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):
@@ -2687,6 +2705,13 @@ def do_task(message, custom_prompt: str = ''):
                                             reply_markup=get_keyboard('hide', message))
                         my_log.log_echo(message, response)
                         return
+
+        # если в сообщении только ссылка на видео в тиктоке
+        # предложить скачать это видео
+        if my_tiktok.is_valid_url(message.text):
+            bot.reply_to(message, message.text, disable_web_page_preview = True,
+                         reply_markup=get_keyboard('download_tiktok', message))
+            return
 
         # если в сообщении только ссылка и она отправлена боту в приват
         # тогда сумморизируем текст из неё

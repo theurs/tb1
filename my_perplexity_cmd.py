@@ -31,8 +31,7 @@ def ask(query: str, search_focus: str = 'internet') -> str:
         result = ''
         for i in answer:
             pass
-        d = json.loads(i['text'])
-        result = d['answer']
+        result = i['answer']
     except Exception as error:
         print(error)
         my_log.log2(f'my_perplexity.py:ask: {error}')
@@ -41,7 +40,7 @@ def ask(query: str, search_focus: str = 'internet') -> str:
         result += '\n\n'
         n = 1
         links = []
-        for x in d['web_results']:
+        for x in i['web_results']:
             # result += f'[{n}] <a href="{x["url"]}">{html.escape(x["name"])}</a>\n\n'
             links.append(f'<a href="{x["url"]}">[{n}]</a>')
             n += 1
@@ -61,6 +60,9 @@ def ask(query: str, search_focus: str = 'internet') -> str:
 
 
 if __name__ == '__main__':
+
+    # print(ask('погода во владистоке прогноз на неделю подробно'))
+
     """Usage ./bingai.py 'list 10 japanese dishes"""
     t = sys.argv[1]
     print(ask(t))  

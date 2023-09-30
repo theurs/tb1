@@ -25,6 +25,7 @@ import my_google
 import my_log
 import my_ocr
 import my_pandoc
+import my_perplexity
 import my_stt
 import my_sum
 import my_tiktok
@@ -1813,6 +1814,65 @@ def block_user_list(message: telebot.types.Message):
     else:
         bot.reply_to(message, tr('Только администраторы могут использовать эту команду.', lang), reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, 'Только администраторы могут использовать эту команду.')
+
+
+
+@bot.message_handler(commands=['ask', 'perplexity'])
+def ask(message: telebot.types.Message):
+    thread = threading.Thread(target=ask_thread, args=(message,))
+    thread.start()
+def ask_thread(message: telebot.types.Message):
+    """ищет в perplexity.ai ответ"""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    chat_id_full = get_topic_id(message)
+    check_blocked_user(chat_id_full)
+
+    try:
+        query = message.text.split(maxsplit=1)[1]
+    except Exception as error2:
+        print(error2)
+        help = """/ask <текст запроса> будет искать с помощью сервиса perplexity.io"""
+        bot.reply_to(message, help, parse_mode = 'Markdown',
+                     disable_web_page_preview = True,
+                     reply_markup=get_keyboard('hide', message))
+        return
+
+    with ShowAction(message, 'typing'):
+        with semaphore_talks:
+            try:
+                response = my_perplexity.ask(query)
+            except Exception as error2:
+                my_log.log2(f'tb:ask: {error2}')
+                f'tb:ask: {error2}'
+                response = ''
+        if not response:
+            bot.reply_to(message, 'Интернет вам не ответил, перезвоните позже',
+                         parse_mode = '', disable_web_page_preview = True,
+                         reply_markup=get_keyboard('hide', message))
+            return
+        try:
+            reply_to_long_message(message, response, parse_mode = 'HTML',
+                                  disable_web_page_preview = True,
+                                  reply_markup=get_keyboard('hide', message))
+        except Exception as error2:
+            my_log.log2(error2)
+            reply_to_long_message(message, response, parse_mode = '',
+                                  disable_web_page_preview = True,
+                                  reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, response)
+
+        if chat_id_full not in gpt_basic.CHATS:
+            gpt_basic.CHATS[chat_id_full] = []
+        gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
+                "content": f'user {tr("попросил сделать запрос в perplexity.io:", lang)} {query}'},
+                {"role":    'system',
+                "content": f'assistant {tr("perplexity.io ответил:", lang)} {response}'}
+            ]
 
 
 @bot.message_handler(commands=['alert'])

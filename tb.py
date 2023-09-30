@@ -1858,12 +1858,12 @@ def ask_thread(message: telebot.types.Message):
         try:
             reply_to_long_message(message, response, parse_mode = 'HTML',
                                   disable_web_page_preview = True,
-                                  reply_markup=get_keyboard('hide', message))
+                                  reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
             reply_to_long_message(message, response, parse_mode = '',
                                   disable_web_page_preview = True,
-                                  reply_markup=get_keyboard('hide', message))
+                                  reply_markup=get_keyboard('chat', message))
         my_log.log_echo(message, response)
 
         if chat_id_full not in gpt_basic.CHATS:

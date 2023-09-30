@@ -1830,6 +1830,7 @@ def ask_thread(message: telebot.types.Message):
     my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
     check_blocked_user(chat_id_full)
 
     try:

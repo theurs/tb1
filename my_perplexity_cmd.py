@@ -27,7 +27,7 @@ def ask(query: str, search_focus: str = 'internet') -> str:
 
     try:
         perplexity = Perplexity()
-        answer = perplexity.search(query, search_focus=search_focus)
+        answer = perplexity.search(query, search_focus=search_focus, timeout = 30)
         result = ''
         for i in answer:
             pass

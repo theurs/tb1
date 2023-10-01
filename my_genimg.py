@@ -11,8 +11,10 @@ import gpt_basic
 import my_log
 
 
-def bing(prompt: str):
+def bing(prompt: str, moderation_flag: bool = False):
     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
+    if moderation_flag:
+        return []
     try:
         images = bingai.gen_imgs(prompt)
         if type(images) == list:
@@ -49,13 +51,13 @@ def ddg_search_images(prompt: str, max_results: int = 10):
     return result[:max_results]
 
 
-def gen_images(prompt: str):
+def gen_images(prompt: str, moderation_flag: bool = False):
     """рисует одновременно и с помощью бинга и с сервисом от chimera"""
     #return bing(prompt) + chimera(prompt)
 
     pool = ThreadPool(processes=2)
 
-    async_result1 = pool.apply_async(bing, (prompt,))
+    async_result1 = pool.apply_async(bing, (prompt, moderation_flag))
     async_result2 = pool.apply_async(openai, (prompt,))
 
     result = async_result1.get() + async_result2.get()

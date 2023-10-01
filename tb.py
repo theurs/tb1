@@ -1659,7 +1659,8 @@ def image_thread(message: telebot.types.Message):
         if len(prompt) > 1:
             prompt = prompt[1]
             with ShowAction(message, 'upload_photo'):
-                images = my_genimg.gen_images(prompt)
+                moderation_flag = gpt_basic.moderation(prompt)
+                images = my_genimg.gen_images(prompt, moderation_flag)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images]
                 if len(medias) > 0:
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
@@ -1814,7 +1815,6 @@ def block_user_list(message: telebot.types.Message):
     else:
         bot.reply_to(message, tr('Только администраторы могут использовать эту команду.', lang), reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, 'Только администраторы могут использовать эту команду.')
-
 
 
 @bot.message_handler(commands=['ask', 'perplexity'])

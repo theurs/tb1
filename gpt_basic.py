@@ -715,6 +715,32 @@ def check_phone_number(number: str) -> str:
     return response
 
 
+def moderation(text: str) -> bool:
+    """
+    Checks if the given text violates any moderation rules.
+
+    Parameters:
+        text (str): The text to be checked for moderation.
+
+    Returns:
+        bool: True if the text is flagged for moderation, False otherwise.
+    """
+    result = False
+    for server in cfg.openai_servers:
+        openai.api_base = server[0]
+        openai.api_key = server[1]
+
+        try:
+            response = openai.Moderation.create(input=text)
+            if response:
+                result = response['results'][0]['flagged']
+                break
+        except Exception as error:
+            print(error)
+            my_log.log2(f'gpt_basic.moderation: {error}\n\nServer: {openai.api_base}')
+    return result
+
+
 if __name__ == '__main__':
     print(ai_instruct('напиши 10 главных героев книги незнайка на луне'))
 

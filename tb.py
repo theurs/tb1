@@ -1065,7 +1065,7 @@ def handle_photo_thread(message: telebot.types.Message):
                 fp = io.BytesIO()
                 file_info = bot.get_file(photo.file_id)
                 image = bot.download_file(file_info.file_path)
-                result = my_bard.chat_image(tr(f'Опиши на языке [{lang}] что нарисовано на картинке.', lang), chat_id_full, image)
+                result = my_bard.chat_image(tr(f'Опиши что нарисовано на картинке, дай краткое но ёмкое описание изображения, так чо бы человек понял что здесь изображено.', lang), chat_id_full, image)
                 bot.reply_to(message, result, reply_markup=get_keyboard('hide', message))
             return
 

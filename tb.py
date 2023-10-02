@@ -1033,7 +1033,7 @@ def handle_photo_thread(message: telebot.types.Message):
     if SUPER_CHAT[chat_id_full] == 1:
         is_private = True
 
-    if check_blocks(get_topic_id(message)) and not is_private and message.caption not in ('ocr', tr('прочитай', lang)):
+    if check_blocks(get_topic_id(message)) and not is_private and message.caption not in ('ocr', tr('прочитай', lang)) and tr('что', lang) not in message.caption.lower():
         return
 
     with semaphore_talks:
@@ -1054,6 +1054,17 @@ def handle_photo_thread(message: telebot.types.Message):
         # распознаем текст только если есть команда для этого или если прислали в приват
         if not message.caption and not is_private: return
         if not is_private and not gpt_basic.detect_ocr_command(message.caption.lower()): return
+
+        # распознаем что на картинке с помощью гугл барда
+        if tr('что', lang) in message.caption.lower():
+            with ShowAction(message, 'typing'):
+                photo = message.photo[-1]
+                fp = io.BytesIO()
+                file_info = bot.get_file(photo.file_id)
+                image = bot.download_file(file_info.file_path)
+                result = my_bard.chat_image(tr(f'Опиши подробно на языке [{lang}] что нарисовано на картинке.', lang), chat_id_full, image)
+                bot.reply_to(message, result, reply_markup=get_keyboard('hide', message))
+            return
 
         with ShowAction(message, 'typing'):
             check_blocked_user(chat_id_full)

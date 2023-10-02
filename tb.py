@@ -1034,7 +1034,7 @@ def handle_photo_thread(message: telebot.types.Message):
         is_private = True
 
     # грязный хак что бы в чате тоже срабатывало описание по картинке
-    if tr('что', lang) in message.caption.lower():
+    if message.caption and tr('что', lang) in message.caption.lower():
         is_private = True
     if check_blocks(get_topic_id(message)) and not is_private and message.caption not in ('ocr', tr('прочитай', lang)) and tr('что', lang) not in message.caption.lower():
         return
@@ -1059,7 +1059,7 @@ def handle_photo_thread(message: telebot.types.Message):
         if not is_private and not gpt_basic.detect_ocr_command(message.caption.lower()): return
 
         # распознаем что на картинке с помощью гугл барда
-        if tr('что', lang) in message.caption.lower():
+        if message.caption and tr('что', lang) in message.caption.lower():
             with ShowAction(message, 'typing'):
                 photo = message.photo[-1]
                 fp = io.BytesIO()

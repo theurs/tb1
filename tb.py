@@ -1033,10 +1033,11 @@ def handle_photo_thread(message: telebot.types.Message):
     if SUPER_CHAT[chat_id_full] == 1:
         is_private = True
 
+    msglower = message.caption.lower() if message.caption else ''
     # грязный хак что бы в чате тоже срабатывало описание по картинке
-    if message.caption and tr('что', lang) in message.caption.lower():
+    if message.caption and tr('что', lang) in msglower:
         is_private = True
-    if check_blocks(get_topic_id(message)) and not is_private and message.caption not in ('ocr', tr('прочитай', lang)) and tr('что', lang) not in message.caption.lower():
+    if check_blocks(get_topic_id(message)) and not is_private and message.caption not in ('ocr', tr('прочитай', lang)) and tr('что', lang) not in msglower:
         return
 
     with semaphore_talks:
@@ -1056,10 +1057,10 @@ def handle_photo_thread(message: telebot.types.Message):
 
         # распознаем текст только если есть команда для этого или если прислали в приват
         if not message.caption and not is_private: return
-        if not is_private and not gpt_basic.detect_ocr_command(message.caption.lower()): return
+        if not is_private and not gpt_basic.detect_ocr_command(msglower): return
 
         # распознаем что на картинке с помощью гугл барда
-        if message.caption and tr('что', lang) in message.caption.lower():
+        if message.caption and tr('что', lang) in msglower:
             with ShowAction(message, 'typing'):
                 photo = message.photo[-1]
                 file_info = bot.get_file(photo.file_id)

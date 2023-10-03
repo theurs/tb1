@@ -1062,12 +1062,12 @@ def handle_photo_thread(message: telebot.types.Message):
         if message.caption and tr('что', lang) in message.caption.lower():
             with ShowAction(message, 'typing'):
                 photo = message.photo[-1]
-                fp = io.BytesIO()
                 file_info = bot.get_file(photo.file_id)
                 image = bot.download_file(file_info.file_path)
-                result = my_bard.chat_image(tr(f'Опиши что нарисовано на картинке, дай краткое но ёмкое описание изображения, так чо бы человек понял что здесь изображено.', lang), chat_id_full, image)
+                result = my_bard.chat_image(tr('Опиши что нарисовано на картинке, дай краткое но ёмкое описание изображения, так что бы человек понял что здесь изображено.', lang), chat_id_full, image)
                 result = utils.bot_markdown_to_html(result)
-                reply_to_long_message(message, result, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
+                reply_to_long_message(message, result, parse_mode='HTML',
+                                      reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, result)
             return
 

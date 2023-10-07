@@ -6,6 +6,7 @@ import json
 import re
 import threading
 import time
+import sys
 import queue
 
 from re_edge_gpt import Chatbot, ConversationStyle, ImageGen

@@ -1578,12 +1578,15 @@ def google_thread(message: telebot.types.Message):
 
     with ShowAction(message, 'typing'):
         with semaphore_talks:
-            r = my_google.search(q)
+            r = my_google.search(q, lang)
         try:
-            bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
+            bot.reply_to(message, r, parse_mode = 'Markdown',
+                         disable_web_page_preview = True,
+                         reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
-            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
+            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True,
+                         reply_markup=get_keyboard('chat', message))
         my_log.log_echo(message, r)
 
         if chat_id_full not in gpt_basic.CHATS:
@@ -1628,17 +1631,22 @@ def ddg_thread(message: telebot.types.Message):
 """
 
         COMMAND_MODE[chat_id_full] = 'ddg'
-        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
+        bot.reply_to(message, help, parse_mode = 'Markdown',
+                     disable_web_page_preview = True,
+                     reply_markup=get_keyboard('command_mode', message))
         return
 
     with ShowAction(message, 'typing'):
         with semaphore_talks:
-            r = my_google.search_ddg(q)
+            r = my_google.search_ddg(q, lang=lang)
         try:
-            bot.reply_to(message, r, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
+            bot.reply_to(message, r, parse_mode = 'Markdown',
+                         disable_web_page_preview = True,
+                         reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
-            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('chat', message))
+            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True,
+                         reply_markup=get_keyboard('chat', message))
         my_log.log_echo(message, r)
         
         if chat_id_full not in gpt_basic.CHATS:

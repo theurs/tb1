@@ -2,7 +2,6 @@
 
 
 import random
-import subprocess
 from multiprocessing.pool import ThreadPool
 
 from duckduckgo_search import DDGS
@@ -24,20 +23,6 @@ def bing(prompt: str, moderation_flag: bool = False):
         print(f'my_genimg:bing: {error_bing_img}')
         my_log.log2(f'my_genimg:bing: {error_bing_img}')
     return []
-
-
-# def bing(prompt: str, moderation_flag: bool = False):
-#     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
-#     if moderation_flag:
-#         return []
-#     process = subprocess.Popen(['proxychains', '/home/ubuntu/.tb1/bin/python3', '/home/ubuntu/tb/bingai.py', prompt],
-#                                stdout = subprocess.PIPE)
-#     output, error = process.communicate()
-#     result = [x.strip() for x in output.decode('utf-8').strip().split()]
-#     if error:
-#         my_log.log2(f'my_genimg:bing: {error}\n\n{error}\n\n{prompt}')
-#         return []
-#     return result
 
 
 def openai(prompt: str):
@@ -83,4 +68,4 @@ def gen_images(prompt: str, moderation_flag: bool = False):
 
 
 if __name__ == '__main__':
-    print(bing('hello'))
+    print(ddg_search_images('сочная малина'))

@@ -2742,9 +2742,7 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
-                # из режима поиска не выходим после первого запроса а ждем команды на отмену
-                if COMMAND_MODE[chat_id_full] != 'perplexity':
-                    COMMAND_MODE[chat_id_full] = ''
+                COMMAND_MODE[chat_id_full] = ''
                 return
 
         # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим

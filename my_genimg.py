@@ -12,32 +12,32 @@ import gpt_basic
 import my_log
 
 
-# def bing(prompt: str, moderation_flag: bool = False):
-#     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
-#     if moderation_flag:
-#         return []
-#     try:
-#         images = bingai.gen_imgs(prompt)
-#         if type(images) == list:
-#             return images
-#     except Exception as error_bing_img:
-#         print(f'my_genimg:bing: {error_bing_img}')
-#         my_log.log2(f'my_genimg:bing: {error_bing_img}')
-#     return []
-
-
 def bing(prompt: str, moderation_flag: bool = False):
     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
     if moderation_flag:
         return []
-    process = subprocess.Popen(['proxychains', '/home/ubuntu/.tb1/bin/python3', '/home/ubuntu/tb/bingai.py', prompt],
-                               stdout = subprocess.PIPE)
-    output, error = process.communicate()
-    result = [x.strip() for x in output.decode('utf-8').strip().split()]
-    if error:
-        my_log.log2(f'my_genimg:bing: {error}\n\n{error}\n\n{prompt}')
-        return []
-    return result
+    try:
+        images = bingai.gen_imgs(prompt)
+        if type(images) == list:
+            return images
+    except Exception as error_bing_img:
+        print(f'my_genimg:bing: {error_bing_img}')
+        my_log.log2(f'my_genimg:bing: {error_bing_img}')
+    return []
+
+
+# def bing(prompt: str, moderation_flag: bool = False):
+#     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
+#     if moderation_flag:
+#         return []
+#     process = subprocess.Popen(['proxychains', '/home/ubuntu/.tb1/bin/python3', '/home/ubuntu/tb/bingai.py', prompt],
+#                                stdout = subprocess.PIPE)
+#     output, error = process.communicate()
+#     result = [x.strip() for x in output.decode('utf-8').strip().split()]
+#     if error:
+#         my_log.log2(f'my_genimg:bing: {error}\n\n{error}\n\n{prompt}')
+#         return []
+#     return result
 
 
 def openai(prompt: str):

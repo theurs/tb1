@@ -365,15 +365,7 @@ def stream_sync_request(query: str):
 
 
 if __name__ == "__main__":
-    # print(chat('brent oil price', 'test-chat-id', 3, False)['text'])
-    #print(ai('hi'))
-
-    #stream_sync_request('brent oil price')
-
-    prompt = 'dogs'
-    print(gen_imgs(prompt))
-
-
-    # """Usage ./bingai.py 'list 10 japanese dishes"""
-    # t = sys.argv[1]
-    # print(ai(t))
+    t = sys.argv[1]
+    images = gen_imgs(t)
+    for i in images:
+        print(i)

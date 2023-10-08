@@ -1676,7 +1676,7 @@ def image_thread(message: telebot.types.Message):
     check_blocked_user(chat_id_full)
 
     with semaphore_talks:
-        help = f"""/image <{tr('текстовое описание картинки, что надо нарисовать', lang)}>
+        help = f"""/image {tr('текстовое описание картинки, что надо нарисовать', lang)}
 
 {tr('Напишите что надо нарисовать, как это выглядит', lang)}
 """

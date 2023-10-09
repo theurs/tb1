@@ -755,6 +755,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
 
 def check_blocks(chat_id: str) -> bool:
+    """в каких чатах выключены автопереводы"""
     if chat_id not in BLOCKS:
         BLOCKS[chat_id] = 0
     return False if BLOCKS[chat_id] == 1 else True
@@ -1020,7 +1021,8 @@ def handle_photo(message: telebot.types.Message):
     thread = threading.Thread(target=handle_photo_thread, args=(message,))
     thread.start()
 def handle_photo_thread(message: telebot.types.Message):
-    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
+    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография
+    + много текста в подписи, и пересланные сообщения в том числе"""
 
     my_log.log_media(message)
 
@@ -1034,33 +1036,23 @@ def handle_photo_thread(message: telebot.types.Message):
         is_private = True
 
     msglower = message.caption.lower() if message.caption else ''
-    # грязный хак что бы в чате тоже срабатывало описание по картинке
-    if message.caption and tr('что', lang) in msglower:
-        is_private = True
-    if check_blocks(get_topic_id(message)) and not is_private and message.caption not in ('ocr', tr('прочитай', lang)) and tr('что', lang) not in msglower:
-        return
+
+    if tr('что', lang) in msglower or msglower == '':
+        state = 'describe'
+    elif 'ocr' in msglower or tr('прочитай', lang) in msglower or tr('читай', lang) in msglower:
+        state = 'ocr'
+    else:
+        state = 'translate'
+
+    # выключены ли автопереводы
+    if check_blocks(get_topic_id(message)):
+        if not is_private:
+            if state == 'translate':
+                return
 
     with semaphore_talks:
-        # пересланные сообщения пытаемся перевести даже если в них картинка
-        # новости в телеграме часто делают как картинка + длинная подпись к ней
-        if message.forward_from_chat and message.caption:
-            # у фотографий нет текста но есть заголовок caption. его и будем переводить
-            check_blocked_user(chat_id_full)
-            with ShowAction(message, 'typing'):
-                text = my_trans.translate(message.caption)
-            if text:
-                bot.reply_to(message, text, reply_markup=get_keyboard('hide', message))
-                my_log.log_echo(message, text)
-            else:
-                my_log.log_echo(message, "Не удалось/понадобилось перевести.")
-            return
-
-        # распознаем текст только если есть команда для этого или если прислали в приват
-        if not message.caption and not is_private: return
-        if not is_private and not gpt_basic.detect_ocr_command(msglower): return
-
         # распознаем что на картинке с помощью гугл барда
-        if message.caption and tr('что', lang) in msglower:
+        if state == 'describe' and (is_private or tr('что', lang) in msglower):
             with ShowAction(message, 'typing'):
                 photo = message.photo[-1]
                 file_info = bot.get_file(photo.file_id)
@@ -1068,30 +1060,45 @@ def handle_photo_thread(message: telebot.types.Message):
                 result = my_bard.chat_image(tr('Опиши что нарисовано на картинке, дай краткое но ёмкое описание изображения, так что бы человек понял что здесь изображено.', lang), chat_id_full, image)
                 result = utils.bot_markdown_to_html(result)
                 reply_to_long_message(message, result, parse_mode='HTML',
-                                      reply_markup=get_keyboard('hide', message))
+                                        reply_markup=get_keyboard('hide', message))
                 my_log.log_echo(message, result)
             return
-
-        with ShowAction(message, 'typing'):
-            check_blocked_user(chat_id_full)
-            # получаем самую большую фотографию из списка
-            photo = message.photo[-1]
-            fp = io.BytesIO()
-            # скачиваем фотографию в байтовый поток
-            file_info = bot.get_file(photo.file_id)
-            downloaded_file = bot.download_file(file_info.file_path)
-            fp.write(downloaded_file)
-            fp.seek(0)
-            # распознаем текст на фотографии с помощью pytesseract
-            text = my_ocr.get_text_from_image(fp.read(), get_ocr_language(message))
-            # отправляем распознанный текст пользователю
-            if text.strip() != '':
-                reply_to_long_message(message, text, parse_mode='',
-                                      reply_markup=get_keyboard('translate', message),
-                                      disable_web_page_preview = True)
-                my_log.log_echo(message, '[OCR] ' + text)
-            else:
-                my_log.log_echo(message, '[OCR] no results')
+        elif state == 'ocr':
+            with ShowAction(message, 'typing'):
+                check_blocked_user(chat_id_full)
+                # получаем самую большую фотографию из списка
+                photo = message.photo[-1]
+                fp = io.BytesIO()
+                # скачиваем фотографию в байтовый поток
+                file_info = bot.get_file(photo.file_id)
+                downloaded_file = bot.download_file(file_info.file_path)
+                fp.write(downloaded_file)
+                fp.seek(0)
+                # распознаем текст на фотографии с помощью pytesseract
+                text = my_ocr.get_text_from_image(fp.read(), get_ocr_language(message))
+                # отправляем распознанный текст пользователю
+                if text.strip() != '':
+                    reply_to_long_message(message, text, parse_mode='',
+                                        reply_markup=get_keyboard('translate', message),
+                                        disable_web_page_preview = True)
+                    my_log.log_echo(message, '[OCR] ' + text)
+                else:
+                    my_log.log_echo(message, '[OCR] no results')
+            return
+        elif state == 'translate':
+            # пересланные сообщения пытаемся перевести даже если в них картинка
+            # новости в телеграме часто делают как картинка + длинная подпись к ней
+            if message.forward_from_chat and message.caption:
+                # у фотографий нет текста но есть заголовок caption. его и будем переводить
+                check_blocked_user(chat_id_full)
+                with ShowAction(message, 'typing'):
+                    text = my_trans.translate(message.caption)
+                if text:
+                    bot.reply_to(message, text, reply_markup=get_keyboard('hide', message))
+                    my_log.log_echo(message, text)
+                else:
+                    my_log.log_echo(message, "Не удалось/понадобилось перевести.")
+                return
 
 
 @bot.message_handler(content_types = ['video', 'video_note'])
@@ -1658,7 +1665,7 @@ def ddg_thread(message: telebot.types.Message):
             ]
 
 
-@bot.message_handler(commands=['image','img'])
+@bot.message_handler(commands=['image','img','i'])
 def image(message: telebot.types.Message):
     thread = threading.Thread(target=image_thread, args=(message,))
     thread.start()
@@ -2075,7 +2082,7 @@ def summ2_text(message: telebot.types.Message):
     summ_text(message)
 
 
-@bot.message_handler(commands=['trans'])
+@bot.message_handler(commands=['trans', 'tr', 't'])
 def trans(message: telebot.types.Message):
     thread = threading.Thread(target=trans_thread, args=(message,))
     thread.start()

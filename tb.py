@@ -2110,6 +2110,10 @@ def trans_thread(message: telebot.types.Message):
 
 {tr('Напишите что надо перевести', lang)}
 """
+        if message.text.startswith('/t '):
+            message.text = message.text.replace('/t', '/trans', 1)
+        if message.text.startswith('/tr '):
+            message.text = message.text.replace('/tr', '/trans', 1)
         # разбираем параметры
         # регулярное выражение для разбора строки
         pattern = r'^\/trans\s+((?:' + '|'.join(supported_langs_trans) + r')\s+)?\s*(.*)$'

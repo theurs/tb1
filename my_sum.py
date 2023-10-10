@@ -19,6 +19,7 @@ import cfg
 import gpt_basic
 import my_log
 import my_claude
+import my_trans
 
 
 def get_text_from_youtube(url: str) -> str:
@@ -92,12 +93,13 @@ BEGIN:
     if type(text) != str or len(text) < 1: return ''
 
     result = ''
+    tr = my_trans.translate_text2
 
     if len(prompt) > cfg.max_request:
         try:
             r = my_claude.chat(prompt[:99000], 'my_summ')
             if r:
-                result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:99000])} символов]'
+                result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:99000])} {tr("символов", lang)}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:claude: {error}')
             my_log.log2(f'my_sum:summ_text_worker:claude: {error}')
@@ -106,7 +108,7 @@ BEGIN:
         try:
             r = gpt_basic.ai(prompt[:cfg.max_request])
             if r:
-                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:cfg.max_request])} символов]'
+                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:cfg.max_request])} {tr("символов", lang)}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')

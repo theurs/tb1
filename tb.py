@@ -1037,7 +1037,7 @@ def handle_photo_thread(message: telebot.types.Message):
 
     msglower = message.caption.lower() if message.caption else ''
 
-    if tr('что', lang) in msglower or msglower == '':
+    if (tr('что', lang) in msglower and len(msglower) < 30) or msglower == '':
         state = 'describe'
     elif 'ocr' in msglower or tr('прочитай', lang) in msglower or tr('читай', lang) in msglower:
         state = 'ocr'

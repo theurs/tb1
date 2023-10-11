@@ -61,7 +61,7 @@ def ask(query: str, search_focus: str = 'internet') -> str:
 
 if __name__ == '__main__':
 
-    # print(ask('погода во владистоке прогноз на неделю подробно'))
+    print(ask('погода во владистоке прогноз на неделю подробно'))
 
     """Usage ./bingai.py 'list 10 japanese dishes"""
     t = sys.argv[1]

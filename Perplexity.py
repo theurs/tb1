@@ -1,3 +1,5 @@
+from typing import Iterable, Dict
+
 from os import listdir
 from uuid import uuid4
 from time import sleep, time
@@ -10,7 +12,7 @@ from requests import Session, get, post
 class Perplexity:
     def __init__(self, email: str = None) -> None:
         self.session: Session = Session()
-        self.user_agent: dict = { "User-Agent": "Ask/2.2.1/334 (iOS; iPhone) isiOSOnMac/false" }
+        self.user_agent: dict = { "User-Agent": "Ask/2.4.1/224 (iOS; iPhone; Version 17.1) isiOSOnMac/false", "X-Client-Name": "Perplexity-iOS" }
         self.session.headers.update(self.user_agent)
 
         if email and ".perplexity_session" in listdir():
@@ -128,7 +130,10 @@ class Perplexity:
                 if message.startswith("42"):
                     message : list = loads(message[2:])
                     content: dict = message[1]
-                    content.update(loads(content["text"]))
+                    if "mode" in content and content["mode"] == "copilot":
+                        content["copilot_answer"] = loads(content["text"])
+                    elif "mode" in content:
+                        content.update(loads(content["text"]))
                     content.pop("text")
                     if (not ("final" in content and content["final"])) or ("status" in content and content["status"] == "completed"):
                         self.queue.append(content)
@@ -150,11 +155,17 @@ class Perplexity:
             on_error=lambda ws, err: print(f"websocket error: {err}")
         )
     
-    def _s(self, query: str, mode: str = "concise", search_focus: str = "internet", attachments: list[str] = [], language: str = "en-GB") -> dict:
+    def _s(self, query: str, mode: str = "concise", search_focus: str = "internet", attachments: list[str] = [], language: str = "en-GB", in_page: str = None, in_domain: str = None) -> None:
         assert self.finished, "already searching"
         assert mode in ["concise", "copilot"], "invalid mode"
         assert len(attachments) <= 4, "too many attachments: max 4"
         assert search_focus in ["internet", "scholar", "writing", "wolfram", "youtube", "reddit"], "invalid search focus"
+
+        if in_page:
+            search_focus = "in_page"
+        if in_domain:
+            search_focus = "in_domain"
+
         self._start_interaction()
         ws_message: str = f"{self.base + self.n}" + dumps([
             "perplexity_ask",
@@ -170,12 +181,14 @@ class Perplexity:
                 "frontend_uuid": str(uuid4()),
                 "mode": mode,
                 # "use_inhouse_model": True
+                "in_page": in_page,
+                "in_domain": in_domain
             }
         ])
 
         self.ws.send(ws_message)
 
-    def search(self, query: str, mode: str = "concise", search_focus: str = "internet", attachments: list[str] = [], language: str = "en-GB", timeout: float = None) -> dict:
+    def search(self, query: str, mode: str = "concise", search_focus: str = "internet", attachments: list[str] = [], language: str = "en-GB", timeout: float = 30) -> Iterable[Dict]:
         self._s(query, mode, search_focus, attachments, language)
 
         start_time: float = time()
@@ -186,7 +199,7 @@ class Perplexity:
             if len(self.queue) != 0:
                 yield self.queue.pop(0)
 
-    def search_sync(self, query: str, mode: str = "concise", search_focus: str = "internet", attachments: list[str] = [], language: str = "en-GB", timeout: float = None) -> dict:
+    def search_sync(self, query: str, mode: str = "concise", search_focus: str = "internet", attachments: list[str] = [], language: str = "en-GB", timeout: float = 30) -> dict:
         self._s(query, mode, search_focus, attachments, language)
 
         start_time: float = time()

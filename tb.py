@@ -1860,6 +1860,7 @@ def ask_thread(message: telebot.types.Message):
     else: return
 
     my_log.log_echo(message)
+    return
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)

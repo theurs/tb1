@@ -958,7 +958,7 @@ def handle_document_thread(message: telebot.types.Message):
                 return
 
         # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
-        if is_private or caption.lower() in [tr('прочитай', lang), tr('читай', lang)]:
+        if is_private or caption.lower() in [tr('прочитай', lang), tr('прочитать', lang)]:
             check_blocked_user(chat_id_full)
             with ShowAction(message, 'upload_document'):
                 # получаем самый большой документ из списка

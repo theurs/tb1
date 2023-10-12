@@ -2279,20 +2279,17 @@ def send_welcome_help(message: telebot.types.Message):
     chat_full = get_topic_id(message)
     lang = get_lang(chat_full, message)
 
-    help = f"""The chatbot responds to the trigger word <b>bot</b>.
-
+    help = f"""The chatbot responds to the name <b>bot</b>.
 For example, you can say <b>bot, tell me a joke</b>.
+In private messages, you don't need to mention the bot's name
 
-In private messages, you don't need to mention the bot's name.
+🔭 If you send a link in a private message, the bot will try to extract and provide a brief summary of the content.
 
-If you send a link in a private message, the bot will try to extract and provide a brief summary of the content.
+🛸 To get text from an image, send the image with the caption "ocr" (or "read"). 
 
-To get text from an image, send the image with the caption "ocr" (or "read"). 
+🎙️ You can issue commands and make requests using voice messages.
 
 When communicating with Claude AI, uploaded files and links are sent directly to Claude, and he can respond based on their content.
-
-You can issue commands and make requests using voice messages.
-
 
 ChatGPT has a special mode of operation where a model trained for concise answers responds instead of the chat. To use it, simply start your query with a period.
 

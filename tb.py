@@ -2295,7 +2295,7 @@ ChatGPT has a special mode of operation where a model trained for concise answer
 
 .Write all days of the week separated by commas
 
-The usual chat will add some extraneous words such as "Okay, I'll try," in addition to the days, while this model will do exactly what you asked for.
+The usual model will add extraneous words to its responses, such as "Okay, I'll try," while this model is trained to be concise and informative.
 
 
 You can send texts longer than 4096 characters. The Telegram client automatically breaks them down into parts, and the bot reassembles them. The restrictions for chatbots are as follows:

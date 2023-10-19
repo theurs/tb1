@@ -392,8 +392,8 @@ def clear_voice_message_text(text: str) -> str:
 
 if __name__ == "__main__":
 
-    print(chat_image('Что изображено на картинке? Отвечай на языке [de]', 0, open('1.jpg', 'rb').read()))
-    pass
+    # print(chat_image('Что изображено на картинке? Отвечай на языке [de]', 0, open('1.jpg', 'rb').read()))
+    # pass
 
     # for i in split_text(test_text, 2500):
     #     print(i)

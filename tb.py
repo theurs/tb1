@@ -2717,12 +2717,17 @@ def do_task(message, custom_prompt: str = ''):
             bot_name = BOT_NAME_DEFAULT
             BOT_NAMES[chat_id_full] = bot_name
 
+        bot_name_used = False
         # убираем из запроса кодовое слово
         if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
             bot_name_used = True
             message.text = message.text[len(f'{bot_name} '):].strip()
-        else:
-            bot_name_used = False
+
+        bot_name2 = f'@{_bot_name}'
+        # убираем из запроса имя бота в телеграме
+        if msg.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
+            bot_name_used = True
+            message.text = message.text[len(f'{bot_name2} '):].strip()
 
         msg = message.text.lower()
 

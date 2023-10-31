@@ -239,6 +239,8 @@ def bot_markdown_to_html(text: str) -> str:
     for match, random_string in list_of_code_blocks:
         new_match = match
         language = new_match.split('\n')[0]
+        if not language:
+            language = 'python'
         body = '\n'.join(new_match.split('\n')[1:])
         # text = text.replace(random_string, f'<code>{new_match}</code>')
         text = text.replace(random_string, f'<pre><code class = "language-{language}">{body}</code></pre>')

@@ -291,8 +291,6 @@ def split_html(text: str, max_length: int = 1500) -> list:
         - AssertionError: If the length of the text is less than or equal to 299.
     """
 
-    return telebot.util.smart_split(text, max_length)
-
     if len(text) < 300:
         return [text,]
 
@@ -319,8 +317,8 @@ def split_html(text: str, max_length: int = 1500) -> list:
 
         b_tags = chunk.count('<b>')
         b_close_tags = chunk.count('</b>')
-        code_tags = chunk.count('<code>')
-        code_close_tags = chunk.count('</code>')
+        code_tags = chunk.count('<pre>')
+        code_close_tags = chunk.count('</pre>')
 
         if b_tags > b_close_tags:
             chunk += '</b>'
@@ -330,18 +328,18 @@ def split_html(text: str, max_length: int = 1500) -> list:
             next_chunk_is_b = False
 
         if code_tags > code_close_tags:
-            chunk += '</code>'
+            chunk += '</pre>'
             next_chunk_is_code = True
         elif code_tags < code_close_tags:
-            chunk = '<code>' + chunk
+            chunk = '<pre>' + chunk
             next_chunk_is_code = False
 
 
         # если нет открывающих и закрывающих тегов <code> а в предыдущем чанке 
         # был добавлен закрывающий тег значит этот чанк целиком - код
         if code_close_tags == 0 and code_tags == 0 and next_chunk_is_code:
-            chunk = '<code>' + chunk
-            chunk += '</code>'
+            chunk = '<pre>' + chunk
+            chunk += '</pre>'
 
         # если нет открывающих и закрывающих тегов <b> а в предыдущем чанке 
         # был добавлен закрывающий тег значит этот чанк целиком - <b>

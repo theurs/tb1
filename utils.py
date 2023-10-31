@@ -241,7 +241,29 @@ def bot_markdown_to_html(text: str) -> str:
         text = text.replace(random_string, f'<code>{new_match}</code>')
 
     text = replace_tables(text)
+    
+    text = replace_code_lang(text)
+    
     return text
+
+
+def replace_code_lang(t: str) -> str:
+    result = ''
+    state = 0
+    for i in t.split('\n'):
+        if i.startswith('<code>') and len(i) > 7:
+            result += f'<pre><code class = "language-{i[6:]}">'
+            state = 1
+        else:
+            if state == 1:
+                if i == '</code>':
+                    result += '</code></pre>'
+                    state = 0
+                else:
+                    result += i + '\n'
+            else:
+                result += i + '\n'
+    return result
 
 
 def split_html(text: str, max_length: int = 1500) -> list:
@@ -413,8 +435,19 @@ def replace_tables(text: str) -> str:
 
 
 if __name__ == '__main__':
-    text = """```
+    text = """
+текст
+
+```python
 print('Hello') # Hello
-```"""
-    print(bot_markdown_to_html(text))
-    
+```
+
+и тут текст
+```
+print('Hello') # Hello
+```
+"""
+    t = bot_markdown_to_html(text)
+
+    tt = split_html(t)
+    print(tt)

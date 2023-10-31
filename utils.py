@@ -240,10 +240,10 @@ def bot_markdown_to_html(text: str) -> str:
         new_match = match
         text = text.replace(random_string, f'<code>{new_match}</code>')
 
-    text = replace_tables(text)
-    
     text = replace_code_lang(text)
-    
+
+    text = replace_tables(text)
+
     return text
 
 

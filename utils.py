@@ -238,7 +238,10 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks:
         new_match = match
-        text = text.replace(random_string, f'<code>{new_match}</code>')
+        language = new_match.split('\n')[0]
+        body = '\n'.join(new_match.split('\n')[1:])
+        # text = text.replace(random_string, f'<code>{new_match}</code>')
+        text = text.replace(random_string, f'<pre><code class = "language-{language}">{body}</code></pre>')
 
     text = replace_tables(text)
     return text
@@ -412,25 +415,8 @@ def replace_tables(text: str) -> str:
 
 
 if __name__ == '__main__':
-    text = """Вот пример таблицы с двумя столбцами, которую я создал с помощью markdown:
-
-| Страна | Столица |
-| ------ | ------- |
-| Франция | Париж |
-| Япония | Токио |
-| Индия | Нью-Дели |
-
-Вы можете использовать этот формат для создания своих собственных таблиц с двумя столбцами. Просто введите вертикальную черту (|) для разделения ячеек и тире (-) для разделения заголовков от данных. Вы также можете выравнивать текст в ячейках по левому, правому или центральному краю, используя двоеточия (:) в строке с тире.
-
-Сравнение характеристик
-
-|Характеристика|Skoda Octavia|Toyota1111111111111111111 Avensis|
-|---|---|---|
-|Цена|От 1,6 млн рублей|От 1,7 млн рублей|
-| Двигатель | 1.4 TSI (150 л.с.), 1.6 TDI (110 л.с.), 2.0 TSI (180 л.с.) | 1.6 Valvematic (122 л.с.), 2.0 Valvematic (152 л.с.) |
-| Коробка передач | Механическая, автоматическая | Механическая, автоматическая |
-| Расход топлива | 5,2-7,3 л/100 км | 6,2-7,8 л/100 км |
-| Размеры | 4689x1814x1460 мм | 4695x1770x1470 мм |
-| Объем багажника | 566 л | <b>520 л</b> |
-| Гарантия | 5 лет | 3 года |"""
-    print(replace_tables(text))
+    text = """```python
+print('Hello') # Hello
+```"""
+    print(bot_markdown_to_html(text))
+    

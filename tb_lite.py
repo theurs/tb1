@@ -18,7 +18,13 @@ def handle_photo(message: telebot.types.Message):
 @bot.message_handler(func=lambda message: True)
 def do_task(message):
     """функция обработчик сообщений работающая в отдельном потоке"""
-    bot.reply_to(message, message.text)
+    text = """
+<pre><code class = "language-python">
+print(123) # 123456
+</code></pre>
+"""
+
+    bot.reply_to(message, text, parse_mode='HTML')
 
 
 def main():

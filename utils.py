@@ -239,11 +239,12 @@ def bot_markdown_to_html(text: str) -> str:
     for match, random_string in list_of_code_blocks:
         new_match = match
         language = new_match.split('\n')[0]
-        if not language:
-            language = 'python'
         body = '\n'.join(new_match.split('\n')[1:])
         # text = text.replace(random_string, f'<code>{new_match}</code>')
-        text = text.replace(random_string, f'<pre><code class = "language-{language}">{body}</code></pre>')
+        if language:
+            text = text.replace(random_string, f'<pre><code class = "language-{language}">{body}</code></pre>')
+        else:
+            text = text.replace(random_string, f'<pre><code>{body}</code></pre>')
 
     text = replace_tables(text)
     return text
@@ -307,6 +308,7 @@ def split_html(text: str, max_length: int = 1500) -> list:
         elif code_tags < code_close_tags:
             chunk = '<code>' + chunk
             next_chunk_is_code = False
+
 
         # если нет открывающих и закрывающих тегов <code> а в предыдущем чанке 
         # был добавлен закрывающий тег значит этот чанк целиком - код
@@ -419,7 +421,7 @@ def replace_tables(text: str) -> str:
 
 
 if __name__ == '__main__':
-    text = """```python
+    text = """```
 print('Hello') # Hello
 ```"""
     print(bot_markdown_to_html(text))

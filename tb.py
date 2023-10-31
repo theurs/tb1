@@ -2927,7 +2927,7 @@ def do_task(message, custom_prompt: str = ''):
                             user_name = chat_name
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name, lang = lang, is_private = is_private)
                         # answer = my_bard.convert_markdown(answer)
-                        my_log.log_echo(message, answer, debug = True)
+                        # my_log.log_echo(message, answer, debug = True)
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
                         my_log.log_echo(message, answer)

@@ -647,7 +647,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             with ShowAction(message, 'upload_video'):
                 tmp = my_tiktok.download_video(message.text)
                 try:
-                    bot.send_video(chat_id=message.chat.id, video=open(tmp, 'rb'))
+                    bot.send_video(chat_id=message.chat.id, video=open(tmp, 'rb'),
+                                   reply_markup=get_keyboard('hide', message))
                 except Exception as bot_send_tiktok_video_error:
                     my_log.log2(f'tb:callback_inline_thread:download_tiktok:{bot_send_tiktok_video_error}')
                 try:

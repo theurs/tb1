@@ -248,6 +248,15 @@ def bot_markdown_to_html(text: str) -> str:
 
 
 def replace_code_lang(t: str) -> str:
+    """
+    Replaces the code language in the given string with appropriate HTML tags.
+
+    Parameters:
+        t (str): The input string containing code snippets.
+
+    Returns:
+        str: The modified string with code snippets wrapped in HTML tags.
+    """
     result = ''
     state = 0
     for i in t.split('\n'):
@@ -281,6 +290,8 @@ def split_html(text: str, max_length: int = 1500) -> list:
     Raises:
         - AssertionError: If the length of the text is less than or equal to 299.
     """
+
+    return telebot.util.smart_split(text, max_length)
 
     if len(text) < 300:
         return [text,]

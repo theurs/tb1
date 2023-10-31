@@ -324,6 +324,8 @@ def split_html(text: str, max_length: int = 1500) -> list:
 
         if chunk.startswith('<code>') and not chunk.endswith('</code>'):
             chunk = chunk[6:]
+        if chunk.startswith('<b>') and not chunk.endswith('</b>'):
+            chunk = chunk[3:]
         chunks2.append(chunk)
 
     return chunks2

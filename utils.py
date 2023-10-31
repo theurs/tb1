@@ -238,13 +238,7 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks:
         new_match = match
-        language = new_match.split('\n')[0]
-        body = '\n'.join(new_match.split('\n')[1:])
-        # text = text.replace(random_string, f'<code>{new_match}</code>')
-        if language:
-            text = text.replace(random_string, f'<pre><code class = "language-{language}">{body}</code></pre>')
-        else:
-            text = text.replace(random_string, f'<pre><code>{body}</code></pre>')
+        text = text.replace(random_string, f'<code>{new_match}</code>')
 
     text = replace_tables(text)
     return text
@@ -322,10 +316,6 @@ def split_html(text: str, max_length: int = 1500) -> list:
             chunk = '<b>' + chunk
             chunk += '</b>'
 
-        if chunk.startswith('<code>') and not chunk.endswith('</code>'):
-            chunk = chunk[6:]
-        if chunk.startswith('<b>') and not chunk.endswith('</b>'):
-            chunk = chunk[3:]
         chunks2.append(chunk)
 
     return chunks2
@@ -423,21 +413,8 @@ def replace_tables(text: str) -> str:
 
 
 if __name__ == '__main__':
-    text = """
-```python
-print(1)
-```
-Вот пример таблицы с двумя столбцами, которую я создал с помощью markdown:
-
-| Страна | Столица |
-| ------ | ------- |
-| Франция | Париж |
-| Япония | Токио |
-| Индия | Нью-Дели |
-
-Вы можете использовать этот формат для создания своих собственных таблиц с двумя столбцами. Просто введите вертикальную черту (|) для разделения ячеек и тире (-) для разделения заголовков от данных. Вы также можете выравнивать текст в ячейках по левому, правому или центральному краю, используя двоеточия (:) в строке с тире.
-
-Сравнение характеристик
-"""
+    text = """```
+print('Hello') # Hello
+```"""
     print(bot_markdown_to_html(text))
     

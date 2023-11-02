@@ -21,7 +21,7 @@ import my_trans
 
 
 # clientside timeout
-openai.api_requestor.TIMEOUT_SECS = 150
+# openai.api_requestor.TIMEOUT_SECS = 150
 
 
 CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')

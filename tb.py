@@ -2578,6 +2578,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                 except Exception as error:
                     print(error)
                     my_log.log2(f'tb:reply_to_long_message: {error}')
+                    my_log.log2(chunk)
                     if send_message:
                         bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
                                          disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)

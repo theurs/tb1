@@ -13,7 +13,7 @@ google
 gTTS
 langdetect
 natsort
-openai
+openai==0.28.0
 openai-whisper
 websocket-client
 pandas

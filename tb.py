@@ -1716,6 +1716,7 @@ def image_thread(message: telebot.types.Message):
                     caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
                     bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
                     reply_markup=get_keyboard('hide_image', message))
+                    my_log.log_echo(message, f'[translated image prompt] {prompt_tr}')
                     my_log.log_echo(message, '[image gen] ')
 
                     n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 

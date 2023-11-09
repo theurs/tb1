@@ -26,9 +26,9 @@ def bing(prompt: str, moderation_flag: bool = False):
 
 
 def openai(prompt: str):
-    """рисует 6 картинок с помощью openai и возвращает сколько смог нарисовать"""
+    """рисует 5 картинок с помощью openai и возвращает сколько смог нарисовать"""
     try:
-        return gpt_basic.image_gen(prompt, amount = 6)
+        return gpt_basic.image_gen(prompt, amount = 5)
     except Exception as error_openai_img:
         print(f'my_genimg:openai: {error_openai_img}')
         my_log.log2(f'my_genimg:openai: {error_openai_img}')

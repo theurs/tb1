@@ -1695,6 +1695,8 @@ def image_thread(message: telebot.types.Message):
             with ShowAction(message, 'upload_photo'):
                 moderation_flag = gpt_basic.moderation(prompt)
                 prompt_tr = gpt_basic.ai_instruct(f'Translate into english: {prompt}')
+                if not prompt_tr:
+                    prompt_tr = prompt
                 images = my_genimg.gen_images(prompt_tr, moderation_flag)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images]
                 if len(medias) > 0:

@@ -59,8 +59,9 @@ def gen_images(prompt: str, moderation_flag: bool = False):
 
     async_result1 = pool.apply_async(bing, (prompt, moderation_flag))
     async_result2 = pool.apply_async(openai, (prompt,))
+    async_result3 = pool.apply_async(openai, (prompt,))
 
-    result = async_result1.get() + async_result2.get()
+    result = async_result1.get() + async_result2.get() + async_result3.get()
 
     # if len(result) < 10:
     #     result = result + ddg_search_images(prompt)

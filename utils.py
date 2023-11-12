@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import platform as platform_module
 
+import bs4
 import qrcode
 import prettytable
 import telebot
@@ -275,7 +276,7 @@ def replace_code_lang(t: str) -> str:
     return result
 
 
-def split_html(text: str, max_length: int = 1500) -> list:
+def split_html_old(text: str, max_length: int = 1500) -> list:
     """
     Split the given HTML text into chunks of maximum length, while preserving the integrity
     of HTML tags. The function takes two arguments:
@@ -443,20 +444,136 @@ def replace_tables(text: str) -> str:
     return text
 
 
+def split_html(html_content: str, max_length: int = 3800):
+    """
+    Splits the given HTML content into chunks that do not exceed the maximum length.
+
+    Parameters:
+        html_content (str): The HTML content to be split.
+        max_length (int, optional): The maximum length of each chunk. Defaults to 3800.
+
+    Returns:
+        list[str]: A list of chunks, where each chunk is a string of HTML content.
+    """
+    if len(html_content) <= max_length:
+        # If content is less than the max length, send as is.
+        return [html_content]
+    else:
+        # If content is too long, split it.
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        chunks = []
+        current_chunk = ''
+        
+        for element in soup.recursiveChildGenerator():
+            if element.name:  # if it's a tag
+                current_html = str(element)
+                
+                # If adding this element exceeds the max length, start a new chunk
+                if len(current_chunk) + len(current_html) > max_length:
+                    chunks.append(current_chunk)
+                    current_chunk = current_html
+                else:
+                    current_chunk += current_html
+            elif element:  # if it's text
+                # Similar logic as above for text
+                if len(current_chunk) + len(element) > max_length:
+                    chunks.append(current_chunk)
+                    current_chunk = element
+                else:
+                    current_chunk += element
+        
+        # Add the last chunk if it's not empty
+        if current_chunk:
+            chunks.append(current_chunk)
+        
+        return chunks
+
+
 if __name__ == '__main__':
-    text = """
-текст
 
-```python
-print('Hello') # Hello
-```
+    html_text = f"""
+<b>Привет, theurs!</b>
 
-и тут текст
-```
-print('Hello') # Hello
-```
+<b>Я понял, что вам нужно разбить HTML текст на части, а не вытаскивать из него части текста.</b>
+
+<b>В таком случае, вам нужно использовать библиотеку BeautifulSoup или lxml.html, чтобы получить список всех элементов HTML. Затем, вы можете использовать метод <code>split()</code> для разделения списка на части.</b>
+
+<b>Вот пример кода:</b>
+
+<pre><code class = "language-python">import bs4
+
+html_text = &quot;&quot;&quot;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;Это заголовок&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1&gt;Это заголовок 1&lt;/h1&gt;
+&lt;p&gt;Это абзац 1&lt;/p&gt;
+&lt;h2&gt;Это заголовок 2&lt;/h2&gt;
+&lt;p&gt;Это абзац 2&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+&quot;&quot;&quot;
+
+soup = bs4.BeautifulSoup(html_text, &quot;html.parser&quot;)
+
+# Получаем список всех элементов HTML
+elements = soup.find_all()
+
+# Делим список на части по 2 элемента
+parts = elements[::2]
+
+for part in parts:
+    print(part)
+
+</code></pre>
+<b>Этот код выведет следующий результат:</b>
+
+<code>
+&lt;h1&gt;Это заголовок 1&lt;/h1&gt;
+&lt;p&gt;Это абзац 1&lt;/p&gt;
+&lt;h2&gt;Это заголовок 2&lt;/h2&gt;
+</code>
+
+<b>Вы также можете использовать метод <code>find_all()</code> для поиска элементов HTML по определенному шаблону. Затем, вы можете использовать метод <code>split()</code> для разделения списка на части.</b>
+
+<b>Вот пример кода:</b>
+
+<pre><code class = "language-python">import bs4
+
+html_text = &quot;&quot;&quot;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;Это заголовок&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1&gt;Это заголовок 1&lt;/h1&gt;
+&lt;p&gt;Это абзац 1&lt;/p&gt;
+&lt;h2&gt;Это заголовок 2&lt;/h2&gt;
+&lt;p&gt;Это абзац 2&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+&quot;&quot;&quot;
+
+soup = bs4.BeautifulSoup(html_text, &quot;html.parser&quot;)
+
+# Ищем все заголовки
+headers = soup.find_all(&quot;h1&quot;, &quot;h2&quot;)
+
+# Делим список на части по 2 элемента
+parts = headers[::2]
+
+for part in parts:
+    print(part)
+
+</code></pre>
+<b>Этот код выведет тот же результат, что и предыдущий.</b>
+
+<b>Надеюсь, это поможет!</b>
+
 """
-    t = bot_markdown_to_html(text)
+    t = split_html_test(html_text, max_length = 300)
 
-    tt = split_html(t)
-    print(tt)
+    print(t)

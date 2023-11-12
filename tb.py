@@ -2581,7 +2581,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
 
     if len(resp) < 20000:
         if parse_mode == 'HTML':
-            chunks = utils.split_html(resp, 4000)
+            chunks = utils.split_html(resp)
         else:
             chunks = utils.split_text(resp, 4000)
         counter = len(chunks)

@@ -1437,9 +1437,11 @@ def set_new_model_thread(message: telebot.types.Message):
             if len(tmpstr) > 3800:
                 msgs.append(tmpstr)
                 tmpstr = ''
+        if len(tmpstr) > 0:
+            msgs.append(tmpstr)
         for x in msgs:
             reply_to_long_message(message, x, parse_mode='HTML', reply_markup=get_keyboard('hide', message)) 
-        my_log.log_echo(message, msg)
+            my_log.log_echo(message, x)
         return
 
     if not (message.from_user.id in cfg.admins or is_admin_member(message)):

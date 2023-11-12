@@ -1430,7 +1430,15 @@ def set_new_model_thread(message: telebot.types.Message):
 
 {available_models}
 """
-        reply_to_long_message(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message)) 
+        msgs = []
+        tmpstr = ''
+        for x in msg.split('\n'):
+            tmpstr += x + '\n'
+            if len(tmpstr) > 3800:
+                msgs.append(tmpstr)
+                tmpstr = ''
+        for x in msgs:
+            reply_to_long_message(message, x, parse_mode='Markdown', reply_markup=get_keyboard('hide', message)) 
         my_log.log_echo(message, msg)
         return
 

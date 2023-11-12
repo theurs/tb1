@@ -1418,15 +1418,15 @@ def set_new_model_thread(message: telebot.types.Message):
     if len(message.text.split()) < 2:
         available_models = ''
         for m in gpt_basic.get_list_of_models():
-            available_models += f'`/model {m}`\n'
+            available_models += f'<code>/model {m}</code>\n'
         msg = f"""{tr('Меняет модель для chatGPT.', lang)}
 
-{tr('Выбрано:', lang)} `/model {current_model}`
+{tr('Выбрано:', lang)} <code>/model {current_model}</code>
 
 {tr('Возможные варианты (на самом деле это просто примеры а реальные варианты зависят от настроек бота, его бекэндов):', lang)}
 
-`/model gpt-4`
-`/model gpt-3.5-turbo-16k`
+<code>/model gpt-4</code>
+<code>/model gpt-3.5-turbo-16k</code>
 
 {available_models}
 """
@@ -1438,7 +1438,7 @@ def set_new_model_thread(message: telebot.types.Message):
                 msgs.append(tmpstr)
                 tmpstr = ''
         for x in msgs:
-            reply_to_long_message(message, x, parse_mode='Markdown', reply_markup=get_keyboard('hide', message)) 
+            reply_to_long_message(message, x, parse_mode='HTML', reply_markup=get_keyboard('hide', message)) 
         my_log.log_echo(message, msg)
         return
 

@@ -3,6 +3,7 @@
 import datetime
 import os
 import json
+import random
 import re
 import sys
 import threading
@@ -57,7 +58,11 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
 
     response = ''
 
-    for server in cfg.openai_servers:
+    # копируем и перемешиваем список серверов
+    shuffled_servers = cfg.openai_servers[:]
+    random.shuffle(shuffled_servers)
+
+    for server in shuffled_servers:
         openai.api_base = server[0]
         openai.api_key = server[1]
 

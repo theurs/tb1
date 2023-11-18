@@ -1704,21 +1704,7 @@ def image_thread(message: telebot.types.Message):
             prompt = prompt[1]
             with ShowAction(message, 'upload_photo'):
                 moderation_flag = gpt_basic.moderation(prompt)
-                prompt_tr = ''
-                try:
-                    prompt_tr = gpt_basic.ai_instruct(f'Translate into english if it is not english, else leave it as it is: {prompt}')
-                except Exception as image_prompt_translate:
-                    my_log.log2(f'image:translate_prompt: {str(image_prompt_translate)}\n\n{prompt}')
-                prompt_tr = prompt_tr.strip()
-                if not prompt_tr:
-                    try:
-                        prompt_tr = my_trans.translate_text2(prompt, 'en')
-                    except Exception as google_translate_error:
-                        my_log.log2(f'image:translate_prompt:google_translate: {str(google_translate_error)}\n\n{prompt}')
-                    if not prompt_tr:
-                        prompt_tr = prompt
-                my_log.log_echo(message, f'[translated image prompt] {prompt_tr}')
-                images = my_genimg.gen_images(prompt_tr, moderation_flag)
+                images = my_genimg.gen_images(prompt, moderation_flag)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images]
                 if len(medias) > 0:
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)

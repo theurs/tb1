@@ -1579,6 +1579,11 @@ def google_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     check_blocked_user(chat_id_full)
 
+    if not allowed_chatGPT_user(message.chat.id):
+        my_log.log_echo(message, 'chatGPT запрещен [google]')
+        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang))
+        return
+
     try:
         q = message.text.split(maxsplit=1)[1]
     except Exception as error2:
@@ -1633,6 +1638,11 @@ def ddg_thread(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     check_blocked_user(chat_id_full)
+
+    if not allowed_chatGPT_user(message.chat.id):
+        my_log.log_echo(message, 'chatGPT запрещен [ddg]')
+        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang))
+        return
 
     try:
         q = message.text.split(maxsplit=1)[1]
@@ -2010,8 +2020,13 @@ def summ_text_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
+    if not allowed_chatGPT_user(message.chat.id):
+        my_log.log_echo(message, 'chatGPT запрещен [sum]')
+        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang))
+        return
+
     text = message.text
-    
+
     if len(text.split(' ', 1)) == 2:
         url = text.split(' ', 1)[1].strip()
         if my_sum.is_valid_url(url):
@@ -2605,6 +2620,17 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         bot.send_document(message.chat.id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
 
 
+def allowed_chatGPT_user(chat_id: int) -> bool:
+    """Проверка на то что юзер может использовать бота"""
+    if len(cfg.allow_chatGPT_users) == 0:
+        return True
+
+    if chat_id in cfg.allow_chatGPT_users:
+        return True
+    else:
+        return False
+
+
 @bot.message_handler(func=lambda message: True)
 def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
     """Обработчик текстовых сообщений"""
@@ -2813,7 +2839,12 @@ def do_task(message, custom_prompt: str = ''):
                     else:
                         check_blocked_user(chat_id_full)
                         with ShowAction(message, 'typing'):
-                            response = gpt_basic.check_phone_number(number)
+                            if not allowed_chatGPT_user(message.chat.id):
+                                my_log.log_echo(message, 'chatGPT запрещен [phonenumber]')
+                                bot.reply_to(message, tr('You are not in allow chatGPT users list', lang))
+                                return
+                            else:
+                                response = gpt_basic.check_phone_number(number)
                     if response:
                         CACHE_CHECK_PHONE[number] = response
                         response = utils.bot_markdown_to_html(response)
@@ -2986,6 +3017,10 @@ def do_task(message, custom_prompt: str = ''):
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, action):
                 check_blocked_user(chat_id_full)
+                if not allowed_chatGPT_user(message.chat.id):
+                    my_log.log_echo(message, 'chatGPT запрещен')
+                    bot.reply_to(message, tr('You are not in allow chatGPT users list, try other chatbot', lang))
+                    return
                 if len(msg) > cfg.CHATGPT_MAX_REQUEST:
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для chatGPT:", lang)} {len(msg)} {tr("из", lang)} {cfg.CHATGPT_MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для chatGPT: {len(msg)} из {cfg.CHATGPT_MAX_REQUEST}')

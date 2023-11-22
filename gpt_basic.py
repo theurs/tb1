@@ -453,6 +453,7 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
     assert amount <= 10, 'Too many images to gen'
     assert size in ('1024x1024','512x512','256x256'), 'Wrong image size'
 
+    my_log.log2(f'gpt_basic:image_gen: {prompt}\n{prompt_tr}')
     results = []
     for server in servers:
         openai.api_base = server[0]

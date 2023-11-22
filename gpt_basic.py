@@ -62,6 +62,9 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
     shuffled_servers = cfg.openai_servers[:]
     random.shuffle(shuffled_servers)
 
+    # не использовать нагу для текстовых запросов
+    shuffled_servers = [x for x in shuffled_servers if 'api.naga.ac' not in x[0]]
+
     for server in shuffled_servers:
         openai.api_base = server[0]
         openai.api_key = server[1]
@@ -784,6 +787,8 @@ def tts(text: str, lang: str = 'ru') -> bytes:
         openai.api_key = server[1]
 
         try:
+            api = openai.API()
+            audio = api.text_to_speech(text)
             client = openai.OpenAI(api_key=server[1])
             response = client.audio.speech.create(
                 model="tts-1", voice="alloy", input=text

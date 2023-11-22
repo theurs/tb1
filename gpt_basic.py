@@ -141,8 +141,6 @@ def ai_instruct(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou
     return check_and_fix_text(response)
 
 
-
-
 def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user', force: bool = False) -> str:
     """сжимает длинное сообщение в чате для того что бы экономить память в контексте
     origin - чье сообщение, юзера или это ответ помощника. 'user' или 'assistant'
@@ -765,8 +763,45 @@ def moderation(text: str) -> bool:
     return result
 
 
+def tts(text: str, lang: str = 'ru') -> bytes:
+    """
+    Generates an audio file from the given text using the TTS API.
+
+    Parameters:
+        text (str): The text to convert to audio.
+    """
+    # mp3_fp = io.BytesIO()
+    # result = gtts.gTTS(text, lang=lang)
+    # result.write_to_fp(mp3_fp)
+    # mp3_fp.seek(0)
+    # return mp3_fp.read()
+
+
+    result = ''
+
+    for server in cfg.openai_servers:
+        openai.api_base = server[0]
+        openai.api_key = server[1]
+
+        try:
+            client = openai.OpenAI(api_key=server[1])
+            response = client.audio.speech.create(
+                model="tts-1", voice="alloy", input=text
+            )
+            result = response.content
+            if result:
+                break
+        except Exception as unknown_error1:
+            my_log.log2(f'gpt_basic.tts: {unknown_error1}\n\nServer: {server[0]}')
+    
+    return result
+
+
 if __name__ == '__main__':
-    print(ai_instruct('напиши 10 главных героев книги незнайка на луне'))
+
+    open('1.mp3', 'wb').write(tts('напиши 10 главных героев книги незнайка на луне'))
+
+    # print(ai_instruct('напиши 10 главных героев книги незнайка на луне'))
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 

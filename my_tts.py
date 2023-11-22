@@ -10,6 +10,8 @@ import tempfile
 import edge_tts
 import gtts
 
+import gpt_basic
+
 
 # cleanup
 for filePath in [x for x in glob.glob('*.wav') + glob.glob('*.ogg') + glob.glob('*.mp4') + glob.glob('*.mp3') if 'temp_tts_file' in x]:
@@ -35,6 +37,10 @@ def tts_google(text: str, lang: str = 'ru') -> bytes:
     result.write_to_fp(mp3_fp)
     mp3_fp.seek(0)
     return mp3_fp.read()
+
+
+def tts_openai(text:str, lang:str = 'ru') -> bytes:
+    return gpt_basic.tts(text, lang)
 
 
 def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:

@@ -478,7 +478,7 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
                 break
             try:
                 response = openai.Image.create(
-                    prompt = prompt,
+                    prompt = prompt_tr,
                     n = 1,
                     size=size,
                     model = model,

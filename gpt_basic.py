@@ -789,9 +789,11 @@ def moderation(text: str) -> bool:
     return result
 
 
-def tts(text: str, lang: str = 'ru') -> bytes:
+def tts(text: str, voice: str = 'alloy', model: str = 'tts-1') -> bytes:
     """
     Generates an audio file from the given text using the TTS API.
+    voice = [alloy, echo, fable, onyx, nova, shimmer]
+    model = [tts-1, tts-1-hd]
 
     Parameters:
         text (str): The text to convert to audio.
@@ -807,9 +809,11 @@ def tts(text: str, lang: str = 'ru') -> bytes:
         try:
             client = openai.OpenAI(api_key=server[1])
             response = client.audio.speech.create(
-            model="tts-1",
-            voice="alloy",
-            input=text
+                model=model,
+                voice=voice,
+                input=text,
+                response_format='opus',
+                speed=1
             )
 
             if response.content:
@@ -821,7 +825,16 @@ def tts(text: str, lang: str = 'ru') -> bytes:
 
 
 if __name__ == '__main__':
+    tts_text = """Перси со значением прочистил горло и посмотрел на другой конец стола, где сидели Гарри, Рон и Гермиона:
 
+– Ты знаешь, о чем я, папа. – И чуточку повысил голос: – Сверхсекретное мероприятие.
+
+Рон закатил глаза и пробормотал тихонько:
+
+– Он пытается заставить нас спросить, что за мероприятие, с тех пор как пошел на работу. Не иначе выставка толстодонных котлов.
+
+В центре стола миссис Уизли спорила с Биллом о его серьге – видимо, совсем недавнем приобретении.
+"""
     # open('1.mp3', 'wb').write(tts('напиши 10 главных героев книги незнайка на луне'))
 
     # print(ai_instruct('напиши 5 главных героев книги незнайка на луне'))
@@ -829,7 +842,7 @@ if __name__ == '__main__':
     # print(moderation(''))
     # print(stt('1.ogg'))
     # print(image_gen('командер Спок, приветствие', 1, '256x256'))
-    # open('1.mp3', 'wb').write(tts('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать. 123 корабля лавировали.', 'ru'))
+    open('1.ogg', 'wb').write(tts(tts_text, voice='echo', model = 'tts-1-hd'))
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 

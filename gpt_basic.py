@@ -66,12 +66,13 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
     shuffled_servers = [x for x in shuffled_servers if 'api.naga.ac' not in x[0]]
 
     for server in shuffled_servers:
-        openai.api_base = server[0]
-        openai.api_key = server[1]
+        openai.base_url = server[0]
+        # openai.api_key = server[1]
 
         try:
+            client = openai.OpenAI(api_key = server[1])
             # тут можно добавить степень творчества(бреда) от 0 до 2 дефолт - temperature = 1
-            completion = openai.ChatCompletion.create(
+            completion = client.chat.completions.create(
                 model = current_model,
                 messages=messages,
                 max_tokens=max_tok,
@@ -94,7 +95,7 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
                         response = content
                         break
             print(unknown_error1)
-            my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.api_base}')
+            my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}')
 
     return check_and_fix_text(response)
 
@@ -109,21 +110,28 @@ def ai_instruct(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou
     current_model = model_to_use
 
     response = ''
+    
+    # перемешиваем сервера
+    shuffled_servers = cfg.openai_servers[:]
+    random.shuffle(shuffled_servers)
 
-    for server in cfg.openai_servers:
-        openai.api_base = server[0]
-        openai.api_key = server[1]
+    # не использовать нагу для текстовых запросов
+    shuffled_servers = [x for x in shuffled_servers if 'api.naga.ac' not in x[0]]
+
+    for server in shuffled_servers:
+        openai.base_url = server[0]
 
         try:
-            # тут можно добавить степень творчества(бреда) от 0 до 2 дефолт - temperature = 1
-            completion = openai.Completion.create(
-                prompt = prompt,
-                model = current_model,
+            client = openai.OpenAI(api_key = server[1])
+
+            completion = client.completions.create(
+                model=current_model,
+                prompt=prompt,
                 max_tokens=max_tok,
                 # temperature=temp,
                 timeout=timeou
             )
-            response = completion["choices"][0]["text"]
+            response = completion.choices[0].text
             if response:
                 break
         except Exception as unknown_error1:
@@ -139,7 +147,7 @@ def ai_instruct(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou
                         response = content
                         break
             print(unknown_error1)
-            my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.api_base}')
+            my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}')
 
     return check_and_fix_text(response)
 
@@ -394,27 +402,28 @@ def stt(audio_file: str) -> str:
 
     assert len(servers) > 0, 'No openai whisper servers configured'
 
-    audio_file_new = Path(utils.convert_to_mp3(audio_file))
-    audio_file_bytes = open(audio_file_new, "rb")
+    audio_file_fh = open(audio_file, "rb")
 
-    for server in servers:
-        openai.api_base = server[0]
-        openai.api_key = server[1]
+    # перемешиваем сервера
+    shuffled_servers = cfg.openai_servers[:]
+    random.shuffle(shuffled_servers)
+
+    for server in shuffled_servers:
+        openai.base_url = server[0]
+        # openai.api_key = server[1]
         try:
-            translation = openai.Audio.transcribe("whisper-1", audio_file_bytes)
-            if translation:
+            client = openai.OpenAI(api_key=server[1])
+            translation = client.audio.transcriptions.create(
+               model="whisper-1",
+               file=audio_file_fh
+            )
+            if translation.text:
                 break
         except Exception as error:
             print(error)
             my_log.log2(f'gpt_basic:stt: {error}\n\nServer: {server[0]}')
 
-    try:
-        audio_file_new.unlink()
-    except PermissionError:
-        print(f'gpt_basic:stt: PermissionError \n\nDelete file: {audio_file_new}')
-        my_log.log2(f'gpt_basic:stt: PermissionError \n\nDelete file: {audio_file_new}')
-
-    return json.loads(json.dumps(translation, ensure_ascii=False))['text']
+    return translation.text
 
 
 def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
@@ -432,6 +441,10 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
 
     #список серверов на которых доступен whisper
     servers = [x for x in cfg.openai_servers if x[3]]
+    
+    # перемешиваем сервера
+    shuffled_servers = cfg.openai_servers[:]
+    random.shuffle(shuffled_servers)
 
     assert len(servers) > 0, 'No openai servers with image_gen=True configured'
 
@@ -455,17 +468,22 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
 
     my_log.log2(f'gpt_basic:image_gen: {prompt}\n{prompt_tr}')
     results = []
-    for server in servers:
-        openai.api_base = server[0]
-        openai.api_key = server[1]
+    for server in shuffled_servers:
+        if len(results) >= amount:
+            break
+        openai.base_url = server[0]
+        # openai.api_key = server[1]
         try:
-            response = openai.Image.create(
+            client = openai.OpenAI(api_key=server[1])
+            response = client.images.generate(
+                # model="dall-e-3",
                 prompt = prompt_tr,
                 n = amount,
                 size=size,
+                quality = 'standard',
             )
             if response:
-                results += [x['url'] for x in response["data"]]
+                results += [x.url for x in response.data]
         except AttributeError:
             pass
         except Exception as error:
@@ -477,14 +495,15 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
             if len(results) >= amount:
                 break
             try:
-                response = openai.Image.create(
+                client = openai.OpenAI(api_key=server[1])
+                response = client.images.generate(
                     prompt = prompt_tr,
                     n = 1,
                     size=size,
                     model = model,
                 )
                 if response:
-                    results += [x['url'] for x in response["data"]]
+                    results += [x.url for x in response.data]
             except AttributeError:
                 pass
             except Exception as error:
@@ -774,47 +793,47 @@ def tts(text: str, lang: str = 'ru') -> bytes:
     Parameters:
         text (str): The text to convert to audio.
     """
-    # mp3_fp = io.BytesIO()
-    # result = gtts.gTTS(text, lang=lang)
-    # result.write_to_fp(mp3_fp)
-    # mp3_fp.seek(0)
-    # return mp3_fp.read()
-
+    # перемешиваем сервера
+    shuffled_servers = cfg.openai_servers[:]
+    random.shuffle(shuffled_servers)
 
     result = ''
 
-    for server in cfg.openai_servers:
-        openai.api_base = server[0]
-        openai.api_key = server[1]
+    for server in shuffled_servers:
+        openai.base_url = server[0]
+        # openai.api_key = server[1]
 
         try:
-            api = openai.API()
-            audio = api.text_to_speech(text)
             client = openai.OpenAI(api_key=server[1])
             response = client.audio.speech.create(
-                model="tts-1", voice="alloy", input=text
+            model="tts-1",
+            voice="alloy",
+            input=text
             )
-            result = response.content
-            if result:
+
+            if response.content:
                 break
         except Exception as unknown_error1:
             my_log.log2(f'gpt_basic.tts: {unknown_error1}\n\nServer: {server[0]}')
     
-    return result
+    return response.content
 
 
 if __name__ == '__main__':
 
-    open('1.mp3', 'wb').write(tts('напиши 10 главных героев книги незнайка на луне'))
+    # open('1.mp3', 'wb').write(tts('напиши 10 главных героев книги незнайка на луне'))
 
-    # print(ai_instruct('напиши 10 главных героев книги незнайка на луне'))
+    # print(ai_instruct('напиши 5 главных героев книги незнайка на луне'))
+    # print(ai('напиши 5 главных героев книги незнайка на луне'))
+    # print(stt('1.ogg'))
+    # print(image_gen('командер Спок, приветствие', 1, '256x256'))
+    # open('1.mp3', 'wb').write(tts('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать. 123 корабля лавировали.', 'ru'))
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 
     # for x in range(5, 15):
         # print(ai(f'1+{x}='))
 
-    # print(image_gen('большой бадабум'))
     # for i in get_list_of_models():
         # print(i)
 

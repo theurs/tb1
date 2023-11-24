@@ -770,19 +770,22 @@ def moderation(text: str) -> bool:
     Returns:
         bool: True if the text is flagged for moderation, False otherwise.
     """
-    result = False
-    for server in cfg.openai_servers:
-        openai.api_base = server[0]
-        openai.api_key = server[1]
+    # перемешиваем сервера
+    shuffled_servers = cfg.openai_servers[:]
+    random.shuffle(shuffled_servers)
 
+    result = False
+    for server in shuffled_servers:
+        openai.base_url = server[0]
         try:
-            response = openai.Moderation.create(input=text)
+            client = openai.OpenAI(api_key=server[1])
+            response = client.moderations.create(input=text)
             if response:
-                result = response['results'][0]['flagged']
+                result = response.results[0].flagged
                 break
         except Exception as error:
             print(error)
-            my_log.log2(f'gpt_basic.moderation: {error}\n\nServer: {openai.api_base}')
+            my_log.log2(f'gpt_basic.moderation: {error}\n\nServer: {openai.base_url}')
     return result
 
 
@@ -796,8 +799,6 @@ def tts(text: str, lang: str = 'ru') -> bytes:
     # перемешиваем сервера
     shuffled_servers = cfg.openai_servers[:]
     random.shuffle(shuffled_servers)
-
-    result = ''
 
     for server in shuffled_servers:
         openai.base_url = server[0]
@@ -825,6 +826,7 @@ if __name__ == '__main__':
 
     # print(ai_instruct('напиши 5 главных героев книги незнайка на луне'))
     # print(ai('напиши 5 главных героев книги незнайка на луне'))
+    print(moderation('убивать жидов и ебать их в сраку'))
     # print(stt('1.ogg'))
     # print(image_gen('командер Спок, приветствие', 1, '256x256'))
     # open('1.mp3', 'wb').write(tts('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать. 123 корабля лавировали.', 'ru'))

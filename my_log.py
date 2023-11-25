@@ -112,7 +112,7 @@ def log_media(message: telebot.types.Message) -> None:
             with open(log_file_path, 'a', encoding="utf-8") as log_file:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил голосовое сообщение] [filesize: \
 {file_size}] [duration: {file_duration}]\n")
-            with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8"), 'a', encoding="utf-8") as log_file:
+            with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8") as log_file:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил голосовое сообщение] [filesize: \
 {file_size}] [duration: {file_duration}]\n")
 
@@ -124,7 +124,7 @@ def log_media(message: telebot.types.Message) -> None:
             with open(log_file_path, 'a', encoding="utf-8") as log_file:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил документ] [caption: {caption}] \
 [filename: {file_name}] [filesize: {file_size}] [mime type: {file_mime_type}]\n")
-            with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8"), 'a', encoding="utf-8") as log_file:
+            with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8") as log_file:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил документ] [caption: {caption}] \
 [filename: {file_name}] [filesize: {file_size}] [mime type: {file_mime_type}]\n")
 

@@ -478,6 +478,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         voices = {'tts_female': tr('MS жен.', lang),
                   'tts_male': tr('MS муж.', lang),
                   'tts_google_female': 'Google',
+                  'tts_openai_alloy': 'Alloy',
+                  'tts_openai_echo': 'Echo',
+                  'tts_openai_fable': 'Fable',
+                  'tts_openai_onyx': 'Onyx',
+                  'tts_openai_nova': 'Nova',
+                  'tts_openai_shimmer': 'Shimmer',
                   }
         voice_title = voices[voice]
 
@@ -695,14 +701,40 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             TTS_GENDER[chat_id_full] = 'male'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+
         elif call.data == 'tts_male':
             TTS_GENDER[chat_id_full] = 'google_female'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
         elif call.data == 'tts_google_female':
+            TTS_GENDER[chat_id_full] = 'openai_alloy'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'tts_openai_alloy':
+            TTS_GENDER[chat_id_full] = 'openai_echo'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'tts_openai_echo':
+            TTS_GENDER[chat_id_full] = 'openai_fable'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'tts_openai_fable':
+            TTS_GENDER[chat_id_full] = 'openai_onyx'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'tts_openai_onyx':
+            TTS_GENDER[chat_id_full] = 'openai_nova'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'tts_openai_nova':
+            TTS_GENDER[chat_id_full] = 'openai_shimmer'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'tts_openai_shimmer':
             TTS_GENDER[chat_id_full] = 'female'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+
         elif call.data == 'voice_only_mode_disable':
             VOICE_ONLY_MODE[chat_id_full] = False
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
@@ -1539,6 +1571,10 @@ def tts_thread(message: telebot.types.Message, caption = None):
 
             # микрософт не умеет в латинский язык
             if llang == 'la':
+                gender = 'google_female'
+
+            # openai доступен не всем, если недоступен то вместо него используется гугл
+            if not allowed_chatGPT_user(message.chat.id):
                 gender = 'google_female'
 
             if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:

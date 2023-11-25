@@ -13,6 +13,10 @@ import gtts
 import gpt_basic
 
 
+#cache for TTS
+TTS_CACHE = []
+
+
 # cleanup
 for filePath in [x for x in glob.glob('*.wav') + glob.glob('*.ogg') + glob.glob('*.mp4') + glob.glob('*.mp3') if 'temp_tts_file' in x]:
     try:
@@ -39,8 +43,37 @@ def tts_google(text: str, lang: str = 'ru') -> bytes:
     return mp3_fp.read()
 
 
-def tts_openai(text:str, lang:str = 'ru') -> bytes:
-    return gpt_basic.tts(text, lang)
+def tts_openai(text: str, voice: str = 'alloy') -> bytes:
+    """
+    Generate text to speech audio using OpenAI's TTS API.
+
+    Args:
+        text (str): The text to be converted to speech.
+        voice (str, optional): The voice to be used for the speech. Defaults to 'alloy'.
+
+    Returns:
+        bytes: The audio data in bytes format.
+
+    """
+    if 'alloy' in voice:
+        voice = 'alloy'
+    elif 'echo' in voice:
+        voice = 'echo'
+    elif 'fable' in voice:
+        voice = 'fable'
+    elif 'onyx' in voice:
+        voice = 'onyx'
+    elif 'nova' in voice:
+        voice = 'nova'
+    elif 'shimmer' in voice:
+        voice = 'shimmer'
+    else:
+        voice = 'alloy'
+    data = gpt_basic.tts(text, voice)
+    global TTS_CACHE
+    TTS_CACHE.append([text, data])
+    TTS_CACHE = TTS_CACHE[-20:]
+    return data
 
 
 def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
@@ -59,8 +92,14 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     """
     lang = voice
 
+    for text_, data in TTS_CACHE:
+        if text_ == text:
+            return data
+
     if gender == 'google_female':
         return tts_google(text, lang)
+    if 'openai' in gender:
+        return tts_openai(text, gender)
 
     voice = get_voice(voice, gender)
 

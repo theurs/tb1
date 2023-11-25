@@ -12,6 +12,8 @@ lock = threading.Lock()
 
 if not os.path.exists('logs'):
     os.mkdir('logs')
+if not os.path.exists('logs2'):
+    os.mkdir('logs2')
 
 
 def log2(text: str) -> None:
@@ -19,6 +21,7 @@ def log2(text: str) -> None:
     time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
     log_file_path = 'logs/debug.log'
     open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+    open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
 
 
 def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bool = False) -> None:
@@ -54,6 +57,12 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
                 log_file.write(f"[{time_now}] [BOT]: {reply_from_bot}\n")
             else:
                 log_file.write(f"[{time_now}] [{user_name}]: {message.text or message.caption or ''}\n")
+        with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8") as log_file:
+            if reply_from_bot:
+                log_file.write(f"[{time_now}] [BOT]: {reply_from_bot}\n")
+            else:
+                log_file.write(f"[{time_now}] [{user_name}]: {message.text or message.caption or ''}\n")
+
 
 
 def log_media(message: telebot.types.Message) -> None:
@@ -92,12 +101,18 @@ def log_media(message: telebot.types.Message) -> None:
             with open(log_file_path, 'a', encoding="utf-8") as log_file:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил аудио файл] [caption: {caption}] [title: {file_title}] \
 [filename: {file_name}] [filesize: {file_size}] [duration: {file_duration}] [mime type: {file_mime_type}]\n")
+            with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8") as log_file:
+                log_file.write(f"[{time_now}] [{user_name}]: [Отправил аудио файл] [caption: {caption}] [title: {file_title}] \
+[filename: {file_name}] [filesize: {file_size}] [duration: {file_duration}] [mime type: {file_mime_type}]\n")
 
     if message.voice:
         file_size = message.voice.file_size
         file_duration = message.voice.duration
         with lock:
             with open(log_file_path, 'a', encoding="utf-8") as log_file:
+                log_file.write(f"[{time_now}] [{user_name}]: [Отправил голосовое сообщение] [filesize: \
+{file_size}] [duration: {file_duration}]\n")
+            with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8"), 'a', encoding="utf-8") as log_file:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил голосовое сообщение] [filesize: \
 {file_size}] [duration: {file_duration}]\n")
 
@@ -109,10 +124,16 @@ def log_media(message: telebot.types.Message) -> None:
             with open(log_file_path, 'a', encoding="utf-8") as log_file:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил документ] [caption: {caption}] \
 [filename: {file_name}] [filesize: {file_size}] [mime type: {file_mime_type}]\n")
+            with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8"), 'a', encoding="utf-8") as log_file:
+                log_file.write(f"[{time_now}] [{user_name}]: [Отправил документ] [caption: {caption}] \
+[filename: {file_name}] [filesize: {file_size}] [mime type: {file_mime_type}]\n")
 
     if message.photo or message.video:
         with lock:
             with open(log_file_path, 'a', encoding="utf-8") as log_file:
+                log_file.write(f"[{time_now}] [{user_name}]: [Отправил фото] [caption]: {caption}\n")
+        with lock:
+            with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8") as log_file:
                 log_file.write(f"[{time_now}] [{user_name}]: [Отправил фото] [caption]: {caption}\n")
 
 
@@ -121,6 +142,8 @@ def log_google(request: str, respond: str):
     time_now = datetime.datetime.now().strftime('%d-%m-%Y %H.%M.%S')
     log_file_path = f'logs/askgoogle at {time_now}.log'
     with open(log_file_path, 'a', encoding="utf-8") as log_file:
+        log_file.write(f'{respond}\n\n{"="*40}\n\n{request}')
+    with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8") as log_file:
         log_file.write(f'{respond}\n\n{"="*40}\n\n{request}')
 
 

@@ -1347,7 +1347,7 @@ def leave(message: telebot.types.Message):
     if message.from_user.id in cfg.admins:
         chat_id = message.text.split()[1]
         if bot.leave_chat(chat_id):
-            bot.send_message(chat_id, tr('Вы вышли из чата', lang) + f' {chat_id}')
+            bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
     else:
         bot.reply_to(message, tr('Эта команда только для админов.', lang), reply_markup=get_keyboard('hide', message))
 

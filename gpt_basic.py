@@ -474,7 +474,7 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
         try:
             client = openai.OpenAI(api_key=server[1])
             response = client.images.generate(
-                # model="dall-e-3",
+                model="dall-e-3",
                 prompt = prompt_tr,
                 n = amount,
                 size=size,
@@ -834,7 +834,7 @@ if __name__ == '__main__':
     # print(ai('напиши 5 главных героев книги незнайка на луне'))
     # print(moderation(''))
     # print(stt('1.ogg'))
-    # print(image_gen('командер Спок, приветствие', 1, '256x256'))
+    # print(image_gen('командер Спок, приветствие', 1))
     # open('1.ogg', 'wb').write(tts(tts_text, voice='echo', model = 'tts-1-hd'))
     print(get_balances())
 

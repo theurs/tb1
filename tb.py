@@ -1319,6 +1319,8 @@ def send_debug_history(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     check_blocked_user(chat_id_full)
 
+    gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+
     # создаем новую историю диалогов с юзером из старой если есть
     messages = []
     if chat_id_full in gpt_basic.CHATS:
@@ -1669,6 +1671,7 @@ def google_thread(message: telebot.types.Message):
                 {"role":    'system',
                 "content": f'assistant {tr("поискал в Google и ответил:", lang)} {r}'}
             ]
+        gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
 
 
 @bot.message_handler(commands=['ddg',])
@@ -1734,6 +1737,7 @@ def ddg_thread(message: telebot.types.Message):
                 {"role":    'system',
                 "content": f'assistant {tr("поискал в Google и ответил:", lang)} {r}'}
             ]
+        gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
 
 
 @bot.message_handler(commands=['image','img','i'])
@@ -1802,6 +1806,7 @@ def image_thread(message: telebot.types.Message):
                         gpt_basic.CHATS[chat_id_full] += n
                     else:
                         gpt_basic.CHATS[chat_id_full] = n
+                        gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
         else:
             COMMAND_MODE[chat_id_full] = 'image'
             bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
@@ -1978,6 +1983,7 @@ def ask_thread(message: telebot.types.Message):
                 {"role":    'system',
                 "content": f'assistant {tr("perplexity.io ответил:", lang)} {response}'}
             ]
+        gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
 
 
 @bot.message_handler(commands=['alert'])
@@ -2100,6 +2106,7 @@ def summ_text_thread(message: telebot.types.Message):
                                 {"role":    'system',
                                 "content": f'assistant {tr("прочитал и ответил:", lang)} {r}'}
                                 ]
+                    gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
                     return
 
                 with ShowAction(message, 'typing'):
@@ -2125,6 +2132,7 @@ def summ_text_thread(message: telebot.types.Message):
                                 {"role":    'system',
                                 "content": f'assistant {tr("прочитал и ответил:", lang)} {r}'}
                                 ]
+                        gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
                         return
                     else:
                         error = tr('Не смог прочитать текст с этой страницы.', lang)
@@ -2965,6 +2973,7 @@ def do_task(message, custom_prompt: str = ''):
                 gpt_basic.CHATS[chat_id_full] += n
             else:
                 gpt_basic.CHATS[chat_id_full] = n
+            gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
             return
 
         # Получить строку с локализованной датой

@@ -499,12 +499,12 @@ def get_list_of_models():
     """
     result = []
     for server in cfg.openai_servers:
-        openai.api_base = server[0]
-        openai.api_key = server[1]
+        openai.base_url = server[0]
         try:
-            model_lst = openai.Model.list()
-            for i in model_lst['data']:
-                result += [i['id'],]
+            client = openai.OpenAI(api_key=server[1])
+            model_lst = client.models.list()
+            for i in model_lst.data:
+                result += [i.id,]
         except Exception as error:
             print(error)
             my_log.log2(f'gpt_basic:get_list_of_models: {error}\n\nServer: {server[0]}')
@@ -836,7 +836,8 @@ if __name__ == '__main__':
     # print(stt('1.ogg'))
     # print(image_gen('командер Спок, приветствие', 1))
     # open('1.ogg', 'wb').write(tts(tts_text, voice='echo', model = 'tts-1-hd'))
-    print(get_balances())
+    # print(get_balances())
+    print(get_list_of_models())
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 

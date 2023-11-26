@@ -5,9 +5,9 @@ import os
 import json
 import random
 import re
+import requests
 import sys
 import threading
-from pathlib import Path
 
 import enchant
 from fuzzywuzzy import fuzz
@@ -405,7 +405,7 @@ def stt(audio_file: str) -> str:
     audio_file_fh = open(audio_file, "rb")
 
     # перемешиваем сервера
-    shuffled_servers = cfg.openai_servers[:]
+    shuffled_servers = servers[:]
     random.shuffle(shuffled_servers)
 
     for server in shuffled_servers:
@@ -439,11 +439,11 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
         - list: A list of URLs pointing to the generated images.
     """
 
-    #список серверов на которых доступен whisper
+    #список серверов на которых доступно рисование
     servers = [x for x in cfg.openai_servers if x[3]]
-    
+
     # перемешиваем сервера
-    shuffled_servers = cfg.openai_servers[:]
+    shuffled_servers = servers[:]
     random.shuffle(shuffled_servers)
 
     assert len(servers) > 0, 'No openai servers with image_gen=True configured'
@@ -462,7 +462,6 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
         if not prompt_tr:
             prompt_tr = prompt
 
-
     assert amount <= 10, 'Too many images to gen'
     assert size in ('1024x1024','512x512','256x256'), 'Wrong image size'
 
@@ -472,7 +471,6 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
         if len(results) >= amount:
             break
         openai.base_url = server[0]
-        # openai.api_key = server[1]
         try:
             client = openai.OpenAI(api_key=server[1])
             response = client.images.generate(
@@ -489,26 +487,6 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
         except Exception as error:
             print(error)
             my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
-        for model in ('DALL-E', 'kandinsky-2', 'kandinsky-2.2',
-                      'stable-diffusion-2.1', 'stable-diffusion 2.1',
-                      'midjourney'):
-            if len(results) >= amount:
-                break
-            try:
-                client = openai.OpenAI(api_key=server[1])
-                response = client.images.generate(
-                    prompt = prompt_tr,
-                    n = 1,
-                    size=size,
-                    model = model,
-                )
-                if response:
-                    results += [x.url for x in response.data]
-            except AttributeError:
-                pass
-            except Exception as error:
-                print(error)
-                my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
     return results
 
 
@@ -804,7 +782,6 @@ def tts(text: str, voice: str = 'alloy', model: str = 'tts-1') -> bytes:
 
     for server in shuffled_servers:
         openai.base_url = server[0]
-        # openai.api_key = server[1]
 
         try:
             client = openai.OpenAI(api_key=server[1])
@@ -822,6 +799,22 @@ def tts(text: str, voice: str = 'alloy', model: str = 'tts-1') -> bytes:
             my_log.log2(f'gpt_basic.tts: {unknown_error1}\n\nServer: {server[0]}')
     
     return response.content
+
+
+def get_balances() -> str:
+    result = ''
+    for server in [x for x in cfg.openai_servers if 'api.openai.com' in x[0]]:
+        secret_key = server[1]
+        response = requests.get(
+            "https://api.openai.com/dashboard/billing/credit_grants",
+            headers={"Authorization": "Bearer {}".format(secret_key)},
+        )
+        if response.status_code == 200:
+            credits = response.json()["credits"]
+            result += f'{server[1][:6]}: {credits}\n'
+        else:
+            result += f'{server[1][:6]}: {response.status_code}\n'
+    return result
 
 
 if __name__ == '__main__':
@@ -842,7 +835,8 @@ if __name__ == '__main__':
     # print(moderation(''))
     # print(stt('1.ogg'))
     # print(image_gen('командер Спок, приветствие', 1, '256x256'))
-    open('1.ogg', 'wb').write(tts(tts_text, voice='echo', model = 'tts-1-hd'))
+    # open('1.ogg', 'wb').write(tts(tts_text, voice='echo', model = 'tts-1-hd'))
+    print(get_balances())
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 

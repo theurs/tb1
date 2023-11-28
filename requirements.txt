@@ -36,6 +36,7 @@ SpeechRecognition
 telebot
 # python -m textblob.download_corpora
 textblob
+tiktoken
 #trafilatura==1.6.1
 trafilatura
 youtube_transcript_api

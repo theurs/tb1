@@ -5,13 +5,14 @@ import os
 import json
 import random
 import re
-import requests
 import sys
 import threading
+import tiktoken
 
 import enchant
 from fuzzywuzzy import fuzz
 import openai
+import requests
 
 import cfg
 import utils
@@ -802,6 +803,7 @@ def tts(text: str, voice: str = 'alloy', model: str = 'tts-1') -> bytes:
 
 
 def get_balances() -> str:
+    """не работает, что то изменилось в API"""
     result = ''
     for server in [x for x in cfg.openai_servers if 'api.openai.com' in x[0]]:
         secret_key = server[1]
@@ -815,6 +817,21 @@ def get_balances() -> str:
         else:
             result += f'{server[1][:6]}: {response.status_code}\n'
     return result
+
+
+def count_tokens(text: str, model: str = 'gpt-3.5-turbo') -> int:
+    """
+    Count the number of tokens in the given text using the specified model.
+
+    Parameters:
+        text (str): The input text.
+        model (str, optional): The name of the model to use for tokenizing. Defaults to 'gpt-3.5-turbo'.
+
+    Returns:
+        int: The number of tokens in the text.
+    """
+    encoding = tiktoken.encoding_for_model(model)
+    return len(encoding.encode(text))
 
 
 if __name__ == '__main__':
@@ -837,7 +854,9 @@ if __name__ == '__main__':
     # print(image_gen('командер Спок, приветствие', 1))
     # open('1.ogg', 'wb').write(tts(tts_text, voice='echo', model = 'tts-1-hd'))
     # print(get_balances())
-    print(get_list_of_models())
+    # print(get_list_of_models())
+    print(count_tokens('Раз два три четыре пять.'))
+    print(count_tokens('One two three four five.'))
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 

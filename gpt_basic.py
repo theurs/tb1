@@ -84,6 +84,10 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
             if response:
                 break
         except Exception as unknown_error1:
+            if 'You exceeded your current quota, please check your plan and billing details.' in str(unknown_error1):
+                my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}\n\n{server[1]}')
+                cfg.openai_servers = [x for x in cfg.openai_servers if x[1] != server[1]]
+                continue
             if str(unknown_error1).startswith('HTTP code 200 from API'):
                     # ошибка парсера json?
                     text = str(unknown_error1)[24:]
@@ -855,13 +859,13 @@ if __name__ == '__main__':
     # open('1.ogg', 'wb').write(tts(tts_text, voice='echo', model = 'tts-1-hd'))
     # print(get_balances())
     # print(get_list_of_models())
-    print(count_tokens('Раз два три четыре пять.'))
-    print(count_tokens('One two three four five.'))
+    # print(count_tokens('Раз два три четыре пять.'))
+    # print(count_tokens('One two three four five.'))
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 
-    # for x in range(5, 15):
-        # print(ai(f'1+{x}='))
+    for x in range(5, 15):
+        print(ai(f'1+{x}='))
 
     # for i in get_list_of_models():
         # print(i)

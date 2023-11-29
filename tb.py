@@ -824,7 +824,11 @@ def handle_voice_thread(message: telebot.types.Message):
         try:
             file_info = bot.get_file(message.voice.file_id)
         except AttributeError:
-            file_info = bot.get_file(message.audio.file_id)
+            try:
+                file_info = bot.get_file(message.audio.file_id)
+            except AttributeError:
+                file_info = bot.get_file(message.document.file_id)
+            
         downloaded_file = bot.download_file(file_info.file_path)
         with open(file_path, 'wb') as new_file:
             new_file.write(downloaded_file)
@@ -886,12 +890,17 @@ def handle_document_thread(message: telebot.types.Message):
     if check_blocks(chat_id_full) and not is_private:
         return
 
+    file_info = bot.get_file(message.document.file_id)
+    if file_info.file_path.lower().endswith('.wav'):
+        handle_voice(message)
+        return
+
     with semaphore_talks:
         # если прислали файл с исправленными переводами
         if 'AUTO_TRANSLATIONS' in message.document.file_name and '.json' in message.document.file_name:
             if message.from_user.id in cfg.admins:
                 try:
-                    file_info = bot.get_file(message.document.file_id)
+                    # file_info = bot.get_file(message.document.file_id)
                     file = bot.download_file(file_info.file_path)
                     with open('AUTO_TRANSLATIONS.json', 'wb') as new_file:
                         new_file.write(file)
@@ -920,7 +929,7 @@ def handle_document_thread(message: telebot.types.Message):
             check_blocked_user(chat_id_full)
             with ShowAction(message, 'typing'):
                 file_name = message.document.file_name
-                file_info = bot.get_file(message.document.file_id)
+                # file_info = bot.get_file(message.document.file_id)
                 file = bot.download_file(file_info.file_path)
                 # сгенерировать случайное имя папки во временной папке для этого файла
                 folder_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
@@ -967,7 +976,7 @@ def handle_document_thread(message: telebot.types.Message):
         and message.document.mime_type in ('text/plain', 'application/pdf'):
             check_blocked_user(chat_id_full)
             with ShowAction(message, 'typing'):
-                file_info = bot.get_file(message.document.file_id)
+                # file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
                 file_bytes = io.BytesIO(downloaded_file)
                 text = ''

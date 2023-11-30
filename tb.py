@@ -3030,7 +3030,7 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     return
-                message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
+                message.text = f'[{formatted_date}] [{from_user_name}] [answer in a super short and objective way]: {message.text}'
                 with ShowAction(message, action):
                     try:
                         # имя пользователя если есть или ник

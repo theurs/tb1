@@ -3061,7 +3061,7 @@ def do_task(message, custom_prompt: str = ''):
             # если активирован режим общения с клод чатом
             if CHAT_MODE[chat_id_full] == 'claude' and not FIRST_DOT:
                 check_blocked_user(chat_id_full)
-                message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
+                message.text = f'[{formatted_date}] [{from_user_name}] [answer in a super short and objective way]: {message.text}'
                 with ShowAction(message, action):
                     try:
                         answer = my_claude.chat(message.text, chat_id_full)

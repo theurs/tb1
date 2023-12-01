@@ -613,7 +613,7 @@ tr('публичный телеграм чат', lang)
             # не сохраняем диалог, нет ответа
             return tr('Не хочу говорить об этом. Или не могу.', lang)
         # произошла ошибка переполнения ответа
-        except openai.error.InvalidRequestError as error2:
+        except openai.BadRequestError as error2:
             if """This model's maximum context length is""" in str(error2):
                 # чистим историю, повторяем запрос
                 p = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or \

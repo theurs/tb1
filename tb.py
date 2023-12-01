@@ -1612,7 +1612,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
             
             # яндекс знает только несколько языков и не может больше 2000 символов
             if 'ynd' in gender:
-                if len(text) > 1990 or lang not in ['ru', 'en', 'uk', 'he', 'de', 'kk', 'uz']:
+                if len(text) > 1990 or llang not in ['ru', 'en', 'uk', 'he', 'de', 'kk', 'uz']:
                     gender = 'female'
 
             # микрософт не умеет в латинский язык

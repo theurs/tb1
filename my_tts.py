@@ -9,6 +9,7 @@ import tempfile
 
 import edge_tts
 import gtts
+import yandex_speech
 
 import gpt_basic
 
@@ -100,6 +101,8 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         return tts_google(text, lang)
     if 'openai' in gender:
         return tts_openai(text, gender)
+    if 'ynd' in gender:
+        return tts_yandex(text, voice, rate, gender)
 
     voice = get_voice(voice, gender)
 
@@ -122,6 +125,41 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     os.remove(filename)
     # Возвращаем байтовый поток с аудио
     return data.getvalue()
+
+
+def tts_yandex(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
+    """
+    Generate text-to-speech (TTS) audio using the Yandex API.
+    
+    Parameters:
+        text (str): The text to convert to speech.
+        voice (str, optional): The voice to use for the speech. Defaults to 'ru'.
+        rate (str, optional): The rate of the speech. Defaults to '+0%'.
+        gender (str, optional): The gender of the voice. Defaults to 'female'.
+        
+    Returns:
+        bytes: The generated audio data in binary format.
+    """
+    # female - "jane", "oksana", "alyss", "omazh"
+    # male - "zahar", "ermil"
+    KEY = '60589d42-0e42-b742-8942-thekeyisalie'
+    FORMAT = 'mp3'
+    lang = f'{voice}-{voice.upper()}'
+    # convert rate to decimal
+    rate_decimal = 1.0 + (float(rate.strip('%')) / 100)
+    
+    if 'female' in gender:
+        voice = 'oksana'
+    elif 'male' in gender:
+        voice = 'zahar'
+
+    tts = yandex_speech.TTS(voice, FORMAT, KEY, lang, speed=rate_decimal)
+    tts.generate(text)
+    
+    data = b''
+    for d in tts._data:
+        data += d
+    return data
 
 
 def get_voice(language_code: str, gender: str = 'female'):
@@ -212,5 +250,6 @@ def get_voice(language_code: str, gender: str = 'female'):
 
 
 if __name__ == "__main__":
-    a = tts('1', 'en', '+0%', 'female')
-    print(a)
+    r = tts_yandex('hello 1+1=2', voice='zh', rate='+0%', gender='male')
+    open('1.mp3', 'wb').write(r)
+    

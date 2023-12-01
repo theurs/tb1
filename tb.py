@@ -478,6 +478,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         voices = {'tts_female': tr('MS жен.', lang),
                   'tts_male': tr('MS муж.', lang),
                   'tts_google_female': 'Google',
+                  'tts_female_ynd': tr('Ynd жен.', lang),
+                  'tts_male_ynd': tr('Ynd муж.', lang),
                   'tts_openai_alloy': 'Alloy',
                   'tts_openai_echo': 'Echo',
                   'tts_openai_fable': 'Fable',
@@ -701,15 +703,24 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             TTS_GENDER[chat_id_full] = 'male'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-
         elif call.data == 'tts_male':
             TTS_GENDER[chat_id_full] = 'google_female'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
         elif call.data == 'tts_google_female':
+            TTS_GENDER[chat_id_full] = 'male_ynd'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_male_ynd':
+            TTS_GENDER[chat_id_full] = 'female_ynd'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'tts_female_ynd':
             TTS_GENDER[chat_id_full] = 'openai_alloy'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+
         elif call.data == 'tts_openai_alloy':
             TTS_GENDER[chat_id_full] = 'openai_echo'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
@@ -1593,14 +1604,19 @@ def tts_thread(message: telebot.types.Message, caption = None):
             else:
                 gender = 'female'
 
-            # микрософт не умеет в латинский язык
-            if llang == 'la':
-                gender = 'google_female'
-
             # openai доступен не всем, если недоступен то вместо него используется гугл
             if not allowed_chatGPT_user(message.chat.id):
                 gender = 'google_female'
             if 'openai' in gender and len(text) > 1000:
+                gender = 'google_female'
+            
+            # яндекс знает только несколько языков и не может больше 2000 символов
+            if 'ynd' in gender:
+                if len(text) > 1990 or lang not in ['ru', 'en', 'uk', 'he', 'de', 'kk', 'uz']:
+                    gender = 'female'
+
+            # микрософт не умеет в латинский язык
+            if llang == 'la':
                 gender = 'google_female'
 
             if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:

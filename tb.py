@@ -830,7 +830,7 @@ def handle_voice_thread(message: telebot.types.Message):
     with semaphore_talks:
         # Создание временного файла 
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            file_path = temp_file.name
+            file_path = temp_file.name + '.ogg'
         # Скачиваем аудиофайл во временный файл
         try:
             file_info = bot.get_file(message.voice.file_id)
@@ -852,7 +852,10 @@ def handle_voice_thread(message: telebot.types.Message):
         with ShowAction(message, action):
             text = my_stt.stt(file_path, lang)
 
-            os.remove(file_path)
+            try:
+                os.remove(file_path)
+            except Exception as remove_file_error:
+                my_log.log2(f'tb:handle_voice_thread:remove_file_error: {remove_file_error}\n\nfile_path')
 
             text = text.strip()
             # Отправляем распознанный текст

@@ -176,7 +176,7 @@ pics_group_url = 'https://t.me/xxx'
 #max_request = 2800
 #max_google_answer = 1000
 # для модели с 16к памяти
-max_request = 15000
+max_request = 14000
 max_google_answer = 2000
 
 

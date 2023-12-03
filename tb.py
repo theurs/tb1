@@ -2416,7 +2416,7 @@ You can send texts longer than 4096 characters. The Telegram client automaticall
 
 ChatGPT: {cfg.CHATGPT_MAX_REQUEST}
 Google Bard: 3100
-ClaudeAI: 199000
+ClaudeAI: {my_claude.MAX_QUERY}
 
 
 Website:
@@ -3080,9 +3080,9 @@ def do_task(message, custom_prompt: str = ''):
             # если активирован режим общения с клод чатом
             if CHAT_MODE[chat_id_full] == 'claude' and not FIRST_DOT:
                 check_blocked_user(chat_id_full)
-                if len(msg) > 199000:
-                    bot.reply_to(message, f'{tr("Слишком длинное сообщение для Клода:", lang)} {len(msg)} {tr("из", lang)} {199000}')
-                    my_log.log_echo(message, f'Слишком длинное сообщение для Клода: {len(msg)} из {199000}')
+                if len(msg) > my_claude.MAX_QUERY:
+                    bot.reply_to(message, f'{tr("Слишком длинное сообщение для Клода:", lang)} {len(msg)} {tr("из", lang)} {my_claude.MAX_QUERY}')
+                    my_log.log_echo(message, f'Слишком длинное сообщение для Клода: {len(msg)} из {my_claude.MAX_QUERY}')
                     return
                 message.text = f'[{formatted_date}] [{from_user_name}] [answer in a super short and objective way]: {message.text}'
                 with ShowAction(message, action):

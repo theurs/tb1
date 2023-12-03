@@ -22,10 +22,6 @@ import my_claude
 import my_trans
 
 
-# CLAUDE_MAX_CHARS = 99000
-CLAUDE_MAX_CHARS = 199000
-
-
 def get_text_from_youtube(url: str) -> str:
     """Вытаскивает текст из субтитров на ютубе
 
@@ -101,9 +97,9 @@ BEGIN:
 
     if len(prompt) > cfg.max_request:
         try:
-            r = my_claude.chat(prompt[:CLAUDE_MAX_CHARS], 'my_summ')
+            r = my_claude.chat(prompt[:my_claude.MAX_QUERY], 'my_summ')
             if r:
-                result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:CLAUDE_MAX_CHARS])} {tr("символов", lang)}]'
+                result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:my_claude.MAX_QUERY])} {tr("символов", lang)}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:claude: {error}')
             my_log.log2(f'my_sum:summ_text_worker:claude: {error}')

@@ -6,6 +6,7 @@ import json
 import random
 import re
 import sys
+import time
 import threading
 import tiktoken
 
@@ -68,7 +69,6 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
 
     for server in shuffled_servers:
         openai.base_url = server[0]
-        # openai.api_key = server[1]
 
         try:
             client = openai.OpenAI(api_key = server[1])
@@ -88,18 +88,22 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
                 my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}\n\n{server[1]}')
                 cfg.openai_servers = [x for x in cfg.openai_servers if x[1] != server[1]]
                 continue
-            if str(unknown_error1).startswith('HTTP code 200 from API'):
-                    # ошибка парсера json?
-                    text = str(unknown_error1)[24:]
-                    lines = [x[6:] for x in text.split('\n') if x.startswith('data:') and ':{"content":"' in x]
-                    content = ''
-                    for line in lines:
-                        parsed_data = json.loads(line)
-                        content += parsed_data["choices"][0]["delta"]["content"]
-                    if content:
-                        response = content
-                        break
-            print(unknown_error1)
+            # if str(unknown_error1).startswith('HTTP code 200 from API'):
+            #         # ошибка парсера json?
+            #         text = str(unknown_error1)[24:]
+            #         lines = [x[6:] for x in text.split('\n') if x.startswith('data:') and ':{"content":"' in x]
+            #         content = ''
+            #         for line in lines:
+            #             parsed_data = json.loads(line)
+            #             content += parsed_data["choices"][0]["delta"]["content"]
+            #         if content:
+            #             response = content
+            #             break
+            if 'Request timed out.' in str(unknown_error1) or 'cf_service_unavailable' in str(unknown_error1):
+                my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}\n\n{server[1]}\n\nsleep 10sec')
+                time.sleep(10)
+                continue
+            # print(unknown_error1)
             my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}')
 
     return check_and_fix_text(response)

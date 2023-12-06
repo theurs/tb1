@@ -34,7 +34,7 @@ def replicate_images(prompt: str, amount: int = 1):
         try:
             r = replicate.run(
                 model,
-                input={"prompt": prompt, "width": 512, "height": 512},
+                input={"prompt": prompt, "width": 1024, "height": 1024},
             )
             for x in r:
                 results.append(x)

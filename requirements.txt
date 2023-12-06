@@ -31,6 +31,7 @@ python-Levenshtein
 python-magic
 #python-magic-bin
 re_edge_gpt
+replicate
 qrcode
 SpeechRecognition
 telebot

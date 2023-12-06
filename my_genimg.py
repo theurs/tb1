@@ -90,19 +90,19 @@ def gen_images(prompt: str, moderation_flag: bool = False):
     """рисует одновременно всеми доступными способами"""
     #return bing(prompt) + chimera(prompt)
 
-    prompt_tr = gpt_basic.translate_image_prompt(prompt)
+    # prompt_tr = gpt_basic.translate_image_prompt(prompt)
 
-    pool = ThreadPool(processes=3)
+    pool = ThreadPool(processes=6)
 
     async_result1 = pool.apply_async(bing, (prompt, moderation_flag))
-    async_result2 = pool.apply_async(openai, (prompt_tr,))
+    # async_result2 = pool.apply_async(openai, (prompt_tr,))
 
-    async_result3 = pool.apply_async(replicate_images, (prompt_tr,))
-    async_result4 = pool.apply_async(replicate_images, (prompt_tr,))
-    async_result5 = pool.apply_async(replicate_images, (prompt_tr,))
-    async_result6 = pool.apply_async(replicate_images, (prompt_tr,))
+    # async_result3 = pool.apply_async(replicate_images, (prompt_tr,))
+    # async_result4 = pool.apply_async(replicate_images, (prompt_tr,))
+    # async_result5 = pool.apply_async(replicate_images, (prompt_tr,))
+    # async_result6 = pool.apply_async(replicate_images, (prompt_tr,))
 
-    result = async_result1.get() + async_result2.get() + async_result3.get() + async_result4.get() + async_result5.get() + async_result6.get()
+    result = async_result1.get() #+ async_result2.get() + async_result3.get() + async_result4.get() + async_result5.get() + async_result6.get()
 
     # if len(result) < 10:
     #     result = result + ddg_search_images(prompt)

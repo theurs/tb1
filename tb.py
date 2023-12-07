@@ -1140,6 +1140,7 @@ def handle_photo_thread(message: telebot.types.Message):
                     my_log.log_echo(message, '[OCR] ' + text)
                 else:
                     my_log.log_echo(message, '[OCR] no results')
+                    bot.reply_to(message, tr('[OCR] no results', lang), reply_markup=get_keyboard('hide', message))
             return
         elif state == 'translate':
             # пересланные сообщения пытаемся перевести даже если в них картинка

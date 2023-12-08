@@ -1818,7 +1818,11 @@ def image_thread(message: telebot.types.Message):
                     caption += '\n'
                     caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
                     bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
-                    reply_markup=get_keyboard('hide_image', message))
+                                 reply_markup=get_keyboard('hide_image', message))
+                    bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
+                                 disable_web_page_preview = True,
+                                 reply_markup=get_keyboard('hide', message))
+
                     my_log.log_echo(message, '[image gen] ')
 
                     n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 

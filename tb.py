@@ -3092,7 +3092,8 @@ def do_task(message, custom_prompt: str = ''):
                                                       reply_markup=get_keyboard('bard_chat', message))
                             if images:
                                 images_group = [telebot.types.InputMediaPhoto(i) for i in images]
-                                bot.send_media_group(message.chat.id, images_group[:10], reply_to_message_id=message.message_id)
+                                photos_ids = bot.send_media_group(message.chat.id, images_group[:10], reply_to_message_id=message.message_id)
+                                my_log.log2('[DEBUG] ' + str(images_group) + '\n' + str(photos_ids))
                             # if links:
                             #     reply_to_long_message(message, text_links, parse_mode='HTML', disable_web_page_preview = True,
                             #                           reply_markup=get_keyboard('hide', message))

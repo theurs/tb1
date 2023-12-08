@@ -3081,7 +3081,7 @@ def do_task(message, custom_prompt: str = ''):
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
                         if answer:
-                            my_log.log_echo(message, (answer + '\n\n' + '\n'.join(images) + '\n\n' + '\n'.join(links)).strip())
+                            my_log.log_echo(message, (answer + '\n\nPHOTO\n\n' + '\n'.join(images) + '\n\nLINKS\n\n' + '\n'.join(links)).strip())
                             try:
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message))

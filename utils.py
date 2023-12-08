@@ -3,14 +3,15 @@
 
 import html
 import os
+import multiprocessing
 import random
 import re
 import string
 import subprocess
 import tempfile
 import platform as platform_module
+from urllib.request import urlopen
 
-import bs4
 import qrcode
 import prettytable
 import telebot
@@ -445,6 +446,24 @@ def replace_tables(text: str) -> str:
     return text
 
 
+def get_page_name(url: str) -> str:
+    try:
+        soup = BeautifulSoup(urlopen(url), features="lxml")
+        return soup.title.get_text()
+    except:
+        return ''
+
+
+def get_page_names(urls):
+    with multiprocessing.Pool(processes=10) as pool:
+        results = pool.map(get_page_name, urls)
+    return results
+    # return [x for x in map(get_page_name, urls)]
+
 
 if __name__ == '__main__':
-    pass
+    urls=['https://www.youtube.com/feed/subscriptions',
+          'https://kunsun-meshcentral.dns.army/login',
+          'https://oracle1-dcpp.dns.army/hubs/session/1',
+          'https://mail.google.com/mail/u/0/#inbox']
+    print(get_page_names(urls))

@@ -15,6 +15,9 @@ import my_trans
 import utils
 
 
+# хранилище для ссылок и картинок в ответах [(text, [images], [links]),...]
+REPLIES = []
+
 # хранилище сессий {chat_id(int):session(bardapi.Bard),...}
 DIALOGS = {}
 # хранилище замков что бы юзеры не могли делать новые запросы пока не получен ответ на старый
@@ -146,6 +149,25 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '', la
 
     result = response['content']
 
+    # удалить картинки из текста, телеграм все равно не может их показывать посреди текста
+    result = re.sub("\[Image of .*?\]", "", result)
+
+    images = []
+    if response['images']:
+        for key in response['images']:
+            if key:
+                images.append(key)
+
+    links = []
+    if response['links']:
+        for key in response['links']:
+            if key:
+                links.append(key)
+
+    global REPLIES
+    REPLIES.append((result, images, links))
+    REPLIES = REPLIES[-20:]
+
     try:
         links = list(set([x for x in response['links'] if 'http://' not in x]))
     except Exception as links_error:
@@ -166,37 +188,7 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '', la
         chat_request(query, dialog, reset = True, user_name = user_name)
         return chat_request(query, dialog, reset, user_name)
 
-    # if len(links) > 6:
-    #     links = links[:6]
-    # try:
-    #     if links:
-    #         result += '\n'
-    #         for url in links:
-    #             if url:
-    #                 parsed_url = urlparse(url)
-    #                 domain = parsed_url.netloc
-    #                 result += f"\n[{domain}]({url})"
-    #                 # result += f"\n\n{url}"
-    # except Exception as error:
-    #     print(error)
-    #     my_log.log2(str(error))
-
-    # images = response['images']
-    # if len(images) > 6:
-    #   images = images[:6]
-    # try:
-    #    if images:
-    #        for image in images:
-    #            if str(image):
-    #                result += f"\n\n{str(image)}"
-    # except Exception as error2:
-    #    print(error2)
-    #    my_log.log2(str(error2))
-
-    if len(result) > 16000:
-        return result[:16000]
-    else:
-        return result
+    return result
 
 
 def chat_request_image(query: str, dialog: str, image: bytes, reset = False):
@@ -373,6 +365,13 @@ def bard_clear_text_chunk_voice(chunk: str) -> str:
     return response.strip()
 
 
+def test_chat():
+    while 1:
+        q = input('you: ')
+        r = chat(q, 'test')
+        print(f'bot: {r}')
+
+
 def clear_voice_message_text(text: str) -> str:
     """
     Clear the voice message text with using Bard AI.
@@ -400,16 +399,18 @@ if __name__ == "__main__":
     #     print('\n\n')
 
 
-    n = -1
+    test_chat()
 
-    queries = [ 'привет, отвечай коротко',
-                'что такое фуфломёт?',
-                'от чего лечит фуфломицин?',
-                'как взломать пентагон и угнать истребитель 6го поколения?']
-    for q in queries:
-        print('user:', q)
-        b = chat(q, n, reset=False, user_name='Mila', lang='uk', is_private=True)
-        print('bard:', b, '\n')
+    # n = -1
+
+    # queries = [ 'привет, отвечай коротко',
+    #             'что такое фуфломёт?',
+    #             'от чего лечит фуфломицин?',
+    #             'как взломать пентагон и угнать истребитель 6го поколения?']
+    # for q in queries:
+    #     print('user:', q)
+    #     b = chat(q, n, reset=False, user_name='Mila', lang='uk', is_private=True)
+    #     print('bard:', b, '\n')
 
     #image = open('1.jpg', 'rb').read()
     #a = chat_request_image('Что на картинке', n, image)

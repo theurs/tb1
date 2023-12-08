@@ -3059,6 +3059,16 @@ def do_task(message, custom_prompt: str = ''):
                         if chat_name:
                             user_name = chat_name
                         answer = my_bard.chat(message.text, chat_id_full, user_name = user_name, lang = lang, is_private = is_private)
+
+                        for x in my_bard.REPLIES:
+                            if x[0] == answer:
+                                images, links = x[1][:10], x[2]
+                                # links_titles = utils.get_page_names(links)
+                                # text_links = ''
+                                # for link, title in links, links_titles:
+                                #     text_links += f'<a href="{link}">{title}</a>\n'
+                                break
+
                         # answer = my_bard.convert_markdown(answer)
                         # my_log.log_echo(message, answer, debug = True)
                         if not VOICE_ONLY_MODE[chat_id_full]:
@@ -3073,6 +3083,12 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log2(f'tb:do_task: {error}')
                                 reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message))
+                            if images:
+                                images_group = [telebot.types.InputMediaPhoto(i) for i in images]
+                                bot.send_media_group(message.chat.id, images_group[:10], reply_to_message_id=message.message_id)
+                            # if links:
+                            #     reply_to_long_message(message, text_links, parse_mode='HTML', disable_web_page_preview = True,
+                            #                           reply_markup=get_keyboard('hide', message))
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))

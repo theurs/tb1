@@ -1834,6 +1834,9 @@ def image_thread(message: telebot.types.Message):
                 else:
                     bot.reply_to(message, tr('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', lang), 
                                  reply_markup=get_keyboard('hide', message))
+                    bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
+                                 disable_web_page_preview = True,
+                                 reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, '[image gen error] ')
                     n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 
                          {'role':'system', 'content':f'assistant {tr("не захотел или не смог нарисовать это с помощью DALL-E", lang)}'}]

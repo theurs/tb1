@@ -151,6 +151,8 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '', la
 
     # удалить картинки из текста, телеграм все равно не может их показывать посреди текста
     result = re.sub("\[Image of .*?\]", "", result)
+    result = result.replace("\n\n", "\n")
+    result = result.replace("\n\n", "\n")
 
     images = []
     if response['images']:

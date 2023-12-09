@@ -859,7 +859,7 @@ def count_tokens(text: str, model: str = 'gpt-3.5-turbo') -> int:
 
 def translate_instruct(text: str, lang: str):
     prompt = f"""
-Translate the following text to language [{lang}]:
+Translate the following text to language [{lang}], leave it as is if not sure:
 
 ==============
 {text}

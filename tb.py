@@ -1856,7 +1856,8 @@ def image_thread(message: telebot.types.Message):
                     caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
                     bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
                                  reply_markup=get_keyboard('hide_image', message))
-                    bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
+                    if cfg.enable_image_adv:
+                        bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
                                  disable_web_page_preview = True,
                                  reply_markup=get_keyboard('hide', message))
 
@@ -1871,7 +1872,8 @@ def image_thread(message: telebot.types.Message):
                 else:
                     bot.reply_to(message, tr('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', lang), 
                                  reply_markup=get_keyboard('hide', message))
-                    bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
+                    if cfg.enable_image_adv:
+                        bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
                                  disable_web_page_preview = True,
                                  reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, '[image gen error] ')

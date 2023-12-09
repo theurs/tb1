@@ -306,6 +306,7 @@ def fix_translation_with_gpt_thread(message: telebot.types.Message):
             AUTO_TRANSLATIONS[key] = translated_text
             counter += 1
             my_log.log2(f'{key} -> {translated_text}')
+            time.sleep(5)
 
     bot.reply_to(message, tr(f'Переведено {counter} строк', user_lang))
 

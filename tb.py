@@ -103,6 +103,8 @@ CACHE_CHECK_PHONE = {}
 LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
 
 # хранилище для переводов сообщений сделанных гугл переводчиком
+# key: (text, lang)
+# value: translated text
 AUTO_TRANSLATIONS = my_dic.PersistentDict('db/auto_translations.pkl')
 
 # замок для выполнения дампа переводов
@@ -274,6 +276,37 @@ def tr(text: str, lang: str) -> str:
     else:
         AUTO_TRANSLATIONS[key] = text
     return AUTO_TRANSLATIONS[key]
+
+
+@bot.message_handler(commands=['fixlang'])
+def fix_translation_with_gpt(message: telebot.types.Message):
+    thread = threading.Thread(target=fix_translation_with_gpt_thread, args=(message,))
+    thread.start()
+def fix_translation_with_gpt_thread(message: telebot.types.Message):
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    chat_full_id = get_topic_id(message)
+    user_lang = get_lang(chat_full_id, message)
+
+    if message.from_user.id not in cfg.admins:
+        bot.reply_to(message, tr("Эта команда доступна только администраторам",
+                                 user_lang))
+        return
+
+    target_lang = message.text.split()[1]
+
+    bot.reply_to(message, tr(f'Started translation process, please wait for a while', user_lang))
+    counter = 0
+    for key in AUTO_TRANSLATIONS.keys():
+        text, lang = eval(key)[0], eval(key)[1]
+        if lang == target_lang:
+            translated_text = gpt_basic.translate_instruct(text, target_lang)
+            AUTO_TRANSLATIONS[key] = translated_text
+            counter += 1
+
+    bot.reply_to(message, tr(f'Переведено {counter} строк', user_lang))
 
 
 def get_lang(id: str, message: telebot.types.Message = None) -> str:

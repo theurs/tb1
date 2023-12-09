@@ -857,6 +857,18 @@ def count_tokens(text: str, model: str = 'gpt-3.5-turbo') -> int:
     return len(encoding.encode(text))
 
 
+def translate_instruct(text: str, lang: str):
+    prompt = f"""
+Translate the following text to language [{lang}]:
+
+==============
+{text}
+==============
+"""
+    result = ai_instruct(prompt)
+    return result
+
+
 if __name__ == '__main__':
     tts_text = """Перси со значением прочистил горло и посмотрел на другой конец стола, где сидели Гарри, Рон и Гермиона:
 
@@ -868,6 +880,8 @@ if __name__ == '__main__':
 
 В центре стола миссис Уизли спорила с Биллом о его серьге – видимо, совсем недавнем приобретении.
 """
+
+    print(translate_instruct(tts_text, 'ar'))
     # open('1.mp3', 'wb').write(tts('напиши 10 главных героев книги незнайка на луне'))
 
     # print(ai_instruct('напиши 5 главных героев книги незнайка на луне'))
@@ -883,8 +897,8 @@ if __name__ == '__main__':
 
     # print(query_file('сколько цифр в файле и какая их сумма', 'test.txt', 100, '1\n2\n2\n1'))
 
-    for x in range(5, 15):
-        print(ai(f'1+{x}='))
+    # for x in range(5, 15):
+    #     print(ai(f'1+{x}='))
 
     # for i in get_list_of_models():
         # print(i)

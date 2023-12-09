@@ -302,12 +302,13 @@ def fix_translation_with_gpt_thread(message: telebot.types.Message):
     for key in AUTO_TRANSLATIONS.keys():
         text, lang = eval(key)[0], eval(key)[1]
         if lang == target_lang:
-            # translated_text = gpt_basic.translate_instruct(text, target_lang)
-            translated_text = my_trans.translate_text2(text, target_lang)
-            AUTO_TRANSLATIONS[key] = translated_text
-            counter += 1
-            my_log.log2(f'{key} -> {translated_text}')
-            time.sleep(5)
+            if 'The chatbot responds to the name' in text or "Hello! I'm your personal multi-functional assistant" in text:
+                translated_text = gpt_basic.translate_instruct(text, target_lang)
+                # translated_text = my_trans.translate_text2(text, target_lang)
+                AUTO_TRANSLATIONS[key] = translated_text
+                counter += 1
+                my_log.log2(f'{key} -> {translated_text}')
+                time.sleep(5)
 
     bot.reply_to(message, tr(f'Переведено {counter} строк', user_lang))
 

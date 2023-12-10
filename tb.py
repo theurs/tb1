@@ -31,6 +31,7 @@ import my_sum
 import my_tiktok
 import my_trans
 import my_tts
+import my_ytb
 import utils
 
 
@@ -54,6 +55,9 @@ semaphore_talks = threading.Semaphore(40)
 if not os.path.exists('db'):
     os.mkdir('db')
 
+
+# хранилище пар ytb_id:ytb_title
+YTB_DB = {}
 
 # заблокированные юзера {id:True/False}
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
@@ -119,6 +123,7 @@ MESSAGE_QUEUE = {}
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 BOT_NAME_DEFAULT = cfg.default_bot_name
+
 
 supported_langs_trans = [
         "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
@@ -390,12 +395,13 @@ def disabled_kbd(chat_id_full):
     return DISABLED_KBD[chat_id_full]
 
 
-def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> telebot.types.InlineKeyboardMarkup:
+def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', payload = None) -> telebot.types.InlineKeyboardMarkup:
     """создает и возвращает клавиатуру по текстовому описанию
     'chat' - клавиатура для чата
     'mem' - клавиатура для команды mem, с кнопками Забудь и Скрой
     'hide' - клавиатура с одной кнопкой Скрой
     ...
+    payload - данные для клавиатуры
     """
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -430,6 +436,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='cancel_command')
         markup.add(button1)
+        return markup
+    elif kbd == 'ytb':
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
+        for b in payload:
+            button = telebot.types.InlineKeyboardButton(f'{b[0]} [{b[1]}]', callback_data=f'youtube {b[2]}')
+            YTB_DB[b[2]] = b[0]
+            markup.add(button)
         return markup
     elif kbd == 'perplexity':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
@@ -700,6 +713,19 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     os.unlink(tmp)
                 except Exception as unlink_error:
                     my_log.log2(f'tb:callback_inline_thread:download_tiktok:{unlink_error}\n\nunlink {tmp}')
+        elif call.data.startswith('youtube '):
+            song_id = call.data[8:]
+            caption = YTB_DB[song_id]
+            thumb = f'https://img.youtube.com/vi/{song_id}/maxresdefault.jpg'
+            with ShowAction(message, 'upload_audio'):
+                data = my_ytb.download_youtube(song_id)
+                bot.send_audio(chat_id=message.chat.id, audio=data,
+                               reply_to_message_id = message.message_id,
+                               reply_markup = get_keyboard('hide', message),
+                               caption = caption,
+                               title = caption,
+                               thumbnail=thumb,
+                               disable_notification=True)
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):
@@ -1502,6 +1528,35 @@ def language(message: telebot.types.Message):
         return
 
 
+@bot.message_handler(commands=['music', 'mus', 'm'])
+def music(message: telebot.types.Message):
+    """ищет и скачивает музыку с ютуба"""
+    thread = threading.Thread(target=music_thread, args=(message,))
+    thread.start()
+def music_thread(message: telebot.types.Message):
+    """ищет и скачивает музыку с ютуба"""
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    check_blocked_user(chat_id_full)
+
+    try:
+        query = message.text.split(maxsplit=1)[1]
+    except:
+        query = ''
+    
+    if query:
+        results = my_ytb.search_youtube(query)
+        msg = tr('Вот что удалось найти', lang)
+        bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
+    else:
+        msg = tr('Usage:', lang) + ' /music <' + tr('song name', lang) + '> - ' + tr('it will find music on youtube', lang)
+        bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
+
+
 @bot.message_handler(commands=['model'])
 def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
@@ -1568,7 +1623,7 @@ def set_new_model_thread(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['tts']) 
+@bot.message_handler(commands=['tts'])
 def tts(message: telebot.types.Message, caption = None):
     thread = threading.Thread(target=tts_thread, args=(message,caption))
     thread.start()

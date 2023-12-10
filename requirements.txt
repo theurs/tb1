@@ -40,5 +40,6 @@ textblob
 tiktoken
 #trafilatura==1.6.1
 trafilatura
+youtube_search
 youtube_transcript_api
 xlrd

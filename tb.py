@@ -718,6 +718,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             caption = YTB_DB[song_id]
             thumb = f'https://img.youtube.com/vi/{song_id}/maxresdefault.jpg'
             with ShowAction(message, 'upload_audio'):
+                my_log.log_echo(message, f'Start sending youtube {song_id} {caption}')
                 data = my_ytb.download_youtube(song_id)
                 bot.send_audio(chat_id=message.chat.id, audio=data,
                                reply_to_message_id = message.message_id,
@@ -726,6 +727,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                title = caption,
                                thumbnail=thumb,
                                disable_notification=True)
+                my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):
@@ -1547,7 +1549,9 @@ def music_thread(message: telebot.types.Message):
         query = message.text.split(maxsplit=1)[1]
     except:
         query = ''
-    
+
+    my_log.log_echo(message, message.text)
+
     if query:
         results = my_ytb.search_youtube(query)
         msg = tr('Вот что удалось найти', lang)

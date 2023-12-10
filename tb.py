@@ -1563,7 +1563,7 @@ def music_thread(message: telebot.types.Message):
             bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
     else:
         msg = tr('Usage:', lang) + ' /music <' + tr('song name', lang) + '> - ' + tr('it will find music on youtube', lang)
-        bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
+        bot.reply_to(message, msg, parse_mode='', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['model'])

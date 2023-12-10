@@ -57,7 +57,8 @@ if not os.path.exists('db'):
 
 
 # хранилище пар ytb_id:ytb_title
-YTB_DB = {}
+# YTB_DB = {}
+YTB_DB = my_dic.PersistentDict('db/ytb.pkl')
 
 # заблокированные юзера {id:True/False}
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')

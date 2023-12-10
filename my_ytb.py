@@ -3,11 +3,15 @@
 
 
 import os
+import threading
 
 from youtube_search import YoutubeSearch
 
 import my_log
 import utils
+
+
+BIG_LOCK = threading.Lock()
 
 
 def search_youtube(query: str, limit: int = 10):
@@ -55,7 +59,8 @@ def download_youtube(id: str) -> bytes:
     tmpfname = utils.get_tmp_fname()
     url = f'https://youtube.com/watch?v={id}'
 
-    os.system(f'yt-dlp -f bestaudio -o "{tmpfname}" "{url}"')
+    with BIG_LOCK:
+        os.system(f'yt-dlp -f bestaudio -o "{tmpfname}" "{url}"')
 
     data = b''
     with open(tmpfname, 'rb') as f:

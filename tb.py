@@ -2462,7 +2462,7 @@ The usual model will add extraneous words to its responses, such as "Okay, I'll 
 You can send texts longer than 4096 characters. The Telegram client automatically breaks them down into parts, and the bot reassembles them. The restrictions for chatbots are as follows:
 
 ChatGPT: {cfg.CHATGPT_MAX_REQUEST}
-Google Bard: 3100
+Google Bard: {my_bard.MAX_REQUEST}
 ClaudeAI: {my_claude.MAX_QUERY}
 
 

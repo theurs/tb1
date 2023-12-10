@@ -1558,6 +1558,7 @@ def music_thread(message: telebot.types.Message):
     if query:
         with ShowAction(message, 'typing'):
             results = my_ytb.search_youtube(query)
+            my_log.log_echo(message, '\n'.join(str(results)))
             msg = tr('Вот что удалось найти', lang)
             bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
     else:

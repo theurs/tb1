@@ -32,12 +32,15 @@ def search_youtube(query: str, limit: int = 10):
         try:
             hours, minutes, seconds = x['duration'].split(":")
             dur_seconds = int(hours) * 3600 + int(minutes) * 60 + int(seconds)
-        except ValueError:
+        except:
             try:
                 minutes, seconds = x['duration'].split(":")
                 dur_seconds = int(minutes) * 60 + int(seconds)
-            except ValueError:
-                dur_seconds = int(x['duration'])
+            except:
+                try:
+                    dur_seconds = int(x['duration'])
+                except:
+                    dur_seconds = 0
 
         if dur_seconds > 20*60:
             continue

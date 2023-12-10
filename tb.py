@@ -1551,7 +1551,7 @@ def music_thread(message: telebot.types.Message):
     except:
         query = ''
 
-    my_log.log_echo(message, message.text)
+    my_log.log_echo(message)
 
     if query:
         with ShowAction(message, 'typing'):

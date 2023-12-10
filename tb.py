@@ -1648,7 +1648,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
             # openai доступен не всем, если недоступен то вместо него используется гугл
             if not allowed_chatGPT_user(message.chat.id):
                 gender = 'google_female'
-            if 'openai' in gender and len(text) > 1000:
+            if 'openai' in gender and len(text) > cfg.MAX_OPENAI_TTS:
                 gender = 'google_female'
             
             # яндекс знает только несколько языков и не может больше 2000 символов

@@ -444,6 +444,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button = telebot.types.InlineKeyboardButton(f'{b[0]} [{b[1]}]', callback_data=f'youtube {b[2]}')
             YTB_DB[b[2]] = b[0]
             markup.add(button)
+        button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
+        markup.add(button2)
         return markup
     elif kbd == 'perplexity':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=4)

@@ -2896,6 +2896,14 @@ def do_task(message, custom_prompt: str = ''):
     # не обрабатывать неизвестные команды
     if message.text.startswith('/'): return
 
+    # если использовано кодовое слово вместо команды /music
+    for x in cfg.MUSIC_WORDS:
+        mv = x + ' '
+        if message.text.lower().startswith(mv):
+            message.text = '/music ' + message.text[len(mv):]
+            music(message)
+            return
+
     with semaphore_talks:
 
         my_log.log_echo(message)

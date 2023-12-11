@@ -1562,8 +1562,11 @@ def music_thread(message: telebot.types.Message):
             msg = tr('Вот что удалось найти', lang)
             bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
     else:
-        msg = tr('Usage:', lang) + ' /music <' + tr('song name', lang) + '> - ' + tr('it will find music on youtube', lang)
-        bot.reply_to(message, msg, parse_mode='', reply_markup=get_keyboard('hide', message))
+        msg = tr('Usage:', lang) + ' /music <' + tr('song name', lang) + '> - ' + tr('will search for music on youtube', lang) + '\n\n'
+        msg += tr('Examples:', lang) + '\n`/music linkin park numb`\n'
+        for x in cfg.MUSIC_WORDS:
+            msg += '\n`' + x + ' linkin park numb`'
+        bot.reply_to(message, msg, parse_mode='markdown', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['model'])
@@ -2899,7 +2902,7 @@ def do_task(message, custom_prompt: str = ''):
     # если использовано кодовое слово вместо команды /music
     for x in cfg.MUSIC_WORDS:
         mv = x + ' '
-        if message.text.lower().startswith(mv):
+        if message.text.lower().startswith(mv) and message.text.lower() != mv:
             message.text = '/music ' + message.text[len(mv):]
             music(message)
             return

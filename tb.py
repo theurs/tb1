@@ -1562,11 +1562,17 @@ def music_thread(message: telebot.types.Message):
             msg = tr('Вот что удалось найти', lang)
             bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
     else:
-        msg = tr('Usage:', lang) + ' /music <' + tr('song name', lang) + '> - ' + tr('will search for music on youtube', lang) + '\n\n'
-        msg += tr('Examples:', lang) + '\n`/music linkin park numb`\n'
-        for x in cfg.MUSIC_WORDS:
-            msg += '\n`' + x + ' linkin park numb`'
-        bot.reply_to(message, msg, parse_mode='markdown', reply_markup=get_keyboard('hide', message))
+        with ShowAction(message, 'typing'):
+            msg = tr('Usage:', lang) + ' /music <' + tr('song name', lang) + '> - ' + tr('will search for music on youtube', lang) + '\n\n'
+            msg += tr('Examples:', lang) + '\n`/music linkin park numb`\n'
+            for x in cfg.MUSIC_WORDS:
+                msg += '\n`' + x + ' linkin park numb`'
+            results = my_ytb.get_random_songs(10)
+            if results:
+                my_log.log_echo(message, '\n' + '\n'.join([str(x) for x in results]))
+                bot.reply_to(message, msg, parse_mode='markdown', reply_markup=get_keyboard('hide', message))
+                msg = tr('Случайные песни', lang)
+                bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
 
 
 @bot.message_handler(commands=['model'])

@@ -2,11 +2,13 @@
 # pip install youtube_search
 
 
+import concurrent.futures
 import os
 import threading
 
 from youtube_search import YoutubeSearch
 
+import gpt_basic
 import my_log
 import utils
 
@@ -77,9 +79,30 @@ def download_youtube(id: str) -> bytes:
     return data
 
 
+def get_random_songs(limit: int = 10):
+    PROMPT = f"""Посоветует хорошую музыку. Дай список из {limit} песен,
+без оформления списка просто одна песня на одной строке без цифр, для поиска на Ютубе в таком виде,
+сначала название песни потом тире потом альбом или группа, используй только реально существующие песни.
+
+Пример:
+нимб - линкин парк"""
+    songs = [x.strip() for x in gpt_basic.ai_instruct(prompt=PROMPT, temp=1).split('\n') if x]
+    try:
+        # Создаем пул потоков
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            # Запускаем поиск по каждой песне в параллельном потоке
+            futures = [executor.submit(search_youtube, song, limit=1) for song in songs]
+            # Получаем результаты поиска
+            results = [future.result()[0] for future in futures]
+        return results
+    except:
+        return []
+
+
 if __name__ == '__main__':
 
-    results = search_youtube('линкин парк на русском', 10)
+    # results = search_youtube('линкин парк на русском', 10)
+    results = get_random_songs(10)
 
     d = download_youtube(results[0][2])
     print(results[0], len(d))

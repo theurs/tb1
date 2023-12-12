@@ -2530,15 +2530,18 @@ You can send texts longer than 4096 characters. The Telegram client automaticall
 
 ChatGPT: {cfg.CHATGPT_MAX_REQUEST}
 Google Bard: {my_bard.MAX_REQUEST}
-ClaudeAI: {my_claude.MAX_QUERY}
+Claude AI: {my_claude.MAX_QUERY}
 
 
 Website:
 https://github.com/theurs/tb1
 
 Report issues on Telegram:
-https://t.me/theurs"""
-    help = tr(help, lang)
+https://t.me/theurs
+
+Donate:"""
+
+    help = tr(help, lang) + f'\n<a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>'
 
     try:
         reply_to_long_message(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))

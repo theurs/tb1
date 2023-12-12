@@ -6,6 +6,7 @@ import concurrent.futures
 import os
 import random
 import threading
+import time
 
 from youtube_search import YoutubeSearch
 
@@ -128,16 +129,24 @@ def get_random_songs(limit: int = 10):
     PROMPT = f"""Посоветует хорошую музыку. Дай список из {limit} песен,
 без оформления списка просто одна песня на одной строке без цифр, для поиска на Ютубе в таком виде,
 сначала название песни потом тире потом альбом или группа, используй только реально существующие песни,
-жанры только эти: {', '.join(random.sample(GENRES, 10))}.
+жанры только эти: {', '.join(random.sample(GENRES, 20))}.
 
 Пример:
 нимб - линкин парк"""
-    songs = [x.strip() for x in gpt_basic.ai_instruct(prompt=PROMPT, temp=1).split('\n') if x]
+    songs = []
+    for _ in range(3):
+        songs = [x.strip() for x in gpt_basic.ai_instruct(prompt=PROMPT, temp=1).split('\n') if x]
+        if songs:
+            break
+        time.sleep(3)
+    if not songs:
+        return []
+
     try:
         # Создаем пул потоков
         with concurrent.futures.ThreadPoolExecutor() as executor:
             # Запускаем поиск по каждой песне в параллельном потоке
-            futures = [executor.submit(search_youtube, song, limit=1) for song in songs]
+            futures = [executor.submit(search_youtube, song, limit=5) for song in songs]
             # Получаем результаты поиска
             results = [future.result()[0] for future in futures]
         return results

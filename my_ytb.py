@@ -4,6 +4,7 @@
 
 import concurrent.futures
 import os
+import random
 import threading
 
 from youtube_search import YoutubeSearch
@@ -15,6 +16,50 @@ import utils
 
 BIG_LOCK = threading.Lock()
 
+
+GENRES = ['rock', 'pop', 'folk', 'dance', 'rusrap', 'ruspop', 'world', 'electronic',
+ 'alternative', 'children', 'rnb', 'hip', 'jazz', 'postrock', 'latin',
+ 'classical', 'metal', 'reggae', 'tatar', 'blues', 'instrumental', 'rusrock',
+ 'dnb', 'türk', 'post', 'country', 'psychedelic', 'conjazz', 'indie',
+ 'posthardcore', 'local', 'avantgarde', 'punk', 'videogame', 'techno', 'house',
+ 'christmas', 'melodic', 'caucasian', 'reggaeton', 'soundtrack', 'singer', 'ska',
+ 'shanson', 'ambient', 'film', 'western', 'rap', 'beats', "hard'n'heavy",
+ 'progmetal', 'minimal', 'contemporary', 'new', 'soul', 'holiday', 'german',
+ 'tropical', 'fairytail', 'spiritual', 'urban', 'gospel', 'nujazz', 'folkmetal',
+ 'trance', 'miscellaneous', 'anime', 'hardcore', 'progressive', 'chanson',
+ 'numetal', 'vocal', 'estrada', 'russian', 'classicmetal', 'dubstep', 'club',
+ 'deep', 'southern', 'black', 'folkrock', 'fitness', 'french', 'disco', 
+ 'religious', 'hiphop', 'drum', 'extrememetal', 'türkçe', 'experimental', 'easy',
+ 'metalcore', 'modern', 'argentinetango', 'old', 'breaks', 'eurofolk', 
+ 'stonerrock', 'industrial', 'funk', 'jpop', 'middle', 'variété', 'other', 
+ 'adult', 'christian', 'gothic', 'international', 'muslim', 'relax', 'schlager',
+ 'caribbean', 'ukrrock', 'nu', 'breakbeat', 'comedy', 'chill', 'newage',
+ 'specialty', 'uzbek', 'k-pop', 'balkan', 'chinese', 'meditative', 'dub', 'power', 
+ 'death', 'grime', 'arabesk', 'romance', 'flamenco', 'leftfield', 'european',
+ 'tech', 'newwave', 'dancehall', 'mpb', 'piano', 'top', 'bigroom', 'opera',
+ 'celtic', 'tradjazz', 'acoustic', 'epicmetal', 'historisch', 'downbeat', 
+ 'downtempo', 'africa', 'audiobook', 'jewish', 'sängerportrait', 'deutschrock', 
+ 'eastern', 'action', 'future', 'electropop', 'folklore', 'bollywood', 
+ 'marschmusik', 'rnr', 'karaoke', 'indian', 'rancheras', 'электроника',
+ 'afrikaans', 'tango', 'rhythm', 'sound', 'deutschspr', 'trip', 'lovers',
+ 'choral', 'dancepop', 'podcasts', 'retro', 'smooth', 'mexican', 'brazilian',
+ 'mood', 'surf', 'author', 'gangsta', 'triphop', 'inspirational', 'idm',  
+ 'ethnic', 'bluegrass', 'broadway', 'animated', 'americana', 'karadeniz',  
+ 'rockabilly', 'colombian', 'self', 'synthrock', 'sertanejo', 'japanese',  
+ 'canzone', 'swing', 'lounge', 'sport', 'korean', 'ragga', 'traditional',
+ 'gitarre', 'frankreich', 'alternativepunk', 'emo', 'laiko', 'cantopop',  
+ 'glitch', 'documentary', 'rockalternative', 'thrash', 'hymn', 'oceania',  
+ 'rockother', 'popeurodance', 'dark', 'vi', 'grunge', 'hardstyle', 'samba',
+ 'garage', 'soft', 'art', 'folktronica', 'entehno', 'mediterranean', 'chamber',
+ 'cuban', 'taraftar', 'rockindie', 'gypsy', 'hardtechno', 'shoegazing',
+ 'skarock', 'bossa', 'salsa', 'latino', 'worldbeat', 'malaysian', 'baile',
+ 'ghazal', 'loungeelectronic', 'arabic', 'popelectronic', 'acid', 'kayokyoku',
+ 'neoklassik', 'tribal', 'tanzorchester', 'native', 'independent', 'cantautori', 
+ 'handsup', 'poprussian', 'punjabi', 'synthpop', 'rave', 'französisch',  
+ 'quebecois', 'speech', 'soulful', 'teen', 'jam', 'ram', 'horror', 'scenic',  
+ 'orchestral', 'neue', 'roots', 'slow', 'jungle', 'indipop', 'axé', 'fado',
+ 'showtunes', 'arena', 'irish', 'mandopop', 'forró', 'popdance', 'dirty',
+ 'regional']
 
 def search_youtube(query: str, limit: int = 10):
     """
@@ -82,7 +127,8 @@ def download_youtube(id: str) -> bytes:
 def get_random_songs(limit: int = 10):
     PROMPT = f"""Посоветует хорошую музыку. Дай список из {limit} песен,
 без оформления списка просто одна песня на одной строке без цифр, для поиска на Ютубе в таком виде,
-сначала название песни потом тире потом альбом или группа, используй только реально существующие песни.
+сначала название песни потом тире потом альбом или группа, используй только реально существующие песни,
+жанры только эти: {', '.join(random.sample(GENRES, 10))}.
 
 Пример:
 нимб - линкин парк"""

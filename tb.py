@@ -59,6 +59,9 @@ if not os.path.exists('db'):
 # хранилище пар ytb_id:ytb_title
 # YTB_DB = {}
 YTB_DB = my_dic.PersistentDict('db/ytb.pkl')
+# хранилище пар ytb_id:message_id
+YTB_CACHE = my_dic.PersistentDict('db/ytb_cache.pkl')
+YTB_CACHE_FROM = my_dic.PersistentDict('db/ytb_cache_from.pkl')
 
 # заблокированные юзера {id:True/False}
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
@@ -722,15 +725,32 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             thumb = f'https://img.youtube.com/vi/{song_id}/maxresdefault.jpg'
             with ShowAction(message, 'upload_audio'):
                 my_log.log_echo(message, f'Start sending youtube {song_id} {caption}')
+
+                if song_id in YTB_CACHE:
+                    try:
+                        bot.copy_message(chat_id=message.chat.id,
+                                         from_chat_id=YTB_CACHE_FROM[song_id],
+                                         message_id = YTB_CACHE[song_id],
+                                         reply_to_message_id = message.message_id,
+                                         reply_markup = get_keyboard('hide', message),
+                                         disable_notification=True)
+                        my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
+                        return
+                    except Exception as copy_message_error:
+                        my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
+
                 data = my_ytb.download_youtube(song_id)
-                bot.send_audio(chat_id=message.chat.id, audio=data,
-                               reply_to_message_id = message.message_id,
-                               reply_markup = get_keyboard('hide', message),
-                               caption = caption,
-                               title = caption,
-                               thumbnail=thumb,
-                               disable_notification=True)
+                m = bot.send_audio(chat_id=message.chat.id, audio=data,
+                                    reply_to_message_id = message.message_id,
+                                    reply_markup = get_keyboard('hide', message),
+                                    caption = caption,
+                                    title = caption,
+                                    thumbnail=thumb,
+                                    disable_notification=True)
+                YTB_CACHE[song_id] = m.message_id
+                YTB_CACHE_FROM[song_id] = m.chat.id
                 my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
+
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):

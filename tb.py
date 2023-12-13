@@ -738,16 +738,22 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     except Exception as copy_message_error:
                         my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
                 data = my_ytb.download_youtube(song_id)
-                m = bot.send_audio(chat_id=message.chat.id, audio=data,
-                                    reply_to_message_id = message.message_id,
-                                    reply_markup = get_keyboard('hide', message),
-                                    caption = caption,
-                                    title = caption,
-                                    thumbnail=thumb,
-                                    disable_notification=True)
-                YTB_CACHE[song_id] = m.message_id
-                YTB_CACHE_FROM[song_id] = m.chat.id
-                my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
+                try:
+                    m = bot.send_audio(chat_id=message.chat.id, audio=data,
+                                        reply_to_message_id = message.message_id,
+                                        reply_markup = get_keyboard('hide', message),
+                                        caption = caption,
+                                        title = caption,
+                                        thumbnail=thumb,
+                                        disable_notification=True)
+                    YTB_CACHE[song_id] = m.message_id
+                    YTB_CACHE_FROM[song_id] = m.chat.id
+                    my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
+                except Exception as send_ytb_error:
+                    my_log.log2(str(send_ytb_error))
+                    err_msg = tr('Не удалось отправить музыку.', lang) + '\n' + str(send_ytb_error)
+                    my_log.log_echo(message, err_msg)
+                    bot.reply_to(message, err_msg, reply_markup=get_keyboard('hide', message))
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):

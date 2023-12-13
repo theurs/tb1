@@ -725,7 +725,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             thumb = f'https://img.youtube.com/vi/{song_id}/maxresdefault.jpg'
             with ShowAction(message, 'upload_audio'):
                 my_log.log_echo(message, f'Start sending youtube {song_id} {caption}')
-
                 if song_id in YTB_CACHE:
                     try:
                         bot.copy_message(chat_id=message.chat.id,
@@ -738,7 +737,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         return
                     except Exception as copy_message_error:
                         my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
-
                 data = my_ytb.download_youtube(song_id)
                 m = bot.send_audio(chat_id=message.chat.id, audio=data,
                                     reply_to_message_id = message.message_id,
@@ -750,7 +748,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 YTB_CACHE[song_id] = m.message_id
                 YTB_CACHE_FROM[song_id] = m.chat.id
                 my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
-
         elif call.data == 'translate':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):

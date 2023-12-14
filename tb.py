@@ -23,6 +23,7 @@ import my_claude
 import my_genimg
 import my_dic
 import my_google
+import my_gemini
 import my_log
 import my_ocr
 import my_pandoc
@@ -533,6 +534,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
         markup.add(button0, button1, button2, button3, button4)
         return markup
+    elif kbd == 'gemini_chat':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gemini_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
     elif kbd == 'config':
         if chat_id_full in TTS_GENDER:
             voice = f'tts_{TTS_GENDER[chat_id_full]}'
@@ -580,6 +592,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button1 = telebot.types.InlineKeyboardButton('☑️Claude AI', callback_data='claude_mode_enable')
 
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='claudeAI_reset')
+        markup.row(button1, button2)
+
+        if CHAT_MODE[chat_id_full] == 'gemini':
+            button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro', callback_data='gemini_mode_disable')
+        else:
+            button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro', callback_data='gemini_mode_enable')
+
+        button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
         markup.row(button1, button2)
 
         button1 = telebot.types.InlineKeyboardButton(tr(f'📢Голос: {voice_title}', lang), callback_data=voice)
@@ -788,6 +808,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             msg = tr('История диалога с Google Bard отчищена.', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
+        elif call.data == 'gemini_reset':
+            my_gemini.reset(chat_id_full)
+            msg = tr('История диалога с Gemini Pro отчищена.', lang)
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+            my_log.log_echo(message, msg)
         elif call.data == 'claudeAI_reset':
             my_claude.reset_claude_chat(chat_id_full)
             msg = tr('История диалога с Claude AI отчищена.', lang)
@@ -871,6 +896,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
         elif call.data == 'claude_mode_enable':
             CHAT_MODE[chat_id_full] = 'claude'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'claude_mode_disable':
+            del CHAT_MODE[chat_id_full]
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'gemini_mode_enable':
+            CHAT_MODE[chat_id_full] = 'gemini'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
         elif call.data == 'claude_mode_disable':
@@ -1443,13 +1476,18 @@ def send_debug_history(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     check_blocked_user(chat_id_full)
 
-    gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+    if CHAT_MODE[chat_id_full] == 'bard':
+        gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
 
-    # создаем новую историю диалогов с юзером из старой если есть
-    messages = []
-    if chat_id_full in gpt_basic.CHATS:
-        messages = gpt_basic.CHATS[chat_id_full]
-    prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or tr('Пусто', lang)
+        # создаем новую историю диалогов с юзером из старой если есть
+        messages = []
+        if chat_id_full in gpt_basic.CHATS:
+            messages = gpt_basic.CHATS[chat_id_full]
+        prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or tr('Пусто', lang)
+    elif CHAT_MODE[chat_id_full] == 'gemini':
+        prompt = my_gemini.get_mem_as_string(chat_id_full) or tr('Пусто', lang)
+    else:
+        return
     my_log.log_echo(message, prompt)
     reply_to_long_message(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
@@ -3068,6 +3106,9 @@ def do_task(message, custom_prompt: str = ''):
             if CHAT_MODE[chat_id_full] == 'bard':
                 my_bard.reset_bard_chat(chat_id_full)
                 my_log.log_echo(message, 'История барда принудительно отчищена')
+            if CHAT_MODE[chat_id_full] == 'gemini':
+                my_bard.reset_bard_chat(chat_id_full)
+                my_log.log_echo(message, 'История Gemini Pro принудительно отчищена')
             elif CHAT_MODE[chat_id_full] == 'claude':
                 my_claude.reset_claude_chat(chat_id_full)
                 my_log.log_echo(message, 'История клода принудительно отчищена')
@@ -3205,6 +3246,38 @@ def do_task(message, custom_prompt: str = ''):
                 message.text = f'[{tr("голосовое сообщение, возможны ошибки распознавания речи, отвечай коротко и просто без форматирования текста - ответ будет зачитан вслух", lang)}]: ' + message.text
             else:
                 action = 'typing'
+
+
+            # если активирован режим общения с Gemini Pro
+            if CHAT_MODE[chat_id_full] == 'gemini' and not FIRST_DOT:
+                check_blocked_user(chat_id_full)
+                if len(msg) > my_gemini.MAX_REQUEST:
+                    bot.reply_to(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                    my_log.log_echo(message, f'Слишком длинное сообщение для Gemini: {len(msg)} из {my_gemini.MAX_REQUEST}')
+                    return
+                message.text = f'[{formatted_date}] [{from_user_name}] [answer in a super short and objective way]: {message.text}'
+                with ShowAction(message, action):
+                    try:
+                        answer = my_gemini.chat(message.text, chat_id_full)
+
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer = utils.bot_markdown_to_html(answer)
+                        if answer:
+                            my_log.log_echo(message, answer)
+                            try:
+                                reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('gemini_chat', message))
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('gemini_chat', message))
+                    except Exception as error3:
+                        print(error3)
+                        my_log.log2(str(error3))
+                    return
+
+
 
             # если активирован режим общения с бард чатом
             if CHAT_MODE[chat_id_full] == 'bard' and not FIRST_DOT:

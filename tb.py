@@ -3107,7 +3107,7 @@ def do_task(message, custom_prompt: str = ''):
                 my_bard.reset_bard_chat(chat_id_full)
                 my_log.log_echo(message, 'История барда принудительно отчищена')
             if CHAT_MODE[chat_id_full] == 'gemini':
-                my_bard.reset_bard_chat(chat_id_full)
+                my_gemini.reset(chat_id_full)
                 my_log.log_echo(message, 'История Gemini Pro принудительно отчищена')
             elif CHAT_MODE[chat_id_full] == 'claude':
                 my_claude.reset_claude_chat(chat_id_full)

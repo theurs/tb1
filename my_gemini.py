@@ -107,6 +107,8 @@ def get_mem_as_string(chat_id: str) -> str:
     Returns:
         str: The chat history as a string.
     """
+    if chat_id not in CHATS:
+        CHATS[chat_id] = []
     mem = CHATS[chat_id]
     result = ''
     for x in mem:

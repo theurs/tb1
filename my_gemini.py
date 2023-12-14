@@ -116,6 +116,8 @@ def get_mem_as_string(chat_id: str) -> str:
         except IndexError:
             text = x['parts'][0]['text']
         result += f'{role}: {text}\n'
+        if role == 'model':
+            result += '\n
     return result    
 
 

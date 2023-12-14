@@ -2608,6 +2608,7 @@ You can send texts longer than 4096 characters. The Telegram client automaticall
 ChatGPT: {cfg.CHATGPT_MAX_REQUEST}
 Google Bard: {my_bard.MAX_REQUEST}
 Claude AI: {my_claude.MAX_QUERY}
+GeminiPro: {my_gemini.MAX_REQUEST}
 
 
 Website:

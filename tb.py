@@ -14,6 +14,7 @@ import time
 import PyPDF2
 import telebot
 from natsort import natsorted
+from telebot import apihelper
 
 import cfg
 import gpt_basic
@@ -38,8 +39,12 @@ import utils
 # устанавливаем рабочую папку = папке в которой скрипт лежит
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
-
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
+# if cfg.local_server_url:
+#     apihelper.API_URL = cfg.local_server_url
+#     bot.log_out()
+#     bot = telebot.TeleBot(cfg.token, skip_pending=True)
+
 _bot_name = bot.get_me().username
 BOT_ID = bot.get_me().id
 
@@ -1954,10 +1959,10 @@ def image_thread(message: telebot.types.Message):
                     caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
                     bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
                                  reply_markup=get_keyboard('hide_image', message))
-                    if cfg.enable_image_adv:
-                        bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
-                                 disable_web_page_preview = True,
-                                 reply_markup=get_keyboard('hide', message))
+                    # if cfg.enable_image_adv:
+                    #     bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
+                    #              disable_web_page_preview = True,
+                    #              reply_markup=get_keyboard('hide', message))
 
                     my_log.log_echo(message, '[image gen] ')
 

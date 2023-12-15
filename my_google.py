@@ -10,6 +10,7 @@ import trafilatura
 import gpt_basic
 import cfg
 import my_log
+import my_gemini
 import my_trans
 
 
@@ -85,7 +86,9 @@ def ask_gpt(query: str, max_req: int, history: str, result: str, engine: str,
 
 {result}"""
 
-    result = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer)
+    result = my_gemini.ai(text[:max_req])
+    if result == '' or result == 'Gemini didnt respond':
+        result = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer)
     my_log.log_google(text[:max_req], result)
     return result
 
@@ -194,7 +197,7 @@ if __name__ == "__main__":
 
     #print(gpt_basic.ai('1+1'))
     
-    print(search_google('курс доллара'), '\n\n')
+    # print(search_google('курс доллара'), '\n\n')
     
     # print(search('полный текст песни doni ft валерия ты такой'), '\n\n')
 
@@ -205,4 +208,4 @@ if __name__ == "__main__":
     # print(search('как убить соседа'), '\n\n')
 
     # print(search('Главные герои книги незнайка на луне, подробно'), '\n\n')
-    # print(search('Главные герои книги три мушкетера, подробно'), '\n\n')
+    print(search('Главные герои книги три мушкетера, подробно'), '\n\n')

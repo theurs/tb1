@@ -19,6 +19,7 @@ import cfg
 import gpt_basic
 import my_log
 import my_claude
+import my_gemini
 import my_trans
 
 
@@ -104,7 +105,18 @@ BEGIN:
             print(f'my_sum:summ_text_worker:claude: {error}')
             my_log.log2(f'my_sum:summ_text_worker:claude: {error}')
 
+
     if not result:
+        try:
+            r = my_gemini.ai(prompt[:cfg.max_request])
+            if r:
+                result = f'{r}\n\n--\nGemini Pro [{len(prompt[:cfg.max_request])} {tr("символов", lang)}]'
+        except Exception as error:
+            print(f'my_sum:summ_text_worker:gpt: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
+
+
+    if result == '' or result == 'Gemini didnt respond':
         try:
             r = gpt_basic.ai(prompt[:cfg.max_request])
             if r:
@@ -194,7 +206,7 @@ def is_valid_url(url: str) -> bool:
 
 if __name__ == "__main__":
     """Usage ./summarize.py '|URL|filename"""
-    r = summ_url('https://habr.com/ru/articles/748266/')
+    r = summ_url('https://www.youtube.com/watch?v=pDhNgculDyU')
     print(r)
     sys.exit(0)
     

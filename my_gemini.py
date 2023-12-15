@@ -22,7 +22,7 @@ MAX_CHAT_SIZE = 25000
 CHATS = {}
 
 
-def ai(q: str, mem) -> str:
+def ai(q: str, mem = []) -> str:
     """
     Generate the response of an AI model based on a given question and memory.
 

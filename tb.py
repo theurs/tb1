@@ -2320,7 +2320,9 @@ def summ_text_thread(message: telebot.types.Message):
                 if url in SUM_CACHE:
                     r = SUM_CACHE[url]
                 if r:
-                    reply_to_long_message(message, r, disable_web_page_preview = True,
+                    rr = utils.bot_markdown_to_html(r)
+                    reply_to_long_message(message, rr, disable_web_page_preview = True,
+                                          parse_mode='HTML',
                                           reply_markup=get_keyboard('translate', message))
                     my_log.log_echo(message, r)
                     if chat_id_full not in gpt_basic.CHATS:
@@ -2344,7 +2346,8 @@ def summ_text_thread(message: telebot.types.Message):
                         my_log.log_echo(message, m)
                         return
                     if res:
-                        reply_to_long_message(message, res, parse_mode='',
+                        rr = utils.bot_markdown_to_html(res)
+                        reply_to_long_message(message, rr, parse_mode='HTML',
                                               disable_web_page_preview = True,
                                               reply_markup=get_keyboard('translate', message))
                         my_log.log_echo(message, res)

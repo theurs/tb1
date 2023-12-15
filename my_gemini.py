@@ -8,6 +8,7 @@ import requests
 
 
 import cfg
+import my_log
 
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
@@ -67,6 +68,7 @@ def ai(q: str, mem) -> str:
     except Exception as ai_error:
         resp = 'Gemini didnt respond'
         # print(ai_error)
+        my_log.log2(str(response.json()))
 
     if resp:
         mem.append({"role": "user", "parts": [{"text": q}]})

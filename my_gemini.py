@@ -114,10 +114,8 @@ def ai(q: str, mem = []) -> str:
 
     try:
         resp = response.json()['candidates'][0]['content']['parts'][0]['text']
-        # print(response.json()['candidates'][0]['content'])
     except Exception as ai_error:
-        resp = 'Gemini didnt respond'
-        # print(ai_error)
+        resp = ''
         my_log.log2(str(response.json()))
 
     if resp:

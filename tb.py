@@ -3269,19 +3269,21 @@ def do_task(message, custom_prompt: str = ''):
                 with ShowAction(message, action):
                     try:
                         answer = my_gemini.chat(message.text, chat_id_full)
+                        if not answer:
+                            answer = 'Gemini Pro ' + tr('did not answered', lang)
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
-                        if answer:
-                            my_log.log_echo(message, answer)
-                            try:
-                                reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('gemini_chat', message))
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('gemini_chat', message))
+
+                        my_log.log_echo(message, answer)
+                        try:
+                            reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('gemini_chat', message))
+                        except Exception as error:
+                            print(f'tb:do_task: {error}')
+                            my_log.log2(f'tb:do_task: {error}')
+                            reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('gemini_chat', message))
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))

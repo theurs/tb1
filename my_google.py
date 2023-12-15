@@ -87,7 +87,7 @@ def ask_gpt(query: str, max_req: int, history: str, result: str, engine: str,
 {result}"""
 
     result = my_gemini.ai(text[:max_req])
-    if result == '' or result == 'Gemini didnt respond':
+    if result == '' or result.strip() == 'Gemini didnt respond':
         result = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer)
     my_log.log_google(text[:max_req], result)
     return result

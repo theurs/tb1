@@ -109,14 +109,14 @@ BEGIN:
     if not result:
         try:
             r = my_gemini.ai(prompt[:cfg.max_request])
-            if r:
+            if r != 'Gemini didnt respond' and r != '':
                 result = f'{r}\n\n--\nGemini Pro [{len(prompt[:cfg.max_request])} {tr("символов", lang)}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
 
 
-    if result == '' or result == 'Gemini didnt respond':
+    if result:
         try:
             r = gpt_basic.ai(prompt[:cfg.max_request])
             if r:

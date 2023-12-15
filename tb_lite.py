@@ -3,30 +3,30 @@
 
 import telebot
 
+import my_gemini
 import cfg
 
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
 
 
-@bot.message_handler(content_types = ['photo'])
-def handle_photo(message: telebot.types.Message):
-    """получает несколько фотографий и склеивает в 1"""
-    pass
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.reply_to(message, 'Hi!')
+
+
+@bot.message_handler(commands=['reset'])
+def reset(message):
+    my_gemini.reset(message.chat.id)
+    bot.reply_to(message, 'Cleared!')
 
 
 @bot.message_handler(func=lambda message: True)
 def do_task(message):
     """функция обработчик сообщений работающая в отдельном потоке"""
-    text = """
-текст
-
-<pre><code class = "language-python">print(&#x27;Hello&#x27;) # Hello
-</code></pre>
-и тут текст
-
-"""
-
+    query = message.text
+    user_id = message.chat.id
+    text = my_gemini.chat(query, user_id)
     bot.reply_to(message, text, parse_mode='HTML')
 
 

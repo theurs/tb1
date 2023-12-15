@@ -2655,7 +2655,7 @@ def id_cmd_handler(message: telebot.types.Message):
 {tr("ID группы:", lang)} {chat_id_full}
 
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
-''')
+''', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['dump_translation'])

@@ -3259,7 +3259,7 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для Gemini: {len(msg)} из {my_gemini.MAX_REQUEST}')
                     return
-                message.text = f'[{formatted_date}] [{from_user_name}] [answer in a super short and objective way]: {message.text}'
+                message.text = f'[{formatted_date}] [{from_user_name}] [answer in a short and objective way]: {message.text}'
                 with ShowAction(message, action):
                     try:
                         answer = my_gemini.chat(message.text, chat_id_full)

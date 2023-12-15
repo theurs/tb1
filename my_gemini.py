@@ -2,6 +2,7 @@
 # https://ai.google.dev/
 
 
+import base64
 import random
 import requests
 import threading
@@ -25,6 +26,50 @@ MAX_CHAT_SIZE = 25000
 
 # хранилище диалогов {id:list(mem)}
 CHATS = {}
+
+
+def img2txt(data_: bytes, prompt: str = "Что на картинке, подробно?") -> str:
+    """
+    Generates a textual description of an image based on its contents.
+
+    Args:
+        data_: The image data as bytes.
+        prompt: The prompt to provide for generating the description. Defaults to "Что на картинке, подробно?".
+
+    Returns:
+        A textual description of the image.
+
+    Raises:
+        None.
+    """
+    try:
+        img_data = base64.b64encode(data_).decode("utf-8")
+        data = {
+            "contents": [
+                {
+                "parts": [
+                    {"text": prompt},
+                    {
+                    "inline_data": {
+                        "mime_type": "image/jpeg",
+                        "data": img_data
+                    }
+                    }
+                ]
+                }
+            ]
+            }
+        api_key = random.choice(cfg.gemini_keys)
+        response = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={api_key}",
+            json=data,
+            timeout=60
+        ).json()
+
+        return response['candidates'][0]['content']['parts'][0]['text']
+    except Exception as error:
+        my_log.log2(f'img2txt:{error}')
+    return ''
 
 
 def ai(q: str, mem = []) -> str:
@@ -155,8 +200,15 @@ def get_mem_as_string(chat_id: str) -> str:
     return result    
 
 
-if __name__ == '__main__':
+def chat_cli():
     while 1:
         q = input('>')
         r = chat(q, 'test')
         print(r)
+
+
+if __name__ == '__main__':
+    # chat_cli()
+    
+    data = open('1.jpg', 'rb').read()
+    print(img2txt(data))

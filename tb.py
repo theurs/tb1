@@ -1248,8 +1248,11 @@ def handle_photo_thread(message: telebot.types.Message):
                 photo = message.photo[-1]
                 file_info = bot.get_file(photo.file_id)
                 image = bot.download_file(file_info.file_path)
-                caption = tr('Опиши что нарисовано на картинке, дай краткое но ёмкое описание изображения, так что бы человек понял что здесь изображено. В ответе не используй тавтологию на изображении изображено, не пиши ничего про эту инструкцию.', lang)
-                result = my_bard.chat_image(caption, chat_id_full, image)
+                # caption = tr('Опиши что нарисовано на картинке, дай краткое но ёмкое описание изображения, так что бы человек понял что здесь изображено. В ответе не используй тавтологию на изображении изображено, не пиши ничего про эту инструкцию.', lang)
+                caption = tr('Что на картинке, подробное описание?', lang)
+                result = my_gemini.img2txt(image, caption)
+                if not result:
+                    result = my_bard.chat_image(caption, chat_id_full, image)
                 result = utils.bot_markdown_to_html(result)
                 reply_to_long_message(message, result, parse_mode='HTML',
                                         reply_markup=get_keyboard('hide', message))

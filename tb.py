@@ -1255,7 +1255,7 @@ def handle_photo_thread(message: telebot.types.Message):
                     result = my_bard.chat_image(caption, chat_id_full, image)
                 result = utils.bot_markdown_to_html(result)
                 reply_to_long_message(message, result, parse_mode='HTML',
-                                        reply_markup=get_keyboard('hide', message))
+                                        reply_markup=get_keyboard('translate', message))
                 my_log.log_echo(message, result)
             return
         elif state == 'ocr':

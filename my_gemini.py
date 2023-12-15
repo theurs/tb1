@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 # https://ai.google.dev/
 
-# Проверь присылает ли Джемини картинки вне текста в ответе
 
 import random
 import requests
+import threading
 
 
 import cfg
 import my_log
+
+
+# {id:lock}
+LOCKS = {}
 
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
@@ -90,19 +94,25 @@ def ai(q: str, mem = []) -> str:
 
 def chat(query: str, chat_id: str) -> str:
     """
-    A function that handles chat queries.
+    This function is used to process a chat query and return a response.
 
-    Args:
-        query (str): The query string.
-        chat_id (str): The ID of the chat.
+    Parameters:
+    - query (str): The chat query to process.
+    - chat_id (str): The ID of the chat.
 
     Returns:
-        str: The response from the AI.
+    - str: The response to the chat query.
     """
-    if chat_id not in CHATS:
-        CHATS[chat_id] = []
-    mem = CHATS[chat_id]
-    return ai(query, mem)
+    if chat_id in LOCKS:
+        lock = LOCKS[chat_id]
+    else:
+        lock = threading.Lock()
+        LOCKS[chat_id] = lock
+    with lock:
+        if chat_id not in CHATS:
+            CHATS[chat_id] = []
+        mem = CHATS[chat_id]
+        return ai(query, mem)
 
 
 def reset(chat_id: str):

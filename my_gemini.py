@@ -11,6 +11,7 @@ import cfg
 import my_log
 
 
+# блокировка чатов что бы не испортить историю 
 # {id:lock}
 LOCKS = {}
 

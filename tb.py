@@ -296,6 +296,35 @@ def tr(text: str, lang: str) -> str:
     return AUTO_TRANSLATIONS[key]
 
 
+def img2txt(text, lang: str, chat_id_full: str) -> str:
+    """
+    Generate the text description of an image.
+
+    Args:
+        text (str): The image file URL or downloaded data(bytes).
+        lang (str): The language code for the image description.
+        chat_id_full (str): The full chat ID.
+
+    Returns:
+        str: The text description of the image.
+    """
+    if isinstance(text, bytes):
+        data = text
+    else:
+        data = utils.download_image_as_bytes(text)
+    query = tr('Что изображено на картинке? Дай мне подробное описание, и объясни подробно что это может означать.', lang)
+    text = ''
+    try:
+        text = my_gemini.img2txt(data, query)
+    except Exception as img_from_link_error:
+        my_log.log2(f'tb:img2txt: {img_from_link_error}')
+        try:
+            text = my_bard.chat_image(query, chat_id_full, data)
+        except Exception as img_from_link_error2:
+            my_log.log2(f'tb:img2txt: {img_from_link_error2}')
+    return text
+
+
 @bot.message_handler(commands=['fixlang'])
 def fix_translation_with_gpt(message: telebot.types.Message):
     thread = threading.Thread(target=fix_translation_with_gpt_thread, args=(message,))
@@ -1248,15 +1277,13 @@ def handle_photo_thread(message: telebot.types.Message):
                 photo = message.photo[-1]
                 file_info = bot.get_file(photo.file_id)
                 image = bot.download_file(file_info.file_path)
-                # caption = tr('Опиши что нарисовано на картинке, дай краткое но ёмкое описание изображения, так что бы человек понял что здесь изображено. В ответе не используй тавтологию на изображении изображено, не пиши ничего про эту инструкцию.', lang)
-                caption = tr('Что на картинке, подробное описание и объяснение?', lang)
-                result = my_gemini.img2txt(image, caption)
-                if not result:
-                    result = my_bard.chat_image(caption, chat_id_full, image)
-                result = utils.bot_markdown_to_html(result)
-                reply_to_long_message(message, result, parse_mode='HTML',
-                                        reply_markup=get_keyboard('translate', message))
-                my_log.log_echo(message, result)
+                text = img2txt(image, lang, chat_id_full)
+                if text:
+                    text = utils.bot_markdown_to_html(text)
+                    reply_to_long_message(message, text, parse_mode='HTML',
+                                          reply_markup=get_keyboard('translate', message))
+
+                my_log.log_echo(message, text)
             return
         elif state == 'ocr':
             with ShowAction(message, 'typing'):
@@ -3201,9 +3228,17 @@ def do_task(message, custom_prompt: str = ''):
                     reply_to_long_message(message, response, parse_mode='HTML',
                                           reply_markup=get_keyboard('claude_chat', message))
                 return
-            message.text = '/sum ' + message.text
-            summ_text(message)
-            return
+            if utils.is_image_link(message.text):
+                text = img2txt(message.text, lang, chat_id_full)
+                if text:
+                    text = utils.bot_markdown_to_html(text)
+                    reply_to_long_message(message, text, parse_mode='HTML',
+                                          reply_markup=get_keyboard('translate', message))
+                    return
+            else:
+                message.text = '/sum ' + message.text
+                summ_text(message)
+                return
 
         # проверяем просят ли нарисовать что-нибудь
         if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',')):

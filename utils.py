@@ -6,6 +6,7 @@ import os
 import multiprocessing
 import random
 import re
+import requests
 import string
 import subprocess
 import tempfile
@@ -461,9 +462,37 @@ def get_page_names(urls):
     # return [x for x in map(get_page_name, urls)]
 
 
+def is_image_link(url: str) -> bool:
+  """Проверяет, является ли URL-адрес ссылкой на картинку.
+
+  Args:
+    url: URL-адрес изображения.
+
+  Returns:
+    True, если URL-адрес ссылается на картинку, иначе False.
+  """
+
+  try:
+    response = requests.get(url)
+    content_type = response.headers['Content-Type']
+    return content_type.startswith('image/')
+  except:
+    return False
+
+
+def download_image_as_bytes(url: str) -> bytes:
+  """Загружает изображение по URL-адресу и возвращает его в виде байтов.
+
+  Args:
+    url: URL-адрес изображения.
+
+  Returns:
+    Изображение в виде байтов.
+  """
+
+  response = requests.get(url)
+  return response.content
+
+
 if __name__ == '__main__':
-    urls=['https://www.youtube.com/feed/subscriptions',
-          'https://kunsun-meshcentral.dns.army/login',
-          'https://oracle1-dcpp.dns.army/hubs/session/1',
-          'https://mail.google.com/mail/u/0/#inbox']
-    print(get_page_names(urls))
+    print(is_image_link('https://keep.google.com/u/0/?pli=1#NOTE/1KA1ADEB_Cn9dNEiBKakN8BebZkOtBVCNpeOeFTFujVKkDYtyKGuNFzW-a6dYK_Q'))

@@ -1482,7 +1482,7 @@ def change_mode(message: telebot.types.Message):
     if chat_id_full not in gpt_basic.PROMPTS:
         # по умолчанию формальный стиль
         gpt_basic.PROMPTS[chat_id_full] = [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
-        my_gemini.ROLES[chat_id_full] = utils.gpt_start_message1
+        my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
 
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
@@ -3358,6 +3358,8 @@ def do_task(message, custom_prompt: str = ''):
                     my_log.log_echo(message, f'Слишком длинное сообщение для Gemini: {len(msg)} из {my_gemini.MAX_REQUEST}')
                     return
                 # message.text = f'[{formatted_date}] [{from_user_name}] [answer in a short and objective way]: {message.text}'
+                if chat_id_full not in my_gemini.ROLES:
+                    my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
                 message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
                 with ShowAction(message, action):
                     try:

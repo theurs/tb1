@@ -3,10 +3,10 @@
 
 
 import base64
+import pickle
 import random
-import requests
 import threading
-
+import requests
 
 import cfg
 import my_dic
@@ -20,6 +20,8 @@ ROLES = my_dic.PersistentDict('db/gemini_roles.pkl')
 # {id:lock}
 LOCKS = {}
 
+# memory save lock
+SAVE_LOCK = threading.Lock()
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 14000
@@ -30,6 +32,52 @@ MAX_CHAT_SIZE = 25000
 
 # хранилище диалогов {id:list(mem)}
 CHATS = {}
+DB_FILE = 'db/gemini_dialogs.pkl'
+
+
+def load_memory_from_file():
+    """
+    Load memory from a file and store it in the global CHATS variable.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
+    global CHATS
+    try:
+        with open(DB_FILE, 'rb') as f:
+            CHATS = pickle.load(f)
+    except Exception as error:
+        CHATS = {}
+        my_log.log2(f'load_memory_from_file:{str(error)}')
+
+
+def save_memory_to_file():
+    """
+    Saves the contents of the CHATS dictionary to a file.
+
+    This function is responsible for serializing the CHATS dictionary and
+    saving its contents to a file specified by the DB_FILE constant. It
+    ensures that the operation is thread-safe by acquiring the SAVE_LOCK
+    before performing the file write.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If an error occurs while saving the memory to the file.
+    """
+    try:
+        with SAVE_LOCK:
+            with open(DB_FILE, 'wb') as f:
+                pickle.dump(CHATS, f)
+    except Exception as error:
+        my_log.log2(f'save_memory_to_file:{str(error)}')
 
 
 def img2txt(data_: bytes, prompt: str = "Что на картинке, подробно?") -> str:
@@ -106,6 +154,7 @@ def update_mem(query: str, resp: str, mem) -> list:
             for x in mem:
                 text = x['parts'][0]['text']
                 size += len(text)
+        save_memory_to_file()
 
 
 def ai(q: str, mem = []) -> str:

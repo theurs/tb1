@@ -74,16 +74,21 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
 
 def update_mem(query: str, resp: str, mem) -> list:
     """
-    Updates the memory with a new query and response.
+    Update the memory with the given query and response.
 
-    Args:
-        query (str): The query string.
-        resp (str): The response string.
-        mem (list): The memory list.
+    Parameters:
+        query (str): The input query.
+        resp (str): The response to the query.
+        mem: The memory object to update, if str than mem is a chat_id
 
     Returns:
-        list: The updated memory list.
+        list: The updated memory object.
     """
+    if isinstance(mem, str): # if mem - chat_id
+        if mem not in CHATS:
+            CHATS[mem] = []
+        mem = CHATS[mem]
+
     if resp:
         mem.append({"role": "user", "parts": [{"text": query}]})
         mem.append({"role": "model", "parts": [{"text": resp}]})

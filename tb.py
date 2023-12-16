@@ -323,6 +323,10 @@ def img2txt(text, lang: str, chat_id_full: str) -> str:
             text = my_bard.chat_image(query, chat_id_full, data)
         except Exception as img_from_link_error2:
             my_log.log2(f'tb:img2txt: {img_from_link_error2}')
+
+    if text:
+        my_gemini.update_mem(tr('User asked to describe a picture.', lang), text, chat_id_full)
+
     return text
 
 
@@ -1918,6 +1922,9 @@ def google_thread(message: telebot.types.Message):
                 "content": f'assistant {tr("поискал в Google и ответил:", lang)} {r}'}
             ]
         gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+        my_gemini.update_mem(f'user {tr("попросил сделать запрос в Google:", lang)} {q}',
+                             f'{tr("поискал в Google и ответил:", lang)} {r}',
+                             chat_id_full)
 
 
 @bot.message_handler(commands=['ddg',])
@@ -1984,6 +1991,9 @@ def ddg_thread(message: telebot.types.Message):
                 "content": f'assistant {tr("поискал в Google и ответил:", lang)} {r}'}
             ]
         gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+        my_gemini.update_mem(f'user {tr("попросил сделать запрос в Google:", lang)} {q}',
+                             f'{tr("поискал в Google и ответил:", lang)} {r}',
+                             chat_id_full)
 
 
 @bot.message_handler(commands=['image','img','i'])
@@ -2047,6 +2057,9 @@ def image_thread(message: telebot.types.Message):
                         gpt_basic.CHATS[chat_id_full] += n
                     else:
                         gpt_basic.CHATS[chat_id_full] = n
+                    my_gemini.update_mem(f'user {tr("попросил нарисовать", lang)}\n{prompt}',
+                                         f'{tr("нарисовал с помощью DALL-E", lang)}',
+                                         chat_id_full)
                 else:
                     bot.reply_to(message, tr('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', lang), 
                                  reply_markup=get_keyboard('hide', message))
@@ -2057,11 +2070,15 @@ def image_thread(message: telebot.types.Message):
                     my_log.log_echo(message, '[image gen error] ')
                     n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 
                          {'role':'system', 'content':f'assistant {tr("не захотел или не смог нарисовать это с помощью DALL-E", lang)}'}]
+                    my_gemini.update_mem(f'user {tr("попросил нарисовать", lang)}\n{prompt}',
+                                            f'{tr("не захотел или не смог нарисовать это с помощью DALL-E", lang)}',
+                                            chat_id_full)
                     if chat_id_full in gpt_basic.CHATS:
                         gpt_basic.CHATS[chat_id_full] += n
                     else:
                         gpt_basic.CHATS[chat_id_full] = n
                         gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+
         else:
             COMMAND_MODE[chat_id_full] = 'image'
             bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))

@@ -136,7 +136,9 @@ def update_mem(query: str, resp: str, mem) -> list:
     Returns:
         list: The updated memory object.
     """
+    chat_id = ''
     if isinstance(mem, str): # if mem - chat_id
+        chat_id = mem
         if mem not in CHATS:
             CHATS[mem] = []
         mem = CHATS[mem]
@@ -154,7 +156,10 @@ def update_mem(query: str, resp: str, mem) -> list:
             for x in mem:
                 text = x['parts'][0]['text']
                 size += len(text)
-        save_memory_to_file()
+        if chat_id:
+            CHATS[chat_id] = mem
+            save_memory_to_file()
+        return mem
 
 
 def ai(q: str, mem = []) -> str:
@@ -203,7 +208,7 @@ def ai(q: str, mem = []) -> str:
         resp = ''
         my_log.log2(str(response.json()))
 
-    update_mem(q, resp, mem)
+    # update_mem(q, resp, mem)
 
     return resp
 
@@ -228,7 +233,12 @@ def chat(query: str, chat_id: str) -> str:
         if chat_id not in CHATS:
             CHATS[chat_id] = []
         mem = CHATS[chat_id]
-        return ai(query, mem)
+        r = ai(query, mem)
+        if r:
+            mem = update_mem(query, r, mem)
+            CHATS[chat_id] = mem
+            save_memory_to_file()
+        return r
 
 
 def reset(chat_id: str):
@@ -242,6 +252,7 @@ def reset(chat_id: str):
         None
     """
     CHATS[chat_id] = []
+    save_memory_to_file()
 
 
 def get_mem_as_string(chat_id: str) -> str:

@@ -3023,6 +3023,16 @@ def do_task(message, custom_prompt: str = ''):
         MESSAGE_QUEUE[chat_id_full] += message.text + '\n\n'
         return
 
+    # если админ прислал новые куки для бинга
+    if message.chat.id in cfg.admins:
+        if '"name": "_U",' in message.text:
+            if '"domain": ".bing.com",' in message.text:
+                if '"value": "' in message.text:
+                    if len(message.text) > 10000:
+                        open('cookies.json', 'w').write(message.text)
+                        reply_to_long_message(message, tr("Куки файл обновлен.", lang), reply_markup=get_keyboard('hide', message))
+                        return
+
     if message.text in [tr('🎨 Нарисуй', lang),     tr('🌐 Найди', lang), 
                         tr('📋 Перескажи', lang),   tr('🎧 Озвучь', lang),
                         tr('🈶 Перевод', lang),     tr('⚙️ Настройки', lang),

@@ -98,6 +98,9 @@ SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
 # {chat_id:0|1}
 SUPER_CHAT = my_dic.PersistentDict('db/super_chat.pkl')
 
+# в каких чатах надо просто транскрибировать голосовые сообщения, не отвечая на них
+TRANSCRIBE_ONLY_CHAT = my_dic.PersistentDict('db/transcribe_only_chat.pkl')
+
 # в каких чатах какая команда дана, как обрабатывать последующий текст
 # например после команды /image ожидаем описание картинки
 # COMMAND_MODE[chat_id] = 'google'|'image'|...
@@ -660,6 +663,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton(tr(f'✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
         markup.row(button1, button2)
 
+        if chat_id_full not in TRANSCRIBE_ONLY_CHAT:
+            TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
+        
+        if TRANSCRIBE_ONLY_CHAT[chat_id_full]:
+            button = telebot.types.InlineKeyboardButton(tr(f'✅Voice to text mode ONLY', lang), callback_data='transcribe_only_chat_disable')
+        else:
+            button = telebot.types.InlineKeyboardButton(tr(f'☑️Voice to text mode ONLY', lang), callback_data='transcribe_only_chat_enable')
+        markup.row(button)
+
         if cfg.pics_group_url:
             button_pics = telebot.types.InlineKeyboardButton(tr("🖼️Галерея", lang),  url = cfg.pics_group_url)
             markup.add(button_pics)
@@ -915,6 +927,18 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             VOICE_ONLY_MODE[chat_id_full] = True
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        
+        elif call.data == 'transcribe_only_chat_disable':
+            TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+        elif call.data == 'transcribe_only_chat_enable':
+            TRANSCRIBE_ONLY_CHAT[chat_id_full] = True
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
+                                  text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
+
+
+        
         elif call.data == 'chatGPT_mode_disable':
             del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
@@ -1045,8 +1069,11 @@ def handle_voice_thread(message: telebot.types.Message):
 
             # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
             if text:
-                message.text = text
-                echo_all(message)
+                if chat_id_full not in TRANSCRIBE_ONLY_CHAT:
+                    TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
+                if not TRANSCRIBE_ONLY_CHAT[chat_id_full]:
+                    message.text = text
+                    echo_all(message)
 
 
 @bot.message_handler(content_types = ['document'])

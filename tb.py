@@ -3286,12 +3286,13 @@ def do_task(message, custom_prompt: str = ''):
                                           reply_markup=get_keyboard('claude_chat', message))
                 return
             if utils.is_image_link(message.text):
-                text = img2txt(message.text, lang, chat_id_full)
-                if text:
-                    text = utils.bot_markdown_to_html(text)
-                    reply_to_long_message(message, text, parse_mode='HTML',
-                                          reply_markup=get_keyboard('translate', message))
-                    return
+                with ShowAction(message, 'typing'):
+                    text = img2txt(message.text, lang, chat_id_full)
+                    if text:
+                        text = utils.bot_markdown_to_html(text)
+                        reply_to_long_message(message, text, parse_mode='HTML',
+                                            reply_markup=get_keyboard('translate', message))
+                        return
             else:
                 message.text = '/sum ' + message.text
                 summ_text(message)

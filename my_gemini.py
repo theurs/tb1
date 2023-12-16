@@ -72,6 +72,33 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
     return ''
 
 
+def update_mem(query: str, resp: str, mem) -> list:
+    """
+    Updates the memory with a new query and response.
+
+    Args:
+        query (str): The query string.
+        resp (str): The response string.
+        mem (list): The memory list.
+
+    Returns:
+        list: The updated memory list.
+    """
+    if resp:
+        mem.append({"role": "user", "parts": [{"text": query}]})
+        mem.append({"role": "model", "parts": [{"text": resp}]})
+        size = 0
+        for x in mem:
+            text = x['parts'][0]['text']
+            size += len(text)
+        while size > MAX_CHAT_SIZE:
+            mem = mem[2:]
+            size = 0
+            for x in mem:
+                text = x['parts'][0]['text']
+                size += len(text)
+
+
 def ai(q: str, mem = []) -> str:
     """
     Generate the response of an AI model based on a given question and memory.
@@ -118,20 +145,7 @@ def ai(q: str, mem = []) -> str:
         resp = ''
         my_log.log2(str(response.json()))
 
-    if resp:
-        mem.append({"role": "user", "parts": [{"text": q}]})
-        mem.append({"role": "model", "parts": [{"text": resp}]})
-        size = 0
-        for x in mem:
-            text = x['parts'][0]['text']
-            size += len(text)
-        while size > MAX_CHAT_SIZE:
-            mem = mem[2:]
-            size = 0
-            for x in mem:
-                text = x['parts'][0]['text']
-                size += len(text)
-
+    update_mem(q, resp, mem)
 
     return resp
 
@@ -206,7 +220,7 @@ def chat_cli():
 
 
 if __name__ == '__main__':
-    # chat_cli()
+    chat_cli()
     
-    data = open('1.jpg', 'rb').read()
-    print(img2txt(data))
+    # data = open('1.jpg', 'rb').read()
+    # print(img2txt(data))

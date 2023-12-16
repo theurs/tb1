@@ -318,6 +318,7 @@ def img2txt(text, lang: str, chat_id_full: str) -> str:
         text = my_gemini.img2txt(data, query)
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
+    if not text:
         try:
             text = my_bard.chat_image(query, chat_id_full, data)
         except Exception as img_from_link_error2:

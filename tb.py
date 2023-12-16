@@ -1482,6 +1482,7 @@ def change_mode(message: telebot.types.Message):
     if chat_id_full not in gpt_basic.PROMPTS:
         # по умолчанию формальный стиль
         gpt_basic.PROMPTS[chat_id_full] = [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
+        my_gemini.ROLES[chat_id_full] = utils.gpt_start_message1
 
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
@@ -1496,6 +1497,7 @@ def change_mode(message: telebot.types.Message):
         else:
             new_prompt = arg[0]
         gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
+        my_gemini.ROLES[chat_id_full] = new_prompt
         msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`\n\n***{tr("Роли работают только с chatGPT, используйте команду /config что бы выбрать chatGPT", lang)}***'
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, msg)
@@ -3355,7 +3357,8 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для Gemini: {len(msg)} из {my_gemini.MAX_REQUEST}')
                     return
-                message.text = f'[{formatted_date}] [{from_user_name}] [answer in a short and objective way]: {message.text}'
+                # message.text = f'[{formatted_date}] [{from_user_name}] [answer in a short and objective way]: {message.text}'
+                message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
                 with ShowAction(message, action):
                     try:
                         answer = my_gemini.chat(message.text, chat_id_full)

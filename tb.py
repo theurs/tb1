@@ -1543,7 +1543,8 @@ def send_debug_history(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     check_blocked_user(chat_id_full)
 
-    if CHAT_MODE[chat_id_full] == 'bard':
+    if CHAT_MODE[chat_id_full] == 'chatgpt':
+        # обрезаем историю
         gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
 
         # создаем новую историю диалогов с юзером из старой если есть

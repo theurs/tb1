@@ -840,7 +840,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                         parse_mode='HTML')
                     YTB_CACHE[song_id] = m.message_id
                     YTB_CACHE_FROM[song_id] = m.chat.id
-                    my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
+                    my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}\n{caption_}')
                 except Exception as send_ytb_error:
                     my_log.log2(str(send_ytb_error))
                     err_msg = tr('Не удалось отправить музыку.', lang) + '\n' + str(send_ytb_error)

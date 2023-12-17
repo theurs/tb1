@@ -852,8 +852,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 text = message.text if message.text else message.caption
                 translated = my_trans.translate_text2(text, lang)
             if translated and translated != text:
-                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
+                if message.text:
+                    bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
                                       reply_markup=get_keyboard('translate', message))
+                if message.caption:
+                    bot.edit_message_caption(chat_id=message.chat.id, message_id=message.message_id, caption=translated, 
+                                      reply_markup=get_keyboard('translate', message), parse_mode='HTML')
         elif call.data == 'translate_perplexity':
             # реакция на клавиатуру для OCR кнопка перевести текст
             with ShowAction(message, 'typing'):

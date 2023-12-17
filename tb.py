@@ -808,7 +808,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                          from_chat_id=YTB_CACHE_FROM[song_id],
                                          message_id = YTB_CACHE[song_id],
                                          reply_to_message_id = message.message_id,
-                                         reply_markup = get_keyboard('hide', message),
+                                         reply_markup = get_keyboard('translate', message),
                                          disable_notification=True,
                                          parse_mode='HTML')
                         my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
@@ -822,7 +822,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     try:
                         m = bot.send_audio(chat_id=message.chat.id, audio=data,
                                         reply_to_message_id = message.message_id,
-                                        reply_markup = get_keyboard('hide', message),
+                                        reply_markup = get_keyboard('translate', message),
                                         caption = caption_,
                                         title = caption,
                                         thumbnail=thumb,
@@ -832,7 +832,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
                         m = bot.send_audio(chat_id=message.chat.id, audio=data,
                                         reply_to_message_id = message.message_id,
-                                        reply_markup = get_keyboard('hide', message),
+                                        reply_markup = get_keyboard('translate', message),
                                         caption = caption,
                                         title = caption,
                                         thumbnail=thumb,

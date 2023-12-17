@@ -881,7 +881,12 @@ if __name__ == '__main__':
 В центре стола миссис Уизли спорила с Биллом о его серьге – видимо, совсем недавнем приобретении.
 """
 
-    print(translate_instruct(tts_text, 'ar'))
+    print(count_tokens('раз два три четыре пять'))
+    print(count_tokens('One two three four five'))
+    print(count_tokens('一二三四五'))
+    print(count_tokens('אחד שתיים שלוש ארבע חמש'))
+    
+    # print(translate_instruct(tts_text, 'ar'))
     # open('1.mp3', 'wb').write(tts('напиши 10 главных героев книги незнайка на луне'))
 
     # print(ai_instruct('напиши 5 главных героев книги незнайка на луне'))

@@ -816,7 +816,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
                 data = my_ytb.download_youtube(song_id)
                 try:
-                    caption_ = my_gemini.ai(tr(f'Напиши несколько строк о песне \n', lang) + caption)
+                    caption_ = my_gemini.ai(tr(f'Человек в мессенджере телеграм скачал песню с ютуба, напиши описание для этой песни: ', lang) + caption)
                     m = bot.send_audio(chat_id=message.chat.id, audio=data,
                                         reply_to_message_id = message.message_id,
                                         reply_markup = get_keyboard('hide', message),

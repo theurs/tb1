@@ -4,8 +4,6 @@
 
 
 import concurrent.futures
-import html
-import locale
 import os
 import random
 import threading
@@ -163,7 +161,6 @@ def get_random_songs(limit: int = 10):
 
 def get_video_info(vid_id: str) -> str:
     url = f'https://youtube.com/watch?v={vid_id}'
-    locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
 
     yt = YouTube(url,
                 #  use_oauth=True,
@@ -176,7 +173,7 @@ def get_video_info(vid_id: str) -> str:
     # metadata = yt.metadata
     publish_date = yt.publish_date
     # vid_info = yt.vid_info
-    views = locale.format_string('%.0f', yt.views, grouping=True)
+    views = yt.views
     # captions = yt.captions
     description = yt.description
     result = f"""URL: {url}

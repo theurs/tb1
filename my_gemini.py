@@ -290,6 +290,27 @@ def get_mem_as_string(chat_id: str) -> str:
     return result    
 
 
+def translate(text: str, from_lang: str = '', to_lang: str = '') -> str:
+    """
+    Translates the given text from one language to another.
+    
+    Args:
+        text (str): The text to be translated.
+        from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
+        to_lang (str, optional): The language to translate the text into. If not specified, the text will be translated into Russian.
+        
+    Returns:
+        str: The translated text.
+    """
+    if from_lang == '':
+        from_lang = 'autodetect'
+    if to_lang == '':
+        to_lang = 'ru'
+    query = f'Translate from language [{from_lang}] to language [{to_lang}]:\n\n{text}'
+    translated = ai(query)
+    return translated
+
+
 def chat_cli():
     while 1:
         q = input('>')
@@ -298,7 +319,20 @@ def chat_cli():
 
 
 if __name__ == '__main__':
-    chat_cli()
+    t = """'The chatbot responds to the name <b>bot</b>.\nFor example, you can say <b>bot, tell me a joke</b>.\nIn private messages, you don\'t need to mention the bot\'s name\n\n🔭 If you send a link in a private message, the bot will try to extract and provide a brief summary of the content.\n\n🛸 To get text from an image, send the image with the caption "ocr" (or "read"). \n\n🎙️ You can issue commands and make requests using voice messages.\n\nWhen communicating with Claude AI, uploaded files and links are sent directly to Claude, and he can respond based on their content.\n\nChatGPT has a special mode of operation where a model trained for concise answers responds instead of the chat. To use it, simply start your query with a period.\n\n.Write all days of the week separated by commas\n\nThe usual model will add extraneous words to its responses, such as "Okay, I\'ll try," while this model is trained to be concise and informative.\n\n\nYou can send texts longer than 4096 characters. The Telegram client automatically breaks them down into parts, and the bot reassembles them. The restrictions for chatbots are as follows:\n\nChatGPT: 7000\nGoogle Bard: 14000\nClaude AI: 190000\n\n\nWebsite:\nhttps://github.com/theurs/tb1\n\nReport issues on Telegram:\nhttps://t.me/theurs\n\nDonate:\n<a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>\n'"""
+    print(translate(t, 'en', 'ru'))
+    print(translate('Привет', 'ru', 'en'))
+    print(translate('Hello', 'en', 'es'))
+    print(translate('Bonjour', 'fr', 'de'))
+    print(translate('Ciao', 'it', 'ja'))
+    print(translate('你好', 'zh', 'ko'))
+    print(translate('مرحبا', 'ar', 'nl'))
+    print(translate('Hej', 'sv', 'pl'))
+    print(translate('Γεια σας', 'el', 'pt'))
+    print(translate('Hallo', 'de', 'ru'))
+    print(translate('Hola', 'es', 'fr'))
+
+    # chat_cli()
     
     # data = open('1.jpg', 'rb').read()
     # print(img2txt(data))

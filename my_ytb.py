@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 # pip install youtube_search
+# pip install pytube
 
 
 import concurrent.futures
+import html
+import locale
 import os
 import random
 import threading
 import time
 
+from pytube import YouTube
 from youtube_search import YoutubeSearch
 
 import gpt_basic
@@ -157,10 +161,42 @@ def get_random_songs(limit: int = 10):
         return []
 
 
+def get_video_info(vid_id: str) -> str:
+    url = f'https://youtube.com/watch?v={vid_id}'
+    locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
+
+    yt = YouTube(url,
+                #  use_oauth=True,
+                #  allow_oauth_cache=True
+                 )
+
+    title = yt.title
+    autor = yt.author
+    length = yt.length
+    # metadata = yt.metadata
+    publish_date = yt.publish_date
+    # vid_info = yt.vid_info
+    views = locale.format_string('%.0f', yt.views, grouping=True)
+    # captions = yt.captions
+    description = yt.description
+    result = f"""URL: {url}
+Название: {title}
+Автор: {autor}
+Описание: {description}
+
+Продолжительность: {length} (секунды)
+Дата публикации: {publish_date}
+Просмотры: {views}
+"""
+    return result
+
+
 if __name__ == '__main__':
 
     # results = search_youtube('линкин парк на русском', 10)
-    results = get_random_songs(10)
+    # results = get_random_songs(10)
 
-    d = download_youtube(results[0][2])
-    print(results[0], len(d))
+    # d = download_youtube(results[0][2])
+    # print(results[0], len(d))
+    
+    print(get_video_info('FAAM7wdtXmg'))

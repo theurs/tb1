@@ -816,11 +816,21 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
                 data = my_ytb.download_youtube(song_id)
                 try:
-                    caption_ = my_gemini.ai(tr(f'Человек в мессенджере телеграм скачал песню с ютуба, напиши описание для этой песни: ', lang) + caption)
-                    m = bot.send_audio(chat_id=message.chat.id, audio=data,
+                    caption_ = my_gemini.ai(tr(f'Человек в мессенджере телеграм скачал песню с ютуба, напиши описание для этой песни, несколько строк: ', lang) + caption)
+                    try:
+                        m = bot.send_audio(chat_id=message.chat.id, audio=data,
                                         reply_to_message_id = message.message_id,
                                         reply_markup = get_keyboard('hide', message),
                                         caption = caption_,
+                                        title = caption,
+                                        thumbnail=thumb,
+                                        disable_notification=True)
+                    except Exception as send_ytb_audio_error:
+                        my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
+                        m = bot.send_audio(chat_id=message.chat.id, audio=data,
+                                        reply_to_message_id = message.message_id,
+                                        reply_markup = get_keyboard('hide', message),
+                                        caption = caption,
                                         title = caption,
                                         thumbnail=thumb,
                                         disable_notification=True)

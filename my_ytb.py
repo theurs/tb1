@@ -114,9 +114,10 @@ def download_youtube(id: str) -> bytes:
 
     url = f'https://youtube.com/watch?v={id}'
 
-    with BIG_LOCK:
-        # os.system(f'yt-dlp -f "ba" -x --audio-format mp3 -o "{tmpfname}" "{url}"')
-        os.system(f'yt-dlp -f "ba" -o "{tmpfname}" "{url}"')
+    # with BIG_LOCK:
+        ## os.system(f'yt-dlp -f "ba" -x --audio-format mp3 -o "{tmpfname}" "{url}"')
+        # os.system(f'yt-dlp -f "ba" -o "{tmpfname}" "{url}"')
+    os.system(f'yt-dlp -f "ba" -o "{tmpfname}" "{url}"')
 
     data = b''
     with open(tmpfname, 'rb') as f:

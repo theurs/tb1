@@ -820,7 +820,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     video_data = my_ytb.get_video_info(song_id)
                     query_to_gemini = tr(f'Напиши краткую сводку про песню с ютуба, кто исполняет, какой альбом итп, и добавь короткое описание пару строчек: ', lang) + caption + '\n' +  tr(f'Эта информация может помочь ответить', lang) + '\n\n' + video_data
                     caption_ = my_gemini.ai(query_to_gemini)
-                    caption_ = utils.bot_markdown_to_html(caption_)
+                    if caption_:
+                        caption_ = utils.bot_markdown_to_html(caption_)
+                    else:
+                        caption_ = caption
                     try:
                         m = bot.send_audio(chat_id=message.chat.id, audio=data,
                                         reply_to_message_id = message.message_id,

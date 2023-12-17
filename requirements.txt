@@ -30,6 +30,7 @@ pytesseract
 python-Levenshtein
 python-magic
 #python-magic-bin
+pytube
 re_edge_gpt
 replicate
 qrcode

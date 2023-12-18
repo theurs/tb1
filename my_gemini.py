@@ -341,12 +341,13 @@ def inject_explicit_content(chat_id: str):
 
 def chat_cli():
     inject_explicit_content('test')
+    style = '[пиши грубо с матами как троль в интернете]'
     while 1:
         q = input('>')
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        r = chat(q, 'test')
+        r = chat(f'{style} {q}', 'test')
         print(r)
 
 

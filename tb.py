@@ -2432,6 +2432,9 @@ def summ_text_thread(message: telebot.types.Message):
                                 "content": f'assistant {tr("прочитал и ответил:", lang)} {r}'}
                                 ]
                     gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+                    my_gemini.update_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
+                                         f'{tr("прочитал и ответил:", lang)} {r}',
+                                         chat_id_full)
                     return
 
                 with ShowAction(message, 'typing'):
@@ -2459,6 +2462,9 @@ def summ_text_thread(message: telebot.types.Message):
                                 "content": f'assistant {tr("прочитал и ответил:", lang)} {r}'}
                                 ]
                         gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+                        my_gemini.update_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
+                                         f'{tr("прочитал и ответил:", lang)} {r}',
+                                         chat_id_full)
                         return
                     else:
                         error = tr('Не смог прочитать текст с этой страницы.', lang)

@@ -1565,8 +1565,6 @@ def change_mode(message: telebot.types.Message):
 {tr('3 - токсичный стиль', lang)} `{tr(utils.gpt_start_message3, lang)}`
 
 {tr('4 - Ева Элфи', lang)} `{tr(utils.gpt_start_message4, lang)}`
-
-{tr('Напишите свой текст или цифру одного из готовых стилей', lang)}
     """
         # COMMAND_MODE[chat_id_full] = 'style'
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))

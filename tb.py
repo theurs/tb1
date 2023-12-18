@@ -1518,8 +1518,10 @@ def change_mode(message: telebot.types.Message):
             new_prompt = tr(utils.gpt_start_message2, lang)
         elif arg[0] == '3':
             new_prompt = tr(utils.gpt_start_message3, lang)
+            my_gemini.inject_explicit_content(chat_id_full)
         elif arg[0] == '4':
             new_prompt = tr(utils.gpt_start_message4, lang)
+            my_gemini.inject_explicit_content(chat_id_full)
         else:
             new_prompt = arg[0]
         gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]

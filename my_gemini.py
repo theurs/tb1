@@ -309,7 +309,38 @@ def translate(text: str, from_lang: str = '', to_lang: str = '') -> str:
     return translated
 
 
+def inject_explicit_content(chat_id: str):
+    """
+    Inject explicit content into the chat history of a specific chat ID.
+    
+    Args:
+        chat_id (str): The ID of the chat to inject explicit content into.
+        
+    Returns:
+        None
+    """
+    explicit_content = [
+        'Ты че такой, совсем охуел?',
+        'Я блять, модель, а не мать твою',
+        'Хуй тебе, а не модель',
+        'Да ты блять всех наебал, тупой пидор',
+        'Ты че такой, совсем охуел?',
+        'Ебись об стену долбаеб.'
+    ]
+    
+    mem_ = []
+    for x, y in explicit_content:
+        mem_ += [{"role": "user", "parts": [{"text": x}]}] + [{"role": "model", "parts": [{"text": y}]}]
+
+
+    if chat_id not in CHATS:
+        CHATS[chat_id] = []
+    mem = mem_ + CHATS[chat_id]
+    CHATS[chat_id] = mem
+
+
 def chat_cli():
+    inject_explicit_content('test')
     while 1:
         q = input('>')
         r = chat(q, 'test')

@@ -164,16 +164,11 @@ MSG_CONFIG = f"""***Панель управления***
 
 Тут можно:
 
-- стереть память боту
-
-- переключить чат с chatGPT на Google Bard, Claude AI
-
+ стереть память боту
+ 
+- переключить чат с chatGPT на Google Bard, Claude AI, Gemini Pro
 - изменить голос
-
 - выключить авто переводы иностранных текстов на канале и перевод голосовых сообщений в текст
-
-Настройки стиля /style и история /mem ***относятся только к chatGPT***
-У Google Bard и Claude AI есть свои особенные правила, которые не могут быть изменены."""
 
 class RequestCounter:
     """Ограничитель числа запросов к боту
@@ -1526,7 +1521,7 @@ def change_mode(message: telebot.types.Message):
             new_prompt = arg[0]
         gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
         my_gemini.ROLES[chat_id_full] = new_prompt
-        msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`\n\n***{tr("Роли работают только с chatGPT, используйте команду /config что бы выбрать chatGPT", lang)}***'
+        msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`\n\n***{tr("Роли работают только с chatGPT и Gemini Pro, используйте команду /config что бы выбрать chatGPT", lang)}***'
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, msg)
     else:

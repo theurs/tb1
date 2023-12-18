@@ -1543,6 +1543,7 @@ def change_mode(message: telebot.types.Message):
         else:
             GEMINI_INJECT[chat_id_full] = True
             new_prompt = arg[0]
+        gemini_reset(chat_id_full)
         gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
         my_gemini.ROLES[chat_id_full] = new_prompt
         msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'

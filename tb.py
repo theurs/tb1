@@ -1545,7 +1545,7 @@ def change_mode(message: telebot.types.Message):
 
 {tr('Напишите свой текст или цифру одного из готовых стилей', lang)}
     """
-        COMMAND_MODE[chat_id_full] = 'style'
+        # COMMAND_MODE[chat_id_full] = 'style'
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
         my_log.log_echo(message, msg)
 

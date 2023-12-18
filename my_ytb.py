@@ -75,7 +75,7 @@ def search_youtube(query: str, limit: int = 10):
     Returns:
         list: A list of tuples containing the title, duration, and ID of each video.
     """
-    results = YoutubeSearch(query, max_results=limit).to_dict()
+    results = YoutubeSearch(query, max_results=50).to_dict()
 
     r = []
     for x in results:
@@ -98,7 +98,7 @@ def search_youtube(query: str, limit: int = 10):
             continue
         r.append((x['title'], x['duration'], x['id']))
 
-    return r
+    return r[:limit]
 
 
 def download_youtube(id: str) -> bytes:

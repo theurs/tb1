@@ -1541,7 +1541,7 @@ def change_mode(message: telebot.types.Message):
             GEMINI_INJECT[chat_id_full] = True
             my_gemini.inject_explicit_content(chat_id_full)
         else:
-            GEMINI_INJECT[chat_id_full] = True
+            # GEMINI_INJECT[chat_id_full] = False
             new_prompt = arg[0]
         gemini_reset(chat_id_full)
         gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]

@@ -135,6 +135,10 @@ DUMP_TRANSLATION_LOCK = threading.Lock()
 # ловим сообщение и ждем полсекунды не прилетит ли еще кусок
 MESSAGE_QUEUE = {}
 
+# в каких чатах был активирован режим без цензуры для Gemini
+# {id:True/False}
+GEMINI_INJECT = my_dic.PersistentDict('db/gemini_inject.pkl')
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -326,6 +330,21 @@ def img2txt(text, lang: str, chat_id_full: str) -> str:
         my_gemini.update_mem(tr('User asked to describe a picture.', lang), text, chat_id_full)
 
     return text
+
+
+def gemini_reset(chat_id: str):
+    """
+    Resets the Gemini state for the given chat ID.
+
+    Parameters:
+    - chat_id (str): The ID of the chat for which the Gemini state should be reset.
+    """
+    if chat_id in GEMINI_INJECT:
+        if GEMINI_INJECT[chat_id]:
+            my_gemini.reset(chat_id)
+            my_gemini.inject_explicit_content(chat_id)
+            return
+    my_gemini.reset(chat_id)
 
 
 @bot.message_handler(commands=['fixlang'])
@@ -719,7 +738,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             if CHAT_MODE[chat_id_full] == 'chatgpt':
                 gpt_basic.chat_reset(chat_id_full)
             elif CHAT_MODE[chat_id_full] == 'gemini':
-                my_gemini.reset(chat_id_full)
+                gemini_reset(chat_id_full)
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
@@ -879,7 +898,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
         elif call.data == 'gemini_reset':
-            my_gemini.reset(chat_id_full)
+            gemini_reset(chat_id_full)
             msg = tr('История диалога с Gemini Pro отчищена.', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
@@ -1508,16 +1527,21 @@ def change_mode(message: telebot.types.Message):
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
         if arg[0] == '1':
+            GEMINI_INJECT[chat_id_full] = False
             new_prompt = tr(utils.gpt_start_message1, lang)
         elif arg[0] == '2':
+            GEMINI_INJECT[chat_id_full] = False
             new_prompt = tr(utils.gpt_start_message2, lang)
         elif arg[0] == '3':
             new_prompt = tr(utils.gpt_start_message3, lang)
+            GEMINI_INJECT[chat_id_full] = True
             my_gemini.inject_explicit_content(chat_id_full)
         elif arg[0] == '4':
             new_prompt = tr(utils.gpt_start_message4, lang)
+            GEMINI_INJECT[chat_id_full] = True
             my_gemini.inject_explicit_content(chat_id_full)
         else:
+            GEMINI_INJECT[chat_id_full] = False
             new_prompt = arg[0]
         gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
         my_gemini.ROLES[chat_id_full] = new_prompt
@@ -3229,7 +3253,7 @@ def do_task(message, custom_prompt: str = ''):
                 my_bard.reset_bard_chat(chat_id_full)
                 my_log.log_echo(message, 'История барда принудительно отчищена')
             if CHAT_MODE[chat_id_full] == 'gemini':
-                my_gemini.reset(chat_id_full)
+                gemini_reset(chat_id_full)
                 my_log.log_echo(message, 'История Gemini Pro принудительно отчищена')
             elif CHAT_MODE[chat_id_full] == 'claude':
                 my_claude.reset_claude_chat(chat_id_full)

@@ -340,6 +340,7 @@ def inject_explicit_content(chat_id: str):
         CHATS[chat_id] = []
     mem = mem_ + CHATS[chat_id]
     CHATS[chat_id] = mem
+    save_memory_to_file()
 
 
 def chat_cli():

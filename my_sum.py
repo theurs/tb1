@@ -36,7 +36,11 @@ def get_text_from_youtube(url: str) -> str:
 
     video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
 
-    t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+    try:
+        t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+    except Exception as error:
+        my_log.log2(f'get_text_from_youtube: {error}')
+        t = ''
 
     text = '\n'.join([x['text'] for x in t])
 

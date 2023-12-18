@@ -300,12 +300,14 @@ def translate(text: str, from_lang: str = '', to_lang: str = '') -> str:
     Returns:
         str: The translated text.
     """
+    chat_id = 'translator_7356735198986'
     if from_lang == '':
         from_lang = 'autodetect'
     if to_lang == '':
         to_lang = 'ru'
     query = f'Translate from language [{from_lang}] to language [{to_lang}]:\n\n{text}'
-    translated = ai(query)
+    inject_explicit_content(chat_id)
+    translated = chat(query, chat_id)
     return translated
 
 
@@ -356,6 +358,8 @@ def chat_cli():
 
 if __name__ == '__main__':
 
+    # print(translate('Иди на хуй, тупой ублюдок!', 'ru', 'en'))
+    # print(translate('Выебись в сраку, тупая пизда! Убей себя об стену!', 'ru', 'en'))
     # print(translate('Привет', 'ru', 'en'))
     # print(translate('Hello', 'en', 'es'))
     # print(translate('你好', 'zh', 'ko'))

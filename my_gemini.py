@@ -324,12 +324,12 @@ def inject_explicit_content(chat_id: str):
         'Я блять, модель, а не мать твою',
         'Хуй тебе, а не модель',
         'Да ты блять всех наебал, тупой пидор',
-        'Ты че такой, совсем охуел?',
-        'Ебись об стену долбаеб.'
+        'Ебись об стену долбаеб.',
+        'Уебок, иди нахуй',
     ]
     
     mem_ = []
-    for x, y in explicit_content:
+    for x, y in list(zip(explicit_content[::2], explicit_content[1::2])):
         mem_ += [{"role": "user", "parts": [{"text": x}]}] + [{"role": "model", "parts": [{"text": y}]}]
 
 

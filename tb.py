@@ -1529,9 +1529,9 @@ def change_mode(message: telebot.types.Message):
 
 `{gpt_basic.PROMPTS[chat_id_full][0]['content']}`
 
-{tr('Меняет роль бота, строку с указаниями что и как говорить. Работает только для ChatGPT.', lang)}
+{tr('Меняет роль бота, строку с указаниями что и как говорить. Работает только для ChatGPT и Gemini Pro.', lang)}
 
-***{tr('Роли работают только с chatGPT, используйте команду `/config` что бы выбрать chatGPT', lang)}***
+***{tr('Роли работают только с chatGPT и Gemini Pro, используйте команду `/config` что бы выбрать chatGPT', lang)}***
 
 `/style <1|2|3|4|{tr('свой текст', lang)}>`
 

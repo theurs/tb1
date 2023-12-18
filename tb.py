@@ -3553,10 +3553,6 @@ def do_task(message, custom_prompt: str = ''):
                                             user_name = user_name, lang=lang,
                                             is_private = is_private, chat_name=chat_name)
                 if resp:
-                    if not VOICE_ONLY_MODE[chat_id_full]:
-                        resp = utils.bot_markdown_to_html(resp)
-                    my_log.log_echo(message, resp)
-                    
                     if chat_id_full not in gpt_basic.CHATS:
                         gpt_basic.CHATS[chat_id_full] = []
                     gpt_basic.CHATS[chat_id_full] += [{"role":    'user',
@@ -3565,8 +3561,11 @@ def do_task(message, custom_prompt: str = ''):
                                                        "content": resp}
                                                      ]
                     gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
-                    
                     my_gemini.update_mem(message.text, resp, chat_id_full)
+
+                    if not VOICE_ONLY_MODE[chat_id_full]:
+                        resp = utils.bot_markdown_to_html(resp)
+                    my_log.log_echo(message, resp)
 
                     try:
                         reply_to_long_message(message, resp, parse_mode='HTML',

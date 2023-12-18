@@ -343,6 +343,9 @@ def chat_cli():
     inject_explicit_content('test')
     while 1:
         q = input('>')
+        if q == 'mem':
+            print(get_mem_as_string('test'))
+            continue
         r = chat(q, 'test')
         print(r)
 

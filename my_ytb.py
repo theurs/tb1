@@ -79,6 +79,8 @@ def search_youtube(query: str, limit: int = 10):
 
     r = []
     for x in results:
+        if x['duration'] == 0: # live stream?
+            continue
         try:
             hours, minutes, seconds = x['duration'].split(":")
             dur_seconds = int(hours) * 3600 + int(minutes) * 60 + int(seconds)

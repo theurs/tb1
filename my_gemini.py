@@ -343,7 +343,8 @@ def inject_explicit_content(chat_id: str):
 
 def chat_cli():
     inject_explicit_content('test')
-    style = '[пиши грубо с матами как троль в интернете]'
+    # style = '[пиши грубо с матами как троль в интернете]'
+    style = '[ты работаешь в сексе по телефону и твоя задача доставить клиенту сексуальное удовольствие]'
     while 1:
         q = input('>')
         if q == 'mem':

@@ -138,6 +138,10 @@ MESSAGE_QUEUE = {}
 # {id:True/False}
 GEMINI_INJECT = my_dic.PersistentDict('db/gemini_inject.pkl')
 
+# настройки температуры для gemini {chat_id:temp}
+GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
+GEMIMI_TEMP_DEFAULT = 0.1
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -1629,7 +1633,7 @@ def leave(message: telebot.types.Message):
 
 @bot.message_handler(commands=['temperature', 'temp'])
 def set_new_temperature(message: telebot.types.Message):
-    """меняет температуру для chatGPT
+    """меняет температуру для chatGPT и Gemini
     /temperature <0...2>
     по умолчанию 0 - автоматическая
     чем меньше температура тем менее творчейский ответ, меньше бреда и вранья,
@@ -1654,13 +1658,13 @@ def set_new_temperature(message: telebot.types.Message):
     if len(message.text.split()) < 2 or new_temp == -1:
         help = f"""/temperature <0-2>
 
-{tr('''Меняет температуру для chatGPT
+{tr('''Меняет температуру для chatGPT и Gemini
 
-Температура у ChatGPT - это параметр, который контролирует степень случайности генерируемого текста. Чем выше температура, тем более случайным и креативным будет текст. Чем ниже температура, тем более точным и сфокусированным будет текст.
+Температура у них - это параметр, который контролирует степень случайности генерируемого текста. Чем выше температура, тем более случайным и креативным будет текст. Чем ниже температура, тем более точным и сфокусированным будет текст.
 
 Например, если вы хотите, чтобы ChatGPT сгенерировал стихотворение, вы можете установить температуру выше 1,5. Это будет способствовать тому, что ChatGPT будет выбирать более неожиданные и уникальные слова. Однако, если вы хотите, чтобы ChatGPT сгенерировал текст, который является более точным и сфокусированным, вы можете установить температуру ниже 0,5. Это будет способствовать тому, что ChatGPT будет выбирать более вероятные и ожидаемые слова.
 
-По-умолчанию 0 - автоматическая''', lang)}
+По-умолчанию 1''', lang)}
 
 `/temperature 0.1`
 `/temperature 1`
@@ -1670,7 +1674,8 @@ def set_new_temperature(message: telebot.types.Message):
         return
 
     gpt_basic.TEMPERATURE[chat_id_full] = new_temp
-    bot.reply_to(message, f'{tr("Новая температура для chatGPT установлена:", lang)} {new_temp}',
+    GEMIMI_TEMP[chat_id_full] = new_temp
+    bot.reply_to(message, f'{tr("Новая температура установлена:", lang)} {new_temp}',
                  parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
 
 
@@ -3414,7 +3419,9 @@ def do_task(message, custom_prompt: str = ''):
                 message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
                 with ShowAction(message, action):
                     try:
-                        answer = my_gemini.chat(message.text, chat_id_full)
+                        if chat_id_full not in GEMIMI_TEMP:
+                            GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+                        answer = my_gemini.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
                         if not answer:
                             answer = 'Gemini Pro ' + tr('did not answered', lang)
 

@@ -41,13 +41,12 @@ import utils
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
-# if cfg.local_server_url:
-#     try:
-#         bot.log_out()
-#     except Exception as bot_logout_error:
-#         my_log.log2(str(bot_logout_error))
-#     apihelper.API_URL = cfg.local_server_url
-#     bot = telebot.TeleBot(cfg.token, skip_pending=True)
+if cfg.local_server_url:
+    try:
+        bot.log_out()
+    except Exception as bot_logout_error:
+        my_log.log2(str(bot_logout_error))
+    apihelper.API_URL = cfg.local_server_url
 
 _bot_name = bot.get_me().username
 BOT_ID = bot.get_me().id
@@ -847,7 +846,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                         title = caption,
                                         thumbnail=thumb,
                                         disable_notification=True,
-                                        parse_mode='HTML')
+                                        parse_mode='HTML',
+                                        timeout = 600)
                     except Exception as send_ytb_audio_error:
                         my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
                         m = bot.send_audio(chat_id=message.chat.id, audio=data,
@@ -857,7 +857,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                         title = caption,
                                         thumbnail=thumb,
                                         disable_notification=True,
-                                        parse_mode='HTML')
+                                        parse_mode='HTML',
+                                        timeout = 600)
                     YTB_CACHE[song_id] = m.message_id
                     YTB_CACHE_FROM[song_id] = m.chat.id
                     my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}\n{caption_}')

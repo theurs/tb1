@@ -2,8 +2,6 @@
 
 
 import telebot
-
-import my_gemini
 import cfg
 
 
@@ -12,29 +10,14 @@ bot = telebot.TeleBot(cfg.token, skip_pending=True)
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, 'Hi!')
-
-
-@bot.message_handler(commands=['reset'])
-def reset(message):
-    my_gemini.reset(message.chat.id)
-    bot.reply_to(message, 'Cleared!')
-
-
-@bot.message_handler(func=lambda message: True)
-def do_task(message):
-    """функция обработчик сообщений работающая в отдельном потоке"""
-    query = message.text
-    user_id = message.chat.id
-    text = my_gemini.chat(query, user_id)
-    bot.reply_to(message, text, parse_mode='HTML')
-
+    data = b' '*1024*1024*100
+    bot.send_document(message.chat.id, data, caption='test.dat', visible_file_name='test.dat')
+    
 
 def main():
-    """
-    Runs the main function, which sets default commands and starts polling the bot.
-    """
-
+   
+    bot.log_out()
+    telebot.apihelper.API_URL = cfg.local_server_url
     bot.polling()
 
 

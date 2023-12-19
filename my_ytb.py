@@ -12,6 +12,7 @@ import time
 from pytube import YouTube
 from youtube_search import YoutubeSearch
 
+import cfg
 import gpt_basic
 import my_log
 import utils
@@ -94,7 +95,7 @@ def search_youtube(query: str, limit: int = 10):
                 except:
                     dur_seconds = 0
 
-        if dur_seconds > 20*60:
+        if dur_seconds > cfg.MAX_YTB_SECS:
             continue
         r.append((x['title'], x['duration'], x['id']))
 

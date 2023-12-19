@@ -84,7 +84,8 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
             if response:
                 break
         except Exception as unknown_error1:
-            if 'You exceeded your current quota, please check your plan and billing details.' in str(unknown_error1):
+            if 'You exceeded your current quota, please check your plan and billing details.' in str(unknown_error1) \
+                or 'The OpenAI account associated with this API key has been deactivated.' in str(unknown_error1):
                 my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}\n\n{server[1]}')
                 cfg.openai_servers = [x for x in cfg.openai_servers if x[1] != server[1]]
                 continue

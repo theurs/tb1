@@ -192,15 +192,15 @@ def ai(q: str, mem = []) -> str:
                     "threshold": "BLOCK_NONE"
                 }
             ],
-            # "generationConfig": {
+            "generationConfig": {
                 # "stopSequences": [
                 #     "Title"
                 # ],
-                # "temperature": 1.0,
+                "temperature": 0.1,
                 # "maxOutputTokens": 8000,
                 # "topP": 0.8,
                 # "topK": 10
-                # }
+                }
             }
 
     keys = cfg.gemini_keys[:]

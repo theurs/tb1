@@ -41,12 +41,12 @@ import utils
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
-if cfg.local_server_url:
-    try:
-        bot.log_out()
-    except Exception as bot_logout_error:
-        my_log.log2(str(bot_logout_error))
-    apihelper.API_URL = cfg.local_server_url
+# if cfg.local_server_url:
+#     try:
+#         bot.log_out()
+#     except Exception as bot_logout_error:
+#         my_log.log2(str(bot_logout_error))
+#     apihelper.API_URL = cfg.local_server_url
 
 _bot_name = bot.get_me().username
 BOT_ID = bot.get_me().id

@@ -16,8 +16,8 @@ def start(message):
 
 def main():
    
-    bot.log_out()
-    telebot.apihelper.API_URL = cfg.local_server_url
+    #bot.log_out()
+    #telebot.apihelper.API_URL = 'https://api.telegram.org/bot{0}/{1}'
     bot.polling()
 
 

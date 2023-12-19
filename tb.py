@@ -838,27 +838,22 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         caption_ = utils.bot_markdown_to_html(caption_)
                     else:
                         caption_ = caption
-                    try:
-                        m = bot.send_audio(chat_id=message.chat.id, audio=data,
-                                        reply_to_message_id = message.message_id,
-                                        reply_markup = get_keyboard('translate', message),
-                                        caption = caption_,
-                                        title = caption,
-                                        thumbnail=thumb,
-                                        disable_notification=True,
-                                        parse_mode='HTML',
-                                        timeout = 600)
-                    except Exception as send_ytb_audio_error:
-                        my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
-                        m = bot.send_audio(chat_id=message.chat.id, audio=data,
-                                        reply_to_message_id = message.message_id,
-                                        reply_markup = get_keyboard('translate', message),
-                                        caption = caption,
-                                        title = caption,
-                                        thumbnail=thumb,
-                                        disable_notification=True,
-                                        parse_mode='HTML',
-                                        timeout = 600)
+                    n = 50
+                    while n > 0:
+                        n -= 1
+                        try:
+                            m = bot.send_audio(chat_id=message.chat.id, audio=data,
+                                            reply_to_message_id = message.message_id,
+                                            reply_markup = get_keyboard('translate', message),
+                                            caption = caption_,
+                                            title = caption,
+                                            thumbnail=thumb,
+                                            disable_notification=True,
+                                            parse_mode='HTML')
+                        except Exception as send_ytb_audio_error:
+                            if not 'timeout' in str(send_ytb_audio_error).lower():
+                                my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
+                                n = 0
                     YTB_CACHE[song_id] = m.message_id
                     YTB_CACHE_FROM[song_id] = m.chat.id
                     my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}\n{caption_}')

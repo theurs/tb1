@@ -893,22 +893,22 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                       reply_markup=get_keyboard('chat', message))
         elif call.data == 'bardAI_reset':
             my_bard.reset_bard_chat(chat_id_full)
-            msg = tr('История диалога с Google Bard отчищена.', lang)
+            msg = tr('История диалога с Google Bard очищена.', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
         elif call.data == 'gemini_reset':
             gemini_reset(chat_id_full)
-            msg = tr('История диалога с Gemini Pro отчищена.', lang)
+            msg = tr('История диалога с Gemini Pro очищена.', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
         elif call.data == 'claudeAI_reset':
             my_claude.reset_claude_chat(chat_id_full)
-            msg = tr('История диалога с Claude AI отчищена.', lang)
+            msg = tr('История диалога с Claude AI очищена.', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
         elif call.data == 'chatGPT_reset':
             gpt_basic.chat_reset(chat_id_full)
-            msg = tr('История диалога с chatGPT отчищена.', lang)
+            msg = tr('История диалога с chatGPT очищена.', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
         elif call.data == 'tts_female':
@@ -3249,16 +3249,16 @@ def do_task(message, custom_prompt: str = ''):
         if msg.startswith(tr('забудь', lang)) and (is_private or is_reply):
             if CHAT_MODE[chat_id_full] == 'bard':
                 my_bard.reset_bard_chat(chat_id_full)
-                my_log.log_echo(message, 'История барда принудительно отчищена')
+                my_log.log_echo(message, 'История барда принудительно очищена')
             if CHAT_MODE[chat_id_full] == 'gemini':
                 gemini_reset(chat_id_full)
-                my_log.log_echo(message, 'История Gemini Pro принудительно отчищена')
+                my_log.log_echo(message, 'История Gemini Pro принудительно очищена')
             elif CHAT_MODE[chat_id_full] == 'claude':
                 my_claude.reset_claude_chat(chat_id_full)
-                my_log.log_echo(message, 'История клода принудительно отчищена')
+                my_log.log_echo(message, 'История клода принудительно очищена')
             elif CHAT_MODE[chat_id_full] == 'chatgpt':
                 gpt_basic.chat_reset(chat_id_full)
-                my_log.log_echo(message, 'История GPT принудительно отчищена')
+                my_log.log_echo(message, 'История GPT принудительно очищена')
             bot.reply_to(message, tr('Ок', lang), reply_markup=get_keyboard('hide', message))
             return
 

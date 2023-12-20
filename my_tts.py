@@ -98,6 +98,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     """
     lang = voice
 
+    global TTS_CACHE
     for text_, data in TTS_CACHE:
         if text_ == text:
             return data
@@ -130,7 +131,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     os.remove(filename)
     # Возвращаем байтовый поток с аудио
     data = data.getvalue()
-    global TTS_CACHE
+
     TTS_CACHE.append([text, data])
     TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
     return data

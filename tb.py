@@ -3169,8 +3169,6 @@ def do_task(message, custom_prompt: str = ''):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
-    check_blocked_user(chat_id_full)
-
     # отлавливаем слишком длинные сообщения
     if chat_id_full not in MESSAGE_QUEUE:
         MESSAGE_QUEUE[chat_id_full] = message.text
@@ -3315,6 +3313,13 @@ def do_task(message, custom_prompt: str = ''):
             bot_name_used = True
             message.text = message.text[len(f'{bot_name2} '):].strip()
 
+        
+        # проверка на блокировку и тротлинг
+        if bot_name_used or is_private or is_reply:
+            check_blocked_user(chat_id_full)
+        else:
+            return
+
         msg = message.text.lower()
 
         # если предварительно была введена какая то команда то этот текст надо отправить в неё
@@ -3387,7 +3392,6 @@ def do_task(message, custom_prompt: str = ''):
                     if number in CACHE_CHECK_PHONE:
                         response = CACHE_CHECK_PHONE[number]
                     else:
-                        # check_blocked_user(chat_id_full)
                         with ShowAction(message, 'typing'):
                             if not allowed_chatGPT_user(message.chat.id):
                                 my_log.log_echo(message, 'chatGPT запрещен [phonenumber]')
@@ -3464,8 +3468,6 @@ def do_task(message, custom_prompt: str = ''):
 
         # проверяем просят ли нарисовать что-нибудь
         if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',')):
-            # check_blocked_user(chat_id_full)
-            # prompt = message.text[8:]
             prompt = message.text.split(' ', 1)[1]
             message.text = f'/image {prompt}'
             image_thread(message)
@@ -3517,7 +3519,6 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с Gemini Pro
             if CHAT_MODE[chat_id_full] == 'gemini' and not FIRST_DOT:
-                # check_blocked_user(chat_id_full)
                 if len(msg) > my_gemini.MAX_REQUEST:
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для Gemini: {len(msg)} из {my_gemini.MAX_REQUEST}')
@@ -3555,7 +3556,6 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с бард чатом
             if CHAT_MODE[chat_id_full] == 'bard' and not FIRST_DOT:
-                # check_blocked_user(chat_id_full)
                 if len(msg) > my_bard.MAX_REQUEST:
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
@@ -3609,7 +3609,6 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с клод чатом
             if CHAT_MODE[chat_id_full] == 'claude' and not FIRST_DOT:
-                # check_blocked_user(chat_id_full)
                 if len(msg) > my_claude.MAX_QUERY:
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для Клода:", lang)} {len(msg)} {tr("из", lang)} {my_claude.MAX_QUERY}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для Клода: {len(msg)} из {my_claude.MAX_QUERY}')
@@ -3641,7 +3640,6 @@ def do_task(message, custom_prompt: str = ''):
             # chatGPT
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, action):
-                # check_blocked_user(chat_id_full)
                 if not allowed_chatGPT_user(message.chat.id):
                     my_log.log_echo(message, 'ChatGPT запрещен')
                     bot.reply_to(message, tr('You are not in allow chatGPT users list, try other chatbot', lang))

@@ -477,7 +477,14 @@ def is_image_link(url: str) -> bool:
   """
 
   try:
-    response = requests.get(url)
+    # response = requests.get(url, timeout=2, stream=True)
+    content = b''
+    response = requests.get(url, stream=True, timeout=10)
+    # Ограничиваем размер
+    for chunk in response.iter_content(chunk_size=1024):
+        content += chunk
+        if len(content) > 50000:
+            break
     content_type = response.headers['Content-Type']
     return content_type.startswith('image/')
   except:

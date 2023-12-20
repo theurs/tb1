@@ -171,7 +171,7 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
                 text += page.extract_text()
         else:
             # Определяем кодировку текста
-            encoding = chardet.detect(content)['encoding']
+            encoding = chardet.detect(content[:2000])['encoding']
             # Декодируем содержимое страницы
             try:
                 content = content.decode(encoding)

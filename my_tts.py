@@ -16,6 +16,7 @@ import gpt_basic
 
 #cache for TTS
 TTS_CACHE = []
+CACHE_SIZE = 20
 
 
 # cleanup
@@ -44,7 +45,7 @@ def tts_google(text: str, lang: str = 'ru') -> bytes:
     data = mp3_fp.read()
     global TTS_CACHE
     TTS_CACHE.append([text, data])
-    TTS_CACHE = TTS_CACHE[-20:]
+    TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
     return data
 
 
@@ -77,7 +78,7 @@ def tts_openai(text: str, voice: str = 'alloy') -> bytes:
     data = gpt_basic.tts(text, voice)
     global TTS_CACHE
     TTS_CACHE.append([text, data])
-    TTS_CACHE = TTS_CACHE[-20:]
+    TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
     return data
 
 
@@ -131,7 +132,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     data = data.getvalue()
     global TTS_CACHE
     TTS_CACHE.append([text, data])
-    TTS_CACHE = TTS_CACHE[-20:]
+    TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
     return data
 
 
@@ -170,7 +171,7 @@ def tts_yandex(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'f
 
     global TTS_CACHE
     TTS_CACHE.append([text, data])
-    TTS_CACHE = TTS_CACHE[-20:]
+    TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
     return data
 
 

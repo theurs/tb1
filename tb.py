@@ -1636,7 +1636,7 @@ def leave(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
     if message.from_user.id in cfg.admins:
         chat_id = message.text.split()[1]
-        LEAVED_CHATS[chat_id] = True
+        LEAVED_CHATS[int(chat_id)] = True
         if bot.leave_chat(chat_id):
             bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
     else:

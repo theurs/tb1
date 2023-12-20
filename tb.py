@@ -851,6 +851,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         caption_ = utils.bot_markdown_to_html(caption_)
                     else:
                         caption_ = caption
+                    caption_ += f'\n<a href = "https://youtu.be/{song_id}">Посмотреть на ютубе</a>'
 
                     try:
                         m = bot.send_audio(chat_id=message.chat.id, audio=data,

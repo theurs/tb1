@@ -2179,7 +2179,7 @@ def image_thread(message: telebot.types.Message):
             with ShowAction(message, 'upload_photo'):
                 moderation_flag = gpt_basic.moderation(prompt)
                 if chat_id_full in gpt_basic.IMG_API_KEYS and gpt_basic.IMG_API_KEYS[chat_id_full]:
-                    images = gpt_basic.image_gen(prompt, chat_id_full, size = '1024x1024', model = 'dall-e-2')
+                    images = gpt_basic.image_gen(prompt, chat_id_full, size = '1024x1024', model = 'dall-e-3')
                 else:
                     images = my_genimg.gen_images(prompt, moderation_flag)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
@@ -2228,8 +2228,8 @@ def image_thread(message: telebot.types.Message):
                         else:
                             keys_total = 0
 
-                        msg += f'{tr("Personal api keys amount:", lang)} {keys_total}\n\n'
-                        msg += f'{tr("You can buy very cheap keys on the website", lang)} https://wmcentre.net/search?searchstr=CHATGPT+API {tr("the approximate cost is 1 US dollar for 4000 DALLE-2 images.", lang)}'
+                        # msg += f'{tr("Personal api keys amount:", lang)} {keys_total}\n\n'
+                        # msg += f'{tr("You can buy very cheap keys on the website", lang)} https://wmcentre.net/search?searchstr=CHATGPT+API {tr("the approximate cost is 1 US dollar for 4000 DALLE-2 images.", lang)}'
                         bot.reply_to(message, msg,
                                  disable_web_page_preview = True,
                                  reply_markup=get_keyboard('hide', message))

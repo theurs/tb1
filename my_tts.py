@@ -41,7 +41,11 @@ def tts_google(text: str, lang: str = 'ru') -> bytes:
     result = gtts.gTTS(text, lang=lang)
     result.write_to_fp(mp3_fp)
     mp3_fp.seek(0)
-    return mp3_fp.read()
+    data = mp3_fp.read()
+    global TTS_CACHE
+    TTS_CACHE.append([text, data])
+    TTS_CACHE = TTS_CACHE[-20:]
+    return data
 
 
 def tts_openai(text: str, voice: str = 'alloy') -> bytes:
@@ -124,7 +128,11 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
 
     os.remove(filename)
     # Возвращаем байтовый поток с аудио
-    return data.getvalue()
+    data = data.getvalue()
+    global TTS_CACHE
+    TTS_CACHE.append([text, data])
+    TTS_CACHE = TTS_CACHE[-20:]
+    return data
 
 
 def tts_yandex(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
@@ -159,6 +167,10 @@ def tts_yandex(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'f
     data = b''
     for d in tts._data:
         data += d
+
+    global TTS_CACHE
+    TTS_CACHE.append([text, data])
+    TTS_CACHE = TTS_CACHE[-20:]
     return data
 
 

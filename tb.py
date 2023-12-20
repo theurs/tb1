@@ -3080,6 +3080,7 @@ def do_task(message, custom_prompt: str = ''):
     # автоматически выходить из забаненых чатов
     if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
         bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
         return
 
     # отлавливаем слишком длинные сообщения

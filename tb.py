@@ -143,6 +143,9 @@ GEMINI_INJECT = my_dic.PersistentDict('db/gemini_inject.pkl')
 GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
 GEMIMI_TEMP_DEFAULT = 0.1
 
+# Из каких чатов надо выходиьт сразу (забаненые)
+LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
+
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
@@ -1633,6 +1636,7 @@ def leave(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
     if message.from_user.id in cfg.admins:
         chat_id = message.text.split()[1]
+        LEAVED_CHATS[chat_id] = True
         if bot.leave_chat(chat_id):
             bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
     else:
@@ -3072,6 +3076,11 @@ def do_task(message, custom_prompt: str = ''):
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        return
 
     # отлавливаем слишком длинные сообщения
     if chat_id_full not in MESSAGE_QUEUE:

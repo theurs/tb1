@@ -5,6 +5,7 @@ import json
 import os
 import random
 import re
+import requests
 import tempfile
 import datetime
 import string
@@ -820,7 +821,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data.startswith('youtube '):
             song_id = call.data[8:]
             caption = YTB_DB[song_id]
-            thumb = f'https://img.youtube.com/vi/{song_id}/maxresdefault.jpg'
+            thumb0 = f'https://img.youtube.com/vi/{song_id}/0.jpg'
+            thumb_data = requests.get(thumb0).content
             with ShowAction(message, 'upload_audio'):
                 my_log.log_echo(message, f'Start sending youtube {song_id} {caption}')
                 if song_id in YTB_CACHE:
@@ -840,21 +842,20 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 try:
                     video_data = my_ytb.get_video_info(song_id)
                     subtitles = my_sum.get_text_from_youtube(f'https://youtu.be/{song_id}')[:8000]
-                    query_to_gemini = tr(f'Напиши краткую сводку про песню с ютуба, пиши на языке [{lang}], кто исполняет, какой альбом итп, и добавь короткое описание пару строчек: ', lang) + caption + '\n' +  tr(f'Эта информация может помочь ответить', lang) + '\n\n' + video_data + '\n\nСубтитры:\n\n' + subtitles
+                    query_to_gemini = tr(f'Напиши краткую сводку про песню с ютуба, пиши на языке [{lang}], кто исполняет, какой альбом итп, и добавь короткое описание 4 строчки: ', lang) + caption + '\n' +  tr(f'Эта информация может помочь ответить', lang) + '\n\n' + video_data + '\n\nСубтитры:\n\n' + subtitles
                     caption_ = my_gemini.ai(query_to_gemini)
                     if caption_:
                         caption_ = utils.bot_markdown_to_html(caption_)
                     else:
                         caption_ = caption
-                    caption_ += f'\n\n<a href="{thumb}">{tr("Song poster", lang)}</a>'
+
                     try:
                         m = bot.send_audio(chat_id=message.chat.id, audio=data,
                                         reply_to_message_id = message.message_id,
                                         reply_markup = get_keyboard('translate', message),
                                         caption = caption_,
                                         title = caption,
-                                        thumbnail=thumb,
-                                        thumb=thumb,
+                                        thumbnail=thumb_data,
                                         disable_notification=True,
                                         parse_mode='HTML')
                     except Exception as send_ytb_audio_error:
@@ -864,10 +865,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                         reply_markup = get_keyboard('translate', message),
                                         caption = caption,
                                         title = caption,
-                                        thumbnail=thumb,
-                                        thumb=thumb,
+                                        thumbnail=thumb_data,
                                         disable_notification=True,
                                         parse_mode='HTML')
+
                     YTB_CACHE[song_id] = m.message_id
                     YTB_CACHE_FROM[song_id] = m.chat.id
                     my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}\n{caption_}')

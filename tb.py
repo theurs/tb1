@@ -736,6 +736,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         lang = get_lang(chat_id_full, message)
         # check_blocked_user(chat_id_full)
 
+        # сбросить кеш при переключении голоса
+        if call.data.startswith('tts_'):
+            my_tts.TTS_CACHE = []
+
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
             if CHAT_MODE[chat_id_full] == 'chatgpt':

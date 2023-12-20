@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import hashlib
 import os
 import subprocess
 import tempfile
@@ -14,9 +15,9 @@ import my_log
 # locks for chat_ids
 LOCKS = {}
 
-# [(data bytes, text recognized),...]
+# [(crc32, text recognized),...]
 STT_CACHE = []
-CACHE_SIZE = 20
+CACHE_SIZE = 100
 
 def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
     """
@@ -97,8 +98,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
     with LOCKS[chat_id]:
         text = ''
         
-        # первая 1000 байт вместо идентификатора всего файла
-        data = open(input_file, 'rb').read(1000)
+        data = hashlib.sha256(open(input_file, 'rb').read()).hexdigest()
         global STT_CACHE
         for x in STT_CACHE:
             if x[0] == data:

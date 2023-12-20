@@ -2201,6 +2201,8 @@ def stats_thread(message: telebot.types.Message):
 
 def check_blocked_user(id: str):
     """Вызывает ошибку если юзер заблокирован и ему не надо отвечать"""
+    if id in cfg.admins():
+        return
     user_id = id.replace('[','').replace(']','').split()[0]
     if not request_counter.check_limit(user_id):
         my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован за DDOS')

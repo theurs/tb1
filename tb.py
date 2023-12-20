@@ -3587,7 +3587,7 @@ def do_task(message, custom_prompt: str = ''):
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
                         if answer:
-                            my_log.log_echo(message, ('[bard] ' + answer + '\nPHOTO\n' + '\n'.join(images) + '\nLINKS\n' + '\n'.join(links)).strip())
+                            my_log.log_echo(message, ('[Bard] ' + answer + '\nPHOTO\n' + '\n'.join(images) + '\nLINKS\n' + '\n'.join(links)).strip())
                             try:
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message))
@@ -3623,7 +3623,7 @@ def do_task(message, custom_prompt: str = ''):
                         answer = my_claude.chat(message.text, chat_id_full)
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
-                        my_log.log_echo(message, f'[claude] {answer}')
+                        my_log.log_echo(message, f'[Claude] {answer}')
                         if answer:
                             try:
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
@@ -3643,7 +3643,7 @@ def do_task(message, custom_prompt: str = ''):
             with ShowAction(message, action):
                 # check_blocked_user(chat_id_full)
                 if not allowed_chatGPT_user(message.chat.id):
-                    my_log.log_echo(message, 'chatGPT запрещен')
+                    my_log.log_echo(message, 'ChatGPT запрещен')
                     bot.reply_to(message, tr('You are not in allow chatGPT users list, try other chatbot', lang))
                     return
                 if len(msg) > cfg.CHATGPT_MAX_REQUEST:

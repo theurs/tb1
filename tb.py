@@ -2159,11 +2159,29 @@ def image_thread(message: telebot.types.Message):
 {tr('Напишите что надо нарисовать, как это выглядит', lang)}
 """
         prompt = message.text.split(maxsplit = 1)
+        
+        # если в запросе есть ключи для API openai то добавить их в персональное хранилище
+        pattern = r"sk-[a-zA-Z0-9]{48}"
+        try:
+            api_keys = re.findall(pattern, prompt[1])
+        except IndexError:
+            api_keys = []
+        if api_keys:
+            gpt_basic.add_image_keys(chat_id_full, api_keys)
+            msg = f'{tr("Detected API keys, added:", lang)} {len(api_keys)}'
+            my_log.log_echo(message)
+            my_log.log_echo(message, msg)
+            bot.reply_to(message, msg)
+            return
+
         if len(prompt) > 1:
             prompt = prompt[1]
             with ShowAction(message, 'upload_photo'):
                 moderation_flag = gpt_basic.moderation(prompt)
-                images = my_genimg.gen_images(prompt, moderation_flag)
+                if chat_id_full in gpt_basic.IMG_API_KEYS and gpt_basic.IMG_API_KEYS[chat_id_full]:
+                    images = gpt_basic.image_gen(prompt, chat_id_full, size = '1024x1024', model = 'dall-e-3')
+                else:
+                    images = my_genimg.gen_images(prompt, moderation_flag)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 if len(medias) > 0:
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
@@ -2204,7 +2222,15 @@ def image_thread(message: telebot.types.Message):
                     bot.reply_to(message, tr('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', lang), 
                                  reply_markup=get_keyboard('hide', message))
                     if cfg.enable_image_adv:
-                        bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
+                        msg = f'{tr("Try this free group, it has a lot of mediabots:", lang)} https://t.me/neuralforum\n\n'
+                        if chat_id_full in gpt_basic.IMG_API_KEYS:
+                            keys_total = len(gpt_basic.IMG_API_KEYS[chat_id_full])
+                        else:
+                            keys_total = 0
+
+                        msg += f'{tr("Personal api keys amount:", lang)} {keys_total}\n\n'
+                        msg += f'{tr("You can buy very cheap keys on the website", lang)} https://wmcentre.net/search?searchstr=CHATGPT+API {tr("the approximate cost is 1 US dollar for 1000 best DALLE-3 images.", lang)}'
+                        bot.reply_to(message, msg,
                                  disable_web_page_preview = True,
                                  reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, '[image gen error] ')
@@ -3680,6 +3706,7 @@ def main():
     # set_default_commands()
     
     my_gemini.load_memory_from_file()
+    gpt_basic.load_img_api_keys()
 
     bot.polling(timeout=90, long_polling_timeout=90)
 

@@ -501,7 +501,7 @@ def image_gen(prompt: str, chat_id: str = '_',
             response = client.images.generate(
                 model=model,
                 prompt = prompt_tr,
-                n = 1,
+                n = 4,
                 size=size,
                 # quality = 'standard',
             )

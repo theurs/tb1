@@ -3168,7 +3168,9 @@ def do_task(message, custom_prompt: str = ''):
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    
+
+    check_blocked_user(chat_id_full)
+
     # отлавливаем слишком длинные сообщения
     if chat_id_full not in MESSAGE_QUEUE:
         MESSAGE_QUEUE[chat_id_full] = message.text
@@ -3385,7 +3387,7 @@ def do_task(message, custom_prompt: str = ''):
                     if number in CACHE_CHECK_PHONE:
                         response = CACHE_CHECK_PHONE[number]
                     else:
-                        check_blocked_user(chat_id_full)
+                        # check_blocked_user(chat_id_full)
                         with ShowAction(message, 'typing'):
                             if not allowed_chatGPT_user(message.chat.id):
                                 my_log.log_echo(message, 'chatGPT запрещен [phonenumber]')
@@ -3462,7 +3464,7 @@ def do_task(message, custom_prompt: str = ''):
 
         # проверяем просят ли нарисовать что-нибудь
         if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',')):
-            check_blocked_user(chat_id_full)
+            # check_blocked_user(chat_id_full)
             # prompt = message.text[8:]
             prompt = message.text.split(' ', 1)[1]
             message.text = f'/image {prompt}'
@@ -3515,7 +3517,7 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с Gemini Pro
             if CHAT_MODE[chat_id_full] == 'gemini' and not FIRST_DOT:
-                check_blocked_user(chat_id_full)
+                # check_blocked_user(chat_id_full)
                 if len(msg) > my_gemini.MAX_REQUEST:
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для Gemini: {len(msg)} из {my_gemini.MAX_REQUEST}')
@@ -3535,7 +3537,7 @@ def do_task(message, custom_prompt: str = ''):
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
 
-                        my_log.log_echo(message, answer)
+                        my_log.log_echo(message, f'[Gemini] {answer}')
                         try:
                             reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                     reply_markup=get_keyboard('gemini_chat', message))
@@ -3553,7 +3555,7 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с бард чатом
             if CHAT_MODE[chat_id_full] == 'bard' and not FIRST_DOT:
-                check_blocked_user(chat_id_full)
+                # check_blocked_user(chat_id_full)
                 if len(msg) > my_bard.MAX_REQUEST:
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
@@ -3585,7 +3587,7 @@ def do_task(message, custom_prompt: str = ''):
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
                         if answer:
-                            my_log.log_echo(message, (answer + '\nPHOTO\n' + '\n'.join(images) + '\nLINKS\n' + '\n'.join(links)).strip())
+                            my_log.log_echo(message, ('[bard] ' + answer + '\nPHOTO\n' + '\n'.join(images) + '\nLINKS\n' + '\n'.join(links)).strip())
                             try:
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message))
@@ -3607,7 +3609,7 @@ def do_task(message, custom_prompt: str = ''):
 
             # если активирован режим общения с клод чатом
             if CHAT_MODE[chat_id_full] == 'claude' and not FIRST_DOT:
-                check_blocked_user(chat_id_full)
+                # check_blocked_user(chat_id_full)
                 if len(msg) > my_claude.MAX_QUERY:
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для Клода:", lang)} {len(msg)} {tr("из", lang)} {my_claude.MAX_QUERY}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для Клода: {len(msg)} из {my_claude.MAX_QUERY}')
@@ -3621,7 +3623,7 @@ def do_task(message, custom_prompt: str = ''):
                         answer = my_claude.chat(message.text, chat_id_full)
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
-                        my_log.log_echo(message, answer)
+                        my_log.log_echo(message, f'[claude] {answer}')
                         if answer:
                             try:
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
@@ -3639,7 +3641,7 @@ def do_task(message, custom_prompt: str = ''):
             # chatGPT
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, action):
-                check_blocked_user(chat_id_full)
+                # check_blocked_user(chat_id_full)
                 if not allowed_chatGPT_user(message.chat.id):
                     my_log.log_echo(message, 'chatGPT запрещен')
                     bot.reply_to(message, tr('You are not in allow chatGPT users list, try other chatbot', lang))
@@ -3678,7 +3680,7 @@ def do_task(message, custom_prompt: str = ''):
 
                     if not VOICE_ONLY_MODE[chat_id_full]:
                         resp = utils.bot_markdown_to_html(resp)
-                    my_log.log_echo(message, resp)
+                    my_log.log_echo(message, f'[chatgpt] {resp}')
 
                     try:
                         reply_to_long_message(message, resp, parse_mode='HTML',

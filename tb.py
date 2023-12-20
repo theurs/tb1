@@ -1055,6 +1055,11 @@ def check_blocks(chat_id: str) -> bool:
 @bot.message_handler(content_types = ['voice', 'audio'])
 def handle_voice(message: telebot.types.Message): 
     """Автоматическое распознавание текст из голосовых сообщений"""
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=handle_voice_thread, args=(message,))
     thread.start()
 def handle_voice_thread(message: telebot.types.Message):
@@ -1133,6 +1138,11 @@ def handle_voice_thread(message: telebot.types.Message):
 @bot.message_handler(content_types = ['document'])
 def handle_document(message: telebot.types.Message):
     """Обработчик документов"""
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=handle_document_thread, args=(message,))
     thread.start()
 def handle_document_thread(message: telebot.types.Message):
@@ -1324,6 +1334,11 @@ def handle_document_thread(message: telebot.types.Message):
 @bot.message_handler(content_types = ['photo'])
 def handle_photo(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=handle_photo_thread, args=(message,))
     thread.start()
 def handle_photo_thread(message: telebot.types.Message):
@@ -1413,6 +1428,11 @@ def handle_photo_thread(message: telebot.types.Message):
 @bot.message_handler(content_types = ['video', 'video_note'])
 def handle_video(message: telebot.types.Message):
     """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=handle_video_thread, args=(message,))
     thread.start()
 def handle_video_thread(message: telebot.types.Message):
@@ -1494,6 +1514,11 @@ def is_for_me(cmd: str):
 @bot.message_handler(commands=['config'])
 def config(message: telebot.types.Message):
     """Меню настроек"""
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     # не обрабатывать команды к другому боту /cmd@botname args
     try:
         if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
@@ -1734,6 +1759,11 @@ def language(message: telebot.types.Message):
 @bot.message_handler(commands=['music', 'mus', 'm'])
 def music(message: telebot.types.Message):
     """ищет и скачивает музыку с ютуба"""
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=music_thread, args=(message,))
     thread.start()
 def music_thread(message: telebot.types.Message):
@@ -1842,6 +1872,11 @@ def set_new_model_thread(message: telebot.types.Message):
 
 @bot.message_handler(commands=['tts'])
 def tts(message: telebot.types.Message, caption = None):
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=tts_thread, args=(message,caption))
     thread.start()
 def tts_thread(message: telebot.types.Message, caption = None):
@@ -1955,6 +1990,11 @@ def tts_thread(message: telebot.types.Message, caption = None):
 
 @bot.message_handler(commands=['google',])
 def google(message: telebot.types.Message):
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=google_thread, args=(message,))
     thread.start()
 def google_thread(message: telebot.types.Message):
@@ -2019,6 +2059,11 @@ def google_thread(message: telebot.types.Message):
 
 @bot.message_handler(commands=['ddg',])
 def ddg(message: telebot.types.Message):
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=ddg_thread, args=(message,))
     thread.start()
 def ddg_thread(message: telebot.types.Message):
@@ -2088,6 +2133,11 @@ def ddg_thread(message: telebot.types.Message):
 
 @bot.message_handler(commands=['image','img','i'])
 def image(message: telebot.types.Message):
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=image_thread, args=(message,))
     thread.start()
 def image_thread(message: telebot.types.Message):
@@ -2426,6 +2476,11 @@ def qrcode_text(message: telebot.types.Message):
 
 @bot.message_handler(commands=['sum'])
 def summ_text(message: telebot.types.Message):
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=summ_text_thread, args=(message,))
     thread.start()
 def summ_text_thread(message: telebot.types.Message):
@@ -2543,6 +2598,11 @@ def summ2_text(message: telebot.types.Message):
 
 @bot.message_handler(commands=['trans', 'tr', 't'])
 def trans(message: telebot.types.Message):
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=trans_thread, args=(message,))
     thread.start()
 def trans_thread(message: telebot.types.Message):
@@ -3069,6 +3129,11 @@ def allowed_chatGPT_user(chat_id: int) -> bool:
 @bot.message_handler(func=lambda message: True)
 def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
     """Обработчик текстовых сообщений"""
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
     thread = threading.Thread(target=do_task, args=(message, custom_prompt))
     thread.start()
 def do_task(message, custom_prompt: str = ''):
@@ -3077,12 +3142,6 @@ def do_task(message, custom_prompt: str = ''):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
-
     # отлавливаем слишком длинные сообщения
     if chat_id_full not in MESSAGE_QUEUE:
         MESSAGE_QUEUE[chat_id_full] = message.text

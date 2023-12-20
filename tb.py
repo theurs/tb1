@@ -846,6 +846,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         caption_ = utils.bot_markdown_to_html(caption_)
                     else:
                         caption_ = caption
+                    caption_ += f'\n\n<a href="{thumb}">{tr("Song poster", lang)}</a>'
                     try:
                         m = bot.send_audio(chat_id=message.chat.id, audio=data,
                                         reply_to_message_id = message.message_id,
@@ -853,6 +854,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                         caption = caption_,
                                         title = caption,
                                         thumbnail=thumb,
+                                        thumb=thumb,
                                         disable_notification=True,
                                         parse_mode='HTML')
                     except Exception as send_ytb_audio_error:
@@ -863,6 +865,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                         caption = caption,
                                         title = caption,
                                         thumbnail=thumb,
+                                        thumb=thumb,
                                         disable_notification=True,
                                         parse_mode='HTML')
                     YTB_CACHE[song_id] = m.message_id

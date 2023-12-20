@@ -1090,7 +1090,7 @@ def handle_voice_thread(message: telebot.types.Message):
         else:
             action = 'typing'
         with ShowAction(message, action):
-            text = my_stt.stt(file_path, lang)
+            text = my_stt.stt(file_path, lang, chat_id_full)
 
             try:
                 os.remove(file_path)
@@ -1452,7 +1452,7 @@ def handle_video_thread(message: telebot.types.Message):
             with open(file_path, 'wb') as new_file:
                 new_file.write(downloaded_file)
             # Распознаем текст из аудио 
-            text = my_stt.stt(file_path, lang)
+            text = my_stt.stt(file_path, lang, chat_id_full)
             os.remove(file_path)
             # Отправляем распознанный текст
             if text:

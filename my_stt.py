@@ -4,11 +4,19 @@
 import os
 import subprocess
 import tempfile
+import threading
 import speech_recognition as sr
 
 import gpt_basic
 import my_log
 
+
+# locks for chat_ids
+LOCKS = {}
+
+# [(data bytes, text recognized),...]
+STT_CACHE = []
+CACHE_SIZE = 20
 
 def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
     """
@@ -72,43 +80,58 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     return text
 
 
-def stt(input_file: str, lang: str = 'ru') -> str:
+def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
     """
-    This function takes an input file path as a parameter and returns the transcribed text from the audio file.
-    
+    Generate the function comment for the given function body in a markdown code block with the correct language syntax.
+
     Args:
-        input_file (str): The path of the input audio file.
-    
+        input_file (str): The path to the input file.
+        lang (str, optional): The language for speech recognition. Defaults to 'ru'.
+        chat_id (str, optional): The ID of the chat. Defaults to '_'.
+
     Returns:
-        str: The transcribed text from the audio file.
+        str: The recognized speech as text.
     """
-    text = ''
+    if chat_id not in LOCKS:
+        LOCKS[chat_id] = threading.Lock()
+    with LOCKS[chat_id]:
+        text = ''
+        
+        # первая 1000 байт вместо идентификатора всего файла
+        data = open(input_file, 'rb').read(1000)
+        global STT_CACHE
+        for x in STT_CACHE:
+            if x[0] == data:
+                text = x[1]
+                return text
 
-    try: # сначала пробуем через гугл
-        text = stt_google(input_file, lang)
-    except AssertionError:
-        pass
-    except sr.UnknownValueError as unknown_value_error:
-        print(unknown_value_error)
-        my_log.log2(str(unknown_value_error))
-    except sr.RequestError as request_error:
-        print(request_error)
-        my_log.log2(str(request_error))
-    except Exception as unknown_error:
-        print(unknown_error)
-        my_log.log2(str(unknown_error))
+        try: # сначала пробуем через гугл
+            text = stt_google(input_file, lang)
+        except AssertionError:
+            pass
+        except sr.UnknownValueError as unknown_value_error:
+            print(unknown_value_error)
+            my_log.log2(str(unknown_value_error))
+        except sr.RequestError as request_error:
+            print(request_error)
+            my_log.log2(str(request_error))
+        except Exception as unknown_error:
+            print(unknown_error)
+            my_log.log2(str(unknown_error))
 
-    if not text:
-        try:
-            # затем opanai
-            assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
-            # auto detect language?
-            text = gpt_basic.stt(input_file)
-        except Exception as error:
-            print(error, text)
-            my_log.log2(f'{error}\n\n{text}')
+        if not text:
+            try:
+                # затем opanai
+                assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
+                # auto detect language?
+                text = gpt_basic.stt(input_file)
+            except Exception as error:
+                print(error, text)
+                my_log.log2(f'{error}\n\n{text}')
 
-    return text
+        STT_CACHE.append([data, text])
+        STT_CACHE = STT_CACHE[-CACHE_SIZE:]
+        return text
 
 
 if __name__ == "__main__":

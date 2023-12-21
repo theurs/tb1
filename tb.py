@@ -3314,12 +3314,6 @@ def do_task(message, custom_prompt: str = ''):
             message.text = message.text[len(f'{bot_name2} '):].strip()
 
         
-        # проверка на блокировку и тротлинг
-        if bot_name_used or is_private or is_reply:
-            check_blocked_user(chat_id_full)
-        else:
-            return
-
         msg = message.text.lower()
 
         # если предварительно была введена какая то команда то этот текст надо отправить в неё
@@ -3381,6 +3375,19 @@ def do_task(message, custom_prompt: str = ''):
             bot.reply_to(message, tr('Ок', lang), reply_markup=get_keyboard('hide', message))
             return
 
+        # если в сообщении только ссылка на видео в тиктоке
+        # предложить скачать это видео
+        if my_tiktok.is_valid_url(message.text):
+            bot.reply_to(message, message.text, disable_web_page_preview = True,
+                         reply_markup=get_keyboard('download_tiktok', message))
+            return
+
+        # проверка на блокировку и тротлинг
+        if bot_name_used or is_private or is_reply:
+            check_blocked_user(chat_id_full)
+        else:
+            return
+
         # если это номер телефона
         # удалить из текста все символы кроме цифр
         if len(msg) < 18 and len(msg) > 9  and not re.search(r"[^0-9+\-()\s]", msg):
@@ -3406,13 +3413,6 @@ def do_task(message, custom_prompt: str = ''):
                                             reply_markup=get_keyboard('hide', message))
                         my_log.log_echo(message, response)
                         return
-
-        # если в сообщении только ссылка на видео в тиктоке
-        # предложить скачать это видео
-        if my_tiktok.is_valid_url(message.text):
-            bot.reply_to(message, message.text, disable_web_page_preview = True,
-                         reply_markup=get_keyboard('download_tiktok', message))
-            return
 
         # если в сообщении только ссылка и она отправлена боту в приват
         # тогда сумморизируем текст из неё

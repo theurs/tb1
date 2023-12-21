@@ -1979,7 +1979,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
                     # в привате не надо добавлять клавиатуру с кнопкой для удаления, 
                     # там можно удалить без нее, а случайное удаление ни к чему
                     bot.send_voice(message.chat.id, audio, caption=caption)
-                my_log.log_echo(message, '[Отправил голосовое сообщение]')
+                my_log.log_echo(message, f'[Отправил голосовое сообщение] [{gender}]')
             else:
                 msg = tr('Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.', lang)
                 if message.chat.type != 'private':

@@ -305,7 +305,7 @@ def tr(text: str, lang: str) -> str:
     return AUTO_TRANSLATIONS[key]
 
 
-def img2txt(text, lang: str, chat_id_full: str) -> str:
+def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     """
     Generate the text description of an image.
 
@@ -321,7 +321,8 @@ def img2txt(text, lang: str, chat_id_full: str) -> str:
         data = text
     else:
         data = utils.download_image_as_bytes(text)
-    query = tr('Что изображено на картинке? Дай мне подробное описание, и объясни подробно что это может означать.', lang)
+    if not query:
+        query = tr('Что изображено на картинке? Дай мне подробное описание, и объясни подробно что это может означать.', lang)
     text = ''
     try:
         text = my_gemini.img2txt(data, query)
@@ -1364,7 +1365,9 @@ def handle_photo_thread(message: telebot.types.Message):
     elif 'ocr' in msglower or tr('прочитай', lang) in msglower or tr('читай', lang) in msglower:
         state = 'ocr'
     else:
-        state = 'translate'
+        # state = 'translate'
+        # автопереводом никто не пользуется а вот описание по запросу популярно
+        state = 'describe'
 
     # выключены ли автопереводы
     if check_blocks(get_topic_id(message)):
@@ -1379,7 +1382,7 @@ def handle_photo_thread(message: telebot.types.Message):
                 photo = message.photo[-1]
                 file_info = bot.get_file(photo.file_id)
                 image = bot.download_file(file_info.file_path)
-                text = img2txt(image, lang, chat_id_full)
+                text = img2txt(image, lang, chat_id_full, message.caption)
                 if text:
                     text = utils.bot_markdown_to_html(text)
                     reply_to_long_message(message, text, parse_mode='HTML',

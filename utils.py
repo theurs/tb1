@@ -35,21 +35,6 @@ gpt_start_message3 = 'Answer in a rude and subjective way.'
 gpt_start_message4 = 'Answer as a porn star from the Internet.'
 
 
-def escape_markdown(text):
-    """
-    Escapes special characters in a given text using Markdown escape sequences.
-
-    Args:
-        text (str): The text to escape.
-
-    Returns:
-        str: The escaped text.
-    """
-    pattern = r"([_*\[\]~|`])"
-    my_log.log2(text + '\n\n\n\n')
-    return re.sub(pattern, r"\\\1", text)
-
-
 def count_tokens(messages):
     """
     Count the number of tokens in the given messages.
@@ -217,12 +202,8 @@ def bot_markdown_to_html(text: str) -> str:
         new_text += i + '\n'
     text = new_text.strip()
 
-    # 1 или 2 * в 3 звездочки
-    # *bum* -> ***bum***
-    # text = re.sub('\*\*?(.*?)\*\*?', '***\\1***', text)
+    # 1 или 2 * в <b></b>
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
-    # одиночные звезды невозможно нормально заменить Ж( как впрочем и пары
-    # text = re.sub('\*(.+?)\*', '<b>\\1</b>', text)
 
     # tex в unicode
     matches = re.findall("\$\$?(.*?)\$\$?", text, flags=re.DOTALL)
@@ -232,7 +213,6 @@ def bot_markdown_to_html(text: str) -> str:
         text = text.replace(f'${match}$', new_match)
 
     # меняем маркдаун ссылки на хтмл
-    # text = re.sub(r'\[([^]]+)\]\((https?://\S+)\)', r'<a href="\2">\1</a>', text)
     text = re.sub(r'\[([^\]]*)\]\(([^\)]*)\)', r'<a href="\2">\1</a>', text)
     # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
     text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)

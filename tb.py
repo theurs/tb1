@@ -1367,7 +1367,7 @@ def handle_photo_thread(message: telebot.types.Message):
     # elif 'ocr' in msglower or tr('прочитай', lang) in msglower or tr('читай', lang) in msglower:
     elif 'ocr' in msglower:
         state = 'ocr'
-    else:
+    elif is_private:
         # state = 'translate'
         # автопереводом никто не пользуется а вот описание по запросу популярно
         state = 'describe'

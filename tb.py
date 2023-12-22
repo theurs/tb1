@@ -3532,6 +3532,8 @@ def do_task(message, custom_prompt: str = ''):
                         if chat_id_full not in GEMIMI_TEMP:
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
                         answer = my_gemini.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
+
+                        flag_gpt_help = False
                         if not answer:
                             prev_conersation = my_gemini.chat(tr('Summarize the previous conversation in 200 words.', lang),
                                                               chat_id_full, GEMIMI_TEMP[chat_id_full], update_memory=False)
@@ -3539,12 +3541,17 @@ def do_task(message, custom_prompt: str = ''):
                                                            GEMIMI_TEMP[chat_id_full])
                             if not answer:
                                 answer = 'Gemini Pro ' + tr('did not answered', lang)
-                            my_gemini.update_mem(message.text, answer, chat_id_full)
+                            else:
+                                my_gemini.update_mem(message.text, answer, chat_id_full)
+                                flag_gpt_help = True
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
 
-                        my_log.log_echo(message, f'[Gemini] {answer}')
+                        if flag_gpt_help:
+                            my_log.log_echo(message, f'[Gemini + gpt_instruct] {answer}')
+                        else:
+                            my_log.log_echo(message, f'[Gemini] {answer}')
                         try:
                             reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                     reply_markup=get_keyboard('gemini_chat', message))

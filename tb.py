@@ -1378,7 +1378,8 @@ def handle_photo_thread(message: telebot.types.Message):
 
     with semaphore_talks:
         # распознаем что на картинке с помощью гугл барда
-        if state == 'describe' and (is_private or tr('что', lang) in msglower):
+        # if state == 'describe' and (is_private or tr('что', lang) in msglower):
+        if state == 'describe':
             with ShowAction(message, 'typing'):
                 photo = message.photo[-1]
                 file_info = bot.get_file(photo.file_id)

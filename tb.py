@@ -3612,6 +3612,10 @@ def do_task(message, custom_prompt: str = ''):
                             index = text.find("]")
                             if index > 10 and index < 40:
                                 answer = answer.strip()[index+1:].strip()
+                        if answer.strip().startswith('<b>['):
+                            index = text.find("]</b>")
+                            if index > 10 and index < 40:
+                                answer = answer.strip()[index+1:].strip()
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)

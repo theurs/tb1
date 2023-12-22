@@ -1362,7 +1362,8 @@ def handle_photo_thread(message: telebot.types.Message):
 
     if (tr('что', lang) in msglower and len(msglower) < 30) or msglower == '':
         state = 'describe'
-    elif 'ocr' in msglower or tr('прочитай', lang) in msglower or tr('читай', lang) in msglower:
+    # elif 'ocr' in msglower or tr('прочитай', lang) in msglower or tr('читай', lang) in msglower:
+    elif 'ocr':
         state = 'ocr'
     else:
         # state = 'translate'
@@ -2833,7 +2834,7 @@ In private messages, you don't need to mention the bot's name
 
 🔭 If you send a link in a private message, the bot will try to extract and provide a brief summary of the content.
 
-🛸 To get text from an image, send the image with the caption "ocr" (or "read"). 
+🛸 To get text from an image, send the image with the caption "ocr".
 
 🎙️ You can issue commands and make requests using voice messages.
 

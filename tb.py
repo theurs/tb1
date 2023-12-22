@@ -3541,6 +3541,13 @@ def do_task(message, custom_prompt: str = ''):
                                                            GEMIMI_TEMP[chat_id_full])
                             if answer.strip().startswith(':'):
                                 answer = answer.strip()[1:].strip()
+                            if answer.strip().startswith('.'):
+                                answer = answer.strip()[1:].strip()
+                            if answer.strip().startswith('['):
+                                index = text.find("]")
+                                if index > 10 and index < 40:
+                                    answer = answer.strip()[index+1:].strip()
+
                             if not answer:
                                 answer = 'Gemini Pro ' + tr('did not answered', lang)
                             else:

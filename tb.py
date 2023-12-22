@@ -3534,11 +3534,12 @@ def do_task(message, custom_prompt: str = ''):
                         answer = my_gemini.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
                         if not answer:
                             prev_conersation = my_gemini.chat(tr('Summarize the previous conversation in 200 words.', lang),
-                                                              chat_id_full, GEMIMI_TEMP[chat_id_full])
+                                                              chat_id_full, GEMIMI_TEMP[chat_id_full], update_memory=False)
                             answer = gpt_basic.ai_instruct(f'{tr("What was the previous conversation about:", lang)} {prev_conersation}\n\n{tr("Write good answer for new query:", lang)} {message.text}',
                                                            GEMIMI_TEMP[chat_id_full])
                             if not answer:
                                 answer = 'Gemini Pro ' + tr('did not answered', lang)
+                            my_gemini.update_mem(message.text, answer, chat_id_full)
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)

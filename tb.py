@@ -3607,8 +3607,12 @@ def do_task(message, custom_prompt: str = ''):
                                 #     text_links += f'<a href="{link}">{title}</a>\n'
                                 break
 
-                        # answer = my_bard.convert_markdown(answer)
-                        # my_log.log_echo(message, answer, debug = True)
+                        # удалить текст в скобках который бот иногда вставляет в начале
+                        if answer.strip().startswith('['):
+                            index = text.find("]")
+                            if index > 10 and index < 40:
+                                answer = answer.strip()[index+1:].strip()
+
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
                         if answer:
@@ -3649,6 +3653,12 @@ def do_task(message, custom_prompt: str = ''):
                             answer = utils.bot_markdown_to_html(answer)
                         my_log.log_echo(message, f'[Claude] {answer}')
                         if answer:
+                            # удалить текст в скобках который бот иногда вставляет в начале
+                            if answer.strip().startswith('['):
+                                index = text.find("]")
+                                if index > 10 and index < 40:
+                                    answer = answer.strip()[index+1:].strip()
+
                             try:
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('claude_chat', message))

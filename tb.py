@@ -335,7 +335,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
             my_log.log2(f'tb:img2txt: {img_from_link_error2}')
 
     if text:
-        my_gemini.update_mem(tr('User asked to describe a picture.', lang), text, chat_id_full)
+        my_gemini.update_mem(tr('User asked about a picture:', lang) + ' ' + query, text, chat_id_full)
 
     return text
 

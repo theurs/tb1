@@ -3539,6 +3539,8 @@ def do_task(message, custom_prompt: str = ''):
                                                               chat_id_full, GEMIMI_TEMP[chat_id_full], update_memory=False)
                             answer = gpt_basic.ai_instruct(f'{tr("What was the previous conversation about:", lang)} {prev_conersation}\n\n{tr("Write good answer for new query:", lang)} {message.text}',
                                                            GEMIMI_TEMP[chat_id_full])
+                            if answer.startswith(':'):
+                                answer = answer[1:].strip()
                             if not answer:
                                 answer = 'Gemini Pro ' + tr('did not answered', lang)
                             else:

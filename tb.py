@@ -1598,7 +1598,7 @@ def change_mode(message: telebot.types.Message):
 
 `/style <1|2|3|4|{tr('свой текст', lang)}>`
 
-{tr('1 - формальный стиль', lang)} `{tr(utils.gpt_start_message1, lang)}`
+{tr('1 - лаконичный стиль', lang)} `{tr(utils.gpt_start_message1, lang)}`
 
 {tr('2 - формальный стиль + немного юмора', lang)} `{tr(utils.gpt_start_message2, lang)}`
 

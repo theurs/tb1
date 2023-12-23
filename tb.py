@@ -3574,12 +3574,12 @@ def do_task(message, custom_prompt: str = ''):
                         answer = remove_system_prompt(answer)
                         flag_gpt_help = False
                         if not answer:
-                            prev_conersation = my_gemini.chat(tr('Summarize the previous conversation in 200 words.', lang),
-                                                              chat_id_full, GEMIMI_TEMP[chat_id_full], update_memory=False)
-                            answer = gpt_basic.ai_instruct(f'{tr("What was the previous conversation about:", lang)} {prev_conersation}\n\n{tr("Write good answer for new query:", lang)} {message.text}',
-                                                           GEMIMI_TEMP[chat_id_full])
+                            # prev_conersation = my_gemini.chat(tr('Summarize the previous conversation in 200 words.', lang),
+                            #                                   chat_id_full, GEMIMI_TEMP[chat_id_full], update_memory=False)
+                            # answer = gpt_basic.ai_instruct(f'{tr("What was the previous conversation about:", lang)} {prev_conersation}\n\n{tr("Write good answer for new query:", lang)} {message.text}',
+                            #                                GEMIMI_TEMP[chat_id_full])
 
-                            answer = remove_system_prompt(answer)
+                            # answer = remove_system_prompt(answer)
 
                             if not answer:
                                 answer = 'Gemini Pro ' + tr('did not answered', lang)

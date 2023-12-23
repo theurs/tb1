@@ -3164,26 +3164,25 @@ def remove_system_prompt(answer: str) -> str:
     """бот иногда(часто) начинает ответ с того что вставляет
     инфу с подсказкой - дата имя итп в квадратных скобках
     её надо убирать"""
-    if answer.strip().startswith(':'):
-        answer = answer.strip()[1:].strip()
-    if answer.strip().startswith('.'):
+
+    st = ('!', '?', '.', ':')
+
+    if answer.strip().startswith(st):
         answer = answer.strip()[1:].strip()
 
-    for _ in range(4):
+    for _ in range(5):
         if answer.strip().startswith('<b>['):
             index = answer.find("]</b>")
             if index > 3 and index < 200:
                 answer = answer.strip()[index+1:].strip()
 
-    for _ in range(4):
+    for _ in range(5):
         if answer.strip().startswith('['):
             index = answer.find("]")
             if index > 3 and index < 200:
                 answer = answer.strip()[index+1:].strip()
 
-    if answer.strip().startswith(':'):
-        answer = answer.strip()[1:].strip()
-    if answer.strip().startswith('.'):
+    if answer.strip().startswith(st):
         answer = answer.strip()[1:].strip()
 
     return answer
@@ -3568,7 +3567,7 @@ def do_task(message, custom_prompt: str = ''):
                         if chat_id_full not in GEMIMI_TEMP:
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
                         answer = my_gemini.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
-
+                        answer = remove_system_prompt(answer)
                         flag_gpt_help = False
                         if not answer:
                             prev_conersation = my_gemini.chat(tr('Summarize the previous conversation in 200 words.', lang),

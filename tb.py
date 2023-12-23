@@ -3722,6 +3722,7 @@ def do_task(message, custom_prompt: str = ''):
                                             user_name = user_name, lang=lang,
                                             is_private = is_private, chat_name=chat_name)
                 if resp:
+                    resp = remove_system_prompt(resp)
                     if chat_id_full not in gpt_basic.CHATS:
                         gpt_basic.CHATS[chat_id_full] = []
                     gpt_basic.CHATS[chat_id_full] += [{"role":    'user',

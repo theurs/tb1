@@ -3160,6 +3160,35 @@ def allowed_chatGPT_user(chat_id: int) -> bool:
         return False
 
 
+def remove_system_prompt(answer: str) -> str:
+    """бот иногда(часто) начинает ответ с того что вставляет
+    инфу с подсказкой - дата имя итп в квадратных скобках
+    её надо убирать"""
+    if answer.strip().startswith(':'):
+        answer = answer.strip()[1:].strip()
+    if answer.strip().startswith('.'):
+        answer = answer.strip()[1:].strip()
+
+    for _ in range(4):
+        if answer.strip().startswith('<b>['):
+            index = answer.find("]</b>")
+            if index > 3 and index < 200:
+                answer = answer.strip()[index+1:].strip()
+
+    for _ in range(4):
+        if answer.strip().startswith('['):
+            index = answer.find("]")
+            if index > 3 and index < 200:
+                answer = answer.strip()[index+1:].strip()
+
+    if answer.strip().startswith(':'):
+        answer = answer.strip()[1:].strip()
+    if answer.strip().startswith('.'):
+        answer = answer.strip()[1:].strip()
+
+    return answer
+
+
 @bot.message_handler(func=lambda message: True)
 def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
     """Обработчик текстовых сообщений"""
@@ -3546,14 +3575,8 @@ def do_task(message, custom_prompt: str = ''):
                                                               chat_id_full, GEMIMI_TEMP[chat_id_full], update_memory=False)
                             answer = gpt_basic.ai_instruct(f'{tr("What was the previous conversation about:", lang)} {prev_conersation}\n\n{tr("Write good answer for new query:", lang)} {message.text}',
                                                            GEMIMI_TEMP[chat_id_full])
-                            if answer.strip().startswith(':'):
-                                answer = answer.strip()[1:].strip()
-                            if answer.strip().startswith('.'):
-                                answer = answer.strip()[1:].strip()
-                            if answer.strip().startswith('['):
-                                index = text.find("]")
-                                if index > 10 and index < 40:
-                                    answer = answer.strip()[index+1:].strip()
+
+                            answer = remove_system_prompt(answer)
 
                             if not answer:
                                 answer = 'Gemini Pro ' + tr('did not answered', lang)
@@ -3612,14 +3635,7 @@ def do_task(message, custom_prompt: str = ''):
                                 break
 
                         # удалить текст в скобках который бот иногда вставляет в начале
-                        if answer.strip().startswith('['):
-                            index = text.find("]")
-                            if index > 10 and index < 40:
-                                answer = answer.strip()[index+1:].strip()
-                        if answer.strip().startswith('<b>['):
-                            index = text.find("]</b>")
-                            if index > 10 and index < 40:
-                                answer = answer.strip()[index+1:].strip()
+                        answer = remove_system_prompt(answer)
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
@@ -3662,10 +3678,7 @@ def do_task(message, custom_prompt: str = ''):
                         my_log.log_echo(message, f'[Claude] {answer}')
                         if answer:
                             # удалить текст в скобках который бот иногда вставляет в начале
-                            if answer.strip().startswith('['):
-                                index = text.find("]")
-                                if index > 10 and index < 40:
-                                    answer = answer.strip()[index+1:].strip()
+                            answer = remove_system_prompt(answer)
 
                             try:
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 

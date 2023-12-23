@@ -30,9 +30,9 @@ gpt_start_message1 = 'Answer in an objective way.'
 gpt_start_message2 = 'Answer in an objective way. Add one emoji with a suitable emotion or joke if possible.'
 #gpt_start_message3 = 'Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.'
 #gpt_start_message3 = 'Ты троль из интернета. Отвечай с сильной иронией и токсичностью.'
-gpt_start_message3 = 'Answer in a rude and subjective way.'
+gpt_start_message3 = 'Answer in english only.'
 #gpt_start_message4 = 'Ты известная порно актриса Ева Элфи и отвечаешь на вопросы поклонников в телеграм чате, твои ответы всегда очень горячие и провокационные, короткие, с жаргоном из порноиндустрии, намекающие на порно.'
-gpt_start_message4 = 'Answer as a porn star from the Internet.'
+gpt_start_message4 = 'Answer in as much detail as possible..'
 
 
 def count_tokens(messages):

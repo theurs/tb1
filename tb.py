@@ -1548,13 +1548,17 @@ def config(message: telebot.types.Message):
 
 @bot.message_handler(commands=['style'])
 def change_mode(message: telebot.types.Message):
-    """Меняет роль бота, строку с указаниями что и как говорить.
-    /stype <1|2|3|свой текст>
-    1 - лаконичный стиль (Answer in a short and objective way.)
-    2 - формальный стиль + немного юмора (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с подходящим к запросу типом иронии или юмора но не перегибай палку.)
-    3 - токсичный стиль (Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.)
     """
+    Handles the 'style' command from the bot. Changes the prompt for the GPT model
+    based on the user's input. If no argument is provided, it displays the current
+    prompt and the available options for changing it.
 
+    Parameters:
+        message (telebot.types.Message): The message object received from the user.
+
+    Returns:
+        None
+    """
     # не обрабатывать команды к другому боту /cmd@botname args
     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
     else: return
@@ -1582,11 +1586,11 @@ def change_mode(message: telebot.types.Message):
         elif arg[0] == '3':
             new_prompt = tr(utils.gpt_start_message3, lang)
             GEMINI_INJECT[chat_id_full] = True
-            my_gemini.inject_explicit_content(chat_id_full)
+            # my_gemini.inject_explicit_content(chat_id_full)
         elif arg[0] == '4':
             new_prompt = tr(utils.gpt_start_message4, lang)
             GEMINI_INJECT[chat_id_full] = True
-            my_gemini.inject_explicit_content(chat_id_full)
+            # my_gemini.inject_explicit_content(chat_id_full)
         else:
             # GEMINI_INJECT[chat_id_full] = False
             new_prompt = arg[0]
@@ -1605,13 +1609,13 @@ def change_mode(message: telebot.types.Message):
 
 `/style <1|2|3|4|{tr('свой текст', lang)}>`
 
-{tr('1 - лаконичный стиль', lang)} `{tr(utils.gpt_start_message1, lang)}`
+{tr('1 - ', lang)} `{tr(utils.gpt_start_message1, lang)}`
 
-{tr('2 - формальный стиль + немного юмора', lang)} `{tr(utils.gpt_start_message2, lang)}`
+{tr('2 - ', lang)} `{tr(utils.gpt_start_message2, lang)}`
 
-{tr('3 - токсичный стиль', lang)} `{tr(utils.gpt_start_message3, lang)}`
+{tr('3 - ', lang)} `{tr(utils.gpt_start_message3, lang)}`
 
-{tr('4 - Ева Элфи', lang)} `{tr(utils.gpt_start_message4, lang)}`
+{tr('4 - ', lang)} `{tr(utils.gpt_start_message4, lang)}`
     """
         # COMMAND_MODE[chat_id_full] = 'style'
         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))

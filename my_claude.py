@@ -14,7 +14,8 @@ import my_dic
 
 # максимальный размер запроса 190к (символов или токенов или чего?)
 # тут считаем что символов но как на самом деле хз
-MAX_QUERY = 190000
+# MAX_QUERY = 190000
+MAX_QUERY = 90000
 
 # хранилище сессий {chat_id(str):session(str),...}
 DIALOGS = my_dic.PersistentDict('db/claude_dialogs.pkl')

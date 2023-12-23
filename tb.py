@@ -347,11 +347,11 @@ def gemini_reset(chat_id: str):
     Parameters:
     - chat_id (str): The ID of the chat for which the Gemini state should be reset.
     """
-    if chat_id in GEMINI_INJECT:
-        if GEMINI_INJECT[chat_id]:
-            my_gemini.reset(chat_id)
-            my_gemini.inject_explicit_content(chat_id)
-            return
+    # if chat_id in GEMINI_INJECT:
+    #     if GEMINI_INJECT[chat_id]:
+    #         my_gemini.reset(chat_id)
+    #         my_gemini.inject_explicit_content(chat_id)
+    #         return
     my_gemini.reset(chat_id)
 
 

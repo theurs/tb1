@@ -1358,6 +1358,8 @@ def handle_photo_thread(message: telebot.types.Message):
         # state = 'translate'
         # автопереводом никто не пользуется а вот описание по запросу популярно
         state = 'describe'
+    else:
+        state = ''
 
     # выключены ли автопереводы
     if check_blocks(get_topic_id(message)):

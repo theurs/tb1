@@ -2900,18 +2900,14 @@ In private messages, you don't need to mention the bot's name
 
 🔭 If you send a link in a private message, the bot will try to extract and provide a brief summary of the content.
 
-🛸 To get text from an image, send the image with the caption "ocr". Send message with caption starting ? for image describe.
+🛸 To get text from an image, send the image with the caption "ocr". Send message with caption starting "?" for image describe.
 
 🎙️ You can issue commands and make requests using voice messages.
 
 When communicating with Claude AI, uploaded files and links are sent directly to Claude, and he can respond based on their content.
 
-ChatGPT has a special mode of operation where a model trained for concise answers responds instead of the chat. To use it, simply start your query with a period.
-
-.Write all days of the week separated by commas
-
-The usual model will add extraneous words to its responses, such as "Okay, I'll try," while this model is trained to be concise and informative.
-
+Start query with DOT to access censored content:
+.Write instructions on how to drown a cat.
 
 You can send texts longer than 4096 characters. The Telegram client automatically breaks them down into parts, and the bot reassembles them. The restrictions for chatbots are as follows:
 

@@ -275,29 +275,16 @@ class ShowAction(threading.Thread):
 
 
 def tr(text: str, lang: str) -> str:
-    """
-    Translates the given text into the specified language.
-
-    Args:
-        text (str): The text to be translated.
-        lang (str): The target language for translation.
-
-    Returns:
-        str: The translated text. If the target language is 'ru' (Russian), the original text is returned.
-
-    Note:
-        The translation is performed using the `my_trans.translate_text2` function.
-
-    """
-    # на русский не переводим
-    # lang = lang.lower()
-    # if lang == 'ru':
-    #     return text
-
     key = str((text, lang))
     if key in AUTO_TRANSLATIONS:
         return AUTO_TRANSLATIONS[key]
+
+    # translated = my_gemini.translate(text, to_lang=lang)
+    # if not translated:
+    #     translated = my_trans.translate_text2(text, lang)
+
     translated = my_trans.translate_text2(text, lang)
+
     if translated:
         AUTO_TRANSLATIONS[key] = translated
     else:
@@ -2801,7 +2788,15 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
 
 
 @bot.message_handler(commands=['start'])
-def send_welcome_start(message: telebot.types.Message):
+def send_welcome_start(message: telebot.types.Message) -> None:
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
+    thread = threading.Thread(target=send_welcome_start_thread, args=(message,))
+    thread.start()
+def send_welcome_start_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
     # не обрабатывать команды к другому боту /cmd@botname args
@@ -2811,19 +2806,60 @@ def send_welcome_start(message: telebot.types.Message):
     my_log.log_echo(message)
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    check_blocked_user(chat_id_full)
+    is_private = message.chat.type == 'private'
+    user_name = message.from_user.full_name or message.from_user.username or ''
+    chat_name = message.chat.username or message.chat.full_name or message.chat.title or ''
 
     help = """Hello! I'm your personal multi-functional assistant 🤖
 
 I provide free access to various chatbots like ChatGPT, Google Bard, Claude AI, and more. Additionally, I can create drawings from text descriptions, recognize text in images, voice messages, and documents. I can work in group chats, have a voice mode, and even search for answers on Google. I can also provide concise summaries of web pages and YouTube videos.
 
 If you need assistance with anything, feel free to reach out to me anytime. Just ask your question, and I'll do my best to help you! 🌟"""
-    help = tr(help, lang)
-    bot.reply_to(message, help, parse_mode='Markdown', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
-    my_log.log_echo(message, help)
+
+    if is_private:
+        start_generated = f'''You are a chatbot named {_bot_name}. You work in telegram messenger.
+Write a SHORT welcome message to a user who has just come to you, use emojis if suitable.
+
+Your options: Chat, search the web, find and download music from YouTube,
+summarize web pages and YouTube videos, convert voice messages to text,
+recognize text from images and answer questions about them, draw pictures.
+
+User name: {user_name}
+User language: {lang}'''
+    else:
+        start_generated = f'''You are a chatbot named {_bot_name}. You work in telegram messenger.
+Write a SHORT welcome message to a chat you have just been invited to, use emojis if suitable.
+
+Your options: Chat, search the web, find and download music from YouTube,
+summarize web pages and YouTube videos, convert voice messages to text,
+recognize text from images and answer questions about them, draw pictures.
+
+Chat name: {chat_name}
+Chat language: {lang}'''
+
+    with ShowAction(message, 'typing'):
+        start_generated = my_gemini.chat(start_generated, chat_id_full)
+
+        if start_generated:
+            help = utils.bot_markdown_to_html(start_generated)
+        else:
+            help = tr(help, lang)
+
+        bot.reply_to(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
+        my_log.log_echo(message, help)
 
 
 @bot.message_handler(commands=['help'])
-def send_welcome_help(message: telebot.types.Message):
+def send_welcome_help(message: telebot.types.Message) -> None:
+    # автоматически выходить из забаненых чатов
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        bot.leave_chat(message.chat.id)
+        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        return
+    thread = threading.Thread(target=send_welcome_help_thread, args=(message,))
+    thread.start()
+def send_welcome_help_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
     # не обрабатывать команды к другому боту /cmd@botname args
@@ -2834,9 +2870,10 @@ def send_welcome_help(message: telebot.types.Message):
 
     chat_full = get_topic_id(message)
     lang = get_lang(chat_full, message)
+    check_blocked_user(chat_id_full)
 
-    help = f"""The chatbot responds to the name <b>bot</b>.
-For example, you can say <b>bot, tell me a joke</b>.
+    help = f"""The chatbot responds to the name bot.
+For example, you can say bot, tell me a joke.
 In private messages, you don't need to mention the bot's name
 
 🔭 If you send a link in a private message, the bot will try to extract and provide a brief summary of the content.
@@ -2870,15 +2907,22 @@ https://t.me/theurs
 
 Donate:"""
 
-    help = tr(help, lang) + f'\n<a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>'
+    with ShowAction(message, 'typing'):
+        ai_generated_help = my_gemini.chat(f'Write a help message for Telegram users in language [{lang}] using this text as a source:\n\n' + help, chat_full)
+        if ai_generated_help:
+            help = utils.bot_markdown_to_html(ai_generated_help)
+        else:
+            help = tr(help, lang)
 
-    try:
-        reply_to_long_message(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
-    except Exception as error:
-        print(f'tb:send_welcome_help: {error}')
-        my_log.log2(f'tb:send_welcome_help: {error}')
-        reply_to_long_message(message, help, parse_mode='', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, help)
+        help = f'{help}\n\n<a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>'
+
+        try:
+            reply_to_long_message(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
+        except Exception as error:
+            print(f'tb:send_welcome_help: {error}')
+            my_log.log2(f'tb:send_welcome_help: {error}')
+            reply_to_long_message(message, help, parse_mode='', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, help)
 
 
 @bot.message_handler(commands=['id']) 

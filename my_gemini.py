@@ -310,7 +310,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '') -> str:
     if to_lang == '':
         to_lang = 'ru'
     query = f'Translate from language [{from_lang}] to language [{to_lang}]:\n\n{text}'
-    inject_explicit_content(chat_id)
+    # inject_explicit_content(chat_id)
     translated = chat(query, chat_id)
     return translated
 

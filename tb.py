@@ -310,16 +310,32 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
         data = utils.download_image_as_bytes(text)
     if not query:
         query = tr('Что изображено на картинке? Дай мне подробное описание, и объясни подробно что это может означать.', lang)
+
+    if chat_id_full not in CHAT_MODE:
+        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+
     text = ''
-    try:
-        text = my_gemini.img2txt(data, query)
-    except Exception as img_from_link_error:
-        my_log.log2(f'tb:img2txt: {img_from_link_error}')
-    if not text:
+
+    if CHAT_MODE[chat_id_full] == 'bard':
         try:
             text = my_bard.chat_image(query, chat_id_full, data)
-        except Exception as img_from_link_error2:
-            my_log.log2(f'tb:img2txt: {img_from_link_error2}')
+        except Exception as img_from_link_error:
+            my_log.log2(f'tb:img2txt: {img_from_link_error}')
+        if not text:
+            try:
+                text = my_gemini.img2txt(data, query)
+            except Exception as img_from_link_error2:
+                my_log.log2(f'tb:img2txt: {img_from_link_error2}')
+    else:
+        try:
+            text = my_gemini.img2txt(data, query)
+        except Exception as img_from_link_error:
+            my_log.log2(f'tb:img2txt: {img_from_link_error}')
+        if not text:
+            try:
+                text = my_bard.chat_image(query, chat_id_full, data)
+            except Exception as img_from_link_error2:
+                my_log.log2(f'tb:img2txt: {img_from_link_error2}')
 
     if text:
         my_gemini.update_mem(tr('User asked about a picture:', lang) + ' ' + query, text, chat_id_full)
@@ -1375,6 +1391,7 @@ def handle_photo_thread(message: telebot.types.Message):
                 photo = message.photo[-1]
                 file_info = bot.get_file(photo.file_id)
                 image = bot.download_file(file_info.file_path)
+                
                 text = img2txt(image, lang, chat_id_full, message.caption)
                 if text:
                     text = utils.bot_markdown_to_html(text)

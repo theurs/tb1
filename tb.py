@@ -2820,7 +2820,7 @@ I provide free access to various chatbots like ChatGPT, Google Bard, Claude AI, 
 If you need assistance with anything, feel free to reach out to me anytime. Just ask your question, and I'll do my best to help you! 🌟"""
 
     if is_private:
-        start_generated = f'''You are a chatbot named {_bot_name}. You work in telegram messenger.
+        start_generated = f'''You are a chatbot named @{_bot_name}. You work in telegram messenger.
 Write a SHORT welcome message to a user who has just come to you, use emojis if suitable.
 
 Your options: Chat, search the web, find and download music from YouTube,
@@ -2830,7 +2830,7 @@ recognize text from images and answer questions about them, draw pictures.
 User name: {user_name}
 User language: {lang}'''
     else:
-        start_generated = f'''You are a chatbot named {_bot_name}. You work in telegram messenger.
+        start_generated = f'''You are a chatbot named @{_bot_name}. You work in telegram messenger.
 Write a SHORT welcome message to a chat you have just been invited to, use emojis if suitable.
 
 Your options: Chat, search the web, find and download music from YouTube,
@@ -2870,8 +2870,8 @@ def send_welcome_help_thread(message: telebot.types.Message):
 
     my_log.log_echo(message)
 
-    chat_full = get_topic_id(message)
-    lang = get_lang(chat_full, message)
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
     check_blocked_user(chat_id_full)
 
     help = f"""The chatbot responds to the name bot.
@@ -2910,7 +2910,7 @@ https://t.me/theurs
 Donate:"""
 
     with ShowAction(message, 'typing'):
-        ai_generated_help = my_gemini.chat(f'Write a help message for Telegram users in language [{lang}] using this text as a source:\n\n' + help, chat_full)
+        ai_generated_help = my_gemini.chat(f'Write a help message for Telegram users in language [{lang}] using this text as a source:\n\n' + help, chat_id_full)
         if ai_generated_help:
             help = utils.bot_markdown_to_html(ai_generated_help)
         else:

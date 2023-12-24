@@ -3663,8 +3663,8 @@ def do_task(message, custom_prompt: str = ''):
                     return
                 if chat_id_full not in my_gemini.ROLES:
                     my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
-                message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
-                # message.text = f'[{formatted_date}] [{from_user_name}] [{answer in a super short and objective way}]: {message.text}'
+                # с ролями бард как то странно работает
+                # message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
                 with ShowAction(message, action):
                     try:
                         # имя пользователя если есть или ник

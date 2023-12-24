@@ -2831,7 +2831,7 @@ def send_welcome_start_thread(message: telebot.types.Message):
     check_blocked_user(chat_id_full)
     is_private = message.chat.type == 'private'
     user_name = message.from_user.full_name or message.from_user.username or ''
-    chat_name = message.chat.username or message.chat.full_name or message.chat.title or ''
+    chat_name = message.chat.username or message.chat.title or ''
 
     help = """Hello! I'm your personal multi-functional assistant 🤖
 

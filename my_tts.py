@@ -44,12 +44,12 @@ def tts_google(text: str, lang: str = 'ru') -> bytes:
     mp3_fp.seek(0)
     data = mp3_fp.read()
     global TTS_CACHE
-    TTS_CACHE.append([text, data])
+    TTS_CACHE.append([text, data, lang, '+0%', 'google_female'])
     TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
     return data
 
 
-def tts_openai(text: str, voice: str = 'alloy') -> bytes:
+def tts_openai(text: str, voice: str = 'alloy', lang = 'ru') -> bytes:
     """
     Generate text to speech audio using OpenAI's TTS API.
 
@@ -61,6 +61,7 @@ def tts_openai(text: str, voice: str = 'alloy') -> bytes:
         bytes: The audio data in bytes format.
 
     """
+    voice_ = voice
     if 'alloy' in voice:
         voice = 'alloy'
     elif 'echo' in voice:
@@ -77,62 +78,7 @@ def tts_openai(text: str, voice: str = 'alloy') -> bytes:
         voice = 'alloy'
     data = gpt_basic.tts(text, voice)
     global TTS_CACHE
-    TTS_CACHE.append([text, data])
-    TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
-    return data
-
-
-def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
-    """
-    Generates text-to-speech audio from the given input text using the specified voice, 
-    speech rate, and gender.
-
-    Args:
-        text (str): The input text to convert to speech.
-        voice (str, optional): The voice to use for the speech. Defaults to 'ru'.
-        rate (str, optional): The speech rate. Defaults to '+0%'.
-        gender (str, optional): The gender of the voice. Defaults to 'female'.
-
-    Returns:
-        bytes: The generated audio as a bytes object.
-    """
-    lang = voice
-
-    global TTS_CACHE
-    for text_, data in TTS_CACHE:
-        if text_ == text:
-            return data
-
-    if gender == 'google_female':
-        return tts_google(text, lang)
-    if 'openai' in gender:
-        return tts_openai(text, gender)
-    if 'ynd' in gender:
-        return tts_yandex(text, voice, rate, gender)
-
-    voice = get_voice(voice, gender)
-
-    # Удаляем символы переноса строки и перевода каретки 
-    text = text.replace('\r','') 
-    text = text.replace('\n\n','\n')  
-
-    # Создаем временный файл для записи аудио
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f: 
-        filename = f.name 
-
-    # Запускаем edge-tts для генерации аудио
-    com = edge_tts.Communicate(text, voice, rate=rate)
-    asyncio.run(com.save(filename))
-
-    # Читаем аудио из временного файла 
-    with open(filename, "rb") as f: 
-        data = io.BytesIO(f.read())
-
-    os.remove(filename)
-    # Возвращаем байтовый поток с аудио
-    data = data.getvalue()
-
-    TTS_CACHE.append([text, data])
+    TTS_CACHE.append([text, data, lang, '+0%', voice_])
     TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
     return data
 
@@ -171,7 +117,7 @@ def tts_yandex(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'f
         data += d
 
     global TTS_CACHE
-    TTS_CACHE.append([text, data])
+    TTS_CACHE.append([text, data, lang, rate, gender])
     TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
     return data
 
@@ -261,6 +207,61 @@ def get_voice(language_code: str, gender: str = 'female'):
  'zu': {'female': 'zu-ZA-ThandoNeural', 'male': 'zu-ZA-ThembaNeural'}}
 
     return voices[language_code][gender]
+
+
+def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
+    """
+    Generates text-to-speech audio from the given input text using the specified voice, 
+    speech rate, and gender.
+
+    Args:
+        text (str): The input text to convert to speech.
+        voice (str, optional): The voice to use for the speech. Defaults to 'ru'.
+        rate (str, optional): The speech rate. Defaults to '+0%'.
+        gender (str, optional): The gender of the voice. Defaults to 'female'.
+
+    Returns:
+        bytes: The generated audio as a bytes object.
+    """
+    lang = voice
+
+    global TTS_CACHE
+    for text_, data, lang_, rate_, gender_ in TTS_CACHE:
+        if text_ == text and lang_ == lang and rate_ == rate and gender_ == gender:
+            return data
+
+    if gender == 'google_female':
+        return tts_google(text, lang)
+    if 'openai' in gender:
+        return tts_openai(text, gender, lang)
+    if 'ynd' in gender:
+        return tts_yandex(text, voice, rate, gender)
+
+    voice = get_voice(voice, gender)
+
+    # Удаляем символы переноса строки и перевода каретки 
+    text = text.replace('\r','') 
+    text = text.replace('\n\n','\n')  
+
+    # Создаем временный файл для записи аудио
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f: 
+        filename = f.name 
+
+    # Запускаем edge-tts для генерации аудио
+    com = edge_tts.Communicate(text, voice, rate=rate)
+    asyncio.run(com.save(filename))
+
+    # Читаем аудио из временного файла 
+    with open(filename, "rb") as f: 
+        data = io.BytesIO(f.read())
+
+    os.remove(filename)
+    # Возвращаем байтовый поток с аудио
+    data = data.getvalue()
+
+    TTS_CACHE.append([text, data, lang, rate, gender])
+    TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
+    return data
 
 
 if __name__ == "__main__":

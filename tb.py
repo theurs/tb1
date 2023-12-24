@@ -744,9 +744,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         lang = get_lang(chat_id_full, message)
         # check_blocked_user(chat_id_full)
 
-        # сбросить кеш при переключении голоса
-        if call.data.startswith('tts_'):
-            my_tts.TTS_CACHE = []
+        # # сбросить кеш при переключении голоса
+        # if call.data.startswith('tts_'):
+        #     my_tts.TTS_CACHE = []
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
@@ -1552,80 +1552,80 @@ def config(message: telebot.types.Message):
         print(error)
 
 
-@bot.message_handler(commands=['style'])
-def change_mode(message: telebot.types.Message):
-    """
-    Handles the 'style' command from the bot. Changes the prompt for the GPT model
-    based on the user's input. If no argument is provided, it displays the current
-    prompt and the available options for changing it.
+# @bot.message_handler(commands=['style'])
+# def change_mode(message: telebot.types.Message):
+#     """
+#     Handles the 'style' command from the bot. Changes the prompt for the GPT model
+#     based on the user's input. If no argument is provided, it displays the current
+#     prompt and the available options for changing it.
 
-    Parameters:
-        message (telebot.types.Message): The message object received from the user.
+#     Parameters:
+#         message (telebot.types.Message): The message object received from the user.
 
-    Returns:
-        None
-    """
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
+#     Returns:
+#         None
+#     """
+#     # не обрабатывать команды к другому боту /cmd@botname args
+#     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+#     else: return
 
-    my_log.log_echo(message)
+#     my_log.log_echo(message)
 
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
+#     chat_id_full = get_topic_id(message)
+#     lang = get_lang(chat_id_full, message)
+#     check_blocked_user(chat_id_full)
 
-    # в каждом чате свой собственный промт
-    if chat_id_full not in gpt_basic.PROMPTS:
-        # по умолчанию формальный стиль
-        gpt_basic.PROMPTS[chat_id_full] = [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
-        my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
+#     # в каждом чате свой собственный промт
+#     if chat_id_full not in gpt_basic.PROMPTS:
+#         # по умолчанию формальный стиль
+#         gpt_basic.PROMPTS[chat_id_full] = [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
+#         my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
 
-    arg = message.text.split(maxsplit=1)[1:]
-    if arg:
-        if arg[0] == '1':
-            GEMINI_INJECT[chat_id_full] = False
-            new_prompt = tr(utils.gpt_start_message1, lang)
-        elif arg[0] == '2':
-            GEMINI_INJECT[chat_id_full] = False
-            new_prompt = tr(utils.gpt_start_message2, lang)
-        elif arg[0] == '3':
-            new_prompt = tr(utils.gpt_start_message3, lang)
-            GEMINI_INJECT[chat_id_full] = True
-            # my_gemini.inject_explicit_content(chat_id_full)
-        elif arg[0] == '4':
-            new_prompt = tr(utils.gpt_start_message4, lang)
-            GEMINI_INJECT[chat_id_full] = True
-            # my_gemini.inject_explicit_content(chat_id_full)
-        else:
-            # GEMINI_INJECT[chat_id_full] = False
-            new_prompt = arg[0]
-        gemini_reset(chat_id_full)
-        gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
-        my_gemini.ROLES[chat_id_full] = new_prompt
-        msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
-        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, msg)
-    else:
-        msg = f"""{tr('Текущий стиль', lang)}
+#     arg = message.text.split(maxsplit=1)[1:]
+#     if arg:
+#         if arg[0] == '1':
+#             GEMINI_INJECT[chat_id_full] = False
+#             new_prompt = tr(utils.gpt_start_message1, lang)
+#         elif arg[0] == '2':
+#             GEMINI_INJECT[chat_id_full] = False
+#             new_prompt = tr(utils.gpt_start_message2, lang)
+#         elif arg[0] == '3':
+#             new_prompt = tr(utils.gpt_start_message3, lang)
+#             GEMINI_INJECT[chat_id_full] = True
+#             # my_gemini.inject_explicit_content(chat_id_full)
+#         elif arg[0] == '4':
+#             new_prompt = tr(utils.gpt_start_message4, lang)
+#             GEMINI_INJECT[chat_id_full] = True
+#             # my_gemini.inject_explicit_content(chat_id_full)
+#         else:
+#             # GEMINI_INJECT[chat_id_full] = False
+#             new_prompt = arg[0]
+#         gemini_reset(chat_id_full)
+#         gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
+#         my_gemini.ROLES[chat_id_full] = new_prompt
+#         msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
+#         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
+#         my_log.log_echo(message, msg)
+#     else:
+#         msg = f"""{tr('Текущий стиль', lang)}
 
-`{gpt_basic.PROMPTS[chat_id_full][0]['content']}`
+# `{gpt_basic.PROMPTS[chat_id_full][0]['content']}`
 
-{tr('Меняет роль бота, строку с указаниями что и как говорить.', lang)}
+# {tr('Меняет роль бота, строку с указаниями что и как говорить.', lang)}
 
-`/style <1|2|3|4|{tr('свой текст', lang)}>`
+# `/style <1|2|3|4|{tr('свой текст', lang)}>`
 
-{tr('1 - ', lang)} `{tr(utils.gpt_start_message1, lang)}`
+# {tr('1 - ', lang)} `{tr(utils.gpt_start_message1, lang)}`
 
-{tr('2 - ', lang)} `{tr(utils.gpt_start_message2, lang)}`
+# {tr('2 - ', lang)} `{tr(utils.gpt_start_message2, lang)}`
 
-{tr('3 - ', lang)} `{tr(utils.gpt_start_message3, lang)}`
+# {tr('3 - ', lang)} `{tr(utils.gpt_start_message3, lang)}`
 
-{tr('4 - ', lang)} `{tr(utils.gpt_start_message4, lang)}`
-    """
-        # COMMAND_MODE[chat_id_full] = 'style'
-        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
-        my_log.log_echo(message, msg)
+# {tr('4 - ', lang)} `{tr(utils.gpt_start_message4, lang)}`
+#     """
+#         # COMMAND_MODE[chat_id_full] = 'style'
+#         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
+#         my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['mem'])
@@ -1646,7 +1646,10 @@ def send_debug_history(message: telebot.types.Message):
 
     if CHAT_MODE[chat_id_full] == 'chatgpt':
         # обрезаем историю
-        gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+        try:
+            gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+        except:
+            pass
 
         # создаем новую историю диалогов с юзером из старой если есть
         messages = []
@@ -3626,9 +3629,9 @@ def do_task(message, custom_prompt: str = ''):
                     my_log.log_echo(message, f'Слишком длинное сообщение для Gemini: {len(msg)} из {my_gemini.MAX_REQUEST}')
                     return
                 # message.text = f'[{formatted_date}] [{from_user_name}] [answer in a short and objective way]: {message.text}'
-                if chat_id_full not in my_gemini.ROLES:
-                    my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
-                message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
+                # if chat_id_full not in my_gemini.ROLES:
+                #     my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
+                # message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
                 with ShowAction(message, action):
                     try:
                         if chat_id_full not in GEMIMI_TEMP:
@@ -3678,8 +3681,8 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     return
-                if chat_id_full not in my_gemini.ROLES:
-                    my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
+                # if chat_id_full not in my_gemini.ROLES:
+                #     my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
                 # с ролями бард как то странно работает
                 # message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
                 with ShowAction(message, action):
@@ -3732,9 +3735,9 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для Клода:", lang)} {len(msg)} {tr("из", lang)} {my_claude.MAX_QUERY}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для Клода: {len(msg)} из {my_claude.MAX_QUERY}')
                     return
-                if chat_id_full not in my_gemini.ROLES:
-                    my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
-                message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
+                # if chat_id_full not in my_gemini.ROLES:
+                #     my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
+                # message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
                 # message.text = f'[{formatted_date}] [{from_user_name}] [answer in a super short and objective way]: {message.text}'
                 with ShowAction(message, action):
                     try:

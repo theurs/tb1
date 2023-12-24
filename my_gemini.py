@@ -14,7 +14,7 @@ import my_log
 
 
 # роли {id:str} инструкция которая вставляется всегда
-ROLES = my_dic.PersistentDict('db/gemini_roles.pkl')
+# ROLES = my_dic.PersistentDict('db/gemini_roles.pkl')
 
 # блокировка чатов что бы не испортить историю 
 # {id:lock}

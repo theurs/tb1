@@ -34,7 +34,7 @@ CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
 CHATS = my_dic.PersistentDict('db/dialogs.pkl')
 # системные промты для чатов, роли или инструкции что и как делать в этом чате
 # {id:prompt}
-PROMPTS = my_dic.PersistentDict('db/prompts.pkl')
+# PROMPTS = my_dic.PersistentDict('db/prompts.pkl')
 # температура chatGPT {id:float(0-2)}
 TEMPERATURE = {}
 # замки диалогов {id:lock}
@@ -598,25 +598,25 @@ def chat(chat_id: str, query: str, user_name: str = 'noname', lang: str = 'ru',
         else:
             temp = 0
 
-        # в каждом чате свой собственный промт
-        curr_place = tr('приватный телеграм чат', lang) if is_private else \
-tr('публичный телеграм чат', lang)
-        if not is_private:
-            curr_place = f'{curr_place} "{chat_name}"'
-        sys_prompt = f'{tr("Сейчас ", lang)} {formatted_date} , \
-{tr("ты находишься в ", lang)} {curr_place} \
-{tr("и отвечаешь пользователю с ником", lang)} "{user_name}", \
-{tr("локаль пользователя: ", lang)} "{lang}"'
-        if chat_id in PROMPTS:
-            current_prompt = PROMPTS[chat_id]
-        else:
-            # по умолчанию формальный стиль
-            PROMPTS[chat_id] = [{"role": "system",
-                                 "content": tr(utils.gpt_start_message1, lang)}]
-            current_prompt =   [{"role": "system",
-                                 "content": tr(utils.gpt_start_message1, lang)}]
-        current_prompt = [{"role": "system", "content": sys_prompt}] + current_prompt
-
+#         # в каждом чате свой собственный промт
+#         curr_place = tr('приватный телеграм чат', lang) if is_private else \
+# tr('публичный телеграм чат', lang)
+#         if not is_private:
+#             curr_place = f'{curr_place} "{chat_name}"'
+#         sys_prompt = f'{tr("Сейчас ", lang)} {formatted_date} , \
+# {tr("ты находишься в ", lang)} {curr_place} \
+# {tr("и отвечаешь пользователю с ником", lang)} "{user_name}", \
+# {tr("локаль пользователя: ", lang)} "{lang}"'
+#         if chat_id in PROMPTS:
+#             current_prompt = PROMPTS[chat_id]
+#         else:
+#             # по умолчанию формальный стиль
+#             PROMPTS[chat_id] = [{"role": "system",
+#                                  "content": tr(utils.gpt_start_message1, lang)}]
+#             current_prompt =   [{"role": "system",
+#                                  "content": tr(utils.gpt_start_message1, lang)}]
+#         current_prompt = [{"role": "system", "content": sys_prompt}] + current_prompt
+        current_prompt = []
 
         # пытаемся получить ответ
         resp = ''

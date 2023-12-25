@@ -3506,13 +3506,20 @@ def do_task(message, custom_prompt: str = ''):
                                 bot.reply_to(message, tr('You are not in allow chatGPT users list', lang))
                                 return
                             else:
-                                response = gpt_basic.check_phone_number(number)
+                                response = my_gemini.check_phone_number(number)
+                                gemini_resp = True
+                                if not response:
+                                    response = gpt_basic.check_phone_number(number)
+                                    gemini_resp = False
                     if response:
                         CACHE_CHECK_PHONE[number] = response
                         response = utils.bot_markdown_to_html(response)
                         reply_to_long_message(message, response, parse_mode='HTML',
                                             reply_markup=get_keyboard('hide', message))
-                        my_log.log_echo(message, response)
+                        if gemini_resp:
+                            my_log.log_echo(message, '[gemini] ' + response)
+                        else:
+                            my_log.log_echo(message, '[chatgpt] ' + response)
                         return
 
         # если в сообщении только ссылка и она отправлена боту в приват

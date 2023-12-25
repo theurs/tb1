@@ -2840,7 +2840,7 @@ I provide free access to various chatbots like ChatGPT, Google Bard, Claude AI, 
 If you need assistance with anything, feel free to reach out to me anytime. Just ask your question, and I'll do my best to help you! 🌟"""
 
     if is_private:
-        start_generated = f'''You are a chatbot named @{_bot_name}. You work in telegram messenger.
+        start_generated = f'''You are a Chatbot 1 day old. You work in telegram messenger.
 Write a SHORT welcome message to a user who has just come to you, use emojis if suitable.
 
 Your options: Chat, search the web, find and download music from YouTube,
@@ -2850,7 +2850,7 @@ recognize text from images and answer questions about them, draw pictures.
 User name: {user_name}
 User language: {lang}'''
     else:
-        start_generated = f'''You are a chatbot named @{_bot_name}. You work in telegram messenger.
+        start_generated = f'''You are a Chatbot 1 day old. You work in telegram messenger.
 Write a SHORT welcome message to a chat you have just been invited to, use emojis if suitable.
 
 Your options: Chat, search the web, find and download music from YouTube,

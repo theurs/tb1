@@ -255,24 +255,35 @@ def gen_imgs(prompt: str):
                     auth = ck["value"]
                     break
 
+        images = []
         if auth:
             try:
-                proxy = cfg.bing_proxy
+                proxys = cfg.bing_proxy
             except AttributeError:
-                proxy = ''
-            if proxy:
-                image_gen = ImageGen(auth, quiet = True, proxy=proxy)
+                proxys = ''
+            if proxys:
+                for proxy in proxys:
+                    image_gen = ImageGen(auth, quiet = True, proxy=proxy)
+                    try:
+                        images = image_gen.get_images(prompt)
+                        if images:
+                            break
+                    except Exception as error:
+                        if 'Your prompt has been blocked by Bing. Try to change any bad words and try again.' in str(error) or 'Bad' in str(error):
+                            return 'Бинг отказался это рисовать.'
+                        print(f'my_bingai.gen_imgs: {error}')
+                        my_log.log2(f'my_bingai.gen_imgs: {error}')
+                        #return str(error)
             else:
                 image_gen = ImageGen(auth, quiet = True)
-
-            try:
-                images = image_gen.get_images(prompt)
-            except Exception as error:
-                if 'Your prompt has been blocked by Bing. Try to change any bad words and try again.' in str(error):
-                    return 'Бинг отказался это рисовать.'
-                print(f'my_bingai.gen_imgs: {error}')
-                my_log.log2(f'my_bingai.gen_imgs: {error}')
-                return str(error)
+                try:
+                    images = image_gen.get_images(prompt)
+                except Exception as error:
+                    if 'Your prompt has been blocked by Bing. Try to change any bad words and try again.' in str(error):
+                        return 'Бинг отказался это рисовать.'
+                    print(f'my_bingai.gen_imgs: {error}')
+                    my_log.log2(f'my_bingai.gen_imgs: {error}')
+                    return str(error)
 
             return images
 

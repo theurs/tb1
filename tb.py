@@ -143,6 +143,11 @@ GEMINI_INJECT = my_dic.PersistentDict('db/gemini_inject.pkl')
 GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
 GEMIMI_TEMP_DEFAULT = 0.1
 
+# tts-openai limiter. не давать больше чем 10000 символов озвучивания через openai tts в одни руки
+# {id:limit}
+TTS_OPENAI_LIMIT = my_dic.PersistentDict('db/tts_openai_limit.pkl')
+TTS_OPENAI_LIMIT_MAX = 10000
+
 # Из каких чатов надо выходиьт сразу (забаненые)
 LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
 
@@ -1973,15 +1978,25 @@ def tts_thread(message: telebot.types.Message, caption = None):
             else:
                 gender = 'female'
 
+            # ограничение на кол-во символов для openai
+            if chat_id_full not in TTS_OPENAI_LIMIT:
+                TTS_OPENAI_LIMIT[chat_id_full] = 0
+
+            if 'openai' in gender and TTS_OPENAI_LIMIT[chat_id_full] > TTS_OPENAI_LIMIT_MAX:
+                gender = 'google_female'
+
             # openai доступен не всем, если недоступен то вместо него используется гугл
             if not allowed_chatGPT_user(message.chat.id):
                 gender = 'google_female'
             if 'openai' in gender and len(text) > cfg.MAX_OPENAI_TTS:
                 gender = 'google_female'
-            
+
+            if 'openai' in gender:
+                TTS_OPENAI_LIMIT[chat_id_full] += len(text)
+
             # яндекс знает только несколько языков и не может больше 2000 символов
             if 'ynd' in gender:
-                if len(text) > 1990 or llang not in ['ru', 'en', 'uk', 'he', 'de', 'kk', 'uz']:
+                if len(text) > 1500 or llang not in ['ru', 'en', 'uk', 'he', 'de', 'kk', 'uz']:
                     gender = 'female'
 
             # микрософт не умеет в латинский язык

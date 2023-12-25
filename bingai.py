@@ -10,6 +10,7 @@ import queue
 
 from re_edge_gpt import Chatbot, ConversationStyle, ImageGen
 
+import cfg
 import my_log
 
 
@@ -255,7 +256,14 @@ def gen_imgs(prompt: str):
                     break
 
         if auth:
-            image_gen = ImageGen(auth, quiet = True)
+            try:
+                proxy = cfg.bing_proxy
+            except AttributeError:
+                proxy = ''
+            if proxy:
+                image_gen = ImageGen(auth, quiet = True, proxy=proxy)
+            else:
+                image_gen = ImageGen(auth, quiet = True)
 
             try:
                 images = image_gen.get_images(prompt)

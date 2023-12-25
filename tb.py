@@ -2861,7 +2861,7 @@ Chat name: {chat_name}
 Chat language: {lang}'''
 
     with ShowAction(message, 'typing'):
-        start_generated = my_gemini.chat(start_generated, chat_id_full)
+        start_generated = my_gemini.chat(start_generated, chat_id_full, update_memory=False)
 
         if start_generated:
             help = utils.bot_markdown_to_html(start_generated)
@@ -2926,7 +2926,7 @@ https://t.me/theurs
 Donate:"""
 
     with ShowAction(message, 'typing'):
-        ai_generated_help = my_gemini.chat(f'Write a help message for Telegram users in language [{lang}] using this text as a source:\n\n' + help, chat_id_full)
+        ai_generated_help = my_gemini.chat(f'Write a help message for Telegram users in language [{lang}] using this text as a source:\n\n' + help, chat_id_full, update_memory=False)
         if ai_generated_help:
             help = utils.bot_markdown_to_html(ai_generated_help)
         else:

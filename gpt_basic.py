@@ -483,7 +483,8 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
     shuffled_servers = servers[:]
     random.shuffle(shuffled_servers)
 
-    assert len(servers) > 0, 'No openai servers with image_gen=True configured'
+    if len(servers) = 0:
+        return []
 
     # prompt_tr = translate_image_prompt(prompt)
     prompt_tr = prompt

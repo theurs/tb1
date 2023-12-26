@@ -135,14 +135,14 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                         if result:
                             break
                     except Exception as err1:
-                        my_log.log2(f'img2txt:{proxy} {api_key} {str(response)} {err1}')
+                        my_log.log2(f'img2txt:{proxy} {api_key} {str(response)} {response.text}\n\n{err1}')
             else:
                 try:
                     response = requests.post(url, json=data, timeout=60).json()
                     try:
                         result = response['candidates'][0]['content']['parts'][0]['text']
                     except AttributeError:
-                        my_log.log2(f'img2txt:{api_key} {str(response)}')
+                        my_log.log2(f'img2txt:{api_key} {str(response)} {response.text}')
                 except Exception as error:
                     my_log.log2(f'img2txt:{error}')
             if result:
@@ -256,13 +256,13 @@ def ai(q: str, mem = [], temperature: float = 0.1) -> str:
                         result = response.json()['candidates'][0]['content']['parts'][0]['text']
                         break
                     else:
-                        my_log.log2(f'my_gemini:ai:{proxy} {key} {str(response)}')
+                        my_log.log2(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}')
             else:
                 response = requests.post(url, json=mem_, timeout=60)
                 if response.status_code == 200:
                     result = response.json()['candidates'][0]['content']['parts'][0]['text']
                 else:
-                    my_log.log2(f'my_gemini:ai:{key} {str(response)}')
+                    my_log.log2(f'my_gemini:ai:{key} {str(response)} {response.text}')
 
             if result:
                 break

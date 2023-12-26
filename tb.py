@@ -3643,7 +3643,12 @@ def do_task(message, custom_prompt: str = ''):
                     try:
                         if chat_id_full not in GEMIMI_TEMP:
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
-                        answer = my_gemini.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
+
+                        if message.chat.title:
+                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang}".]'
+                        else:
+                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}".]'
+                        answer = my_gemini.chat(f'{hidden_text} {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])
                         flag_gpt_help = False
                         if not answer:
                             if not answer:

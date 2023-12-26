@@ -112,17 +112,45 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                 }
             ]
             }
-        api_key = random.choice(cfg.gemini_keys)
-        response = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={api_key}",
-            json=data,
-            timeout=60
-        ).json()
 
-        return response['candidates'][0]['content']['parts'][0]['text']
-    except Exception as error:
-        my_log.log2(f'img2txt:{error}')
-    return ''
+        result = ''
+        keys = cfg.gemini_keys[:]
+        random.shuffle(keys)
+
+        try:
+            proxies = cfg.gemini_proxies
+        except AttributeError:
+            proxies = None
+
+        for api_key in keys:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={api_key}"
+
+            if proxies:
+                for proxy in proxies:
+                    session = requests.Session()
+                    session.proxies = {"http": proxy, "https": proxy}
+                    try:
+                        response = session.post(url, json=data, timeout=60).json()
+                        result = response['candidates'][0]['content']['parts'][0]['text']
+                        if result:
+                            break
+                    except Exception as err1:
+                        my_log.log2(f'img2txt:{proxy} {api_key} {str(response)} {err1}')
+            else:
+                try:
+                    response = requests.post(url, json=data, timeout=60).json()
+                    try:
+                        result = response['candidates'][0]['content']['parts'][0]['text']
+                    except AttributeError:
+                        my_log.log2(f'img2txt:{api_key} {str(response)}')
+                except Exception as error:
+                    my_log.log2(f'img2txt:{error}')
+            if result:
+                break
+        return result.strip()
+    except Exception as unknown_error:
+        my_log.log2(f'my_gemini:img2txt:{unknown_error}')
+        return ''
 
 
 def update_mem(query: str, resp: str, mem) -> list:
@@ -208,19 +236,40 @@ def ai(q: str, mem = [], temperature: float = 0.1) -> str:
 
     keys = cfg.gemini_keys[:]
     random.shuffle(keys)
-    for key in keys:
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + key
-        response = requests.post(url, json=mem_, timeout=60)
-        if response.status_code == 200:
-            break
+    result = ''
 
     try:
-        resp = response.json()['candidates'][0]['content']['parts'][0]['text']
-    except Exception as ai_error:
-        my_log.log2(f'ai:{ai_error}\n\n{str(response.json())}')
-        resp = ''
+        proxies = cfg.gemini_proxies
+    except AttributeError:
+        proxies = None
 
-    return resp
+    try:
+        for key in keys:
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + key
+
+            if proxies:
+                for proxy in proxies:
+                    session = requests.Session()
+                    session.proxies = {"http": proxy, "https": proxy}
+                    response = session.post(url, json=mem_, timeout=60)
+                    if response.status_code == 200:
+                        result = response.json()['candidates'][0]['content']['parts'][0]['text']
+                        break
+                    else:
+                        my_log.log2(f'my_gemini:ai:{proxy} {key} {response.status_code}')
+            else:
+                response = requests.post(url, json=mem_, timeout=60)
+                if response.status_code == 200:
+                    result = response.json()['candidates'][0]['content']['parts'][0]['text']
+                else:
+                    my_log.log2(f'my_gemini:ai:{key} {response.status_code}')
+
+            if result:
+                break
+    except Exception as unknown_error:
+        my_log.log2(f'my_gemini:ai:{unknown_error}')
+
+    return result.strip()
 
 
 def chat(query: str, chat_id: str, temperature: float = 0.1, update_memory: bool = True) -> str:

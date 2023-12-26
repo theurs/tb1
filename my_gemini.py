@@ -256,13 +256,13 @@ def ai(q: str, mem = [], temperature: float = 0.1) -> str:
                         result = response.json()['candidates'][0]['content']['parts'][0]['text']
                         break
                     else:
-                        my_log.log2(f'my_gemini:ai:{proxy} {key} {response.status_code}')
+                        my_log.log2(f'my_gemini:ai:{proxy} {key} {str(response)}')
             else:
                 response = requests.post(url, json=mem_, timeout=60)
                 if response.status_code == 200:
                     result = response.json()['candidates'][0]['content']['parts'][0]['text']
                 else:
-                    my_log.log2(f'my_gemini:ai:{key} {response.status_code}')
+                    my_log.log2(f'my_gemini:ai:{key} {str(response)}')
 
             if result:
                 break

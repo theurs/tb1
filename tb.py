@@ -1682,11 +1682,14 @@ def restart(message: telebot.types.Message):
 
 @bot.message_handler(commands=['leave']) 
 def leave(message: telebot.types.Message):
+    thread = threading.Thread(target=leave_thread, args=(message,))
+    thread.start()
+def leave_thread(message: telebot.types.Message):
     """выйти из чата"""
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
     if message.from_user.id in cfg.admins:
-        
+
         if len(message.text) > 7:
             args = message.text[7:]
         else:
@@ -1706,6 +1709,32 @@ def leave(message: telebot.types.Message):
             else:
                 bot.reply_to(message, tr('Вы уже раньше вышли из чата', lang) + f' {chat_id}')
             
+    else:
+        bot.reply_to(message, tr('Эта команда только для админов.', lang), reply_markup=get_keyboard('hide', message))
+
+
+@bot.message_handler(commands=['revoke']) 
+def revoke(message: telebot.types.Message):
+    thread = threading.Thread(target=revoke_thread, args=(message,))
+    thread.start()
+def revoke_thread(message: telebot.types.Message):
+    """разбанить чат(ы)"""
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+    if message.from_user.id in cfg.admins:
+        if len(message.text) > 8:
+            args = message.text[8:]
+        else:
+            bot.reply_to(message, '/revoke <группа или группы которые надо разбанить>')
+            return
+
+        chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
+        for chat_id in chat_ids:
+            if chat_id in LEAVED_CHATS and LEAVED_CHATS[chat_id]:
+                LEAVED_CHATS[chat_id] = False
+                bot.reply_to(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}')
+            else:
+                bot.reply_to(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}')
     else:
         bot.reply_to(message, tr('Эта команда только для админов.', lang), reply_markup=get_keyboard('hide', message))
 

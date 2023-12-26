@@ -56,30 +56,30 @@ def get_new_session(user_name: str = '', lang: str = '', is_private: bool = True
 
     bard = Bard(token=cfg.bard_tokens[current_token], proxies=proxies, session=session, timeout=30)
 
-    rules = ''
-    if not user_name:
-        user_name = 'noname'
-    if not lang:
-        lang = cfg.DEFAULT_LANGUAGE
+#     rules = ''
+#     if not user_name:
+#         user_name = 'noname'
+#     if not lang:
+#         lang = cfg.DEFAULT_LANGUAGE
 
-    rules += '\n'
-    if is_private:
-        rules += """Ты общаешься с человеком в привате мессенджера Telegram, обращай внимание на его пол, 
-если не понятно по имени то определяй по словам которые использует человек,
-людям нравится когда ты правильно говоришь с учетом пола и языка.
-Имя и язык пользователя: """
-    else:
-        rules += """Ты общаешься с разными людьми в публичном чате мессенджера Telegram, обращай внимание на их пол, 
-если не понятно по имени то определяй по словам которые использует человек,
-людям нравится когда ты правильно говоришь с учетом пола и языка.
-Имя чата и язык пользователей чата: """
+#     rules += '\n'
+#     if is_private:
+#         rules += """Ты общаешься с человеком в привате мессенджера Telegram, обращай внимание на его пол, 
+# если не понятно по имени то определяй по словам которые использует человек,
+# людям нравится когда ты правильно говоришь с учетом пола и языка.
+# Имя и язык пользователя: """
+#     else:
+#         rules += """Ты общаешься с разными людьми в публичном чате мессенджера Telegram, обращай внимание на их пол, 
+# если не понятно по имени то определяй по словам которые использует человек,
+# людям нравится когда ты правильно говоришь с учетом пола и языка.
+# Имя чата и язык пользователей чата: """
 
-    if lang != 'ru':
-        rules = my_trans.translate_text(rules, lang)
+#     if lang != 'ru':
+#         rules = my_trans.translate_text(rules, lang)
 
-    rules = f'{rules} [{user_name}], [{lang}]'
+#     rules = f'{rules} [{user_name}], [{lang}]'
 
-    r = bard.get_answer(rules)
+#     r = bard.get_answer(rules)
 
     return bard
 

@@ -483,7 +483,7 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
     shuffled_servers = servers[:]
     random.shuffle(shuffled_servers)
 
-    if len(servers) = 0:
+    if len(servers) == 0:
         return []
 
     # prompt_tr = translate_image_prompt(prompt)

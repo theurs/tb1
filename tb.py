@@ -1686,10 +1686,26 @@ def leave(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
     if message.from_user.id in cfg.admins:
-        chat_id = message.text.split()[1]
-        LEAVED_CHATS[int(chat_id)] = True
-        if bot.leave_chat(chat_id):
-            bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
+        
+        if len(message.text) > 7:
+            args = message.text[7:]
+        else:
+            bot.reply_to(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>')
+            return
+
+        chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
+        for chat_id in chat_ids:
+            if chat_id not in LEAVED_CHATS or LEAVED_CHATS[chat_id] == False:
+                LEAVED_CHATS[chat_id] = True
+                try:
+                    bot.leave_chat(chat_id)
+                    bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
+                except Exception as error:
+                    my_log.log2(f'tb:leave: {chat_id} {str(error)}')
+                    bot.reply_to(message, tr('Не удалось выйти из чата', lang) + f' {chat_id} {str(error)}')
+            else:
+                bot.reply_to(message, tr('Вы уже раньше вышли из чата', lang) + f' {chat_id}')
+            
     else:
         bot.reply_to(message, tr('Эта команда только для админов.', lang), reply_markup=get_keyboard('hide', message))
 
@@ -2196,20 +2212,6 @@ def image_thread(message: telebot.types.Message):
 {tr('Напишите что надо нарисовать, как это выглядит', lang)}
 """
         prompt = message.text.split(maxsplit = 1)
-        
-        # если в запросе есть ключи для API openai то добавить их в персональное хранилище
-        pattern = r"sk-[a-zA-Z0-9]{48}"
-        try:
-            api_keys = re.findall(pattern, prompt[1])
-        except IndexError:
-            api_keys = []
-        if api_keys:
-            gpt_basic.add_image_keys(chat_id_full, api_keys)
-            msg = f'{tr("Detected API keys, added:", lang)} {len(api_keys)}'
-            my_log.log_echo(message)
-            my_log.log_echo(message, msg)
-            bot.reply_to(message, msg)
-            return
 
         if len(prompt) > 1:
             prompt = prompt[1]
@@ -2260,13 +2262,7 @@ def image_thread(message: telebot.types.Message):
                                  reply_markup=get_keyboard('hide', message))
                     if cfg.enable_image_adv:
                         msg = f'{tr("Try this free group, it has a lot of mediabots:", lang)} https://t.me/neuralforum\n\n'
-                        if chat_id_full in gpt_basic.IMG_API_KEYS:
-                            keys_total = len(gpt_basic.IMG_API_KEYS[chat_id_full])
-                        else:
-                            keys_total = 0
 
-                        # msg += f'{tr("Personal api keys amount:", lang)} {keys_total}\n\n'
-                        # msg += f'{tr("You can buy very cheap keys on the website", lang)} https://wmcentre.net/search?searchstr=CHATGPT+API {tr("the approximate cost is 1 US dollar for 4000 DALLE-2 images.", lang)}'
                         bot.reply_to(message, msg,
                                  disable_web_page_preview = True,
                                  reply_markup=get_keyboard('hide', message))
@@ -3852,7 +3848,6 @@ def main():
     # set_default_commands()
     
     my_gemini.load_memory_from_file()
-    gpt_basic.load_img_api_keys()
 
     bot.polling(timeout=90, long_polling_timeout=90)
 

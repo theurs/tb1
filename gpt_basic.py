@@ -40,10 +40,6 @@ TEMPERATURE = {}
 # замки диалогов {id:lock}
 CHAT_LOCKS = {}
 
-# personal API keys for image command
-IMG_API_KEYS = {}
-IMG_API_KEYS_LOCK = threading.Lock()
-
 
 def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 120, messages = None,
        chat_id = None, model_to_use: str = '') -> str:
@@ -467,56 +463,56 @@ def translate_image_prompt(prompt: str) -> str:
     return prompt_tr
 
 
-def image_gen(prompt: str, chat_id: str = '_',
-              amount: int = 4,
-              size: str ='256x256',
-              model:str = 'dall-e-2'):
+def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
+    """
+    Generates a specified number of images based on a given prompt.
 
-    global IMG_API_KEYS
+    Parameters:
+        - prompt (str): The text prompt used to generate the images.
+        - amount (int, optional): The number of images to generate. Defaults to 10.
+        - size (str, optional): The size of the generated images. Must be one of '1024x1024', '512x512', or '256x256'. Defaults to '1024x1024'.
+
+    Returns:
+        - list: A list of URLs pointing to the generated images.
+    """
 
     #список серверов на которых доступно рисование
-    if chat_id not in IMG_API_KEYS or len(IMG_API_KEYS[chat_id]) < 1:
-        return []
+    servers = [x for x in cfg.openai_servers if x[3]]
 
-    # перемешиваем сервера(а точнее ключи)
-    shuffled_servers = IMG_API_KEYS[chat_id][:]
-
+    # перемешиваем сервера
+    shuffled_servers = servers[:]
     random.shuffle(shuffled_servers)
 
-    assert len(shuffled_servers) > 0, 'No openai servers with image_gen=True configured'
+    assert len(servers) > 0, 'No openai servers with image_gen=True configured'
 
     # prompt_tr = translate_image_prompt(prompt)
     prompt_tr = prompt
 
     assert amount <= 10, 'Too many images to gen'
-    assert size in ('1792x1024', '1024x1792', '1024x1024','512x512','256x256'), 'Wrong image size'
+    assert size in ('1024x1024','512x512','256x256'), 'Wrong image size'
 
     my_log.log2(f'gpt_basic:image_gen: {prompt}\n{prompt_tr}')
     results = []
     for server in shuffled_servers:
         if len(results) >= amount:
             break
+        openai.base_url = server[0]
         try:
-            client = openai.OpenAI(api_key=server)
+            client = openai.OpenAI(api_key=server[1])
             response = client.images.generate(
-                model=model,
+                model="dall-e-3",
                 prompt = prompt_tr,
-                n = 1,
+                n = amount,
                 size=size,
-                # quality = 'standard',
+                quality = 'standard',
             )
             if response:
                 results += [x.url for x in response.data]
         except AttributeError:
             pass
         except Exception as error:
-            if 'You exceeded your current quota, please check your plan and billing details.' in str(error) \
-                or 'The OpenAI account associated with this API key has been deactivated.' in str(error):
-                IMG_API_KEYS[chat_id] = [x for x in IMG_API_KEYS[chat_id] if x != server]
-                save_img_api_keys()
-                my_log.log2(f'gpt_basic:image_gen: removed key {server} from user {chat_id} with reason {str(error)}')
-            else:
-                my_log.log2(f'gpt_basic:image_gen: {error}\n\nKey: {server}\nuser: {chat_id}\nPrompt: {prompt}\nReason: {str(error)}')
+            print(error)
+            my_log.log2(f'gpt_basic:image_gen: {error}\n\nServer: {server[0]}')
     return results
 
 
@@ -873,61 +869,6 @@ Translate the following text to language [{lang}], leave it as is if not sure:
 """
     result = ai_instruct(prompt)
     return result
-
-
-def add_image_keys(chat_id_full: str, api_keys):
-    """
-    Add image keys to the IMG_API_KEYS dictionary for the given chat ID.
-
-    Parameters:
-        chat_id_full (str): The full chat ID.
-        api_keys: The API keys to be added.
-
-    Returns:
-        None
-    """
-    global IMG_API_KEYS
-    if chat_id_full not in IMG_API_KEYS:
-        IMG_API_KEYS[chat_id_full] = []
-    IMG_API_KEYS[chat_id_full] += api_keys
-    save_img_api_keys()
-
-
-def save_img_api_keys():
-    """
-    Save the IMG_API_KEYS dictionary to a pickle file.
-
-    This function acquires a lock to ensure thread safety while writing to the file.
-    The dictionary is serialized using the pickle module and saved to the file specified by the path "db/img_api_keys.pkl".
-
-    Parameters:
-    None
-
-    Returns:
-    None
-    """
-    with IMG_API_KEYS_LOCK:
-        with open("db/img_api_keys.pkl", "wb") as f:
-            pickle.dump(IMG_API_KEYS, f)
-
-
-def load_img_api_keys():
-    """
-    Load the image API keys from the "db/img_api_keys.pkl" file.
-    This function updates the global variable IMG_API_KEYS with the loaded values.
-
-    Parameters:
-        None
-
-    Returns:
-        None
-    """
-    global IMG_API_KEYS
-    try:
-        with open("db/img_api_keys.pkl", "rb") as f:
-            IMG_API_KEYS = pickle.load(f)
-    except Exception as error:
-        my_log.log2(f'gpt_basic.load_img_api_keys: {error}')
 
 
 if __name__ == '__main__':

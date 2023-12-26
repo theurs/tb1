@@ -3265,34 +3265,6 @@ def allowed_chatGPT_user(chat_id: int) -> bool:
         return False
 
 
-def remove_system_prompt(answer: str) -> str:
-    """бот иногда(часто) начинает ответ с того что вставляет
-    инфу с подсказкой - дата имя итп в квадратных скобках
-    её надо убирать"""
-
-    st = ('!', '?', '.', ':')
-
-    if answer.strip().startswith(st):
-        answer = answer.strip()[1:].strip()
-
-    for _ in range(5):
-        if answer.strip().startswith('<b>['):
-            index = answer.find("]</b>")
-            if index > 3 and index < 200:
-                answer = answer.strip()[index+1:].strip()
-
-    for _ in range(5):
-        if answer.strip().startswith('['):
-            index = answer.find("]")
-            if index > 3 and index < 200:
-                answer = answer.strip()[index+1:].strip()
-
-    if answer.strip().startswith(st):
-        answer = answer.strip()[1:].strip()
-
-    return answer
-
-
 @bot.message_handler(func=lambda message: True)
 def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
     """Обработчик текстовых сообщений"""
@@ -3627,13 +3599,6 @@ def do_task(message, custom_prompt: str = ''):
             gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
             return
 
-        # Получить строку с локализованной датой
-        formatted_date = datetime.datetime.now().strftime("%d %B %Y %H:%M")
-        from_user_name = ((message.from_user.first_name or '') + ' ' + (message.from_user.last_name or '')).strip()
-        if not from_user_name:
-            from_user_name = message.from_user.username or 'unknown'
-        # message.text = f'[{formatted_date}] [{from_user_name}] {message.text}'
-
         # можно перенаправить запрос к гуглу, но он долго отвечает
         # не локализуем
         if msg.startswith(('гугл ', 'гугл,', 'гугл\n')):
@@ -3679,16 +3644,8 @@ def do_task(message, custom_prompt: str = ''):
                         if chat_id_full not in GEMIMI_TEMP:
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
                         answer = my_gemini.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
-                        answer = remove_system_prompt(answer)
                         flag_gpt_help = False
                         if not answer:
-                            # prev_conersation = my_gemini.chat(tr('Summarize the previous conversation in 200 words.', lang),
-                            #                                   chat_id_full, GEMIMI_TEMP[chat_id_full], update_memory=False)
-                            # answer = gpt_basic.ai_instruct(f'{tr("What was the previous conversation about:", lang)} {prev_conersation}\n\n{tr("Write good answer for new query:", lang)} {message.text}',
-                            #                                GEMIMI_TEMP[chat_id_full])
-
-                            # answer = remove_system_prompt(answer)
-
                             if not answer:
                                 answer = 'Gemini Pro ' + tr('did not answered', lang)
                             else:
@@ -3739,14 +3696,7 @@ def do_task(message, custom_prompt: str = ''):
                         for x in my_bard.REPLIES:
                             if x[0] == answer:
                                 images, links = x[1][:10], x[2]
-                                # links_titles = utils.get_page_names(links)
-                                # text_links = ''
-                                # for link, title in links, links_titles:
-                                #     text_links += f'<a href="{link}">{title}</a>\n'
                                 break
-
-                        # удалить текст в скобках который бот иногда вставляет в начале
-                        answer = remove_system_prompt(answer)
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
@@ -3788,9 +3738,6 @@ def do_task(message, custom_prompt: str = ''):
                             answer = utils.bot_markdown_to_html(answer)
                         my_log.log_echo(message, f'[Claude] {answer}')
                         if answer:
-                            # удалить текст в скобках который бот иногда вставляет в начале
-                            answer = remove_system_prompt(answer)
-
                             try:
                                 reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('claude_chat', message))
@@ -3833,7 +3780,6 @@ def do_task(message, custom_prompt: str = ''):
                                             user_name = user_name, lang=lang,
                                             is_private = is_private, chat_name=chat_name)
                 if resp:
-                    resp = remove_system_prompt(resp)
                     if chat_id_full not in gpt_basic.CHATS:
                         gpt_basic.CHATS[chat_id_full] = []
                     gpt_basic.CHATS[chat_id_full] += [{"role":    'user',

@@ -2246,7 +2246,7 @@ def image_thread(message: telebot.types.Message):
             prompt = prompt[1]
             with ShowAction(message, 'upload_photo'):
                 moderation_flag = gpt_basic.moderation(prompt)
-                images = gpt_basic.image_gen(prompt, chat_id_full, size = '1024x1024', model = 'dall-e-3')
+                images = gpt_basic.image_gen(prompt, chat_id_full, size = '1024x1024')
                 images += my_genimg.gen_images(prompt, moderation_flag)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 if len(medias) > 0:

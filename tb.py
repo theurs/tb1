@@ -3448,18 +3448,18 @@ def do_task(message, custom_prompt: str = ''):
                 COMMAND_MODE[chat_id_full] = ''
                 return
 
-        # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
-        if msg.startswith((tr('замолчи', lang), tr('заткнись', lang))) and (is_private or is_reply):
-            BLOCKS[chat_id_full] = 1
-            bot.reply_to(message, tr('Автоперевод выключен', lang), reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
-            return
-        # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
-        if msg.startswith(tr('вернись', lang)) and (is_private or is_reply):
-            BLOCKS[chat_id_full] = 0
-            bot.reply_to(message, tr('Автоперевод включен', lang), reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
-            return
+        # # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
+        # if msg.startswith((tr('замолчи', lang), tr('заткнись', lang))) and (is_private or is_reply):
+        #     BLOCKS[chat_id_full] = 1
+        #     bot.reply_to(message, tr('Автоперевод выключен', lang), reply_markup=get_keyboard('hide', message))
+        #     my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
+        #     return
+        # # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
+        # if msg.startswith(tr('вернись', lang)) and (is_private or is_reply):
+        #     BLOCKS[chat_id_full] = 0
+        #     bot.reply_to(message, tr('Автоперевод включен', lang), reply_markup=get_keyboard('hide', message))
+        #     my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
+        #     return
         # если сообщение начинается на 'забудь' то стираем историю общения GPT
         if msg.startswith(tr('забудь', lang)) and (is_private or is_reply):
             if CHAT_MODE[chat_id_full] == 'bard':

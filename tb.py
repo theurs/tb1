@@ -3763,11 +3763,11 @@ def do_task(message, custom_prompt: str = ''):
                     resp = gpt_basic.ai_instruct(message.text)
                 else:
                     if chat_name:
-                        resp = gpt_basic.chat(chat_id_full, message.text,
+                        resp = gpt_basic.chat(chat_id_full, helped_query,
                                             user_name = user_name, lang=lang,
                                             is_private = False, chat_name=chat_name)
                     else:
-                        resp = gpt_basic.chat(chat_id_full, message.text,
+                        resp = gpt_basic.chat(chat_id_full, helped_query,
                                             user_name = user_name, lang=lang,
                                             is_private = is_private, chat_name=chat_name)
                 if resp:

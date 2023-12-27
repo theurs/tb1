@@ -3645,7 +3645,8 @@ def do_task(message, custom_prompt: str = ''):
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
                         if message.chat.title:
-                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang}".]'
+                            lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
+                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}".]'
                         else:
                             hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}".]'
                         answer = my_gemini.chat(f'{hidden_text} {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])

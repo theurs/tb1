@@ -3623,6 +3623,15 @@ def do_task(message, custom_prompt: str = ''):
                 action = 'typing'
 
 
+            # подсказка для ботов что бы понимали где и с кем общаются
+            formatted_date = datetime.datetime.now().strftime('%d, %b %Y %H:%M:%S')
+            if message.chat.title:
+                lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
+                hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date in Asia/Vladivostok "{formatted_date}".]'
+            else:
+                hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date in Asia/Vladivostok "{formatted_date}".]'
+            helped_query = f'{hidden_text} {message.text}'
+
             # если активирован режим общения с Gemini Pro
             if CHAT_MODE[chat_id_full] == 'gemini' and not FIRST_DOT:
                 if len(msg) > my_gemini.MAX_REQUEST:
@@ -3634,13 +3643,8 @@ def do_task(message, custom_prompt: str = ''):
                     try:
                         if chat_id_full not in GEMIMI_TEMP:
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
-                        formatted_date = datetime.datetime.now().strftime('%d, %b %Y %H:%M:%S')
-                        if message.chat.title:
-                            lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date in Asia/Vladivostok "{formatted_date}".]'
-                        else:
-                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date in Asia/Vladivostok "{formatted_date}".]'
-                        answer = my_gemini.chat(f'{hidden_text} {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])
+
+                        answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full])
                         flag_gpt_help = False
                         if not answer:
                             if not answer:
@@ -3677,18 +3681,9 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
                     return
-                # if chat_id_full not in my_gemini.ROLES:
-                #     my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
-                # с ролями бард как то странно работает
-                # message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
                 with ShowAction(message, action):
                     try:
-                        # имя пользователя если есть или ник
-                        user_name = message.from_user.first_name or message.from_user.username or ''
-                        chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
-                        if chat_name:
-                            user_name = chat_name
-                        answer = my_bard.chat(message.text, chat_id_full, user_name = user_name, lang = lang, is_private = is_private)
+                        answer = my_bard.chat(helped_query, chat_id_full, user_name = '', lang = '', is_private = is_private)
 
                         for x in my_bard.REPLIES:
                             if x[0] == answer:
@@ -3724,13 +3719,10 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для Клода:", lang)} {len(msg)} {tr("из", lang)} {my_claude.MAX_QUERY}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для Клода: {len(msg)} из {my_claude.MAX_QUERY}')
                     return
-                # if chat_id_full not in my_gemini.ROLES:
-                #     my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
-                # message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
-                # message.text = f'[{formatted_date}] [{from_user_name}] [answer in a super short and objective way]: {message.text}'
+
                 with ShowAction(message, action):
                     try:
-                        answer = my_claude.chat(message.text, chat_id_full)
+                        answer = my_claude.chat(helped_query, chat_id_full)
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer = utils.bot_markdown_to_html(answer)
                         my_log.log_echo(message, f'[Claude] {answer}')

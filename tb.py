@@ -88,6 +88,9 @@ OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
 # для запоминания ответов на команду /sum
 SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
 
+# {chat_id:role} какие роли - дополнительные инструкции в чате
+ROLES = my_dic.PersistentDict('db/roles.pkl')
+
 # в каких чатах активирован режим суперчата, когда бот отвечает на все реплики всех участников
 # {chat_id:0|1}
 SUPER_CHAT = my_dic.PersistentDict('db/super_chat.pkl')
@@ -128,10 +131,6 @@ DUMP_TRANSLATION_LOCK = threading.Lock()
 # были отправлены клеинтом по кускам {id:[messages]}
 # ловим сообщение и ждем полсекунды не прилетит ли еще кусок
 MESSAGE_QUEUE = {}
-
-# в каких чатах был активирован режим без цензуры для Gemini
-# {id:True/False}
-GEMINI_INJECT = my_dic.PersistentDict('db/gemini_inject.pkl')
 
 # настройки температуры для gemini {chat_id:temp}
 GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
@@ -349,11 +348,6 @@ def gemini_reset(chat_id: str):
     Parameters:
     - chat_id (str): The ID of the chat for which the Gemini state should be reset.
     """
-    # if chat_id in GEMINI_INJECT:
-    #     if GEMINI_INJECT[chat_id]:
-    #         my_gemini.reset(chat_id)
-    #         my_gemini.inject_explicit_content(chat_id)
-    #         return
     my_gemini.reset(chat_id)
 
 
@@ -1551,80 +1545,82 @@ def config(message: telebot.types.Message):
         print(error)
 
 
-# @bot.message_handler(commands=['style'])
-# def change_mode(message: telebot.types.Message):
-#     """
-#     Handles the 'style' command from the bot. Changes the prompt for the GPT model
-#     based on the user's input. If no argument is provided, it displays the current
-#     prompt and the available options for changing it.
+@bot.message_handler(commands=['style'])
+def change_mode(message: telebot.types.Message):
+    """
+    Handles the 'style' command from the bot. Changes the prompt for the GPT model
+    based on the user's input. If no argument is provided, it displays the current
+    prompt and the available options for changing it.
 
-#     Parameters:
-#         message (telebot.types.Message): The message object received from the user.
+    Parameters:
+        message (telebot.types.Message): The message object received from the user.
 
-#     Returns:
-#         None
-#     """
-#     # не обрабатывать команды к другому боту /cmd@botname args
-#     if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-#     else: return
+    Returns:
+        None
+    """
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
 
-#     my_log.log_echo(message)
+    my_log.log_echo(message)
 
-#     chat_id_full = get_topic_id(message)
-#     lang = get_lang(chat_id_full, message)
-#     check_blocked_user(chat_id_full)
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    check_blocked_user(chat_id_full)
 
-#     # в каждом чате свой собственный промт
-#     if chat_id_full not in gpt_basic.PROMPTS:
-#         # по умолчанию формальный стиль
-#         gpt_basic.PROMPTS[chat_id_full] = [{"role": "system", "content": tr(utils.gpt_start_message1, lang)}]
-#         my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
+    if chat_id_full not in ROLES:
+        ROLES[chat_id_full] = ''
 
-#     arg = message.text.split(maxsplit=1)[1:]
-#     if arg:
-#         if arg[0] == '1':
-#             GEMINI_INJECT[chat_id_full] = False
-#             new_prompt = tr(utils.gpt_start_message1, lang)
-#         elif arg[0] == '2':
-#             GEMINI_INJECT[chat_id_full] = False
-#             new_prompt = tr(utils.gpt_start_message2, lang)
-#         elif arg[0] == '3':
-#             new_prompt = tr(utils.gpt_start_message3, lang)
-#             GEMINI_INJECT[chat_id_full] = True
-#             # my_gemini.inject_explicit_content(chat_id_full)
-#         elif arg[0] == '4':
-#             new_prompt = tr(utils.gpt_start_message4, lang)
-#             GEMINI_INJECT[chat_id_full] = True
-#             # my_gemini.inject_explicit_content(chat_id_full)
-#         else:
-#             # GEMINI_INJECT[chat_id_full] = False
-#             new_prompt = arg[0]
-#         gemini_reset(chat_id_full)
-#         gpt_basic.PROMPTS[chat_id_full] =  [{"role": "system", "content": new_prompt}]
-#         my_gemini.ROLES[chat_id_full] = new_prompt
-#         msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
-#         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
-#         my_log.log_echo(message, msg)
-#     else:
-#         msg = f"""{tr('Текущий стиль', lang)}
+    DEFAULT_ROLES = [tr('отвечай суперкоротко', lang),
+                     tr('отвечай максимально развернуто', lang),
+                     tr('отвечай всегда на английском языке', lang),
+                     tr('всегда переводи всё на английский язык вместо того что бы отвечать', lang),
+                     tr('отвечай так грубо как только можешь', lang),]
 
-# `{gpt_basic.PROMPTS[chat_id_full][0]['content']}`
+    arg = message.text.split(maxsplit=1)[1:]
+    if arg:
+        if arg[0] == '1':
+            new_prompt = DEFAULT_ROLES[0]
+        elif arg[0] == '2':
+            new_prompt = DEFAULT_ROLES[1]
+        elif arg[0] == '3':
+            new_prompt = DEFAULT_ROLES[2]
+        elif arg[0] == '4':
+            new_prompt = DEFAULT_ROLES[3]
+        elif arg[0] == '5':
+            new_prompt = DEFAULT_ROLES[4]
+        elif arg[0] == '0':
+            new_prompt = ''
+        else:
+            new_prompt = arg[0]
+        ROLES[chat_id_full] = new_prompt
+        msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, msg)
+    else:
+        msg = f"""{tr('Текущий стиль', lang)}
 
-# {tr('Меняет роль бота, строку с указаниями что и как говорить.', lang)}
+`/style {ROLES[chat_id_full] or tr('нет никакой роли', lang)}`
 
-# `/style <1|2|3|4|{tr('свой текст', lang)}>`
+{tr('Меняет роль бота, строку с указаниями что и как говорить.', lang)}
 
-# {tr('1 - ', lang)} `{tr(utils.gpt_start_message1, lang)}`
+`/style <0|1|2|3|4|{tr('свой текст', lang)}>`
 
-# {tr('2 - ', lang)} `{tr(utils.gpt_start_message2, lang)}`
+0 - {tr('сброс, нет никакой роли', lang)} `/style 0`
 
-# {tr('3 - ', lang)} `{tr(utils.gpt_start_message3, lang)}`
+1 - `/style {DEFAULT_ROLES[0]}`
 
-# {tr('4 - ', lang)} `{tr(utils.gpt_start_message4, lang)}`
-#     """
-#         # COMMAND_MODE[chat_id_full] = 'style'
-#         bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
-#         my_log.log_echo(message, msg)
+2 - `/style {DEFAULT_ROLES[1]}`
+
+3 - `/style {DEFAULT_ROLES[2]}`
+
+4 - `/style {DEFAULT_ROLES[3]}`
+
+5 - `/style {DEFAULT_ROLES[4]}`
+    """
+
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
+        my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['mem'])
@@ -3627,9 +3623,15 @@ def do_task(message, custom_prompt: str = ''):
             formatted_date = datetime.datetime.now().strftime('%d, %b %Y %H:%M:%S')
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date in Asia/Vladivostok "{formatted_date}".]'
+                if chat_id_full in ROLES and ROLES[chat_id_full]:
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date in Asia/Vladivostok "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
+                else:
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date in Asia/Vladivostok "{formatted_date}".]'
             else:
-                hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date in Asia/Vladivostok "{formatted_date}".]'
+                if chat_id_full in ROLES and ROLES[chat_id_full]:
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date in Asia/Vladivostok "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
+                else:
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date in Asia/Vladivostok "{formatted_date}".]'
             helped_query = f'{hidden_text} {message.text}'
 
             # если активирован режим общения с Gemini Pro

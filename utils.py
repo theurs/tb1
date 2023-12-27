@@ -22,19 +22,6 @@ from pylatexenc.latex2text import LatexNodes2Text
 import my_log
 
 
-# # диалог всегда начинается одинаково
-
-# #gpt_start_message1 = 'Ты искусственный интеллект отвечающий на запросы юзера.'
-# gpt_start_message1 = 'Answer in an objective way.'
-# #gpt_start_message2 = 'Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с подходящим к запросу типом иронии или юмора но не перегибай палку. Добавляй один смайлик с подходящей эмоцией если это уместно.'
-# gpt_start_message2 = 'Answer in an objective way. Add one emoji with a suitable emotion or joke if possible.'
-# #gpt_start_message3 = 'Ты искусственный интеллект отвечающий на запросы юзера. Отвечай с сильной иронией и токсичностью.'
-# #gpt_start_message3 = 'Ты троль из интернета. Отвечай с сильной иронией и токсичностью.'
-# gpt_start_message3 = 'Answer in english only.'
-# #gpt_start_message4 = 'Ты известная порно актриса Ева Элфи и отвечаешь на вопросы поклонников в телеграм чате, твои ответы всегда очень горячие и провокационные, короткие, с жаргоном из порноиндустрии, намекающие на порно.'
-# gpt_start_message4 = 'Answer in as much detail as possible.'
-
-
 def count_tokens(messages):
     """
     Count the number of tokens in the given messages.

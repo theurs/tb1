@@ -3449,9 +3449,9 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'name':
                     message.text = f'/name {message.text}'
                     send_name(message)
-                elif COMMAND_MODE[chat_id_full] == 'style':
-                    message.text = f'/style {message.text}'
-                    change_mode(message)
+                # elif COMMAND_MODE[chat_id_full] == 'style':
+                #     message.text = f'/style {message.text}'
+                #     change_mode(message)
                 elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
@@ -3635,20 +3635,17 @@ def do_task(message, custom_prompt: str = ''):
                     bot.reply_to(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                     my_log.log_echo(message, f'Слишком длинное сообщение для Gemini: {len(msg)} из {my_gemini.MAX_REQUEST}')
                     return
-                # message.text = f'[{formatted_date}] [{from_user_name}] [answer in a short and objective way]: {message.text}'
-                # if chat_id_full not in my_gemini.ROLES:
-                #     my_gemini.ROLES[chat_id_full] = tr(utils.gpt_start_message1, lang)
-                # message.text = f'[{formatted_date}] [{from_user_name}] [{my_gemini.ROLES[chat_id_full]}]: {message.text}'
+
                 with ShowAction(message, action):
                     try:
                         if chat_id_full not in GEMIMI_TEMP:
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
-
+                        formatted_date = datetime.datetime.now().strftime('%d, %b %Y %H:%M:%S')
                         if message.chat.title:
                             lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}".]'
+                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date in Paris now "{formatted_date}".]'
                         else:
-                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}".]'
+                            hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date in Paris now "{formatted_date}".]'
                         answer = my_gemini.chat(f'{hidden_text} {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])
                         flag_gpt_help = False
                         if not answer:

@@ -107,9 +107,9 @@
 
 6. Создайте файл cfg.py и добавьте в него строку
 ```
-# адрес локального сервера если есть
-local_server_url = ''
-# local_server_url = 'http://172.28.1.5:8081/bot{0}/{1}'
+# [urs, port, addr] | None
+# webhook = ["https://mydomain.com/bot", 33333, '0.0.0.0']
+webhook = None
 
 # описание бота, которое отображается в чате с ботом, если чат пуст. До 512 символов.
 bot_description = """Free chat bot

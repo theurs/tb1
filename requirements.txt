@@ -8,6 +8,7 @@ duckduckgo_search
 edge_tts
 # EdgeGPT
 fake_useragent
+flask
 fuzzywuzzy
 google
 gTTS

@@ -42,12 +42,6 @@ import utils
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
-# if cfg.local_server_url:
-#     try:
-#         bot.log_out()
-#     except Exception as bot_logout_error:
-#         my_log.log2(str(bot_logout_error))
-#     apihelper.API_URL = cfg.local_server_url
 
 _bot_name = bot.get_me().username
 BOT_ID = bot.get_me().id
@@ -3825,7 +3819,37 @@ def main():
     
     my_gemini.load_memory_from_file()
 
-    bot.polling(timeout=90, long_polling_timeout=90)
+
+    try:
+        webhook = cfg.webhook
+    except AttributeError:
+        webhook = None
+
+    if webhook:
+        from flask import Flask, request
+
+        url = webhook[0]
+        port = webhook[1]
+        addr = webhook[2]
+
+        server = Flask(__name__)
+
+        @server.route("/bot", methods=['POST'])
+        def getMessage():
+            bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+            return "!", 200
+        @server.route("/")
+        def webhook():
+            bot.remove_webhook()
+            bot.set_webhook(url=url)
+            return "?", 200
+
+        server.run(host=addr, port=port)
+
+        bot.polling()
+    else:
+        bot.remove_webhook()
+        bot.polling(timeout=90, long_polling_timeout=90)
 
 
 if __name__ == '__main__':

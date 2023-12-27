@@ -1604,7 +1604,7 @@ def change_mode(message: telebot.types.Message):
 
 {tr('Меняет роль бота, строку с указаниями что и как говорить.', lang)}
 
-`/style <0|1|2|3|4|{tr('свой текст', lang)}>`
+`/style <0|1|2|3|4|5|{tr('свой текст', lang)}>`
 
 0 - {tr('сброс, нет никакой роли', lang)} `/style 0`
 

@@ -135,7 +135,7 @@ GEMINI_INJECT = my_dic.PersistentDict('db/gemini_inject.pkl')
 
 # настройки температуры для gemini {chat_id:temp}
 GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
-GEMIMI_TEMP_DEFAULT = 0.1
+GEMIMI_TEMP_DEFAULT = 0.2
 
 # tts-openai limiter. не давать больше чем 10000 символов озвучивания через openai tts в одни руки
 # {id:limit}

@@ -204,6 +204,9 @@ def ai(q: str, mem = [], temperature: float = 0.1) -> str:
     Returns:
         str: The generated response from the AI model.
     """
+    # bugfix температура на самом деле от 0 до 1 а не от 0 до 2
+    temperature = round(temperature / 2, 2)
+    
     mem_ = {"contents": mem + [{"role": "user", "parts": [{"text": q}]}],
             "safetySettings": [
                 {

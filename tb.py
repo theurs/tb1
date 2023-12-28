@@ -1572,7 +1572,7 @@ def change_mode(message: telebot.types.Message):
     is_private = message.chat.type == 'private'
     
     if not is_private and not is_admin_member(message):
-        bot.reply_to(tr('У вас нет прав на изменение роли бота здесь.', lang))
+        bot.reply_to(message, tr('У вас нет прав на изменение роли бота здесь.', lang))
         return
 
     if chat_id_full not in ROLES:

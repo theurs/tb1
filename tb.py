@@ -450,6 +450,8 @@ def is_admin_member(message: telebot.types.Message):
     """Checks if the user is an admin member of the chat."""
     if not message:
         return False
+    if message.chat.id in cfg.admins:
+        return True
     chat_id = message.chat.id
     user_id = message.from_user.id
     member = bot.get_chat_member(chat_id, user_id).status.lower()
@@ -1567,6 +1569,11 @@ def change_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     check_blocked_user(chat_id_full)
+    is_private = message.chat.type == 'private'
+    
+    if not is_private and not is_admin_member(message):
+        bot.reply_to(tr('У вас нет прав на изменение роли бота здесь.', lang))
+        return
 
     if chat_id_full not in ROLES:
         ROLES[chat_id_full] = ''

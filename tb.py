@@ -3819,6 +3819,7 @@ def main():
     # set_default_commands()
     
     my_gemini.load_memory_from_file()
+    my_gemini.run_proxy_pool_daemon()
 
 
     try:

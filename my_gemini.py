@@ -529,6 +529,8 @@ def test_proxy_for_gemini(proxy: str = '') -> bool:
         - The 'PROXY_POOL_REMOVED' and 'PROXY_POOL' variables are assumed to be defined elsewhere in the code.
         - The 'time' module is assumed to be imported.
     """
+    if proxy in PROXY_POOL_REMOVED:
+        return False
     query = '1+1= answer very short'
     start_time = time.time()
     answer = ai(query, proxy_str=proxy)
@@ -559,10 +561,28 @@ def get_proxies():
         data = scrapper.getProxies()
         proxies = [f'http://{x.ip}:{x.port}' for x in data.proxies]
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+        p_socks5h = 'https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/socks5.txt'
+        p_socks4 = 'https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/socks4.txt'
+        p_http = 'https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt'
+
+        try:
+            p_socks5h = requests.get(p_socks5h, timeout=60).text.split('\n')
+            p_socks5h = [f'socks5h://{x}' for x in p_socks5h if x]
+            p_socks4 = requests.get(p_socks4, timeout=60).text.split('\n')
+            p_socks4 = [f'socks4://{x}' for x in p_socks4 if x]
+            p_http = requests.get(p_http, timeout=60).text.split('\n')
+            p_http = [f'http://{x}' for x in p_http if x]
+            proxies += p_socks5h + p_socks4 + p_http
+            random.shuffle(proxies)
+        except Exception as error:
+            my_log.log2(f'my_gemini:get_proxies: {error}')
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
             futures = [executor.submit(test_proxy_for_gemini, proxy) for proxy in proxies]
             for future in futures:
                 future.result()
+                if len(PROXY_POOL) >= MAX_PROXY_POOL:
+                    break
 
     except Exception as error:
         my_log.log2(f'proxy:get_proxies: {error}')

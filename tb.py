@@ -1683,6 +1683,34 @@ def change_mode(message: telebot.types.Message):
         my_log.log_echo(message, msg)
 
 
+@bot.message_handler(commands=['style2'])
+def change_mode2(message: telebot.types.Message):
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    if message.from_user.id not in cfg.admins:
+        bot.reply_to(message, tr('Access denied.', lang), reply_markup=get_keyboard('hide', message))
+        return
+
+    try:
+        arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
+        arg2 = message.text.split(maxsplit=3)[3]
+    except:
+        bot.reply_to(message, tr('Usage: /style2 <chat_id_full!> <new_style>'))
+        return
+
+    ROLES[arg1] = arg2
+    msg = tr('[Новая роль установлена]', lang) + ' `' + arg2 + '` ' + tr('для чата', lang) + ' `' + arg1 + '`'
+    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
+
+
 @bot.message_handler(commands=['mem'])
 def send_debug_history(message: telebot.types.Message):
     """

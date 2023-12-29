@@ -175,6 +175,10 @@ bard_tokens = ['xxx',
 #pics_group_url = ''
 pics_group = xxx
 pics_group_url = 'https://t.me/xxx'
+# id телеграм группы куда скидываются все скаченные ролики с ютуба
+#videos_group = 0
+videos_group = xxxx
+videos_group_url = 'https://t.me/xxx'
 
 
 # размер буфера для поиска в гугле, чем больше тем лучше ищет и отвечает

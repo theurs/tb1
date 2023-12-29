@@ -244,7 +244,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     text = text.replace('\n\n','\n')  
 
     # Создаем временный файл для записи аудио
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f: 
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=True) as f: 
         filename = f.name 
 
     # Запускаем edge-tts для генерации аудио

@@ -67,9 +67,12 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     with sr.AudioFile(audio_file2) as source:
         audio = google_recognizer.record(source)  # read the entire audio file
 
-    text = google_recognizer.recognize_google(audio, language=language)
+    try:
+        os.unlink(audio_file2)
+    except Exception as unknown_error:
+        my_log.log2(f'my_stt:stt_google:{unknown_error}')
 
-    os.remove(audio_file2)
+    text = google_recognizer.recognize_google(audio, language=language)
 
     # хак для голосовых команд обращенных к гуглу и бингу
     # воск их записывает по-русски а гугл по-английски

@@ -50,6 +50,10 @@ BOT_ID = bot.get_me().id
 # телеграм группа для отправки сгенерированных картинок
 pics_group = cfg.pics_group
 pics_group_url = cfg.pics_group_url
+# телеграм группа для отправки сгенерированных музыки с ютуба
+videos_group = cfg.videos_group
+videos_group_url = cfg.videos_group_url
+
 
 # до 40 одновременных потоков для чата с гпт
 semaphore_talks = threading.Semaphore(40)
@@ -694,7 +698,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
         if cfg.pics_group_url:
             button_pics = telebot.types.InlineKeyboardButton(tr("🖼️Галерея", lang),  url = cfg.pics_group_url)
-            markup.add(button_pics)
+            if cfg.videos_group_url:
+                button_video = telebot.types.InlineKeyboardButton(tr("🎧Музыка", lang),  url = cfg.videos_group_url)
+                markup.add(button_pics, button_video)
+            else:
+                markup.add(button_pics)
+
 
         button = telebot.types.InlineKeyboardButton(tr('🔍История ChatGPT', lang), callback_data='chatGPT_memory_debug')
         markup.add(button)
@@ -852,28 +861,69 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         caption_ = caption
                     caption_ += f'\n<a href = "https://youtu.be/{song_id}">Посмотреть на ютубе</a>'
 
-                    try:
-                        m = bot.send_audio(chat_id=message.chat.id, audio=data,
-                                        reply_to_message_id = message.message_id,
-                                        reply_markup = get_keyboard('translate', message),
-                                        caption = caption_,
-                                        title = caption,
-                                        thumbnail=thumb_data,
-                                        disable_notification=True,
-                                        parse_mode='HTML')
-                    except Exception as send_ytb_audio_error:
-                        my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
-                        m = bot.send_audio(chat_id=message.chat.id, audio=data,
-                                        reply_to_message_id = message.message_id,
-                                        reply_markup = get_keyboard('translate', message),
-                                        caption = caption,
-                                        title = caption,
-                                        thumbnail=thumb_data,
-                                        disable_notification=True,
-                                        parse_mode='HTML')
+                    if videos_group:
+                        try:
+                            m = bot.send_audio(chat_id=videos_group, audio=data,
+                                            reply_markup = get_keyboard('translate', message),
+                                            caption = caption_,
+                                            title = caption,
+                                            thumbnail=thumb_data,
+                                            disable_notification=True,
+                                            parse_mode='HTML')
+                            YTB_CACHE[song_id] = m.message_id
+                            YTB_CACHE_FROM[song_id] = m.chat.id
+                        except Exception as send_ytb_audio_error:
+                            my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
+                            m = bot.send_audio(chat_id=videos_group, audio=data,
+                                            reply_markup = get_keyboard('translate', message),
+                                            caption = caption, # другой вариант
+                                            title = caption,
+                                            thumbnail=thumb_data,
+                                            disable_notification=True,
+                                            parse_mode='HTML')
+                            YTB_CACHE[song_id] = m.message_id
+                            YTB_CACHE_FROM[song_id] = m.chat.id
+                        if song_id in YTB_CACHE:
+                            try:
+                                bot.copy_message(chat_id=message.chat.id,
+                                                from_chat_id=YTB_CACHE_FROM[song_id],
+                                                message_id = YTB_CACHE[song_id],
+                                                reply_to_message_id = message.message_id,
+                                                reply_markup = get_keyboard('translate', message),
+                                                disable_notification=True,
+                                                parse_mode='HTML')
+                            except Exception as copy_message_error:
+                                my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
+                        else:
+                            bot.reply_to(message, tr('Не удалось скачать это видео.', lang))
+                            my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
+                            return
+                    else:
+                        try:
+                            m = bot.send_audio(chat_id=message.chat.id, audio=data,
+                                            reply_to_message_id = message.message_id,
+                                            reply_markup = get_keyboard('translate', message),
+                                            caption = caption_,
+                                            title = caption,
+                                            thumbnail=thumb_data,
+                                            disable_notification=True,
+                                            parse_mode='HTML')
+                            YTB_CACHE[song_id] = m.message_id
+                            YTB_CACHE_FROM[song_id] = m.chat.id
 
-                    YTB_CACHE[song_id] = m.message_id
-                    YTB_CACHE_FROM[song_id] = m.chat.id
+                        except Exception as send_ytb_audio_error:
+                            my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
+                            m = bot.send_audio(chat_id=message.chat.id, audio=data,
+                                            reply_to_message_id = message.message_id,
+                                            reply_markup = get_keyboard('translate', message),
+                                            caption = caption, # другой вариант
+                                            title = caption,
+                                            thumbnail=thumb_data,
+                                            disable_notification=True,
+                                            parse_mode='HTML')
+                            YTB_CACHE[song_id] = m.message_id
+                            YTB_CACHE_FROM[song_id] = m.chat.id
+
                     my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}\n{caption_}')
                 except Exception as send_ytb_error:
                     my_log.log2(str(send_ytb_error))

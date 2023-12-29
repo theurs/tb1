@@ -1702,7 +1702,7 @@ def change_mode2(message: telebot.types.Message):
         arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
         arg2 = message.text.split(maxsplit=3)[3]
     except:
-        bot.reply_to(message, tr('Usage: /style2 <chat_id_full!> <new_style>'))
+        bot.reply_to(message, tr('Usage: /style2 <chat_id_full!> <new_style>', lang))
         return
 
     ROLES[arg1] = arg2

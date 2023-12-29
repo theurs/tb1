@@ -577,12 +577,10 @@ def get_proxies():
         except Exception as error:
             my_log.log2(f'my_gemini:get_proxies: {error}')
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
             futures = [executor.submit(test_proxy_for_gemini, proxy) for proxy in proxies]
             for future in futures:
                 future.result()
-                if len(PROXY_POOL) >= MAX_PROXY_POOL:
-                    break
 
     except Exception as error:
         my_log.log2(f'proxy:get_proxies: {error}')

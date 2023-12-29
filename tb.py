@@ -830,6 +830,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 except Exception as unlink_error:
                     my_log.log2(f'tb:callback_inline_thread:download_tiktok:{unlink_error}\n\nunlink {tmp}')
         elif call.data.startswith('youtube '):
+            global YTB_CACHE
             song_id = call.data[8:]
             caption = YTB_DB[song_id]
             thumb0 = f'https://img.youtube.com/vi/{song_id}/0.jpg'
@@ -849,6 +850,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         return
                     except Exception as copy_message_error:
                         my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
+                        YTB_CACHE = [x for x in YTB_CACHE if x != song_id]
                 data = my_ytb.download_youtube(song_id)
                 try:
                     video_data = my_ytb.get_video_info(song_id)
@@ -894,6 +896,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                                 parse_mode='HTML')
                             except Exception as copy_message_error:
                                 my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
+                                YTB_CACHE = [x for x in YTB_CACHE if x != song_id]
                         else:
                             bot.reply_to(message, tr('Не удалось скачать это видео.', lang))
                             my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')

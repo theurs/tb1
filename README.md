@@ -61,6 +61,7 @@
 /stats - статистика бота
 
 /style2 - изменить стиль бота для заданного чата (пример: /style2 [id] [topic id] новая роль)
+/reset_gemini2 - очистить историю чата Gemini Pro в другом чате Usage: /reset_gemini2 <chat_id_full!>
 
 
 ![Скриншоты](pics/README.md)

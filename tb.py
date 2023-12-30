@@ -1683,6 +1683,30 @@ def change_mode(message: telebot.types.Message):
         my_log.log_echo(message, msg)
 
 
+@bot.message_handler(commands=['reset_gemini2'])
+def reset_gemini2(message: telebot.types.Message):
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    if message.from_user.id not in cfg.admins:
+        bot.reply_to(message, tr('Access denied.', lang), reply_markup=get_keyboard('hide', message))
+        return
+
+    try:
+        arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
+        my_gemini.reset(arg1)
+        bot.reply_to(message, f'{tr("История Gemini Pro в чате очищена", lang)} {arg1}')
+    except:
+        bot.reply_to(message, tr('Usage: /reset_gemini2 <chat_id_full!>', lang))
+        return
+
+
 @bot.message_handler(commands=['style2'])
 def change_mode2(message: telebot.types.Message):
     # не обрабатывать команды к другому боту /cmd@botname args

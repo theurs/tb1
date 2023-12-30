@@ -727,9 +727,9 @@ def run_proxy_pool_daemon():
             pass
         thread = threading.Thread(target=update_proxy_pool_daemon)
         thread.start()
-        # Waiting until at least 1 proxy is found
-        while len(PROXY_POOL) < 1:
-            time.sleep(1)
+        # # Waiting until at least 1 proxy is found
+        # while len(PROXY_POOL) < 1:
+        #     time.sleep(1)
 
 
 if __name__ == '__main__':

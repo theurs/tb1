@@ -861,7 +861,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         caption_ = utils.bot_markdown_to_html(caption_)
                     else:
                         caption_ = caption
-                    caption_ += f'\n<a href = "https://youtu.be/{song_id}">Посмотреть на ютубе</a>'
+                    caption_ += f'\n<a href = "https://youtu.be/{song_id}">{tr("Посмотреть на ютубе", lang)}</a>'
 
                     if videos_group:
                         try:

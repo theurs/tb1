@@ -608,6 +608,7 @@ def test_proxy_for_gemini(proxy: str = '') -> bool:
         if answer and answer not in PROXY_POOL_REMOVED:
             if total_time < 5:
                 PROXY_POOL.append(proxy)
+                PROXY_POLL_SPEED[proxy] = total_time
                 save_proxy_pool()
 
 

@@ -301,13 +301,11 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                         result = response.json()['candidates'][0]['content']['parts'][0]['text']
                         end_time = time.time()
                         total_time = end_time - start_time
-                        if total_time > 40 or (len(result) < 600 and total_time > 10):
+                        if total_time > 50:
                             remove_proxy(proxy)
                         else:
-                            # запоминаем как быстро дает ответ через эту прокси для короткого запроса
-                            if len(result) < 600 and total_time < 10 or total_time < 20:
-                                PROXY_POLL_SPEED[proxy] = total_time
-                                save_proxy_pool()
+                            PROXY_POLL_SPEED[proxy] = total_time
+                            save_proxy_pool()
                         break
                     else:
                         PROXY_POOL = [x for x in PROXY_POOL if x != proxy]

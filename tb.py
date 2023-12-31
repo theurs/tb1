@@ -1706,6 +1706,9 @@ def gemini_proxies(message: telebot.types.Message):
     for x in proxies:
         msg += f'{[x]} [{round(my_gemini.PROXY_POLL_SPEED[x], 2)}]\n'
 
+    if not msg:
+        msg = tr('Ничего нет', lang)
+
     bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
     my_log.log2(msg)
 

@@ -1704,9 +1704,9 @@ def gemini_proxies(message: telebot.types.Message):
     msg = ''
 
     for x in proxies:
-        msg += f'{[x]} [{my_gemini.PROXY_POLL_SPEED[x]}]\n'
+        msg += f'{[x]} [{round(my_gemini.PROXY_POLL_SPEED[x], 2)}]\n'
 
-    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
+    bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
     my_log.log2(msg)
 
 

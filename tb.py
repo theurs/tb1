@@ -1683,6 +1683,33 @@ def change_mode(message: telebot.types.Message):
         my_log.log_echo(message, msg)
 
 
+@bot.message_handler(commands=['gemini_proxies'])
+def gemini_proxies(message: telebot.types.Message):
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    if message.from_user.id not in cfg.admins:
+        bot.reply_to(message, tr('Access denied.', lang), reply_markup=get_keyboard('hide', message))
+        return
+    
+    proxies = my_gemini.PROXY_POOL[:]
+    my_gemini.sort_proxies_by_speed(proxies)
+    
+    msg = ''
+    
+    for x in proxies:
+        msg += f'{[x]} [{my_gemini.PROXY_POLL_SPEED[x]}]\n'
+    
+    bot.reply_to(message, msg)
+    my_log.log2(msg)
+
+
 @bot.message_handler(commands=['reset_gemini2'])
 def reset_gemini2(message: telebot.types.Message):
     # не обрабатывать команды к другому боту /cmd@botname args

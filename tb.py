@@ -3561,7 +3561,7 @@ def do_task(message, custom_prompt: str = ''):
             bot_name_used = True
             message.text = message.text[len(f'{bot_name2} '):].strip()
 
-        
+        message.text = message.text.strip()
         msg = message.text.lower()
 
         # если предварительно была введена какая то команда то этот текст надо отправить в неё

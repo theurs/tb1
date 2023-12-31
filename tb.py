@@ -1697,16 +1697,16 @@ def gemini_proxies(message: telebot.types.Message):
     if message.from_user.id not in cfg.admins:
         bot.reply_to(message, tr('Access denied.', lang), reply_markup=get_keyboard('hide', message))
         return
-    
+
     proxies = my_gemini.PROXY_POOL[:]
     my_gemini.sort_proxies_by_speed(proxies)
-    
+
     msg = ''
-    
+
     for x in proxies:
         msg += f'{[x]} [{my_gemini.PROXY_POLL_SPEED[x]}]\n'
-    
-    bot.reply_to(message, msg)
+
+    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
     my_log.log2(msg)
 
 

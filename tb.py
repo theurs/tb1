@@ -3607,7 +3607,7 @@ def do_task(message, custom_prompt: str = ''):
         #     my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
         #     return
         # если сообщение начинается на 'забудь' то стираем историю общения GPT
-        if msg.startswith(tr('забудь', lang)) and (is_private or is_reply):
+        if msg.startswith(tr('забудь', lang)) and (is_private or is_reply) or bot_name_used and msg.startswith(tr('забудь', lang)):
             if CHAT_MODE[chat_id_full] == 'bard':
                 my_bard.reset_bard_chat(chat_id_full)
                 my_log.log_echo(message, 'История барда принудительно очищена')

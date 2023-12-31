@@ -1714,7 +1714,7 @@ def gemini_proxies(message: telebot.types.Message):
         msg = tr('Ничего нет', lang)
 
     bot.reply_to(message, f'<code>{msg}</code>', parse_mode='HTML', reply_markup=get_keyboard('hide', message))
-    my_log.log2(msg)
+    my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['reset_gemini2'])

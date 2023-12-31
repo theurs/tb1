@@ -680,7 +680,7 @@ def update_proxy_pool_daemon():
                 save_proxy_pool()
                 time.sleep(60*60)
         else:
-            time.sleep(60)
+            time.sleep(2)
 
 
 def run_proxy_pool_daemon():

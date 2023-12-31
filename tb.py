@@ -1703,13 +1703,17 @@ def gemini_proxies(message: telebot.types.Message):
 
     msg = ''
 
+    n = 0
     for x in proxies:
-        msg += f'{[x]} [{round(my_gemini.PROXY_POLL_SPEED[x], 2)}]\n'
+        n += 1
+        p1 = f'{int(my_gemini.PROXY_POLL_SPEED[x]):02}'
+        p2 = f'{round(my_gemini.PROXY_POLL_SPEED[x], 2):.2f}'.split('.')[1]
+        msg += f'[{n:02}] [{p1}.{p2}] {[x]}\n'
 
     if not msg:
         msg = tr('Ничего нет', lang)
 
-    bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
+    bot.reply_to(message, f'<code>{msg}</code>', parse_mode='HTML', reply_markup=get_keyboard('hide', message))
     my_log.log2(msg)
 
 

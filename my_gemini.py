@@ -386,8 +386,8 @@ def get_mem_as_string(chat_id: str) -> str:
     result = ''
     for x in mem:
         role = x['role']
-        if role == 'user': role = '🆄🆂🅴🆁'
-        if role == 'model': role = '🅜🅞🅓🅔🅛'
+        if role == 'user': role = '𝐔𝐒𝐄𝐑'
+        if role == 'model': role = '𝐌𝐎𝐃𝐄𝐋'
         try:
             text = x['parts'][0]['text'].split(']: ', maxsplit=1)[1]
         except IndexError:
@@ -396,7 +396,7 @@ def get_mem_as_string(chat_id: str) -> str:
             end = text.find(']') + 1
             text = text[end:].strip()
         result += f'{role}: {text}\n'
-        if role == '🅜🅞🅓🅔🅛':
+        if role == '𝐌𝐎𝐃𝐄𝐋':
             result += '\n'
     return result    
 

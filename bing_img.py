@@ -136,11 +136,11 @@ def get_images(prompt: str,
     ]
     for img in normal_image_links:
         if img in bad_images:
-            raise Exception("Bad images")
+            raise Exception("error1_Bad images")
     # No images
     if not normal_image_links:
         raise Exception('error_no_images')
-    
+
     normal_image_links = [x for x in normal_image_links if not x.startswith('https://r.bing.com/')]
     return normal_image_links
 

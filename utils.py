@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import hashlib
 import html
 import os
 import multiprocessing
@@ -470,6 +471,20 @@ def download_image_as_bytes(url: str) -> bytes:
 
   response = requests.get(url)
   return response.content
+
+
+def nice_hash(s: str, l: int = 12) -> str:
+    """
+    Generate a nice hash of the given string.
+
+    Parameters:
+        s (str): The string to hash.
+
+    Returns:
+        str: The nice hash of the string.
+    """
+    hash_object = hashlib.sha224(s.encode())
+    return f'{hash_object.hexdigest()[:l]}'
 
 
 if __name__ == '__main__':

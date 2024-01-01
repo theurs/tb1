@@ -862,8 +862,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         caption_ = utils.bot_markdown_to_html(caption_)
                     else:
                         caption_ = caption
-                    caption_ += f'\n<a href = "https://youtu.be/{song_id}">{tr("Посмотреть на ютубе", lang)}</a>'
-
+                    caption_ += f'\n<a href = "https://youtu.be/{song_id}">{tr("Посмотреть на ютубе", lang)}</a> | #{utils.nice_hash(chat_id_full)}' 
                     if videos_group:
                         try:
                             m = bot.send_audio(chat_id=videos_group, audio=data,
@@ -2408,7 +2407,7 @@ def image_thread(message: telebot.types.Message):
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                     if pics_group:
                         try:
-                            bot.send_message(cfg.pics_group, f'{prompt}', disable_web_page_preview = True)
+                            bot.send_message(cfg.pics_group, f'{prompt} #{utils.nice_hash(chat_id_full)}', disable_web_page_preview = True)
                             bot.send_media_group(pics_group, medias)
                         except Exception as error2:
                             print(error2)

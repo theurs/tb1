@@ -856,7 +856,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 try:
                     video_data = my_ytb.get_video_info(song_id)
                     subtitles = my_sum.get_text_from_youtube(f'https://youtu.be/{song_id}')[:8000]
-                    query_to_gemini = tr(f'Напиши краткую сводку про песню с ютуба, пиши на языке [{lang}], кто исполняет, какой альбом итп, и добавь короткое описание 4 строчки: ', lang) + caption + '\n' +  tr(f'Эта информация может помочь ответить', lang) + '\n\n' + video_data + '\n\nСубтитры:\n\n' + subtitles
+                    query_to_gemini = tr(f'Напиши краткую сводку про песню с ютуба, пиши на языке [{lang}], кто исполняет, какой альбом итп, и добавь короткое описание 4 строчки, и хештеги в конце добавь: ', lang) + caption + '\n' +  tr(f'Эта информация может помочь ответить', lang) + '\n\n' + video_data + '\n\nСубтитры:\n\n' + subtitles
                     caption_ = my_gemini.ai(query_to_gemini)
                     if caption_:
                         caption_ = utils.bot_markdown_to_html(caption_)

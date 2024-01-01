@@ -386,12 +386,17 @@ def get_mem_as_string(chat_id: str) -> str:
     result = ''
     for x in mem:
         role = x['role']
+        if role == 'user': role = '🆄🆂🅴🆁'
+        if role == 'model': role = '🅜🅞🅓🅔🅛'
         try:
             text = x['parts'][0]['text'].split(']: ', maxsplit=1)[1]
         except IndexError:
             text = x['parts'][0]['text']
-        result += f'**{role}**: {text}\n\n'
-        if role == 'model':
+        if text.startswith('[Info to help you answer'):
+            end = text.find(']') + 1
+            text = text[end:].strip()
+        result += f'{role}: {text}\n'
+        if role == '🅜🅞🅓🅔🅛':
             result += '\n'
     return result    
 

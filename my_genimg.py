@@ -9,7 +9,7 @@ import replicate
 from duckduckgo_search import DDGS
 
 import cfg
-import bingai
+import bing_img
 import gpt_basic
 import my_log
 
@@ -51,11 +51,10 @@ def bing(prompt: str, moderation_flag: bool = False):
     if moderation_flag:
         return []
     try:
-        images = bingai.gen_imgs(prompt)
+        images = bing_img.gen_images(prompt)
         if type(images) == list:
             return images
     except Exception as error_bing_img:
-        print(f'my_genimg:bing: {error_bing_img}')
         my_log.log2(f'my_genimg:bing: {error_bing_img}')
     return []
 

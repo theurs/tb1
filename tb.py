@@ -20,6 +20,7 @@ from telebot import apihelper
 import cfg
 import gpt_basic
 import my_bard
+import bing_img
 import my_claude
 import my_genimg
 import my_dic
@@ -1741,6 +1742,34 @@ def reset_gemini2(message: telebot.types.Message):
         return
 
 
+@bot.message_handler(commands=['bingcookie', 'cookie', 'c'])
+def set_bing_cookies(message: telebot.types.Message):
+    # не обрабатывать команды к другому боту /cmd@botname args
+    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
+    else: return
+
+    my_log.log_echo(message)
+
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    if message.from_user.id not in cfg.admins:
+        bot.reply_to(message, tr('Access denied.', lang), reply_markup=get_keyboard('hide', message))
+        return
+
+    try:
+        args = message.text.split(maxsplit=1)[1]
+        cookies = args.split()
+        n = 0
+        for cookie in cookies:
+            bing_img.COOKIE[n] = cookie.strip()
+            n += 1
+        bot.reply_to(message, f'{tr("Cookies set:", lang)} {n}', reply_markup=get_keyboard('hide', message))
+    except Exception as error:
+        my_log.log2(f'set_bing_cookies: {error}\n\n{message.text}')
+        bot.reply_to(message, tr('Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie', lang), reply_markup=get_keyboard('hide', message))
+
+
 @bot.message_handler(commands=['style2'])
 def change_mode2(message: telebot.types.Message):
     # не обрабатывать команды к другому боту /cmd@botname args
@@ -3435,17 +3464,7 @@ def do_task(message, custom_prompt: str = ''):
         MESSAGE_QUEUE[chat_id_full] += message.text + '\n\n'
         return
 
-    # если админ прислал новые куки для бинга
-    if message.chat.id in cfg.admins:
-        if '"name": "_U",' in message.text:
-            if '"domain": ".bing.com",' in message.text:
-                if '"value": "' in message.text:
-                    if len(message.text) > 10000:
-                        open('cookies.json', 'w').write(message.text)
-                        reply_to_long_message(message, tr("Куки файл обновлен.", lang), reply_markup=get_keyboard('hide', message))
-                        return
-
-    if message.text in [tr('🎨 Нарисуй', lang),     tr('🌐 Найди', lang), 
+    if message.text in [tr('🎨 Нарисуй', lang),     tr('🌐 Найди', lang),
                         tr('📋 Перескажи', lang),   tr('🎧 Озвучь', lang),
                         tr('🈶 Перевод', lang),     tr('⚙️ Настройки', lang),
                         '🎨 Нарисуй',               '🌐 Найди',

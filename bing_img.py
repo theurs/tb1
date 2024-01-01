@@ -17,6 +17,9 @@ import my_dic
 # {0: cookie0, 1: cookie1, ...}
 COOKIE = my_dic.PersistentDict('db/bing_cookie.pkl')
 
+# хранилище запросов которые бинг отбраковал, их нельзя повторять
+BAD_IMAGES_PROMPT = my_dic.PersistentDict('db/bad_images_prompt.pkl')
+
 
 take_ip_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 take_ip_socket.connect(("8.8.8.8", 80))
@@ -159,6 +162,9 @@ def gen_images(query: str):
         Exception: If there is an error getting the images.
 
     """
+    if query in BAD_IMAGES_PROMPT:
+        my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
+        return []
     cookies = []
     for x in COOKIE.items():
         cookie = x[1].strip()
@@ -172,6 +178,7 @@ def gen_images(query: str):
                     except Exception as error:
                         my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                         if str(error).startswith('error1'):
+                            BAD_IMAGES_PROMPT[query] = True
                             return []
             else:
                 try:

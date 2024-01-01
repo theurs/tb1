@@ -4,6 +4,7 @@
 import time
 import socket
 
+import random
 import re
 
 import requests
@@ -124,21 +125,38 @@ def get_images(prompt: str,
 
 
 def gen_images(query: str):
-    for x in COOKIE.keys():
-        cookie = COOKIE[x].strip()
-        if cfg.bing_proxy:
-            for proxy in cfg.bing_proxy:
+    """
+    Generate images based on the given query.
+
+    Args:
+        query (str): The query to generate images for.
+
+    Returns:
+        list: A list of generated images.
+
+    Raises:
+        Exception: If there is an error getting the images.
+
+    """
+    cookies = []
+    for x in COOKIE.items():
+        cookie = x[1].strip()
+        cookies.append(cookie)
+        random.shuffle(cookies)
+        for cookie in cookies:
+            if cfg.bing_proxy:
+                for proxy in cfg.bing_proxy:
+                    try:
+                        return get_images(query, cookie, proxy)
+                    except Exception as error:
+                        my_log.log2(f'get_images: {error}')
+            else:
                 try:
-                    return get_images(query, cookie, proxy)
+                    return get_images(query, cookie)
                 except Exception as error:
                     my_log.log2(f'get_images: {error}')
-        else:
-            try:
-                return get_images(query, cookie)
-            except Exception as error:
-                my_log.log2(f'get_images: {error}')
     return []
 
 
 if __name__ == '__main__':
-    print(gen_images('bad bytes stop here'))
+    print(gen_images('bad bytes stop here or there'))

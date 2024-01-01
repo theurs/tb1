@@ -390,7 +390,7 @@ def get_mem_as_string(chat_id: str) -> str:
             text = x['parts'][0]['text'].split(']: ', maxsplit=1)[1]
         except IndexError:
             text = x['parts'][0]['text']
-        result += f'{role}: {text}\n\n'
+        result += f'**{role}**: {text}\n\n'
         if role == 'model':
             result += '\n'
     return result    

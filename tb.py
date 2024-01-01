@@ -1815,17 +1815,7 @@ def send_debug_history(message: telebot.types.Message):
     check_blocked_user(chat_id_full)
 
     if CHAT_MODE[chat_id_full] == 'chatgpt':
-        # обрезаем историю
-        try:
-            gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
-        except:
-            pass
-
-        # создаем новую историю диалогов с юзером из старой если есть
-        messages = []
-        if chat_id_full in gpt_basic.CHATS:
-            messages = gpt_basic.CHATS[chat_id_full]
-        prompt = '\n'.join(f'{i["role"]} - {i["content"]}\n' for i in messages) or tr('Пусто', lang)
+        prompt = gpt_basic.get_mem_as_string(chat_id_full) or tr('Пусто', lang)
     elif CHAT_MODE[chat_id_full] == 'gemini':
         prompt = my_gemini.get_mem_as_string(chat_id_full) or tr('Пусто', lang)
     else:

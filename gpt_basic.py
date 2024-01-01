@@ -195,6 +195,26 @@ def ai_compress(prompt: str, max_prompt: int  = 300, origin: str = 'user', force
     return prompt
 
 
+def get_mem_as_string(chat_id_full: str) ->str:
+    # обрезаем историю
+    try:
+        CHATS[chat_id_full] = CHATS[chat_id_full][-cfg.max_hist_lines:]
+    except:
+        pass
+
+    if chat_id_full in CHATS:
+        messages = CHATS[chat_id_full]
+        messages2 = []
+        for x in messages:
+            if x['content'].startswith('[Info to help you answer'):
+                end = x['content'].find(']') + 1
+                x['content'] = x['content'][end:]
+            messages2.append(x)
+    prompt = '\n'.join(f'{"𝐔𝐒𝐄𝐑" if i["role"] == "user" else "𝐁𝐎𝐓" if i["role"] == "assistant" else "𝐒𝐘𝐒𝐓𝐄𝐌"} - {i["content"]}\n' for i in messages2) or ''
+    prompt = prompt.replace('\n𝐁𝐎𝐓','𝐁𝐎𝐓')
+    return prompt
+
+
 def translate_text(text, fr = 'autodetect', to = 'ru'):
     """переводит текст с помощью GPT-чата, возвращает None при ошибке"""
 

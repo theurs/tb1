@@ -7,6 +7,7 @@ import random
 import re
 import requests
 import tempfile
+import traceback
 import datetime
 import string
 import threading
@@ -875,6 +876,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                             YTB_CACHE[song_id] = m.message_id
                             YTB_CACHE_FROM[song_id] = m.chat.id
                         except Exception as send_ytb_audio_error:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(error_traceback)
                             my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
                             m = bot.send_audio(chat_id=videos_group, audio=data,
                                             reply_markup = get_keyboard('translate', message),
@@ -915,6 +918,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                             YTB_CACHE_FROM[song_id] = m.chat.id
 
                         except Exception as send_ytb_audio_error:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(error_traceback)  
                             my_log.log2(f'tb:callback_inline_thread:ytb:send_audio:{send_ytb_audio_error}')
                             m = bot.send_audio(chat_id=message.chat.id, audio=data,
                                             reply_to_message_id = message.message_id,
@@ -929,6 +934,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
                     my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}\n{caption_}')
                 except Exception as send_ytb_error:
+                    error_traceback = traceback.format_exc()
+                    my_log.log2(error_traceback)                    
                     my_log.log2(str(send_ytb_error))
                     err_msg = tr('Не удалось отправить музыку.', lang) + '\n' + str(send_ytb_error)
                     my_log.log_echo(message, err_msg)

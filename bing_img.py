@@ -46,6 +46,28 @@ def get_images(prompt: str,
                proxy: str = None,
                timeout: int = 200,
                max_generate_time_sec: int = 60):
+    """
+    Retrieves a list of normal image links from Bing search based on a given prompt.
+    
+    Args:
+        prompt (str): The search prompt to use for retrieving images.
+        u_cookie (str): The user cookie for authentication.
+        proxy (str, optional): The proxy server to use for the request. Defaults to None.
+        timeout (int, optional): The timeout duration for the request in milliseconds. Defaults to 200.
+        max_generate_time_sec (int, optional): The maximum time in seconds to wait for image generation. Defaults to 60.
+        
+    Raises:
+        Exception: If the prompt is being reviewed by Bing.
+        Exception: If the prompt has been blocked by Bing.
+        Exception: If the language of the prompt is unsupported.
+        Exception: If the request for image creation fails.
+        TimeoutError: If the request times out while waiting for image generation.
+        Exception: If no images are found in the search results.
+        Exception: If any of the retrieved image links are in the list of bad images.
+        
+    Returns:
+        list: A list of normal image links (URLs) from Bing search.
+    """
 
     url_encoded_prompt = requests.utils.quote(prompt)
 

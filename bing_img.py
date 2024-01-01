@@ -89,17 +89,16 @@ def get_images(prompt: str,
     )
     # check for content waring message
     if "this prompt is being reviewed" in response.text.lower():
-        raise Exception("error_being_reviewed_prompt")
+        raise Exception("error1_being_reviewed_prompt")
     if "this prompt has been blocked" in response.text.lower():
-        raise Exception('error_blocked_prompt')
+        raise Exception('error1_blocked_prompt')
     if "we're working hard to offer image creator in more languages" in response.text.lower():
-        raise Exception('error_unsupported_lang')
+        raise Exception('error1_unsupported_lang')
     if response.status_code != 302:
         url = f"{BING_URL}/images/create?q={url_encoded_prompt}&rt=3&FORM=GUH2CR"
         response = session.post(url, allow_redirects=False, timeout=timeout)
         if response.status_code != 302:
-            print("Image create failed pls check cookie or old image still creating", flush=True)
-            return
+            Exception ('Image create failed pls check cookie or old image still creating')
 
     redirect_url = response.headers["Location"].replace("&nfy=1", "")
     request_id = redirect_url.split("id=")[-1]
@@ -111,10 +110,10 @@ def get_images(prompt: str,
     time_sec = 0
     while True:
         if int(time.time() - start_wait) > timeout:
-            raise Exception('error_timeout')
+            raise Exception('error2_timeout')
         response = session.get(polling_url)
         if response.status_code != 200:
-            raise Exception('error_noresults')
+            raise Exception('error2_noresults')
         if not response.text or response.text.find("errorMessage") != -1:
             time.sleep(1)
             time_sec = time_sec + 1
@@ -172,6 +171,8 @@ def gen_images(query: str):
                         return get_images(query, cookie, proxy)
                     except Exception as error:
                         my_log.log2(f'get_images: {error}')
+                        if str(error).startswith('error1'):
+                            return []
             else:
                 try:
                     return get_images(query, cookie)

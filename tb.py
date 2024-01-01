@@ -2407,7 +2407,7 @@ def image_thread(message: telebot.types.Message):
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                     if pics_group:
                         try:
-                            bot.send_message(cfg.pics_group, f'{prompt} #{utils.nice_hash(chat_id_full)}', disable_web_page_preview = True)
+                            bot.send_message(cfg.pics_group, f'{prompt} | #{utils.nice_hash(chat_id_full)}', disable_web_page_preview = True)
                             bot.send_media_group(pics_group, medias)
                         except Exception as error2:
                             print(error2)

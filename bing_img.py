@@ -170,7 +170,7 @@ def gen_images(query: str):
                     try:
                         return get_images(query, cookie, proxy)
                     except Exception as error:
-                        my_log.log2(f'get_images: {error}')
+                        my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                         if str(error).startswith('error1'):
                             return []
             else:

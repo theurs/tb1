@@ -182,4 +182,4 @@ def gen_images(query: str):
 
 
 if __name__ == '__main__':
-    print(gen_images('bad bytes stop here or there'))
+    print(gen_images('fuck sex babe'))

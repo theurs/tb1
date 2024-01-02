@@ -138,6 +138,9 @@ DUMP_TRANSLATION_LOCK = threading.Lock()
 # ловим сообщение и ждем полсекунды не прилетит ли еще кусок
 MESSAGE_QUEUE = {}
 
+# блокировать процесс отправки картинок что бы не было перемешивания разных запросов
+SEND_IMG_LOCK = threading.Lock()
+
 # настройки температуры для gemini {chat_id:temp}
 GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
 GEMIMI_TEMP_DEFAULT = 0.2
@@ -2415,44 +2418,63 @@ def image_thread(message: telebot.types.Message):
                     bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, msg)
                     return
+
+                suggest_query = tr("""Suggest a wide range options for a request to a neural network that
+generates images according to the description, show 5 options with no numbers and trailing symbols, 1 on 1 line, output example:
+
+some option
+some more option
+some more option
+some more option
+some more option
+
+the original prompt:""", lang) + '\n\n\n' + prompt
+                suggest = my_gemini.ai(suggest_query, temperature=1.5)
+                suggest = utils.bot_markdown_to_html(suggest).strip()
+
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
                 images += my_genimg.gen_images(prompt, moderation_flag)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 if len(medias) > 0:
-                    msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
-                    if pics_group:
-                        try:
-                            bot.send_message(cfg.pics_group, f'{prompt} | #{utils.nice_hash(chat_id_full)}', disable_web_page_preview = True)
-                            bot.send_media_group(pics_group, medias)
-                        except Exception as error2:
-                            print(error2)
-                    caption = ''
-                    # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
-                    # что бы можно было их потом просматривать отдельно
-                    IMAGE_PROMPTS[msgs_ids[0].message_id] = prompt
+                    with SEND_IMG_LOCK:
+                        msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                        if pics_group:
+                            try:
+                                bot.send_message(cfg.pics_group, f'{prompt} | #{utils.nice_hash(chat_id_full)}', disable_web_page_preview = True)
+                                bot.send_media_group(pics_group, medias)
+                            except Exception as error2:
+                                print(error2)
+                        caption = ''
+                        # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
+                        # что бы можно было их потом просматривать отдельно
+                        IMAGE_PROMPTS[msgs_ids[0].message_id] = prompt
 
-                    for i in msgs_ids:
-                        caption += f'{i.message_id} '
-                    caption += '\n'
-                    caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
-                    bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
-                                 reply_markup=get_keyboard('hide_image', message))
-                    # if cfg.enable_image_adv:
-                    #     bot.reply_to(message, tr('Try this group, it has a lot of mediabots: ', lang) + 'https://t.me/neuralforum',
-                    #              disable_web_page_preview = True,
-                    #              reply_markup=get_keyboard('hide', message))
+                        for i in msgs_ids:
+                            caption += f'{i.message_id} '
+                        caption += '\n'
+                        caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
+                        bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
+                                    reply_markup=get_keyboard('hide_image', message))
 
-                    my_log.log_echo(message, '[image gen] ')
+                        images_list_str = "\n".join(images)
+                        my_log.log_echo(message, f'[image gen] {len(medias)}\n{images_list_str}')
 
-                    n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 
-                         {'role':'system', 'content':f'assistant {tr("нарисовал с помощью DALL-E", lang)}'}]
-                    if chat_id_full in gpt_basic.CHATS:
-                        gpt_basic.CHATS[chat_id_full] += n
-                    else:
-                        gpt_basic.CHATS[chat_id_full] = n
-                    my_gemini.update_mem(f'user {tr("попросил нарисовать", lang)}\n{prompt}',
-                                         f'{tr("нарисовал с помощью DALL-E", lang)}',
-                                         chat_id_full)
+                        if suggest:
+                            suggest2 = [f'<code>/image {x}</code>'.replace('• ', '') for x in suggest.split('\n')]
+                            suggest3 = '\n\n'.join(suggest2)
+                            suggest4 = tr('Here are some more possible options for your request:', lang) + '\n\n' + suggest3
+                            reply_to_long_message(message, suggest4, parse_mode = 'HTML', reply_markup=get_keyboard('hide', message))
+                            my_log.log_echo(message, suggest4)
+
+                        n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 
+                            {'role':'system', 'content':f'assistant {tr("нарисовал с помощью DALL-E", lang)}'}]
+                        if chat_id_full in gpt_basic.CHATS:
+                            gpt_basic.CHATS[chat_id_full] += n
+                        else:
+                            gpt_basic.CHATS[chat_id_full] = n
+                        my_gemini.update_mem(f'user {tr("попросил нарисовать", lang)}\n{prompt}',
+                                            f'{tr("нарисовал с помощью DALL-E", lang)}',
+                                            chat_id_full)
                 else:
                     bot.reply_to(message, tr('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', lang), 
                                  reply_markup=get_keyboard('hide', message))

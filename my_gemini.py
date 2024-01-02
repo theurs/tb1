@@ -294,6 +294,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                     try:
                         response = session.post(url, json=mem_, timeout=60)
                     except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
+                        # my_log.log2(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}')
                         remove_proxy(proxy)
                         continue
 
@@ -308,8 +309,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                             save_proxy_pool()
                         break
                     else:
-                        PROXY_POOL = [x for x in PROXY_POOL if x != proxy]
-                        save_proxy_pool()
+                        remove_proxy(proxy)
                         my_log.log2(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}')
             else:
                 response = requests.post(url, json=mem_, timeout=60)
@@ -322,6 +322,53 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                 break
     except Exception as unknown_error:
         my_log.log2(f'my_gemini:ai:{unknown_error}')
+
+    return result.strip()
+
+
+def get_models() -> str:
+    """some error, return 404"""
+    global PROXY_POOL
+
+    keys = cfg.gemini_keys[:]
+    random.shuffle(keys)
+    result = ''
+
+    proxies = PROXY_POOL[:]
+    random.shuffle(proxies)
+
+    proxy = ''
+    try:
+        for key in keys:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro?key={key}"
+
+            if proxies:
+                sort_proxies_by_speed(proxies)
+                for proxy in proxies:
+                    session = requests.Session()
+                    session.proxies = {"http": proxy, "https": proxy}
+                    try:
+                        response = session.post(url, timeout=60)
+                    except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
+                        continue
+
+                    if response.status_code == 200:
+                        result = response.json()###################
+                        break
+                    else:
+                        remove_proxy(proxy)
+                        my_log.log2(f'my_gemini:get_models:{proxy} {key} {str(response)} {response.text}')
+            else:
+                response = requests.post(url, timeout=60)
+                if response.status_code == 200:
+                    result = response.json()###############
+                else:
+                    my_log.log2(f'my_gemini:get_models:{key} {str(response)} {response.text}')
+
+            if result:
+                break
+    except Exception as unknown_error:
+        my_log.log2(f'my_gemini:get_models:{unknown_error}')
 
     return result.strip()
 
@@ -538,7 +585,7 @@ def remove_proxy(proxy: str):
 
     PROXY_POOL_REMOVED.append(proxy)
     PROXY_POOL_REMOVED = list(set(PROXY_POOL_REMOVED))
-    
+
     save_proxy_pool()
 
 
@@ -739,6 +786,8 @@ def run_proxy_pool_daemon():
 if __name__ == '__main__':
 
     run_proxy_pool_daemon()
+
+    # print(get_models())
 
     chat_cli()
 

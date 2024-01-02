@@ -2420,7 +2420,7 @@ def image_thread(message: telebot.types.Message):
                     return
 
                 suggest_query = tr("""Suggest a wide range options for a request to a neural network that
-generates images according to the description, show 5 options with no numbers and trailing symbols, 1 on 1 line, output example:
+generates images according to the description, show 5 options with no numbers and trailing symbols, add many details, 1 on 1 line, output example:
 
 some option
 some more option

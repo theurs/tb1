@@ -2,6 +2,7 @@
 
 
 import time
+import threading
 import socket
 
 import random
@@ -12,6 +13,10 @@ import requests
 import cfg
 import my_log
 import my_dic
+
+
+# не использовать 1 и тот же ключ одновременно для разных запросов
+LOCKS = {}
 
 
 # {0: cookie0, 1: cookie1, ...}
@@ -171,20 +176,23 @@ def gen_images(query: str):
         cookies.append(cookie)
         random.shuffle(cookies)
         for cookie in cookies:
-            if cfg.bing_proxy:
-                for proxy in cfg.bing_proxy:
+            if cookie not in LOCKS:
+                LOCKS[cookie] = threading.Lock()
+            with LOCKS[cookie]:
+                if cfg.bing_proxy:
+                    for proxy in cfg.bing_proxy:
+                        try:
+                            return get_images(query, cookie, proxy)
+                        except Exception as error:
+                            my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
+                            if str(error).startswith('error1'):
+                                BAD_IMAGES_PROMPT[query] = True
+                                return []
+                else:
                     try:
-                        return get_images(query, cookie, proxy)
+                        return get_images(query, cookie)
                     except Exception as error:
-                        my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
-                        if str(error).startswith('error1'):
-                            BAD_IMAGES_PROMPT[query] = True
-                            return []
-            else:
-                try:
-                    return get_images(query, cookie)
-                except Exception as error:
-                    my_log.log2(f'get_images: {error}')
+                        my_log.log2(f'get_images: {error}')
     return []
 
 

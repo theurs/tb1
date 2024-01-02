@@ -2410,6 +2410,10 @@ def image_thread(message: telebot.types.Message):
             prompt = prompt[1]
             with ShowAction(message, 'upload_photo'):
                 moderation_flag = gpt_basic.moderation(prompt)
+                if moderation_flag:
+                        bot.reply_to(message, tr('Что то подозрительное есть в вашем запросе, попробуйте написать иначе.', lang),
+                                     reply_markup=get_keyboard('hide', message))
+                        return
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
                 images += my_genimg.gen_images(prompt, moderation_flag)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]

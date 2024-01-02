@@ -1774,6 +1774,9 @@ def set_bing_cookies(message: telebot.types.Message):
     except Exception as error:
         my_log.log2(f'set_bing_cookies: {error}\n\n{message.text}')
         bot.reply_to(message, tr('Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie', lang), reply_markup=get_keyboard('hide', message))
+        keys = '\n\n'.join([x[1] for x in bing_img.COOKIE.items()])
+        if keys.strip():
+            bot.reply_to(message, f'{tr("Current cookies:", lang)} {keys}', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['style2'])

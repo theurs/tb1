@@ -11,7 +11,6 @@ from textblob import TextBlob
 
 import cfg
 import my_log
-import my_trans
 import utils
 
 

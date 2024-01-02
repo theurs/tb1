@@ -360,41 +360,6 @@ def gemini_reset(chat_id: str):
     my_gemini.reset(chat_id)
 
 
-@bot.message_handler(commands=['fixlang'])
-def fix_translation_with_gpt(message: telebot.types.Message):
-    thread = threading.Thread(target=fix_translation_with_gpt_thread, args=(message,))
-    thread.start()
-def fix_translation_with_gpt_thread(message: telebot.types.Message):
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    chat_full_id = get_topic_id(message)
-    user_lang = get_lang(chat_full_id, message)
-
-    if message.from_user.id not in cfg.admins:
-        bot.reply_to(message, tr("Эта команда доступна только администраторам",
-                                 user_lang))
-        return
-
-    target_lang = message.text.split()[1]
-
-    bot.reply_to(message, tr(f'Started translation process, please wait for a while', user_lang))
-    counter = 0
-    for key in AUTO_TRANSLATIONS.keys():
-        text, lang = eval(key)[0], eval(key)[1]
-        if lang == target_lang:
-            if 'The chatbot responds to the name' in text or "Hello! I'm your personal multi-functional assistant" in text:
-                translated_text = gpt_basic.translate_instruct(text, target_lang)
-                # translated_text = my_trans.translate_text2(text, target_lang)
-                AUTO_TRANSLATIONS[key] = translated_text
-                counter += 1
-                my_log.log2(f'{key} -> {translated_text}')
-                time.sleep(5)
-
-    bot.reply_to(message, tr(f'Переведено {counter} строк', user_lang))
-
-
 def get_lang(id: str, message: telebot.types.Message = None) -> str:
     """
     Returns the language corresponding to the given ID.
@@ -465,6 +430,112 @@ def is_admin_member(message: telebot.types.Message):
     user_id = message.from_user.id
     member = bot.get_chat_member(chat_id, user_id).status.lower()
     return True if 'creator' in member or 'administrator' in member else False
+
+
+def is_for_me(cmd: str):
+    """Checks who the command is addressed to, this bot or another one.
+    
+    /cmd@botname args
+    
+    Returns (True/False, 'the same command but without the bot name').
+    If there is no bot name at all, assumes that the command is addressed to this bot.
+    """
+
+    # for not text command (audio, video, documents etc)
+    if not cmd:
+        return (True, cmd)
+
+    # если это не команда значит ко мне
+    if not cmd.startswith('/'):
+        (True, cmd)
+
+    command_parts = cmd.split()
+    first_arg = command_parts[0]
+
+    if '@' in first_arg:
+        message_cmd = first_arg.split('@', maxsplit=1)[0]
+        message_bot = first_arg.split('@', maxsplit=1)[1] if len(first_arg.split('@', maxsplit=1)) > 1 else ''
+        message_args = cmd.split(maxsplit=1)[1] if len(command_parts) > 1 else ''
+        return (message_bot == _bot_name, f'{message_cmd} {message_args}'.strip())
+    else:
+        return (True, cmd)
+
+
+def authorized_owner(message: telebot.types.Message) -> bool:
+    """if chanel owner or private"""
+    is_private = message.chat.type == 'private'
+
+    if not (is_private or is_admin_member(message)):
+        chat_full_id = get_topic_id(message)
+        lang = get_lang(chat_full_id, message)
+        msg = tr("This command is only available to administrators", lang)
+        my_log.log_echo(message, msg)
+        bot.reply_to(message, msg)
+        return False
+    return authorized(message)
+
+
+def authorized_admin(message: telebot.types.Message) -> bool:
+    """if admin"""
+    if message.from_user.id not in cfg.admins:
+        chat_full_id = get_topic_id(message)
+        lang = get_lang(chat_full_id, message)
+        msg = tr("This command is only available to administrators", lang)
+        my_log.log_echo(message, msg)
+        bot.reply_to(message, msg)
+        return False
+    return authorized(message)
+
+
+def authorized(message: telebot.types.Message) -> bool:
+    """
+    Check if the user is authorized based on the given message.
+
+    Parameters:
+        message (telebot.types.Message): The message object containing the chat ID and user ID.
+
+    Returns:
+        bool: True if the user is authorized, False otherwise.
+    """
+
+    # do not process commands to another bot /cmd@botname args
+    if is_for_me(message.text)[0]:
+        message.text = is_for_me(message.text)[1]
+    else:
+        return False
+
+    my_log.log_echo(message)
+
+    # никаких проверок и тротлинга для админов
+    if message.from_user.id in cfg.admins:
+        return True
+
+    # if this chat was forcibly left (banned), then when trying to enter it immediately exit
+    # I don't know how to do that, so I have to leave only when receiving any event
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        try:
+            bot.leave_chat(message.chat.id)
+            my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        except Exception as leave_chat_error:
+            my_log.log2(f'tb:auth:live_chat_error: {leave_chat_error}')
+        return False
+
+    chat_id_full = get_topic_id(message)
+
+    # check for blocking and throttling
+    try:
+        check_blocked_user(chat_id_full)
+    except:
+        return False
+
+    return True
+
+
+def check_blocks(chat_id: str) -> bool:
+    """в каких чатах выключены автопереводы"""
+    if chat_id not in BLOCKS:
+        BLOCKS[chat_id] = 0
+    return False if BLOCKS[chat_id] == 1 else True
 
 
 def disabled_kbd(chat_id_full):
@@ -751,11 +822,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         chat_id = message.chat.id
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
-        # check_blocked_user(chat_id_full)
-
-        # # сбросить кеш при переключении голоса
-        # if call.data.startswith('tts_'):
-        #     my_tts.TTS_CACHE = []
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
@@ -1053,9 +1119,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             TRANSCRIBE_ONLY_CHAT[chat_id_full] = True
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-
-
-        
         elif call.data == 'chatGPT_mode_disable':
             del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
@@ -1108,21 +1171,38 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
 
 
-def check_blocks(chat_id: str) -> bool:
-    """в каких чатах выключены автопереводы"""
-    if chat_id not in BLOCKS:
-        BLOCKS[chat_id] = 0
-    return False if BLOCKS[chat_id] == 1 else True
+@bot.message_handler(commands=['fixlang'], fun=authorized_admin)
+def fix_translation_with_gpt(message: telebot.types.Message):
+    thread = threading.Thread(target=fix_translation_with_gpt_thread, args=(message,))
+    thread.start()
+def fix_translation_with_gpt_thread(message: telebot.types.Message):
+    chat_full_id = get_topic_id(message)
+    user_lang = get_lang(chat_full_id, message)
+
+    target_lang = message.text.split()[1]
+
+    msg = tr('Started translation process, please wait for a while.', user_lang)
+    my_log.log_echo(message, msg)
+    bot.reply_to(message, msg)
+
+    counter = 0
+    for key in AUTO_TRANSLATIONS.keys():
+        text, lang = eval(key)[0], eval(key)[1]
+        if lang == target_lang:
+            if 'The chatbot responds to the name' in text or "Hello! I'm your personal multi-functional assistant" in text:
+                translated_text = gpt_basic.translate_instruct(text, target_lang)
+                # translated_text = my_trans.translate_text2(text, target_lang)
+                AUTO_TRANSLATIONS[key] = translated_text
+                counter += 1
+                my_log.log2(f'{key} -> {translated_text}')
+                time.sleep(5)
+
+    bot.reply_to(message, tr(f'Translated {counter} strings', user_lang))
 
 
-@bot.message_handler(content_types = ['voice', 'audio'])
+@bot.message_handler(content_types = ['voice', 'audio'], func=authorized)
 def handle_voice(message: telebot.types.Message): 
     """Автоматическое распознавание текст из голосовых сообщений"""
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=handle_voice_thread, args=(message,))
     thread.start()
 def handle_voice_thread(message: telebot.types.Message):
@@ -1133,7 +1213,7 @@ def handle_voice_thread(message: telebot.types.Message):
     is_private = message.chat.type == 'private'
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
+
     if chat_id_full not in SUPER_CHAT:
         SUPER_CHAT[chat_id_full] = 0
     if SUPER_CHAT[chat_id_full] == 1:
@@ -1144,7 +1224,7 @@ def handle_voice_thread(message: telebot.types.Message):
 
     with semaphore_talks:
         # Создание временного файла 
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(delete=True) as temp_file:
             file_path = temp_file.name + '.ogg'
         # Скачиваем аудиофайл во временный файл
         try:
@@ -1165,7 +1245,12 @@ def handle_voice_thread(message: telebot.types.Message):
         else:
             action = 'typing'
         with ShowAction(message, action):
-            text = my_stt.stt(file_path, lang, chat_id_full)
+
+            try:
+                text = my_stt.stt(file_path, lang, chat_id_full)
+            except Exception as error_stt:
+                my_log.log2(f'tb:handle_voice_thread: {error_stt}')
+                text = ''
 
             try:
                 os.remove(file_path)
@@ -1198,14 +1283,8 @@ def handle_voice_thread(message: telebot.types.Message):
                     echo_all(message)
 
 
-@bot.message_handler(content_types = ['document'])
+@bot.message_handler(content_types = ['document'], func=authorized)
 def handle_document(message: telebot.types.Message):
-    """Обработчик документов"""
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=handle_document_thread, args=(message,))
     thread.start()
 def handle_document_thread(message: telebot.types.Message):
@@ -1394,14 +1473,9 @@ def handle_document_thread(message: telebot.types.Message):
                     my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
 
 
-@bot.message_handler(content_types = ['photo'])
+@bot.message_handler(content_types = ['photo'], func=authorized)
 def handle_photo(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=handle_photo_thread, args=(message,))
     thread.start()
 def handle_photo_thread(message: telebot.types.Message):
@@ -1497,14 +1571,8 @@ def handle_photo_thread(message: telebot.types.Message):
                 return
 
 
-@bot.message_handler(content_types = ['video', 'video_note'])
+@bot.message_handler(content_types = ['video', 'video_note'], func=authorized)
 def handle_video(message: telebot.types.Message):
-    """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=handle_video_thread, args=(message,))
     thread.start()
 def handle_video_thread(message: telebot.types.Message):
@@ -1527,7 +1595,6 @@ def handle_video_thread(message: telebot.types.Message):
     with semaphore_talks:
         # пересланные сообщения пытаемся перевести даже если в них видео
         if message.forward_from_chat:
-            check_blocked_user(chat_id_full)
             # у видео нет текста но есть заголовок caption. его и будем переводить
             text = my_trans.translate(message.caption)
             if text:
@@ -1538,9 +1605,8 @@ def handle_video_thread(message: telebot.types.Message):
 
     with semaphore_talks:
         with ShowAction(message, 'typing'):
-            check_blocked_user(chat_id_full)
             # Создание временного файла 
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            with tempfile.NamedTemporaryFile(delete=True) as temp_file:
                 file_path = temp_file.name
             # Скачиваем аудиофайл во временный файл
             try:
@@ -1550,9 +1616,19 @@ def handle_video_thread(message: telebot.types.Message):
             downloaded_file = bot.download_file(file_info.file_path)
             with open(file_path, 'wb') as new_file:
                 new_file.write(downloaded_file)
+
             # Распознаем текст из аудио 
-            text = my_stt.stt(file_path, lang, chat_id_full)
-            os.remove(file_path)
+            try:
+                text = my_stt.stt(file_path, lang, chat_id_full)
+            except Exception as stt_error:
+                my_log.log2(f'tb:handle_video_thread: {stt_error}')
+                text = ''
+
+            try:
+                os.remove(file_path)
+            except Exception as hvt_remove_error:
+                my_log.log2(f'tb:handle_video_thread:remove: {hvt_remove_error}')
+
             # Отправляем распознанный текст
             if text:
                 reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
@@ -1563,54 +1639,23 @@ def handle_video_thread(message: telebot.types.Message):
                 my_log.log_echo(message, '[ASR] no results')
 
 
-def is_for_me(cmd: str):
-    """Checks who the command is addressed to, this bot or another one.
-    
-    /cmd@botname args
-    
-    Returns (True/False, 'the same command but without the bot name').
-    If there is no bot name at all, assumes that the command is addressed to this bot.
-    """
-    command_parts = cmd.split()
-    first_arg = command_parts[0]
-
-    if '@' in first_arg:
-        message_cmd = first_arg.split('@', maxsplit=1)[0]
-        message_bot = first_arg.split('@', maxsplit=1)[1] if len(first_arg.split('@', maxsplit=1)) > 1 else ''
-        message_args = cmd.split(maxsplit=1)[1] if len(command_parts) > 1 else ''
-        return (message_bot == _bot_name, f'{message_cmd} {message_args}'.strip())
-    else:
-        return (True, cmd)
-
-
-@bot.message_handler(commands=['config'])
+@bot.message_handler(commands=['config'], func=authorized_owner)
 def config(message: telebot.types.Message):
     """Меню настроек"""
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
-    # не обрабатывать команды к другому боту /cmd@botname args
-    try:
-        if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-        else: return
-    except Exception as error:
-        my_log.log2(f'config:{error}')
-
-    my_log.log_echo(message)
 
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
     try:
-        bot.reply_to(message, tr(MSG_CONFIG, lang), parse_mode='Markdown', reply_markup=get_keyboard('config', message))
+        msg = tr(MSG_CONFIG, lang)
+        my_log.log_echo(message, msg)
+        bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('config', message))
     except Exception as error:
         my_log.log2(f'tb:config:{error}')
         print(error)
 
 
-@bot.message_handler(commands=['style'])
+@bot.message_handler(commands=['style'], func=authorized_owner)
 def change_mode(message: telebot.types.Message):
     """
     Handles the 'style' command from the bot. Changes the prompt for the GPT model
@@ -1623,16 +1668,8 @@ def change_mode(message: telebot.types.Message):
     Returns:
         None
     """
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
-    is_private = message.chat.type == 'private'
 
     if chat_id_full not in ROLES:
         ROLES[chat_id_full] = ''
@@ -1645,10 +1682,6 @@ def change_mode(message: telebot.types.Message):
 
     arg = message.text.split(maxsplit=1)[1:]
     if arg:
-        if not (is_private or is_admin_member(message)):
-            bot.reply_to(message, tr('У вас нет прав на изменение роли бота здесь.', lang))
-            return
-
         if arg[0] == '1':
             new_prompt = DEFAULT_ROLES[0]
         elif arg[0] == '2':
@@ -1693,20 +1726,10 @@ def change_mode(message: telebot.types.Message):
         my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['gemini_proxies'])
+@bot.message_handler(commands=['gemini_proxies'], func=authorized_admin)
 def gemini_proxies(message: telebot.types.Message):
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-
-    if message.from_user.id not in cfg.admins:
-        bot.reply_to(message, tr('Access denied.', lang), reply_markup=get_keyboard('hide', message))
-        return
 
     proxies = my_gemini.PROXY_POOL[:]
     my_gemini.sort_proxies_by_speed(proxies)
@@ -1727,44 +1750,26 @@ def gemini_proxies(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['reset_gemini2'])
+@bot.message_handler(commands=['reset_gemini2'], func=authorized_admin)
 def reset_gemini2(message: telebot.types.Message):
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-
-    if message.from_user.id not in cfg.admins:
-        bot.reply_to(message, tr('Access denied.', lang), reply_markup=get_keyboard('hide', message))
-        return
 
     try:
         arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
         my_gemini.reset(arg1)
-        bot.reply_to(message, f'{tr("История Gemini Pro в чате очищена", lang)} {arg1}')
+        msg = f'{tr("История Gemini Pro в чате очищена", lang)} {arg1}'
+        bot.reply_to(message, msg)
     except:
-        bot.reply_to(message, tr('Usage: /reset_gemini2 <chat_id_full!>', lang))
-        return
+        msg = tr('Usage: /reset_gemini2 <chat_id_full!>', lang)
+        bot.reply_to(message, msg)
+    my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['bingcookie', 'cookie', 'c'])
+@bot.message_handler(commands=['bingcookie', 'cookie', 'c'], func=authorized_admin)
 def set_bing_cookies(message: telebot.types.Message):
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-
-    if message.from_user.id not in cfg.admins:
-        bot.reply_to(message, tr('Access denied.', lang), reply_markup=get_keyboard('hide', message))
-        return
 
     try:
         args = message.text.split(maxsplit=1)[1]
@@ -1773,29 +1778,25 @@ def set_bing_cookies(message: telebot.types.Message):
         for cookie in cookies:
             bing_img.COOKIE[n] = cookie.strip()
             n += 1
-        bot.reply_to(message, f'{tr("Cookies set:", lang)} {n}', reply_markup=get_keyboard('hide', message))
+        msg = f'{tr("Cookies set:", lang)} {n}'
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, msg)
     except Exception as error:
         my_log.log2(f'set_bing_cookies: {error}\n\n{message.text}')
-        bot.reply_to(message, tr('Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie', lang), reply_markup=get_keyboard('hide', message))
+        msg = tr('Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie', lang)
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, msg)
         keys = '\n\n'.join([x[1] for x in bing_img.COOKIE.items()])
         if keys.strip():
-            bot.reply_to(message, f'{tr("Current cookies:", lang)} {keys}', reply_markup=get_keyboard('hide', message))
+            msg = f'{tr("Current cookies:", lang)} {keys}'
+            my_log.log_echo(message, msg)
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
 
 
-@bot.message_handler(commands=['style2'])
+@bot.message_handler(commands=['style2'], func=authorized_admin)
 def change_mode2(message: telebot.types.Message):
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-
-    if message.from_user.id not in cfg.admins:
-        bot.reply_to(message, tr('Access denied.', lang), reply_markup=get_keyboard('hide', message))
-        return
 
     try:
         arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
@@ -1810,44 +1811,31 @@ def change_mode2(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['mem'])
+@bot.message_handler(commands=['mem'], func=authorized)
 def send_debug_history(message: telebot.types.Message):
     """
     Отправляет текущую историю сообщений пользователю.
     """
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-    
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     if CHAT_MODE[chat_id_full] == 'chatgpt':
-        prompt = gpt_basic.get_mem_as_string(chat_id_full) or tr('Пусто', lang)
+        prompt = gpt_basic.get_mem_as_string(chat_id_full) or tr('Empty', lang)
     elif CHAT_MODE[chat_id_full] == 'gemini':
-        prompt = my_gemini.get_mem_as_string(chat_id_full) or tr('Пусто', lang)
+        prompt = my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
     else:
         return
     my_log.log_echo(message, prompt)
     reply_to_long_message(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
-@bot.message_handler(commands=['restart']) 
+@bot.message_handler(commands=['restart'], func=authorized_admin) 
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
-    if message.from_user.id in cfg.admins:
-        bot.stop_polling()
-    else:
-        bot.reply_to(message, tr('Эта команда только для админов.', lang), reply_markup=get_keyboard('hide', message))
+    bot.stop_polling()
 
 
-@bot.message_handler(commands=['leave']) 
+@bot.message_handler(commands=['leave'], func=authorized_admin) 
 def leave(message: telebot.types.Message):
     thread = threading.Thread(target=leave_thread, args=(message,))
     thread.start()
@@ -1855,32 +1843,28 @@ def leave_thread(message: telebot.types.Message):
     """выйти из чата"""
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
-    if message.from_user.id in cfg.admins:
 
-        if len(message.text) > 7:
-            args = message.text[7:]
-        else:
-            bot.reply_to(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>')
-            return
-
-        chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
-        for chat_id in chat_ids:
-            if chat_id not in LEAVED_CHATS or LEAVED_CHATS[chat_id] == False:
-                LEAVED_CHATS[chat_id] = True
-                try:
-                    bot.leave_chat(chat_id)
-                    bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
-                except Exception as error:
-                    my_log.log2(f'tb:leave: {chat_id} {str(error)}')
-                    bot.reply_to(message, tr('Не удалось выйти из чата', lang) + f' {chat_id} {str(error)}')
-            else:
-                bot.reply_to(message, tr('Вы уже раньше вышли из чата', lang) + f' {chat_id}')
-            
+    if len(message.text) > 7:
+        args = message.text[7:]
     else:
-        bot.reply_to(message, tr('Эта команда только для админов.', lang), reply_markup=get_keyboard('hide', message))
+        bot.reply_to(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>')
+        return
+
+    chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
+    for chat_id in chat_ids:
+        if chat_id not in LEAVED_CHATS or LEAVED_CHATS[chat_id] == False:
+            LEAVED_CHATS[chat_id] = True
+            try:
+                bot.leave_chat(chat_id)
+                bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
+            except Exception as error:
+                my_log.log2(f'tb:leave: {chat_id} {str(error)}')
+                bot.reply_to(message, tr('Не удалось выйти из чата', lang) + f' {chat_id} {str(error)}')
+        else:
+            bot.reply_to(message, tr('Вы уже раньше вышли из чата', lang) + f' {chat_id}')
 
 
-@bot.message_handler(commands=['revoke']) 
+@bot.message_handler(commands=['revoke'], func=authorized_admin) 
 def revoke(message: telebot.types.Message):
     thread = threading.Thread(target=revoke_thread, args=(message,))
     thread.start()
@@ -1888,36 +1872,33 @@ def revoke_thread(message: telebot.types.Message):
     """разбанить чат(ы)"""
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
-    if message.from_user.id in cfg.admins:
-        if len(message.text) > 8:
-            args = message.text[8:]
-        else:
-            bot.reply_to(message, '/revoke <группа или группы которые надо разбанить>')
-            return
 
-        chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
-        for chat_id in chat_ids:
-            if chat_id in LEAVED_CHATS and LEAVED_CHATS[chat_id]:
-                LEAVED_CHATS[chat_id] = False
-                bot.reply_to(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}')
-            else:
-                bot.reply_to(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}')
+    if len(message.text) > 8:
+        args = message.text[8:]
     else:
-        bot.reply_to(message, tr('Эта команда только для админов.', lang), reply_markup=get_keyboard('hide', message))
+        bot.reply_to(message, '/revoke <группа или группы которые надо разбанить>')
+        return
+
+    chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
+    for chat_id in chat_ids:
+        if chat_id in LEAVED_CHATS and LEAVED_CHATS[chat_id]:
+            LEAVED_CHATS[chat_id] = False
+            bot.reply_to(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}')
+        else:
+            bot.reply_to(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}')
 
 
-@bot.message_handler(commands=['temperature', 'temp'])
+@bot.message_handler(commands=['temperature', 'temp'], func=authorized)
 def set_new_temperature(message: telebot.types.Message):
-    """меняет температуру для chatGPT и Gemini
+    """Changes the temperature for chatGPT and Gemini
     /temperature <0...2>
-    по умолчанию 0 - автоматическая
-    чем меньше температура тем менее творчейский ответ, меньше бреда и вранья,
-    и желания давать ответ
+    Default is 0 - automatic
+    The lower the temperature, the less creative the response, the less nonsense and lies,
+    and the desire to give an answer
     """
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     if len(message.text.split()) == 2:
         try:
@@ -1946,23 +1927,19 @@ def set_new_temperature(message: telebot.types.Message):
 `/temperature 1.9` {tr('На таких высоких значения он пишет один сплошной бред', lang)}
 """
         bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, help)
         return
 
     gpt_basic.TEMPERATURE[chat_id_full] = new_temp
     GEMIMI_TEMP[chat_id_full] = new_temp
-    bot.reply_to(message, f'{tr("Новая температура установлена:", lang)} {new_temp}',
-                 parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
+    msg = f'{tr("New temperature set:", lang)} {new_temp}'
+    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['lang', 'language'])
+@bot.message_handler(commands=['lang', 'language'], func=authorized)
 def language(message: telebot.types.Message):
     """change locale"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
 
     chat_id_full = get_topic_id(message)
     check_blocked_user(chat_id_full)
@@ -1994,38 +1971,26 @@ def language(message: telebot.types.Message):
         return
 
 
-@bot.message_handler(commands=['music', 'mus', 'm'])
+@bot.message_handler(commands=['music', 'mus', 'm'], func=authorized)
 def music(message: telebot.types.Message):
-    """ищет и скачивает музыку с ютуба"""
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=music_thread, args=(message,))
     thread.start()
 def music_thread(message: telebot.types.Message):
-    """ищет и скачивает музыку с ютуба"""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
+    """Searches and downloads music from YouTube"""
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     try:
         query = message.text.split(maxsplit=1)[1]
     except:
         query = ''
 
-    my_log.log_echo(message)
-
     if query:
         with ShowAction(message, 'typing'):
             results = my_ytb.search_youtube(query)
             my_log.log_echo(message, '\n' + '\n'.join([str(x) for x in results]))
-            msg = tr('Вот что удалось найти', lang)
+            msg = tr("Here's what I managed to find", lang)
             bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
     else:
         with ShowAction(message, 'typing'):
@@ -2038,25 +2003,19 @@ def music_thread(message: telebot.types.Message):
             results = my_ytb.get_random_songs(10)
             if results:
                 my_log.log_echo(message, '\n' + '\n'.join([str(x) for x in results]))
-                msg = tr('Случайные песни', lang)
+                msg = tr('Random songs', lang)
                 bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
 
 
-@bot.message_handler(commands=['model'])
+@bot.message_handler(commands=['model'], func=authorized_admin)
 def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
     thread = threading.Thread(target=set_new_model_thread, args=(message,))
     thread.start()
 def set_new_model_thread(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     if chat_id_full in gpt_basic.CUSTOM_MODELS:
         current_model = gpt_basic.CUSTOM_MODELS[chat_id_full]
@@ -2092,12 +2051,6 @@ def set_new_model_thread(message: telebot.types.Message):
             my_log.log_echo(message, x)
         return
 
-    if not (message.from_user.id in cfg.admins or is_admin_member(message)):
-       msg = tr('Эта команда только для админов.', lang)
-       bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-       my_log.log_echo(message, msg)
-       return
-
     model = message.text.split()[1]
     msg0 = f'{tr("Старая модель", lang)} `{current_model}`.'
     msg = f'{tr("Установлена новая модель", lang)} `{model}`.'
@@ -2108,13 +2061,8 @@ def set_new_model_thread(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['tts'])
+@bot.message_handler(commands=['tts'], func=authorized)
 def tts(message: telebot.types.Message, caption = None):
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=tts_thread, args=(message,caption))
     thread.start()
 def tts_thread(message: telebot.types.Message, caption = None):
@@ -2122,19 +2070,12 @@ def tts_thread(message: telebot.types.Message, caption = None):
         /tts <URL>
     """
 
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
-    urls = re.findall(r'^/tts\s*(https?://[^\s]+)?$', message.text.lower())
+    # urls = re.findall(r'^/tts\s*(https?://[^\s]+)?$', message.text.lower())
 
-    # обрабатываем урл, просто достаем текст и показываем с клавиатурой для озвучки
+    # Process the url, just get the text and show it with a keyboard for voice acting
     args = message.text.split()
     if len(args) == 2 and my_sum.is_valid_url(args[1]):
         url = args[1]
@@ -2148,15 +2089,11 @@ def tts_thread(message: telebot.types.Message, caption = None):
                                       disable_web_page_preview=True)
         return
 
-    # разбираем параметры
-    # регулярное выражение для разбора строки
     pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
-    # поиск совпадений с регулярным выражением
     match = re.match(pattern, message.text, re.DOTALL)
-    # извлечение параметров из найденных совпадений
     if match:
-        llang = match.group("lang") or lang  # если lang не указан, то по умолчанию язык юзера
-        rate = match.group("rate") or "+0%"  # если rate не указан, то по умолчанию '+0%'
+        llang = match.group("lang") or lang  # If lang is not specified, then by default the user's language
+        rate = match.group("rate") or "+0%"  # If rate is not specified, then by default '+0%'
         text = match.group("text") or ''
     else:
         text = llang = rate = ''
@@ -2164,18 +2101,17 @@ def tts_thread(message: telebot.types.Message, caption = None):
     rate = rate.strip()
 
     if not text or llang not in supported_langs_tts:
-        help = f"""{tr('Использование:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('текст', lang)}>|<URL>
+        help = f"""{tr('Usage:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('text', lang)}>|<URL>
 
-+-XX% - {tr('ускорение с обязательным указанием направления + или -', lang)}
++-XX% - {tr('acceleration with mandatory indication of direction + or -', lang)}
 
-/tts привет
-/tts en hello, let me speak from all my heart
-/tts +50% привет со скоростью 1.5х
-/tts uk -50% тянем время, говорим по-русски с украинским акцентом :)
+/tts hello all
+/tts en hello, let me speak
+/tts en +50% Hello at a speed of 1.5x
 
-{tr('Поддерживаемые языки:', lang)} {', '.join(supported_langs_tts)}
+{tr('Supported languages:', lang)} {', '.join(supported_langs_tts)}
 
-{tr('Напишите что надо произнести, чтобы получить голосовое сообщение', lang)}
+{tr('Write what to say to get a voice message.', lang)}
 """
 
         COMMAND_MODE[chat_id_full] = 'tts'
@@ -2190,7 +2126,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
             else:
                 gender = 'female'
 
-            # ограничение на кол-во символов для openai
+            # Character limit for openai
             if chat_id_full not in TTS_OPENAI_LIMIT:
                 TTS_OPENAI_LIMIT[chat_id_full] = 0
 
@@ -2198,7 +2134,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
                 my_log.log2(f'Openai tts limit exceeded: {chat_id_full} {TTS_OPENAI_LIMIT[chat_id_full]}')
                 gender = 'google_female'
 
-            # openai доступен не всем, если недоступен то вместо него используется гугл
+            # OpenAI is not available to everyone, if it is not available then Google is used instead
             if not allowed_chatGPT_user(message.chat.id):
                 gender = 'google_female'
             if 'openai' in gender and len(text) > cfg.MAX_OPENAI_TTS:
@@ -2207,12 +2143,12 @@ def tts_thread(message: telebot.types.Message, caption = None):
             if 'openai' in gender:
                 TTS_OPENAI_LIMIT[chat_id_full] += len(text)
 
-            # яндекс знает только несколько языков и не может больше 2000 символов
+            # Yandex knows only a few languages and cannot exceed 1000 characters
             if 'ynd' in gender:
-                if len(text) > 1500 or llang not in ['ru', 'en', 'uk', 'he', 'de', 'kk', 'uz']:
+                if len(text) > 1000 or llang not in ['ru', 'en', 'uk', 'he', 'de', 'kk', 'uz']:
                     gender = 'female'
 
-            # микрософт не умеет в латинский язык
+            # Microsoft do not support Latin
             if llang == 'la':
                 gender = 'google_female'
 
@@ -2224,12 +2160,12 @@ def tts_thread(message: telebot.types.Message, caption = None):
                     bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id,
                                    reply_markup=get_keyboard('hide', message), caption=caption)
                 else:
-                    # в привате не надо добавлять клавиатуру с кнопкой для удаления, 
-                    # там можно удалить без нее, а случайное удаление ни к чему
+                    # In private, you don't need to add a keyboard with a delete button,
+                    # you can delete it there without it, and accidental deletion is useless
                     bot.send_voice(message.chat.id, audio, caption=caption)
-                my_log.log_echo(message, f'[Отправил голосовое сообщение] [{gender}]')
+                my_log.log_echo(message, f'[Sent voice message] [{gender}]')
             else:
-                msg = tr('Не удалось озвучить. Возможно вы перепутали язык, например немецкий голос не читает по-русски.', lang)
+                msg = tr('Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.', lang)
                 if message.chat.type != 'private':
                     bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
                 else:
@@ -2237,27 +2173,15 @@ def tts_thread(message: telebot.types.Message, caption = None):
                     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['google',])
+@bot.message_handler(commands=['google',], func=authorized)
 def google(message: telebot.types.Message):
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=google_thread, args=(message,))
     thread.start()
 def google_thread(message: telebot.types.Message):
     """ищет в гугле перед ответом"""
 
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     if not allowed_chatGPT_user(message.chat.id):
         my_log.log_echo(message, 'chatGPT запрещен [google]')
@@ -2306,27 +2230,15 @@ def google_thread(message: telebot.types.Message):
                              chat_id_full)
 
 
-@bot.message_handler(commands=['ddg',])
+@bot.message_handler(commands=['ddg',], func=authorized)
 def ddg(message: telebot.types.Message):
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=ddg_thread, args=(message,))
     thread.start()
 def ddg_thread(message: telebot.types.Message):
     """ищет в DuckDuckGo перед ответом"""
 
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     if not allowed_chatGPT_user(message.chat.id):
         my_log.log_echo(message, 'chatGPT запрещен [ddg]')
@@ -2380,32 +2292,20 @@ def ddg_thread(message: telebot.types.Message):
                              chat_id_full)
 
 
-@bot.message_handler(commands=['image','img','i'])
+@bot.message_handler(commands=['image','img','i'], func=authorized)
 def image(message: telebot.types.Message):
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=image_thread, args=(message,))
     thread.start()
 def image_thread(message: telebot.types.Message):
-    """генерирует картинку по описанию"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
+    """Generates a picture from a description"""
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     with semaphore_talks:
-        help = f"""/image {tr('текстовое описание картинки, что надо нарисовать', lang)}
+        help = f"""/image {tr('Text description of the picture, what to draw.', lang)}
 
-{tr('Напишите что надо нарисовать, как это выглядит', lang)}
+{tr('Write what to draw, what it looks like.', lang)}
 """
         prompt = message.text.split(maxsplit = 1)
 
@@ -2414,7 +2314,7 @@ def image_thread(message: telebot.types.Message):
             with ShowAction(message, 'upload_photo'):
                 moderation_flag = gpt_basic.moderation(prompt)
                 if moderation_flag:
-                    msg = tr('Что то подозрительное есть в вашем запросе, попробуйте написать иначе.', lang)
+                    msg = tr('There is something suspicious in your request, try to rewrite it differently.', lang)
                     bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, msg)
                     return
@@ -2445,8 +2345,8 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                             except Exception as error2:
                                 print(error2)
                         caption = ''
-                        # запоминаем промпт по ключу (номер первой картинки) и сохраняем в бд запрос и картинки
-                        # что бы можно было их потом просматривать отдельно
+                        # remember prompt by key (first image number) and save request and images to database
+                        # so that they can be viewed separately later
                         IMAGE_PROMPTS[msgs_ids[0].message_id] = prompt
 
                         for i in msgs_ids:
@@ -2460,23 +2360,23 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                         my_log.log_echo(message, f'[image gen] {len(medias)}\n{images_list_str}')
 
                         if suggest:
-                            suggest2 = [f'<code>/image {x}</code>'.replace('• ', '') for x in suggest.split('\n')]
+                            suggest2 = [f'<code>/image {x}</code>'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1) for x in suggest.split('\n')]
                             suggest3 = '\n\n'.join(suggest2)
                             suggest4 = tr('Here are some more possible options for your request:', lang) + '\n\n' + suggest3
                             reply_to_long_message(message, suggest4, parse_mode = 'HTML', reply_markup=get_keyboard('hide', message))
                             my_log.log_echo(message, suggest4)
 
-                        n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 
-                            {'role':'system', 'content':f'assistant {tr("нарисовал с помощью DALL-E", lang)}'}]
+                        n = [{'role':'system', 'content':f'user {tr("asked to draw", lang)}\n{prompt}'}, 
+                            {'role':'system', 'content':f'assistant {tr("drew using DALL-E", lang)}'}]
                         if chat_id_full in gpt_basic.CHATS:
                             gpt_basic.CHATS[chat_id_full] += n
                         else:
                             gpt_basic.CHATS[chat_id_full] = n
-                        my_gemini.update_mem(f'user {tr("попросил нарисовать", lang)}\n{prompt}',
-                                            f'{tr("нарисовал с помощью DALL-E", lang)}',
+                        my_gemini.update_mem(f'user {tr("asked to draw", lang)}\n{prompt}',
+                                            f'{tr("drew using DALL-E", lang)}',
                                             chat_id_full)
                 else:
-                    bot.reply_to(message, tr('Не смог ничего нарисовать. Может настроения нет, а может надо другое описание дать.', lang), 
+                    bot.reply_to(message, tr('Could not draw anything. Maybe there is no mood, or maybe you need to give another description.', lang), 
                                  reply_markup=get_keyboard('hide', message))
                     if cfg.enable_image_adv:
                         msg = f'{tr("Try this free group, it has a lot of mediabots:", lang)} https://t.me/neuralforum\n\n'
@@ -2485,10 +2385,10 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                  disable_web_page_preview = True,
                                  reply_markup=get_keyboard('hide', message))
                     my_log.log_echo(message, '[image gen error] ')
-                    n = [{'role':'system', 'content':f'user {tr("попросил нарисовать", lang)}\n{prompt}'}, 
-                         {'role':'system', 'content':f'assistant {tr("не захотел или не смог нарисовать это с помощью DALL-E", lang)}'}]
-                    my_gemini.update_mem(f'user {tr("попросил нарисовать", lang)}\n{prompt}',
-                                            f'{tr("не захотел или не смог нарисовать это с помощью DALL-E", lang)}',
+                    n = [{'role':'system', 'content':f'user {tr("asked to draw", lang)}\n{prompt}'}, 
+                         {'role':'system', 'content':f'assistant {tr("did not want or could not draw this using DALL-E", lang)}'}]
+                    my_gemini.update_mem(f'user {tr("asked to draw", lang)}\n{prompt}',
+                                            f'{tr("did not want or could not draw this using DALL-E", lang)}',
                                             chat_id_full)
                     if chat_id_full in gpt_basic.CHATS:
                         gpt_basic.CHATS[chat_id_full] += n
@@ -2502,32 +2402,22 @@ the original prompt:""", lang) + '\n\n\n' + prompt
             my_log.log_echo(message, help)
 
 
-@bot.message_handler(commands=['stats'])
+@bot.message_handler(commands=['stats'], func=authorized_admin)
 def stats(message: telebot.types.Message):
     """Показывает статистику использования бота."""
     thread = threading.Thread(target=stats_thread, args=(message,))
     thread.start()
 def stats_thread(message: telebot.types.Message):
     """Показывает статистику использования бота."""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    my_log.log_echo(message)
-    if message.chat.id in cfg.admins:
-        users = [x for x in CHAT_MODE.keys()]
-        users_sorted = natsorted(users)
-        users_text = '\n'.join(users_sorted) + '\n\nTotal: ' + str(len(users_sorted))
-        reply_to_long_message(message, tr("Статистика бота:", lang) + '\n\n' + users_text,
-                              reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, users_text)
-        return
-    msg = f'/stats ' + tr("показывает статистику бота.\n\nТолько администраторы могут использовать эту команду.", lang)
-    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    users = [x for x in CHAT_MODE.keys()]
+    users_sorted = natsorted(users)
+    users_text = '\n'.join(users_sorted) + '\n\nTotal: ' + str(len(users_sorted))
+    reply_to_long_message(message, tr("Статистика бота:", lang) + '\n\n' + users_text,
+                            reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, users_text)
 
 
 def check_blocked_user(id: str):
@@ -2547,92 +2437,61 @@ def check_blocked_user(id: str):
                 raise Exception(f'user {user_id} in stop list, ignoring')
 
 
-@bot.message_handler(commands=['blockadd'])
+@bot.message_handler(commands=['blockadd'], func=authorized_admin)
 def block_user_add(message: telebot.types.Message):
     """Добавить юзера в стоп список"""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
 
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
-    my_log.log_echo(message)
-    if message.chat.id in cfg.admins:
-        user_id = message.text[10:].strip()
-        if user_id:
-            BAD_USERS[user_id] = True
-            bot.reply_to(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}',
-                         reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, f'Пользователь {user_id} добавлен в стоп-лист')
-    else:
-        bot.reply_to(message, tr('Только администраторы могут использовать эту команду.', lang), 
-                     reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, 'Только администраторы могут использовать эту команду.')
+
+    user_id = message.text[10:].strip()
+    if user_id:
+        BAD_USERS[user_id] = True
+        bot.reply_to(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}',
+                        reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, f'Пользователь {user_id} добавлен в стоп-лист')
 
 
-@bot.message_handler(commands=['blockdel'])
+@bot.message_handler(commands=['blockdel'], func=authorized_admin)
 def block_user_del(message: telebot.types.Message):
     """Убрать юзера из стоп списка"""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
 
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
-    my_log.log_echo(message)
-    if message.chat.id in cfg.admins:
-        user_id = message.text[10:].strip()
-        if user_id:
-            if user_id in BAD_USERS:
-                del BAD_USERS[user_id]
-                bot.reply_to(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}',
-                             reply_markup=get_keyboard('hide', message))
-                my_log.log_echo(message, f'Пользователь {user_id} удален из стоп-листа')
-            else:
-                bot.reply_to(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}', 
-                             reply_markup=get_keyboard('hide', message))
-                my_log.log_echo(message, f'Пользователь {user_id} не найден в стоп-листе')
-    else:
-        bot.reply_to(message, tr('Только администраторы могут использовать эту команду.', lang), reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, 'Только администраторы могут использовать эту команду.')
+
+    user_id = message.text[10:].strip()
+    if user_id:
+        if user_id in BAD_USERS:
+            del BAD_USERS[user_id]
+            bot.reply_to(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}',
+                            reply_markup=get_keyboard('hide', message))
+            my_log.log_echo(message, f'Пользователь {user_id} удален из стоп-листа')
+        else:
+            bot.reply_to(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}', 
+                            reply_markup=get_keyboard('hide', message))
+            my_log.log_echo(message, f'Пользователь {user_id} не найден в стоп-листе')
 
 
-@bot.message_handler(commands=['blocklist'])
+@bot.message_handler(commands=['blocklist'], func=authorized_admin)
 def block_user_list(message: telebot.types.Message):
     """Показывает список заблокированных юзеров"""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
-    my_log.log_echo(message)
-    if message.chat.id in cfg.admins:
-        users = [x for x in BAD_USERS.keys() if x]
-        if users:
-            reply_to_long_message(message, '\n'.join(users), reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, '\n'.join(users))
-    else:
-        bot.reply_to(message, tr('Только администраторы могут использовать эту команду.', lang), reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, 'Только администраторы могут использовать эту команду.')
+    users = [x for x in BAD_USERS.keys() if x]
+    if users:
+        reply_to_long_message(message, '\n'.join(users), reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, '\n'.join(users))
 
 
-@bot.message_handler(commands=['ask', 'perplexity'])
+@bot.message_handler(commands=['ask', 'perplexity'], func=authorized)
 def ask(message: telebot.types.Message):
     thread = threading.Thread(target=ask_thread, args=(message,))
     thread.start()
 def ask_thread(message: telebot.types.Message):
     """ищет в perplexity.ai ответ"""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
 
-    my_log.log_echo(message)
     return
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     try:
         query = message.text.split(maxsplit=1)[1]
@@ -2678,7 +2537,7 @@ def ask_thread(message: telebot.types.Message):
         gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
 
 
-@bot.message_handler(commands=['alert'])
+@bot.message_handler(commands=['alert'], func=authorized_admin)
 def alert(message: telebot.types.Message):
     """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
        а она появляется в первом же сообщении.
@@ -2689,13 +2548,10 @@ def alert_thread(message: telebot.types.Message):
     """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
        а она появляется в первом же сообщении.
     """
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
 
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
-    my_log.log_echo(message)
+
     if message.chat.id in cfg.admins:
         text = message.text[7:]
         if text:
@@ -2723,16 +2579,13 @@ def alert_thread(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['qr'])
+@bot.message_handler(commands=['qr'], func=authorized)
 def qrcode_text(message: telebot.types.Message):
     """переводит текст в qrcode"""
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
 
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
-    my_log.log_echo(message)
+
     text = message.text[3:]
     if text:
         image = utils.text_to_qrcode(text)
@@ -2751,26 +2604,15 @@ def qrcode_text(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['sum'])
+@bot.message_handler(commands=['sum'], func=authorized)
 def summ_text(message: telebot.types.Message):
     # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=summ_text_thread, args=(message,))
     thread.start()
 def summ_text_thread(message: telebot.types.Message):
 
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
-
-    my_log.log_echo(message)
 
     if not allowed_chatGPT_user(message.chat.id):
         my_log.log_echo(message, 'chatGPT запрещен [sum]')
@@ -2853,7 +2695,7 @@ def summ_text_thread(message: telebot.types.Message):
     my_log.log_echo(message, help)
 
 
-@bot.message_handler(commands=['sum2'])
+@bot.message_handler(commands=['sum2'], func=authorized)
 def summ2_text(message: telebot.types.Message):
     # убирает запрос из кеша если он там есть и делает запрос снова
 
@@ -2873,26 +2715,14 @@ def summ2_text(message: telebot.types.Message):
     summ_text(message)
 
 
-@bot.message_handler(commands=['trans', 'tr', 't'])
+@bot.message_handler(commands=['trans', 'tr', 't'], func=authorized)
 def trans(message: telebot.types.Message):
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=trans_thread, args=(message,))
     thread.start()
 def trans_thread(message: telebot.types.Message):
 
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
-
-    my_log.log_echo(message)
 
     with semaphore_talks:
         help = f"""/trans [en|ru|uk|..] {tr('''текст для перевода на указанный язык
@@ -2927,7 +2757,6 @@ def trans_thread(message: telebot.types.Message):
             return
         llang = llang.strip()
 
-    with semaphore_talks:
         with ShowAction(message, 'typing'):
             translated = my_trans.translate_text2(text, llang)
             if translated:
@@ -2954,20 +2783,13 @@ def trans_thread(message: telebot.types.Message):
                 my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['name'])
+@bot.message_handler(commands=['name'], func=authorized)
 def send_name(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не
     слишком длинное"""
 
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     BAD_NAMES = (tr('гугл', lang).lower(), tr('утка', lang).lower(),
                  tr('нарисуй', lang).lower())
@@ -2994,19 +2816,12 @@ def send_name(message: telebot.types.Message):
         bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
-@bot.message_handler(commands=['ocr'])
+@bot.message_handler(commands=['ocr'], func=authorized)
 def ocr_setup(message: telebot.types.Message):
     """меняет настройки ocr"""
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
 
     try:
         arg = message.text.split(maxsplit=1)[1]
@@ -3039,26 +2854,17 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
     bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
 
 
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['start'], func=authorized)
 def send_welcome_start(message: telebot.types.Message) -> None:
     # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=send_welcome_start_thread, args=(message,))
     thread.start()
 def send_welcome_start_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
+
     is_private = message.chat.type == 'private'
     user_name = message.from_user.full_name or message.from_user.username or ''
     chat_name = message.chat.username or message.chat.title or ''
@@ -3102,27 +2908,15 @@ Chat language: {lang}'''
         my_log.log_echo(message, help)
 
 
-@bot.message_handler(commands=['help'])
+@bot.message_handler(commands=['help'], func=authorized)
 def send_welcome_help(message: telebot.types.Message) -> None:
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=send_welcome_help_thread, args=(message,))
     thread.start()
 def send_welcome_help_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
-    my_log.log_echo(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    check_blocked_user(chat_id_full)
 
     help = f"""The chatbot responds to the name bot.
 For example, you can say bot, tell me a joke.
@@ -3173,14 +2967,9 @@ Donate:"""
         my_log.log_echo(message, help)
 
 
-@bot.message_handler(commands=['id']) 
+@bot.message_handler(commands=['id'], func=authorized) 
 def id_cmd_handler(message: telebot.types.Message):
     """показывает id юзера и группы в которой сообщение отправлено"""
-
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
-
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
@@ -3195,7 +2984,7 @@ def id_cmd_handler(message: telebot.types.Message):
 ''', reply_markup=get_keyboard('hide', message))
 
 
-@bot.message_handler(commands=['dump_translation'])
+@bot.message_handler(commands=['dump_translation'], func=authorized_admin)
 def dump_translation(message: telebot.types.Message):
     thread = threading.Thread(target=dump_translation_thread, args=(message,))
     thread.start()
@@ -3203,14 +2992,9 @@ def dump_translation_thread(message: telebot.types.Message):
     """
     Dump automatically translated messages as json file
     """
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
 
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
-
-    my_log.log_echo(message)
 
     with ShowAction(message, 'upload_document'):
         # dump AUTO_TRANSLATIONS as json file
@@ -3226,7 +3010,7 @@ def dump_translation_thread(message: telebot.types.Message):
                 my_log.log2(f'ERROR: {error}')
 
 
-@bot.message_handler(commands=['init'])
+@bot.message_handler(commands=['init'], func=authorized_admin)
 def set_default_commands(message: telebot.types.Message):
     thread = threading.Thread(target=set_default_commands_thread, args=(message,))
     thread.start()
@@ -3239,17 +3023,9 @@ def set_default_commands_thread(message: telebot.types.Message):
     Reads a file containing a list of commands and their descriptions,
     and sets the default commands for the bot.
     """
-    # не обрабатывать команды к другому боту /cmd@botname args
-    if is_for_me(message.text)[0]: message.text = is_for_me(message.text)[1]
-    else: return
 
     chat_full_id = get_topic_id(message)
     user_lang = get_lang(chat_full_id, message)
-
-    if message.from_user.id not in cfg.admins:
-        bot.reply_to(message, tr("Эта команда доступна только администраторам",
-                                 user_lang))
-        return
 
     def get_seconds(s):
         match = re.search(r"after\s+(?P<seconds>\d+)", s)
@@ -3258,9 +3034,7 @@ def set_default_commands_thread(message: telebot.types.Message):
         else:
             return 0
 
-    bot.reply_to(message,
-                 tr("Локализация займет много времени, не повторяйте эту команду",
-                    user_lang))
+    bot.reply_to(message, tr("Localization will take a long time, do not repeat this command.", user_lang))
     
     # most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr','hi',
     #                    'hu', 'id', 'in', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro',
@@ -3278,7 +3052,7 @@ def set_default_commands_thread(message: telebot.types.Message):
                         description = tr(description, lang)
                         commands.append(telebot.types.BotCommand(command, description))
                 except Exception as error:
-                    my_log.log2(f'Не удалось прочитать команды по умолчанию для языка {lang}: {error}')
+                    my_log.log2(f'Failed to read default commands for language {lang}: {error}')
         result = False
         try:
             l1 = [x.description for x in bot.get_my_commands(language_code=lang)]
@@ -3288,7 +3062,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             else:
                 result = True
         except Exception as error_set_command:
-            my_log.log2(f'Не удалось установить команды по умолчанию для языка {lang}: {error_set_command} ')
+            my_log.log2(f'Failed to set default commands for language {lang}: {error_set_command} ')
             time.sleep(get_seconds(str(error_set_command)))
             try:
                 if l1 != l2:
@@ -3296,13 +3070,13 @@ def set_default_commands_thread(message: telebot.types.Message):
                 else:
                     result = True
             except Exception as error_set_command2:
-                my_log.log2(f'Не удалось установить команды по умолчанию для языка {lang}: {error_set_command2}')
+                my_log.log2(f'Failed to set default commands for language {lang}: {error_set_command2}')
         if result:
             result = '✅'
         else:
             result = '❌'
 
-        msg = f'{result} Установлены команды по умолчанию [{lang}]'
+        msg = f'{result} Default commands set [{lang}]'
         msg_commands += msg + '\n'
     reply_to_long_message(message, msg_commands)
 
@@ -3319,7 +3093,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             else:
                 result = True
         except Exception as error_set_name:
-            my_log.log2(f'Не удалось установить имя бота: {tr(new_bot_name, lang)}'+'\n\n'+str(error_set_name))
+            my_log.log2(f"Failed to set bot's name: {tr(new_bot_name, lang)}" + '\n\n' + str(error_set_name))
             time.sleep(get_seconds(str(error_set_name)))
             try:
                 if bot.get_my_name(language_code=lang).name != tr(new_bot_name, lang):
@@ -3327,11 +3101,11 @@ def set_default_commands_thread(message: telebot.types.Message):
                 else:
                     result = True
             except Exception as error_set_name2:
-                my_log.log2(f'Не удалось установить имя бота: {tr(new_bot_name, lang)}'+'\n\n'+str(error_set_name2))
+                my_log.log2(f"Failed to set bot's name: {tr(new_bot_name, lang)}" + '\n\n' + str(error_set_name2))
         if result:
-            msg_bot_names += '✅ Установлено имя бота для языка ' + lang + f' [{tr(new_bot_name, lang)}]\n'
+            msg_bot_names += "✅ Bot's name set for language " + lang + f' [{tr(new_bot_name, lang)}]\n'
         else:
-            msg_bot_names += '❌ Установлено имя бота для языка ' + lang + f' [{tr(new_bot_name, lang)}]\n'
+            msg_bot_names += "❌ Bot's name set for language " + lang + f' [{tr(new_bot_name, lang)}]\n'
     reply_to_long_message(message, msg_bot_names)
 
     msg_descriptions = ''
@@ -3343,7 +3117,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             else:
                 result = True
         except Exception as error_set_description:
-            my_log.log2(f'Не удалось установить описание бота {lang}: {tr(new_description, lang)}'+'\n\n'+str(error_set_description))
+            my_log.log2(f"Failed to set bot's description {lang}: {tr(new_description, lang)}" + '\n\n' + str(error_set_description))
             time.sleep(get_seconds(str(error_set_description)))
             try:
                 if bot.get_my_description(language_code=lang).description != tr(new_description, lang):
@@ -3351,13 +3125,13 @@ def set_default_commands_thread(message: telebot.types.Message):
                 else:
                     result = True
             except Exception as error_set_description2:
-                my_log.log2(f'Не удалось установить описание бота {lang}: {tr(new_description, lang)}'+'\n\n'+str(error_set_description2))
-                msg_descriptions += '❌ Установлено новое описание бота для языка ' + lang + '\n'
+                my_log.log2(f"Failed to set bot's description {lang}: {tr(new_description, lang)}" + '\n\n' + str(error_set_description2))
+                msg_descriptions += "❌ New bot's description set for language " + lang + '\n'
                 continue
         if result:
-            msg_descriptions += '✅ Установлено новое описание бота для языка ' + lang + '\n'
+            msg_descriptions += "✅ New bot's description set for language " + lang + '\n'
         else:
-            msg_descriptions += '❌ Установлено новое описание бота для языка ' + lang + '\n'
+            msg_descriptions += "❌ New bot's description set for language " + lang + '\n'
     reply_to_long_message(message, msg_descriptions)
 
     msg_descriptions = ''
@@ -3369,7 +3143,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             else:
                 result = True
         except Exception as error_set_short_description:
-            my_log.log2(f'Не удалось установить короткое описание бота: {tr(new_short_description, lang)}'+'\n\n'+str(error_set_short_description))
+            my_log.log2(f"Failed to set bot's short description: {tr(new_short_description, lang)}" + '\n\n' + str(error_set_short_description))
             time.sleep(get_seconds(str(error_set_short_description)))
             try:
                 if bot.get_my_short_description(language_code=lang).short_description != tr(new_short_description, lang):
@@ -3377,13 +3151,13 @@ def set_default_commands_thread(message: telebot.types.Message):
                 else:
                     result = True
             except Exception as error_set_short_description2:
-                my_log.log2(f'Не удалось установить короткое описание бота: {tr(new_short_description, lang)}'+'\n\n'+str(error_set_short_description2))
-                msg_descriptions += '❌ Установлено новое короткое описание бота для языка ' + lang + '\n'
+                my_log.log2(f"Failed to set bot's short description: {tr(new_short_description, lang)}" + '\n\n' + str(error_set_short_description2))
+                msg_descriptions += "❌ New bot's short description set for language " + lang + '\n'
                 continue
         if result:
-            msg_descriptions += '✅ Установлено новое короткое описание бота для языка ' + lang + '\n'
+            msg_descriptions += "✅ New bot's short description set for language " + lang + '\n'
         else:
-            msg_descriptions += '❌ Установлено новое короткое описание бота для языка ' + lang + '\n'
+            msg_descriptions += "❌ New bot's short description set for language " + lang + '\n'
     reply_to_long_message(message, msg_descriptions)
 
 
@@ -3446,7 +3220,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
 
 
 def allowed_chatGPT_user(chat_id: int) -> bool:
-    """Проверка на то что юзер может использовать бота"""
+    """Проверка на то что юзер может использовать платную часть бота (гпт всегда платный даже когда бесплатный Ж-[)"""
     if len(cfg.allow_chatGPT_users) == 0:
         return True
 
@@ -3456,23 +3230,17 @@ def allowed_chatGPT_user(chat_id: int) -> bool:
         return False
 
 
-@bot.message_handler(func=lambda message: True)
+@bot.message_handler(func=authorized)
 def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
-    """Обработчик текстовых сообщений"""
-    # автоматически выходить из забаненых чатов
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
-        bot.leave_chat(message.chat.id)
-        my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
-        return
     thread = threading.Thread(target=do_task, args=(message, custom_prompt))
     thread.start()
 def do_task(message, custom_prompt: str = ''):
-    """функция обработчик сообщений работающая в отдельном потоке"""
+    """default handler"""
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
-    # отлавливаем слишком длинные сообщения
+    # catch too long messages
     if chat_id_full not in MESSAGE_QUEUE:
         MESSAGE_QUEUE[chat_id_full] = message.text
         last_state = MESSAGE_QUEUE[chat_id_full]
@@ -3526,7 +3294,9 @@ def do_task(message, custom_prompt: str = ''):
         message.text = custom_prompt
 
     # не обрабатывать неизвестные команды
-    if message.text.startswith('/'): return
+    if message.text.startswith('/'):
+        my_log.log2(f'tb:do_task:unknown command: {message.text}')
+        return
 
     # если использовано кодовое слово вместо команды /music
     for x in cfg.MUSIC_WORDS:
@@ -3537,8 +3307,6 @@ def do_task(message, custom_prompt: str = ''):
             return
 
     with semaphore_talks:
-
-        my_log.log_echo(message)
 
         # является ли это сообщение топика, темы (особые чаты внутри чатов)
         is_topic = message.is_topic_message or (message.reply_to_message and message.reply_to_message.is_topic_message)
@@ -3673,12 +3441,6 @@ def do_task(message, custom_prompt: str = ''):
         if my_tiktok.is_valid_url(message.text):
             bot.reply_to(message, message.text, disable_web_page_preview = True,
                          reply_markup=get_keyboard('download_tiktok', message))
-            return
-
-        # проверка на блокировку и тротлинг
-        if bot_name_used or is_private or is_reply:
-            check_blocked_user(chat_id_full)
-        else:
             return
 
         # если это номер телефона
@@ -3866,8 +3628,6 @@ def do_task(message, custom_prompt: str = ''):
                         my_log.log2(str(error3))
                     return
 
-
-
             # если активирован режим общения с бард чатом
             if CHAT_MODE[chat_id_full] == 'bard' and not FIRST_DOT:
                 if len(msg) > my_bard.MAX_REQUEST:
@@ -3901,6 +3661,10 @@ def do_task(message, custom_prompt: str = ''):
                             # if links:
                             #     reply_to_long_message(message, text_links, parse_mode='HTML', disable_web_page_preview = True,
                             #                           reply_markup=get_keyboard('hide', message))
+                        else:
+                            msg = tr('No answer from Bard.', lang)
+                            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+                            my_log.log_echo(message, msg)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))
@@ -3986,14 +3750,14 @@ def do_task(message, custom_prompt: str = ''):
                         reply_to_long_message(message, resp, parse_mode='',
                                               disable_web_page_preview = True,
                                               reply_markup=get_keyboard('chat', message))
-        else: # смотрим надо ли переводить текст
-            if check_blocks(chat_id_full) and not is_private:
-                return
-            text = my_trans.translate(message.text)
-            if text:
-                bot.reply_to(message, text, parse_mode='Markdown',
-                             reply_markup=get_keyboard('translate', message))
-                my_log.log_echo(message, text)
+        # else: # смотрим надо ли переводить текст
+        #     if check_blocks(chat_id_full) and not is_private:
+        #         return
+        #     text = my_trans.translate(message.text)
+        #     if text:
+        #         bot.reply_to(message, text, parse_mode='Markdown',
+        #                      reply_markup=get_keyboard('translate', message))
+        #         my_log.log_echo(message, text)
 
 
 def main():

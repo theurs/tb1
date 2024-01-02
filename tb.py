@@ -1776,7 +1776,7 @@ def set_bing_cookies(message: telebot.types.Message):
         args = args.replace('\n', ' ')
         cookies = args.split()
         n = 0
-        for x in bing_img.COOKIE.items:
+        for x in bing_img.COOKIE.items():
             del bing_img.COOKIE[x[0]]
         for cookie in cookies:
             bing_img.COOKIE[n] = cookie.strip()

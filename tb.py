@@ -1766,15 +1766,18 @@ def reset_gemini2(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['bingcookie', 'cookie', 'c'], func=authorized_admin)
+@bot.message_handler(commands=['bingcookie', 'cookie', 'co', 'c'], func=authorized_admin)
 def set_bing_cookies(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
     try:
         args = message.text.split(maxsplit=1)[1]
+        args = args.replace('\n', ' ')
         cookies = args.split()
         n = 0
+        for x in bing_img.COOKIE.items:
+            del bing_img.COOKIE[x[0]]
         for cookie in cookies:
             bing_img.COOKIE[n] = cookie.strip()
             n += 1

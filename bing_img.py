@@ -186,6 +186,10 @@ def gen_images(query: str):
                         except Exception as error:
                             if 'location' in str(error):
                                 my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
+                                for z in COOKIE.items():
+                                    if z[1] == cookie:
+                                        del COOKIE[z[0]]
+                                        break
                             else:
                                 my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                             if str(error).startswith('error1'):
@@ -200,4 +204,4 @@ def gen_images(query: str):
 
 
 if __name__ == '__main__':
-    print(gen_images('fuck sex babe'))
+    print(gen_images('wolf face big'))

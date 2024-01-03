@@ -1851,13 +1851,13 @@ def set_bing_cookies(message: telebot.types.Message):
         my_log.log_echo(message, msg)
 
         nl = '\n\n'
-        keys = '\n\n'.join([f'{x[1][:5]}...{x[1][-5:]}' for x in bing_img.COOKIE.items()])
+        keys = '\n\n'.join([f'{x[1]}' for x in bing_img.COOKIE.items()])
         if keys.strip():
             msg = f'{tr("Current cookies:", lang)}{nl}{keys}'
             my_log.log_echo(message, msg)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
 
-        keys_suspended = '\n\n'.join([f'{x[0][:5]}...{x[0][-5:]} {round((time.time() - x[1])/60/60, 1)} hours left' for x in bing_img.COOKIE_SUSPENDED.items()])
+        keys_suspended = '\n\n'.join([f'{x[0]} {round((bing_img.SUSPEND_TIME - (time.time() - x[1]))/60/60, 1)} hours left' for x in bing_img.COOKIE_SUSPENDED.items()])
         if keys_suspended.strip():
             msg = f'{nl}{tr("Current suspended cookies:", lang)}{nl}{keys_suspended}'
             my_log.log_echo(message, msg)

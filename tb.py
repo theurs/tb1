@@ -890,6 +890,25 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         raise f"Неизвестная клавиатура '{kbd}'"
 
 
+@bot.message_handler(commands=['cmd'], func=authorized_admin)
+def command_code(message: telebot.types.Message):
+    return
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    cmd = message.text[4:]
+    if cmd:
+        try:
+            cmp = compile(cmd.strip(), 'test', 'exec')
+            exec(cmp)
+        except Exception:
+            error_traceback = traceback.format_exc()
+            my_log.log2(f'tb:command_code: {cmd.strip()}\n\n{error_traceback}')
+    else:
+        msg = f"{tr('Usage: /cmd <string to eval()>', lang)}"
+        my_log.log_echo(message, msg)
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+
+
 @bot.callback_query_handler(func=authorized_callback)
 def callback_inline(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
@@ -1879,6 +1898,7 @@ def set_bing_cookies(message: telebot.types.Message):
         cookies = args.split()
         n = 0
         bing_img.COOKIE.clear()
+        bing_img.COOKIE_SUSPENDED.clear()
         for cookie in cookies:
             bing_img.COOKIE[n] = cookie.strip()
             n += 1
@@ -1898,11 +1918,11 @@ def set_bing_cookies(message: telebot.types.Message):
             my_log.log_echo(message, msg)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
 
-        keys_suspended = '\n\n'.join([f'{x[0]} {round((bing_img.SUSPEND_TIME - (time.time() - x[1]))/60/60, 1)} hours left' for x in bing_img.COOKIE_SUSPENDED.items()])
+        keys_suspended = '\n\n'.join([f'{x[0]} <b>{round((bing_img.SUSPEND_TIME - (time.time() - x[1]))/60/60, 1)} hours left</b>' for x in bing_img.COOKIE_SUSPENDED.items()])
         if keys_suspended.strip():
             msg = f'{nl}{tr("Current suspended cookies:", lang)}{nl}{keys_suspended}'
             my_log.log_echo(message, msg)
-            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+            bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['style2'], func=authorized_admin)

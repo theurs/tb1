@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 
+import traceback
+
 import telebot
 import cfg
 
@@ -8,18 +10,24 @@ import cfg
 bot = telebot.TeleBot(cfg.token, skip_pending=True)
 
 
-def auth(message: telebot.types.Message) -> bool:
-    return message.from_user.id in cfg.admins
+D = {
+    1: 'Hi',
+}
 
-
-# @bot.message_handler(commands=['start'], func=auth)
-# def start(message):
-#     bot.reply_to(message, '[OK]')
-
-
-@bot.message_handler(func=auth)
-def echo_all(message: telebot.types.Message) -> None:
-    bot.reply_to(message, message.text.upper())
+@bot.message_handler(commands=['cmd'])
+def command_code(message: telebot.types.Message):
+    cmd = message.text[4:]
+    if cmd:
+        try:
+            cmp = compile(cmd.strip(), 'test', 'exec')
+            exec(cmp)
+            print(D)
+        except Exception:
+            error_traceback = traceback.format_exc()
+            print(error_traceback)
+    else:
+        msg = 'Usage: /cmd <string to eval()>'
+        bot.reply_to(message, msg)
 
 
 if __name__ == '__main__':

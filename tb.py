@@ -440,6 +440,14 @@ def check_blocked_user(id: str, check_trottle = True):
 
 def is_admin_member(message: telebot.types.Message):
     """Checks if the user is an admin member of the chat."""
+    try:
+        if message.data: # its a callback
+            is_private = message.message.chat.type == 'private'
+            if is_private:
+                return True
+    except AttributeError:
+        pass
+
     if not message:
         return False
     if message.from_user.id in cfg.admins:

@@ -16,6 +16,7 @@ import time
 import PyPDF2
 import telebot
 from natsort import natsorted
+from sqlitedict import SqliteDict
 from telebot import apihelper
 
 import cfg
@@ -66,11 +67,10 @@ if not os.path.exists('db'):
 
 
 # хранилище пар ytb_id:ytb_title
-# YTB_DB = {}
-YTB_DB = my_dic.PersistentDict('db/ytb.pkl')
+YTB_DB = SqliteDict('db/ytb.db', autocommit=True)
 # хранилище пар ytb_id:message_id
-YTB_CACHE = my_dic.PersistentDict('db/ytb_cache.pkl')
-YTB_CACHE_FROM = my_dic.PersistentDict('db/ytb_cache_from.pkl')
+YTB_CACHE = SqliteDict('db/ytb_cache.db', autocommit=True)
+YTB_CACHE_FROM = SqliteDict('db/ytb_cache_from.db', autocommit=True)
 
 # заблокированные юзера {id:True/False}
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
@@ -86,13 +86,13 @@ BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
 TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
 
 # запоминаем промпты для повторения рисования
-IMAGE_PROMPTS = my_dic.PersistentDict('db/image_prompts.pkl')
+IMAGE_PROMPTS = SqliteDict('db/image_prompts.db', autocommit=True)
 
 # запоминаем у какого юзера какой язык OCR выбран
 OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
 
 # для запоминания ответов на команду /sum
-SUM_CACHE = my_dic.PersistentDict('db/sum_cache.pkl')
+SUM_CACHE = SqliteDict('db/sum_cache.db', autocommit=True)
 
 # {chat_id:role} какие роли - дополнительные инструкции в чате
 ROLES = my_dic.PersistentDict('db/roles.pkl')
@@ -128,7 +128,7 @@ LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
 # хранилище для переводов сообщений сделанных гугл переводчиком
 # key: (text, lang)
 # value: translated text
-AUTO_TRANSLATIONS = my_dic.PersistentDict('db/auto_translations.pkl')
+AUTO_TRANSLATIONS = SqliteDict('db/auto_translations.db', autocommit=True)
 
 # замок для выполнения дампа переводов
 DUMP_TRANSLATION_LOCK = threading.Lock()
@@ -3840,6 +3840,7 @@ def do_task(message, custom_prompt: str = ''):
                         resp = gpt_basic.chat(chat_id_full, helped_query,
                                             user_name = user_name, lang=lang,
                                             is_private = is_private, chat_name=chat_name)
+
                 if resp and FIRST_DOT:
                     my_gemini.update_mem(message.text, resp, chat_id_full)
 
@@ -3873,9 +3874,7 @@ def main():
     """
     # set_default_commands()
     
-    my_gemini.load_memory_from_file()
     my_gemini.run_proxy_pool_daemon()
-
 
     try:
         webhook = cfg.webhook

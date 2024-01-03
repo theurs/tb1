@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
-import datetime
 import os
 import json
-import pickle
 import random
 import re
 import sys
@@ -15,10 +13,10 @@ import enchant
 from fuzzywuzzy import fuzz
 import openai
 import requests
+from sqlitedict import SqliteDict
 
 import cfg
 import utils
-import my_dic
 import my_google
 import my_log
 import my_trans
@@ -28,13 +26,13 @@ import my_trans
 # openai.api_requestor.TIMEOUT_SECS = 150
 
 
-CUSTOM_MODELS = my_dic.PersistentDict('db/custom_models.pkl')
+CUSTOM_MODELS = SqliteDict('db/custom_models.db', autocommit=True)
 
 # память диалогов {id:messages: list}
-CHATS = my_dic.PersistentDict('db/dialogs.pkl')
+CHATS = SqliteDict('db/dialogs.db', autocommit=True)
 # системные промты для чатов, роли или инструкции что и как делать в этом чате
 # {id:prompt}
-# PROMPTS = my_dic.PersistentDict('db/prompts.pkl')
+
 # температура chatGPT {id:float(0-2)}
 TEMPERATURE = {}
 # замки диалогов {id:lock}
@@ -202,7 +200,6 @@ def get_mem_as_string(chat_id_full: str) ->str:
     except:
         pass
 
-    prompt = ''
     if chat_id_full in CHATS:
         messages = CHATS[chat_id_full]
         messages2 = []
@@ -213,6 +210,8 @@ def get_mem_as_string(chat_id_full: str) ->str:
             messages2.append(x)
         prompt = '\n'.join(f'{"𝐔𝐒𝐄𝐑" if i["role"] == "user" else "𝐁𝐎𝐓" if i["role"] == "assistant" else "𝐒𝐘𝐒𝐓𝐄𝐌"} - {i["content"]}\n' for i in messages2) or ''
         prompt = prompt.replace('\n𝐁𝐎𝐓','𝐁𝐎𝐓')
+    else:
+        prompt = ''
     return prompt
 
 
@@ -608,32 +607,12 @@ def chat(chat_id: str, query: str, user_name: str = 'noname', lang: str = 'ru',
         messages = messages + [{"role":    "user",
                                 "content": query}]
 
-        formatted_date = datetime.datetime.now().strftime("%d %B %Y %H:%M")
-
         # в каждом чате своя температура
         if chat_id in TEMPERATURE:
             temp = TEMPERATURE[chat_id]
         else:
             temp = 0
 
-#         # в каждом чате свой собственный промт
-#         curr_place = tr('приватный телеграм чат', lang) if is_private else \
-# tr('публичный телеграм чат', lang)
-#         if not is_private:
-#             curr_place = f'{curr_place} "{chat_name}"'
-#         sys_prompt = f'{tr("Сейчас ", lang)} {formatted_date} , \
-# {tr("ты находишься в ", lang)} {curr_place} \
-# {tr("и отвечаешь пользователю с ником", lang)} "{user_name}", \
-# {tr("локаль пользователя: ", lang)} "{lang}"'
-#         if chat_id in PROMPTS:
-#             current_prompt = PROMPTS[chat_id]
-#         else:
-#             # по умолчанию формальный стиль
-#             PROMPTS[chat_id] = [{"role": "system",
-#                                  "content": tr(utils.gpt_start_message1, lang)}]
-#             current_prompt =   [{"role": "system",
-#                                  "content": tr(utils.gpt_start_message1, lang)}]
-#         current_prompt = [{"role": "system", "content": sys_prompt}] + current_prompt
         current_prompt = []
 
         # пытаемся получить ответ

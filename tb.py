@@ -522,11 +522,40 @@ def authorized(message: telebot.types.Message) -> bool:
 
     chat_id_full = get_topic_id(message)
 
-    # check for blocking and throttling
-    try:
-        check_blocked_user(chat_id_full)
-    except:
-        return False
+    # trottle only messages addressed to me
+    is_private = message.chat.type == 'private'
+    if chat_id_full not in SUPER_CHAT:
+        SUPER_CHAT[chat_id_full] = 0
+    if SUPER_CHAT[chat_id_full] == 1:
+        is_private = True
+
+    is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
+
+    msg = message.text.lower()
+
+    if msg.startswith('.'):
+        msg = msg[1:]
+
+    if chat_id_full in BOT_NAMES:
+        bot_name = BOT_NAMES[chat_id_full]
+    else:
+        bot_name = BOT_NAME_DEFAULT
+        BOT_NAMES[chat_id_full] = bot_name
+
+    bot_name_used = False
+    if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
+        bot_name_used = True
+
+    bot_name2 = f'@{_bot_name}'
+    if msg.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
+        bot_name_used = True
+
+    if is_reply or is_private or bot_name_used:
+        # check for blocking and throttling
+        try:
+            check_blocked_user(chat_id_full)
+        except:
+            return False
 
     return True
 
@@ -1769,7 +1798,8 @@ def disable_chat_mode(message: telebot.types.Message):
         msg = f'{tr("Changed: ", lang)} {n}.'
         bot.reply_to(message, msg)
     except:
-        msg = tr('Example usage: <code>/disable_chat_mode bard gemini</code>\n\nAvailable: bard, claude, chatgpt, gemini', lang)
+        n = '\n\n'
+        msg = f"{tr('Example usage: /disable_chat_mode FROM TO{n}Available:', lang)} bard, claude, chatgpt, gemini"
         bot.reply_to(message, msg, parse_mode='HTML')
     my_log.log_echo(message, msg)
 
@@ -1812,9 +1842,17 @@ def set_bing_cookies(message: telebot.types.Message):
         msg = tr('Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie', lang)
         bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, msg)
-        keys = '\n\n'.join([x[1] for x in bing_img.COOKIE.items()])
+
+        nl = '\n\n'
+        keys = '\n\n'.join([f'{x[1][:5]}...{x[1][-5:]}' for x in bing_img.COOKIE.items()])
         if keys.strip():
-            msg = f'{tr("Current cookies:", lang)} {keys}'
+            msg = f'{tr("Current cookies:", lang)}{nl}{keys}'
+            my_log.log_echo(message, msg)
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+
+        keys_suspended = '\n\n'.join([f'{x[0][:5]}...{x[0][-5:]} {round((time.time() - x[1])/60/60, 1)} hours left' for x in bing_img.COOKIE_SUSPENDED.items()])
+        if keys_suspended.strip():
+            msg = f'{nl}{tr("Current suspended cookies:", lang)}{nl}{keys_suspended}'
             my_log.log_echo(message, msg)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
 

@@ -15,14 +15,18 @@ import my_log
 import my_dic
 
 
-# не использовать 1 и тот же ключ одновременно для разных запросов
+# do not use 1 same key at the same time for different requests
 LOCKS = {}
 
 
 # {0: cookie0, 1: cookie1, ...}
 COOKIE = my_dic.PersistentDict('db/bing_cookie.pkl')
+# {cookie:datetime, ...}
+# cookies frozen for a day
+COOKIE_SUSPENDED = my_dic.PersistentDict('db/bing_cookie_suspended.pkl')
+SUSPEND_TIME = 60 * 60 * 12
 
-# хранилище запросов которые бинг отбраковал, их нельзя повторять
+# storage of requests that Bing rejected, they cannot be repeated
 BAD_IMAGES_PROMPT = my_dic.PersistentDict('db/bad_images_prompt.pkl')
 
 
@@ -171,35 +175,54 @@ def gen_images(query: str):
         my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
         return []
     cookies = []
+
+    # unsuspend
+    unsuspend = [x[0] for x in COOKIE_SUSPENDED.items() if time.time() > x[1] + SUSPEND_TIME]
+    for x in unsuspend:
+        COOKIE[time.time()] = x
+
     for x in COOKIE.items():
         cookie = x[1].strip()
         cookies.append(cookie)
-        random.shuffle(cookies)
-        for cookie in cookies:
-            if cookie not in LOCKS:
-                LOCKS[cookie] = threading.Lock()
-            with LOCKS[cookie]:
-                if cfg.bing_proxy:
-                    for proxy in cfg.bing_proxy:
-                        try:
-                            return get_images(query, cookie, proxy)
-                        except Exception as error:
-                            if 'location' in str(error):
-                                my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
-                                for z in COOKIE.items():
-                                    if z[1] == cookie:
-                                        del COOKIE[z[0]]
-                                        break
-                            else:
-                                my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
-                            if str(error).startswith('error1'):
-                                BAD_IMAGES_PROMPT[query] = True
-                                return []
-                else:
+
+    random.shuffle(cookies)
+    for cookie in cookies:
+        if cookie not in LOCKS:
+            LOCKS[cookie] = threading.Lock()
+        with LOCKS[cookie]:
+            if cfg.bing_proxy:
+                for proxy in cfg.bing_proxy:
                     try:
-                        return get_images(query, cookie)
+                        return get_images(query, cookie, proxy)
                     except Exception as error:
-                        my_log.log2(f'get_images: {error}')
+                        if 'location' in str(error):
+                            my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
+                            for z in COOKIE.items():
+                                if z[1] == cookie:
+                                    del COOKIE[z[0]]
+                                    COOKIE_SUSPENDED[z[1]] = time.time()
+                                    break
+                        else:
+                            my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
+                        if str(error).startswith('error1'):
+                            BAD_IMAGES_PROMPT[query] = True
+                            return []
+            else:
+                try:
+                    return get_images(query, cookie)
+                except Exception as error:
+                    if 'location' in str(error):
+                            my_log.log2(f'get_images: {error} Cookie: {cookie}')
+                            for z in COOKIE.items():
+                                if z[1] == cookie:
+                                    del COOKIE[z[0]]
+                                    COOKIE_SUSPENDED[z[1]] = time.time()
+                                    break
+                    else:
+                        my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
+                    if str(error).startswith('error1'):
+                        BAD_IMAGES_PROMPT[query] = True
+                        return []
     return []
 
 

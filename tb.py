@@ -1750,6 +1750,28 @@ def gemini_proxies(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
+@bot.message_handler(commands=['disable_chat_mode'], func=authorized_admin)
+def disable_chat_mode(message: telebot.types.Message):
+    """mandatory switch all users from one chatbot to another"""
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    try:
+        _from = message.text.split(maxsplit=3)[1].strip()
+        _to = message.text.split(maxsplit=3)[2].strip()
+        
+        for x in CHAT_MODE.keys():
+            if CHAT_MODE[x] == _from:
+                CHAT_MODE[x] = _to
+
+        msg = f'{tr("OK", lang)}'
+        bot.reply_to(message, msg)
+    except:
+        msg = tr('Example usage: <code>/disable_chat_mode bard gemini</code>\n\nAvailable: bard, claude, chatgpt, gemini', lang)
+        bot.reply_to(message, msg, parse_mode='HTML')
+    my_log.log_echo(message, msg)
+
+
 @bot.message_handler(commands=['reset_gemini2'], func=authorized_admin)
 def reset_gemini2(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)

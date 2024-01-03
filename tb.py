@@ -1760,11 +1760,13 @@ def disable_chat_mode(message: telebot.types.Message):
         _from = message.text.split(maxsplit=3)[1].strip()
         _to = message.text.split(maxsplit=3)[2].strip()
         
+        n = 0
         for x in CHAT_MODE.keys():
             if CHAT_MODE[x] == _from:
                 CHAT_MODE[x] = _to
+                n += 1
 
-        msg = f'{tr("OK", lang)}'
+        msg = f'{tr("Changed: ", lang)} {n}.'
         bot.reply_to(message, msg)
     except:
         msg = tr('Example usage: <code>/disable_chat_mode bard gemini</code>\n\nAvailable: bard, claude, chatgpt, gemini', lang)

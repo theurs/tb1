@@ -202,6 +202,7 @@ def get_mem_as_string(chat_id_full: str) ->str:
     except:
         pass
 
+    prompt = ''
     if chat_id_full in CHATS:
         messages = CHATS[chat_id_full]
         messages2 = []
@@ -210,8 +211,8 @@ def get_mem_as_string(chat_id_full: str) ->str:
                 end = x['content'].find(']') + 1
                 x['content'] = x['content'][end:]
             messages2.append(x)
-    prompt = '\n'.join(f'{"𝐔𝐒𝐄𝐑" if i["role"] == "user" else "𝐁𝐎𝐓" if i["role"] == "assistant" else "𝐒𝐘𝐒𝐓𝐄𝐌"} - {i["content"]}\n' for i in messages2) or ''
-    prompt = prompt.replace('\n𝐁𝐎𝐓','𝐁𝐎𝐓')
+        prompt = '\n'.join(f'{"𝐔𝐒𝐄𝐑" if i["role"] == "user" else "𝐁𝐎𝐓" if i["role"] == "assistant" else "𝐒𝐘𝐒𝐓𝐄𝐌"} - {i["content"]}\n' for i in messages2) or ''
+        prompt = prompt.replace('\n𝐁𝐎𝐓','𝐁𝐎𝐓')
     return prompt
 
 

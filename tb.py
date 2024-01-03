@@ -3840,31 +3840,23 @@ def do_task(message, custom_prompt: str = ''):
                         resp = gpt_basic.chat(chat_id_full, helped_query,
                                             user_name = user_name, lang=lang,
                                             is_private = is_private, chat_name=chat_name)
-                if resp:
-                    if chat_id_full not in gpt_basic.CHATS:
-                        gpt_basic.CHATS[chat_id_full] = []
-                    gpt_basic.CHATS[chat_id_full] += [{"role":    'user',
-                                                       "content": message.text},
-                                                      {"role":    'assistant',
-                                                       "content": resp}
-                                                     ]
-                    gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+                if resp and FIRST_DOT:
                     my_gemini.update_mem(message.text, resp, chat_id_full)
 
-                    if not VOICE_ONLY_MODE[chat_id_full]:
-                        resp = utils.bot_markdown_to_html(resp)
-                    my_log.log_echo(message, f'[chatgpt] {resp}')
+                if not VOICE_ONLY_MODE[chat_id_full]:
+                    resp = utils.bot_markdown_to_html(resp)
+                my_log.log_echo(message, f'[chatgpt] {resp}')
 
-                    try:
-                        reply_to_long_message(message, resp, parse_mode='HTML',
-                                              disable_web_page_preview = True,
-                                              reply_markup=get_keyboard('chat', message))
-                    except Exception as error2:
-                        print(error2)
-                        my_log.log2(resp)
-                        reply_to_long_message(message, resp, parse_mode='',
-                                              disable_web_page_preview = True,
-                                              reply_markup=get_keyboard('chat', message))
+                try:
+                    reply_to_long_message(message, resp, parse_mode='HTML',
+                                            disable_web_page_preview = True,
+                                            reply_markup=get_keyboard('chat', message))
+                except Exception as error2:
+                    print(error2)
+                    my_log.log2(resp)
+                    reply_to_long_message(message, resp, parse_mode='',
+                                            disable_web_page_preview = True,
+                                            reply_markup=get_keyboard('chat', message))
         # else: # смотрим надо ли переводить текст
         #     if check_blocks(chat_id_full) and not is_private:
         #         return

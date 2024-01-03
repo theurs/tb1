@@ -420,13 +420,34 @@ def get_topic_id(message: telebot.types.Message) -> str:
     return f'[{chat_id}] [{topic_id}]'
 
 
+def check_blocked_user(id: str, check_trottle = True):
+    """Вызывает ошибку если юзер заблокирован и ему не надо отвечать"""
+    for x in cfg.admins:
+        if id == f'[{x}] [0]':
+            return
+    user_id = id.replace('[','').replace(']','').split()[0]
+    if check_trottle:
+        if not request_counter.check_limit(user_id):
+            my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован за DDOS')
+            raise Exception(f'user {user_id} in ddos stop list, ignoring')
+    for i in BAD_USERS:
+        u_id = i.replace('[','').replace(']','').split()[0]
+        if u_id == user_id:
+            if BAD_USERS[id]:
+                my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован')
+                raise Exception(f'user {user_id} in stop list, ignoring')
+
+
 def is_admin_member(message: telebot.types.Message):
     """Checks if the user is an admin member of the chat."""
     if not message:
         return False
     if message.from_user.id in cfg.admins:
         return True
-    chat_id = message.chat.id
+    try:
+        chat_id = message.chat.id
+    except AttributeError: # its a callback
+        chat_id = message.message.chat.id
     user_id = message.from_user.id
     member = bot.get_chat_member(chat_id, user_id).status.lower()
     return True if 'creator' in member or 'administrator' in member else False
@@ -485,6 +506,22 @@ def authorized_admin(message: telebot.types.Message) -> bool:
         bot.reply_to(message, msg)
         return False
     return authorized(message)
+
+
+def authorized_callback(call: telebot.types.CallbackQuery) -> bool:
+    # никаких проверок для админов
+    if call.from_user.id in cfg.admins:
+        return True
+
+    chat_id_full = f'[{call.from_user.id}] [0]'
+
+    # check for blocking and throttling
+    try:
+        check_blocked_user(chat_id_full, check_trottle=False)
+    except:
+        return False
+
+    return True
 
 
 def authorized(message: telebot.types.Message) -> bool:
@@ -845,7 +882,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         raise f"Неизвестная клавиатура '{kbd}'"
 
 
-@bot.callback_query_handler(func=lambda call: True)
+@bot.callback_query_handler(func=authorized_callback)
 def callback_inline(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
     thread = threading.Thread(target=callback_inline_thread, args=(call,))
@@ -885,7 +922,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.reply_to(message, tr('Режим поиска в гугле отключен', lang))
         # режим автоответов в чате, бот отвечает на все реплики всех участников
         # комната для разговоров с ботом Ж)
-        elif call.data == 'admin_chat':
+        elif call.data == 'admin_chat' and is_admin_member(call):
             #bot.reply_to(message, 'Автоответы в чате активированы, бот будет отвечать на все реплики всех участников')
             if chat_id_full in SUPER_CHAT:
                 SUPER_CHAT[chat_id_full] = 1 if SUPER_CHAT[chat_id_full] == 0 else 0
@@ -1091,117 +1128,113 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             msg = tr('История диалога с chatGPT очищена.', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
             my_log.log_echo(message, msg)
-        elif call.data == 'tts_female':
+        elif call.data == 'tts_female' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'male'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_male':
+        elif call.data == 'tts_male' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'google_female'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_google_female':
+        elif call.data == 'tts_google_female' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'male_ynd'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_male_ynd':
+        elif call.data == 'tts_male_ynd' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'female_ynd'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_female_ynd':
+        elif call.data == 'tts_female_ynd' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'openai_alloy'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_alloy':
+        elif call.data == 'tts_openai_alloy' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'openai_echo'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_echo':
+        elif call.data == 'tts_openai_echo' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'openai_fable'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_fable':
+        elif call.data == 'tts_openai_fable' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'openai_onyx'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_onyx':
+        elif call.data == 'tts_openai_onyx' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'openai_nova'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_nova':
+        elif call.data == 'tts_openai_nova' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'openai_shimmer'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_shimmer':
+        elif call.data == 'tts_openai_shimmer' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'female'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'voice_only_mode_disable':
+        elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
             VOICE_ONLY_MODE[chat_id_full] = False
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'voice_only_mode_enable':
+        elif call.data == 'voice_only_mode_enable'  and is_admin_member(call):
             VOICE_ONLY_MODE[chat_id_full] = True
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        
-        elif call.data == 'transcribe_only_chat_disable':
+        elif call.data == 'transcribe_only_chat_disable' and is_admin_member(call):
             TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'transcribe_only_chat_enable':
+        elif call.data == 'transcribe_only_chat_enable'  and is_admin_member(call):
             TRANSCRIBE_ONLY_CHAT[chat_id_full] = True
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'chatGPT_mode_disable':
+        elif call.data == 'chatGPT_mode_disable' and is_admin_member(call):
             del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'chatGPT_mode_enable':
+        elif call.data == 'chatGPT_mode_enable' and is_admin_member(call):
             CHAT_MODE[chat_id_full] = 'chatgpt'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'bard_mode_enable':
+        elif call.data == 'bard_mode_enable' and is_admin_member(call):
             CHAT_MODE[chat_id_full] = 'bard'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'bard_mode_disable':
+        elif call.data == 'bard_mode_disable' and is_admin_member(call):
             del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'claude_mode_enable':
+        elif call.data == 'claude_mode_enable' and is_admin_member(call):
             CHAT_MODE[chat_id_full] = 'claude'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'claude_mode_disable':
+        elif call.data == 'claude_mode_disable' and is_admin_member(call):
             del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'gemini_mode_enable':
+        elif call.data == 'gemini_mode_enable' and is_admin_member(call):
             CHAT_MODE[chat_id_full] = 'gemini'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'claude_mode_disable':
+        elif call.data == 'claude_mode_disable' and is_admin_member(call):
             del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'autotranslate_disable':
+        elif call.data == 'autotranslate_disable' and is_admin_member(call):
             BLOCKS[chat_id_full] = 0
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'autotranslate_enable':
+        elif call.data == 'autotranslate_enable' and is_admin_member(call):
             BLOCKS[chat_id_full] = 1
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_memory_debug':
             send_debug_history(message)
-        elif call.data == 'disable_chat_kbd':
+        elif call.data == 'disable_chat_kbd' and is_admin_member(call):
             DISABLED_KBD[chat_id_full] = False
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
-        elif call.data == 'enable_chat_kbd':
+        elif call.data == 'enable_chat_kbd' and is_admin_member(call):
             DISABLED_KBD[chat_id_full] = True
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
                                   text = tr(MSG_CONFIG, lang), reply_markup=get_keyboard('config', message))
@@ -2489,23 +2522,6 @@ def stats_thread(message: telebot.types.Message):
     reply_to_long_message(message, tr("Статистика бота:", lang) + '\n\n' + users_text,
                             reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, users_text)
-
-
-def check_blocked_user(id: str):
-    """Вызывает ошибку если юзер заблокирован и ему не надо отвечать"""
-    for x in cfg.admins:
-        if id == f'[{x}] [0]':
-            return
-    user_id = id.replace('[','').replace(']','').split()[0]
-    if not request_counter.check_limit(user_id):
-        my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован за DDOS')
-        raise Exception(f'user {user_id} in ddos stop list, ignoring')
-    for i in BAD_USERS:
-        u_id = i.replace('[','').replace(']','').split()[0]
-        if u_id == user_id:
-            if BAD_USERS[id]:
-                my_log.log2(f'tb:check_blocked_user: Пользователь {id} заблокирован')
-                raise Exception(f'user {user_id} in stop list, ignoring')
 
 
 @bot.message_handler(commands=['blockadd'], func=authorized_admin)

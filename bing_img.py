@@ -7,27 +7,27 @@ import socket
 
 import random
 import re
-
 import requests
+from sqlitedict import SqliteDict
 
 import cfg
 import my_log
-import my_dic
 
 
 # do not use 1 same key at the same time for different requests
 LOCKS = {}
 
+LOCK_STORAGE = threading.Lock()
 
 # {0: cookie0, 1: cookie1, ...}
-COOKIE = my_dic.PersistentDict('db/bing_cookie.pkl')
+COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 # {cookie:datetime, ...}
 # cookies frozen for a day
-COOKIE_SUSPENDED = my_dic.PersistentDict('db/bing_cookie_suspended.pkl')
+COOKIE_SUSPENDED = SqliteDict('db/bing_cookie_suspended.db', autocommit=True)
 SUSPEND_TIME = 60 * 60 * 12
 
 # storage of requests that Bing rejected, they cannot be repeated
-BAD_IMAGES_PROMPT = my_dic.PersistentDict('db/bad_images_prompt.pkl')
+BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
 
 
 take_ip_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -174,16 +174,17 @@ def gen_images(query: str):
     if query in BAD_IMAGES_PROMPT:
         my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
         return []
+
     cookies = []
 
-    # unsuspend
-    unsuspend = [x[0] for x in COOKIE_SUSPENDED.items() if time.time() > x[1] + SUSPEND_TIME]
-    for x in unsuspend:
-        COOKIE[time.time()] = x
-
-    for x in COOKIE.items():
-        cookie = x[1].strip()
-        cookies.append(cookie)
+    with LOCK_STORAGE:
+        # unsuspend
+        unsuspend = [x[0] for x in COOKIE_SUSPENDED.items() if time.time() > x[1] + SUSPEND_TIME]
+        for x in unsuspend:
+            COOKIE[time.time()] = x
+        for x in COOKIE.items():
+            cookie = x[1].strip()
+            cookies.append(cookie)
 
     random.shuffle(cookies)
     for cookie in cookies:
@@ -197,11 +198,12 @@ def gen_images(query: str):
                     except Exception as error:
                         if 'location' in str(error):
                             my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
-                            for z in COOKIE.items():
-                                if z[1] == cookie:
-                                    del COOKIE[z[0]]
-                                    COOKIE_SUSPENDED[z[1]] = time.time()
-                                    break
+                            with LOCK_STORAGE:
+                                for z in COOKIE.items():
+                                    if z[1] == cookie:
+                                        del COOKIE[z[0]]
+                                        COOKIE_SUSPENDED[z[1]] = time.time()
+                                        break
                         else:
                             my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                         if str(error).startswith('error1'):
@@ -213,11 +215,12 @@ def gen_images(query: str):
                 except Exception as error:
                     if 'location' in str(error):
                             my_log.log2(f'get_images: {error} Cookie: {cookie}')
-                            for z in COOKIE.items():
-                                if z[1] == cookie:
-                                    del COOKIE[z[0]]
-                                    COOKIE_SUSPENDED[z[1]] = time.time()
-                                    break
+                            with LOCK_STORAGE:
+                                for z in COOKIE.items():
+                                    if z[1] == cookie:
+                                        del COOKIE[z[0]]
+                                        COOKIE_SUSPENDED[z[1]] = time.time()
+                                        break
                     else:
                         my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
                     if str(error).startswith('error1'):

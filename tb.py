@@ -2624,7 +2624,8 @@ def stats_thread(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
 
     users = [x for x in CHAT_MODE.keys()]
-    users_sorted = natsorted(users)
+    # users_sorted = natsorted(users)
+    users_sorted = sorted(users, key=lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else 300)
     users_text = ''
     for user in users_sorted:
         left_days = int((time.time()-TRIAL_USERS[user])/60/60/24)+7 if user in TRIAL_USERS else 7

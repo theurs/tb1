@@ -546,7 +546,7 @@ def authorized_owner(message: telebot.types.Message) -> bool:
         lang = get_lang(chat_full_id, message)
         msg = tr("This command is only available to administrators", lang)
         my_log.log_echo(message, msg)
-        bot.reply_to(message, msg)
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
         return False
     return authorized(message)
 
@@ -557,8 +557,8 @@ def authorized_admin(message: telebot.types.Message) -> bool:
         chat_full_id = get_topic_id(message)
         lang = get_lang(chat_full_id, message)
         msg = tr("This command is only available to administrators", lang)
-        my_log.log_echo(message, msg)
-        bot.reply_to(message, msg)
+        my_log.log_echo(message, msg, re)
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
         return False
     return authorized(message)
 

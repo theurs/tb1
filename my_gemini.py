@@ -5,7 +5,6 @@
 
 import concurrent.futures
 import base64
-import pickle
 import random
 import threading
 import time
@@ -15,6 +14,7 @@ from Proxy_List_Scrapper import Scrapper
 from sqlitedict import SqliteDict
 
 import cfg
+import my_dic
 import my_google
 import my_log
 
@@ -34,26 +34,23 @@ MAX_CHAT_SIZE = 25000
 
 
 # хранилище диалогов {id:list(mem)}
-DB_FILE = 'db/gemini_dialogs.db'
-CHATS = SqliteDict(DB_FILE, autocommit=True)
+CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
 
 
 ##################################################################################
 # If no proxies are specified in the config, then we first try to work directly
 # and if that doesn't work, we start looking for free proxies using
 # a constantly running daemon
-PROXY_POOL = []
-PROXY_POLL_SPEED = {}
-PROXY_POOL_REMOVED = []
+PROXY_POOL = my_dic.PersistentList('db/gemini_proxy_pool_v2.pkl')
+PROXY_POLL_SPEED = SqliteDict('db/gemini_proxy_pool_speed_v2.pkl')
+# PROXY_POOL_REMOVED = my_dic.PersistentList('db/gemini_proxy_pool_removed_v2.pkl')
+PROXY_POOL_REMOVED = [] # не надо наверное помнить всегда все удаленные прокси
 
 # искать и добавлять прокси пока не найдется хотя бы 10 проксей
 MAX_PROXY_POOL = 10
 # начинать повторный поиск если осталось всего 5 проксей
 MAX_PROXY_POOL_LOW_MARGIN = 5
 
-PROXY_POOL_DB_FILE = 'db/gemini_proxy_pool.pkl'
-PROXY_POLL_SPEED_DB_FILE = 'db/gemini_proxy_pool_speed.pkl'
-# PROXY_POOL_REMOVED_DB_FILE = 'db/gemini_proxy_pool_removed.pkl'
 SAVE_LOCK = threading.Lock()
 POOL_MAX_WORKERS = 50
 ##################################################################################
@@ -73,8 +70,6 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
     Raises:
         None.
     """
-    global PROXY_POOL
-
     try:
         img_data = base64.b64encode(data_).decode("utf-8")
         data = {
@@ -189,7 +184,6 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
     Returns:
         str: The generated response from the AI model.
     """
-    global PROXY_POOL
     # bugfix температура на самом деле от 0 до 1 а не от 0 до 2
     temperature = round(temperature / 2, 2)
 
@@ -259,7 +253,6 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                             remove_proxy(proxy)
                         else:
                             PROXY_POLL_SPEED[proxy] = total_time
-                            save_proxy_pool()
                         break
                     else:
                         remove_proxy(proxy)
@@ -281,8 +274,6 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
 
 def get_models() -> str:
     """some error, return 404"""
-    global PROXY_POOL
-
     keys = cfg.gemini_keys[:]
     random.shuffle(keys)
     result = ''
@@ -460,27 +451,6 @@ def check_phone_number(number: str) -> str:
     return response
 
 
-def save_proxy_pool():
-    """
-    Saves the proxy pool to disk.
-    """
-    global PROXY_POLL_SPEED
-    with SAVE_LOCK:
-        s = {}
-        for x in PROXY_POOL:
-            try:
-                s[x] = PROXY_POLL_SPEED[x]
-            except:
-                pass
-        PROXY_POLL_SPEED = s
-        with open(PROXY_POOL_DB_FILE, 'wb') as f:
-            pickle.dump(PROXY_POOL, f)
-        with open(PROXY_POLL_SPEED_DB_FILE, 'wb') as f:
-            pickle.dump(PROXY_POLL_SPEED, f)
-        # with open(PROXY_POOL_REMOVED_DB_FILE, 'wb') as f:
-        #     pickle.dump(PROXY_POOL_REMOVED, f)
-
-
 def remove_proxy(proxy: str):
     """
     Remove a proxy from the proxy pool and add it to the removed proxy pool.
@@ -498,14 +468,13 @@ def remove_proxy(proxy: str):
     except AttributeError:
         pass
 
-    global PROXY_POOL, PROXY_POOL_REMOVED
-
-    PROXY_POOL = [x for x in PROXY_POOL if x != proxy]
+    PROXY_POOL.remove_all(proxy)
 
     PROXY_POOL_REMOVED.append(proxy)
-    PROXY_POOL_REMOVED = list(set(PROXY_POOL_REMOVED))
-
-    save_proxy_pool()
+    try:
+        PROXY_POOL_REMOVED.deduplicate()
+    except: # это обычный список а не постоянный, у него нет такого метода
+        PROXY_POOL_REMOVED = list(set(PROXY_POOL_REMOVED))
 
 
 def sort_proxies_by_speed(proxies):
@@ -557,10 +526,6 @@ def test_proxy_for_gemini(proxy: str = '') -> bool:
         - The 'time' module is assumed to be imported.
     """
 
-    # # не искать больше чем нужно
-    # if proxy and len(PROXY_POOL) > MAX_PROXY_POOL:
-    #     return
-
     query = '1+1= answer very short'
     start_time = time.time()
     answer = ai(query, proxy_str=proxy)
@@ -578,7 +543,6 @@ def test_proxy_for_gemini(proxy: str = '') -> bool:
             if total_time < 5:
                 PROXY_POOL.append(proxy)
                 PROXY_POLL_SPEED[proxy] = total_time
-                save_proxy_pool()
 
 
 def get_proxies():
@@ -616,9 +580,14 @@ def get_proxies():
         while n < maxn:
             if len(PROXY_POOL) > MAX_PROXY_POOL:
                 break
+            if len(PROXY_POOL) == 0:
+                step = 500
+            else:
+                step = POOL_MAX_WORKERS
             chunk = proxies[n:n+step]
             n += step
-            with concurrent.futures.ThreadPoolExecutor(max_workers=POOL_MAX_WORKERS) as executor:
+            print(f'Proxies found: {len(PROXY_POOL)} (processing {n} of {maxn})')
+            with concurrent.futures.ThreadPoolExecutor(max_workers=step) as executor:
                 futures = [executor.submit(test_proxy_for_gemini, proxy) for proxy in chunk]
                 for future in futures:
                     future.result()
@@ -641,12 +610,10 @@ def update_proxy_pool_daemon():
         Returns:
         None
     """
-    global PROXY_POOL
     while 1:
         if len(PROXY_POOL) < MAX_PROXY_POOL_LOW_MARGIN:
                 get_proxies()
-                PROXY_POOL = list(set(PROXY_POOL))
-                save_proxy_pool()
+                PROXY_POOL.deduplicate()
                 time.sleep(60*60)
         else:
             time.sleep(2)
@@ -654,20 +621,26 @@ def update_proxy_pool_daemon():
 
 def run_proxy_pool_daemon():
     """
-    Runs a daemon to manage the proxy pool.
+    Run the proxy pool daemon.
 
-    This function initializes the necessary variables and starts a background thread to update the proxy pool.
-    If no Gemini proxies are configured, it checks if a direct connection to Gemini is available.
-    If Gemini proxies are configured, it sets the `PROXY_POOL` global variable to the configured proxies.
+    This function checks if there are any proxies available. If there are no proxies,
+    it checks if direct connection to the server is possible. If direct connection is
+    not available, the function logs a message indicating that direct connection is
+    unavailable.
 
-    If the `PROXY_POOL` is empty and a direct connection to Gemini is not available,
-    it attempts to load the proxy pool from a file. If the loading fails,
-    it continues without a proxy pool. It then starts a background thread to
-    update the proxy pool and waits until at least one proxy is available in the pool.
+    If there are proxies available, the proxy pool is recreated with the provided
+    proxies.
 
-    This function does not take any parameters and does not return anything.
+    If the proxy pool is empty and direct connection is not available, a new thread is
+    started to update the proxy pool. The function waits until at least 1 proxy is
+    found before returning.
+
+    Parameters:
+    None
+
+    Returns:
+    None
     """
-    global PROXY_POOL, PROXY_POOL_REMOVED, PROXY_POLL_SPEED
     try:
         proxies = cfg.gemini_proxies
     except AttributeError:
@@ -683,18 +656,9 @@ def run_proxy_pool_daemon():
             if not direct_connect_available:
                 my_log.log2('proxy:run_proxy_pool_daemon: direct connect unavailable')
     else:
-        PROXY_POOL = proxies
+        PROXY_POOL.recreate(proxies)
 
     if not PROXY_POOL and not direct_connect_available:
-        try:
-            with open(PROXY_POOL_DB_FILE, 'rb') as f:
-                PROXY_POOL = pickle.load(f)
-            with open(PROXY_POLL_SPEED_DB_FILE, 'rb') as f:
-                PROXY_POLL_SPEED = pickle.load(f)
-            # with open(PROXY_POOL_REMOVED_DB_FILE, 'rb') as f:
-            #     PROXY_POOL_REMOVED = pickle.load(f)
-        except:
-            pass
         thread = threading.Thread(target=update_proxy_pool_daemon)
         thread.start()
         # # Waiting until at least 1 proxy is found

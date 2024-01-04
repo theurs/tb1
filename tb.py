@@ -1951,6 +1951,8 @@ def send_debug_history(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
+    if chat_id_full not in CHAT_MODE:
+        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
     if CHAT_MODE[chat_id_full] == 'chatgpt':
         prompt = gpt_basic.get_mem_as_string(chat_id_full) or tr('Empty', lang)
     elif CHAT_MODE[chat_id_full] == 'gemini':

@@ -241,7 +241,6 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                     try:
                         response = session.post(url, json=mem_, timeout=60)
                     except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
-                        # my_log.log2(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}')
                         remove_proxy(proxy)
                         continue
 
@@ -461,6 +460,7 @@ def remove_proxy(proxy: str):
     Returns:
         None
     """
+    global PROXY_POOL_REMOVED
     # не удалять прокси из конфига
     try:
         if proxy in cfg.gemini_proxies:

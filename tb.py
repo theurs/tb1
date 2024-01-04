@@ -2626,7 +2626,7 @@ def stats_thread(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    users = [x for x in CHAT_MODE.keys()]
+    users = [x for x in CHAT_MODE.keys() if x in TRIAL_USERS_COUNTER]
     # users_sorted = natsorted(users)
     users_sorted = sorted(users, key=lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else 300)
     users_text = ''

@@ -3184,7 +3184,7 @@ def id_cmd_handler(message: telebot.types.Message):
         else:
             sec_left = 60*60*24*7
             TRIAL_USERS[chat_full_id] = time.time()
-        days_left = int((time.time() - sec_left)/60/60/24)
+        days_left = int((time.time() - sec_left)/60/60/24) + 7
         if chat_full_id in TRIAL_USERS_COUNTER:
             msgs_counter = TRIAL_USERS_COUNTER[chat_full_id]
         else:

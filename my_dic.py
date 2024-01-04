@@ -3,6 +3,7 @@
 
 import pickle
 import threading
+import traceback
 
 import my_log
 
@@ -81,7 +82,8 @@ class PersistentList(list):
             with open(filename, 'rb') as f:
                 self.extend(pickle.load(f))
         except Exception as unknown:
-            my_log.log2(f'my_dic:PersistentList:init: {filename} {str(unknown)}')
+            error_traceback = traceback.format_exc()
+            my_log.log2(f'my_dic:PersistentList:init: {filename} {str(unknown)}\n\n{error_traceback}')
 
     def save(self):
         with PersistentListLock[self.filename]:
@@ -89,7 +91,8 @@ class PersistentList(list):
                 try:
                     pickle.dump(self, f)
                 except Exception as unknown:
-                    my_log.log2(f'my_dic:PersistentList:save: {str(unknown)}')
+                    error_traceback = traceback.format_exc()
+                    my_log.log2(f'my_dic:PersistentList:save: {str(unknown)}\n\n{error_traceback}')
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)

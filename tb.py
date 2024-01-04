@@ -152,6 +152,7 @@ TTS_OPENAI_LIMIT_MAX = 10000
 
 # {chat_full_id: time.time()}
 TRIAL_USERS = SqliteDict('db/trial_users.db', autocommit=True)
+TRIAL_USERS_COUNTER = SqliteDict('db/trial_users_counter.db', autocommit=True)
 
 # Из каких чатов надо выходиьт сразу (забаненые)
 LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
@@ -512,6 +513,13 @@ def trial_status(message: telebot.types.Message) -> bool:
 
         chat_full_id = get_topic_id(message)
         lang = get_lang(chat_full_id, message)
+
+        if chat_full_id in TRIAL_USERS_COUNTER:
+            TRIAL_USERS_COUNTER[chat_full_id] += 1
+        else:
+            TRIAL_USERS_COUNTER[chat_full_id] = 0
+        if TRIAL_USERS_COUNTER[chat_full_id] < 300:
+            return True
 
         if chat_full_id in TRIAL_USERS:
             # TRIAL_USERS[chat_full_id] = 0
@@ -1916,7 +1924,6 @@ def disable_chat_mode(message: telebot.types.Message):
 
 @bot.message_handler(commands=['trial'], func=authorized_admin)
 def set_trial(message: telebot.types.Message):
-    
     if hasattr(cfg, 'TRIALS') and cfg.TRIALS:
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
@@ -3165,12 +3172,29 @@ def id_cmd_handler(message: telebot.types.Message):
     user_id = message.from_user.id
     chat_id_full = get_topic_id(message)
     reported_language = message.from_user.language_code
-    bot.reply_to(message, f'''{tr("ID пользователя:", lang)} {user_id}
+    msg = f'''{tr("ID пользователя:", lang)} {user_id}
                  
 {tr("ID группы:", lang)} {chat_id_full}
 
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
-''', reply_markup=get_keyboard('hide', message))
+'''
+    if hasattr(cfg, 'TRIALS'):
+        if chat_full_id in TRIAL_USERS:
+            sec_left = TRIAL_USERS[chat_full_id]
+        else:
+            sec_left = 60*60*24*7
+            TRIAL_USERS[chat_full_id] = time.time()
+        days_left = int((time.time() - sec_left)/60/60/24)
+        if chat_full_id in TRIAL_USERS_COUNTER:
+            msgs_counter = TRIAL_USERS_COUNTER[chat_full_id]
+        else:
+            msgs_counter = 0
+        msgs_counter = 300 - msgs_counter
+        if msgs_counter < 0:
+            msgs_counter = 0
+        msg += f'\n\n{tr("Дней осталось:", lang)} {days_left}\n{tr("Сообщений осталось:", lang)} {msgs_counter}\n\n'
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['dump_translation'], func=authorized_admin)

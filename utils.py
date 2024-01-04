@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import datetime
 import hashlib
 import html
 import os
@@ -487,5 +488,21 @@ def nice_hash(s: str, l: int = 12) -> str:
     return f'{hash_object.hexdigest()[:l]}'
 
 
+def get_full_time() -> str:
+    """
+    Get the current time with a GMT time offset.
+
+    Returns:
+        str: A string representing the current time in the format "YYYY-MM-DD HH:MM:SS TZ".
+    """
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=10)))
+    time_string = now.strftime("%Y-%m-%d %H:%M:%S %Z")
+    return time_string
+
+
 if __name__ == '__main__':
     print(is_image_link('https://keep.google.com/u/0/?pli=1#NOTE/1KA1ADEB_Cn9dNEiBKakN8BebZkOtBVCNpeOeFTFujVKkDYtyKGuNFzW-a6dYK_Q'))
+    
+    print(get_full_time())    
+    
+

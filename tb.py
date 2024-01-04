@@ -150,6 +150,9 @@ GEMIMI_TEMP_DEFAULT = 0.2
 TTS_OPENAI_LIMIT = my_dic.PersistentDict('db/tts_openai_limit.pkl')
 TTS_OPENAI_LIMIT_MAX = 10000
 
+# {chat_full_id: time.time()}
+TRIAL_USERS = SqliteDict('db/trial_users.db', autocommit=True)
+
 # Из каких чатов надо выходиьт сразу (забаненые)
 LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
 
@@ -490,6 +493,42 @@ def is_for_me(cmd: str):
         return (True, cmd)
 
 
+def trial_status(message: telebot.types.Message) -> bool:
+    """
+    Check the status of a trial.
+
+    Parameters:
+        message (telebot.types.Message): The message object.
+
+    Returns:
+        bool: True if the trial is active, False otherwise.
+    """
+    if hasattr(cfg, 'TRIALS') and cfg.TRIALS:
+        is_private = message.chat.type == 'private'
+        if not is_private: # no trials for groups
+            return True
+        if hasattr(message, 'message'): # callback
+                return True
+
+        chat_full_id = get_topic_id(message)
+        lang = get_lang(chat_full_id, message)
+
+        if chat_full_id in TRIAL_USERS:
+            # TRIAL_USERS[chat_full_id] = 0
+            if time.time() - TRIAL_USERS[chat_full_id] > 60*60*24*7: # 1 week free trial
+                msg = tr('Free trial period ended, please contact @theurs.\n\nYou can run your own free copy of this bot at https://github.com/theurs/tb1 and (simplified version) https://github.com/theurs/tbg', lang)
+                bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message), disable_web_page_preview=True)
+                my_log.log_echo(message, msg)
+                return False
+            else:
+                return True
+        else:
+            TRIAL_USERS[chat_full_id] = time.time()
+            return True
+    else:
+        return True
+
+
 def authorized_owner(message: telebot.types.Message) -> bool:
     """if chanel owner or private"""
     is_private = message.chat.type == 'private'
@@ -563,6 +602,10 @@ def authorized(message: telebot.types.Message) -> bool:
             my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
         except Exception as leave_chat_error:
             my_log.log2(f'tb:auth:live_chat_error: {leave_chat_error}')
+        return False
+
+    # check free trial status
+    if not trial_status(message):
         return False
 
     chat_id_full = get_topic_id(message)
@@ -1871,6 +1914,35 @@ def disable_chat_mode(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
+@bot.message_handler(commands=['trial'], func=authorized_admin)
+def set_trial(message: telebot.types.Message):
+    
+    if hasattr(cfg, 'TRIALS') and cfg.TRIALS:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        try:
+            user = message.text.split(maxsplit=3)[1]
+            try:
+                monthes = message.text.split(maxsplit=3)[2]
+            except IndexError:
+                monthes = 0
+
+            user = f'[{user.strip()}] [0]'
+
+            if user not in TRIAL_USERS:
+                TRIAL_USERS[user] = time.time()
+            TRIAL_USERS[user] = TRIAL_USERS[user] + int(monthes)*60*60*24*30
+            time_left = -round((time.time()-TRIAL_USERS[user])/60/60/24/30, 1)
+            msg = f'{tr("User trial updated.", lang)} {user} +{monthes} = [{time_left}]'
+        except:
+            msg = tr('Usage: /trial <userid as integer> <amount of monthes to add>', lang)
+    else:
+        msg = tr('Trials not activated in this bot.', lang)
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
+
+
 @bot.message_handler(commands=['reset_gemini2'], func=authorized_admin)
 def reset_gemini2(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
@@ -3084,7 +3156,7 @@ Donate:"""
         my_log.log_echo(message, help)
 
 
-@bot.message_handler(commands=['id'], func=authorized) 
+@bot.message_handler(commands=['id']) 
 def id_cmd_handler(message: telebot.types.Message):
     """показывает id юзера и группы в которой сообщение отправлено"""
     chat_full_id = get_topic_id(message)
@@ -3689,11 +3761,11 @@ def do_task(message, custom_prompt: str = ''):
                 action = 'typing'
 
             # подсказка для ботов что бы понимали где и с кем общаются
-            formatted_date = datetime.datetime.now().strftime('%d, %b %Y %H:%M:%S')
+            formatted_date = utils.get_full_time()
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date in GMT+10 "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
                 else:
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date in GMT+10 "{formatted_date}".]'
             else:

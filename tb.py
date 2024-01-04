@@ -8,7 +8,6 @@ import re
 import requests
 import tempfile
 import traceback
-import datetime
 import string
 import threading
 import time
@@ -17,7 +16,6 @@ import PyPDF2
 import telebot
 from natsort import natsorted
 from sqlitedict import SqliteDict
-from telebot import apihelper
 
 import cfg
 import gpt_basic
@@ -44,7 +42,8 @@ import utils
 # устанавливаем рабочую папку = папке в которой скрипт лежит
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
-bot = telebot.TeleBot(cfg.token, skip_pending=True)
+bot = telebot.TeleBot(cfg.token)
+# bot = telebot.TeleBot(cfg.token, skip_pending=True)
 
 _bot_name = bot.get_me().username
 BOT_ID = bot.get_me().id

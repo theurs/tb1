@@ -997,11 +997,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Отменить ввод команды, но не скрывать"
             COMMAND_MODE[chat_id_full] = ''
             # bot.delete_message(message.chat.id, message.message_id)
-            bot.reply_to(message, tr('Режим поиска в гугле отключен', lang))
+            bot.reply_to(message, tr('Режим поиска в гугле отключен', lang), reply_markup=get_keyboard('hide', message))
         # режим автоответов в чате, бот отвечает на все реплики всех участников
         # комната для разговоров с ботом Ж)
         elif call.data == 'admin_chat' and is_admin_member(call):
-            #bot.reply_to(message, 'Автоответы в чате активированы, бот будет отвечать на все реплики всех участников')
             if chat_id_full in SUPER_CHAT:
                 SUPER_CHAT[chat_id_full] = 1 if SUPER_CHAT[chat_id_full] == 0 else 0
             else:
@@ -1121,7 +1120,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                 my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
                                 del YTB_CACHE[song_id]
                         else:
-                            bot.reply_to(message, tr('Не удалось скачать это видео.', lang))
+                            bot.reply_to(message, tr('Не удалось скачать это видео.', lang), reply_markup=get_keyboard('hide', message))
                             my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
                             return
                     else:
@@ -1330,7 +1329,7 @@ def fix_translation_with_gpt_thread(message: telebot.types.Message):
 
     msg = tr('Started translation process, please wait for a while.', user_lang)
     my_log.log_echo(message, msg)
-    bot.reply_to(message, msg)
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
 
     counter = 0
     for key in AUTO_TRANSLATIONS.keys():
@@ -1344,7 +1343,7 @@ def fix_translation_with_gpt_thread(message: telebot.types.Message):
                 my_log.log2(f'{key} -> {translated_text}')
                 time.sleep(5)
 
-    bot.reply_to(message, tr(f'Translated {counter} strings', user_lang))
+    bot.reply_to(message, tr(f'Translated {counter} strings', user_lang), reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(content_types = ['voice', 'audio'], func=authorized)
@@ -1478,12 +1477,12 @@ def handle_document_thread(message: telebot.types.Message):
                         print(f'tb:handle_document_thread: {error}')
                         my_log.log2(f'tb:handle_document_thread: {error}')
 
-                    bot.reply_to(message, tr('Переводы загружены', lang))
+                    bot.reply_to(message, tr('Переводы загружены', lang), reply_markup=get_keyboard('hide', message))
                 except Exception as error:
                     print(f'tb:handle_document_thread: {error}')
                     my_log.log2(f'tb:handle_document_thread: {error}')
                     msg = tr('Не удалось принять файл автопереводов ' + str(error), lang)
-                    bot.reply_to(message, msg)
+                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
                     my_log.log2(msg)
                     return
                 return
@@ -1520,7 +1519,7 @@ def handle_document_thread(message: telebot.types.Message):
                     print(f'tb:handle_document_thread:claude: {error}')
                     my_log.log2(f'tb:handle_document_thread:claude: {error}')
                     msg = tr('Не удалось отправить файл', lang)
-                    bot.reply_to(message, msg)
+                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
                     my_log.log2(msg)
                     os.remove(full_path)
                     os.rmdir(folder_path)
@@ -1914,12 +1913,12 @@ def disable_chat_mode(message: telebot.types.Message):
                 n += 1
 
         msg = f'{tr("Changed: ", lang)} {n}.'
-        bot.reply_to(message, msg)
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
     except:
         n = '\n\n'
         msg = f"{tr('Example usage: /disable_chat_mode FROM TO{n}Available:', lang)} bard, claude, chatgpt, gemini"
         bot.reply_to(message, msg, parse_mode='HTML')
-    my_log.log_echo(message, msg)
+    my_log.log_echo(message, msg, reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['trial'], func=authorized_admin)
@@ -1959,10 +1958,10 @@ def reset_gemini2(message: telebot.types.Message):
         arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
         my_gemini.reset(arg1)
         msg = f'{tr("История Gemini Pro в чате очищена", lang)} {arg1}'
-        bot.reply_to(message, msg)
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
     except:
         msg = tr('Usage: /reset_gemini2 <chat_id_full!>', lang)
-        bot.reply_to(message, msg)
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, msg)
 
 
@@ -2013,7 +2012,7 @@ def change_mode2(message: telebot.types.Message):
         arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
         arg2 = message.text.split(maxsplit=3)[3]
     except:
-        bot.reply_to(message, tr('Usage: /style2 <chat_id_full!> <new_style>', lang))
+        bot.reply_to(message, tr('Usage: /style2 <chat_id_full!> <new_style>', lang), reply_markup=get_keyboard('hide', message))
         return
 
     ROLES[arg1] = arg2
@@ -2060,7 +2059,7 @@ def leave_thread(message: telebot.types.Message):
     if len(message.text) > 7:
         args = message.text[7:]
     else:
-        bot.reply_to(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>')
+        bot.reply_to(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>', reply_markup=get_keyboard('hide', message))
         return
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
@@ -2069,12 +2068,12 @@ def leave_thread(message: telebot.types.Message):
             LEAVED_CHATS[chat_id] = True
             try:
                 bot.leave_chat(chat_id)
-                bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
+                bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}', reply_markup=get_keyboard('hide', message))
             except Exception as error:
                 my_log.log2(f'tb:leave: {chat_id} {str(error)}')
-                bot.reply_to(message, tr('Не удалось выйти из чата', lang) + f' {chat_id} {str(error)}')
+                bot.reply_to(message, tr('Не удалось выйти из чата', lang) + f' {chat_id} {str(error)}', reply_markup=get_keyboard('hide', message))
         else:
-            bot.reply_to(message, tr('Вы уже раньше вышли из чата', lang) + f' {chat_id}')
+            bot.reply_to(message, tr('Вы уже раньше вышли из чата', lang) + f' {chat_id}', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['revoke'], func=authorized_admin) 
@@ -2089,16 +2088,16 @@ def revoke_thread(message: telebot.types.Message):
     if len(message.text) > 8:
         args = message.text[8:]
     else:
-        bot.reply_to(message, '/revoke <группа или группы которые надо разбанить>')
+        bot.reply_to(message, '/revoke <группа или группы которые надо разбанить>', reply_markup=get_keyboard('hide', message))
         return
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
     for chat_id in chat_ids:
         if chat_id in LEAVED_CHATS and LEAVED_CHATS[chat_id]:
             LEAVED_CHATS[chat_id] = False
-            bot.reply_to(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}')
+            bot.reply_to(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}', reply_markup=get_keyboard('hide', message))
         else:
-            bot.reply_to(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}')
+            bot.reply_to(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}', reply_markup=get_keyboard('hide', message))
 
 
 @bot.message_handler(commands=['temperature', 'temp'], func=authorized)
@@ -2398,7 +2397,7 @@ def google_thread(message: telebot.types.Message):
 
     if not allowed_chatGPT_user(message.chat.id):
         my_log.log_echo(message, 'chatGPT запрещен [google]')
-        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang))
+        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang), reply_markup=get_keyboard('hide', message))
         return
 
     try:
@@ -2455,7 +2454,7 @@ def ddg_thread(message: telebot.types.Message):
 
     if not allowed_chatGPT_user(message.chat.id):
         my_log.log_echo(message, 'chatGPT запрещен [ddg]')
-        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang))
+        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang), reply_markup=get_keyboard('hide', message))
         return
 
     try:
@@ -2812,7 +2811,7 @@ def summ_text_thread(message: telebot.types.Message):
 
     if not allowed_chatGPT_user(message.chat.id):
         my_log.log_echo(message, 'chatGPT запрещен [sum]')
-        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang))
+        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang), reply_markup=get_keyboard('hide', message))
         return
 
     text = message.text
@@ -2992,7 +2991,7 @@ def send_name(message: telebot.types.Message):
     args = message.text.split()
     if len(args) > 1:
         new_name = args[1]
-        
+
         # Строка содержит только русские и английские буквы и цифры после букв, но не в начале слова
         # regex = r'^[a-zA-Zа-яА-ЯёЁ][a-zA-Zа-яА-ЯёЁ0-9]*$'
         # if re.match(regex, new_name) and len(new_name) <= 10 \

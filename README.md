@@ -70,7 +70,7 @@
 
 /disable_chat_mode from to - принудительно сменить всем режим чата, например у кого бард переключить на джемини
 
-/trial <userid as integer> <amount of monthes to add>
+/trial - userid_as_integer amount_of_monthes_to_add
 
 
 ![Скриншоты](pics/README.md)

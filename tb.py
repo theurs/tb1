@@ -2625,7 +2625,12 @@ def stats_thread(message: telebot.types.Message):
 
     users = [x for x in CHAT_MODE.keys()]
     users_sorted = natsorted(users)
-    users_text = '\n'.join(users_sorted) + '\n\nTotal: ' + str(len(users_sorted))
+    users_text = ''
+    for user in users_sorted:
+        left_days = int((time.time()-TRIAL_USERS[user])/60/60/24)+7 if user in TRIAL_USERS else 0
+        left_msgs = 300-TRIAL_USERS_COUNTER[user] if user in TRIAL_USERS_COUNTER else 300
+        users_text += f'{user} - {left_days} дн. - {left_msgs} сообщений осталось\n'
+    users_text += '\n\nTotal: ' + str(len(users_sorted))
     reply_to_long_message(message, tr("Статистика бота:", lang) + '\n\n' + users_text,
                             reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, users_text)

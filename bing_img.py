@@ -14,6 +14,9 @@ import cfg
 import my_log
 
 
+BIG_LOCK = threading.Lock()
+
+
 # do not use 1 same key at the same time for different requests
 LOCKS = {}
 
@@ -154,6 +157,7 @@ def get_images(prompt: str,
         raise Exception('error_no_images')
 
     normal_image_links = [x for x in normal_image_links if not x.startswith('https://r.bing.com/')]
+    time.sleep(5)
     return normal_image_links
 
 
@@ -171,62 +175,64 @@ def gen_images(query: str):
         Exception: If there is an error getting the images.
 
     """
-    if query in BAD_IMAGES_PROMPT:
-        my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
-        return []
 
-    cookies = []
+    with BIG_LOCK:
+        if query in BAD_IMAGES_PROMPT:
+            my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
+            return []
 
-    with LOCK_STORAGE:
-        # unsuspend
-        unsuspend = [x[0] for x in COOKIE_SUSPENDED.items() if time.time() > x[1] + SUSPEND_TIME]
-        for x in unsuspend:
-            COOKIE[time.time()] = x
-        for x in COOKIE.items():
-            cookie = x[1].strip()
-            cookies.append(cookie)
+        cookies = []
 
-    random.shuffle(cookies)
-    for cookie in cookies:
-        if cookie not in LOCKS:
-            LOCKS[cookie] = threading.Lock()
-        with LOCKS[cookie]:
-            if cfg.bing_proxy:
-                for proxy in cfg.bing_proxy:
+        with LOCK_STORAGE:
+            # unsuspend
+            unsuspend = [x[0] for x in COOKIE_SUSPENDED.items() if time.time() > x[1] + SUSPEND_TIME]
+            for x in unsuspend:
+                COOKIE[time.time()] = x
+            for x in COOKIE.items():
+                cookie = x[1].strip()
+                cookies.append(cookie)
+
+        random.shuffle(cookies)
+        for cookie in cookies:
+            if cookie not in LOCKS:
+                LOCKS[cookie] = threading.Lock()
+            with LOCKS[cookie]:
+                if cfg.bing_proxy:
+                    for proxy in cfg.bing_proxy:
+                        try:
+                            return get_images(query, cookie, proxy)
+                        except Exception as error:
+                            if 'location' in str(error):
+                                my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
+                                with LOCK_STORAGE:
+                                    for z in COOKIE.items():
+                                        if z[1] == cookie:
+                                            del COOKIE[z[0]]
+                                            COOKIE_SUSPENDED[z[1]] = time.time()
+                                            break
+                            else:
+                                my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
+                            if str(error).startswith('error1'):
+                                BAD_IMAGES_PROMPT[query] = True
+                                return []
+                else:
                     try:
-                        return get_images(query, cookie, proxy)
+                        return get_images(query, cookie)
                     except Exception as error:
                         if 'location' in str(error):
-                            my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
-                            with LOCK_STORAGE:
-                                for z in COOKIE.items():
-                                    if z[1] == cookie:
-                                        del COOKIE[z[0]]
-                                        COOKIE_SUSPENDED[z[1]] = time.time()
-                                        break
+                                my_log.log2(f'get_images: {error} Cookie: {cookie}')
+                                with LOCK_STORAGE:
+                                    for z in COOKIE.items():
+                                        if z[1] == cookie:
+                                            del COOKIE[z[0]]
+                                            COOKIE_SUSPENDED[z[1]] = time.time()
+                                            break
                         else:
-                            my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
+                            my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
                         if str(error).startswith('error1'):
                             BAD_IMAGES_PROMPT[query] = True
                             return []
-            else:
-                try:
-                    return get_images(query, cookie)
-                except Exception as error:
-                    if 'location' in str(error):
-                            my_log.log2(f'get_images: {error} Cookie: {cookie}')
-                            with LOCK_STORAGE:
-                                for z in COOKIE.items():
-                                    if z[1] == cookie:
-                                        del COOKIE[z[0]]
-                                        COOKIE_SUSPENDED[z[1]] = time.time()
-                                        break
-                    else:
-                        my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
-                    if str(error).startswith('error1'):
-                        BAD_IMAGES_PROMPT[query] = True
-                        return []
-    return []
+        return []
 
 
 if __name__ == '__main__':

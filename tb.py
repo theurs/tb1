@@ -12,6 +12,7 @@ import string
 import threading
 import time
 
+import prettytable
 import PyPDF2
 import telebot
 from natsort import natsorted
@@ -2704,17 +2705,35 @@ def stats_thread(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    users = [x for x in CHAT_MODE.keys() if x in TRIAL_USERS_COUNTER]
+    users = [x for x in CHAT_MODE.keys() if x in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[x] > 0]
     # users_sorted = natsorted(users)
     users_sorted = sorted(users, key=lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else 300)
     users_text = ''
+    pt = prettytable.PrettyTable(
+        align = "r",
+        set_style = prettytable.MSWORD_FRIENDLY,
+        hrules = prettytable.HEADER,
+        junction_char = '|')
+    
+    header = ['USER', 'left days', 'left messages']
+    pt.field_names = header
+
     for user in users_sorted:
         left_days = int((time.time()-TRIAL_USERS[user])/60/60/24)+7 if user in TRIAL_USERS else 7
         left_msgs = 300-TRIAL_USERS_COUNTER[user] if user in TRIAL_USERS_COUNTER else 300
-        users_text += f'{user} - {left_days}d - {left_msgs}m \n'
-    users_text += '\n\nTotal: ' + str(len(users_sorted))
-    reply_to_long_message(message, tr("Статистика бота:", lang) + '\n\n' + users_text,
-                            reply_markup=get_keyboard('hide', message))
+        # users_text += f'{user} - {left_days}d - {left_msgs}m \n'
+        row = [user, left_days, left_msgs]
+        try:
+            pt.add_row(row)
+        except Exception as unknown:
+            my_log.log2(f'tb:stats_thread:add_row {unknown}')
+
+    users_text = f'{tr("Usage statistics:", lang)}\n\n<pre><code>{pt.get_string()}</code></pre>'
+
+    users_text += f'\n\n{tr("Total:", lang)} {str(len(users_sorted))}'
+
+    reply_to_long_message(message, users_text, parse_mode='HTML',
+                          reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, users_text)
 
 

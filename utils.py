@@ -397,7 +397,7 @@ def replace_tables(text: str) -> str:
                                     set_style = prettytable.MSWORD_FRIENDLY,
                                     hrules = prettytable.HEADER,
                                     junction_char = '|')
-        
+
         lines = table.split('\n')
         header = [x.strip().replace('<b>', '').replace('</b>', '') for x in lines[0].split('|') if x]
         header = [split_long_string(x, header = True) for x in header]
@@ -504,5 +504,3 @@ if __name__ == '__main__':
     print(is_image_link('https://keep.google.com/u/0/?pli=1#NOTE/1KA1ADEB_Cn9dNEiBKakN8BebZkOtBVCNpeOeFTFujVKkDYtyKGuNFzW-a6dYK_Q'))
     
     print(get_full_time())    
-    
-

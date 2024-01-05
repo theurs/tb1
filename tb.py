@@ -4009,7 +4009,7 @@ def main():
     # set_default_commands()
     
     my_gemini.run_proxy_pool_daemon()
-    bing_img.run_proxy_pool_daemon()
+    #bing_img.run_proxy_pool_daemon()
 
     try:
         webhook = cfg.webhook

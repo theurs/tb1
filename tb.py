@@ -65,6 +65,10 @@ if not os.path.exists('db'):
     os.mkdir('db')
 
 
+# запоминаем уникальные хелпы и приветствия, сбрасывать при смене языка
+HELLO_MSG = SqliteDict('db/msg_hello.db', autocommit=True)
+HELP_MSG = SqliteDict('db/msg_help.db', autocommit=True)
+
 # хранилище пар ytb_id:ytb_title
 YTB_DB = SqliteDict('db/ytb.db', autocommit=True)
 # хранилище пар ytb_id:message_id
@@ -2201,6 +2205,8 @@ def language(message: telebot.types.Message):
     new_lang = message.text.split(maxsplit=1)[1].strip().lower()
     if new_lang in supported_langs_trans:
         LANGUAGE_DB[chat_id_full] = new_lang
+        HELLO_MSG[chat_id_full] = ''
+        HELP_MSG[chat_id_full] = ''
         msg = f'{tr("Язык бота изменен на:", new_lang)} <b>{new_lang}</b>'
         bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('start', message))
         my_log.log_echo(message, msg)
@@ -3127,14 +3133,28 @@ Chat name: {chat_name}
 Chat language: {lang}'''
 
     with ShowAction(message, 'typing'):
-        start_generated = my_gemini.chat(start_generated, chat_id_full, update_memory=False)
+        if chat_id_full in HELLO_MSG and HELLO_MSG[chat_id_full]:
+            start_generated = HELLO_MSG[chat_id_full]
+            new_run = False
+        else:
+            start_generated = my_gemini.chat(start_generated, chat_id_full, update_memory=False)
+            new_run = True
 
         if start_generated:
-            help = utils.bot_markdown_to_html(start_generated)
+            if new_run:
+                help = utils.bot_markdown_to_html(start_generated)
+                HELLO_MSG[chat_id_full] = help
+            else:
+                help = start_generated
         else:
             help = tr(help, lang)
 
-        bot.reply_to(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
+        kbd = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        button1 = telebot.types.KeyboardButton(tr('1', lang))
+        kbd.row(button1)
+        m = bot.reply_to(message, '777', reply_markup=kbd)
+        bot.delete_message(m.chat.id, m.message_id)
+        bot.reply_to(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, help)
 
 
@@ -3183,9 +3203,19 @@ https://t.me/theurs
 Donate:"""
 
     with ShowAction(message, 'typing'):
-        ai_generated_help = my_gemini.chat(f'Write a help message for Telegram users in language [{lang}] using this text as a source:\n\n' + help, chat_id_full, update_memory=False)
+        if chat_id_full in HELP_MSG and HELP_MSG[chat_id_full]:
+            ai_generated_help = HELP_MSG[chat_id_full]
+            new_run = False
+        else:
+            ai_generated_help = my_gemini.chat(f'Write a help message for Telegram users in language [{lang}] using this text as a source:\n\n' + help, chat_id_full, update_memory=False)
+            new_run = True
+
         if ai_generated_help:
-            help = utils.bot_markdown_to_html(ai_generated_help)
+            if new_run:
+                help = utils.bot_markdown_to_html(ai_generated_help)
+                HELP_MSG[chat_id_full] = help
+            else:
+                help = ai_generated_help
         else:
             help = tr(help, lang)
 

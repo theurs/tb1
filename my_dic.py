@@ -83,7 +83,8 @@ class PersistentList(list):
                 self.extend(pickle.load(f))
         except Exception as unknown:
             error_traceback = traceback.format_exc()
-            my_log.log2(f'my_dic:PersistentList:init: {filename} {str(unknown)}\n\n{error_traceback}')
+            if 'No such file or directory' not in str(error_traceback):
+                my_log.log2(f'my_dic:PersistentList:init: {filename} {str(unknown)}\n\n{error_traceback}')
 
     def save(self):
         with PersistentListLock[self.filename]:

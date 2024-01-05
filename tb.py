@@ -2719,7 +2719,7 @@ def stats_thread(message: telebot.types.Message):
     pt.field_names = header
 
     for user in users_sorted:
-        left_days = int((time.time()-TRIAL_USERS[user])/60/60/24)+7 if user in TRIAL_USERS else 7
+        left_days = 7 - int((time.time()-TRIAL_USERS[user])/60/60/24)
         left_msgs = 300-TRIAL_USERS_COUNTER[user] if user in TRIAL_USERS_COUNTER else 300
         # users_text += f'{user} - {left_days}d - {left_msgs}m \n'
         row = [user, left_days, left_msgs]

@@ -3149,12 +3149,13 @@ Chat language: {lang}'''
         else:
             help = tr(help, lang)
 
-        kbd = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        button1 = telebot.types.KeyboardButton(tr('1', lang))
-        kbd.row(button1)
-        m = bot.reply_to(message, '777', reply_markup=kbd)
-        bot.delete_message(m.chat.id, m.message_id)
-        bot.reply_to(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
+        # kbd = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        # button1 = telebot.types.KeyboardButton(tr('1', lang))
+        # kbd.row(button1)
+        # m = bot.reply_to(message, '777', reply_markup=kbd)
+        # bot.delete_message(m.chat.id, m.message_id)
+        # bot.reply_to(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
+        bot.reply_to(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
         my_log.log_echo(message, help)
 
 

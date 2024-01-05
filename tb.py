@@ -518,6 +518,10 @@ def trial_status(message: telebot.types.Message) -> bool:
 
         chat_full_id = get_topic_id(message)
         lang = get_lang(chat_full_id, message)
+        
+        if chat_full_id not in TRIAL_USERS:
+            TRIAL_USERS[chat_full_id] = time.time()
+        trial_time = (time.time() - TRIAL_USERS[chat_full_id]) / (60*60*24)
 
         if chat_full_id in TRIAL_USERS_COUNTER:
             TRIAL_USERS_COUNTER[chat_full_id] += 1
@@ -526,17 +530,12 @@ def trial_status(message: telebot.types.Message) -> bool:
         if TRIAL_USERS_COUNTER[chat_full_id] < 300:
             return True
 
-        if chat_full_id in TRIAL_USERS:
-            # TRIAL_USERS[chat_full_id] = 0
-            if time.time() - TRIAL_USERS[chat_full_id] > 60*60*24*7: # 1 week free trial
-                msg = tr('Free trial period ended, please contact @theurs.\n\nYou can run your own free copy of this bot at https://github.com/theurs/tb1 and (simplified version) https://github.com/theurs/tbg', lang)
-                bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message), disable_web_page_preview=True)
-                my_log.log_echo(message, msg)
-                return False
-            else:
-                return True
+        if trial_time > 7: # 1 week free trial
+            msg = tr('Free trial period ended, please contact @theurs.\n\nYou can run your own free copy of this bot at https://github.com/theurs/tb1 and (simplified version) https://github.com/theurs/tbg', lang)
+            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message), disable_web_page_preview=True)
+            my_log.log_echo(message, msg)
+            return False
         else:
-            TRIAL_USERS[chat_full_id] = time.time()
             return True
     else:
         return True

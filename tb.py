@@ -2620,7 +2620,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                     bot.reply_to(message, tr('Could not draw anything. Maybe there is no mood, or maybe you need to give another description.', lang), 
                                  reply_markup=get_keyboard('hide', message))
                     if cfg.enable_image_adv:
-                        msg = f'{tr("Try this free group, it has a lot of mediabots:", lang)} https://t.me/neuralforum\n\n'
+                        msg = f'{tr("Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots:", lang)} https://t.me/neuralforum\n\n'
 
                         bot.reply_to(message, msg,
                                  disable_web_page_preview = True,

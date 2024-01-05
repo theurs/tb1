@@ -193,6 +193,7 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
         Exception: If there is an error getting the images.
 
     """
+    global REMOVED_PROXY
     if query in BAD_IMAGES_PROMPT:
         my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
         return []
@@ -254,7 +255,8 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
                                     print(f'proxies left: {len(PROXY_POOL["proxies"])} removed: {len(REMOVED_PROXY)}')
                                     if len(REMOVED_PROXY) > REMOVED_PROXY_MAX:
                                         REMOVED_PROXY = []
-                            if 'Max retries exceeded with url' not in str(error):
+                            not_log_reasons = ['Read timed out', 'Max retries exceeded with url', ' Out of generate time']
+                            if not any(x in str(error) for x in not_log_reasons):
                                 my_log.log2(f'gen_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                         if str(error).startswith('error1'):
                             BAD_IMAGES_PROMPT[query] = True

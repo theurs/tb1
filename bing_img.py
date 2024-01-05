@@ -175,7 +175,7 @@ def gen_images(query: str):
         Exception: If there is an error getting the images.
 
     """
-
+    return []
     with BIG_LOCK:
         if query in BAD_IMAGES_PROMPT:
             my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')

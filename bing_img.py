@@ -37,7 +37,7 @@ BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
 # proxy pool {'proxies': list of proxies}
 PROXY_POOL = SqliteDict('db/bing_proxy_pool.db', autocommit=True)
 REMOVED_PROXY = [] # list of removed proxies
-GOOD_PROXY = my_dic.PersistentList('db/bing_good_proxy.db') # list of working proxies
+GOOD_PROXY = my_dic.PersistentList('db/bing_good_proxy.pkl') # list of working proxies
 PROXY_POOL_MAX = 30
 PROXY_POOL_MAX_WORKERS = 50
 

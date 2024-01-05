@@ -1889,12 +1889,12 @@ def bing_proxies(message: telebot.types.Message):
     for p in proxies:
         msg += f'{p}\n'
     
-    msg += f'\nRemoved: {len(proxies_removed)}'
+    msg += f'\nCandidates: {len(proxies)} Removed: {len(proxies_removed)}'
 
     if not msg:
         msg = tr('Ничего нет', lang)
 
-    bot.reply_to(message, f'<code>{msg}</code>', parse_mode='HTML', reply_markup=get_keyboard('hide', message))
+    reply_to_long_message(message, f'<code>{msg}</code>', parse_mode='HTML', reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, msg)
 
 

@@ -2719,14 +2719,15 @@ def stats_thread(message: telebot.types.Message):
     pt.field_names = header
 
     for user in users_sorted:
-        left_days = 7 - int((time.time()-TRIAL_USERS[user])/60/60/24)
-        left_msgs = 300-TRIAL_USERS_COUNTER[user] if user in TRIAL_USERS_COUNTER else 300
-        # users_text += f'{user} - {left_days}d - {left_msgs}m \n'
-        row = [user, left_days, left_msgs]
-        try:
-            pt.add_row(row)
-        except Exception as unknown:
-            my_log.log2(f'tb:stats_thread:add_row {unknown}')
+        if user in TRIAL_USERS:
+            left_days = 7 - int((time.time()-TRIAL_USERS[user])/60/60/24)
+            left_msgs = 300-TRIAL_USERS_COUNTER[user]
+            # users_text += f'{user} - {left_days}d - {left_msgs}m \n'
+            row = [user, left_days, left_msgs]
+            try:
+                pt.add_row(row)
+            except Exception as unknown:
+                my_log.log2(f'tb:stats_thread:add_row {unknown}')
 
     users_text = f'{tr("Usage statistics:", lang)}\n\n<pre><code>{pt.get_string()}</code></pre>'
 

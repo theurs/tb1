@@ -251,7 +251,8 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
                                     PROXY_POOL['proxies'] = [x for x in PROXY_POOL['proxies'] if x != proxy]
                                     REMOVED_PROXY.append(proxy)
                                     print(f'proxies left: {len(PROXY_POOL["proxies"])} removed: {len(REMOVED_PROXY)}')
-                            my_log.log2(f'gen_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
+                            if 'Max retries exceeded with url' not in str(error):
+                                my_log.log2(f'gen_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                         if str(error).startswith('error1'):
                             BAD_IMAGES_PROMPT[query] = True
                             return []

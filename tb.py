@@ -1872,6 +1872,32 @@ def change_mode(message: telebot.types.Message):
         my_log.log_echo(message, msg)
 
 
+@bot.message_handler(commands=['bing_proxies'], func=authorized_admin)
+def bing_proxies(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    proxies = bing_img.PROXY_POOL['proxies'][:]
+    proxies_removed = bing_img.REMOVED_PROXY[:]
+    good_proxy = bing_img.GOOD_PROXY[:]
+    
+    msg = ''
+
+    for p in good_proxy:
+        msg += f'{p}\n'
+    msg += '\n\n'
+    for p in proxies:
+        msg += f'{p}\n'
+    
+    msg += f'\nRemoved: {len(proxies_removed)}'
+
+    if not msg:
+        msg = tr('Ничего нет', lang)
+
+    bot.reply_to(message, f'<code>{msg}</code>', parse_mode='HTML', reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
+
+
 @bot.message_handler(commands=['gemini_proxies'], func=authorized_admin)
 def gemini_proxies(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)

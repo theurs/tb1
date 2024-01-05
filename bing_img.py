@@ -237,7 +237,7 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
                     except Exception as error:
                         # print(error)
                         if 'location' in str(error):
-                            my_log.log2(f'gen_images:remove_cookie: {error} Cookie: {cookie} Proxy: {proxy}')
+                            my_log.log2(f'gen_images:suspend_cookie: {error} Cookie: {cookie} Proxy: {proxy}')
                             with LOCK_STORAGE:
                                 for z in COOKIE.items():
                                     if z[1] == cookie:

@@ -218,6 +218,8 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
         with LOCKS[cookie]:
             if custom_proxies:
                 p_list = custom_proxies
+                if not p_list:
+                    return []
             else:
                 try:
                     p_list = cfg.bing_proxy
@@ -263,6 +265,8 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
                             BAD_IMAGES_PROMPT[query] = True
                             return []
             else:
+                # only proxy!
+                return []
                 try:
                     return get_images(query, cookie)
                 except Exception as error:

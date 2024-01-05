@@ -255,7 +255,7 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
                                     print(f'proxies left: {len(PROXY_POOL["proxies"])} removed: {len(REMOVED_PROXY)}')
                                     if len(REMOVED_PROXY) > REMOVED_PROXY_MAX:
                                         REMOVED_PROXY = []
-                            not_log_reasons = ['Read timed out', 'Max retries exceeded with url', ' Out of generate time']
+                            not_log_reasons = ['Read timed out', 'Max retries exceeded with url', ]
                             if not any(x in str(error) for x in not_log_reasons):
                                 my_log.log2(f'gen_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                         if str(error).startswith('error1'):

@@ -219,6 +219,7 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
                 cookie = x[1].strip()
                 cookies.append(cookie)
 
+        n_tries = 0
         random.shuffle(cookies)
         for cookie in cookies:
             if cookie not in LOCKS:
@@ -242,6 +243,9 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
                     # for proxy in cfg.bing_proxy:
                     for proxy in shuffled_proxy:
                         try:
+                            if n_tries > 3:
+                                return []
+                            n_tries += 1
                             r = get_images(query, cookie, proxy)
                             if r:
                                 if proxy not in GOOD_PROXY:

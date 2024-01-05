@@ -34,10 +34,10 @@ BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
 # proxy pool {'proxies': list of proxies}
 PROXY_POOL = SqliteDict('db/bing_proxy_pool.db', autocommit=True)
 REMOVED_PROXY = [] # list of removed proxies
-REMOVED_PROXY_MAX = 50000 # clear and start again after this many proxies
+REMOVED_PROXY_MAX = 20000 # clear and start again after this many proxies
 GOOD_PROXY = my_dic.PersistentList('db/bing_good_proxy.pkl') # list of working proxies
-PROXY_POOL_MAX = 30
-PROXY_POOL_MAX_WORKERS = 50
+PROXY_POOL_MAX = 50
+PROXY_POOL_MAX_WORKERS = 100
 
 
 BING_URL = "https://www.bing.com"
@@ -100,7 +100,7 @@ def get_images(prompt: str,
         list: A list of normal image links (URLs) from Bing search.
     """
 
-    TIMEOUT2 = 5
+    TIMEOUT2 = 10
 
     url_encoded_prompt = requests.utils.quote(prompt)
 

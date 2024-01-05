@@ -224,6 +224,7 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
                 shuffled_proxy = p_list[:]
                 random.shuffle(shuffled_proxy)
                 # good proxy first
+                random.shuffle(GOOD_PROXY)
                 shuffled_proxy = list(set(GOOD_PROXY + shuffled_proxy))
                 # for proxy in cfg.bing_proxy:
                 for proxy in shuffled_proxy:

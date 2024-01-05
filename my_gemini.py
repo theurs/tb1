@@ -9,7 +9,6 @@ import random
 import threading
 import time
 import requests
-from Proxy_List_Scrapper import Scrapper
 
 from sqlitedict import SqliteDict
 
@@ -17,6 +16,7 @@ import cfg
 import my_dic
 import my_google
 import my_log
+import my_proxy
 
 
 # блокировка чатов что бы не испортить историю 
@@ -564,25 +564,7 @@ def get_proxies():
     """
     global PROXY_POOL
     try:
-        scrapper = Scrapper(category='ALL', print_err_trace=False)
-        data = scrapper.getProxies()
-        proxies = [f'http://{x.ip}:{x.port}' for x in data.proxies]
-
-        p_socks5h = 'https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/socks5.txt'
-        p_socks4 = 'https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/socks4.txt'
-        p_http = 'https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt'
-
-        try:
-            p_socks5h = requests.get(p_socks5h, timeout=60).text.split('\n')
-            p_socks5h = [f'socks5h://{x}' for x in p_socks5h if x]
-            p_socks4 = requests.get(p_socks4, timeout=60).text.split('\n')
-            p_socks4 = [f'socks4://{x}' for x in p_socks4 if x]
-            p_http = requests.get(p_http, timeout=60).text.split('\n')
-            p_http = [f'http://{x}' for x in p_http if x]
-            proxies += p_socks5h + p_socks4 + p_http
-            random.shuffle(proxies)
-        except Exception as error:
-            my_log.log2(f'my_gemini:get_proxies: {error}')
+        proxies = my_proxy.get_proxies()
 
         n = 0
         maxn = len(proxies)

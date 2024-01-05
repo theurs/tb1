@@ -51,7 +51,7 @@ def bing(prompt: str, moderation_flag: bool = False):
     if moderation_flag:
         return []
     try:
-        images = bing_img.gen_images(prompt)
+        images = bing_img.gen_images_with_proxy_pool(prompt)
         if type(images) == list:
             return images
     except Exception as error_bing_img:

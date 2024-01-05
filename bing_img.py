@@ -100,7 +100,7 @@ def get_images(prompt: str,
         list: A list of normal image links (URLs) from Bing search.
     """
 
-    TIMEOUT2 = 10
+    TIMEOUT2 = 5
 
     url_encoded_prompt = requests.utils.quote(prompt)
 

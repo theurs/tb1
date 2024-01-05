@@ -102,6 +102,8 @@ def get_images(prompt: str,
         list: A list of normal image links (URLs) from Bing search.
     """
 
+    TIMEOUT2 = 5
+
     url_encoded_prompt = requests.utils.quote(prompt)
 
     payload = f"q={url_encoded_prompt}&qs=ds"
@@ -118,7 +120,7 @@ def get_images(prompt: str,
         url,
         allow_redirects=False,
         data=payload,
-        timeout=timeout,
+        timeout=TIMEOUT2,
     )
     # check for content waring message
     if "this prompt is being reviewed" in response.text.lower():
@@ -129,7 +131,7 @@ def get_images(prompt: str,
         raise Exception('error1_unsupported_lang')
     if response.status_code != 302:
         url = f"{BING_URL}/images/create?q={url_encoded_prompt}&rt=3&FORM=GUH2CR"
-        response = session.post(url, allow_redirects=False, timeout=timeout)
+        response = session.post(url, allow_redirects=False, timeout=TIMEOUT2)
         if response.status_code != 302:
             Exception ('Image create failed pls check cookie or old image still creating')
 

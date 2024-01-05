@@ -193,7 +193,9 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
         Exception: If there is an error getting the images.
 
     """
-    not_log_reasons = ['Read timed out', 'Max retries exceeded with url', 'Connection aborted.', 'Out of generate time']
+    not_log_reasons = ['Read timed out', 'Max retries exceeded with url',
+                       'Connection aborted.', 'Out of generate time',
+                       'Connection broken',]
 
     global REMOVED_PROXY
     if query in BAD_IMAGES_PROMPT:

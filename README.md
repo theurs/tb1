@@ -64,8 +64,8 @@
 
 /reset_gemini2 - очистить историю чата Gemini Pro в другом чате Usage: /reset_gemini2 <chat_id_full!>
 
-/gemini_proxies - [DEBUG] показывает список прокси которые нашел бот для Gemini Pro
-/bing_proxies - [DEBUG] показывает список прокси которые нашел бот для Bing
+/gemini_proxy - [DEBUG] показывает список прокси которые нашел бот для Gemini Pro
+/bing_proxy - [DEBUG] показывает список прокси которые нашел бот для Bing
 
 /bingcookie - (/cookie /c) заменить куки для бинга, можно несколько через пробел
 

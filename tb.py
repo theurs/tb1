@@ -1872,7 +1872,7 @@ def change_mode(message: telebot.types.Message):
         my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['bing_proxies'], func=authorized_admin)
+@bot.message_handler(commands=['bing_proxy'], func=authorized_admin)
 def bing_proxies(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -1898,7 +1898,7 @@ def bing_proxies(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['gemini_proxies'], func=authorized_admin)
+@bot.message_handler(commands=['gemini_proxy'], func=authorized_admin)
 def gemini_proxies(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)

@@ -16,9 +16,6 @@ import my_log
 import my_proxy
 
 
-BIG_LOCK = threading.Lock()
-
-
 # do not use 1 same key at the same time for different requests
 LOCKS = {}
 

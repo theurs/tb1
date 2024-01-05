@@ -3,7 +3,7 @@
 
 import time
 import threading
-import socket
+# import socket
 
 import random
 import re
@@ -33,27 +33,12 @@ SUSPEND_TIME = 60 * 60 * 1
 BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
 
 
-take_ip_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-take_ip_socket.connect(("8.8.8.8", 80))
-FORWARDED_IP: str = take_ip_socket.getsockname()[0]
-take_ip_socket.close()
+# take_ip_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# take_ip_socket.connect(("8.8.8.8", 80))
+# FORWARDED_IP: str = take_ip_socket.getsockname()[0]
+# take_ip_socket.close()
 
 BING_URL = "https://www.bing.com"
-HEADERS = {
-    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
-              "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.77",
-    "accept-language": "en,zh-TW;q=0.9,zh;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-    "cache-control": "max-age=0",
-    "content-type": "application/x-www-form-urlencoded",
-    "referrer": "https://www.bing.com/images/create/",
-    "origin": "https://www.bing.com",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/119.0.0.0 "
-                  "Safari/537.36 "
-                  "Edg/119.0.0.0",
-    "x-forwarded-for": FORWARDED_IP,
-}
 
 
 def get_images(prompt: str,
@@ -83,6 +68,23 @@ def get_images(prompt: str,
     Returns:
         list: A list of normal image links (URLs) from Bing search.
     """
+
+    FORWARDED_IP = proxy.split('//', 1)[1].split(':', 1)[0]
+    HEADERS = {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
+                "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.77",
+        "accept-language": "en,zh-TW;q=0.9,zh;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+        "cache-control": "max-age=0",
+        "content-type": "application/x-www-form-urlencoded",
+        "referrer": "https://www.bing.com/images/create/",
+        "origin": "https://www.bing.com",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/119.0.0.0 "
+                    "Safari/537.36 "
+                    "Edg/119.0.0.0",
+        "x-forwarded-for": FORWARDED_IP,
+    }
 
     url_encoded_prompt = requests.utils.quote(prompt)
 

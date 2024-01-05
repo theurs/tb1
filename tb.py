@@ -1979,6 +1979,51 @@ def set_trial(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
+def reset_(message: telebot.types.Message):
+    """Clear chat history (bot's memory)"""
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    if chat_id_full in CHAT_MODE:
+        if CHAT_MODE[chat_id_full] == 'bard':
+            my_bard.reset_bard_chat(chat_id_full)
+            my_log.log_echo(message, 'История барда принудительно очищена')
+        if CHAT_MODE[chat_id_full] == 'gemini':
+            gemini_reset(chat_id_full)
+            my_log.log_echo(message, 'История Gemini Pro принудительно очищена')
+        elif CHAT_MODE[chat_id_full] == 'claude':
+            my_claude.reset_claude_chat(chat_id_full)
+            my_log.log_echo(message, 'История клода принудительно очищена')
+        elif CHAT_MODE[chat_id_full] == 'chatgpt':
+            gpt_basic.chat_reset(chat_id_full)
+            my_log.log_echo(message, 'История GPT принудительно очищена')
+        bot.reply_to(message, tr('History cleared.', lang), reply_markup=get_keyboard('hide', message))
+    else:
+        msg = tr('History was not found.', lang)
+        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+        my_log.log_echo(message, msg)
+
+
+@bot.message_handler(commands=['reset'], func=authorized_admin)
+def reset(message: telebot.types.Message):
+    """Clear chat history (bot's memory)"""
+    reset_(message)
+
+
+@bot.message_handler(commands=['remove_keyboard'], func=authorized_admin)
+def remove_keyboard(message: telebot.types.Message):
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+        kbd = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        button1 = telebot.types.KeyboardButton(tr('777', lang))
+        kbd.row(button1)
+        m = bot.reply_to(message, '777', reply_markup=kbd)
+        bot.delete_message(m.chat.id, m.message_id)
+    except Exception as unknown:
+        my_log.log2(f'tb:remove_keyboard: {unknown}')
+
+
 @bot.message_handler(commands=['reset_gemini2'], func=authorized_admin)
 def reset_gemini2(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
@@ -3149,12 +3194,6 @@ Chat language: {lang}'''
         else:
             help = tr(help, lang)
 
-        # kbd = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        # button1 = telebot.types.KeyboardButton(tr('1', lang))
-        # kbd.row(button1)
-        # m = bot.reply_to(message, '777', reply_markup=kbd)
-        # bot.delete_message(m.chat.id, m.message_id)
-        # bot.reply_to(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
         bot.reply_to(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
         my_log.log_echo(message, help)
 
@@ -3702,19 +3741,7 @@ def do_task(message, custom_prompt: str = ''):
         #     return
         # если сообщение начинается на 'забудь' то стираем историю общения GPT
         if msg == tr('забудь', lang) and (is_private or is_reply) or bot_name_used and msg==tr('забудь', lang):
-            if CHAT_MODE[chat_id_full] == 'bard':
-                my_bard.reset_bard_chat(chat_id_full)
-                my_log.log_echo(message, 'История барда принудительно очищена')
-            if CHAT_MODE[chat_id_full] == 'gemini':
-                gemini_reset(chat_id_full)
-                my_log.log_echo(message, 'История Gemini Pro принудительно очищена')
-            elif CHAT_MODE[chat_id_full] == 'claude':
-                my_claude.reset_claude_chat(chat_id_full)
-                my_log.log_echo(message, 'История клода принудительно очищена')
-            elif CHAT_MODE[chat_id_full] == 'chatgpt':
-                gpt_basic.chat_reset(chat_id_full)
-                my_log.log_echo(message, 'История GPT принудительно очищена')
-            bot.reply_to(message, tr('Ок', lang), reply_markup=get_keyboard('hide', message))
+            reset_(message)
             return
 
         # если в сообщении только ссылка на видео в тиктоке

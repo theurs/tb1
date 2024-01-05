@@ -211,7 +211,8 @@ def gen_images(query: str):
                                         if z[1] == cookie:
                                             del COOKIE[z[0]]
                                             COOKIE_SUSPENDED[z[1]] = time.time()
-                                            break
+                                            # break
+                                            return []
                             else:
                                 my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                             if str(error).startswith('error1'):

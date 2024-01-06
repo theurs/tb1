@@ -196,107 +196,106 @@ def gen_images(query: str, custom_proxies = None, remove_auto_proxies = False) -
         Exception: If there is an error getting the images.
 
     """
-    with BIG_LOCK:
-        # not_log_reasons = ['Read timed out', 'Max retries exceeded with url',
-        #                 'Connection aborted.', 'Out of generate time',
-        #                 'Connection broken',]
-        not_log_reasons = ['111111111111111',]
+    # not_log_reasons = ['Read timed out', 'Max retries exceeded with url',
+    #                 'Connection aborted.', 'Out of generate time',
+    #                 'Connection broken',]
+    not_log_reasons = ['111111111111111',]
 
-        global REMOVED_PROXY
-        if query in BAD_IMAGES_PROMPT:
-            my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
-            return []
+    global REMOVED_PROXY
+    if query in BAD_IMAGES_PROMPT:
+        my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
+        return []
 
-        cookies = []
+    cookies = []
 
-        with LOCK_STORAGE:
-            # unsuspend
-            unsuspend = [x[0] for x in COOKIE_SUSPENDED.items() if time.time() > x[1] + SUSPEND_COOKIE_TIME]
-            for x in unsuspend:
-                COOKIE[time.time()] = x
-                COOKIE_SUSPENDED.pop(x)
-            for x in COOKIE.items():
-                cookie = x[1].strip()
-                cookies.append(cookie)
+    with LOCK_STORAGE:
+        # unsuspend
+        unsuspend = [x[0] for x in COOKIE_SUSPENDED.items() if time.time() > x[1] + SUSPEND_COOKIE_TIME]
+        for x in unsuspend:
+            COOKIE[time.time()] = x
+            COOKIE_SUSPENDED.pop(x)
+        for x in COOKIE.items():
+            cookie = x[1].strip()
+            cookies.append(cookie)
 
-        n_tries = 0
-        random.shuffle(cookies)
-        for cookie in cookies:
-            if cookie not in LOCKS:
-                LOCKS[cookie] = threading.Lock()
-            with LOCKS[cookie]:
-                if custom_proxies:
-                    p_list = custom_proxies
-                    if not p_list:
-                        return []
-                else:
-                    try:
-                        p_list = cfg.bing_proxy
-                    except AttributeError:
-                        p_list = []
-                if p_list:
-                    shuffled_proxy = p_list[:]
-                    random.shuffle(shuffled_proxy)
-                    # good proxy first
-                    random.shuffle(GOOD_PROXY)
-                    shuffled_proxy = list(set(GOOD_PROXY + shuffled_proxy))
-                    # for proxy in cfg.bing_proxy:
-                    for proxy in shuffled_proxy:
-                        try:
-                            if n_tries > 3:
-                                return []
-                            n_tries += 1
-                            r = get_images(query, cookie, proxy)
-                            if r:
-                                if proxy not in GOOD_PROXY:
-                                    GOOD_PROXY.append(proxy)
-                                return r
-                        except Exception as error:
-                            # print(error)
-                            if 'location' in str(error):
-                                my_log.log2(f'gen_images:suspend_cookie: {error} Cookie: {cookie} Proxy: {proxy}')
-                                with LOCK_STORAGE:
-                                    for z in COOKIE.items():
-                                        if z[1] == cookie:
-                                            del COOKIE[z[0]]
-                                            COOKIE_SUSPENDED[z[1]] = time.time()
-                                            break
-                            else:
-                                if remove_auto_proxies and not str(error).startswith('error'):
-                                    if proxy in GOOD_PROXY:
-                                        GOOD_PROXY.remove(proxy)
-                                    else:
-                                        PROXY_POOL['proxies'] = [x for x in PROXY_POOL['proxies'] if x != proxy]
-                                        REMOVED_PROXY.append(proxy)
-                                        print(f'proxies left: {len(PROXY_POOL["proxies"])} removed: {len(REMOVED_PROXY)}')
-                                        if len(REMOVED_PROXY) > REMOVED_PROXY_MAX:
-                                            REMOVED_PROXY = []
-                                if not any(x in str(error) for x in not_log_reasons):
-                                    my_log.log2(f'gen_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
-                            if str(error).startswith('error1'):
-                                BAD_IMAGES_PROMPT[query] = True
-                                return []
-                else:
-                    # only proxy!
+    n_tries = 0
+    random.shuffle(cookies)
+    for cookie in cookies:
+        if cookie not in LOCKS:
+            LOCKS[cookie] = threading.Lock()
+        with LOCKS[cookie]:
+            if custom_proxies:
+                p_list = custom_proxies
+                if not p_list:
                     return []
+            else:
+                try:
+                    p_list = cfg.bing_proxy
+                except AttributeError:
+                    p_list = []
+            if p_list:
+                shuffled_proxy = p_list[:]
+                random.shuffle(shuffled_proxy)
+                # good proxy first
+                random.shuffle(GOOD_PROXY)
+                shuffled_proxy = list(set(GOOD_PROXY + shuffled_proxy))
+                # for proxy in cfg.bing_proxy:
+                for proxy in shuffled_proxy:
                     try:
-                        return get_images(query, cookie)
+                        if n_tries > 3:
+                            return []
+                        n_tries += 1
+                        r = get_images(query, cookie, proxy)
+                        if r:
+                            if proxy not in GOOD_PROXY:
+                                GOOD_PROXY.append(proxy)
+                            return r
                     except Exception as error:
+                        # print(error)
                         if 'location' in str(error):
-                                my_log.log2(f'gen_images: {error} Cookie: {cookie}')
-                                with LOCK_STORAGE:
-                                    for z in COOKIE.items():
-                                        if z[1] == cookie:
-                                            del COOKIE[z[0]]
-                                            COOKIE_SUSPENDED[z[1]] = time.time()
-                                            break
+                            my_log.log2(f'gen_images:suspend_cookie: {error} Cookie: {cookie} Proxy: {proxy}')
+                            with LOCK_STORAGE:
+                                for z in COOKIE.items():
+                                    if z[1] == cookie:
+                                        del COOKIE[z[0]]
+                                        COOKIE_SUSPENDED[z[1]] = time.time()
+                                        break
                         else:
+                            if remove_auto_proxies and not str(error).startswith('error'):
+                                if proxy in GOOD_PROXY:
+                                    GOOD_PROXY.remove(proxy)
+                                else:
+                                    PROXY_POOL['proxies'] = [x for x in PROXY_POOL['proxies'] if x != proxy]
+                                    REMOVED_PROXY.append(proxy)
+                                    print(f'proxies left: {len(PROXY_POOL["proxies"])} removed: {len(REMOVED_PROXY)}')
+                                    if len(REMOVED_PROXY) > REMOVED_PROXY_MAX:
+                                        REMOVED_PROXY = []
                             if not any(x in str(error) for x in not_log_reasons):
-                                my_log.log2(f'gen_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
+                                my_log.log2(f'gen_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                         if str(error).startswith('error1'):
                             BAD_IMAGES_PROMPT[query] = True
                             return []
-        return []
+            else:
+                # only proxy!
+                return []
+                try:
+                    return get_images(query, cookie)
+                except Exception as error:
+                    if 'location' in str(error):
+                            my_log.log2(f'gen_images: {error} Cookie: {cookie}')
+                            with LOCK_STORAGE:
+                                for z in COOKIE.items():
+                                    if z[1] == cookie:
+                                        del COOKIE[z[0]]
+                                        COOKIE_SUSPENDED[z[1]] = time.time()
+                                        break
+                    else:
+                        if not any(x in str(error) for x in not_log_reasons):
+                            my_log.log2(f'gen_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
+                    if str(error).startswith('error1'):
+                        BAD_IMAGES_PROMPT[query] = True
+                        return []
+    return []
 
 
 def probe_proxy(proxy: str) -> str:

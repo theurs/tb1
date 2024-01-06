@@ -2706,15 +2706,14 @@ def stats_thread(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
 
     users = [x for x in CHAT_MODE.keys() if x in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[x] > 0]
-    # users_sorted = natsorted(users)
-    users_sorted = sorted(users, key=lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else TRIAL_MESSAGES)
+    users_sorted = natsorted(users, lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else TRIAL_MESSAGES, reverse = True)
     users_text = ''
     pt = prettytable.PrettyTable(
         align = "r",
         set_style = prettytable.MSWORD_FRIENDLY,
         hrules = prettytable.HEADER,
         junction_char = '|')
-    
+
     header = ['USER', 'left days', 'left messages']
     pt.field_names = header
 
@@ -2729,7 +2728,7 @@ def stats_thread(message: telebot.types.Message):
             except Exception as unknown:
                 my_log.log2(f'tb:stats_thread:add_row {unknown}')
 
-    users_text = f'{tr("Usage statistics:", lang)}\n\n<pre><code>{pt.get_string(sorted="left messages", reversesort=True)}</code></pre>'
+    users_text = f'{tr("Usage statistics:", lang)}\n\n<pre><code>{pt.get_string()}</code></pre>'
 
     users_text += f'\n\n{tr("Total:", lang)} {str(len(users_sorted))}'
 
@@ -3153,6 +3152,7 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
     OCR_DB[chat_id_full] = arg
     
     bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['start'], func=authorized)

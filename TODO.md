@@ -1,5 +1,8 @@
 ## Что сделать
 
+сделать функцию для ответов бота с логами, это часто повторяемые действия
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+    my_log.log2(message, msg)
 
 ?подставлять ip адрес прокси в хеадер в bing_img?
 

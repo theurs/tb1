@@ -3258,7 +3258,7 @@ Website:
 https://github.com/theurs/tb1
 
 Report issues on Telegram:
-https://t.me/theurs
+https://t.me/kun4_sun_bot_support
 
 Donate:"""
 
@@ -3279,7 +3279,7 @@ Donate:"""
         else:
             help = tr(help, lang)
 
-        help = f'{help}\n\n<a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>'
+        help = f'{help}\n\n[<a href = "https://www.donationalerts.com/r/theurs">DonationAlerts</a> 💸 <a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> 💸 <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> 💸 <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>]'
 
         try:
             reply_to_long_message(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
@@ -3288,6 +3288,16 @@ Donate:"""
             my_log.log2(f'tb:send_welcome_help: {error}')
             reply_to_long_message(message, help, parse_mode='', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
         my_log.log_echo(message, help)
+
+
+@bot.message_handler(commands=['report']) 
+def report_cmd_handler(message: telebot.types.Message):
+    """показывает id юзера и группы в которой сообщение отправлено"""
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+    msg = f'{tr("Our support telegram group report here", lang)} https://t.me/kun4_sun_bot_support'
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+    my_log.log2(message, msg)
 
 
 @bot.message_handler(commands=['id']) 

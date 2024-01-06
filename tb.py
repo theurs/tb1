@@ -2067,7 +2067,18 @@ def reset_gemini2(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['bingcookie', 'cookie', 'co', 'c'], func=authorized_admin)
+@bot.message_handler(commands=['bingcookieclear'], func=authorized_admin)
+def clear_bing_cookies(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    msg = tr('Cookies cleared.', lang)
+    with bing_img.LOCK_STORAGE:
+        bing_img.COOKIE.clear()
+        bing_img.COOKIE_SUSPENDED.clear()
+    bot_reply(message, msg)
+
+
+@bot.message_handler(commands=['bingcookie', 'cookie', 'k'], func=authorized_admin)
 def set_bing_cookies(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -2078,9 +2089,12 @@ def set_bing_cookies(message: telebot.types.Message):
         cookies = args.split()
         n = 0
         with bing_img.LOCK_STORAGE:
-            bing_img.COOKIE.clear()
-            bing_img.COOKIE_SUSPENDED.clear()
+            # bing_img.COOKIE.clear()
+            # bing_img.COOKIE_SUSPENDED.clear()
+            all_cookies = [x[1] for x in bing_img.COOKIE.items()] + [x[0] for x in bing_img.COOKIE_SUSPENDED.items()]
             for cookie in cookies:
+                if cookie in all_cookies:
+                    continue
                 cookie = cookie.strip()
                 if len(cookie) < 200:
                     continue

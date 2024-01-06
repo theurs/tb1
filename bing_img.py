@@ -40,6 +40,10 @@ BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
 
 BING_URL = "https://www.bing.com"
 
+# {proxy: (timestamp, external_ip)}
+PROXY_ADDR_CACHE = SqliteDict('db/proxy_addr_cache.db', autocommit=True)
+PROXY_ADDR_CACHE_MAX_TIME = 60*60*24
+
 
 def get_external_ip(proxy):
     """
@@ -51,10 +55,17 @@ def get_external_ip(proxy):
     Returns:
     - str: The external IP address.
     """
+    if proxy in PROXY_ADDR_CACHE:
+        if time.time() - PROXY_ADDR_CACHE[proxy][0] < PROXY_ADDR_CACHE_MAX_TIME:
+            return PROXY_ADDR_CACHE[proxy][1]
+        else:
+            del PROXY_ADDR_CACHE[proxy]
     session = requests.Session()
     session.proxies.update({'http': proxy, 'https': proxy})
     response = session.get('https://ifconfig.me')
     external_ip = response.text.strip() or '127.0.0.1'
+    if external_ip != '127.0.0.1':
+        PROXY_ADDR_CACHE[proxy] = (time.time(), external_ip)
     return external_ip
 
 

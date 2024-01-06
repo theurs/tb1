@@ -1,5 +1,9 @@
 ## Что сделать
 
+
+Добавить в группу поддержки защиту от входа и админов?
+
+
 сделать функцию для ответов бота с логами, это часто повторяемые действия
     bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, msg)

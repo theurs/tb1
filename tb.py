@@ -2010,7 +2010,7 @@ def reset(message: telebot.types.Message):
     reset_(message)
 
 
-@bot.message_handler(commands=['remove_keyboard'], func=authorized_admin)
+@bot.message_handler(commands=['remove_keyboard'], func=authorized_owner)
 def remove_keyboard(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
@@ -2099,7 +2099,7 @@ def change_mode2(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['mem'], func=authorized)
+@bot.message_handler(commands=['mem'], func=authorized_owner)
 def send_debug_history(message: telebot.types.Message):
     """
     Отправляет текущую историю сообщений пользователю.
@@ -2178,7 +2178,7 @@ def revoke_thread(message: telebot.types.Message):
             bot.reply_to(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}', reply_markup=get_keyboard('hide', message))
 
 
-@bot.message_handler(commands=['temperature', 'temp'], func=authorized)
+@bot.message_handler(commands=['temperature', 'temp'], func=authorized_owner)
 def set_new_temperature(message: telebot.types.Message):
     """Changes the temperature for chatGPT and Gemini
     /temperature <0...2>
@@ -2227,7 +2227,7 @@ def set_new_temperature(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['lang', 'language'], func=authorized)
+@bot.message_handler(commands=['lang', 'language'], func=authorized_owner)
 def language(message: telebot.types.Message):
     """change locale"""
 
@@ -3083,7 +3083,7 @@ def trans_thread(message: telebot.types.Message):
                 my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['name'], func=authorized)
+@bot.message_handler(commands=['name'], func=authorized_owner)
 def send_name(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не
     слишком длинное"""
@@ -3299,7 +3299,7 @@ def report_cmd_handler(message: telebot.types.Message):
     my_log.log_echo(message, msg)
 
 
-@bot.message_handler(commands=['purge'], func = authorized) 
+@bot.message_handler(commands=['purge'], func = authorized_owner)
 def report_cmd_handler(message: telebot.types.Message):
     """удаляет логи юзера"""
     is_private = message.chat.type == 'private'

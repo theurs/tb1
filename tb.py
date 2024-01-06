@@ -2611,6 +2611,10 @@ def image_thread(message: telebot.types.Message):
                     my_log.log_echo(message, msg)
                     return
 
+                images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
+                images += my_genimg.gen_images(prompt, moderation_flag)
+                medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
+
                 suggest_query = tr("""Suggest a wide range options for a request to a neural network that
 generates images according to the description, show 5 options with no numbers and trailing symbols, add many details, 1 on 1 line, output example:
 
@@ -2624,9 +2628,6 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                 suggest = my_gemini.ai(suggest_query, temperature=1.5)
                 suggest = utils.bot_markdown_to_html(suggest).strip()
 
-                images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
-                images += my_genimg.gen_images(prompt, moderation_flag)
-                medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 if len(medias) > 0:
                     with SEND_IMG_LOCK:
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)

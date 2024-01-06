@@ -190,6 +190,13 @@ def gen_images(query: str):
             for x in unsuspend:
                 COOKIE[time.time()] = x
                 COOKIE_SUSPENDED.pop(x)
+
+            # if no more cookies, then unsuspend all
+            if len(COOKIE) == 0:
+                for x in COOKIE_SUSPENDED.items():
+                    COOKIE[time.time()] = x[0]
+                    COOKIE_SUSPENDED.pop(x[0])
+
             for x in COOKIE.items():
                 cookie = x[1].strip()
                 cookies.append(cookie)

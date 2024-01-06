@@ -35,10 +35,27 @@ BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
 
 # take_ip_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # take_ip_socket.connect(("8.8.8.8", 80))
-# FORWARDED_IP: str = take_ip_socket.getsockname()[0]
+# FORWARDED_IP = take_ip_socket.getsockname()[0]
 # take_ip_socket.close()
 
 BING_URL = "https://www.bing.com"
+
+
+def get_external_ip(proxy):
+    """
+    Retrieves the external IP address using a proxy.
+
+    Parameters:
+    - proxy (str): The proxy to be used for the request.
+
+    Returns:
+    - str: The external IP address.
+    """
+    session = requests.Session()
+    session.proxies.update({'http': proxy, 'https': proxy})
+    response = session.get('https://ifconfig.me')
+    external_ip = response.text.strip() or '127.0.0.1'
+    return external_ip
 
 
 def get_images(prompt: str,
@@ -69,7 +86,7 @@ def get_images(prompt: str,
         list: A list of normal image links (URLs) from Bing search.
     """
 
-    FORWARDED_IP = proxy.split('//', 1)[1].split(':', 1)[0]
+    FORWARDED_IP = get_external_ip(proxy)
     HEADERS = {
         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
                 "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.77",

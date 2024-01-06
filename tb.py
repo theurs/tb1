@@ -3297,7 +3297,7 @@ def report_cmd_handler(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
     msg = f'{tr("Our support telegram group report here", lang)} https://t.me/kun4_sun_bot_support'
     bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-    my_log.log2(message, msg)
+    my_log.log_echo(message, msg)
 
 
 @bot.message_handler(commands=['id']) 

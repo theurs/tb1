@@ -1012,8 +1012,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть ответ"
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'tts':
-            llang = my_trans.detect_lang(message.text) or lang
-            message.text = f'/tts {llang} {message.text}'
+            llang = my_trans.detect_lang(message.text or message.caption or '') or lang
+            message.text = f'/tts {llang} {message.text or message.caption or ""}'
             tts(message)
         elif call.data == 'erase_image':
             # обработка нажатия кнопки "Стереть ответ"
@@ -2692,7 +2692,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
 
 
 @bot.message_handler(commands=['stats'], func=authorized_admin)
-def stats(message: telebot.types.Message):
+def stats_admin(message: telebot.types.Message):
     """Показывает статистику использования бота."""
     thread = threading.Thread(target=stats_thread, args=(message,))
     thread.start()
@@ -3307,7 +3307,7 @@ def id_cmd_handler(message: telebot.types.Message):
         else:
             sec_left = 60*60*24*7
             TRIAL_USERS[chat_full_id] = time.time()
-        days_left = int((time.time() - sec_left)/60/60/24) + 7
+        days_left = 7 - int((time.time() - sec_left)/60/60/24)
         if chat_full_id in TRIAL_USERS_COUNTER:
             msgs_counter = TRIAL_USERS_COUNTER[chat_full_id]
         else:

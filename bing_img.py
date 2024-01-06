@@ -27,7 +27,7 @@ COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 # {cookie:datetime, ...}
 # cookies frozen for a day
 COOKIE_SUSPENDED = SqliteDict('db/bing_cookie_suspended.db', autocommit=True)
-SUSPEND_TIME = 60 * 60 * 1
+SUSPEND_TIME = 60 * 60 * 2
 
 # storage of requests that Bing rejected, they cannot be repeated
 BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)

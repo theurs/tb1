@@ -532,8 +532,7 @@ def trial_status(message: telebot.types.Message) -> bool:
 
         if trial_time > TRIAL_DAYS:
             msg = tr('Free trial period ended, please contact @theurs.\n\nYou can run your own free copy of this bot at https://github.com/theurs/tb1 and (simplified version) https://github.com/theurs/tbg', lang)
-            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message), disable_web_page_preview=True)
-            my_log.log_echo(message, msg)
+            bot_reply(message, msg, disable_web_page_preview=True)
             return False
         else:
             return True
@@ -568,6 +567,10 @@ def authorized_admin(message: telebot.types.Message) -> bool:
 
 
 def authorized_callback(call: telebot.types.CallbackQuery) -> bool:
+    # do not work buttons in cache gallery
+    if hasattr(cfg, 'videos_group') and call.message.chat.id == cfg.videos_group:
+            return False
+
     # никаких проверок для админов
     if call.from_user.id in cfg.admins:
         return True
@@ -679,6 +682,30 @@ def disabled_kbd(chat_id_full):
     if chat_id_full not in DISABLED_KBD:
         DISABLED_KBD[chat_id_full] = True
     return DISABLED_KBD[chat_id_full]
+
+
+def bot_reply(message: telebot.types.Message,
+              msg: str,
+              parse_mode: str = None,
+              disable_web_page_preview: bool = None,
+              reply_markup: telebot.types.InlineKeyboardMarkup = None,
+              send_message: bool = False):
+    """Send message from bot and log it"""
+    try:
+        if reply_markup is None:
+            reply_markup = get_keyboard('hide', message)
+
+        my_log.log_echo(message, msg)
+
+        if send_message:
+            send_long_message(message, msg, parse_mode=parse_mode,
+                                disable_web_page_preview=disable_web_page_preview,
+                                reply_markup=reply_markup)
+        else:
+            reply_to_long_message(message, msg, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview,
+                            reply_markup=reply_markup)
+    except Exception as unknown:
+        my_log.log2(f'tb:bot_reply: {unknown}')
 
 
 def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', payload = None) -> telebot.types.InlineKeyboardMarkup:
@@ -2054,7 +2081,10 @@ def set_bing_cookies(message: telebot.types.Message):
             bing_img.COOKIE.clear()
             bing_img.COOKIE_SUSPENDED.clear()
             for cookie in cookies:
-                bing_img.COOKIE[n] = cookie.strip()
+                cookie = cookie.strip()
+                if len(cookie) < 200:
+                    continue
+                bing_img.COOKIE[n] = cookie
                 n += 1
         msg = f'{tr("Cookies set:", lang)} {n}'
         bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
@@ -2122,6 +2152,10 @@ def send_debug_history(message: telebot.types.Message):
 @bot.message_handler(commands=['restart'], func=authorized_admin) 
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+    msg = tr('Restarting bot, please wait', lang)
+    bot_reply(message, msg)
     bot.stop_polling()
 
 

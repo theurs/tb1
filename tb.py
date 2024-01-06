@@ -65,6 +65,9 @@ semaphore_talks = threading.Semaphore(40)
 if not os.path.exists('db'):
     os.mkdir('db')
 
+# сколько дней триальный период
+TRIAL_DAYS = cfg.TRIAL_DAYS if hasattr(cfg, 'TRIAL_DAYS') else 7
+TRIAL_MESSAGES = cfg.TRIAL_MESSAGES if hasattr(cfg, 'TRIAL_MESSAGES') else 300
 
 # запоминаем уникальные хелпы и приветствия, сбрасывать при смене языка
 HELLO_MSG = SqliteDict('db/msg_hello.db', autocommit=True)
@@ -524,10 +527,10 @@ def trial_status(message: telebot.types.Message) -> bool:
             TRIAL_USERS_COUNTER[chat_full_id] += 1
         else:
             TRIAL_USERS_COUNTER[chat_full_id] = 0
-        if TRIAL_USERS_COUNTER[chat_full_id] < 300:
+        if TRIAL_USERS_COUNTER[chat_full_id] < TRIAL_MESSAGES:
             return True
 
-        if trial_time > 7: # 1 week free trial
+        if trial_time > TRIAL_DAYS:
             msg = tr('Free trial period ended, please contact @theurs.\n\nYou can run your own free copy of this bot at https://github.com/theurs/tb1 and (simplified version) https://github.com/theurs/tbg', lang)
             bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message), disable_web_page_preview=True)
             my_log.log_echo(message, msg)
@@ -2703,7 +2706,7 @@ def stats_thread(message: telebot.types.Message):
 
     users = [x for x in CHAT_MODE.keys() if x in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[x] > 0]
     # users_sorted = natsorted(users)
-    users_sorted = sorted(users, key=lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else 300)
+    users_sorted = sorted(users, key=lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else TRIAL_MESSAGES)
     users_text = ''
     pt = prettytable.PrettyTable(
         align = "r",
@@ -2716,8 +2719,8 @@ def stats_thread(message: telebot.types.Message):
 
     for user in users_sorted:
         if user in TRIAL_USERS:
-            left_days = 7 - int((time.time()-TRIAL_USERS[user])/60/60/24)
-            left_msgs = 300-TRIAL_USERS_COUNTER[user]
+            left_days = TRIAL_DAYS - int((time.time()-TRIAL_USERS[user])/60/60/24)
+            left_msgs = TRIAL_MESSAGES-TRIAL_USERS_COUNTER[user]
             # users_text += f'{user} - {left_days}d - {left_msgs}m \n'
             row = [user, left_days, left_msgs]
             try:
@@ -3305,14 +3308,14 @@ def id_cmd_handler(message: telebot.types.Message):
         if chat_full_id in TRIAL_USERS:
             sec_left = TRIAL_USERS[chat_full_id]
         else:
-            sec_left = 60*60*24*7
+            sec_left = 60*60*24*TRIAL_DAYS
             TRIAL_USERS[chat_full_id] = time.time()
-        days_left = 7 - int((time.time() - sec_left)/60/60/24)
+        days_left = TRIAL_DAYS - int((time.time() - sec_left)/60/60/24)
         if chat_full_id in TRIAL_USERS_COUNTER:
             msgs_counter = TRIAL_USERS_COUNTER[chat_full_id]
         else:
             msgs_counter = 0
-        msgs_counter = 300 - msgs_counter
+        msgs_counter = TRIAL_MESSAGES - msgs_counter
         if msgs_counter < 0:
             msgs_counter = 0
         msg += f'\n\n{tr("Дней осталось:", lang)} {days_left}\n{tr("Сообщений осталось:", lang)} {msgs_counter}\n\n'

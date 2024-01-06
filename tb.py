@@ -3307,7 +3307,7 @@ def report_cmd_handler(message: telebot.types.Message):
         if my_log.purge(message.chat.id):
             chat_full_id = get_topic_id(message)
             lang = get_lang(chat_full_id, message)
-            msg = f'{tr("Yuor logs was purged.", lang)}'
+            msg = f'{tr("Your logs was purged. Keep in mind there could be a backups and some mixed logs. It's hard to erase you from the internet.", lang)}'
         else:
             msg = f'{tr("Error. Your logs was NOT purged.", lang)}'
     bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))

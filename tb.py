@@ -2652,7 +2652,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                         my_log.log_echo(message, f'[image gen] {len(medias)}\n{images_list_str}')
 
                         if suggest:
-                            suggest2 = [f'<code>/image {x}</code>'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1) for x in suggest.split('\n')]
+                            suggest2 = [f'<code>/image {x}</code>'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).replace('<code>/image </code>\n', '') for x in suggest.split('\n')]
                             suggest3 = '\n\n'.join(suggest2)
                             suggest4 = tr('Here are some more possible options for your request:', lang) + '\n\n' + suggest3
                             reply_to_long_message(message, suggest4, parse_mode = 'HTML', reply_markup=get_keyboard('hide', message))

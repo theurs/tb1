@@ -510,15 +510,12 @@ def trial_status(message: telebot.types.Message) -> bool:
         bool: True if the trial is active, False otherwise.
     """
     if hasattr(cfg, 'TRIALS') and cfg.TRIALS:
-        is_private = message.chat.type == 'private'
-        if not is_private: # no trials for groups
-            return True
-        if hasattr(message, 'message'): # callback
-                return True
-
         chat_full_id = get_topic_id(message)
         lang = get_lang(chat_full_id, message)
-        
+
+        if message.chat.type != 'private':
+            chat_full_id = f'[{message.chat.id}] [0]'
+
         if chat_full_id not in TRIAL_USERS:
             TRIAL_USERS[chat_full_id] = time.time()
         trial_time = (time.time() - TRIAL_USERS[chat_full_id]) / (60*60*24)

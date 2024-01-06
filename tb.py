@@ -2728,7 +2728,7 @@ def stats_thread(message: telebot.types.Message):
             except Exception as unknown:
                 my_log.log2(f'tb:stats_thread:add_row {unknown}')
 
-    users_text = f'{tr("Usage statistics:", lang)}\n\n<pre><code>{pt.get_string()}</code></pre>'
+    users_text = f'{tr("Usage statistics:", lang)}\n\n<pre><code>{pt.get_string(sorted="left messages")}</code></pre>'
 
     users_text += f'\n\n{tr("Total:", lang)} {str(len(users_sorted))}'
 

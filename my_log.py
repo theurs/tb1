@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import glob
 import os
 import datetime
 import telebot
@@ -149,7 +150,20 @@ def log_google(request: str, respond: str):
         log_file.write(f'{respond}\n\n{"="*40}\n\n{request}')
 
 
+def purge(chat_id: int) -> bool:
+    f1 = glob.glob(f'logs/*.log')
+    f2 = glob.glob(f'logs2/*.log')
+    f3 = f1 + f2
+    f4 = [x for x in f3 if x.endswith(f'[{chat_id}].log') or x.endswith(f'[{chat_id}].log.debug.log')]
+    try:
+        for f in f4:
+            os.remove(f)
+    except Exception as unknown:
+        log2(f'my_log:purge: {unknown}')
+        return False
+    return True
+
 if __name__ == '__main__':
     pass
-    log_google('1', '2')
+    purge(1651196)
     

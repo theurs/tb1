@@ -3292,10 +3292,24 @@ Donate:"""
 
 @bot.message_handler(commands=['report']) 
 def report_cmd_handler(message: telebot.types.Message):
-    """показывает id юзера и группы в которой сообщение отправлено"""
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
     msg = f'{tr("Our support telegram group report here", lang)} https://t.me/kun4_sun_bot_support'
+    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+    my_log.log_echo(message, msg)
+
+
+@bot.message_handler(commands=['purge'], func = authorized) 
+def report_cmd_handler(message: telebot.types.Message):
+    """удаляет логи юзера"""
+    is_private = message.chat.type == 'private'
+    if is_private:
+        if my_log.purge(message.chat.id):
+            chat_full_id = get_topic_id(message)
+            lang = get_lang(chat_full_id, message)
+            msg = f'{tr("Yuor logs was purged.", lang)}'
+        else:
+            msg = f'{tr("Error. Your logs was NOT purged.", lang)}'
     bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
     my_log.log_echo(message, msg)
 

@@ -2344,7 +2344,7 @@ def music_thread(message: telebot.types.Message):
                 bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
 
 
-@bot.message_handler(commands=['model'], func=authorized_admin)
+@bot.message_handler(commands=['model'], func=authorized_owner)
 def set_new_model(message: telebot.types.Message):
     """меняет модель для гпт, никаких проверок не делает"""
     thread = threading.Thread(target=set_new_model_thread, args=(message,))
@@ -2384,18 +2384,15 @@ def set_new_model_thread(message: telebot.types.Message):
         if len(tmpstr) > 0:
             msgs.append(tmpstr)
         for x in msgs:
-            reply_to_long_message(message, x, parse_mode='HTML', reply_markup=get_keyboard('hide', message)) 
-            my_log.log_echo(message, x)
+            bot_reply(message, x, parse_mode='HTML')
         return
 
     model = message.text.split()[1]
     msg0 = f'{tr("Старая модель", lang)} `{current_model}`.'
     msg = f'{tr("Установлена новая модель", lang)} `{model}`.'
     gpt_basic.CUSTOM_MODELS[chat_id_full] = model
-    bot.reply_to(message, msg0, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
-    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg0)
-    my_log.log_echo(message, msg)
+    bot_reply(message, msg0, parse_mode='Markdown')
+    bot_reply(message, msg, parse_mode='Markdown')
 
 
 @bot.message_handler(commands=['tts'], func=authorized)

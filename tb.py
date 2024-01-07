@@ -3608,7 +3608,7 @@ def do_task(message, custom_prompt: str = ''):
 
     # не обрабатывать неизвестные команды
     if message.text.startswith('/'):
-        my_log.log2(f'tb:do_task:unknown command: {message.text}')
+        bot_reply(message, f"{tr('Unknown command:', lang)} {message.text}")
         return
 
     # если использовано кодовое слово вместо команды /music

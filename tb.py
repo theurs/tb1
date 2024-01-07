@@ -2120,7 +2120,7 @@ def send_debug_history(message: telebot.types.Message):
     bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
-@bot.message_handler(commands=['restart'], func=authorized_admin) 
+@bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin) 
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
     chat_full_id = get_topic_id(message)

@@ -696,13 +696,15 @@ def bot_reply(message: telebot.types.Message,
               parse_mode: str = None,
               disable_web_page_preview: bool = None,
               reply_markup: telebot.types.InlineKeyboardMarkup = None,
-              send_message: bool = False):
+              send_message: bool = False,
+              not_log: bool = False):
     """Send message from bot and log it"""
     try:
         if reply_markup is None:
             reply_markup = get_keyboard('hide', message)
 
-        my_log.log_echo(message, msg)
+        if not not_log:
+            my_log.log_echo(message, msg)
 
         if send_message:
             send_long_message(message, msg, parse_mode=parse_mode,
@@ -1441,15 +1443,13 @@ def handle_voice_thread(message: telebot.types.Message):
                     # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
                     pass
                 else:
-                    reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
-                    my_log.log_echo(message, f'[ASR] {text}')
+                    bot_reply(message, text, reply_markup=get_keyboard('translate', message))
             else:
                 if VOICE_ONLY_MODE[chat_id_full]:
                     message.text = '/tts ' + tr('Не удалось распознать текст', lang)
                     tts(message)
                 else:
                     bot_reply(message, tr('Не удалось распознать текст', lang))
-                    my_log.log_echo(message, '[ASR] no results')
 
             # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
             if text:
@@ -1558,8 +1558,7 @@ def handle_document_thread(message: telebot.types.Message):
                 # удалить сначала файл а потом и эту папку
                 os.remove(full_path)
                 os.rmdir(folder_path)
-                my_log.log_echo(message, response)
-                reply_to_long_message(message, response, parse_mode='HTML', reply_markup=get_keyboard('claude_chat', message))
+                bot_reply(message, response, parse_mode='HTML', reply_markup=get_keyboard('claude_chat', message))
             return
 
         # если прислали текстовый файл или pdf с подписью перескажи
@@ -1582,10 +1581,9 @@ def handle_document_thread(message: telebot.types.Message):
 
                 if text.strip():
                     summary = my_sum.summ_text(text)
-                    reply_to_long_message(message, summary, parse_mode='',
+                    bot_reply(message, summary, parse_mode='',
                                           disable_web_page_preview = True,
                                           reply_markup=get_keyboard('translate', message))
-                    my_log.log_echo(message, summary)
                 else:
                     help = tr('Не удалось получить никакого текста из документа.', lang)
                     bot_reply(message, help)
@@ -1610,14 +1608,12 @@ def handle_document_thread(message: telebot.types.Message):
                         text = my_ocr.get_text_from_image(fp.read(), get_ocr_language(message))
                         # отправляем распознанный текст пользователю
                         if text.strip() != '':
-                            reply_to_long_message(message, text, parse_mode='',
+                            bot_reply(message, text, parse_mode='',
                                                   reply_markup=get_keyboard('translate', message),
                                                   disable_web_page_preview = True)
-                            my_log.log_echo(message, '[OCR] ' + text)
                         else:
-                            reply_to_long_message(message, tr('Не смог распознать текст.', lang),
+                            bot_reply(message, tr('Не смог распознать текст.', lang),
                                                   reply_markup=get_keyboard('translate', message))
-                            my_log.log_echo(message, '[OCR] no results')
                     return
                 if document.mime_type != 'application/pdf':
                     bot_reply(message, f'{tr("Это не PDF-файл.", lang)} {document.mime_type}')
@@ -1701,10 +1697,8 @@ def handle_photo_thread(message: telebot.types.Message):
                 text = img2txt(image, lang, chat_id_full, message.caption)
                 if text:
                     text = utils.bot_markdown_to_html(text)
-                    reply_to_long_message(message, text, parse_mode='HTML',
+                    bot_reply(message, text, parse_mode='HTML',
                                           reply_markup=get_keyboard('translate', message))
-
-                my_log.log_echo(message, text)
             return
         elif state == 'ocr':
             with ShowAction(message, 'typing'):
@@ -1721,10 +1715,9 @@ def handle_photo_thread(message: telebot.types.Message):
                 text = my_ocr.get_text_from_image(fp.read(), get_ocr_language(message))
                 # отправляем распознанный текст пользователю
                 if text.strip() != '':
-                    reply_to_long_message(message, text, parse_mode='',
+                    bot_reply(message, text, parse_mode='',
                                         reply_markup=get_keyboard('translate', message),
                                         disable_web_page_preview = True)
-                    my_log.log_echo(message, '[OCR] ' + text)
                 else:
                     bot_reply(message, tr('[OCR] no results', lang))
             return
@@ -1802,11 +1795,9 @@ def handle_video_thread(message: telebot.types.Message):
 
             # Отправляем распознанный текст
             if text:
-                reply_to_long_message(message, text, reply_markup=get_keyboard('translate', message))
-                my_log.log_echo(message, f'[ASR] {text}')
+                bot_reply(message, text, reply_markup=get_keyboard('translate', message))
             else:
                 bot_reply(message, tr('Не удалось распознать текст', lang))
-                my_log.log_echo(message, '[ASR] no results')
 
 
 @bot.message_handler(commands=['config'], func=authorized_owner)
@@ -1915,8 +1906,7 @@ def bing_proxies(message: telebot.types.Message):
     if not msg:
         msg = tr('Ничего нет', lang)
 
-    reply_to_long_message(message, f'<code>{msg}</code>', parse_mode='HTML', reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    bot_reply(message, f'<code>{msg}</code>', parse_mode='HTML')
 
 
 @bot.message_handler(commands=['gemini_proxy'], func=authorized_admin)
@@ -2001,16 +1991,12 @@ def reset_(message: telebot.types.Message):
     if chat_id_full in CHAT_MODE:
         if CHAT_MODE[chat_id_full] == 'bard':
             my_bard.reset_bard_chat(chat_id_full)
-            my_log.log_echo(message, 'История барда принудительно очищена')
         if CHAT_MODE[chat_id_full] == 'gemini':
             my_gemini.reset(chat_id_full)
-            my_log.log_echo(message, 'История Gemini Pro принудительно очищена')
         elif CHAT_MODE[chat_id_full] == 'claude':
             my_claude.reset_claude_chat(chat_id_full)
-            my_log.log_echo(message, 'История клода принудительно очищена')
         elif CHAT_MODE[chat_id_full] == 'chatgpt':
             gpt_basic.chat_reset(chat_id_full)
-            my_log.log_echo(message, 'История GPT принудительно очищена')
         bot_reply(message, tr('History cleared.', lang))
     else:
         msg = tr('History was not found.', lang)
@@ -2140,8 +2126,7 @@ def send_debug_history(message: telebot.types.Message):
         prompt = my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
     else:
         return
-    my_log.log_echo(message, prompt)
-    reply_to_long_message(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
 @bot.message_handler(commands=['restart'], func=authorized_admin) 
@@ -2395,7 +2380,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
         else:
             text = my_google.download_text([url, ], 100000, no_links = True)
         if text:
-            reply_to_long_message(message, text, parse_mode='',
+            bot_reply(message, text, parse_mode='',
                                   reply_markup=get_keyboard('translate', message),
                                       disable_web_page_preview=True)
         return
@@ -2426,8 +2411,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
 """
 
         COMMAND_MODE[chat_id_full] = 'tts'
-        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
-        my_log.log_echo(message, help)
+        bot_reply(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
         return
 
     with semaphore_talks:
@@ -2477,11 +2461,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
                 my_log.log_echo(message, f'[Sent voice message] [{gender}]')
             else:
                 msg = tr('Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.', lang)
-                if message.chat.type != 'private':
-                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-                else:
-                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-                    my_log.log_echo(message, msg)
+                bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['google',], func=authorized)
@@ -2495,8 +2475,7 @@ def google_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     if not allowed_chatGPT_user(message.chat.id):
-        my_log.log_echo(message, 'chatGPT запрещен [google]')
-        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang), reply_markup=get_keyboard('hide', message))
+        bot_reply(message, tr('You are not in allow chatGPT users list', lang))
         return
 
     try:
@@ -2512,21 +2491,20 @@ def google_thread(message: telebot.types.Message):
 {tr('Напишите запрос в гугл', lang)}
 """
         COMMAND_MODE[chat_id_full] = 'google'
-        bot.reply_to(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
+        bot_reply(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
         return
 
     with ShowAction(message, 'typing'):
         with semaphore_talks:
             r = my_google.search(q, lang)
         try:
-            bot.reply_to(message, r, parse_mode = 'Markdown',
+            bot_reply(message, r, parse_mode = 'Markdown',
                          disable_web_page_preview = True,
                          reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
-            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True,
+            bot_reply(message, r, parse_mode = '', disable_web_page_preview = True,
                          reply_markup=get_keyboard('chat', message))
-        my_log.log_echo(message, r)
 
         if chat_id_full not in gpt_basic.CHATS:
             gpt_basic.CHATS[chat_id_full] = []
@@ -2552,8 +2530,7 @@ def ddg_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     if not allowed_chatGPT_user(message.chat.id):
-        my_log.log_echo(message, 'chatGPT запрещен [ddg]')
-        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang), reply_markup=get_keyboard('hide', message))
+        bot_reply(message, tr('You are not in allow chatGPT users list', lang))
         return
 
     try:
@@ -2572,7 +2549,7 @@ def ddg_thread(message: telebot.types.Message):
 """
 
         COMMAND_MODE[chat_id_full] = 'ddg'
-        bot.reply_to(message, help, parse_mode = 'Markdown',
+        bot_reply(message, help, parse_mode = 'Markdown',
                      disable_web_page_preview = True,
                      reply_markup=get_keyboard('command_mode', message))
         return
@@ -2581,14 +2558,13 @@ def ddg_thread(message: telebot.types.Message):
         with semaphore_talks:
             r = my_google.search_ddg(q, lang=lang)
         try:
-            bot.reply_to(message, r, parse_mode = 'Markdown',
+            bot_reply(message, r, parse_mode = 'Markdown',
                          disable_web_page_preview = True,
                          reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
-            bot.reply_to(message, r, parse_mode = '', disable_web_page_preview = True,
+            bot_reply(message, r, parse_mode = '', disable_web_page_preview = True,
                          reply_markup=get_keyboard('chat', message))
-        my_log.log_echo(message, r)
         
         if chat_id_full not in gpt_basic.CHATS:
             gpt_basic.CHATS[chat_id_full] = []
@@ -2626,8 +2602,7 @@ def image_thread(message: telebot.types.Message):
                 moderation_flag = gpt_basic.moderation(prompt)
                 if moderation_flag:
                     msg = tr('There is something suspicious in your request, try to rewrite it differently.', lang)
-                    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-                    my_log.log_echo(message, msg)
+                    bot_reply(message, msg)
                     return
 
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
@@ -2665,18 +2640,14 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                             caption += f'{i.message_id} '
                         caption += '\n'
                         caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
-                        bot.reply_to(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
+                        bot_reply(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
                                     reply_markup=get_keyboard('hide_image', message))
-
-                        images_list_str = "\n".join(images)
-                        my_log.log_echo(message, f'[image gen] {len(medias)}\n{images_list_str}')
 
                         if suggest:
                             suggest2 = [f'<code>/image {x}</code>'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).replace('<code>/image </code>\n', '') for x in suggest.split('\n')]
                             suggest3 = '\n\n'.join(suggest2)
                             suggest4 = tr('Here are some more possible options for your request:', lang) + '\n\n' + suggest3
-                            reply_to_long_message(message, suggest4, parse_mode = 'HTML', reply_markup=get_keyboard('hide', message))
-                            my_log.log_echo(message, suggest4)
+                            bot_reply(message, suggest4, parse_mode = 'HTML')
 
                         n = [{'role':'system', 'content':f'user {tr("asked to draw", lang)}\n{prompt}'}, 
                             {'role':'system', 'content':f'assistant {tr("drew using DALL-E", lang)}'}]
@@ -2688,14 +2659,11 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                             f'{tr("drew using DALL-E", lang)}',
                                             chat_id_full)
                 else:
-                    bot.reply_to(message, tr('Could not draw anything. Maybe there is no mood, or maybe you need to give another description.', lang), 
-                                 reply_markup=get_keyboard('hide', message))
+                    bot_reply(message, tr('Could not draw anything. Maybe there is no mood, or maybe you need to give another description.', lang))
                     if cfg.enable_image_adv:
                         msg = f'{tr("Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots:", lang)} https://t.me/neuralforum\n\n'
 
-                        bot.reply_to(message, msg,
-                                 disable_web_page_preview = True,
-                                 reply_markup=get_keyboard('hide', message))
+                        bot_reply(message, msg, disable_web_page_preview = True)
                     my_log.log_echo(message, '[image gen error] ')
                     n = [{'role':'system', 'content':f'user {tr("asked to draw", lang)}\n{prompt}'}, 
                          {'role':'system', 'content':f'assistant {tr("did not want or could not draw this using DALL-E", lang)}'}]
@@ -2710,8 +2678,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
 
         else:
             COMMAND_MODE[chat_id_full] = 'image'
-            bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
-            my_log.log_echo(message, help)
+            bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
 @bot.message_handler(commands=['stats'], func=authorized_admin)
@@ -2751,9 +2718,7 @@ def stats_thread(message: telebot.types.Message):
 
     users_text += f'\n\n{tr("Total:", lang)} {str(len(users_sorted))}'
 
-    reply_to_long_message(message, users_text, parse_mode='HTML',
-                          reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, users_text)
+    bot_reply(message, users_text, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['blockadd'], func=authorized_admin)
@@ -2766,9 +2731,7 @@ def block_user_add(message: telebot.types.Message):
     user_id = message.text[10:].strip()
     if user_id:
         BAD_USERS[user_id] = True
-        bot.reply_to(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}',
-                        reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, f'Пользователь {user_id} добавлен в стоп-лист')
+        bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
 
 
 @bot.message_handler(commands=['blockdel'], func=authorized_admin)
@@ -2782,13 +2745,9 @@ def block_user_del(message: telebot.types.Message):
     if user_id:
         if user_id in BAD_USERS:
             del BAD_USERS[user_id]
-            bot.reply_to(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}',
-                            reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, f'Пользователь {user_id} удален из стоп-листа')
+            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
         else:
-            bot.reply_to(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}', 
-                            reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, f'Пользователь {user_id} не найден в стоп-листе')
+            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
 
 
 @bot.message_handler(commands=['blocklist'], func=authorized_admin)
@@ -2796,8 +2755,7 @@ def block_user_list(message: telebot.types.Message):
     """Показывает список заблокированных юзеров"""
     users = [x for x in BAD_USERS.keys() if x]
     if users:
-        reply_to_long_message(message, '\n'.join(users), reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, '\n'.join(users))
+        bot_reply(message, '\n'.join(users))
 
 
 @bot.message_handler(commands=['ask', 'perplexity'], func=authorized)
@@ -2817,9 +2775,7 @@ def ask_thread(message: telebot.types.Message):
     except Exception as error2:
         print(error2)
         help = """/ask <текст запроса> будет искать с помощью сервиса perplexity.io"""
-        bot.reply_to(message, help, parse_mode = 'Markdown',
-                     disable_web_page_preview = True,
-                     reply_markup=get_keyboard('hide', message))
+        bot_reply(message, help, parse_mode = 'Markdown', disable_web_page_preview = True)
         return
 
     with ShowAction(message, 'typing'):
@@ -2831,20 +2787,18 @@ def ask_thread(message: telebot.types.Message):
                 f'tb:ask: {error2}'
                 response = ''
         if not response:
-            bot.reply_to(message, 'Интернет вам не ответил, перезвоните позже',
-                         parse_mode = '', disable_web_page_preview = True,
-                         reply_markup=get_keyboard('hide', message))
+            bot_reply(message, 'Интернет вам не ответил, перезвоните позже',
+                         parse_mode = '', disable_web_page_preview = True)
             return
         try:
-            reply_to_long_message(message, response, parse_mode = 'HTML',
+            bot_reply(message, response, parse_mode = 'HTML',
                                   disable_web_page_preview = True,
                                   reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
-            reply_to_long_message(message, response, parse_mode = '',
+            bot_reply(message, response, parse_mode = '',
                                   disable_web_page_preview = True,
                                   reply_markup=get_keyboard('chat', message))
-        my_log.log_echo(message, response)
 
         if chat_id_full not in gpt_basic.CHATS:
             gpt_basic.CHATS[chat_id_full] = []
@@ -2894,8 +2848,7 @@ def alert_thread(message: telebot.types.Message):
             return
 
     msg = f'/alert <{tr("текст сообщения которое бот отправит всем кого знает, форматирование маркдаун", lang)}>. {tr("Только администраторы могут использовать эту команду.", lang)}'
-    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['qr'], func=authorized)
@@ -2919,8 +2872,7 @@ def qrcode_text(message: telebot.types.Message):
             return
 
     msg = f'/qr {tr("текст который надо перевести в qrcode", lang)}'
-    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['sum'], func=authorized)
@@ -2934,8 +2886,7 @@ def summ_text_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     if not allowed_chatGPT_user(message.chat.id):
-        my_log.log_echo(message, 'chatGPT запрещен [sum]')
-        bot.reply_to(message, tr('You are not in allow chatGPT users list', lang), reply_markup=get_keyboard('hide', message))
+        bot_reply(message, tr('You are not in allow chatGPT users list', lang))
         return
 
     text = message.text
@@ -2955,10 +2906,9 @@ def summ_text_thread(message: telebot.types.Message):
                     r = SUM_CACHE[url]
                 if r:
                     rr = utils.bot_markdown_to_html(r)
-                    reply_to_long_message(message, rr, disable_web_page_preview = True,
+                    bot_reply(message, rr, disable_web_page_preview = True,
                                           parse_mode='HTML',
                                           reply_markup=get_keyboard('translate', message))
-                    my_log.log_echo(message, r)
                     if chat_id_full not in gpt_basic.CHATS:
                         gpt_basic.CHATS[chat_id_full] = []
                     gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
@@ -2979,15 +2929,13 @@ def summ_text_thread(message: telebot.types.Message):
                     except Exception as error2:
                         print(error2)
                         m = tr('Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', lang)
-                        bot.reply_to(message, m, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
-                        my_log.log_echo(message, m)
+                        bot_reply(message, m, parse_mode='Markdown')
                         return
                     if res:
                         rr = utils.bot_markdown_to_html(res)
-                        reply_to_long_message(message, rr, parse_mode='HTML',
+                        bot_reply(message, rr, parse_mode='HTML',
                                               disable_web_page_preview = True,
                                               reply_markup=get_keyboard('translate', message))
-                        my_log.log_echo(message, res)
                         SUM_CACHE[url] = res
                         if chat_id_full not in gpt_basic.CHATS:
                             gpt_basic.CHATS[chat_id_full] = []
@@ -3003,15 +2951,13 @@ def summ_text_thread(message: telebot.types.Message):
                         return
                     else:
                         error = tr('Не смог прочитать текст с этой страницы.', lang)
-                        bot.reply_to(message, error, reply_markup=get_keyboard('hide', message))
-                        my_log.log_echo(message, error)
+                        bot_reply(message, error)
                         return
     help = f"""{tr('Пример:', lang)} /sum https://youtu.be/3i123i6Bf-U
 
 {tr('Давайте вашу ссылку и я перескажу содержание', lang)}"""
     COMMAND_MODE[chat_id_full] = 'sum'
-    bot.reply_to(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
-    my_log.log_echo(message, help)
+    bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
 @bot.message_handler(commands=['sum2'], func=authorized)
@@ -3070,9 +3016,8 @@ def trans_thread(message: telebot.types.Message):
             text = match.group(2) or ''
         else:
             COMMAND_MODE[chat_id_full] = 'trans'
-            bot.reply_to(message, help, parse_mode = 'Markdown',
+            bot_reply(message, help, parse_mode = 'Markdown',
                          reply_markup=get_keyboard('command_mode', message))
-            my_log.log_echo(message, help)
             return
         llang = llang.strip()
 
@@ -3088,18 +3033,16 @@ def trans_thread(message: telebot.types.Message):
                 except Exception as detect_error:
                     my_log.log2(f'tb:trans:detect_langs: {detect_error}')
                 if match and match.group(1):
-                    bot.reply_to(message, translated,
+                    bot_reply(message, translated,
                                  reply_markup=get_keyboard('translate', message))
                 else:
-                    bot.reply_to(message,
+                    bot_reply(message,
                                  translated + '\n\n' + tr('Распознанные языки:', lang) \
                                  + ' ' + str(', '.join(detected_langs)).strip(', '),
                                  reply_markup=get_keyboard('translate', message))
-                my_log.log_echo(message, translated)
             else:
                 msg = 'Ошибка перевода'
-                bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-                my_log.log_echo(message, msg)
+                bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['name'], func=authorized_owner)
@@ -3123,16 +3066,14 @@ def send_name(message: telebot.types.Message):
         if len(new_name) <= 10 and new_name.lower() not in BAD_NAMES:
             BOT_NAMES[chat_id_full] = new_name.lower()
             msg = f'{tr("Кодовое слово для обращения к боту изменено на", lang)} ({args[1]}) {tr("для этого чата.", lang)}'
-            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, msg)
+            bot_reply(message, msg)
         else:
             msg = f"{tr('Неправильное имя, цифры после букв, не больше 10 всего. Имена', lang)} {', '.join(BAD_NAMES) if BAD_NAMES else ''} {tr('уже заняты.', lang)}"
-            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-            my_log.log_echo(message, msg)
+            bot_reply(message, msg)
     else:
         help = f"{tr('Напишите новое имя бота и я поменяю его, цифры после букв, не больше 10 всего. Имена', lang)} {', '.join(BAD_NAMES) if BAD_NAMES else ''} {tr('уже заняты.', lang)}"
         COMMAND_MODE[chat_id_full] = 'name'
-        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
+        bot_reply(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
 @bot.message_handler(commands=['ocr'], func=authorized)
@@ -3160,7 +3101,7 @@ def ocr_setup(message: telebot.types.Message):
 
 https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
 
-        bot.reply_to(message, msg, parse_mode='HTML',
+        bot_reply(message, msg, parse_mode='HTML',
                      reply_markup=get_keyboard('hide', message),
                      disable_web_page_preview=True)
         return
@@ -3170,8 +3111,7 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
     msg = f'{tr("Старые настройки:", lang)} {llang}\n\n{tr("Новые настройки:", lang)} {arg}'
     OCR_DB[chat_id_full] = arg
     
-    bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    bot_reply(message, msg, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['start'], func=authorized)
@@ -3233,8 +3173,7 @@ Chat language: {lang}'''
         else:
             help = tr(help, lang)
 
-        bot.reply_to(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
-        my_log.log_echo(message, help)
+        bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 
 
 @bot.message_handler(commands=['help'], func=authorized)
@@ -3301,12 +3240,11 @@ Donate:"""
         help = f'{help}\n\n[<a href = "https://www.donationalerts.com/r/theurs">DonationAlerts</a> 💸 <a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> 💸 <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> 💸 <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>]'
 
         try:
-            reply_to_long_message(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
+            bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
         except Exception as error:
             print(f'tb:send_welcome_help: {error}')
             my_log.log2(f'tb:send_welcome_help: {error}')
-            reply_to_long_message(message, help, parse_mode='', disable_web_page_preview=True, reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, help)
+            bot_reply(message, help, parse_mode='', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['report']) 
@@ -3314,8 +3252,7 @@ def report_cmd_handler(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
     msg = f'{tr("Our support telegram group report here", lang)} https://t.me/kun4_sun_bot_support'
-    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['purge'], func = authorized_owner)
@@ -3329,8 +3266,7 @@ def report_cmd_handler(message: telebot.types.Message):
             msg = f'{tr("Your logs was purged. Keep in mind there could be a backups and some mixed logs. It is hard to erase you from the internet.", lang)}'
         else:
             msg = f'{tr("Error. Your logs was NOT purged.", lang)}'
-    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['id']) 
@@ -3367,8 +3303,7 @@ def id_cmd_handler(message: telebot.types.Message):
         msg += f'{tr("Пользователь забанен.", lang)}\n'
     if str(message.chat.id) in DDOS_BLOCKED_USERS:
         msg += f'{tr("Пользователь забанен за DDOS.", lang)}\n'
-    bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['dump_translation'], func=authorized_admin)
@@ -3421,7 +3356,7 @@ def set_default_commands_thread(message: telebot.types.Message):
         else:
             return 0
 
-    bot.reply_to(message, tr("Localization will take a long time, do not repeat this command.", user_lang))
+    bot_reply(message, tr("Localization will take a long time, do not repeat this command.", user_lang))
     
     # most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr','hi',
     #                    'hu', 'id', 'in', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro',
@@ -3465,7 +3400,7 @@ def set_default_commands_thread(message: telebot.types.Message):
 
         msg = f'{result} Default commands set [{lang}]'
         msg_commands += msg + '\n'
-    reply_to_long_message(message, msg_commands)
+    bot_reply(message, msg_commands)
 
     new_bot_name = cfg.bot_name.strip()
     new_description = cfg.bot_description.strip()
@@ -3493,7 +3428,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             msg_bot_names += "✅ Bot's name set for language " + lang + f' [{tr(new_bot_name, lang)}]\n'
         else:
             msg_bot_names += "❌ Bot's name set for language " + lang + f' [{tr(new_bot_name, lang)}]\n'
-    reply_to_long_message(message, msg_bot_names)
+    bot_reply(message, msg_bot_names)
 
     msg_descriptions = ''
     for lang in most_used_langs:
@@ -3519,7 +3454,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             msg_descriptions += "✅ New bot's description set for language " + lang + '\n'
         else:
             msg_descriptions += "❌ New bot's description set for language " + lang + '\n'
-    reply_to_long_message(message, msg_descriptions)
+    bot_reply(message, msg_descriptions)
 
     msg_descriptions = ''
     for lang in most_used_langs:
@@ -3545,7 +3480,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             msg_descriptions += "✅ New bot's short description set for language " + lang + '\n'
         else:
             msg_descriptions += "❌ New bot's short description set for language " + lang + '\n'
-    reply_to_long_message(message, msg_descriptions)
+    bot_reply(message, msg_descriptions)
 
 
 def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
@@ -3794,19 +3729,6 @@ def do_task(message, custom_prompt: str = ''):
                 COMMAND_MODE[chat_id_full] = ''
                 return
 
-        # # если сообщение начинается на 'заткнись или замолчи' то ставим блокировку на канал и выходим
-        # if msg.startswith((tr('замолчи', lang), tr('заткнись', lang))) and (is_private or is_reply):
-        #     BLOCKS[chat_id_full] = 1
-        #     bot.reply_to(message, tr('Автоперевод выключен', lang), reply_markup=get_keyboard('hide', message))
-        #     my_log.log_echo(message, 'Включена блокировка автопереводов в чате')
-        #     return
-        # # если сообщение начинается на 'вернись' то снимаем блокировку на канал и выходим
-        # if msg.startswith(tr('вернись', lang)) and (is_private or is_reply):
-        #     BLOCKS[chat_id_full] = 0
-        #     bot.reply_to(message, tr('Автоперевод включен', lang), reply_markup=get_keyboard('hide', message))
-        #     my_log.log_echo(message, 'Выключена блокировка автопереводов в чате')
-        #     return
-        # если сообщение начинается на 'забудь' то стираем историю общения GPT
         if msg == tr('забудь', lang) and (is_private or is_reply) or bot_name_used and msg==tr('забудь', lang):
             reset_(message)
             return
@@ -3814,7 +3736,7 @@ def do_task(message, custom_prompt: str = ''):
         # если в сообщении только ссылка на видео в тиктоке
         # предложить скачать это видео
         if my_tiktok.is_valid_url(message.text):
-            bot.reply_to(message, message.text, disable_web_page_preview = True,
+            bot_reply(message, message.text, disable_web_page_preview = True,
                          reply_markup=get_keyboard('download_tiktok', message))
             return
 
@@ -3831,8 +3753,7 @@ def do_task(message, custom_prompt: str = ''):
                     else:
                         with ShowAction(message, 'typing'):
                             if not allowed_chatGPT_user(message.chat.id):
-                                my_log.log_echo(message, 'chatGPT запрещен [phonenumber]')
-                                bot.reply_to(message, tr('You are not in allow chatGPT users list', lang))
+                                bot_reply(message, tr('You are not in allow chatGPT users list', lang))
                                 return
                             else:
                                 response = my_gemini.check_phone_number(number)
@@ -3843,8 +3764,7 @@ def do_task(message, custom_prompt: str = ''):
                     if response:
                         CACHE_CHECK_PHONE[number] = response
                         response = utils.bot_markdown_to_html(response)
-                        reply_to_long_message(message, response, parse_mode='HTML',
-                                            reply_markup=get_keyboard('hide', message))
+                        bot_reply(message, response, parse_mode='HTML', not_log=True)
                         if gemini_resp:
                             my_log.log_echo(message, '[gemini] ' + response)
                         else:
@@ -3878,7 +3798,7 @@ def do_task(message, custom_prompt: str = ''):
                         print(f'tb:handle_document_thread:claude: {error}')
                         my_log.log2(f'tb:handle_document_thread:claude: {error}')
                         msg = tr('Что-то пошло не так', lang)
-                        bot.reply_to(message, msg)
+                        bot_reply(message, msg)
                         my_log.log2(msg)
                         os.remove(full_path)
                         os.rmdir(folder_path)
@@ -3886,8 +3806,7 @@ def do_task(message, custom_prompt: str = ''):
                     # удалить сначала файл а потом и эту папку
                     os.remove(full_path)
                     os.rmdir(folder_path)
-                    my_log.log_echo(message, response)
-                    reply_to_long_message(message, response, parse_mode='HTML',
+                    bot_reply(message, response, parse_mode='HTML',
                                           reply_markup=get_keyboard('claude_chat', message))
                 return
             if utils.is_image_link(message.text):
@@ -3895,7 +3814,7 @@ def do_task(message, custom_prompt: str = ''):
                     text = img2txt(message.text, lang, chat_id_full)
                     if text:
                         text = utils.bot_markdown_to_html(text)
-                        reply_to_long_message(message, text, parse_mode='HTML',
+                        bot_reply(message, text, parse_mode='HTML',
                                             reply_markup=get_keyboard('translate', message))
                         return
             else:
@@ -3934,8 +3853,7 @@ def do_task(message, custom_prompt: str = ''):
         elif is_reply or is_private or bot_name_used:
             # if len(msg) > cfg.max_message_from_user and (chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] != 'claude'):
             if len(msg) > cfg.max_message_from_user:
-                bot.reply_to(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
-                my_log.log_echo(message, f'Слишком длинное сообщение для чат-бота: {len(msg)} из {cfg.max_message_from_user}')
+                bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
                 return
 
             if chat_id_full not in VOICE_ONLY_MODE:
@@ -3964,8 +3882,7 @@ def do_task(message, custom_prompt: str = ''):
             # если активирован режим общения с Gemini Pro
             if CHAT_MODE[chat_id_full] == 'gemini' and not FIRST_DOT:
                 if len(msg) > my_gemini.MAX_REQUEST:
-                    bot.reply_to(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
-                    my_log.log_echo(message, f'Слишком длинное сообщение для Gemini: {len(msg)} из {my_gemini.MAX_REQUEST}')
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                     return
 
                 with ShowAction(message, action):
@@ -3990,13 +3907,13 @@ def do_task(message, custom_prompt: str = ''):
                         else:
                             my_log.log_echo(message, f'[Gemini] {answer}')
                         try:
-                            reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
-                                                    reply_markup=get_keyboard('gemini_chat', message))
+                            bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True)
                         except Exception as error:
                             print(f'tb:do_task: {error}')
                             my_log.log2(f'tb:do_task: {error}')
-                            reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                    reply_markup=get_keyboard('gemini_chat', message))
+                            bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))
@@ -4005,8 +3922,7 @@ def do_task(message, custom_prompt: str = ''):
             # если активирован режим общения с бард чатом
             if CHAT_MODE[chat_id_full] == 'bard' and not FIRST_DOT:
                 if len(msg) > my_bard.MAX_REQUEST:
-                    bot.reply_to(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
-                    my_log.log_echo(message, f'Слишком длинное сообщение для барда: {len(msg)} из {my_bard.MAX_REQUEST}')
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
                     return
                 with ShowAction(message, action):
                     try:
@@ -4022,23 +3938,22 @@ def do_task(message, custom_prompt: str = ''):
                         if answer:
                             my_log.log_echo(message, ('[Bard] ' + answer + '\nPHOTO\n' + '\n'.join(images) + '\nLINKS\n' + '\n'.join(links)).strip())
                             try:
-                                reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('bard_chat', message))
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('bard_chat', message), not_log=True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
-                                reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message))
                             if images:
                                 images_group = [telebot.types.InputMediaPhoto(i) for i in images]
                                 photos_ids = bot.send_media_group(message.chat.id, images_group[:10], reply_to_message_id=message.message_id)
                             # if links:
-                            #     reply_to_long_message(message, text_links, parse_mode='HTML', disable_web_page_preview = True,
+                            #     bot_reply(message, text_links, parse_mode='HTML', disable_web_page_preview = True,
                             #                           reply_markup=get_keyboard('hide', message))
                         else:
                             msg = tr('No answer from Bard.', lang)
-                            bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-                            my_log.log_echo(message, msg)
+                            bot_reply(message, msg)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))
@@ -4047,8 +3962,7 @@ def do_task(message, custom_prompt: str = ''):
             # если активирован режим общения с клод чатом
             if CHAT_MODE[chat_id_full] == 'claude' and not FIRST_DOT:
                 if len(msg) > my_claude.MAX_QUERY:
-                    bot.reply_to(message, f'{tr("Слишком длинное сообщение для Клода:", lang)} {len(msg)} {tr("из", lang)} {my_claude.MAX_QUERY}')
-                    my_log.log_echo(message, f'Слишком длинное сообщение для Клода: {len(msg)} из {my_claude.MAX_QUERY}')
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Клода:", lang)} {len(msg)} {tr("из", lang)} {my_claude.MAX_QUERY}')
                     return
 
                 with ShowAction(message, action):
@@ -4059,13 +3973,13 @@ def do_task(message, custom_prompt: str = ''):
                         my_log.log_echo(message, f'[Claude] {answer}')
                         if answer:
                             try:
-                                reply_to_long_message(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('claude_chat', message))
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('claude_chat', message), not_log=True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
-                                reply_to_long_message(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('claude_chat', message))
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('claude_chat', message), not_log=True)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))
@@ -4075,12 +3989,10 @@ def do_task(message, custom_prompt: str = ''):
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, action):
                 if not allowed_chatGPT_user(message.chat.id):
-                    my_log.log_echo(message, 'ChatGPT запрещен')
-                    bot.reply_to(message, tr('You are not in allow chatGPT users list, try other chatbot', lang))
+                    bot_reply(message, tr('You are not in allow chatGPT users list, try other chatbot', lang))
                     return
                 if len(msg) > cfg.CHATGPT_MAX_REQUEST:
-                    bot.reply_to(message, f'{tr("Слишком длинное сообщение для chatGPT:", lang)} {len(msg)} {tr("из", lang)} {cfg.CHATGPT_MAX_REQUEST}')
-                    my_log.log_echo(message, f'Слишком длинное сообщение для chatGPT: {len(msg)} из {cfg.CHATGPT_MAX_REQUEST}')
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для chatGPT:", lang)} {len(msg)} {tr("из", lang)} {cfg.CHATGPT_MAX_REQUEST}')
                     return
                 # имя пользователя если есть или ник
                 user_name = message.from_user.first_name or message.from_user.username or ''
@@ -4108,23 +4020,22 @@ def do_task(message, custom_prompt: str = ''):
                 my_log.log_echo(message, f'[chatgpt] {resp}')
 
                 try:
-                    reply_to_long_message(message, resp, parse_mode='HTML',
+                    bot_reply(message, resp, parse_mode='HTML',
                                             disable_web_page_preview = True,
-                                            reply_markup=get_keyboard('chat', message))
+                                            reply_markup=get_keyboard('chat', message), not_log=True)
                 except Exception as error2:
                     print(error2)
                     my_log.log2(resp)
-                    reply_to_long_message(message, resp, parse_mode='',
+                    bot_reply(message, resp, parse_mode='',
                                             disable_web_page_preview = True,
-                                            reply_markup=get_keyboard('chat', message))
+                                            reply_markup=get_keyboard('chat', message), not_log=True)
         # else: # смотрим надо ли переводить текст
         #     if check_blocks(chat_id_full) and not is_private:
         #         return
         #     text = my_trans.translate(message.text)
         #     if text:
-        #         bot.reply_to(message, text, parse_mode='Markdown',
+        #         bot_reply(message, text, parse_mode='Markdown',
         #                      reply_markup=get_keyboard('translate', message))
-        #         my_log.log_echo(message, text)
 
 
 def main():

@@ -2119,7 +2119,7 @@ def set_bing_cookies(message: telebot.types.Message):
             keys_suspended = '\n\n'.join([f'{x[0]} <b>{round((bing_img.SUSPEND_TIME - (time.time() - x[1]))/60/60, 1)} hours left</b>' for x in bing_img.COOKIE_SUSPENDED.items()])
         if keys_suspended.strip():
             msg = f'{nl}{tr("Current suspended cookies:", lang)}{nl}{keys_suspended}'
-            bot_reply(message, msg)
+            bot_reply(message, msg, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['style2'], func=authorized_admin)

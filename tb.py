@@ -3105,7 +3105,7 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
     bot_reply(message, msg, parse_mode='HTML')
 
 
-@bot.message_handler(commands=['start'], func=authorized)
+@bot.message_handler(commands=['start'])
 def send_welcome_start(message: telebot.types.Message) -> None:
     # автоматически выходить из забаненых чатов
     thread = threading.Thread(target=send_welcome_start_thread, args=(message,))
@@ -3167,7 +3167,7 @@ Chat language: {lang}'''
         bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 
 
-@bot.message_handler(commands=['help'], func=authorized)
+@bot.message_handler(commands=['help'])
 def send_welcome_help(message: telebot.types.Message) -> None:
     thread = threading.Thread(target=send_welcome_help_thread, args=(message,))
     thread.start()

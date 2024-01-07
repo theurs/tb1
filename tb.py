@@ -2752,6 +2752,8 @@ def block_user_add(message: telebot.types.Message):
     if user_id:
         BAD_USERS[user_id] = True
         bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
+    else:
+        bot_reply(message, tr('Usage: /blockadd <[user id] [group id]>', lang))
 
 
 @bot.message_handler(commands=['blockdel'], func=authorized_admin)
@@ -2768,6 +2770,8 @@ def block_user_del(message: telebot.types.Message):
             bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
         else:
             bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
+    else:
+        bot_reply(message, tr('Usage: /blockdel <[user id] [group id]>', lang))
 
 
 @bot.message_handler(commands=['blocklist'], func=authorized_admin)

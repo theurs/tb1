@@ -2017,7 +2017,7 @@ def reset_(message: telebot.types.Message):
         bot_reply(message, msg)
 
 
-@bot.message_handler(commands=['reset'], func=authorized_owner)
+@bot.message_handler(commands=['reset'], func=authorized)
 def reset(message: telebot.types.Message):
     """Clear chat history (bot's memory)"""
     reset_(message)
@@ -2033,6 +2033,7 @@ def remove_keyboard(message: telebot.types.Message):
         kbd.row(button1)
         m = bot.reply_to(message, '777', reply_markup=kbd)
         bot.delete_message(m.chat.id, m.message_id)
+        bot_reply(message, tr('Keyboard removed.', lang))
     except Exception as unknown:
         my_log.log2(f'tb:remove_keyboard: {unknown}')
 
@@ -2046,11 +2047,10 @@ def reset_gemini2(message: telebot.types.Message):
         arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
         my_gemini.reset(arg1)
         msg = f'{tr("История Gemini Pro в чате очищена", lang)} {arg1}'
-        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
+        bot_reply(message, msg)
     except:
         msg = tr('Usage: /reset_gemini2 <chat_id_full!>', lang)
-        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+        bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['bingcookieclear'], func=authorized_admin)
@@ -2087,8 +2087,7 @@ def set_bing_cookies(message: telebot.types.Message):
                 bing_img.COOKIE[time.time()] = cookie
                 n += 1
         msg = f'{tr("Cookies set:", lang)} {n}'
-        bot.reply_to(message, msg, reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, msg)
+        bot_reply(message, msg)
     except Exception as error:
         my_log.log2(f'set_bing_cookies: {error}\n\n{message.text}')
         msg = tr('Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie', lang)
@@ -2117,13 +2116,12 @@ def change_mode2(message: telebot.types.Message):
         arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
         arg2 = message.text.split(maxsplit=3)[3]
     except:
-        bot.reply_to(message, tr('Usage: /style2 <chat_id_full!> <new_style>', lang), reply_markup=get_keyboard('hide', message))
+        bot_reply(message, tr('Usage: /style2 <chat_id_full!> <new_style>', lang))
         return
 
     ROLES[arg1] = arg2
     msg = tr('[Новая роль установлена]', lang) + ' `' + arg2 + '` ' + tr('для чата', lang) + ' `' + arg1 + '`'
-    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    bot_reply(message, msg, parse_mode='Markdown')
 
 
 @bot.message_handler(commands=['mem'], func=authorized_owner)
@@ -2168,7 +2166,7 @@ def leave_thread(message: telebot.types.Message):
     if len(message.text) > 7:
         args = message.text[7:]
     else:
-        bot.reply_to(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>', reply_markup=get_keyboard('hide', message))
+        bot_reply(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>')
         return
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
@@ -2177,12 +2175,12 @@ def leave_thread(message: telebot.types.Message):
             LEAVED_CHATS[chat_id] = True
             try:
                 bot.leave_chat(chat_id)
-                bot.reply_to(message, tr('Вы вышли из чата', lang) + f' {chat_id}', reply_markup=get_keyboard('hide', message))
+                bot_reply(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
             except Exception as error:
                 my_log.log2(f'tb:leave: {chat_id} {str(error)}')
-                bot.reply_to(message, tr('Не удалось выйти из чата', lang) + f' {chat_id} {str(error)}', reply_markup=get_keyboard('hide', message))
+                bot_reply(message, tr('Не удалось выйти из чата', lang) + f' {chat_id} {str(error)}')
         else:
-            bot.reply_to(message, tr('Вы уже раньше вышли из чата', lang) + f' {chat_id}', reply_markup=get_keyboard('hide', message))
+            bot_reply(message, tr('Вы уже раньше вышли из чата', lang) + f' {chat_id}')
 
 
 @bot.message_handler(commands=['revoke'], func=authorized_admin) 
@@ -2197,16 +2195,16 @@ def revoke_thread(message: telebot.types.Message):
     if len(message.text) > 8:
         args = message.text[8:]
     else:
-        bot.reply_to(message, '/revoke <группа или группы которые надо разбанить>', reply_markup=get_keyboard('hide', message))
+        bot_reply(message, '/revoke <группа или группы которые надо разбанить>')
         return
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
     for chat_id in chat_ids:
         if chat_id in LEAVED_CHATS and LEAVED_CHATS[chat_id]:
             LEAVED_CHATS[chat_id] = False
-            bot.reply_to(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}', reply_markup=get_keyboard('hide', message))
+            bot_reply(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}')
         else:
-            bot.reply_to(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}', reply_markup=get_keyboard('hide', message))
+            bot_reply(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}')
 
 
 @bot.message_handler(commands=['temperature', 'temp'], func=authorized_owner)
@@ -2247,15 +2245,13 @@ def set_new_temperature(message: telebot.types.Message):
 `/temperature 1`
 `/temperature 1.9` {tr('На таких высоких значения он пишет один сплошной бред', lang)}
 """
-        bot.reply_to(message, help, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, help)
+        bot_reply(message, help, parse_mode='Markdown')
         return
 
     gpt_basic.TEMPERATURE[chat_id_full] = new_temp
     GEMIMI_TEMP[chat_id_full] = new_temp
     msg = f'{tr("New temperature set:", lang)} {new_temp}'
-    bot.reply_to(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('hide', message))
-    my_log.log_echo(message, msg)
+    bot_reply(message, msg, parse_mode='Markdown')
 
 
 @bot.message_handler(commands=['lang', 'language'], func=authorized_owner)
@@ -2274,8 +2270,7 @@ def language(message: telebot.types.Message):
     supported_langs_trans2 = ', '.join([x for x in supported_langs_trans])
     if len(message.text.split()) < 2:
         msg = f'/lang {tr("двухбуквенный код языка. Меняет язык бота. Ваш язык сейчас: ", lang)} <b>{lang}</b>\n\n{tr("Возможные варианты:", lang)}\n{supported_langs_trans2}\n\n/lang en\n/lang de\n/lang uk\n...'
-        bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, msg)
+        bot_reply(message, msg, parse_mode='HTML')
         return
 
     new_lang = message.text.split(maxsplit=1)[1].strip().lower()
@@ -2284,14 +2279,10 @@ def language(message: telebot.types.Message):
         HELLO_MSG[chat_id_full] = ''
         HELP_MSG[chat_id_full] = ''
         msg = f'{tr("Язык бота изменен на:", new_lang)} <b>{new_lang}</b>'
-        bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('start', message))
-        my_log.log_echo(message, msg)
-        return
+        bot_reply(message, msg, parse_mode='HTML', reply_markup=get_keyboard('start', message))
     else:
         msg = f'{tr("Такой язык не поддерживается:", lang)} <b>{new_lang}</b>\n\n{tr("Возможные варианты:", lang)}\n{supported_langs_trans2}'
-        bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('hide', message))
-        my_log.log_echo(message, msg)
-        return
+        bot_reply(message, msg, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['music', 'mus', 'm'], func=authorized)
@@ -2314,20 +2305,20 @@ def music_thread(message: telebot.types.Message):
             results = my_ytb.search_youtube(query)
             my_log.log_echo(message, '\n' + '\n'.join([str(x) for x in results]))
             msg = tr("Here's what I managed to find", lang)
-            bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
+            bot_reply(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
     else:
         with ShowAction(message, 'typing'):
             msg = tr('Usage:', lang) + ' /music <' + tr('song name', lang) + '> - ' + tr('will search for music on youtube', lang) + '\n\n'
             msg += tr('Examples:', lang) + '\n`/music linkin park numb`\n'
             for x in cfg.MUSIC_WORDS:
                 msg += '\n`' + x + ' linkin park numb`'
-            bot.reply_to(message, msg, parse_mode='markdown', reply_markup=get_keyboard('hide', message))
+            bot_reply(message, msg, parse_mode='markdown')
 
             results = my_ytb.get_random_songs(10)
             if results:
                 my_log.log_echo(message, '\n' + '\n'.join([str(x) for x in results]))
                 msg = tr('Random songs', lang)
-                bot.reply_to(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
+                bot_reply(message, msg, parse_mode='HTML', reply_markup=get_keyboard('ytb', message, payload = results))
 
 
 @bot.message_handler(commands=['model'], func=authorized_owner)

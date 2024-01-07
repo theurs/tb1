@@ -2023,7 +2023,7 @@ def reset_(message: telebot.types.Message):
         bot_reply(message, msg)
 
 
-@bot.message_handler(commands=['reset'], func=authorized)
+@bot.message_handler(commands=['reset'], func=authorized_log)
 def reset(message: telebot.types.Message):
     """Clear chat history (bot's memory)"""
     reset_(message)

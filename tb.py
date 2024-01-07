@@ -2643,6 +2643,18 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                 suggest = utils.bot_markdown_to_html(suggest).strip()
 
                 if len(medias) > 0:
+                    if 'error1_being_reviewed_prompt' in images[0]:
+                        bot_reply(message, tr('Ваш запрос содержит потенциально неприемлемый контент.', lang))
+                        return
+                    elif 'error1_blocked_prompt' in images[0]:
+                        bot_reply(message, tr('Ваш запрос содержит неприемлемый контент.', lang))
+                        return
+                    elif 'error1_unsupported_lang' in images[0]:
+                        bot_reply(message, tr('Не понятный язык.', lang))
+                        return
+                    elif 'error1_Bad images' in images[0]:
+                        bot_reply(message, tr('Ваш запрос содержит неприемлемый контент.', lang))
+                        return
                     with SEND_IMG_LOCK:
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                         if pics_group:

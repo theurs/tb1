@@ -610,7 +610,10 @@ def authorized(message: telebot.types.Message) -> bool:
     else:
         return False
 
-    my_log.log_echo(message)
+    if message.text:
+        my_log.log_echo(message)
+    else:
+        my_log.log_media(message)
 
     # никаких проверок и тротлинга для админов
     if message.from_user.id in cfg.admins:
@@ -1386,9 +1389,6 @@ def handle_voice(message: telebot.types.Message):
     thread.start()
 def handle_voice_thread(message: telebot.types.Message):
     """Автоматическое распознавание текст из голосовых сообщений и аудио файлов"""
-
-    my_log.log_media(message)
-
     is_private = message.chat.type == 'private'
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -1466,9 +1466,6 @@ def handle_document(message: telebot.types.Message):
     thread.start()
 def handle_document_thread(message: telebot.types.Message):
     """Обработчик документов"""
-
-    my_log.log_media(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
@@ -1651,9 +1648,6 @@ def handle_photo(message: telebot.types.Message):
 def handle_photo_thread(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография
     + много текста в подписи, и пересланные сообщения в том числе"""
-
-    my_log.log_media(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
@@ -1742,9 +1736,6 @@ def handle_video(message: telebot.types.Message):
     thread.start()
 def handle_video_thread(message: telebot.types.Message):
     """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
-
-    my_log.log_media(message)
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 

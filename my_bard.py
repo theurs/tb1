@@ -38,12 +38,8 @@ loop_detector = {}
 
 
 def get_new_session(user_name: str = '', lang: str = '', is_private: bool = True):
-    proxies = None
-
     session = requests.Session()
-
     session.cookies.set("__Secure-1PSID", cfg.bard_tokens[current_token])
-
     session.headers = {
         "Host": "bard.google.com",
         "X-Same-Domain": "1",
@@ -53,6 +49,11 @@ def get_new_session(user_name: str = '', lang: str = '', is_private: bool = True
         "Referer": "https://bard.google.com/",
         }
 
+    # if hasattr(cfg, 'bard_proxies') and cfg.bard_proxies:
+    #     proxies = {"http": cfg.bard_proxies, "https": cfg.bard_proxies}
+    # else:
+    #     proxies = None
+    proxies = None
     bard = Bard(token=cfg.bard_tokens[current_token], proxies=proxies, session=session, timeout=30)
 
 #     rules = ''

@@ -3268,6 +3268,7 @@ def id_cmd_handler(message: telebot.types.Message):
 
     user_id = message.from_user.id
     chat_id_full = get_topic_id(message)
+    chat_id_full_grp = f'[{message.chat.id}] [0]'
     reported_language = message.from_user.language_code
     msg = f'''{tr("ID пользователя:", lang)} {user_id}
                  
@@ -3276,19 +3277,33 @@ def id_cmd_handler(message: telebot.types.Message):
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
 '''
     if hasattr(cfg, 'TRIALS'):
-        if chat_full_id in TRIAL_USERS:
-            sec_left = TRIAL_USERS[chat_full_id]
+        if message.chat.type == 'private':
+            if chat_full_id in TRIAL_USERS_COUNTER:
+                msgs_counter = TRIAL_USERS_COUNTER[chat_full_id]
+            else:
+                msgs_counter = 0
+            if chat_full_id in TRIAL_USERS:
+                sec_start = TRIAL_USERS[chat_full_id]
+            else:
+                sec_start = 60*60*24*TRIAL_DAYS
+                TRIAL_USERS[chat_full_id] = time.time()
         else:
-            sec_left = 60*60*24*TRIAL_DAYS
-            TRIAL_USERS[chat_full_id] = time.time()
-        days_left = TRIAL_DAYS - int((time.time() - sec_left)/60/60/24)
-        if chat_full_id in TRIAL_USERS_COUNTER:
-            msgs_counter = TRIAL_USERS_COUNTER[chat_full_id]
-        else:
-            msgs_counter = 0
+            if chat_id_full_grp in TRIAL_USERS_COUNTER:
+                msgs_counter = TRIAL_USERS_COUNTER[chat_id_full_grp]
+            else:
+                msgs_counter = 0
+            if chat_id_full_grp in TRIAL_USERS:
+                sec_start = TRIAL_USERS[chat_id_full_grp]
+            else:
+                sec_start = 60*60*24*TRIAL_DAYS
+                TRIAL_USERS[chat_id_full_grp] = time.time()
+
+        sec_start += TRIAL_DAYS*60*60*24
+        days_left = -int((time.time() - sec_start)/60/60/24)            
         msgs_counter = TRIAL_MESSAGES - msgs_counter
         if msgs_counter < 0:
             msgs_counter = 0
+
         msg += f'\n\n{tr("Дней осталось:", lang)} {days_left}\n{tr("Сообщений осталось:", lang)} {msgs_counter}\n\n'
     if chat_full_id in BAD_USERS:
         msg += f'{tr("Пользователь забанен.", lang)}\n'

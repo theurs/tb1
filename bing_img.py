@@ -208,7 +208,7 @@ def gen_images(query: str):
     with BIG_LOCK:
         if query in BAD_IMAGES_PROMPT:
             my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
-            return []
+            return ['error1_Bad images',]
 
         cookies = []
 

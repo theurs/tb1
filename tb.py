@@ -261,9 +261,13 @@ class ShowAction(threading.Thread):
         self.action = action
         self.is_running = True
         self.timerseconds = 1
+        self.started_time = time.time()
 
     def run(self):
         while self.is_running:
+            if time.time() - self.started_time > 60*5:
+                self.stop()
+                return
             try:
                 if self.is_topic:
                     bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)

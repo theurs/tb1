@@ -680,6 +680,35 @@ def authorized(message: telebot.types.Message) -> bool:
     return True
 
 
+def authorized_log(message: telebot.types.Message) -> bool:
+    """
+    Only log and banned
+    """
+
+    # do not process commands to another bot /cmd@botname args
+    if is_for_me(message.text)[0]:
+        message.text = is_for_me(message.text)[1]
+    else:
+        return False
+
+    if message.text:
+        my_log.log_echo(message)
+    else:
+        my_log.log_media(message)
+
+    # if this chat was forcibly left (banned), then when trying to enter it immediately exit
+    # I don't know how to do that, so I have to leave only when receiving any event
+    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+        try:
+            bot.leave_chat(message.chat.id)
+            my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+        except Exception as leave_chat_error:
+            my_log.log2(f'tb:auth:live_chat_error: {leave_chat_error}')
+        return False
+
+    return True
+
+
 def check_blocks(chat_id: str) -> bool:
     """в каких чатах выключены автопереводы"""
     if chat_id not in BLOCKS:
@@ -3105,7 +3134,7 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
     bot_reply(message, msg, parse_mode='HTML')
 
 
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['start'], func = authorized_log)
 def send_welcome_start(message: telebot.types.Message) -> None:
     # автоматически выходить из забаненых чатов
     thread = threading.Thread(target=send_welcome_start_thread, args=(message,))
@@ -3167,7 +3196,7 @@ Chat language: {lang}'''
         bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 
 
-@bot.message_handler(commands=['help'])
+@bot.message_handler(commands=['help'], func = authorized_log)
 def send_welcome_help(message: telebot.types.Message) -> None:
     thread = threading.Thread(target=send_welcome_help_thread, args=(message,))
     thread.start()
@@ -3238,7 +3267,7 @@ Donate:"""
             bot_reply(message, help, parse_mode='', disable_web_page_preview=True)
 
 
-@bot.message_handler(commands=['report']) 
+@bot.message_handler(commands=['report'], func = authorized_log) 
 def report_cmd_handler(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
@@ -3260,7 +3289,7 @@ def report_cmd_handler(message: telebot.types.Message):
     bot_reply(message, msg)
 
 
-@bot.message_handler(commands=['id']) 
+@bot.message_handler(commands=['id'], func = authorized_log) 
 def id_cmd_handler(message: telebot.types.Message):
     """показывает id юзера и группы в которой сообщение отправлено"""
     chat_full_id = get_topic_id(message)

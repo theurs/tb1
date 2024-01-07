@@ -236,12 +236,12 @@ request_counter = RequestCounter()
 
 
 class ShowAction(threading.Thread):
-    """Поток который можно остановить. Беспрерывно отправляет в чат уведомление об активности.
-    Телеграм автоматически гасит уведомление через 5 секунд, по-этому его надо повторять.
+    """A thread that can be stopped. Continuously sends a notification of activity to the chat.
+    Telegram automatically extinguishes the notification after 5 seconds, so it must be repeated.
 
-    Использовать в коде надо как то так
+    To use in the code, you need to do something like this:
     with ShowAction(message, 'typing'):
-        делаем что-нибудь и пока делаем уведомление не гаснет
+        do something and while doing it the notification does not go out
     """
     def __init__(self, message, action):
         """_summary_
@@ -267,6 +267,7 @@ class ShowAction(threading.Thread):
         while self.is_running:
             if time.time() - self.started_time > 60*5:
                 self.stop()
+                my_log.log2(f'tb:show_action:stoped after 5min [{self.chat_id}] [{self.thread_id}] is topic: {self.is_topic} action: {self.action}')
                 return
             try:
                 if self.is_topic:
@@ -297,16 +298,30 @@ class ShowAction(threading.Thread):
         self.stop()
 
 
-def tr(text: str, lang: str) -> str:
+def tr(text: str, lang: str, ai: bool = False) -> str:
+    """
+    This function translates text to the specified language,
+    using either the AI translation engine or the standard translation engine.
+
+    Args:
+        text: The text to translate.
+        lang: The language to translate to.
+        ai: Whether to use the AI translation engine.
+
+    Returns:
+        The translated text.
+    """
     key = str((text, lang))
     if key in AUTO_TRANSLATIONS:
         return AUTO_TRANSLATIONS[key]
 
-    # translated = my_gemini.translate(text, to_lang=lang)
-    # if not translated:
-    #     translated = my_trans.translate_text2(text, lang)
+    translated = ''
 
-    translated = my_trans.translate_text2(text, lang)
+    if ai:
+        translated = my_gemini.translate(text, to_lang=lang)
+
+    if not translated:
+        translated = my_trans.translate_text2(text, lang)
 
     if translated:
         AUTO_TRANSLATIONS[key] = translated

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import httpx
 import os
 import json
 import random
@@ -70,7 +71,11 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
         openai.base_url = server[0]
 
         try:
-            client = openai.OpenAI(api_key = server[1])
+            if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
+                http_client = httpx.Client(proxies = cfg.openai_proxy)
+            else:
+                http_client = httpx.Client()
+            client = openai.OpenAI(api_key = server[1], http_client=http_client)
             # тут можно добавить степень творчества(бреда) от 0 до 2 дефолт - temperature = 1
             completion = client.chat.completions.create(
                 model = current_model,
@@ -88,22 +93,10 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
                 my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}\n\n{server[1]}')
                 cfg.openai_servers = [x for x in cfg.openai_servers if x[1] != server[1]]
                 continue
-            # if str(unknown_error1).startswith('HTTP code 200 from API'):
-            #         # ошибка парсера json?
-            #         text = str(unknown_error1)[24:]
-            #         lines = [x[6:] for x in text.split('\n') if x.startswith('data:') and ':{"content":"' in x]
-            #         content = ''
-            #         for line in lines:
-            #             parsed_data = json.loads(line)
-            #             content += parsed_data["choices"][0]["delta"]["content"]
-            #         if content:
-            #             response = content
-            #             break
             if 'Request timed out.' in str(unknown_error1) or 'cf_service_unavailable' in str(unknown_error1):
                 my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}\n\n{server[1]}\n\nsleep 10sec')
                 time.sleep(10)
                 continue
-            # print(unknown_error1)
             my_log.log2(f'gpt_basic.ai: {unknown_error1}\n\nServer: {openai.base_url}')
 
     return check_and_fix_text(response)
@@ -131,7 +124,11 @@ def ai_instruct(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou
         openai.base_url = server[0]
 
         try:
-            client = openai.OpenAI(api_key = server[1])
+            if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
+                http_client = httpx.Client(proxies = cfg.openai_proxy)
+            else:
+                http_client = httpx.Client()
+            client = openai.OpenAI(api_key = server[1], http_client=http_client)
 
             completion = client.completions.create(
                 model=current_model,
@@ -443,7 +440,11 @@ def stt(audio_file: str) -> str:
         openai.base_url = server[0]
         # openai.api_key = server[1]
         try:
-            client = openai.OpenAI(api_key=server[1])
+            if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
+                http_client = httpx.Client(proxies = cfg.openai_proxy)
+            else:
+                http_client = httpx.Client()
+            client = openai.OpenAI(api_key=server[1], http_client=http_client)
             translation = client.audio.transcriptions.create(
                model="whisper-1",
                file=audio_file_fh
@@ -519,7 +520,11 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
             break
         openai.base_url = server[0]
         try:
-            client = openai.OpenAI(api_key=server[1])
+            if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
+                http_client = httpx.Client(proxies = cfg.openai_proxy)
+            else:
+                http_client = httpx.Client()
+            client = openai.OpenAI(api_key=server[1], http_client=http_client)
             response = client.images.generate(
                 model="dall-e-3",
                 prompt = prompt_tr,
@@ -548,7 +553,11 @@ def get_list_of_models():
     for server in cfg.openai_servers:
         openai.base_url = server[0]
         try:
-            client = openai.OpenAI(api_key=server[1])
+            if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
+                http_client = httpx.Client(proxies = cfg.openai_proxy)
+            else:
+                http_client = httpx.Client()
+            client = openai.OpenAI(api_key=server[1], http_client=http_client)
             model_lst = client.models.list()
             for i in model_lst.data:
                 result += [i.id,]
@@ -783,7 +792,11 @@ def moderation(text: str) -> bool:
     for server in shuffled_servers:
         openai.base_url = server[0]
         try:
-            client = openai.OpenAI(api_key=server[1])
+            if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
+                http_client = httpx.Client(proxies = cfg.openai_proxy)
+            else:
+                http_client = httpx.Client()
+            client = openai.OpenAI(api_key=server[1], http_client=http_client)
             response = client.moderations.create(input=text)
             if response:
                 result = response.results[0].flagged
@@ -811,7 +824,11 @@ def tts(text: str, voice: str = 'alloy', model: str = 'tts-1') -> bytes:
         openai.base_url = server[0]
 
         try:
-            client = openai.OpenAI(api_key=server[1])
+            if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
+                http_client = httpx.Client(proxies = cfg.openai_proxy)
+            else:
+                http_client = httpx.Client()
+            client = openai.OpenAI(api_key=server[1], http_client=http_client)
             response = client.audio.speech.create(
                 model=model,
                 voice=voice,
@@ -884,10 +901,10 @@ if __name__ == '__main__':
 В центре стола миссис Уизли спорила с Биллом о его серьге – видимо, совсем недавнем приобретении.
 """
 
-    print(count_tokens('раз два три четыре пять'))
-    print(count_tokens('One two three four five'))
-    print(count_tokens('一二三四五'))
-    print(count_tokens('אחד שתיים שלוש ארבע חמש'))
+    # print(count_tokens('раз два три четыре пять'))
+    # print(count_tokens('One two three four five'))
+    # print(count_tokens('一二三四五'))
+    # print(count_tokens('אחד שתיים שלוש ארבע חמש'))
     
     # print(translate_instruct(tts_text, 'ar'))
     # open('1.mp3', 'wb').write(tts('напиши 10 главных героев книги незнайка на луне'))
@@ -914,7 +931,7 @@ if __name__ == '__main__':
     #print(ai(open('1.txt', 'r', encoding='utf-8').read()[:15000], max_tok = 2000))
 
     # print(check_phone_number('9284655834'))
-    # console_chat_test()
+    console_chat_test()
 
     sys.exit()
 

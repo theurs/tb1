@@ -181,6 +181,10 @@ openai_servers = [
     ['https://yyy.com/v1', 'sk-yyy', False, False]
 ]
 
+# proxy for access openai
+# openai_proxy = 'socks5://172.28.1.4:1080'
+# openai_proxy = 'http://172.28.1.4:3128'
+
 # токены для google bard
 # искать __Secure-1PSID в куках с сайта https://bard.google.com/
 # можно указать только 1

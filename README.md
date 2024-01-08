@@ -172,9 +172,6 @@ token   = "xxx"
 
 # openai tokens and addresses
 # список  серверов для chatGPT [['address', 'token', True/False(распознавание голоса), True/False(рисование)], [], ...]
-# * где можно попытаться получить халявный ключ - дискорд chimeraGPT https://discord.gg/RFFeutYK https://chimeragpt.adventblocks.cc/ru
-# * https://openai-api.ckt1031.xyz/
-# * https://api.waveai.link/
 openai_servers = [
     ['https://xxx.com/v1', 'sk-xxx', False, False],
     ['https://yyy.com/v1', 'sk-yyy', False, False]
@@ -276,8 +273,8 @@ gemini_keys = ['xxx', 'yyy']
 
 # максимальный размер для скачивания музыки с ютуба в секундах
 # если есть локальный сервер то можно много, если нет то 20 минут
-MAX_YTB_SECS = 6*60*60
-# MAX_YTB_SECS = 20*60
+# MAX_YTB_SECS = 6*60*60
+MAX_YTB_SECS = 20*60
 
 # прокси для рисования бингом
 # bing_proxy = ['socks5://172.28.1.4:1080', 'socks5://172.28.1.7:1080']

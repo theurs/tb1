@@ -540,8 +540,7 @@ def trial_status(message: telebot.types.Message) -> bool:
             return True
 
         if trial_time > TRIAL_DAYS:
-            msg = tr('Free trial period ended, please contact @theurs.\n\nYou can run your own free copy of this bot at https://github.com/theurs/tb1 and (simplified version) https://github.com/theurs/tbg', lang)
-            bot_reply(message, msg, disable_web_page_preview=True)
+            bot_reply_tr(message, 'Free trial period ended, please contact @theurs.\n\nYou can run your own free copy of this bot at https://github.com/theurs/tb1 and (simplified version) https://github.com/theurs/tbg', disable_web_page_preview=True)
             return False
         else:
             return True
@@ -554,10 +553,7 @@ def authorized_owner(message: telebot.types.Message) -> bool:
     is_private = message.chat.type == 'private'
 
     if not (is_private or is_admin_member(message)):
-        chat_full_id = get_topic_id(message)
-        lang = get_lang(chat_full_id, message)
-        msg = tr("This command is only available to administrators", lang)
-        bot_reply(message, msg)
+        bot_reply_tr(message, "This command is only available to administrators")
         return False
     return authorized(message)
 
@@ -565,10 +561,7 @@ def authorized_owner(message: telebot.types.Message) -> bool:
 def authorized_admin(message: telebot.types.Message) -> bool:
     """if admin"""
     if message.from_user.id not in cfg.admins:
-        chat_full_id = get_topic_id(message)
-        lang = get_lang(chat_full_id, message)
-        msg = tr("This command is only available to administrators", lang)
-        bot_reply(message, msg)
+        bot_reply_tr(message, "This command is only available to administrators")
         return False
     return authorized(message)
 
@@ -721,6 +714,18 @@ def disabled_kbd(chat_id_full):
     if chat_id_full not in DISABLED_KBD:
         DISABLED_KBD[chat_id_full] = True
     return DISABLED_KBD[chat_id_full]
+
+def bot_reply_tr(message: telebot.types.Message,
+              msg: str,
+              parse_mode: str = None,
+              disable_web_page_preview: bool = None,
+              reply_markup: telebot.types.InlineKeyboardMarkup = None,
+              send_message: bool = False,
+              not_log: bool = False):
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    msg = tr(msg, lang)
+    bot_reply(message, msg, parse_mode, disable_web_page_preview, reply_markup, send_message, not_log)
 
 
 def bot_reply(message: telebot.types.Message,
@@ -1027,8 +1032,7 @@ def command_code(message: telebot.types.Message):
             error_traceback = traceback.format_exc()
             my_log.log2(f'tb:command_code: {cmd.strip()}\n\n{error_traceback}')
     else:
-        msg = f"{tr('Usage: /cmd <string to eval()>', lang)}"
-        bot_reply(message, msg)
+        bot_reply_tr(message, 'Usage: /cmd <string to eval()>')
 
 
 @bot.callback_query_handler(func=authorized_callback)
@@ -1068,7 +1072,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Отменить ввод команды, но не скрывать"
             COMMAND_MODE[chat_id_full] = ''
             # bot.delete_message(message.chat.id, message.message_id)
-            bot_reply(message, tr('Режим поиска в гугле отключен', lang))
+            bot_reply_tr(message, 'Режим поиска в гугле отключен')
         # режим автоответов в чате, бот отвечает на все реплики всех участников
         # комната для разговоров с ботом Ж)
         elif call.data == 'admin_chat' and is_admin_member(call):
@@ -1191,7 +1195,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                 my_log.log2(f'tb:callback_inline_thread:ytb:copy_message:{copy_message_error}')
                                 del YTB_CACHE[song_id]
                         else:
-                            bot_reply(message, tr('Не удалось скачать это видео.', lang))
+                            bot_reply_tr(message, 'Не удалось скачать это видео.')
                             my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}')
                             return
                     else:
@@ -1257,20 +1261,16 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                       reply_markup=get_keyboard('chat', message))
         elif call.data == 'bardAI_reset':
             my_bard.reset_bard_chat(chat_id_full)
-            msg = tr('История диалога с Google Bard очищена.', lang)
-            bot_reply(message, msg)
+            bot_reply_tr(message, 'История диалога с Google Bard очищена.')
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full)
-            msg = tr('История диалога с Gemini Pro очищена.', lang)
-            bot_reply(message, msg)
+            bot_reply_tr(message, 'История диалога с Gemini Pro очищена.')
         elif call.data == 'claudeAI_reset':
             my_claude.reset_claude_chat(chat_id_full)
-            msg = tr('История диалога с Claude AI очищена.', lang)
-            bot_reply(message, msg)
+            bot_reply_tr(message, 'История диалога с Claude AI очищена.')
         elif call.data == 'chatGPT_reset':
             gpt_basic.chat_reset(chat_id_full)
-            msg = tr('История диалога с chatGPT очищена.', lang)
-            bot_reply(message, msg)
+            bot_reply_tr(message, 'История диалога с chatGPT очищена.')
         elif call.data == 'tts_female' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'male'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
@@ -1388,13 +1388,9 @@ def fix_translation_with_gpt(message: telebot.types.Message):
     thread = threading.Thread(target=fix_translation_with_gpt_thread, args=(message,))
     thread.start()
 def fix_translation_with_gpt_thread(message: telebot.types.Message):
-    chat_full_id = get_topic_id(message)
-    user_lang = get_lang(chat_full_id, message)
-
     target_lang = message.text.split()[1]
 
-    msg = tr('Started translation process, please wait for a while.', user_lang)
-    bot_reply(message, msg)
+    bot_reply_tr(message, 'Started translation process, please wait for a while.')
 
     counter = 0
     for key in AUTO_TRANSLATIONS.keys():
@@ -1407,8 +1403,8 @@ def fix_translation_with_gpt_thread(message: telebot.types.Message):
                 counter += 1
                 my_log.log2(f'{key} -> {translated_text}')
                 time.sleep(5)
-
-    bot_reply(message, tr(f'Translated {counter} strings', user_lang))
+    msg = tr('Translated', lang) + f' {counter} ' + tr('strings.', lang)
+    bot_reply(message, msg)
 
 
 @bot.message_handler(content_types = ['voice', 'audio'], func=authorized)
@@ -1478,7 +1474,7 @@ def handle_voice_thread(message: telebot.types.Message):
                     message.text = '/tts ' + tr('Не удалось распознать текст', lang)
                     tts(message)
                 else:
-                    bot_reply(message, tr('Не удалось распознать текст', lang))
+                    bot_reply_tr(message, 'Не удалось распознать текст')
 
             # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
             if text:
@@ -1534,11 +1530,11 @@ def handle_document_thread(message: telebot.types.Message):
                         print(f'tb:handle_document_thread: {error}')
                         my_log.log2(f'tb:handle_document_thread: {error}')
 
-                    bot_reply(message, tr('Переводы загружены', lang))
+                    bot_reply_tr(message, 'Переводы загружены')
                 except Exception as error:
                     print(f'tb:handle_document_thread: {error}')
                     my_log.log2(f'tb:handle_document_thread: {error}')
-                    msg = tr('Не удалось принять файл автопереводов ' + str(error), lang)
+                    msg = f"{tr('Не удалось принять файл автопереводов ', lang)} {str(error)}"
                     bot_reply(message, msg)
                     my_log.log2(msg)
                     return
@@ -1575,8 +1571,8 @@ def handle_document_thread(message: telebot.types.Message):
                 except Exception as error:
                     print(f'tb:handle_document_thread:claude: {error}')
                     my_log.log2(f'tb:handle_document_thread:claude: {error}')
-                    msg = tr('Не удалось отправить файл', lang)
-                    bot_reply(message, msg)
+                    msg = 'Не удалось отправить файл'
+                    bot_reply_tr(message, msg)
                     my_log.log2(msg)
                     os.remove(full_path)
                     os.rmdir(folder_path)
@@ -1611,8 +1607,7 @@ def handle_document_thread(message: telebot.types.Message):
                                           disable_web_page_preview = True,
                                           reply_markup=get_keyboard('translate', message))
                 else:
-                    help = tr('Не удалось получить никакого текста из документа.', lang)
-                    bot_reply(message, help)
+                    bot_reply_tr(message, 'Не удалось получить никакого текста из документа.')
                 return
 
         # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
@@ -1638,8 +1633,8 @@ def handle_document_thread(message: telebot.types.Message):
                                                   reply_markup=get_keyboard('translate', message),
                                                   disable_web_page_preview = True)
                         else:
-                            bot_reply(message, tr('Не смог распознать текст.', lang),
-                                                  reply_markup=get_keyboard('translate', message))
+                            bot_reply_tr(message, 'Не смог распознать текст.',
+                                         reply_markup=get_keyboard('translate', message))
                     return
                 if document.mime_type != 'application/pdf':
                     bot_reply(message, f'{tr("Это не PDF-файл.", lang)} {document.mime_type}')
@@ -1742,7 +1737,7 @@ def handle_photo_thread(message: telebot.types.Message):
                                         reply_markup=get_keyboard('translate', message),
                                         disable_web_page_preview = True)
                 else:
-                    bot_reply(message, tr('[OCR] no results', lang))
+                    bot_reply_tr(message, '[OCR] no results')
             return
         elif state == 'translate':
             # пересланные сообщения пытаемся перевести даже если в них картинка
@@ -1817,19 +1812,14 @@ def handle_video_thread(message: telebot.types.Message):
             if text:
                 bot_reply(message, text, reply_markup=get_keyboard('translate', message))
             else:
-                bot_reply(message, tr('Не удалось распознать текст', lang))
+                bot_reply_tr(message, 'Не удалось распознать текст')
 
 
-@bot.message_handler(commands=['config'], func=authorized_owner)
+@bot.message_handler(commands=['config', 'settings', 'setting', 'options'], func=authorized_owner)
 def config(message: telebot.types.Message):
     """Меню настроек"""
-
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
-
     try:
-        msg = tr(MSG_CONFIG, lang)
-        bot_reply(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('config', message))
+        bot_reply_tr(message, MSG_CONFIG, parse_mode='Markdown', reply_markup=get_keyboard('config', message))
     except Exception as error:
         my_log.log2(f'tb:config:{error}')
         print(error)
@@ -1904,36 +1894,8 @@ def change_mode(message: telebot.types.Message):
         bot_reply(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
-@bot.message_handler(commands=['bing_proxy'], func=authorized_admin)
-def bing_proxies(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-
-    proxies = bing_img.PROXY_POOL['proxies'][:]
-    proxies_removed = bing_img.REMOVED_PROXY[:]
-    good_proxy = bing_img.GOOD_PROXY[:]
-    
-    msg = ''
-
-    for p in good_proxy:
-        msg += f'{p}\n'
-    msg += '\n\n'
-    for p in proxies:
-        msg += f'{p}\n'
-    
-    msg += f'\nCandidates: {len(proxies)} Removed: {len(proxies_removed)}'
-
-    if not msg:
-        msg = tr('Ничего нет', lang)
-
-    bot_reply(message, f'<code>{msg}</code>', parse_mode='HTML')
-
-
 @bot.message_handler(commands=['gemini_proxy'], func=authorized_admin)
 def gemini_proxies(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-
     proxies = my_gemini.PROXY_POOL[:]
     my_gemini.sort_proxies_by_speed(proxies)
 
@@ -1947,9 +1909,9 @@ def gemini_proxies(message: telebot.types.Message):
         msg += f'[{n:02}] [{p1}.{p2}] {[x]}\n'
 
     if not msg:
-        msg = tr('Ничего нет', lang)
-
-    bot_reply(message, f'<code>{msg}</code>', parse_mode='HTML')
+        bot_reply_tr(message, '<code>Ничего нет</code>', parse_mode='HTML')
+    else:
+        bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['disable_chat_mode'], func=authorized_admin)
@@ -2017,10 +1979,9 @@ def reset_(message: telebot.types.Message):
             my_claude.reset_claude_chat(chat_id_full)
         elif CHAT_MODE[chat_id_full] == 'chatgpt':
             gpt_basic.chat_reset(chat_id_full)
-        bot_reply(message, tr('History cleared.', lang))
+        bot_reply_tr(message, 'History cleared.')
     else:
-        msg = tr('History was not found.', lang)
-        bot_reply(message, msg)
+        bot_reply_tr(message, 'History was not found.')
 
 
 @bot.message_handler(commands=['reset'], func=authorized_log)
@@ -2039,7 +2000,7 @@ def remove_keyboard(message: telebot.types.Message):
         kbd.row(button1)
         m = bot.reply_to(message, '777', reply_markup=kbd)
         bot.delete_message(m.chat.id, m.message_id)
-        bot_reply(message, tr('Keyboard removed.', lang))
+        bot_reply_tr(message, 'Keyboard removed.')
     except Exception as unknown:
         my_log.log2(f'tb:remove_keyboard: {unknown}')
 
@@ -2055,19 +2016,15 @@ def reset_gemini2(message: telebot.types.Message):
         msg = f'{tr("История Gemini Pro в чате очищена", lang)} {arg1}'
         bot_reply(message, msg)
     except:
-        msg = tr('Usage: /reset_gemini2 <chat_id_full!>', lang)
-        bot_reply(message, msg)
+        bot_reply_tr(message, 'Usage: /reset_gemini2 <chat_id_full!>')
 
 
 @bot.message_handler(commands=['bingcookieclear'], func=authorized_admin)
 def clear_bing_cookies(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-    msg = tr('Cookies cleared.', lang)
     with bing_img.LOCK_STORAGE:
         bing_img.COOKIE.clear()
         bing_img.COOKIE_SUSPENDED.clear()
-    bot_reply(message, msg)
+    bot_reply_tr(message, 'Cookies cleared.')
 
 
 @bot.message_handler(commands=['bingcookie', 'cookie', 'k'], func=authorized_admin)
@@ -2096,8 +2053,7 @@ def set_bing_cookies(message: telebot.types.Message):
         bot_reply(message, msg)
     except Exception as error:
         my_log.log2(f'set_bing_cookies: {error}\n\n{message.text}')
-        msg = tr('Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie', lang)
-        bot_reply(message, msg)
+        bot_reply_tr(message, 'Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie')
 
         nl = '\n\n'
         with bing_img.LOCK_STORAGE:
@@ -2122,7 +2078,7 @@ def change_mode2(message: telebot.types.Message):
         arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
         arg2 = message.text.split(maxsplit=3)[3]
     except:
-        bot_reply(message, tr('Usage: /style2 <chat_id_full!> <new_style>', lang))
+        bot_reply_tr(message, 'Usage: /style2 <chat_id_full!> <new_style>')
         return
 
     ROLES[arg1] = arg2
@@ -2152,10 +2108,7 @@ def send_debug_history(message: telebot.types.Message):
 @bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin) 
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
-    msg = tr('Restarting bot, please wait', lang)
-    bot_reply(message, msg)
+    bot_reply_tr(message, 'Restarting bot, please wait')
     bot.stop_polling()
 
 
@@ -2171,7 +2124,7 @@ def leave_thread(message: telebot.types.Message):
     if len(message.text) > 7:
         args = message.text[7:]
     else:
-        bot_reply(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>')
+        bot_reply_tr(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>')
         return
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
@@ -2200,7 +2153,7 @@ def revoke_thread(message: telebot.types.Message):
     if len(message.text) > 8:
         args = message.text[8:]
     else:
-        bot_reply(message, '/revoke <группа или группы которые надо разбанить>')
+        bot_reply_tr(message, '/revoke <группа или группы которые надо разбанить>')
         return
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
@@ -2480,8 +2433,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
                     bot.send_voice(message.chat.id, audio, caption=caption)
                 my_log.log_echo(message, f'[Sent voice message] [{gender}]')
             else:
-                msg = tr('Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.', lang)
-                bot_reply(message, msg)
+                bot_reply_tr(message, 'Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.')
 
 
 @bot.message_handler(commands=['google',], func=authorized)
@@ -2495,7 +2447,7 @@ def google_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     if not allowed_chatGPT_user(message.chat.id):
-        bot_reply(message, tr('You are not in allow chatGPT users list', lang))
+        bot_reply_tr(message, 'You are not in allow chatGPT users list')
         return
 
     try:
@@ -2550,7 +2502,7 @@ def ddg_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     if not allowed_chatGPT_user(message.chat.id):
-        bot_reply(message, tr('You are not in allow chatGPT users list', lang))
+        bot_reply_tr(message, 'You are not in allow chatGPT users list')
         return
 
     try:
@@ -2621,8 +2573,7 @@ def image_thread(message: telebot.types.Message):
             with ShowAction(message, 'upload_photo'):
                 moderation_flag = gpt_basic.moderation(prompt)
                 if moderation_flag:
-                    msg = tr('There is something suspicious in your request, try to rewrite it differently.', lang)
-                    bot_reply(message, msg)
+                    bot_reply_tr(message, 'There is something suspicious in your request, try to rewrite it differently.')
                     return
 
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
@@ -2644,16 +2595,16 @@ the original prompt:""", lang) + '\n\n\n' + prompt
 
                 if len(medias) > 0:
                     if 'error1_being_reviewed_prompt' in images[0]:
-                        bot_reply(message, tr('Ваш запрос содержит потенциально неприемлемый контент.', lang))
+                        bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
                         return
                     elif 'error1_blocked_prompt' in images[0]:
-                        bot_reply(message, tr('Ваш запрос содержит неприемлемый контент.', lang))
+                        bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
                         return
                     elif 'error1_unsupported_lang' in images[0]:
-                        bot_reply(message, tr('Не понятный язык.', lang))
+                        bot_reply_tr(message, 'Не понятный язык.')
                         return
                     elif 'error1_Bad images' in images[0]:
-                        bot_reply(message, tr('Ваш запрос содержит неприемлемый контент.', lang))
+                        bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
                         return
                     with SEND_IMG_LOCK:
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
@@ -2691,11 +2642,11 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                             f'{tr("drew using DALL-E", lang)}',
                                             chat_id_full)
                 else:
-                    bot_reply(message, tr('Could not draw anything. Maybe there is no mood, or maybe you need to give another description.', lang))
+                    bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
                     if cfg.enable_image_adv:
-                        msg = f'{tr("Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots:", lang)} https://t.me/neuralforum\n\n'
-
-                        bot_reply(message, msg, disable_web_page_preview = True)
+                        bot_reply_tr(message,
+                                  "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum",
+                                  disable_web_page_preview = True)
                     my_log.log_echo(message, '[image gen error] ')
                     n = [{'role':'system', 'content':f'user {tr("asked to draw", lang)}\n{prompt}'}, 
                          {'role':'system', 'content':f'assistant {tr("did not want or could not draw this using DALL-E", lang)}'}]
@@ -2765,7 +2716,7 @@ def block_user_add(message: telebot.types.Message):
         BAD_USERS[user_id] = True
         bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
     else:
-        bot_reply(message, tr('Usage: /blockadd <[user id] [group id]>', lang))
+        bot_reply_tr(message, 'Usage: /blockadd <[user id] [group id]>')
 
 
 @bot.message_handler(commands=['blockdel'], func=authorized_admin)
@@ -2783,7 +2734,7 @@ def block_user_del(message: telebot.types.Message):
         else:
             bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
     else:
-        bot_reply(message, tr('Usage: /blockdel <[user id] [group id]>', lang))
+        bot_reply_tr(message, 'Usage: /blockdel <[user id] [group id]>')
 
 
 @bot.message_handler(commands=['blocklist'], func=authorized_admin)
@@ -2823,7 +2774,7 @@ def ask_thread(message: telebot.types.Message):
                 f'tb:ask: {error2}'
                 response = ''
         if not response:
-            bot_reply(message, 'Интернет вам не ответил, перезвоните позже',
+            bot_reply_tr(message, 'Интернет вам не ответил, перезвоните позже',
                          parse_mode = '', disable_web_page_preview = True)
             return
         try:
@@ -2883,8 +2834,7 @@ def alert_thread(message: telebot.types.Message):
                 time.sleep(0.3)
             return
 
-    msg = f'/alert <{tr("текст сообщения которое бот отправит всем кого знает, форматирование маркдаун", lang)}>. {tr("Только администраторы могут использовать эту команду.", lang)}'
-    bot_reply(message, msg)
+    bot_reply_tr(message, '/alert <текст сообщения которое бот отправит всем кого знает, форматирование маркдаун> Только администраторы могут использовать эту команду')
 
 
 @bot.message_handler(commands=['qr'], func=authorized)
@@ -2907,8 +2857,7 @@ def qrcode_text(message: telebot.types.Message):
             my_log.log_echo(message, '[QR code]')
             return
 
-    msg = f'/qr {tr("текст который надо перевести в qrcode", lang)}'
-    bot_reply(message, msg)
+    bot_reply_tr(message, '/qr текст который надо перевести в qrcode')
 
 
 @bot.message_handler(commands=['sum'], func=authorized)
@@ -2922,7 +2871,7 @@ def summ_text_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     if not allowed_chatGPT_user(message.chat.id):
-        bot_reply(message, tr('You are not in allow chatGPT users list', lang))
+        bot_reply_tr(message, 'You are not in allow chatGPT users list')
         return
 
     text = message.text
@@ -2964,8 +2913,7 @@ def summ_text_thread(message: telebot.types.Message):
                         res = my_sum.summ_url(url, lang = lang)
                     except Exception as error2:
                         print(error2)
-                        m = tr('Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', lang)
-                        bot_reply(message, m, parse_mode='Markdown')
+                        bot_reply_tr(message, 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', parse_mode='Markdown')
                         return
                     if res:
                         rr = utils.bot_markdown_to_html(res)
@@ -2986,8 +2934,7 @@ def summ_text_thread(message: telebot.types.Message):
                                          chat_id_full)
                         return
                     else:
-                        error = tr('Не смог прочитать текст с этой страницы.', lang)
-                        bot_reply(message, error)
+                        bot_reply_tr(message, 'Не смог прочитать текст с этой страницы.')
                         return
     help = f"""{tr('Пример:', lang)} /sum https://youtu.be/3i123i6Bf-U
 
@@ -3077,8 +3024,7 @@ def trans_thread(message: telebot.types.Message):
                                  + ' ' + str(', '.join(detected_langs)).strip(', '),
                                  reply_markup=get_keyboard('translate', message))
             else:
-                msg = 'Ошибка перевода'
-                bot_reply(message, msg)
+                bot_reply_tr(message, 'Ошибка перевода')
 
 
 @bot.message_handler(commands=['name'], func=authorized_owner)
@@ -3285,10 +3231,7 @@ Donate:"""
 
 @bot.message_handler(commands=['report'], func = authorized_log) 
 def report_cmd_handler(message: telebot.types.Message):
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
-    msg = f'{tr("Our support telegram group report here", lang)} https://t.me/kun4_sun_bot_support'
-    bot_reply(message, msg)
+    bot_reply_tr(message, 'Our support telegram group report here https://t.me/kun4_sun_bot_support')
 
 
 @bot.message_handler(commands=['purge'], func = authorized_owner)
@@ -3407,8 +3350,8 @@ def set_default_commands_thread(message: telebot.types.Message):
         else:
             return 0
 
-    bot_reply(message, tr("Localization will take a long time, do not repeat this command.", user_lang))
-    
+    bot_reply_tr(message, "Localization will take a long time, do not repeat this command.")
+
     # most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr','hi',
     #                    'hu', 'id', 'in', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro',
     #                    'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'ur', 'vi', 'zh']
@@ -3804,7 +3747,7 @@ def do_task(message, custom_prompt: str = ''):
                     else:
                         with ShowAction(message, 'typing'):
                             if not allowed_chatGPT_user(message.chat.id):
-                                bot_reply(message, tr('You are not in allow chatGPT users list', lang))
+                                bot_reply_tr(message, 'You are not in allow chatGPT users list')
                                 return
                             else:
                                 response = my_gemini.check_phone_number(number)
@@ -4003,8 +3946,7 @@ def do_task(message, custom_prompt: str = ''):
                             #     bot_reply(message, text_links, parse_mode='HTML', disable_web_page_preview = True,
                             #                           reply_markup=get_keyboard('hide', message))
                         else:
-                            msg = tr('No answer from Bard.', lang)
-                            bot_reply(message, msg)
+                            bot_reply_tr(message, 'No answer from Bard.')
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))
@@ -4040,7 +3982,7 @@ def do_task(message, custom_prompt: str = ''):
             # добавляем новый запрос пользователя в историю диалога пользователя
             with ShowAction(message, action):
                 if not allowed_chatGPT_user(message.chat.id):
-                    bot_reply(message, tr('You are not in allow chatGPT users list, try other chatbot', lang))
+                    bot_reply_tr(message, 'You are not in allow chatGPT users list, try other chatbot.')
                     return
                 if len(msg) > cfg.CHATGPT_MAX_REQUEST:
                     bot_reply(message, f'{tr("Слишком длинное сообщение для chatGPT:", lang)} {len(msg)} {tr("из", lang)} {cfg.CHATGPT_MAX_REQUEST}')

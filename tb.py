@@ -2972,6 +2972,9 @@ def summ2_text(message: telebot.types.Message):
 
     text = message.text
 
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
     if len(text.split(' ', 1)) == 2:
         url = text.split(' ', 1)[1].strip()
         if my_sum.is_valid_url(url):

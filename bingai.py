@@ -82,12 +82,17 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
 
     if dialog not in DIALOGS:
         cookies = json.loads(open("cookies.json", encoding="utf-8").read())
-        DIALOGS[dialog] = await Chatbot.create(cookies=cookies)
+        if hasattr(cfg, 'bing_proxy'):
+            # proxy = {'http': cfg.bing_proxy[0], 'https': cfg.bing_proxy[0]}
+            proxy = cfg.bing_proxy[0]
+        else:
+            proxy = None
+        # DIALOGS[dialog] = await Chatbot.create(cookies=cookies, proxy=proxy)
+        DIALOGS[dialog] = await Chatbot.create(proxy=proxy)
 
     try:
         r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
     except Exception as error:
-        #sys.stdout, sys.stderr = orig_stdout, orig_stderr
         print(f'bingai.chat_async:2: {error}')
         my_log.log2(f'bingai.chat_async:2: {error}')
         try:
@@ -383,14 +388,31 @@ def stream_sync_request(query: str):
             pass
 
 
+def test_chat():
+    """
+    Function to test the chat functionality.
+    
+    This function runs an infinite loop where it takes user input as a question
+    and passes it to the chat function along with the 'test' parameter.
+    The response from the chat function is then printed as a message from the bot.
+    """
+    while 1:
+        q = input('you: ')
+        r = chat(q, 'test')
+        print(f'bot: {r}')
+
+
 if __name__ == "__main__":
+    
+    test_chat()
+
     # print(chat('brent oil price', 'test-chat-id', 3, False)['text'])
     #print(ai('hi'))
 
     #stream_sync_request('brent oil price')
 
-    prompt = 'dogs'
-    print(gen_imgs(prompt))
+    # prompt = 'dogs'
+    # print(gen_imgs(prompt))
 
 
     # """Usage ./bingai.py 'list 10 japanese dishes"""

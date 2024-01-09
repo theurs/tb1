@@ -2650,6 +2650,8 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                             suggest2 = [f'<code>/image {x}</code>'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1) for x in suggest.split('\n')]
                             suggest3 = '\n\n'.join(suggest2)
                             suggest3 = suggest3.replace('<code>/image </code>\n', '')
+                            suggest3 = suggest3.replace('\n\n\n\n', '\n\n')
+                            suggest3 = suggest3.replace('\n\n\n', '\n\n')
                             suggest4 = tr('Here are some more possible options for your request:', lang) + '\n\n' + suggest3
                             bot_reply(message, suggest4, parse_mode = 'HTML')
 

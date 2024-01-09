@@ -2492,13 +2492,12 @@ def google_thread(message: telebot.types.Message):
         with semaphore_talks:
             r = my_google.search(q, lang)
         try:
-            bot_reply(message, r, parse_mode = 'Markdown',
+            rr = utils.bot_markdown_to_html(r)
+            bot_reply(message, rr, parse_mode = 'HTML',
                          disable_web_page_preview = True,
                          reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
-            bot_reply(message, r, parse_mode = '', disable_web_page_preview = True,
-                         reply_markup=get_keyboard('chat', message))
 
         if chat_id_full not in gpt_basic.CHATS:
             gpt_basic.CHATS[chat_id_full] = []
@@ -2552,13 +2551,12 @@ def ddg_thread(message: telebot.types.Message):
         with semaphore_talks:
             r = my_google.search_ddg(q, lang=lang)
         try:
-            bot_reply(message, r, parse_mode = 'Markdown',
+            rr = utils.bot_markdown_to_html(r)
+            bot_reply(message, rr, parse_mode = 'HTML',
                          disable_web_page_preview = True,
                          reply_markup=get_keyboard('chat', message))
         except Exception as error2:
             my_log.log2(error2)
-            bot_reply(message, r, parse_mode = '', disable_web_page_preview = True,
-                         reply_markup=get_keyboard('chat', message))
         
         if chat_id_full not in gpt_basic.CHATS:
             gpt_basic.CHATS[chat_id_full] = []

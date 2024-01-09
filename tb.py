@@ -2905,12 +2905,13 @@ def summ_text_thread(message: telebot.types.Message):
             if '/youtu.be/' in url or 'youtube.com/' in url:
                 url = url.split("&t=")[0]
 
+            url_id = str([url, lang])
             with semaphore_talks:
 
                 #смотрим нет ли в кеше ответа на этот урл
                 r = ''
-                if url in SUM_CACHE:
-                    r = SUM_CACHE[url]
+                if url_id in SUM_CACHE:
+                    r = SUM_CACHE[url_id]
                 if r:
                     rr = utils.bot_markdown_to_html(r)
                     bot_reply(message, rr, disable_web_page_preview = True,
@@ -2942,7 +2943,7 @@ def summ_text_thread(message: telebot.types.Message):
                         bot_reply(message, rr, parse_mode='HTML',
                                               disable_web_page_preview = True,
                                               reply_markup=get_keyboard('translate', message))
-                        SUM_CACHE[url] = res
+                        SUM_CACHE[url_id] = res
                         if chat_id_full not in gpt_basic.CHATS:
                             gpt_basic.CHATS[chat_id_full] = []
                         gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
@@ -2977,10 +2978,10 @@ def summ2_text(message: telebot.types.Message):
             # убираем из ютуб урла временную метку
             if '/youtu.be/' in url or 'youtube.com/' in url:
                 url = url.split("&t=")[0]
-
+            url_id = str([url, lang])
             #смотрим нет ли в кеше ответа на этот урл
-            if url in SUM_CACHE:
-                SUM_CACHE.pop(url)
+            if url_id in SUM_CACHE:
+                SUM_CACHE.pop(url_id)
 
     summ_text(message)
 

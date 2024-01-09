@@ -3,7 +3,6 @@
 
 import time
 import threading
-# import socket
 
 import random
 import re

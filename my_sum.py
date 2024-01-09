@@ -79,7 +79,7 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru') -> str:
 -------------
 BEGIN:
 """
-        prompt_gemini = f"""Summarize the following, answer in [{lang}] language:
+        prompt_gemini = f"""Summarize the following, answer in [{lang}] language, keep it within 1000 words:
 -------------
 {text}
 -------------
@@ -92,7 +92,7 @@ BEGIN:
 -------------
 BEGIN:
 """
-        prompt_gemini = f"""Summarize the following telegram chat log, answer in [{lang}] language:
+        prompt_gemini = f"""Summarize the following telegram chat log, answer in [{lang}] language, keep it within 1000 words:
 -------------
 {text}
 -------------
@@ -105,7 +105,7 @@ BEGIN:
 {text}
 -------------
 """
-        prompt_gemini = f"""Summarize the following video subtitles extracted from youtube, answer in [{lang}] language:
+        prompt_gemini = f"""Summarize the following video subtitles extracted from youtube, answer in [{lang}] language, keep it within 1000 words:
 -------------
 {text}
 -------------
@@ -226,8 +226,8 @@ def is_valid_url(url: str) -> bool:
 
 if __name__ == "__main__":
     """Usage ./summarize.py '|URL|filename"""
-    r = summ_url('https://habr.com/ru/articles/780688/')
-    # r = summ_url('https://www.youtube.com/watch?v=v9Sh9hcXhT4')
+    # r = summ_url('https://habr.com/ru/articles/780688/')
+    r = summ_url('https://www.youtube.com/watch?v=P-pkN0KaEZU&t=665s')
     print(r)
     sys.exit(0)
     

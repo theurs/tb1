@@ -145,8 +145,11 @@ bot_name = "Бот"
 default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
-# 'bard', 'claude', 'chatgpt'
-chat_mode_default = 'chatgpt'
+# 'bard', 'claude', 'chatgpt', 'gemini'
+#chat_mode_default = 'chatgpt'
+chat_mode_default = 'gemini'
+#chat_mode_default = 'bard'
+#chat_mode_default = 'claude'
 
 # default locale, язык на который переводятся все сообщения
 DEFAULT_LANGUAGE = 'ru'
@@ -155,17 +158,19 @@ DEFAULT_LANGUAGE = 'ru'
 admins = [xxx,]
 
 # активированы ли триальные периоды, бот будет слать лесом юзеров которые уже неделю нахаляву тут
+# если израсхововано меньше сообщений то продолжит работать и после 7 дней
 # TRIALS = True
-
+# TRIAL_DAYS = 7
+# TRIAL_MESSAGES = 300
 
 # список юзеров кому доступен chatGPT (он хоть и дешевый но не бесплатный)
 # если список пуст то всем можно
-allow_chatGPT_users = [xxx,]
+# allow_chatGPT_users = [xxx,]
 
 # сколько раз раз в минуту можно обращаться к боту до бана
-DDOS_MAX_PER_MINUTE = 10
+DDOS_MAX_PER_MINUTE = 15
 # на сколько секунд банить
-DDOS_BAN_TIME = 86400
+DDOS_BAN_TIME = 60*20
 
 # telegram bot token
 token   = "xxx"
@@ -175,6 +180,7 @@ token   = "xxx"
 # можно использовать стороннии сервисы работающие так же как openai например https://vsegpt.ru/
 openai_servers = [
     ['https://api.openai.com/v1', 'sk-xxx', False, False],
+    ['https://api.vsegpt.ru:6070/v1/', 'sk-or-vv-xxx', False, False],
     ['https://yyy.com/xxx', 'key', False, False]
 ]
 
@@ -190,14 +196,16 @@ bard_tokens = ['xxx',
 
 
 # id телеграм группы куда скидываются все сгенерированные картинки
-#pics_group = 0
-#pics_group_url = ''
-pics_group = xxx
-pics_group_url = 'https://t.me/xxx'
+# группы надо создать, добавить туда бота и дать права на публикацию
+pics_group = 0
+pics_group_url = ''
+# pics_group = xxx
+# pics_group_url = 'https://t.me/xxx'
 # id телеграм группы куда скидываются все скаченные ролики с ютуба
-#videos_group = 0
-videos_group = xxxx
-videos_group_url = 'https://t.me/xxx'
+videos_group = 0
+videos_group_url = ''
+# videos_group = xxxx
+# videos_group_url = 'https://t.me/xxx'
 
 
 # размер буфера для поиска в гугле, чем больше тем лучше ищет и отвечает
@@ -211,8 +219,6 @@ max_google_answer = 2000
 
 
 # насколько большие сообщения от юзера принимать
-# если у gpt всего 4к памяти то 1500
-#max_message_from_user = 4000
 max_message_from_user = 90000
 
 
@@ -260,13 +266,15 @@ claudeai_keys = ['sessionKey=sk-xxxxxxxxxx',] или None
 # https://replicate.com/account/api-tokens
 replicate_token = 'ххх'
 
-# показывать ли рекламу группы Neural Networks Forum при рисовании, что бы люди туда уходили рисовать и отстали от моего бота
+# показывать ли рекламу группы Neural Networks Forum при рисовании,
+# что бы люди туда уходили рисовать и отстали от моего бота
 enable_image_adv = False
 
 # кодовые слова которые можно использовать вместо команды /music
 MUSIC_WORDS = ['муз', 'ytb']
 
 # https://ai.google.dev/
+# ключи для Gemini Pro
 gemini_keys = ['xxx', 'yyy']
 # прокси для gemini pro, если не указать то сначала попытается работать
 # напрямую а если не получится то будет постоянно искать открытые прокси
@@ -274,7 +282,7 @@ gemini_keys = ['xxx', 'yyy']
 
 # максимальный размер для скачивания музыки с ютуба в секундах
 # если есть локальный сервер то можно много, если нет то 20 минут
-# MAX_YTB_SECS = 6*60*60
+# больше 50мбайт телеграм не пропустит :(
 MAX_YTB_SECS = 20*60
 
 # прокси для рисования бингом

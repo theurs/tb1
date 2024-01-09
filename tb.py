@@ -3549,6 +3549,8 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
 
 def allowed_chatGPT_user(chat_id: int) -> bool:
     """Проверка на то что юзер может использовать платную часть бота (гпт всегда платный даже когда бесплатный Ж-[)"""
+    if not hasattr(cfg, 'allow_chatGPT_users'):
+        return True
     if len(cfg.allow_chatGPT_users) == 0:
         return True
 

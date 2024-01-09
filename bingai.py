@@ -82,13 +82,12 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
 
     if dialog not in DIALOGS:
         cookies = json.loads(open("cookies.json", encoding="utf-8").read())
-        if hasattr(cfg, 'bing_proxy'):
-            # proxy = {'http': cfg.bing_proxy[0], 'https': cfg.bing_proxy[0]}
-            proxy = cfg.bing_proxy[0]
+        if hasattr(cfg, 'bing_proxy_chat'):
+            proxy = cfg.bing_proxy_chat
         else:
             proxy = None
         # DIALOGS[dialog] = await Chatbot.create(cookies=cookies, proxy=proxy)
-        DIALOGS[dialog] = await Chatbot.create(proxy=proxy)
+        DIALOGS[dialog] = await Chatbot.create(cookies=cookies, proxy=proxy)
 
     try:
         r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
@@ -105,13 +104,20 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         except KeyError:
             print(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
             my_log.log2(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
-        return error
+        try:
+            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
+        except Exception as error:
+            print(f'bingai.chat_async:2: {error}')
+            my_log.log2(f'bingai.chat_async:2: {error}')
+            return ''
+
     text = r['text']
     suggestions = r['suggestions']
     messages_left = r['messages_left']
     messages_max = r['max_messages']
 
-    sources_text = r['sources_text']
+    # sources_text = r['sources_text']
+    sources_text = r['sources_link']
 
     urls = re.findall(r'\[(.*?)\]\((.*?)\)', sources_text)
     urls2 = []
@@ -137,7 +143,8 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
     text = re.sub(r'\(\^(\d{1,2})\^\)', replace_links, text)
     my_log.log2(text)
 
-    return {'text': text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
+    # return {'text': text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}
+    return text
 
 
 def chat(query: str, dialog: str, style: int = 3, reset: bool = False):
@@ -399,7 +406,10 @@ def test_chat():
     while 1:
         q = input('you: ')
         r = chat(q, 'test')
-        print(f'bot: {r}')
+        if r:
+            print(f'bot: {r}')
+        else:
+            print('bot: не ответил')
 
 
 if __name__ == "__main__":

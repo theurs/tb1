@@ -3262,8 +3262,16 @@ def report_cmd_handler(message: telebot.types.Message):
     is_private = message.chat.type == 'private'
     if is_private:
         if my_log.purge(message.chat.id):
-            chat_full_id = get_topic_id(message)
-            lang = get_lang(chat_full_id, message)
+            chat_id_full = get_topic_id(message)
+            lang = get_lang(chat_id_full, message)
+
+            my_bard.reset_bard_chat(chat_id_full)
+            my_gemini.reset(chat_id_full)
+            my_claude.reset_claude_chat(chat_id_full)
+            gpt_basic.chat_reset(chat_id_full)
+
+            ROLES[chat_id_full] = ''
+
             msg = f'{tr("Your logs was purged. Keep in mind there could be a backups and some mixed logs. It is hard to erase you from the internet.", lang)}'
         else:
             msg = f'{tr("Error. Your logs was NOT purged.", lang)}'
@@ -3944,7 +3952,7 @@ def do_task(message, custom_prompt: str = ''):
                     return
                 with ShowAction(message, action):
                     try:
-                        answer = my_bard.chat(helped_query, chat_id_full, user_name = '', lang = '', is_private = is_private)
+                        answer = my_bard.chat(helped_query, chat_id_full)
 
                         for x in my_bard.REPLIES:
                             if x[0] == answer:

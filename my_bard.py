@@ -4,7 +4,6 @@
 import threading
 import re
 import requests
-from urllib.parse import urlparse
 
 from bardapi import Bard
 from textblob import TextBlob
@@ -37,7 +36,7 @@ if len(cfg.bard_tokens) == 1:
 loop_detector = {}
 
 
-def get_new_session(user_name: str = '', lang: str = '', is_private: bool = True):
+def get_new_session():
     session = requests.Session()
     session.cookies.set("__Secure-1PSID", cfg.bard_tokens[current_token])
     session.headers = {
@@ -55,31 +54,6 @@ def get_new_session(user_name: str = '', lang: str = '', is_private: bool = True
     #     proxies = None
     proxies = None
     bard = Bard(token=cfg.bard_tokens[current_token], proxies=proxies, session=session, timeout=30)
-
-#     rules = ''
-#     if not user_name:
-#         user_name = 'noname'
-#     if not lang:
-#         lang = cfg.DEFAULT_LANGUAGE
-
-#     rules += '\n'
-#     if is_private:
-#         rules += """Ты общаешься с человеком в привате мессенджера Telegram, обращай внимание на его пол, 
-# если не понятно по имени то определяй по словам которые использует человек,
-# людям нравится когда ты правильно говоришь с учетом пола и языка.
-# Имя и язык пользователя: """
-#     else:
-#         rules += """Ты общаешься с разными людьми в публичном чате мессенджера Telegram, обращай внимание на их пол, 
-# если не понятно по имени то определяй по словам которые использует человек,
-# людям нравится когда ты правильно говоришь с учетом пола и языка.
-# Имя чата и язык пользователей чата: """
-
-#     if lang != 'ru':
-#         rules = my_trans.translate_text(rules, lang)
-
-#     rules = f'{rules} [{user_name}], [{lang}]'
-
-#     r = bard.get_answer(rules)
 
     return bard
 
@@ -102,7 +76,7 @@ def reset_bard_chat(dialog: str):
     return
 
 
-def chat_request(query: str, dialog: str, reset = False, user_name: str = '', lang: str = '', is_private: bool = True) -> str:
+def chat_request(query: str, dialog: str, reset = False) -> str:
     """
     Generates the function comment for the given function body in a markdown code block with the correct language syntax.
 
@@ -110,9 +84,6 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '', la
         query (str): The query string.
         dialog (str): The dialog string.
         reset (bool, optional): Whether to reset the chat. Defaults to False.
-        user_name (str, optional): The user name. Defaults to ''.
-        lang (str, optional): The language. Defaults to ''.
-        is_private (bool, optional): Whether the chat is private. Defaults to False.
 
     Returns:
         str: The function comment in markdown format.
@@ -124,7 +95,7 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '', la
     if dialog in DIALOGS:
         session = DIALOGS[dialog]
     else:
-        session = get_new_session(user_name, lang, is_private)
+        session = get_new_session()
         DIALOGS[dialog] = session
 
     try:
@@ -135,7 +106,7 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '', la
 
         try:
             del DIALOGS[dialog]
-            session = get_new_session(user_name, lang, is_private)
+            session = get_new_session()
             DIALOGS[dialog] = session
         except KeyError:
             print(f'no such key in DIALOGS: {dialog}')
@@ -188,8 +159,8 @@ def chat_request(query: str, dialog: str, reset = False, user_name: str = '', la
             current_token = 0
         print(links_error)
         my_log.log2(f'my_bard.py:chat_request:bard token rotated:current_token: {current_token}\n\n{links_error}')
-        chat_request(query, dialog, reset = True, user_name = user_name)
-        return chat_request(query, dialog, reset, user_name)
+        chat_request(query, dialog, reset = True)
+        return chat_request(query, dialog, reset)
 
     return result
 
@@ -241,7 +212,7 @@ def chat_request_image(query: str, dialog: str, image: bytes, reset = False):
     return response
 
 
-def chat(query: str, dialog: str, reset: bool = False, user_name: str = '', lang: str = '', is_private: bool = True) -> str:
+def chat(query: str, dialog: str, reset: bool = False) -> str:
     """
     This function is used to chat with a user.
 
@@ -249,9 +220,6 @@ def chat(query: str, dialog: str, reset: bool = False, user_name: str = '', lang
         query (str): The query or message from the user.
         dialog (str): The dialog or conversation ID.
         reset (bool, optional): Whether to reset the conversation. Defaults to False.
-        user_name (str, optional): The name of the user. Defaults to ''.
-        lang (str, optional): The language of the conversation. Defaults to ''.
-        is_private (bool, optional): Whether the conversation is private. Defaults to False.
 
     Returns:
         str: The response from the chat request.
@@ -264,12 +232,12 @@ def chat(query: str, dialog: str, reset: bool = False, user_name: str = '', lang
     result = ''
     with lock:
         try:
-            result = chat_request(query, dialog, reset, user_name, lang, is_private)
+            result = chat_request(query, dialog, reset)
         except Exception as error:
             print(f'my_bard:chat: {error}')
             my_log.log2(f'my_bard:chat: {error}')
             try:
-                result = chat_request(query, dialog, reset, user_name, lang, is_private)
+                result = chat_request(query, dialog, reset)
             except Exception as error2:
                 print(f'my_bard:chat:2: {error2}')
                 my_log.log2(f'my_bard:chat:2: {error2}')

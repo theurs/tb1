@@ -14,7 +14,6 @@ import PyPDF2
 import requests
 import trafilatura
 
-import bingai
 import cfg
 import gpt_basic
 import my_log
@@ -71,7 +70,7 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru') -> str:
 
     # если запустили из pool.map и передали параметры как список
     if isinstance(text, tuple):
-        text, subj, cont = text[0], text[1], text[2]
+        text, subj, _ = text[0], text[1], text[2]
 
     if subj == 'text' or subj == 'pdf':
         prompt = f"""Summarize the following, briefly answer in [{lang}] language with easy-to-read formatting:
@@ -80,9 +79,20 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru') -> str:
 -------------
 BEGIN:
 """
-
+        prompt_gemini = f"""Summarize the following, answer in [{lang}] language:
+-------------
+{text}
+-------------
+BEGIN:
+"""
     elif subj == 'chat_log':
         prompt = f"""Summarize the following telegram chat log, briefly answer in [{lang}] language with easy-to-read formatting:
+-------------
+{text}
+-------------
+BEGIN:
+"""
+        prompt_gemini = f"""Summarize the following telegram chat log, answer in [{lang}] language:
 -------------
 {text}
 -------------
@@ -91,6 +101,11 @@ BEGIN:
 
     elif subj == 'youtube_video':
         prompt = f"""Summarize the following video subtitles extracted from youtube, briefly answer in [{lang}] language with easy-to-read formatting:
+-------------
+{text}
+-------------
+"""
+        prompt_gemini = f"""Summarize the following video subtitles extracted from youtube, answer in [{lang}] language:
 -------------
 {text}
 -------------
@@ -113,7 +128,7 @@ BEGIN:
 
     if not result:
         try:
-            r = my_gemini.ai(prompt[:cfg.max_request])
+            r = my_gemini.ai(prompt_gemini[:cfg.max_request])
             if r != '':
                 result = f'{r}\n\n--\nGemini Pro [{len(prompt[:cfg.max_request])} {tr("символов", lang)}]'
         except Exception as error:
@@ -212,6 +227,7 @@ def is_valid_url(url: str) -> bool:
 if __name__ == "__main__":
     """Usage ./summarize.py '|URL|filename"""
     r = summ_url('https://habr.com/ru/articles/780688/')
+    # r = summ_url('https://www.youtube.com/watch?v=v9Sh9hcXhT4')
     print(r)
     sys.exit(0)
     

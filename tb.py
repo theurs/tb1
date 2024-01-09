@@ -1922,10 +1922,7 @@ def gemini_proxy(message: telebot.types.Message):
 
     msg += f'<pre><code>{pt.get_string()}</code></pre>'
 
-    if not msg:
-        bot_reply_tr(message, '<code>Ничего нет</code>', parse_mode='HTML')
-    else:
-        bot_reply(message, msg, parse_mode='HTML')
+    bot_reply(message, msg, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['disable_chat_mode'], func=authorized_admin)

@@ -172,9 +172,10 @@ token   = "xxx"
 
 # openai tokens and addresses
 # список  серверов для chatGPT [['address', 'token', True/False(распознавание голоса), True/False(рисование)], [], ...]
+# можно использовать стороннии сервисы работающие так же как openai например https://vsegpt.ru/
 openai_servers = [
-    ['https://xxx.com/v1', 'sk-xxx', False, False],
-    ['https://yyy.com/v1', 'sk-yyy', False, False]
+    ['https://api.openai.com/v1', 'sk-xxx', False, False],
+    ['https://yyy.com/xxx', 'key', False, False]
 ]
 
 # proxy for access openai

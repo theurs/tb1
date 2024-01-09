@@ -1979,7 +1979,6 @@ def set_trial(message: telebot.types.Message):
 def reset_(message: telebot.types.Message):
     """Clear chat history (bot's memory)"""
     chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
 
     if chat_id_full in CHAT_MODE:
         if CHAT_MODE[chat_id_full] == 'bard':

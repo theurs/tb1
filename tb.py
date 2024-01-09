@@ -1541,7 +1541,6 @@ def handle_document_thread(message: telebot.types.Message):
                 return
         # если в режиме клауда чата то закидываем файл прямо в него
         if chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] == 'claude':
-            check_blocked_user(chat_id_full)
             with ShowAction(message, 'typing'):
                 file_name = message.document.file_name
                 # file_info = bot.get_file(message.document.file_id)
@@ -1583,12 +1582,9 @@ def handle_document_thread(message: telebot.types.Message):
                 bot_reply(message, response, parse_mode='HTML', reply_markup=get_keyboard('claude_chat', message))
             return
 
-        # если прислали текстовый файл или pdf с подписью перескажи
+        # если прислали текстовый файл или pdf
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
-        if message.caption \
-        and message.caption.startswith((tr('что там', lang),tr('перескажи', lang),tr('краткое содержание', lang), tr('кратко', lang))) \
-        and message.document.mime_type in ('text/plain', 'application/pdf'):
-            check_blocked_user(chat_id_full)
+        if is_private and message.document.mime_type in ('text/plain', 'application/pdf'):
             with ShowAction(message, 'typing'):
                 # file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
@@ -1611,8 +1607,7 @@ def handle_document_thread(message: telebot.types.Message):
                 return
 
         # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
-        if is_private or caption.lower() in [tr('прочитай', lang), tr('прочитать', lang)]:
-            check_blocked_user(chat_id_full)
+        if is_private or caption.lower() == 'ocr':
             with ShowAction(message, 'upload_document'):
                 # получаем самый большой документ из списка
                 document = message.document
@@ -1720,7 +1715,6 @@ def handle_photo_thread(message: telebot.types.Message):
             return
         elif state == 'ocr':
             with ShowAction(message, 'typing'):
-                check_blocked_user(chat_id_full)
                 # получаем самую большую фотографию из списка
                 photo = message.photo[-1]
                 fp = io.BytesIO()
@@ -1744,7 +1738,6 @@ def handle_photo_thread(message: telebot.types.Message):
             # новости в телеграме часто делают как картинка + длинная подпись к ней
             if message.forward_from_chat and message.caption:
                 # у фотографий нет текста но есть заголовок caption. его и будем переводить
-                check_blocked_user(chat_id_full)
                 with ShowAction(message, 'typing'):
                     text = my_trans.translate(message.caption)
                 if text:
@@ -2228,7 +2221,6 @@ def language(message: telebot.types.Message):
     """change locale"""
 
     chat_id_full = get_topic_id(message)
-    check_blocked_user(chat_id_full)
 
     if chat_id_full in LANGUAGE_DB:
         lang = LANGUAGE_DB[chat_id_full]
@@ -2820,7 +2812,6 @@ def alert_thread(message: telebot.types.Message):
     """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
        а она появляется в первом же сообщении.
     """
-
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 

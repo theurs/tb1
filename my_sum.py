@@ -79,7 +79,7 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru') -> str:
 -------------
 BEGIN:
 """
-        prompt_gemini = f"""Summarize the following, answer in [{lang}] language, keep it within 1000 words:
+        prompt_gemini = f"""Summarize the following, briefly answer in [{lang}] language, keep it within 1000 words:
 -------------
 {text}
 -------------
@@ -92,7 +92,7 @@ BEGIN:
 -------------
 BEGIN:
 """
-        prompt_gemini = f"""Summarize the following telegram chat log, answer in [{lang}] language, keep it within 1000 words:
+        prompt_gemini = f"""Summarize the following telegram chat log, briefly answer in [{lang}] language, keep it within 1000 words:
 -------------
 {text}
 -------------
@@ -105,7 +105,7 @@ BEGIN:
 {text}
 -------------
 """
-        prompt_gemini = f"""Summarize the following video subtitles extracted from youtube, answer in [{lang}] language, keep it within 1000 words:
+        prompt_gemini = f"""Summarize the following video subtitles extracted from youtube, briefly answer in [{lang}] language, keep it within 1000 words:
 -------------
 {text}
 -------------

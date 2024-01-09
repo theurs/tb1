@@ -14,20 +14,9 @@ D = {
     1: 'Hi',
 }
 
-@bot.message_handler(commands=['cmd'])
+@bot.message_handler(commands=['start'])
 def command_code(message: telebot.types.Message):
-    cmd = message.text[4:]
-    if cmd:
-        try:
-            cmp = compile(cmd.strip(), 'test', 'exec')
-            exec(cmp)
-            print(D)
-        except Exception:
-            error_traceback = traceback.format_exc()
-            print(error_traceback)
-    else:
-        msg = 'Usage: /cmd <string to eval()>'
-        bot.reply_to(message, msg)
+    bot.reply_to(message, '''hi''', parse_mode='HTML', disable_web_page_preview=True)
 
 
 if __name__ == '__main__':

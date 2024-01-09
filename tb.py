@@ -540,7 +540,26 @@ def trial_status(message: telebot.types.Message) -> bool:
             return True
 
         if trial_time > TRIAL_DAYS:
-            bot_reply_tr(message, 'Free trial period ended, please contact @theurs.\n\nYou can run your own free copy of this bot at https://github.com/theurs/tb1 and (simplified version) https://github.com/theurs/tbg', disable_web_page_preview=True)
+            msg = '''<b>Free trial period ended</b>
+
+You can run your own free copy of this bot at GitHub:
+
+• <a>https://github.com/theurs/tb1</a>
+• <a>https://github.com/theurs/tbg</a> (simplified version)
+
+Or any other projects,
+
+or use original chat bots at
+• <a>https://openai.com/</a> ChatGPT
+• <a>https://bard.google.com/</a> Google Bard
+• <a>https://claude.ai/</a> Claude
+• <a>https://www.bing.com/</a> Bing - draw and chatGPT4
+• <a>https://ai.google.dev/</a> Gemini Pro (it doesn't have ready-to-use chat, there are only tools for development)
+
+or donate to this one <code>/help</code>.
+
+ <b>It was nice to meet you.</b>'''
+            bot_reply_tr(message, msg, disable_web_page_preview=True, parse_mode='HTML')
             return False
         else:
             return True

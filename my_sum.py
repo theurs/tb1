@@ -119,7 +119,7 @@ BEGIN:
     if len(prompt) > cfg.max_request:
         try:
             r = my_claude.chat(prompt[:my_claude.MAX_QUERY], 'my_summ')
-            if r:
+            if r.strip():
                 result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:my_claude.MAX_QUERY])} {tr("символов", lang)}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:claude: {error}')
@@ -128,7 +128,7 @@ BEGIN:
 
     if not result:
         try:
-            r = my_gemini.ai(prompt_gemini[:cfg.max_request])
+            r = my_gemini.ai(prompt_gemini[:cfg.max_request]).strip()
             if r != '':
                 result = f'{r}\n\n--\nGemini Pro [{len(prompt[:cfg.max_request])} {tr("символов", lang)}]'
         except Exception as error:
@@ -138,7 +138,7 @@ BEGIN:
 
     if not result:
         try:
-            r = gpt_basic.ai(prompt[:cfg.max_request])
+            r = gpt_basic.ai(prompt[:cfg.max_request]).strip()
             if r:
                 result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:cfg.max_request])} {tr("символов", lang)}]'
         except Exception as error:
@@ -227,7 +227,7 @@ def is_valid_url(url: str) -> bool:
 if __name__ == "__main__":
     """Usage ./summarize.py '|URL|filename"""
     # r = summ_url('https://habr.com/ru/articles/780688/')
-    r = summ_url('https://www.youtube.com/watch?v=P-pkN0KaEZU&t=665s')
+    r = summ_url('https://www.youtube.com/watch?v=kBcDhv70gj0&t=1595s')
     print(r)
     sys.exit(0)
     

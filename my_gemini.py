@@ -19,6 +19,9 @@ import my_log
 import my_proxy
 
 
+STOP_DAEMON = False
+
+
 # блокировка чатов что бы не испортить историю 
 # {id:lock}
 LOCKS = {}
@@ -604,7 +607,7 @@ def update_proxy_pool_daemon():
         None
     """
     global PROXY_POOL
-    while 1:
+    while not STOP_DAEMON:
         if len(PROXY_POOL) < MAX_PROXY_POOL_LOW_MARGIN:
                 get_proxies()
                 PROXY_POOL.deduplicate()

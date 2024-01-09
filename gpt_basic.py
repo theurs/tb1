@@ -68,15 +68,13 @@ def ai(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou: int = 1
     shuffled_servers = [x for x in shuffled_servers if 'api.naga.ac' not in x[0]]
 
     for server in shuffled_servers:
-        openai.base_url = server[0]
-
         try:
             if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
                 http_client = httpx.Client(proxies = cfg.openai_proxy)
             else:
                 http_client = httpx.Client()
-            client = openai.OpenAI(api_key = server[1], http_client=http_client)
-            # тут можно добавить степень творчества(бреда) от 0 до 2 дефолт - temperature = 1
+            client = openai.OpenAI(api_key = server[1], base_url = server[0], http_client=http_client)
+
             completion = client.chat.completions.create(
                 model = current_model,
                 messages=messages,
@@ -121,14 +119,12 @@ def ai_instruct(prompt: str = '', temp: float = 0.1, max_tok: int = 2000, timeou
     shuffled_servers = [x for x in shuffled_servers if 'api.naga.ac' not in x[0]]
 
     for server in shuffled_servers:
-        openai.base_url = server[0]
-
         try:
             if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
                 http_client = httpx.Client(proxies = cfg.openai_proxy)
             else:
                 http_client = httpx.Client()
-            client = openai.OpenAI(api_key = server[1], http_client=http_client)
+            client = openai.OpenAI(api_key = server[1], base_url = server[0], http_client=http_client)
 
             completion = client.completions.create(
                 model=current_model,
@@ -437,14 +433,12 @@ def stt(audio_file: str) -> str:
     random.shuffle(shuffled_servers)
 
     for server in shuffled_servers:
-        openai.base_url = server[0]
-        # openai.api_key = server[1]
         try:
             if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
                 http_client = httpx.Client(proxies = cfg.openai_proxy)
             else:
                 http_client = httpx.Client()
-            client = openai.OpenAI(api_key=server[1], http_client=http_client)
+            client = openai.OpenAI(api_key=server[1], base_url = server[0], http_client=http_client)
             translation = client.audio.transcriptions.create(
                model="whisper-1",
                file=audio_file_fh
@@ -518,13 +512,12 @@ def image_gen(prompt: str, amount: int = 10, size: str ='1024x1024'):
     for server in shuffled_servers:
         if len(results) >= amount:
             break
-        openai.base_url = server[0]
         try:
             if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
                 http_client = httpx.Client(proxies = cfg.openai_proxy)
             else:
                 http_client = httpx.Client()
-            client = openai.OpenAI(api_key=server[1], http_client=http_client)
+            client = openai.OpenAI(api_key=server[1], base_url = server[0], http_client=http_client)
             response = client.images.generate(
                 model="dall-e-3",
                 prompt = prompt_tr,
@@ -551,16 +544,16 @@ def get_list_of_models():
     """
     result = []
     for server in cfg.openai_servers:
-        openai.base_url = server[0]
         try:
             if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
                 http_client = httpx.Client(proxies = cfg.openai_proxy)
             else:
                 http_client = httpx.Client()
-            client = openai.OpenAI(api_key=server[1], http_client=http_client)
+            client = openai.OpenAI(api_key=server[1], base_url = server[0], http_client=http_client)
             model_lst = client.models.list()
-            for i in model_lst.data:
-                result += [i.id,]
+            if model_lst:
+                for i in model_lst.data:
+                    result += [i.id,]
         except Exception as error:
             print(error)
             my_log.log2(f'gpt_basic:get_list_of_models: {error}\n\nServer: {server[0]}')
@@ -790,13 +783,12 @@ def moderation(text: str) -> bool:
 
     result = False
     for server in shuffled_servers:
-        openai.base_url = server[0]
         try:
             if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
                 http_client = httpx.Client(proxies = cfg.openai_proxy)
             else:
                 http_client = httpx.Client()
-            client = openai.OpenAI(api_key=server[1], http_client=http_client)
+            client = openai.OpenAI(api_key=server[1], base_url = server[0], http_client=http_client)
             response = client.moderations.create(input=text)
             if response:
                 result = response.results[0].flagged
@@ -821,14 +813,12 @@ def tts(text: str, voice: str = 'alloy', model: str = 'tts-1') -> bytes:
     random.shuffle(shuffled_servers)
 
     for server in shuffled_servers:
-        openai.base_url = server[0]
-
         try:
             if hasattr(cfg, 'openai_proxy') and cfg.openai_proxy:
                 http_client = httpx.Client(proxies = cfg.openai_proxy)
             else:
                 http_client = httpx.Client()
-            client = openai.OpenAI(api_key=server[1], http_client=http_client)
+            client = openai.OpenAI(api_key=server[1], base_url = server[0], http_client=http_client)
             response = client.audio.speech.create(
                 model=model,
                 voice=voice,

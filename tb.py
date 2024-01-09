@@ -1895,23 +1895,37 @@ def change_mode(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['gemini_proxy'], func=authorized_admin)
-def gemini_proxies(message: telebot.types.Message):
+def gemini_proxy(message: telebot.types.Message):
     proxies = my_gemini.PROXY_POOL[:]
     my_gemini.sort_proxies_by_speed(proxies)
 
     msg = ''
+
+    pt = prettytable.PrettyTable(
+        align = "l",
+        set_style = prettytable.MSWORD_FRIENDLY,
+        hrules = prettytable.HEADER,
+        junction_char = '|')
+    header = ['N', 'last time', 'address']
+    pt.field_names = header
 
     n = 0
     for x in proxies:
         n += 1
         p1 = f'{int(my_gemini.PROXY_POLL_SPEED[x]):02}'
         p2 = f'{round(my_gemini.PROXY_POLL_SPEED[x], 2):.2f}'.split('.')[1]
-        msg += f'[{n:02}] [{p1}.{p2}] {[x]}\n'
+        row = [n, f'{p1}.{p2}', x]
+        try:
+            pt.add_row(row)
+        except Exception as unknown:
+            my_log.log2(f'tb:gemini_proxy:add_row {unknown}')
+
+    msg += f'<pre><code>{pt.get_string()}</code></pre>'
 
     if not msg:
         bot_reply_tr(message, '<code>Ничего нет</code>', parse_mode='HTML')
     else:
-        bot_reply(message, msg)
+        bot_reply(message, msg, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['disable_chat_mode'], func=authorized_admin)
@@ -2109,6 +2123,7 @@ def send_debug_history(message: telebot.types.Message):
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
     bot_reply_tr(message, 'Restarting bot, please wait')
+    my_gemini.STOP_DAEMON = True
     bot.stop_polling()
 
 

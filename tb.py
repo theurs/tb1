@@ -967,7 +967,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
         markup.row(button1, button2)
         
-        button1 = telebot.types.InlineKeyboardButton(tr('❌ Clear all history ❌', lang), callback_data='reset_all_memory')
+        button1 = telebot.types.InlineKeyboardButton(tr('❌ Стереть всех сразу ❌', lang), callback_data='reset_all_memory')
         markup.row(button1)
 
         button1 = telebot.types.InlineKeyboardButton(tr(f'📢Голос: {voice_title}', lang), callback_data=voice)

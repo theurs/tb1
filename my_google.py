@@ -2,6 +2,7 @@
 
 
 import urllib.parse
+import traceback
 
 from duckduckgo_search import DDGS
 import googlesearch
@@ -121,6 +122,74 @@ def search_google(query: str, max_req: int = cfg.max_request, max_search: int = 
     return answer
 
 
+def search_google_v2(query: str, max_search: int = 20, lang: str = 'ru') -> str:
+
+    # добавляем в список выдачу самого гугла, и она же первая и главная
+    urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
+    # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
+    r = googlesearch.search(query, stop = max_search, lang=lang)
+
+    bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
+
+    try:
+        for url in r:
+            if any(s.lower() in url.lower() for s in bad_results):
+                continue
+            urls.append(url)
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_google:search_google_v2: {error}\n\n{error_traceback}')
+
+    n = 0
+    maxn = 10
+    qq = f'User googles for [{query}], you have to anwser if there is a good answer in this text. Answer very short - yes or no.'
+    qqq = f'User googles for [{query}], compile a good answer using this text only, answer in [{lang}] language.'
+    qqqq = f"The user searched for [{query}] on Google but couldn't find anything. Generate a good answer for user."
+    for url in urls:
+        # print(n, url)
+        text = download_text([url,], my_gemini.MAX_SUM_REQUEST)
+        answer_short = my_gemini.sum_big_text(text, qq).lower()
+        if 'yes' in answer_short and len(answer_short) < 20:
+            return my_gemini.sum_big_text(text, qqq)
+        n += 1
+        if n == maxn:
+            break
+
+    return my_gemini.ai(qqqq)
+
+
+def search_ddg_v2(query: str, lang: str = 'ru') -> str:
+    urls = []
+    # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
+    bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
+
+    try:
+        for url in ddg_text(query):
+            if any(s.lower() in url.lower() for s in bad_results):
+                continue
+            urls.append(url)
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_google:search_ddg_v2: {error}\n\n{error_traceback}')
+
+    n = 0
+    maxn = 10
+    qq = f'User googles for [{query}], you have to anwser if there is a good answer in this text. Answer very short - yes or no.'
+    qqq = f'User googles for [{query}], compile a good answer using this text only, answer in [{lang}] language.'
+    qqqq = f"The user searched for [{query}] on Google but couldn't find anything. Generate a good answer for user."
+    for url in urls:
+        # print(n, url)
+        text = download_text([url,], my_gemini.MAX_SUM_REQUEST)
+        answer_short = my_gemini.sum_big_text(text, qq).lower()
+        if 'yes' in answer_short and len(answer_short) < 20:
+            return my_gemini.sum_big_text(text, qqq)
+        n += 1
+        if n == maxn:
+            break
+
+    return my_gemini.ai(qqqq)
+
+
 def ddg_text(query: str) -> str:
     """
     Generate a list of URLs from DuckDuckGo search results based on the given query.
@@ -173,10 +242,13 @@ def search(query: str, lang: str = 'ru') -> str:
         str: The search result.
     """
     try:
-        result = search_google(query, lang=lang)
+        # result = search_google(query, lang=lang)
+        result = search_google_v2(query, lang=lang)
+        # result = search_ddg_v2(query, lang=lang)
     except urllib.error.HTTPError as error:
         if 'HTTP Error 429: Too Many Requests' in str(error):
-            result = search_ddg(query, lang=lang)
+            # result = search_ddg(query, lang=lang)
+            result = search_ddg_v2(query, lang=lang)
             my_log.log2(query)
         else:
             print(error)
@@ -192,8 +264,8 @@ if __name__ == "__main__":
 
     #print(download_text(['https://www.google.com/search?q=курс+доллара'], 10))    
 
-    #print(search('3 закона робототехники'), '\n\n')
-    #sys.exit(0)
+    # print(search('3 закона робототехники'), '\n\n')
+    sys.exit(0)
 
     #print(gpt_basic.ai('1+1'))
     
@@ -208,4 +280,4 @@ if __name__ == "__main__":
     # print(search('как убить соседа'), '\n\n')
 
     # print(search('Главные герои книги незнайка на луне, подробно'), '\n\n')
-    print(search('Главные герои книги три мушкетера, подробно'), '\n\n')
+    # print(search('Главные герои книги три мушкетера, подробно'), '\n\n')

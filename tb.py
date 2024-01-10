@@ -2561,7 +2561,8 @@ def ddg_thread(message: telebot.types.Message):
 
     with ShowAction(message, 'typing'):
         with semaphore_talks:
-            r = my_google.search_ddg(q, lang=lang)
+            # r = my_google.search_ddg(q, lang=lang)
+            r = my_google.search_ddg_v2(q, lang=lang)
         try:
             rr = utils.bot_markdown_to_html(r)
             bot_reply(message, rr, parse_mode = 'HTML',

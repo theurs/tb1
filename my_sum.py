@@ -79,12 +79,6 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru') -> str:
 -------------
 BEGIN:
 """
-        prompt_gemini = f"""Summarize the content of this article using only provided text, what this text about, in no more than 1000 words, answer in [{lang}] language:
--------------
-{text}
--------------
-BEGIN:
-"""
     elif subj == 'chat_log':
         prompt = f"""Summarize the following telegram chat log, briefly answer in [{lang}] language with easy-to-read formatting:
 -------------
@@ -92,20 +86,8 @@ BEGIN:
 -------------
 BEGIN:
 """
-        prompt_gemini = f"""Summarize the following telegram chat log, briefly answer in [{lang}] language, keep it within 1000 words:
--------------
-{text}
--------------
-BEGIN:
-"""
-
     elif subj == 'youtube_video':
         prompt = f"""Summarize the following video subtitles extracted from youtube, briefly answer in [{lang}] language with easy-to-read formatting:
--------------
-{text}
--------------
-"""
-        prompt_gemini = f"""Summarize the content of this YouTube video using only the subtitles, what this video about, in no more than 1000 words, answer in [{lang}] language:
 -------------
 {text}
 -------------
@@ -128,9 +110,15 @@ BEGIN:
 
     if not result:
         try:
-            r = my_gemini.ai(prompt_gemini[:cfg.max_request]).strip()
+            # r = my_gemini.ai(prompt_gemini[:cfg.max_request]).strip()
+            
+            if subj == 'youtube_video':
+                qq = f'Summarize the content of this YouTube video using only the subtitles, what this video about, in no more than 1000 words, answer in [{lang}] language.'
+            else:
+                qq = f'Summarize the content of this article using only provided text, what this text about, in no more than 1000 words, answer in [{lang}] language.'
+            r = my_gemini.sum_big_text(text[:my_gemini.MAX_SUM_REQUEST], qq).strip()
             if r != '':
-                result = f'{r}\n\n--\nGemini Pro [{len(prompt[:cfg.max_request])} {tr("символов", lang)}]'
+                result = f'{r}\n\n--\nGemini Pro [{len(prompt[:my_gemini.MAX_SUM_REQUEST])} {tr("символов", lang)}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
@@ -232,11 +220,12 @@ if __name__ == "__main__":
         # 'https://habr.com/ru/articles/784858/',
         # 'https://habr.com/ru/articles/785328/',
         # 'https://www.youtube.com/watch?v=grMAWQBwijw',
-        'https://www.youtube.com/watch?v=x9hfUXAlVd0',
-        'https://www.youtube.com/watch?v=kW3_syJruKs&t=623s',
-        'https://www.youtube.com/watch?v=8Aov8WhV4ME',
+        # 'https://www.youtube.com/watch?v=x9hfUXAlVd0',
+        # 'https://www.youtube.com/watch?v=kW3_syJruKs&t=623s',
+        # 'https://www.youtube.com/watch?v=8Aov8WhV4ME',
         # 'https://www.youtube.com/watch?v=WlUT-szZQWg',
         # 'https://www.youtube.com/watch?v=rbL6hJR1k0I',
+        'https://www.youtube.com/watch?v=nrFjjsAc_E8',
     ]
     for url in urls:
         print(summ_url(url))

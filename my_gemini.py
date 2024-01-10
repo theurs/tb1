@@ -35,6 +35,9 @@ MAX_REQUEST = 14000
 # максимальный размер истории (32к ограничение Google?)
 MAX_CHAT_SIZE = 25000
 
+# можно сделать 2 запроса по 15000 в сумме получится запрос размером 30000
+# может быть полезно для сумморизации текстов
+MAX_SUM_REQUEST = 32000
 
 # хранилище диалогов {id:list(mem)}
 CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
@@ -664,9 +667,39 @@ def run_proxy_pool_daemon():
         #     time.sleep(1)
 
 
+def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
+    """
+    Generates a response from an AI model based on a given text,
+    query, and temperature. Split big text into chunks of 15000 characters.
+    Up to 30000 characters.
+
+    Args:
+        text (str): The complete text to be used as input.
+        query (str): The query to be used for generating the response.
+        temperature (float, optional): The temperature parameter for controlling the randomness of the response. Defaults to 0.1.
+
+    Returns:
+        str: The generated response from the AI model.
+    """
+    t1 = text[:int(MAX_SUM_REQUEST/2)]
+    t2 = text[int(MAX_SUM_REQUEST/2):MAX_SUM_REQUEST] if len(text) > int(MAX_SUM_REQUEST/2) else ''
+    mem = []
+    if t2:
+        mem.append({"role": "user", "parts": [{"text": f'Dont answer before get part 2 and question.\n\nPart 1:\n\n{t1}'}]})
+        mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
+        mem.append({"role": "user", "parts": [{"text": f'Part 2:\n\n{t2}'}]})
+        mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
+    else:
+        mem.append({"role": "user", "parts": [{"text": f'Dont answer before get part 1 and question.\n\nPart 1:\n\n{t1}'}]})
+        mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
+    return ai(query, mem=mem, temperature=temperature)
+
+
 if __name__ == '__main__':
 
     run_proxy_pool_daemon()
+
+    # print(sum_big_text(open('1.txt', 'r', encoding='utf-8').read(), 'Перескажи кратко о чем этот текст, уложись в 1000 слов'))
 
     # print(get_models())
 

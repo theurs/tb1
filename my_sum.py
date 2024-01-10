@@ -116,16 +116,15 @@ BEGIN:
     result = ''
     tr = my_trans.translate_text2
 
-    if len(prompt) > cfg.max_request:
-        try:
-            # r = my_claude.chat(prompt[:my_claude.MAX_QUERY], 'my_summ')
-            r = my_claude.chat(prompt_gemini[:my_claude.MAX_QUERY], 'my_summ')
-            if r.strip():
-                result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:my_claude.MAX_QUERY])} {tr("символов", lang)}]'
-        except Exception as error:
-            print(f'my_sum:summ_text_worker:claude: {error}')
-            my_log.log2(f'my_sum:summ_text_worker:claude: {error}')
-
+    # if len(prompt) > cfg.max_request:
+    #     try:
+    #         # r = my_claude.chat(prompt[:my_claude.MAX_QUERY], 'my_summ')
+    #         r = my_claude.chat(prompt_gemini[:my_claude.MAX_QUERY], 'my_summ')
+    #         if r.strip():
+    #             result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:my_claude.MAX_QUERY])} {tr("символов", lang)}]'
+    #     except Exception as error:
+    #         print(f'my_sum:summ_text_worker:claude: {error}')
+    #         my_log.log2(f'my_sum:summ_text_worker:claude: {error}')
 
     if not result:
         try:
@@ -231,11 +230,11 @@ if __name__ == "__main__":
         # 'https://habr.com/ru/articles/780688/',
         # 'https://habr.com/ru/articles/785320/',
         # 'https://habr.com/ru/articles/784858/',
-        'https://habr.com/ru/articles/785328/',
+        # 'https://habr.com/ru/articles/785328/',
         # 'https://www.youtube.com/watch?v=grMAWQBwijw',
-        # 'https://www.youtube.com/watch?v=x9hfUXAlVd0',
-        # 'https://www.youtube.com/watch?v=kW3_syJruKs&t=623s',
-        # 'https://www.youtube.com/watch?v=8Aov8WhV4ME',
+        'https://www.youtube.com/watch?v=x9hfUXAlVd0',
+        'https://www.youtube.com/watch?v=kW3_syJruKs&t=623s',
+        'https://www.youtube.com/watch?v=8Aov8WhV4ME',
         # 'https://www.youtube.com/watch?v=WlUT-szZQWg',
         # 'https://www.youtube.com/watch?v=rbL6hJR1k0I',
     ]

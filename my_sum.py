@@ -118,7 +118,8 @@ BEGIN:
 
     if len(prompt) > cfg.max_request:
         try:
-            r = my_claude.chat(prompt[:my_claude.MAX_QUERY], 'my_summ')
+            # r = my_claude.chat(prompt[:my_claude.MAX_QUERY], 'my_summ')
+            r = my_claude.chat(prompt_gemini[:my_claude.MAX_QUERY], 'my_summ')
             if r.strip():
                 result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:my_claude.MAX_QUERY])} {tr("символов", lang)}]'
         except Exception as error:

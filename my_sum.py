@@ -105,7 +105,7 @@ BEGIN:
 {text}
 -------------
 """
-        prompt_gemini = f"""Summarize the content of this YouTube video using only the subtitles, in no more than 1000 words, answer in [{lang}] language:
+        prompt_gemini = f"""Summarize the content of this YouTube video using only the subtitles, what this video about, in no more than 1000 words, answer in [{lang}] language:
 -------------
 {text}
 -------------

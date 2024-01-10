@@ -79,7 +79,7 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru') -> str:
 -------------
 BEGIN:
 """
-        prompt_gemini = f"""Summarize the following, briefly answer in [{lang}] language, keep it within 1000 words:
+        prompt_gemini = f"""Summarize the content of this article using only provided text, what this text about, in no more than 1000 words, answer in [{lang}] language:
 -------------
 {text}
 -------------
@@ -105,7 +105,7 @@ BEGIN:
 {text}
 -------------
 """
-        prompt_gemini = f"""Summarize the following video subtitles extracted from youtube, briefly answer in [{lang}] language, keep it within 1000 words:
+        prompt_gemini = f"""Summarize the content of this YouTube video using only the subtitles, in no more than 1000 words, answer in [{lang}] language:
 -------------
 {text}
 -------------
@@ -226,9 +226,21 @@ def is_valid_url(url: str) -> bool:
 
 if __name__ == "__main__":
     """Usage ./summarize.py '|URL|filename"""
-    # r = summ_url('https://habr.com/ru/articles/780688/')
-    r = summ_url('https://www.youtube.com/watch?v=kBcDhv70gj0&t=1595s')
-    print(r)
+    urls = [
+        # 'https://habr.com/ru/articles/780688/',
+        # 'https://habr.com/ru/articles/785320/',
+        # 'https://habr.com/ru/articles/784858/',
+        'https://habr.com/ru/articles/785328/',
+        # 'https://www.youtube.com/watch?v=grMAWQBwijw',
+        # 'https://www.youtube.com/watch?v=x9hfUXAlVd0',
+        # 'https://www.youtube.com/watch?v=kW3_syJruKs&t=623s',
+        # 'https://www.youtube.com/watch?v=8Aov8WhV4ME',
+        # 'https://www.youtube.com/watch?v=WlUT-szZQWg',
+        # 'https://www.youtube.com/watch?v=rbL6hJR1k0I',
+    ]
+    for url in urls:
+        print(summ_url(url))
+
     sys.exit(0)
     
     t = sys.argv[1]

@@ -970,6 +970,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button1 = telebot.types.InlineKeyboardButton(tr('❌ Стереть всех сразу ❌', lang), callback_data='reset_all_memory')
         markup.row(button1)
 
+        button = telebot.types.InlineKeyboardButton(tr('🔍История ChatGPT/Gemini Pro', lang), callback_data='chatGPT_memory_debug')
+        markup.add(button)
+
         button1 = telebot.types.InlineKeyboardButton(tr(f'📢Голос: {voice_title}', lang), callback_data=voice)
         if chat_id_full not in VOICE_ONLY_MODE:
             VOICE_ONLY_MODE[chat_id_full] = False
@@ -1011,10 +1014,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             else:
                 markup.add(button_pics)
 
-
-        button = telebot.types.InlineKeyboardButton(tr('🔍История ChatGPT', lang), callback_data='chatGPT_memory_debug')
-        markup.add(button)
-
+        is_private = message.chat.type == 'private'
         is_admin_of_group = False
         if message.reply_to_message:
             is_admin_of_group = is_admin_member(message.reply_to_message)
@@ -1030,7 +1030,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
                 button = telebot.types.InlineKeyboardButton(tr('✅Автоответы в чате', lang), callback_data='admin_chat')
             else:
                 button = telebot.types.InlineKeyboardButton(tr('☑️Автоответы в чате', lang), callback_data='admin_chat')
-            markup.add(button)
+            if not is_private:
+                markup.add(button)
 
         button = telebot.types.InlineKeyboardButton(tr('🙈Закрыть меню', lang), callback_data='erase_answer')
         markup.add(button)
@@ -1294,7 +1295,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             gpt_basic.chat_reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с chatGPT очищена.')
         elif call.data == 'reset_all_memory':
-            reset_(message)
+            gpt_basic.chat_reset(chat_id_full)
+            my_claude.reset_claude_chat(chat_id_full)
+            my_gemini.reset(chat_id_full)
+            my_bard.reset_bard_chat(chat_id_full)
+            bot_reply_tr(message, 'Chats with all bots was cleared.')
         elif call.data == 'tts_female' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'male'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 
@@ -2124,9 +2129,11 @@ def send_debug_history(message: telebot.types.Message):
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
     if CHAT_MODE[chat_id_full] == 'chatgpt':
-        prompt = gpt_basic.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        prompt = 'ChatGPT\n\n'
+        prompt += gpt_basic.get_mem_as_string(chat_id_full) or tr('Empty', lang)
     elif CHAT_MODE[chat_id_full] == 'gemini':
-        prompt = my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        prompt = 'Gemini Pro\n\n'
+        prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
     else:
         return
     bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))

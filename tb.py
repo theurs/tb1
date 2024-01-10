@@ -966,6 +966,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
         markup.row(button1, button2)
+        
+        button1 = telebot.types.InlineKeyboardButton(tr('❌ Clear all history ❌', lang), callback_data='reset_all_memory')
+        markup.row(button1)
 
         button1 = telebot.types.InlineKeyboardButton(tr(f'📢Голос: {voice_title}', lang), callback_data=voice)
         if chat_id_full not in VOICE_ONLY_MODE:
@@ -1004,7 +1007,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button_pics = telebot.types.InlineKeyboardButton(tr("🖼️Галерея", lang),  url = cfg.pics_group_url)
             if cfg.videos_group_url:
                 button_video = telebot.types.InlineKeyboardButton(tr("🎧Музыка", lang),  url = cfg.videos_group_url)
-                markup.add(button_pics, button_video)
+                markup.row(button_pics, button_video)
             else:
                 markup.add(button_pics)
 
@@ -1290,6 +1293,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'chatGPT_reset':
             gpt_basic.chat_reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с chatGPT очищена.')
+        elif call.data == 'reset_all_memory':
+            reset_(message)
         elif call.data == 'tts_female' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'male'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='Markdown', message_id=message.message_id, 

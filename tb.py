@@ -2060,7 +2060,7 @@ def reset_gemini2(message: telebot.types.Message):
         bot_reply_tr(message, 'Usage: /reset_gemini2 <chat_id_full!>')
 
 
-@bot.message_handler(commands=['bingcookieclear'], func=authorized_admin)
+@bot.message_handler(commands=['bingcookieclear', 'kc'], func=authorized_admin)
 def clear_bing_cookies(message: telebot.types.Message):
     with bing_img.LOCK_STORAGE:
         bing_img.COOKIE.clear()
@@ -2100,7 +2100,7 @@ def set_bing_cookies(message: telebot.types.Message):
         with bing_img.LOCK_STORAGE:
             keys = '\n\n'.join([f'{x[1]}' for x in bing_img.COOKIE.items()])
         if keys.strip():
-            msg = f'{tr("Current cookies:", lang)}{nl}{keys}'
+            msg = f'{tr("Current cookies:", lang)} {len(bing_img.COOKIE) + len(bing_img.COOKIE_SUSPENDED)} {nl}{keys}'
             bot_reply(message, msg)
 
         with bing_img.LOCK_STORAGE:

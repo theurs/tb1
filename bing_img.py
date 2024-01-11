@@ -213,7 +213,7 @@ def gen_images(query: str, user_id: str = ''):
         USER_LOCKS[user_id] = threading.Semaphore(3)
 
     with USER_LOCKS[user_id]:
-        print(user_id, USER_LOCKS[user_id]._value)
+        # print(user_id, USER_LOCKS[user_id]._value)
     # with BIG_LOCK:
         if query in BAD_IMAGES_PROMPT:
             my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')

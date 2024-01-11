@@ -2619,7 +2619,7 @@ def image_thread(message: telebot.types.Message):
                     return
 
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
-                images += my_genimg.gen_images(prompt, moderation_flag)
+                images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
 
                 suggest_query = tr("""Suggest a wide range options for a request to a neural network that

@@ -46,12 +46,12 @@ def replicate_images(prompt: str, amount: int = 1):
     return results
 
 
-def bing(prompt: str, moderation_flag: bool = False):
+def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
     if moderation_flag:
         return []
     try:
-        images = bing_img.gen_images(prompt)
+        images = bing_img.gen_images(prompt, user_id)
         if type(images) == list:
             return images
     except Exception as error_bing_img:
@@ -85,7 +85,7 @@ def ddg_search_images(prompt: str, max_results: int = 10):
     return result[:max_results]
 
 
-def gen_images(prompt: str, moderation_flag: bool = False):
+def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """рисует одновременно всеми доступными способами"""
     #return bing(prompt) + chimera(prompt)
 
@@ -93,7 +93,7 @@ def gen_images(prompt: str, moderation_flag: bool = False):
 
     pool = ThreadPool(processes=6)
 
-    async_result1 = pool.apply_async(bing, (prompt, moderation_flag))
+    async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
     # async_result2 = pool.apply_async(openai, (prompt_tr,))
 
     # async_result3 = pool.apply_async(replicate_images, (prompt_tr,))

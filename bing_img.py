@@ -15,6 +15,10 @@ import my_log
 
 BIG_LOCK = threading.Lock()
 
+# limit user to 3 concurrent requests
+# {id: threading.Semaphore(3)}
+USER_LOCKS = {}
+
 
 # do not use 1 same key at the same time for different requests
 LOCKS = {}
@@ -190,7 +194,7 @@ def get_images(prompt: str,
     return normal_image_links
 
 
-def gen_images(query: str):
+def gen_images(query: str, user_id: str = ''):
     """
     Generate images based on the given query.
 
@@ -204,7 +208,13 @@ def gen_images(query: str):
         Exception: If there is an error getting the images.
 
     """
-    with BIG_LOCK:
+    
+    if user_id not in USER_LOCKS:
+        USER_LOCKS[user_id] = threading.Semaphore(3)
+
+    with USER_LOCKS[user_id]:
+        print(user_id, USER_LOCKS[user_id]._value)
+    # with BIG_LOCK:
         if query in BAD_IMAGES_PROMPT:
             my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
             return ['error1_Bad images',]

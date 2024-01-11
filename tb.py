@@ -3700,44 +3700,46 @@ def do_task(message, custom_prompt: str = ''):
         if msg == tr('забудь', lang) and (is_private or is_reply) or bot_name_used and msg==tr('забудь', lang):
             reset_(message)
             return
+        
+        if hasattr(cfg, 'TIKTOK_ENABLED') and cfg.TIKTOK_ENABLED:
+            # если в сообщении только ссылка на видео в тиктоке
+            # предложить скачать это видео
+            if my_tiktok.is_valid_url(message.text):
+                bot_reply(message, message.text, disable_web_page_preview = True,
+                            reply_markup=get_keyboard('download_tiktok', message))
+                return
 
-        # если в сообщении только ссылка на видео в тиктоке
-        # предложить скачать это видео
-        if my_tiktok.is_valid_url(message.text):
-            bot_reply(message, message.text, disable_web_page_preview = True,
-                         reply_markup=get_keyboard('download_tiktok', message))
-            return
-
-        # если это номер телефона
-        # удалить из текста все символы кроме цифр
-        if len(msg) < 18 and len(msg) > 9  and not re.search(r"[^0-9+\-()\s]", msg):
-            number = re.sub(r'[^0-9]', '', msg)
-            if number:
-                if number.startswith(('7', '8')):
-                    number = number[1:]
-                if len(number) == 10:
-                    if number in CACHE_CHECK_PHONE:
-                        response = CACHE_CHECK_PHONE[number]
-                    else:
-                        with ShowAction(message, 'typing'):
-                            if not allowed_chatGPT_user(message.chat.id):
-                                bot_reply_tr(message, 'You are not in allow chatGPT users list')
-                                return
-                            else:
-                                response = my_gemini.check_phone_number(number)
-                                gemini_resp = True
-                                if not response:
-                                    response = gpt_basic.check_phone_number(number)
-                                    gemini_resp = False
-                    if response:
-                        CACHE_CHECK_PHONE[number] = response
-                        response = utils.bot_markdown_to_html(response)
-                        bot_reply(message, response, parse_mode='HTML', not_log=True)
-                        if gemini_resp:
-                            my_log.log_echo(message, '[gemini] ' + response)
+        if hasattr(cfg, 'PHONE_CATCHER') and cfg.PHONE_CATCHER:
+            # если это номер телефона
+            # удалить из текста все символы кроме цифр
+            if len(msg) < 18 and len(msg) > 9  and not re.search(r"[^0-9+\-()\s]", msg):
+                number = re.sub(r'[^0-9]', '', msg)
+                if number:
+                    if number.startswith(('7', '8')):
+                        number = number[1:]
+                    if len(number) == 10:
+                        if number in CACHE_CHECK_PHONE:
+                            response = CACHE_CHECK_PHONE[number]
                         else:
-                            my_log.log_echo(message, '[chatgpt] ' + response)
-                        return
+                            with ShowAction(message, 'typing'):
+                                if not allowed_chatGPT_user(message.chat.id):
+                                    bot_reply_tr(message, 'You are not in allow chatGPT users list')
+                                    return
+                                else:
+                                    response = my_gemini.check_phone_number(number)
+                                    gemini_resp = True
+                                    if not response:
+                                        response = gpt_basic.check_phone_number(number)
+                                        gemini_resp = False
+                        if response:
+                            CACHE_CHECK_PHONE[number] = response
+                            response = utils.bot_markdown_to_html(response)
+                            bot_reply(message, response, parse_mode='HTML', not_log=True)
+                            if gemini_resp:
+                                my_log.log_echo(message, '[gemini] ' + response)
+                            else:
+                                my_log.log_echo(message, '[chatgpt] ' + response)
+                            return
 
         # если в сообщении только ссылка и она отправлена боту в приват
         # тогда сумморизируем текст из неё

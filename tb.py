@@ -30,7 +30,6 @@ import my_gemini
 import my_log
 import my_ocr
 import my_pandoc
-import my_perplexity
 import my_stt
 import my_sum
 import my_tiktok
@@ -824,14 +823,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
         markup.add(button2)
         return markup
-    elif kbd == 'perplexity':
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
-        button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button3 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_perplexity')
-        button4 = telebot.types.InlineKeyboardButton(tr("⛔️Выход", lang), callback_data='cancel_command_not_hide')
-        markup.row(button1, button2, button3, button4)
-        return markup       
     elif kbd == 'translate_and_repair':
         if disabled_kbd(chat_id_full):
             return None
@@ -1039,23 +1030,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return markup
     else:
         raise f"Неизвестная клавиатура '{kbd}'"
-
-
-@bot.message_handler(commands=['cmd'], func=authorized_admin)
-def command_code(message: telebot.types.Message):
-    return
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-    cmd = message.text[4:]
-    if cmd:
-        try:
-            cmp = compile(cmd.strip(), 'test', 'exec')
-            exec(cmp)
-        except Exception:
-            error_traceback = traceback.format_exc()
-            my_log.log2(f'tb:command_code: {cmd.strip()}\n\n{error_traceback}')
-    else:
-        bot_reply_tr(message, 'Usage: /cmd <string to eval()>')
 
 
 @bot.callback_query_handler(func=authorized_callback)
@@ -1272,13 +1246,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if message.caption:
                     bot.edit_message_caption(chat_id=message.chat.id, message_id=message.message_id, caption=translated, 
                                       reply_markup=get_keyboard('translate', message), parse_mode='HTML')
-        elif call.data == 'translate_perplexity':
-            # реакция на клавиатуру для OCR кнопка перевести текст
-            with ShowAction(message, 'typing'):
-                translated = my_trans.translate_text2(message.text, lang)
-            if translated and translated != message.text:
-                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
-                                      reply_markup=get_keyboard('perplexity', message))
         elif call.data == 'translate_chat':
             # реакция на клавиатуру для Чата кнопка перевести текст
             with ShowAction(message, 'typing'):
@@ -2791,58 +2758,6 @@ def block_user_list(message: telebot.types.Message):
         bot_reply(message, '\n'.join(users))
 
 
-@bot.message_handler(commands=['ask', 'perplexity'], func=authorized)
-def ask(message: telebot.types.Message):
-    thread = threading.Thread(target=ask_thread, args=(message,))
-    thread.start()
-def ask_thread(message: telebot.types.Message):
-    """ищет в perplexity.ai ответ"""
-
-    return
-
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-
-    try:
-        query = message.text.split(maxsplit=1)[1]
-    except Exception as error2:
-        print(error2)
-        help = """/ask <текст запроса> будет искать с помощью сервиса perplexity.io"""
-        bot_reply(message, help, parse_mode = 'Markdown', disable_web_page_preview = True)
-        return
-
-    with ShowAction(message, 'typing'):
-        with semaphore_talks:
-            try:
-                response = my_perplexity.ask(query)
-            except Exception as error2:
-                my_log.log2(f'tb:ask: {error2}')
-                f'tb:ask: {error2}'
-                response = ''
-        if not response:
-            bot_reply_tr(message, 'Интернет вам не ответил, перезвоните позже',
-                         parse_mode = '', disable_web_page_preview = True)
-            return
-        try:
-            bot_reply(message, response, parse_mode = 'HTML',
-                                  disable_web_page_preview = True,
-                                  reply_markup=get_keyboard('chat', message))
-        except Exception as error2:
-            my_log.log2(error2)
-            bot_reply(message, response, parse_mode = '',
-                                  disable_web_page_preview = True,
-                                  reply_markup=get_keyboard('chat', message))
-
-        if chat_id_full not in gpt_basic.CHATS:
-            gpt_basic.CHATS[chat_id_full] = []
-        gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
-                "content": f'user {tr("попросил сделать запрос в perplexity.io:", lang)} {query}'},
-                {"role":    'system',
-                "content": f'assistant {tr("perplexity.io ответил:", lang)} {response}'}
-            ]
-        gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
-
-
 @bot.message_handler(commands=['alert'], func=authorized_admin)
 def alert(message: telebot.types.Message):
     """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
@@ -4081,13 +3996,6 @@ def do_task(message, custom_prompt: str = ''):
                     bot_reply(message, resp, parse_mode='',
                                             disable_web_page_preview = True,
                                             reply_markup=get_keyboard('chat', message), not_log=True)
-        # else: # смотрим надо ли переводить текст
-        #     if check_blocks(chat_id_full) and not is_private:
-        #         return
-        #     text = my_trans.translate(message.text)
-        #     if text:
-        #         bot_reply(message, text, parse_mode='Markdown',
-        #                      reply_markup=get_keyboard('translate', message))
 
 
 def main():

@@ -2029,9 +2029,7 @@ def reset_gemini2(message: telebot.types.Message):
 
 @bot.message_handler(commands=['bingcookieclear', 'kc'], func=authorized_admin)
 def clear_bing_cookies(message: telebot.types.Message):
-    with bing_img.LOCK_STORAGE:
-        bing_img.COOKIE.clear()
-        bing_img.COOKIE_SUSPENDED.clear()
+    bing_img.COOKIE.clear()
     bot_reply_tr(message, 'Cookies cleared.')
 
 
@@ -2045,36 +2043,44 @@ def set_bing_cookies(message: telebot.types.Message):
         args = args.replace('\n', ' ')
         cookies = args.split()
         n = 0
-        with bing_img.LOCK_STORAGE:
-            # bing_img.COOKIE.clear()
-            # bing_img.COOKIE_SUSPENDED.clear()
-            all_cookies = [x[1] for x in bing_img.COOKIE.items()] + [x[0] for x in bing_img.COOKIE_SUSPENDED.items()]
-            for cookie in cookies:
-                if cookie in all_cookies:
-                    continue
-                cookie = cookie.strip()
-                if len(cookie) < 200:
-                    continue
-                bing_img.COOKIE[time.time()] = cookie
-                n += 1
-        msg = f'{tr("Cookies set:", lang)} {n}'
+
+        for cookie in cookies:
+            if len(cookie) < 200:
+                continue
+            if cookie in bing_img.COOKIE:
+                continue
+            cookie = cookie.strip()
+            bing_img.COOKIE[cookie] = 0
+            n += 1
+
+        msg = f'{tr("Cookies added:", lang)} {n}'
         bot_reply(message, msg)
+
     except Exception as error:
-        my_log.log2(f'set_bing_cookies: {error}\n\n{message.text}')
+
+        if 'list index out of range' not in str(error):
+            my_log.log2(f'set_bing_cookies: {error}\n\n{message.text}')
+
         bot_reply_tr(message, 'Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie')
 
-        nl = '\n\n'
-        with bing_img.LOCK_STORAGE:
-            keys = '\n\n'.join([f'{x[1]}' for x in bing_img.COOKIE.items()])
-        if keys.strip():
-            msg = f'{tr("Current cookies:", lang)} {len(bing_img.COOKIE) + len(bing_img.COOKIE_SUSPENDED)} {nl}{keys}'
-            bot_reply(message, msg)
+        # сортируем куки по количеству обращений к ним
+        cookies = [x for x in bing_img.COOKIE.items()]
+        cookies = sorted(cookies, key=lambda x: x[1])
 
-        with bing_img.LOCK_STORAGE:
-            keys_suspended = '\n\n'.join([f'{x[0]} <b>{round((bing_img.SUSPEND_TIME - (time.time() - x[1]))/60/60, 1)} hours left</b>' for x in bing_img.COOKIE_SUSPENDED.items()])
-        if keys_suspended.strip():
-            msg = f'{nl}{tr("Current suspended cookies:", lang)}{nl}{keys_suspended}'
-            bot_reply(message, msg, parse_mode='HTML')
+        pt = prettytable.PrettyTable(
+            align = "r",
+            set_style = prettytable.MSWORD_FRIENDLY,
+            hrules = prettytable.HEADER,
+            junction_char = '|'
+            )
+        header = [tr('Bing key', lang), tr('Used times', lang)]
+        pt.field_names = header
+
+        for cookie in cookies:
+            pt.add_row([cookie[0][:5], cookie[1]])
+
+        msg = f'{tr("Current cookies:", lang)} {len(bing_img.COOKIE)} \n\n<pre><code>{pt.get_string()}</code></pre>'
+        bot_reply(message, msg, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['style2'], func=authorized_admin)

@@ -4,7 +4,6 @@
 import time
 import threading
 
-import random
 import re
 import requests
 from sqlitedict import SqliteDict
@@ -13,7 +12,7 @@ import cfg
 import my_log
 
 
-BIG_LOCK = threading.Lock()
+# BIG_LOCK = threading.Lock()
 
 # limit user to 3 concurrent requests
 # {id: threading.Semaphore(3)}
@@ -23,23 +22,15 @@ USER_LOCKS = {}
 # do not use 1 same key at the same time for different requests
 LOCKS = {}
 
-LOCK_STORAGE = threading.Lock()
+# LOCK_STORAGE = threading.Lock()
 
-# {0: cookie0, 1: cookie1, ...}
+# {cookie: times used, ...}
 COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 # {cookie:datetime, ...}
-# cookies frozen for a day
-COOKIE_SUSPENDED = SqliteDict('db/bing_cookie_suspended.db', autocommit=True)
-SUSPEND_TIME = 60 * 60 * 2
 
 # storage of requests that Bing rejected, they cannot be repeated
 BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
 
-
-# take_ip_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-# take_ip_socket.connect(("8.8.8.8", 80))
-# FORWARDED_IP = take_ip_socket.getsockname()[0]
-# take_ip_socket.close()
 
 BING_URL = "https://www.bing.com"
 
@@ -219,71 +210,48 @@ def gen_images(query: str, user_id: str = ''):
             my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
             return ['error1_Bad images',]
 
-        cookies = []
+        # сортируем куки по количеству обращений к ним
+        cookies = [x for x in COOKIE.items()]
+        cookies = sorted(cookies, key=lambda x: x[1])
+        cookies = [x[0] for x in cookies]
 
-        with LOCK_STORAGE:
-            # unsuspend
-            unsuspend = [x[0] for x in COOKIE_SUSPENDED.items() if time.time() > x[1] + SUSPEND_TIME]
-            for x in unsuspend:
-                COOKIE[time.time()] = x
-                COOKIE_SUSPENDED.pop(x)
-
-            # if no more cookies, then unsuspend 5 with best time
-            if len(COOKIE) == 0:
-                suspended_list = [x for x in COOKIE_SUSPENDED.items()]
-                suspended_list_sorted = sorted(suspended_list, key=lambda x: x[1])
-                for n in range(0, 5):
-                    try:
-                        COOKIE[time.time()] = suspended_list_sorted[n][0]
-                        COOKIE_SUSPENDED.pop(suspended_list_sorted[n][0])
-                    except IndexError:
-                        break
-
-            for x in COOKIE.items():
-                cookie = x[1].strip()
-                cookies.append(cookie)
-
-        random.shuffle(cookies)
         for cookie in cookies:
             if cookie not in LOCKS:
                 LOCKS[cookie] = threading.Lock()
             with LOCKS[cookie]:
+                # сразу обновляем счетчик чтоб этот ключ ушел вниз списка
+                COOKIE[cookie] += 1
                 if cfg.bing_proxy:
                     for proxy in cfg.bing_proxy:
                         try:
+                            # my_log.log2(f'bing_img:gen_images: key {cookie[:5]} proxy {proxy} used times {COOKIE[cookie]}')
                             return get_images(query, cookie, proxy)
                         except Exception as error:
-                            if 'location' in str(error):
-                                my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
-                                with LOCK_STORAGE:
-                                    for z in COOKIE.items():
-                                        if z[1] == cookie:
-                                            del COOKIE[z[0]]
-                                            COOKIE_SUSPENDED[z[1]] = time.time()
-                                            # break
-                                            return []
-                            else:
-                                my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
+                            # if 'location' in str(error):
+                            #     my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
+                            #     return []
+                            # else:
+                            #     my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                             if str(error).startswith('error1'):
                                 BAD_IMAGES_PROMPT[query] = True
                                 return [str(error),]
+                            else:
+                                my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                 else:
                     try:
                         return get_images(query, cookie)
                     except Exception as error:
-                        if 'location' in str(error):
-                                my_log.log2(f'get_images: {error} Cookie: {cookie}')
-                                with LOCK_STORAGE:
-                                    for z in COOKIE.items():
-                                        if z[1] == cookie:
-                                            del COOKIE[z[0]]
-                                            COOKIE_SUSPENDED[z[1]] = time.time()
-                                            break
-                        else:
-                            my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
+                        # if 'location' in str(error):
+                        #         my_log.log2(f'get_images: {error} Cookie: {cookie}')
+                        #         break
+                        # else:
+                        #     my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
                         if str(error).startswith('error1'):
                             BAD_IMAGES_PROMPT[query] = True
                             return []
+                        else:
+                            my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
+
         return []
 
 

@@ -228,11 +228,16 @@ def gen_images(query: str, user_id: str = ''):
                 COOKIE[time.time()] = x
                 COOKIE_SUSPENDED.pop(x)
 
-            # if no more cookies, then unsuspend all
+            # if no more cookies, then unsuspend 5 with best time
             if len(COOKIE) == 0:
-                for x in COOKIE_SUSPENDED.items():
-                    COOKIE[time.time()] = x[0]
-                    COOKIE_SUSPENDED.pop(x[0])
+                suspended_list = [x for x in COOKIE_SUSPENDED.items()]
+                suspended_list_sorted = sorted(suspended_list, key=lambda x: x[1])
+                for n in range(0, 5):
+                    try:
+                        COOKIE[time.time()] = suspended_list_sorted[n][0]
+                        COOKIE_SUSPENDED.pop(suspended_list_sorted[n][0])
+                    except IndexError:
+                        break
 
             for x in COOKIE.items():
                 cookie = x[1].strip()

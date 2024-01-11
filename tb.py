@@ -2152,6 +2152,7 @@ def send_debug_history(message: telebot.types.Message):
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
     bot_reply_tr(message, 'Restarting bot, please wait')
+    my_log.log2(f'tb:restart: !!!RESTART!!!')
     my_gemini.STOP_DAEMON = True
     bot.stop_polling()
 

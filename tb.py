@@ -1000,17 +1000,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         if chat_id_full not in SUGGEST_ENABLED:
             SUGGEST_ENABLED[chat_id_full] = False
         if SUGGEST_ENABLED[chat_id_full]:
-            button1 = telebot.types.InlineKeyboardButton(tr(f'✅Image suggestions', lang), callback_data='suggest_image_prompts_disable')
+            button1 = telebot.types.InlineKeyboardButton(tr(f'✅Show image suggestions', lang), callback_data='suggest_image_prompts_disable')
         else:
-            button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Image suggestions', lang), callback_data='suggest_image_prompts_enable')
+            button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Show image suggestions', lang), callback_data='suggest_image_prompts_enable')
         markup.row(button1)
 
         if chat_id_full not in TRANSCRIBE_ONLY_CHAT:
             TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
         if TRANSCRIBE_ONLY_CHAT[chat_id_full]:
-            button2 = telebot.types.InlineKeyboardButton(tr(f'✅Voice to text', lang), callback_data='transcribe_only_chat_disable')
+            button2 = telebot.types.InlineKeyboardButton(tr(f'✅Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
         else:
-            button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Voice to text', lang), callback_data='transcribe_only_chat_enable')
+            button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
         markup.row(button2)
 
         if cfg.pics_group_url:

@@ -94,6 +94,15 @@ TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
 # запоминаем промпты для повторения рисования
 IMAGE_PROMPTS = SqliteDict('db/image_prompts.db', autocommit=True)
 
+# запоминаем пары хеш-промтп для работы клавиатуры которая рисует по сгенерированным с помощью ИИ подсказкам
+# {hash:prompt, ...}
+IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=True)
+
+# включены ли подсказки для рисования в этом чате
+# {chat_id: True/False}
+SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
+
+
 # запоминаем у какого юзера какой язык OCR выбран
 OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
 
@@ -988,14 +997,21 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton(tr(f'✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
         markup.row(button1, button2)
 
+        if chat_id_full not in SUGGEST_ENABLED:
+            SUGGEST_ENABLED[chat_id_full] = False
+        if SUGGEST_ENABLED[chat_id_full]:
+            button1 = telebot.types.InlineKeyboardButton(tr(f'✅Image suggestions', lang), callback_data='suggest_image_prompts_disable')
+        else:
+            button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Image suggestions', lang), callback_data='suggest_image_prompts_enable')
+        markup.row(button1)
+
         if chat_id_full not in TRANSCRIBE_ONLY_CHAT:
             TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
-        
         if TRANSCRIBE_ONLY_CHAT[chat_id_full]:
-            button = telebot.types.InlineKeyboardButton(tr(f'✅Voice to text mode ONLY', lang), callback_data='transcribe_only_chat_disable')
+            button2 = telebot.types.InlineKeyboardButton(tr(f'✅Voice to text', lang), callback_data='transcribe_only_chat_disable')
         else:
-            button = telebot.types.InlineKeyboardButton(tr(f'☑️Voice to text mode ONLY', lang), callback_data='transcribe_only_chat_enable')
-        markup.row(button)
+            button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Voice to text', lang), callback_data='transcribe_only_chat_enable')
+        markup.row(button2)
 
         if cfg.pics_group_url:
             button_pics = telebot.types.InlineKeyboardButton(tr("🖼️Галерея", lang),  url = cfg.pics_group_url)
@@ -1126,6 +1142,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     os.unlink(tmp)
                 except Exception as unlink_error:
                     my_log.log2(f'tb:callback_inline_thread:download_tiktok:{unlink_error}\n\nunlink {tmp}')
+        elif call.data.startswith('imagecmd_'):
+            hash = call.data[9:]
+            prompt = IMAGE_SUGGEST_BUTTONS[hash]
+            message.text = f'/image {prompt}'
+            image(message)
         elif call.data.startswith('youtube '):
             global YTB_CACHE
             song_id = call.data[8:]
@@ -1317,6 +1338,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
             VOICE_ONLY_MODE[chat_id_full] = False
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'suggest_image_prompts_enable'  and is_admin_member(call):
+            SUGGEST_ENABLED[chat_id_full] = True
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'suggest_image_prompts_disable' and is_admin_member(call):
+            SUGGEST_ENABLED[chat_id_full] = False
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'voice_only_mode_enable'  and is_admin_member(call):
@@ -2596,7 +2625,10 @@ def image_thread(message: telebot.types.Message):
                 images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full)
                 medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
 
-                suggest_query = tr("""Suggest a wide range options for a request to a neural network that
+                if chat_id_full not in SUGGEST_ENABLED:
+                    SUGGEST_ENABLED[chat_id_full] = False
+                if medias and SUGGEST_ENABLED[chat_id_full]:
+                    suggest_query = tr("""Suggest a wide range options for a request to a neural network that
 generates images according to the description, show 5 options with no numbers and trailing symbols, add many details, 1 on 1 line, output example:
 
 some option
@@ -2606,8 +2638,10 @@ some more option
 some more option
 
 the original prompt:""", lang) + '\n\n\n' + prompt
-                suggest = my_gemini.ai(suggest_query, temperature=1.5)
-                suggest = utils.bot_markdown_to_html(suggest).strip()
+                    suggest = my_gemini.ai(suggest_query, temperature=1.5)
+                    suggest = utils.bot_markdown_to_html(suggest).strip()
+                else:
+                    suggest = ''
 
                 if len(medias) > 0:
                     if 'error1_being_reviewed_prompt' in images[0]:
@@ -2626,7 +2660,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                         if pics_group:
                             try:
-                                bot.send_message(cfg.pics_group, f'{prompt} | #{utils.nice_hash(chat_id_full)}', disable_web_page_preview = True)
+                                bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}', disable_web_page_preview = True)
                                 bot.send_media_group(pics_group, medias)
                             except Exception as error2:
                                 print(error2)
@@ -2643,13 +2677,34 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                     reply_markup=get_keyboard('hide_image', message))
 
                         if suggest:
-                            suggest2 = [f'<code>/image {x}</code>'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1) for x in suggest.split('\n')]
-                            suggest3 = '\n\n'.join(suggest2)
-                            suggest3 = suggest3.replace('<code>/image </code>\n', '')
-                            suggest3 = suggest3.replace('\n\n\n\n', '\n\n')
-                            suggest3 = suggest3.replace('\n\n\n', '\n\n')
-                            suggest4 = tr('Here are some more possible options for your request:', lang) + '\n\n' + suggest3
-                            bot_reply(message, suggest4, parse_mode = 'HTML')
+                            suggest = [f'{x}'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).strip() for x in suggest.split('\n')]
+                            suggest = [x for x in suggest if x]
+                            suggest_hashes = [utils.nice_hash(x, 12) for x in suggest]
+                            markup  = telebot.types.InlineKeyboardMarkup()
+                            for s, h in zip(suggest, suggest_hashes):
+                                IMAGE_SUGGEST_BUTTONS[h] = utils.html.unescape(s)
+
+                            b1 = telebot.types.InlineKeyboardButton(text = '1️⃣', callback_data = f'imagecmd_{suggest_hashes[0]}')
+                            b2 = telebot.types.InlineKeyboardButton(text = '2️⃣', callback_data = f'imagecmd_{suggest_hashes[1]}')
+                            b3 = telebot.types.InlineKeyboardButton(text = '3️⃣', callback_data = f'imagecmd_{suggest_hashes[2]}')
+                            b4 = telebot.types.InlineKeyboardButton(text = '4️⃣', callback_data = f'imagecmd_{suggest_hashes[3]}')
+                            b5 = telebot.types.InlineKeyboardButton(text = '5️⃣', callback_data = f'imagecmd_{suggest_hashes[4]}')
+                            b6 = telebot.types.InlineKeyboardButton(text = '🙈', callback_data = f'erase_answer')
+
+                            markup.add(b1, b2, b3, b4, b5, b6)
+
+                            suggest_msg = tr('Here are some more possible options for your request:', lang)
+                            suggest_msg = f'<b>{suggest_msg}</b>\n\n'
+                            n = 1
+                            for s in suggest:
+                                if n == 1: nn = '1️⃣'
+                                if n == 2: nn = '2️⃣'
+                                if n == 3: nn = '3️⃣'
+                                if n == 4: nn = '4️⃣'
+                                if n == 5: nn = '5️⃣'
+                                suggest_msg += f'{nn} <code>/image {s}</code>\n\n'
+                                n += 1
+                            bot_reply(message, suggest_msg, parse_mode = 'HTML', reply_markup=markup)
 
                         n = [{'role':'system', 'content':f'user {tr("asked to draw", lang)}\n{prompt}'}, 
                             {'role':'system', 'content':f'assistant {tr("drew using DALL-E", lang)}'}]

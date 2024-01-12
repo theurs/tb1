@@ -228,6 +228,7 @@ def gen_images(query: str, user_id: str = ''):
                             return get_images(query, cookie, proxy)
                         except Exception as error:
                             if 'location' in str(error):
+                                my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
                                 break
                             # if 'location' in str(error):
                             #     my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
@@ -244,6 +245,7 @@ def gen_images(query: str, user_id: str = ''):
                         return get_images(query, cookie)
                     except Exception as error:
                         if 'location' in str(error):
+                            my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
                             break
                         # if 'location' in str(error):
                         #         my_log.log2(f'get_images: {error} Cookie: {cookie}')

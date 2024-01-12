@@ -2081,6 +2081,8 @@ def set_bing_cookies(message: telebot.types.Message):
             cookie = cookie.strip()
             bing_img.COOKIE[cookie] = 0
             n += 1
+
+        # reset counters after add more cookies
         for cookie in bing_img.COOKIE:
             bing_img.COOKIE[cookie] = 0
 

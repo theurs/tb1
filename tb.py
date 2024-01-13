@@ -2126,7 +2126,8 @@ def set_bing_cookies(message: telebot.types.Message):
             hrules = prettytable.HEADER,
             junction_char = '|'
             )
-        header = ['#', tr('Key', lang), tr('Counter', lang)]
+        header = ['#', tr('Key', lang, 'тут имеется в виду ключ для рисования'),
+                  tr('Counter', lang, 'тут имеется в виду счётчик количества раз использования ключа для рисования')]
         pt.field_names = header
 
         n = 1
@@ -3207,6 +3208,7 @@ Chat language: {lang}'''
             help = tr(help, lang)
 
         bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
+        NEED_TO_UPDATE_KEYBOARD[chat_id_full] = False
 
 
 @bot.message_handler(commands=['help'], func = authorized_log)

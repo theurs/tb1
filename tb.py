@@ -3595,7 +3595,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                                 disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
                 except Exception as error:
                     if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
-                        my_log.log_parser_error(f'{DEBUG_MD_TO_HTML[resp]}\n\n{resp}')
+                        my_log.log_parser_error(f'{DEBUG_MD_TO_HTML[resp]}\n=====================================================\n{resp}')
                     else:
                         my_log.log2(f'tb:reply_to_long_message: {error}')
                         my_log.log2(chunk)
@@ -3613,6 +3613,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         buf.write(resp.encode())
         buf.seek(0)
         bot.send_document(message.chat.id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt')
+        del DEBUG_MD_TO_HTML[resp]
 
 
 def allowed_chatGPT_user(chat_id: int) -> bool:

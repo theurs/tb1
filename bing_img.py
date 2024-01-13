@@ -207,7 +207,7 @@ def gen_images(query: str, user_id: str = ''):
         # print(user_id, USER_LOCKS[user_id]._value)
     # with BIG_LOCK:
         if query in BAD_IMAGES_PROMPT:
-            my_log.log2(f'get_images: {query} is in BAD_IMAGES_PROMPT')
+            my_log.log_bing_img(f'get_images: {query} is in BAD_IMAGES_PROMPT')
             return ['error1_Bad images',]
 
         # сортируем куки по количеству обращений к ним
@@ -224,39 +224,28 @@ def gen_images(query: str, user_id: str = ''):
                 if cfg.bing_proxy:
                     for proxy in cfg.bing_proxy:
                         try:
-                            # my_log.log2(f'bing_img:gen_images: key {cookie[:5]} proxy {proxy} used times {COOKIE[cookie]}')
                             return get_images(query, cookie, proxy)
                         except Exception as error:
                             if 'location' in str(error) or 'timeout' in str(error):
-                                my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
+                                my_log.log_bing_img(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
                                 break
-                            # if 'location' in str(error):
-                            #     my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
-                            #     return []
-                            # else:
-                            #     my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                             if str(error).startswith('error1'):
                                 BAD_IMAGES_PROMPT[query] = True
                                 return [str(error),]
                             else:
-                                my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
+                                my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                 else:
                     try:
                         return get_images(query, cookie)
                     except Exception as error:
                         if 'location' in str(error) or 'timeout' in str(error):
-                            my_log.log2(f'get_images: {error} Cookie: {cookie}')
+                            my_log.log_bing_img(f'get_images: {error} Cookie: {cookie}')
                             break
-                        # if 'location' in str(error):
-                        #         my_log.log2(f'get_images: {error} Cookie: {cookie}')
-                        #         break
-                        # else:
-                        #     my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
                         if str(error).startswith('error1'):
                             BAD_IMAGES_PROMPT[query] = True
                             return []
                         else:
-                            my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
+                            my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
 
         return []
 

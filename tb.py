@@ -3324,7 +3324,9 @@ def id_cmd_handler(message: telebot.types.Message):
                 TRIAL_USERS[chat_id_full_grp] = time.time()
 
         sec_start += TRIAL_DAYS*60*60*24
-        days_left = -int((time.time() - sec_start)/60/60/24)            
+        days_left = -int((time.time() - sec_start)/60/60/24)
+        if days_left < 0:
+            days_left = 0
         msgs_counter = TRIAL_MESSAGES - msgs_counter
         if msgs_counter < 0:
             msgs_counter = 0

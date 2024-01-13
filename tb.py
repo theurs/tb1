@@ -2653,6 +2653,18 @@ def image_thread(message: telebot.types.Message):
                 # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 medias = []
                 for i in images:
+                    if 'error1_being_reviewed_prompt' in i:
+                        bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+                        return
+                    elif 'error1_blocked_prompt' in i:
+                        bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
+                        return
+                    elif 'error1_unsupported_lang' i:
+                        bot_reply_tr(message, 'Не понятный язык.')
+                        return
+                    elif 'error1_Bad images' i:
+                        bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
+                        return
                     if r'https://r.bing.com' not in i:
                         d = utils.download_image_as_bytes(i)
                         if d:
@@ -2681,18 +2693,6 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                     suggest = ''
 
                 if len(medias) > 0:
-                    if 'error1_being_reviewed_prompt' in images[0]:
-                        bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
-                        return
-                    elif 'error1_blocked_prompt' in images[0]:
-                        bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                        return
-                    elif 'error1_unsupported_lang' in images[0]:
-                        bot_reply_tr(message, 'Не понятный язык.')
-                        return
-                    elif 'error1_Bad images' in images[0]:
-                        bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                        return
                     with SEND_IMG_LOCK:
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                         if pics_group:

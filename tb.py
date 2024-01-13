@@ -2674,7 +2674,7 @@ def image_thread(message: telebot.types.Message):
                         d = utils.download_image_as_bytes(i)
                         if d:
                             try:
-                                medias.append(telebot.types.InputMediaPhoto(d, caption=i))
+                                medias.append(telebot.types.InputMediaPhoto(d))
                             except Exception as add_media_error:
                                 error_traceback = traceback.format_exc()
                                 my_log.log2(f'tb:image_thread:add_media_bytes: {add_media_error}\n\n{error_traceback}')

@@ -2650,7 +2650,17 @@ def image_thread(message: telebot.types.Message):
 
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
                 images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full)
-                medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
+                # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
+                medias = []
+                for i in images:
+                    if r'https://r.bing.com' not in i:
+                        d = utils.download_image_as_bytes(i)
+                        if d:
+                            try:
+                                medias.append(telebot.types.InputMediaPhoto(d, caption=i))
+                            except Exception as add_media_error:
+                                error_traceback = traceback.format_exc()
+                                my_log.log2(f'tb:image_thread:add_media_bytes: {add_media_error}\n\n{error_traceback}')
 
                 if chat_id_full not in SUGGEST_ENABLED:
                     SUGGEST_ENABLED[chat_id_full] = False

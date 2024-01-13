@@ -12,6 +12,7 @@ import requests
 import string
 import subprocess
 import tempfile
+import traceback
 import platform as platform_module
 from urllib.request import urlopen
 
@@ -461,17 +462,22 @@ def is_image_link(url: str) -> bool:
 
 
 def download_image_as_bytes(url: str) -> bytes:
-  """Загружает изображение по URL-адресу и возвращает его в виде байтов.
+    """Загружает изображение по URL-адресу и возвращает его в виде байтов.
 
-  Args:
-    url: URL-адрес изображения.
+    Args:
+        url: URL-адрес изображения.
 
-  Returns:
-    Изображение в виде байтов.
-  """
+    Returns:
+        Изображение в виде байтов.
+    """
 
-  response = requests.get(url)
-  return response.content
+    try:
+        response = requests.get(url, timeout=10)
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'download_image_as_bytes: {error}\n\n{error_traceback}')
+        return None
+    return response.content
 
 
 def nice_hash(s: str, l: int = 12) -> str:

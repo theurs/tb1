@@ -4,16 +4,24 @@
 import json
 import os
 import random
+import traceback
 from multiprocessing.pool import ThreadPool
 
+import langdetect
 import requests
 import replicate
 from duckduckgo_search import DDGS
+from sqlitedict import SqliteDict
 
-import cfg
 import bing_img
+import cfg
 import gpt_basic
+import my_gemini
 import my_log
+import my_trans
+
+
+NFSW_CONTENT = SqliteDict('db/nfsw_content_stable_diffusion.db', autocommit=True)
 
 
 def replicate_images(prompt: str, amount: int = 1):
@@ -121,6 +129,100 @@ def wizmodel_com(prompt: str):
     return response.text
 
 
+def stable_duffision_api(prompt: str):
+    """
+    Requests an image from the Stable Diffusion API using the provided prompt.
+
+    Args:
+        prompt (str): The prompt for generating the image.
+
+    Returns:
+        list[str]: A list containing the URL of the generated image if successful, otherwise an empty list.
+    """
+    try:
+        if hasattr(cfg, 'STABLE_DIFFUSION_API') and cfg.STABLE_DIFFUSION_API:
+            if prompt in NFSW_CONTENT:
+                return []
+            url = "https://stablediffusionapi.com/api/v3/text2img"
+            detected_lang = langdetect.detect(prompt)
+            if detected_lang != 'en':
+                prompt_translated = my_gemini.translate(prompt, to_lang='en', help='This is a prompt for image generation. Users can write it in their own language, but only English is supported.')
+                if not prompt_translated:
+                    prompt_translated = my_trans.translate_text2(prompt, 'en')
+                if prompt_translated:
+                    prompt = prompt_translated
+
+            api_keys = cfg.STABLE_DIFFUSION_API[:]
+            random.shuffle(api_keys)
+            for api_key in api_keys:
+                payload = json.dumps({
+                    "key": api_key,
+                    "prompt": prompt,
+                    "negative_prompt": None,
+                    "width": "1024",
+                    "height": "1024",
+                    "samples": "1",
+                    "num_inference_steps": "20",
+                    "seed": None,
+                    "guidance_scale": 7.5,
+                    "safety_checker": "yes",
+                    "multi_lingual": "no",
+                    "panorama": "no",
+                    "self_attention": "no",
+                    "upscale": "no",
+                    "embeddings_model": None,
+                    "webhook": None,
+                    "track_id": None
+                })
+                headers = {
+                'Content-Type': 'application/json'
+                }
+                response = requests.request("POST", url, headers=headers, data=payload, timeout=60)
+                response_json = json.loads(response.text)
+
+                # Get the fields from the JSON response
+                status = response_json["status"]
+                if status == "success":
+                    # generation_time = response_json["generationTime"]
+                    # request_id = response_json["id"]
+                    image_url = response_json["output"][0]
+                    # proxy_link = response_json["proxy_links"][0]
+                    nsfw_content_detected = response_json["nsfw_content_detected"]
+                    if nsfw_content_detected:
+                        NFSW_CONTENT[prompt] = nsfw_content_detected
+                        return []
+                    # meta = response_json["meta"]
+
+                    # Extract the meta fields
+                    # image_height = meta["H"]
+                    # image_width = meta["W"]
+                    # enable_attention_slicing = meta["enable_attention_slicing"]
+                    # file_prefix = meta["file_prefix"]
+                    # guidance_scale = meta["guidance_scale"]
+                    # instant_response = meta["instant_response"]
+                    # model_name = meta["model"]
+                    # num_samples = meta["n_samples"]
+                    # negative_prompt = meta["negative_prompt"]
+                    # output_directory = meta["outdir"]
+                    # prompt = meta["prompt"]
+                    # model_revision = meta["revision"]
+                    # safety_checker = meta["safetychecker"]
+                    # seed = meta["seed"]
+                    # steps = meta["steps"]
+                    # temperature = meta["temp"]
+                    # vae_model = meta["vae"]
+                    return [image_url,]
+                else:
+                    try:
+                        my_log.log_stable_diffusion_api(f'{response_json}\n\nStatus: {status}\nMessage: {response_json["message"]}\nPrompt: {prompt}\nAPI key: {api_key}')
+                    except:
+                        my_log.log_stable_diffusion_api(f'{response_json}\n\nPrompt: {prompt}\nAPI key: {api_key}')
+    except Exception as unknown:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_genimg:stable_diffusion_api: {str(unknown)}\n\n{error_traceback}')
+    return []
+
+
 def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """рисует одновременно всеми доступными способами"""
     #return bing(prompt) + chimera(prompt)
@@ -130,6 +232,7 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     pool = ThreadPool(processes=6)
 
     async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
+
     # async_result2 = pool.apply_async(openai, (prompt_tr,))
 
     # async_result3 = pool.apply_async(replicate_images, (prompt_tr,))
@@ -141,10 +244,18 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 
     # if len(result) < 10:
     #     result = result + ddg_search_images(prompt)
+
+    if not result:
+        result += stable_duffision_api(prompt)
+        my_log.log2(f'my_genimg:gen_images: used stable_diffusion_api, result: {result}')
+
     return result[:10]
 
 
 if __name__ == '__main__':
     # print(ddg_search_images('сочная малина'))
     # print(gen_images('рисунок мальчика с чёрными волосами в костюме жирафа и девочки с рыжими волосами в костюме лисы, наклейки, логотип, минимализм, в новый год, наряжают ёлку'))
-    print(wizmodel_com('firewalled daemon'))
+    # print(stable_duffision_api('гермиона гренджер на коленях перед священником'))
+    # print(stable_duffision_api('a man standing in front of a painting, ssr card, avatar for website, archers, ram skull, janapese, jeremy, mall background, young man with short, marvel poster, wlop : :'))
+    # print(stable_duffision_api("Hermione Granger looks up, mouth agape, in awe and wonder. The light of magic illuminates her face and sparkles dance in her eyes. A swirl of books and magical artifacts surrounds her, representing her vast knowledge and love of learning. The background is a grand library or a starry night sky, symbolizing her limitless potential and insatiable curiosity. The overall tone is one of amazement and discovery."))
+    print(stable_duffision_api("Гермиона Грейнджер смотрит вверх с разинутым ртом в благоговении и удивлении. Свет волшебства освещает ее лицо и сверкает танцем в глазах. Ее окружает водоворот книг и магических артефактов, символизирующий ее обширные знания и любовь к учебе. Фоном является огромная библиотека или звездное ночное небо, символизирующее ее безграничный потенциал и ненасытное любопытство. Общий тон – изумление и открытие."))

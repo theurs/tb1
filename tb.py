@@ -3928,12 +3928,12 @@ def do_task(message, custom_prompt: str = ''):
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
                 else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date in GMT+10 "{formatted_date}".]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}".]'
             else:
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date in GMT+10 "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
                 else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date in GMT+10 "{formatted_date}".]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}".]'
             helped_query = f'{hidden_text} {message.text}'
 
             # если активирован режим общения с Gemini Pro

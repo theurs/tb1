@@ -181,6 +181,11 @@ BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 BOT_NAME_DEFAULT = cfg.default_bot_name
 
+# тут сохраняются сообщения до и после преобразования из маркдауна ботов в хтмл
+# {ответ после преобразования:ответ до преобразования, }
+# это нужно только что бы записать в логи пару если html версия не пролезла через телеграм фильтр
+DEBUG_MD_TO_HTML = {}
+
 
 supported_langs_trans = [
         "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
@@ -3589,12 +3594,14 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                         bot.reply_to(message, chunk, parse_mode=parse_mode,
                                 disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
                 except Exception as error:
-                    print(error)
-                    my_log.log2(f'tb:reply_to_long_message: {error}')
-                    my_log.log2(chunk)
+                    if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
+                        my_log.log_parser_error(f'{DEBUG_MD_TO_HTML[resp]}\n\n{resp}')
+                    else:
+                        my_log.log2(f'tb:reply_to_long_message: {error}')
+                        my_log.log2(chunk)
                     if send_message:
                         bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
-                                         disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                                            disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
                     else:
                         bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
             counter -= 1
@@ -3958,6 +3965,7 @@ def do_task(message, custom_prompt: str = ''):
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
                         answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full])
+                        
                         flag_gpt_help = False
                         if not answer:
                             if not answer:
@@ -3967,7 +3975,9 @@ def do_task(message, custom_prompt: str = ''):
                                 flag_gpt_help = True
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
-                            answer = utils.bot_markdown_to_html(answer)
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
 
                         if flag_gpt_help:
                             my_log.log_echo(message, f'[Gemini + gpt_instruct] {answer}')
@@ -4001,7 +4011,9 @@ def do_task(message, custom_prompt: str = ''):
                                 break
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
-                            answer = utils.bot_markdown_to_html(answer)
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
                         if answer:
                             my_log.log_echo(message, ('[Bard] ' + answer + '\nPHOTO\n' + '\n'.join(images) + '\nLINKS\n' + '\n'.join(links)).strip())
                             try:
@@ -4035,7 +4047,9 @@ def do_task(message, custom_prompt: str = ''):
                     try:
                         answer = my_claude.chat(helped_query, chat_id_full)
                         if not VOICE_ONLY_MODE[chat_id_full]:
-                            answer = utils.bot_markdown_to_html(answer)
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
                         my_log.log_echo(message, f'[Claude] {answer}')
                         if answer:
                             try:
@@ -4082,7 +4096,9 @@ def do_task(message, custom_prompt: str = ''):
                     my_gemini.update_mem(message.text, resp, chat_id_full)
 
                 if not VOICE_ONLY_MODE[chat_id_full]:
-                    resp = utils.bot_markdown_to_html(resp)
+                    resp_ = utils.bot_markdown_to_html(resp)
+                    DEBUG_MD_TO_HTML[resp_] = resp
+                    resp = resp_
                 my_log.log_echo(message, f'[chatgpt] {resp}')
 
                 try:

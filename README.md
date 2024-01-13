@@ -301,8 +301,8 @@ PHONE_CATCHER = True
 
 # рисование ключами stable diffusion
 # https://stablediffusionapi.com/dashboard/apikeys
-STABLE_DIFFUSION_API = ['xxx',
-                        'yyy',]
+# STABLE_DIFFUSION_API = ['xxx',
+#                        'yyy',]
 ```
 
 Что бы работало рисование бингом надо заменить куки, взять с сайта bing.com раздел чат, попасть туда можно только с ип приличных стран и с аккаунтом в микрософте. С помощью браузерного расширения cookie editor надо достать куки с именем _U и передать боту через команду /bingcookie xxx

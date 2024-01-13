@@ -706,13 +706,14 @@ if __name__ == '__main__':
 
     # print(get_models())
 
-    # chat_cli()
+    chat_cli()
 
     # print(translate('مرحبا', 'ar', 'nl'))
     # print(translate('Γεια σας', 'el', 'pt'))
     # print(translate('Голос: Ynd муж.', to_lang='en', help = 'это текст на кнопке, он должен быть коротким что бы уместится на кнопке по-этому сокращен, полный текст - Голос: Yandex мужской, тут имеется в виду мужской голос для TTS от яндекса'))
-    print(translate('', to_lang='en'))
-    print(translate('', to_lang='en', help=''))
+    # print(translate('', to_lang='en'))
+    # print(translate('', to_lang='en', help=''))
 
     # data = open('1.jpg', 'rb').read()
     # print(img2txt(data))
+

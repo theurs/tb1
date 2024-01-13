@@ -220,7 +220,7 @@ def bot_markdown_to_html(text: str) -> str:
 
     text = replace_code_lang(text)
 
-    # text = replace_tables(text)
+    text = replace_tables(text)
 
     return text
 

@@ -404,7 +404,7 @@ def get_mem_as_string(chat_id: str) -> str:
     return result    
 
 
-def translate(text: str, from_lang: str = '', to_lang: str = '') -> str:
+def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '') -> str:
     """
     Translates the given text from one language to another.
     
@@ -412,18 +412,21 @@ def translate(text: str, from_lang: str = '', to_lang: str = '') -> str:
         text (str): The text to be translated.
         from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
         to_lang (str, optional): The language to translate the text into. If not specified, the text will be translated into Russian.
+        help (str, optional): Help text for tranlator.
         
     Returns:
         str: The translated text.
     """
-    chat_id = 'translator_7356735198986'
     if from_lang == '':
         from_lang = 'autodetect'
     if to_lang == '':
         to_lang = 'ru'
-    query = f'Translate from language [{from_lang}] to language [{to_lang}]:\n\n{text}'
+    if help:
+        query = f'Translate from language [{from_lang}] to language [{to_lang}], this can help you to translate better [{help}]:\n\n{text}'
+    else:
+        query = f'Translate from language [{from_lang}] to language [{to_lang}]:\n\n{text}'
     # inject_explicit_content(chat_id)
-    translated = chat(query, chat_id)
+    translated = ai(query)
     return translated
 
 
@@ -703,11 +706,13 @@ if __name__ == '__main__':
 
     # print(get_models())
 
-    chat_cli()
+    # chat_cli()
 
     # print(translate('مرحبا', 'ar', 'nl'))
     # print(translate('Γεια σας', 'el', 'pt'))
-    # print(translate('Hola', 'es', 'fr'))
+    # print(translate('Голос: Ynd муж.', to_lang='en', help = 'это текст на кнопке, он должен быть коротким что бы уместится на кнопке по-этому сокращен, полный текст - Голос: Yandex мужской, тут имеется в виду мужской голос для TTS от яндекса'))
+    print(translate('', to_lang='en'))
+    print(translate('', to_lang='en', help=''))
 
     # data = open('1.jpg', 'rb').read()
     # print(img2txt(data))

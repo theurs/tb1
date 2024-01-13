@@ -227,7 +227,7 @@ def gen_images(query: str, user_id: str = ''):
                             # my_log.log2(f'bing_img:gen_images: key {cookie[:5]} proxy {proxy} used times {COOKIE[cookie]}')
                             return get_images(query, cookie, proxy)
                         except Exception as error:
-                            if 'location' in str(error):
+                            if 'location' in str(error) or 'timeout' in str(error):
                                 my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
                                 break
                             # if 'location' in str(error):
@@ -244,8 +244,8 @@ def gen_images(query: str, user_id: str = ''):
                     try:
                         return get_images(query, cookie)
                     except Exception as error:
-                        if 'location' in str(error):
-                            my_log.log2(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
+                        if 'location' in str(error) or 'timeout' in str(error):
+                            my_log.log2(f'get_images: {error} Cookie: {cookie}')
                             break
                         # if 'location' in str(error):
                         #         my_log.log2(f'get_images: {error} Cookie: {cookie}')
@@ -256,7 +256,7 @@ def gen_images(query: str, user_id: str = ''):
                             BAD_IMAGES_PROMPT[query] = True
                             return []
                         else:
-                            my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
+                            my_log.log2(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
 
         return []
 

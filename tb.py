@@ -103,6 +103,10 @@ IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=Tru
 SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
 
 
+# {chat_id: True/False} надо ли обновить юзеру клавиатуру принудительно
+# когда надо всем обновить клавиатуру надо остановить бота, удалить этот файл и запустить снова
+NEED_TO_UPDATE_KEYBOARD = SqliteDict('db/need_to_update_keyboard.db', autocommit=True)
+
 # запоминаем у какого юзера какой язык OCR выбран
 OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
 
@@ -306,7 +310,7 @@ class ShowAction(threading.Thread):
         self.stop()
 
 
-def tr(text: str, lang: str, ai: bool = False) -> str:
+def tr(text: str, lang: str, help: str = '') -> str:
     """
     This function translates text to the specified language,
     using either the AI translation engine or the standard translation engine.
@@ -314,19 +318,21 @@ def tr(text: str, lang: str, ai: bool = False) -> str:
     Args:
         text: The text to translate.
         lang: The language to translate to.
-        ai: Whether to use the AI translation engine.
+        help: The help text for ai translator.
 
     Returns:
         The translated text.
     """
-    key = str((text, lang))
+    key = str((text, lang, help))
     if key in AUTO_TRANSLATIONS:
         return AUTO_TRANSLATIONS[key]
 
     translated = ''
 
-    if ai:
-        translated = my_gemini.translate(text, to_lang=lang)
+    if help:
+        translated = my_gemini.translate(text, to_lang=lang, help=help)
+        if not translated:
+            my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
 
     if not translated:
         translated = my_trans.translate_text2(text, lang)
@@ -685,6 +691,13 @@ def authorized(message: telebot.types.Message) -> bool:
             bot_name_used = True
 
         if is_reply or is_private or bot_name_used:
+            # check if need to update keyboard
+            if chat_id_full not in NEED_TO_UPDATE_KEYBOARD:
+                try:
+                    bot_reply_tr(message, 'Клавиатура была обновлена, убрать её можно командой /remove_keyboard', parse_mode='HTML', reply_markup=get_keyboard('start', message))
+                    NEED_TO_UPDATE_KEYBOARD[chat_id_full] = False
+                except Exception as unkn_kbd:
+                    my_log.log2('tb:auth:unkn_kbd: ' + str(unkn_kbd))
             # check for blocking and throttling
             try:
                 check_blocked_user(chat_id_full)
@@ -867,13 +880,20 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button1, button2)
         return markup
     elif kbd == 'start':
+        b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+        b_msg_search = tr('🌐 Найди', lang, 'это кнопка в телеграм боте для поиска в гугле, после того как юзер на нее нажимает бот спрашивает у него что надо найти, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+        b_msg_summary = tr('📋 Перескажи', lang, 'это кнопка в телеграм боте для пересказа текста, после того как юзер на нее нажимает бот спрашивает у него ссылку на текст или файл с текстом, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+        b_msg_tts = tr('🎧 Озвучь', lang, 'это кнопка в телеграм боте для озвучивания текста, после того как юзер на нее нажимает бот спрашивает у него текст для озвучивания, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+        b_msg_translate = tr('🈶 Перевод', lang, 'это кнопка в телеграм боте для перевода текста, после того как юзер на нее нажимает бот спрашивает у него текст для перевода, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+        b_msg_settings = tr('⚙️ Настройки', lang, 'это кнопка в телеграм боте для перехода в настройки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+
         markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = telebot.types.KeyboardButton(tr('🎨 Нарисуй', lang))
-        button2 = telebot.types.KeyboardButton(tr('🌐 Найди', lang))
-        button3 = telebot.types.KeyboardButton(tr('📋 Перескажи', lang))
-        button4 = telebot.types.KeyboardButton(tr('🎧 Озвучь', lang))
-        button5 = telebot.types.KeyboardButton(tr('🈶 Перевод', lang))
-        button6 = telebot.types.KeyboardButton(tr('⚙️ Настройки', lang))
+        button1 = telebot.types.KeyboardButton(b_msg_draw)
+        button2 = telebot.types.KeyboardButton(b_msg_search)
+        button3 = telebot.types.KeyboardButton(b_msg_summary)
+        button4 = telebot.types.KeyboardButton(b_msg_tts)
+        button5 = telebot.types.KeyboardButton(b_msg_translate)
+        button6 = telebot.types.KeyboardButton(b_msg_settings)
         markup.row(button1, button2, button3)
         markup.row(button4, button5, button6)
         return markup
@@ -916,11 +936,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         else:
             voice = 'tts_female'
 
-        voices = {'tts_female': tr('MS жен.', lang),
-                  'tts_male': tr('MS муж.', lang),
+        voices = {'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
+                  'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
                   'tts_google_female': 'Google',
-                  'tts_female_ynd': tr('Ynd жен.', lang),
-                  'tts_male_ynd': tr('Ynd муж.', lang),
+                  'tts_female_ynd': tr('Ynd жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Yandex женский", тут имеется в виду женский голос для TTS от яндекса, сделай перевод таким же коротким что бы уместится на кнопке'),
+                  'tts_male_ynd': tr('Ynd муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Yandex мужской", тут имеется в виду мужской голос для TTS от яндекса, сделай перевод таким же коротким что бы уместится на кнопке'),
                   'tts_openai_alloy': 'Alloy',
                   'tts_openai_echo': 'Echo',
                   'tts_openai_fable': 'Fable',
@@ -973,7 +993,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button = telebot.types.InlineKeyboardButton(tr('🔍История ChatGPT/Gemini Pro', lang), callback_data='chatGPT_memory_debug')
         markup.add(button)
 
-        button1 = telebot.types.InlineKeyboardButton(tr(f'📢Голос: {voice_title}', lang), callback_data=voice)
+        button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if chat_id_full not in VOICE_ONLY_MODE:
             VOICE_ONLY_MODE[chat_id_full] = False
         if VOICE_ONLY_MODE[chat_id_full]:
@@ -2106,11 +2126,13 @@ def set_bing_cookies(message: telebot.types.Message):
             hrules = prettytable.HEADER,
             junction_char = '|'
             )
-        header = [tr('Bing key', lang), tr('Used times', lang)]
+        header = ['#', tr('Key', lang), tr('Counter', lang)]
         pt.field_names = header
 
+        n = 1
         for cookie in cookies:
-            pt.add_row([cookie[0][:5], cookie[1]])
+            pt.add_row([n, cookie[0][:5], cookie[1]])
+            n += 1
 
         msg = f'{tr("Current cookies:", lang)} {len(bing_img.COOKIE)} \n\n<pre><code>{pt.get_string()}</code></pre>'
         bot_reply(message, msg, parse_mode='HTML')
@@ -3615,34 +3637,30 @@ def do_task(message, custom_prompt: str = ''):
         MESSAGE_QUEUE[chat_id_full] += message.text + '\n\n'
         return
 
-    if message.text in [tr('🎨 Нарисуй', lang),     tr('🌐 Найди', lang),
-                        tr('📋 Перескажи', lang),   tr('🎧 Озвучь', lang),
-                        tr('🈶 Перевод', lang),     tr('⚙️ Настройки', lang),
-                        '🎨 Нарисуй',               '🌐 Найди',
-                        '📋 Перескажи',             '🎧 Озвучь',
-                        '🈶 Перевод',               '⚙️ Настройки',
-                        '🎨Нарисуй',                '🌐Найди',
-                        '📋Перескажи',              '🎧Озвучь',
-                        '🈶Перевод',                '⚙️Настройки']:
-        if message.text in (tr('🎨 Нарисуй', lang), '🎨 Нарисуй', '🎨Нарисуй'):
+    b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_search = tr('🌐 Найди', lang, 'это кнопка в телеграм боте для поиска в гугле, после того как юзер на нее нажимает бот спрашивает у него что надо найти, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_summary = tr('📋 Перескажи', lang, 'это кнопка в телеграм боте для пересказа текста, после того как юзер на нее нажимает бот спрашивает у него ссылку на текст или файл с текстом, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_tts = tr('🎧 Озвучь', lang, 'это кнопка в телеграм боте для озвучивания текста, после того как юзер на нее нажимает бот спрашивает у него текст для озвучивания, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_translate = tr('🈶 Перевод', lang, 'это кнопка в телеграм боте для перевода текста, после того как юзер на нее нажимает бот спрашивает у него текст для перевода, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_settings = tr('⚙️ Настройки', lang, 'это кнопка в телеграм боте для перехода в настройки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+
+    if any([x for x in (b_msg_draw, b_msg_search, b_msg_summary, b_msg_tts, b_msg_translate, b_msg_settings) if x == message.text]):
+        if any([x for x in (b_msg_draw,) if x == message.text]):
             message.text = '/image'
             image(message)
-        if message.text in (tr('🌐 Найди', lang), '🌐 Найди', '🌐Найди'):
+        if any([x for x in (b_msg_search,) if x == message.text]):
             message.text = '/google'
             google(message)
-        # if message.text in (tr('🌐 Найди', lang), '🌐 Найди', '🌐Найди'):
-        #     message.text = '/ask'
-        #     ask(message)
-        if message.text in (tr('📋 Перескажи', lang), '📋 Перескажи', '📋Перескажи'):
+        if any([x for x in (b_msg_summary,) if x == message.text]):
             message.text = '/sum'
             summ_text(message)
-        if message.text in (tr('🎧 Озвучь', lang), '🎧 Озвучь', '🎧Озвучь'):
+        if any([x for x in (b_msg_tts,) if x == message.text]):
             message.text = '/tts'
             tts(message)
-        if message.text in (tr('🈶 Перевод', lang), '🈶 Перевод', '🈶Перевод'):
+        if any([x for x in (b_msg_translate,) if x == message.text]):
             message.text = '/trans'
             trans(message)
-        if message.text in (tr('⚙️ Настройки', lang), '⚙️ Настройки', '⚙️Настройки'):
+        if any([x for x in (b_msg_settings,) if x == message.text]):
             message.text = '/config'
             config(message)
         return

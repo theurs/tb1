@@ -495,12 +495,12 @@ def get_full_time() -> str:
     Returns:
         str: A string representing the current time in the format "YYYY-MM-DD HH:MM:SS TZ".
     """
-    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=10)))
+    now = datetime.datetime.now()
     time_string = now.strftime("%Y-%m-%d %H:%M:%S %Z")
     return time_string
 
 
 if __name__ == '__main__':
-    print(is_image_link('https://keep.google.com/u/0/?pli=1#NOTE/1KA1ADEB_Cn9dNEiBKakN8BebZkOtBVCNpeOeFTFujVKkDYtyKGuNFzW-a6dYK_Q'))
+    # print(is_image_link('https://keep.google.com/u/0/?pli=1#NOTE/1KA1ADEB_Cn9dNEiBKakN8BebZkOtBVCNpeOeFTFujVKkDYtyKGuNFzW-a6dYK_Q'))
     
     print(get_full_time())    

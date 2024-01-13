@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 
+import json
 import os
 import random
 from multiprocessing.pool import ThreadPool
 
+import requests
 import replicate
 from duckduckgo_search import DDGS
 
@@ -85,6 +87,40 @@ def ddg_search_images(prompt: str, max_results: int = 10):
     return result[:max_results]
 
 
+def wizmodel_com(prompt: str):
+    if not hasattr(cfg, 'WIZMODEL_API') or not cfg.WIZMODEL_API:
+        return []
+
+    url = "https://api.wizmodel.com/v1/predictions"
+    
+    if cfg.bing_proxy:
+        proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
+    else:
+        proxy = None
+
+    payload = json.dumps({
+        "input": {
+            "prompt": prompt
+            },
+        "version": "7d229e3ed5d01c879622d0cd273572260b7e35103d6765af740f853b160d04b7"
+        }
+                         )
+
+    api_key = random.choice(cfg.WIZMODEL_API[0])
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {api_key}'
+        }
+
+    try:
+        response = requests.request("POST", url, headers=headers, data=payload, timeout = 200, proxies=proxy)
+    except Exception as error:
+        my_log.log2(f'my_genimg:wizmodel_com: {error}\n\nPrompt: {prompt}')
+        return []
+
+    return response.text
+
+
 def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """рисует одновременно всеми доступными способами"""
     #return bing(prompt) + chimera(prompt)
@@ -110,4 +146,5 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 
 if __name__ == '__main__':
     # print(ddg_search_images('сочная малина'))
-    print(gen_images('рисунок мальчика с чёрными волосами в костюме жирафа и девочки с рыжими волосами в костюме лисы, наклейки, логотип, минимализм, в новый год, наряжают ёлку'))
+    # print(gen_images('рисунок мальчика с чёрными волосами в костюме жирафа и девочки с рыжими волосами в костюме лисы, наклейки, логотип, минимализм, в новый год, наряжают ёлку'))
+    print(wizmodel_com('firewalled daemon'))

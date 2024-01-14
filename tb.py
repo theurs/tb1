@@ -337,7 +337,11 @@ def tr(text: str, lang: str, help: str = '') -> str:
     if help:
         translated = my_gemini.translate(text, to_lang=lang, help=help)
         if not translated:
-            my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
+            time.sleep(1)
+            # try again
+            translated = my_gemini.translate(text, to_lang=lang, help=help)
+            if not translated:
+                my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
 
     if not translated:
         translated = my_trans.translate_text2(text, lang)

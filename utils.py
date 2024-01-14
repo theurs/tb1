@@ -174,6 +174,10 @@ def bot_markdown_to_html(text: str) -> str:
         random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
         list_of_code_blocks.append([match, random_string])
         text = text.replace(f'```{match}```', random_string)
+
+    # тут могут быть одиночные поворяющиеся `, меняем их на '
+    text = text.replace('```', "'''")
+
     matches = re.findall('`(.*?)`', text, flags=re.DOTALL)
     list_of_code_blocks2 = []
     for match in matches:
@@ -509,4 +513,23 @@ def get_full_time() -> str:
 if __name__ == '__main__':
     # print(is_image_link('https://keep.google.com/u/0/?pli=1#NOTE/1KA1ADEB_Cn9dNEiBKakN8BebZkOtBVCNpeOeFTFujVKkDYtyKGuNFzW-a6dYK_Q'))
     
-    print(get_full_time())    
+    # print(get_full_time())    
+    
+    t = """
+```
+                                             _
+                                            | |
+                                            | |
+                                            | |
+                                            | |
+                                            | |
+                                            | |
+                                            | |
+                                            | |
+                                            | |
+                                            | |
+                                            | |
+                                            | |
+
+"""
+    print(bot_markdown_to_html(t))

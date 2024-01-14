@@ -2024,7 +2024,7 @@ def set_trial(message: telebot.types.Message):
 
             if user not in TRIAL_USERS:
                 TRIAL_USERS[user] = time.time()
-            TRIAL_USERS[user] = TRIAL_USERS[user] + int(monthes)*60*60*24*30
+            TRIAL_USERS[user] = TRIAL_USERS[user] + float(monthes)*60*60*24*30
             time_left = -round((time.time()-TRIAL_USERS[user])/60/60/24/30, 1)
             msg = f'{tr("User trial updated.", lang)} {user} +{monthes} = [{time_left}]'
         except:

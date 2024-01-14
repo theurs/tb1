@@ -2714,6 +2714,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                 if len(medias) > 0:
                     with SEND_IMG_LOCK:
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                        my_log.log_echo(message, ' '.join(images))
                         if pics_group:
                             try:
                                 bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}', disable_web_page_preview = True)

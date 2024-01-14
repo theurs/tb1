@@ -2016,7 +2016,7 @@ def set_trial(message: telebot.types.Message):
         try:
             user = message.text.split(maxsplit=3)[1]
             try:
-                monthes = message.text.split(maxsplit=3)[2]
+                monthes = message.text.split(maxsplit=3)[2].replace(',', '.')
             except IndexError:
                 monthes = 0
 

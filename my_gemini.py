@@ -426,7 +426,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '')
     else:
         query = f'Translate from language [{from_lang}] to language [{to_lang}]:\n\n{text}'
     # inject_explicit_content(chat_id)
-    translated = ai(query)
+    translated = ai(query, temperature=0.1)
     return translated
 
 

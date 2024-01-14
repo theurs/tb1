@@ -31,7 +31,7 @@ PyPDF2
 pysocks
 pytesseract
 python-Levenshtein
-python-magic
+# python-magic
 # python-magic-bin
 # pylibmagic
 pytube
@@ -46,6 +46,7 @@ textblob
 tiktoken
 #trafilatura==1.6.1
 trafilatura
+yandex_speech
 youtube_search
 youtube_transcript_api
 xlrd

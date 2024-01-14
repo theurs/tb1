@@ -6,7 +6,7 @@ import io
 import os
 import subprocess
 
-import magic
+# import magic
 import PyPDF2
 import pandas as pd
 
@@ -24,8 +24,7 @@ def fb2_to_text(data: bytes) -> str:
 
     open(input_file, 'wb').write(data)
 
-    mime = magic.Magic(mime=True)
-    book_type = mime.from_buffer(data)
+    book_type = utils.mime_from_buffer(data)
 
     if 'epub' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'plain', input_file], stdout=subprocess.PIPE)

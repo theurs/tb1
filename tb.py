@@ -93,7 +93,7 @@ BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
 TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
 
 # запоминаем промпты для повторения рисования
-IMAGE_PROMPTS = SqliteDict('db/image_prompts.db', autocommit=True)
+# IMAGE_PROMPTS = SqliteDict('db/image_prompts.db', autocommit=True)
 
 # запоминаем пары хеш-промтп для работы клавиатуры которая рисует по сгенерированным с помощью ИИ подсказкам
 # {hash:prompt, ...}
@@ -885,12 +885,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
                                                      callback_data='erase_answer')
         markup.add(button1, button2)
         return markup
-    elif kbd == 'hide_image':
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_image')
-        button2 = telebot.types.InlineKeyboardButton(tr("Повторить", lang), callback_data='repeat_image')
-        markup.add(button1, button2)
-        return markup
+    # elif kbd == 'hide_image':
+    #     markup  = telebot.types.InlineKeyboardMarkup()
+    #     button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_image')
+    #     button2 = telebot.types.InlineKeyboardButton(tr("Повторить", lang), callback_data='repeat_image')
+    #     markup.add(button1, button2)
+    #     return markup
     elif kbd == 'start':
         b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
         b_msg_search = tr('🌐 Найди', lang, 'это кнопка в телеграм боте для поиска в гугле, после того как юзер на нее нажимает бот спрашивает у него что надо найти, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
@@ -1147,15 +1147,15 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # получаем номер сообщения с картинками из сообщения с ссылками на картинки который идет следом
             for i in message.text.split('\n')[0].split():
                 bot.delete_message(message.chat.id, int(i))
-        elif call.data == 'repeat_image':
-            # получаем номер сообщения с картинками (первый из группы)
-            for i in message.text.split('\n')[0].split():
-                p_id = int(i)
-                break
-            p = IMAGE_PROMPTS[p_id]
-            message.text = f'/image {p}'
-            # рисуем еще картинки с тем же запросом
-            image(message)
+        # elif call.data == 'repeat_image':
+        #     # получаем номер сообщения с картинками (первый из группы)
+        #     for i in message.text.split('\n')[0].split():
+        #         p_id = int(i)
+        #         break
+        #     p = IMAGE_PROMPTS[p_id]
+        #     message.text = f'/image {p}'
+        #     # рисуем еще картинки с тем же запросом
+        #     image(message)
         elif call.data == 'voice_repair':
             # реакция на клавиатуру для исправить текст после распознавания
             with ShowAction(message, 'typing'):
@@ -2688,7 +2688,7 @@ def image_thread(message: telebot.types.Message):
                         d = utils.download_image_as_bytes(i)
                         if d:
                             try:
-                                medias.append(telebot.types.InputMediaPhoto(d))
+                                medias.append(telebot.types.InputMediaPhoto(d, caption = prompt))
                             except Exception as add_media_error:
                                 error_traceback = traceback.format_exc()
                                 my_log.log2(f'tb:image_thread:add_media_bytes: {add_media_error}\n\n{error_traceback}')
@@ -2720,17 +2720,17 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                 bot.send_media_group(pics_group, medias)
                             except Exception as error2:
                                 print(error2)
-                        caption = ''
+                        # caption = ''
                         # remember prompt by key (first image number) and save request and images to database
                         # so that they can be viewed separately later
-                        IMAGE_PROMPTS[msgs_ids[0].message_id] = prompt
+                        # IMAGE_PROMPTS[msgs_ids[0].message_id] = prompt
 
-                        for i in msgs_ids:
-                            caption += f'{i.message_id} '
-                        caption += '\n'
-                        caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
-                        bot_reply(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
-                                    reply_markup=get_keyboard('hide_image', message))
+                        # for i in msgs_ids:
+                        #     caption += f'{i.message_id} '
+                        # caption += '\n'
+                        # caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
+                        # bot_reply(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
+                        #             reply_markup=get_keyboard('hide_image', message))
 
                         if suggest:
                             suggest = [f'{x}'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).strip() for x in suggest.split('\n')]

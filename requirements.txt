@@ -10,6 +10,7 @@ edge_tts
 fake_useragent
 flask
 fuzzywuzzy
+httpx[socks]
 google
 gTTS
 langdetect

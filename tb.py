@@ -12,6 +12,7 @@ import string
 import threading
 import time
 
+import langcodes
 import prettytable
 import PyPDF2
 import telebot
@@ -1093,9 +1094,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
-        MSG_CONFIG = f"""<b>{tr('Current bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT}
+        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT}
 
-<b>{tr('Current bot role:', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)}"""
+<b>{tr('Bot style(role):', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)}
+
+<b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
+"""
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
@@ -1874,9 +1878,12 @@ def config(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     try:
-        MSG_CONFIG = f"""<b>{tr('Current bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT}
+        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT}
 
-<b>{tr('Current bot role:', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)}"""
+<b>{tr('Bot style(role):', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)}
+
+<b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
+"""
         bot_reply(message, MSG_CONFIG, parse_mode='HTML', reply_markup=get_keyboard('config', message))
     except Exception as error:
         my_log.log2(f'tb:config:{error}')

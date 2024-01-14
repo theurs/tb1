@@ -1770,10 +1770,11 @@ def handle_photo_thread(message: telebot.types.Message):
                 photo = message.photo[-1]
                 file_info = bot.get_file(photo.file_id)
                 image = bot.download_file(file_info.file_path)
-                
+
                 text = img2txt(image, lang, chat_id_full, message.caption)
                 if text:
                     text = utils.bot_markdown_to_html(text)
+                    text += '\n\n' + tr("<b>Questions about pictures should be asked each time by sending a picture with a caption, even if it's the same picture.</b>", lang)
                     bot_reply(message, text, parse_mode='HTML',
                                           reply_markup=get_keyboard('translate', message))
             return

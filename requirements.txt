@@ -13,6 +13,7 @@ fuzzywuzzy
 google
 gTTS
 langdetect
+langcodes[data]
 natsort
 openai
 openai-whisper
@@ -21,7 +22,7 @@ pandas
 Pillow
 prettytable
 Proxy-List-Scrapper
-py_trans
+#py_trans
 pycountry
 pyenchant
 pylatexenc
@@ -31,7 +32,8 @@ pysocks
 pytesseract
 python-Levenshtein
 python-magic
-#python-magic-bin
+# python-magic-bin
+# pylibmagic
 pytube
 re_edge_gpt
 replicate

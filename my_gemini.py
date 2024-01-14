@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # https://ai.google.dev/
 # pip install Proxy-List-Scrapper
+# pip install langcodes[data]
 
 
 import concurrent.futures
@@ -9,7 +10,9 @@ import random
 import threading
 import time
 import requests
+import traceback
 
+import langcodes
 from sqlitedict import SqliteDict
 
 import cfg
@@ -421,6 +424,18 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '')
         from_lang = 'autodetect'
     if to_lang == '':
         to_lang = 'ru'
+    try:
+        from_lang = langcodes.Language.make(language=from_lang).display_name(language='en') if from_lang != 'autodetect' else 'autodetect'
+    except Exception as error1:
+        error_traceback = traceback.format_exc()
+        my_log.log_translate(f'my_gemini:translate:error1: {error1}\n\n{error_traceback}')
+        
+    try:
+        to_lang = langcodes.Language.make(language=to_lang).display_name(language='en')
+    except Exception as error2:
+        error_traceback = traceback.format_exc()
+        my_log.log_translate(f'my_gemini:translate:error2: {error2}\n\n{error_traceback}')
+
     if help:
         query = f'Translate from language [{from_lang}] to language [{to_lang}], this can help you to translate better [{help}]:\n\n{text}'
     else:
@@ -708,7 +723,7 @@ if __name__ == '__main__':
 
     chat_cli()
 
-    # print(translate('مرحبا', 'ar', 'nl'))
+    # print(translate('مرحبا', to_lang='nl'))
     # print(translate('Γεια σας', 'el', 'pt'))
     # print(translate('Голос: Ynd муж.', to_lang='en', help = 'это текст на кнопке, он должен быть коротким что бы уместится на кнопке по-этому сокращен, полный текст - Голос: Yandex мужской, тут имеется в виду мужской голос для TTS от яндекса'))
     # print(translate('', to_lang='en'))

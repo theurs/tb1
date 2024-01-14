@@ -75,6 +75,14 @@
 
 /trial - userid_as_integer amount_of_monthes_to_add
 
+/chatgpt - обращение к chatgpt из другого режима
+
+/gemini - обращение к gemini из другого режима
+
+/claude - обращение к claude из другого режима
+
+/bard - обращение к bard из другого режима
+
 
 ![Скриншоты](pics/README.md)
 

@@ -8,7 +8,7 @@ from duckduckgo_search import DDGS
 import enchant
 import pycountry
 from langdetect import detect, detect_langs
-from py_trans import PyTranslator
+# from py_trans import PyTranslator
 
 import my_log
 import utils
@@ -135,27 +135,27 @@ def translate_text_ddg(text: str, lang: str = 'ru', _from: str = None) -> str:
     return result
 
 
-def translate_text(text, lang = 'ru'):
-    """
-    Translates the given text into the specified language.
+# def translate_text(text, lang = 'ru'):
+#     """
+#     Translates the given text into the specified language.
 
-    Parameters:
-        text (str): The text to be translated.
-        lang (str, optional): The language code to translate the text into. Defaults to 'ru'.
+#     Parameters:
+#         text (str): The text to be translated.
+#         lang (str, optional): The language code to translate the text into. Defaults to 'ru'.
 
-    Returns:
-        str or None: The translated text if successful, or None if the translation fails.
-    """
-    key = str((text, lang))
-    if key in TRANSLATE_CACHE:
-        return TRANSLATE_CACHE[key]
-    x = PyTranslator()
-    result = x.translate(text, lang)
-    if result['status'] == 'success':
-        TRANSLATE_CACHE[key] = result['translation']
-        return result['translation']
-    my_log.log2(f'my_trans:translate_text: {result["status"]}\n\n{text}\n\n{lang}')
-    return None
+#     Returns:
+#         str or None: The translated text if successful, or None if the translation fails.
+#     """
+#     key = str((text, lang))
+#     if key in TRANSLATE_CACHE:
+#         return TRANSLATE_CACHE[key]
+#     x = PyTranslator()
+#     result = x.translate(text, lang)
+#     if result['status'] == 'success':
+#         TRANSLATE_CACHE[key] = result['translation']
+#         return result['translation']
+#     my_log.log2(f'my_trans:translate_text: {result["status"]}\n\n{text}\n\n{lang}')
+#     return None
 
 
 def translate_text2(text, lang = 'ru'):
@@ -171,7 +171,8 @@ def translate_text2(text, lang = 'ru'):
         str: The translated text.
     """
     if 'windows' in utils.platform().lower():
-        return translate_text_ddg(text, lang) or translate_text(text, lang)
+        return translate_text_ddg(text, lang)
+        # return translate_text_ddg(text, lang) or translate_text(text, lang)
     text = text.strip()
     startswithslash = False
     if text.startswith('/'):
@@ -202,7 +203,8 @@ def translate(text):
         return None
     # переводим если язык не русский но определился успешно
     if d and d != 'ru':
-        return translate_text2(text) or translate_text(text) or None
+        return translate_text2(text) or None
+        # return translate_text2(text) or translate_text(text) or None
     return None
 
 

@@ -82,7 +82,7 @@ YTB_CACHE_FROM = SqliteDict('db/ytb_cache_from.db', autocommit=True)
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
 
 # в каких чатах какой чатбот отвечает {chat_id_full(str):chatbot(str)}
-# 'bard', 'claude', 'chatgpt'
+# 'bard', 'claude', 'chatgpt', 'gemini'
 CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
@@ -3694,10 +3694,30 @@ def do_task(message, custom_prompt: str = ''):
     if custom_prompt:
         message.text = custom_prompt
 
+
+    # кто по умолчанию отвечает
+    if chat_id_full not in CHAT_MODE:
+        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+
+    chat_mode_ = CHAT_MODE[chat_id_full]
     # не обрабатывать неизвестные команды
     if message.text.startswith('/'):
-        my_log.log2(f'tb:do_task:unknown command: {message.text}')
-        return
+        cmd_ = message.text[1:].split(maxsplit=1)[0].lower().strip()
+        if cmd_ == 'chatgpt':
+            chat_mode_ = 'chatgpt'
+            message.text = message.text.split(maxsplit=1)[1]
+        elif cmd_ == 'bard':
+            chat_mode_ = 'bard'
+            message.text = message.text.split(maxsplit=1)[1]
+        elif cmd_ == 'claude':
+            chat_mode_ = 'claude'
+            message.text = message.text.split(maxsplit=1)[1]
+        elif cmd_ == 'gemini':
+            chat_mode_ = 'gemini'
+            message.text = message.text.split(maxsplit=1)[1]
+        else:
+            my_log.log2(f'tb:do_task:unknown command: {message.text}')
+            return
 
     # если использовано кодовое слово вместо команды /music
     for x in cfg.MUSIC_WORDS:
@@ -3743,10 +3763,6 @@ def do_task(message, custom_prompt: str = ''):
         message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
 
         msg = message.text.lower()
-
-        # кто по умолчанию отвечает
-        if chat_id_full not in CHAT_MODE:
-            CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
         # если сообщение начинается на точку и режим чатГПТ то делаем запрос к модели
         # gpt-3.5-turbo-instruct
@@ -3856,7 +3872,7 @@ def do_task(message, custom_prompt: str = ''):
         # тогда сумморизируем текст из неё
         if my_sum.is_valid_url(message.text) and is_private:
             # если в режиме клауда чата то закидываем веб страницу как файл прямо в него
-            if chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] == 'claude':
+            if chat_mode_ == 'claude':
                 with ShowAction(message, 'typing'):
                     file_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10)) + '.txt'
                     text = my_sum.summ_url(message.text, True, lang)
@@ -3932,7 +3948,6 @@ def do_task(message, custom_prompt: str = ''):
             return
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif is_reply or is_private or bot_name_used:
-            # if len(msg) > cfg.max_message_from_user and (chat_id_full in CHAT_MODE and CHAT_MODE[chat_id_full] != 'claude'):
             if len(msg) > cfg.max_message_from_user:
                 bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
                 return
@@ -3961,7 +3976,7 @@ def do_task(message, custom_prompt: str = ''):
             helped_query = f'{hidden_text} {message.text}'
 
             # если активирован режим общения с Gemini Pro
-            if CHAT_MODE[chat_id_full] == 'gemini' and not FIRST_DOT:
+            if chat_mode_ == 'gemini' and not FIRST_DOT:
                 if len(msg) > my_gemini.MAX_REQUEST:
                     bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                     return
@@ -4004,7 +4019,7 @@ def do_task(message, custom_prompt: str = ''):
                     return
 
             # если активирован режим общения с бард чатом
-            if CHAT_MODE[chat_id_full] == 'bard' and not FIRST_DOT:
+            if chat_mode_ == 'bard' and not FIRST_DOT:
                 if len(msg) > my_bard.MAX_REQUEST:
                     bot_reply(message, f'{tr("Слишком длинное сообщение для барда:", lang)} {len(msg)} {tr("из", lang)} {my_bard.MAX_REQUEST}')
                     return
@@ -4045,7 +4060,7 @@ def do_task(message, custom_prompt: str = ''):
                     return
 
             # если активирован режим общения с клод чатом
-            if CHAT_MODE[chat_id_full] == 'claude' and not FIRST_DOT:
+            if chat_mode_ == 'claude' and not FIRST_DOT:
                 if len(msg) > my_claude.MAX_QUERY:
                     bot_reply(message, f'{tr("Слишком длинное сообщение для Клода:", lang)} {len(msg)} {tr("из", lang)} {my_claude.MAX_QUERY}')
                     return

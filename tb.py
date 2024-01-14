@@ -274,7 +274,7 @@ class ShowAction(threading.Thread):
         assert action in self.actions, f'Допустимые actions = {self.actions}'
         self.chat_id = message.chat.id
         self.thread_id = message.message_thread_id
-        self.is_topic = message.is_topic_message
+        self.is_topic = True if message.is_topic_message else False
         self.action = action
         self.is_running = True
         self.timerseconds = 1
@@ -547,6 +547,8 @@ def trial_status(message: telebot.types.Message) -> bool:
     if hasattr(cfg, 'TRIALS') and cfg.TRIALS:
         chat_full_id = get_topic_id(message)
         lang = get_lang(chat_full_id, message)
+        if lang == 'uk':
+            return True
 
         if message.chat.type != 'private':
             chat_full_id = f'[{message.chat.id}] [0]'

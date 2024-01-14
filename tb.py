@@ -3939,7 +3939,7 @@ def do_task(message, custom_prompt: str = ''):
                 VOICE_ONLY_MODE[chat_id_full] = False
             if VOICE_ONLY_MODE[chat_id_full]:
                 action = 'record_audio'
-                message.text = f'[{tr("голосовое сообщение, возможны ошибки распознавания речи, отвечай коротко и просто без форматирования текста - ответ будет зачитан вслух", lang)}]: ' + message.text
+                message.text = f'[{tr("голосовое сообщение, возможны ошибки распознавания речи, отвечай просто без форматирования текста - ответ будет зачитан вслух", lang)}]: ' + message.text
             else:
                 action = 'typing'
 

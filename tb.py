@@ -3701,20 +3701,25 @@ def do_task(message, custom_prompt: str = ''):
 
     chat_mode_ = CHAT_MODE[chat_id_full]
     # не обрабатывать неизвестные команды
+    chat_bot_cmd_was_used = False
     if message.text.startswith('/'):
         cmd_ = message.text[1:].split(maxsplit=1)[0].lower().strip()
         if cmd_ == 'chatgpt':
             chat_mode_ = 'chatgpt'
             message.text = message.text.split(maxsplit=1)[1]
+            chat_bot_cmd_was_used = True
         elif cmd_ == 'bard':
             chat_mode_ = 'bard'
             message.text = message.text.split(maxsplit=1)[1]
+            chat_bot_cmd_was_used = True
         elif cmd_ == 'claude':
             chat_mode_ = 'claude'
             message.text = message.text.split(maxsplit=1)[1]
+            chat_bot_cmd_was_used = True
         elif cmd_ == 'gemini':
             chat_mode_ = 'gemini'
             message.text = message.text.split(maxsplit=1)[1]
+            chat_bot_cmd_was_used = True
         else:
             my_log.log2(f'tb:do_task:unknown command: {message.text}')
             return
@@ -3947,7 +3952,7 @@ def do_task(message, custom_prompt: str = ''):
             ddg(message)
             return
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
-        elif is_reply or is_private or bot_name_used:
+        elif is_reply or is_private or bot_name_used or chat_bot_cmd_was_used:
             if len(msg) > cfg.max_message_from_user:
                 bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
                 return

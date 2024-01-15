@@ -776,11 +776,12 @@ def bot_reply_tr(message: telebot.types.Message,
               disable_web_page_preview: bool = None,
               reply_markup: telebot.types.InlineKeyboardMarkup = None,
               send_message: bool = False,
-              not_log: bool = False):
+              not_log: bool = False,
+              allow_voice: bool = False):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     msg = tr(msg, lang)
-    bot_reply(message, msg, parse_mode, disable_web_page_preview, reply_markup, send_message, not_log)
+    bot_reply(message, msg, parse_mode, disable_web_page_preview, reply_markup, send_message, not_log, allow_voice)
 
 
 def bot_reply(message: telebot.types.Message,
@@ -789,7 +790,8 @@ def bot_reply(message: telebot.types.Message,
               disable_web_page_preview: bool = None,
               reply_markup: telebot.types.InlineKeyboardMarkup = None,
               send_message: bool = False,
-              not_log: bool = False):
+              not_log: bool = False,
+              allow_voice: bool = False):
     """Send message from bot and log it"""
     try:
         if reply_markup is None:
@@ -801,10 +803,10 @@ def bot_reply(message: telebot.types.Message,
         if send_message:
             send_long_message(message, msg, parse_mode=parse_mode,
                                 disable_web_page_preview=disable_web_page_preview,
-                                reply_markup=reply_markup)
+                                reply_markup=reply_markup, allow_voice=allow_voice)
         else:
             reply_to_long_message(message, msg, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview,
-                            reply_markup=reply_markup)
+                            reply_markup=reply_markup, allow_voice=allow_voice)
     except Exception as unknown:
         my_log.log2(f'tb:bot_reply: {unknown}')
 
@@ -3596,16 +3598,18 @@ def set_default_commands_thread(message: telebot.types.Message):
 
 
 def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
-                      reply_markup: telebot.types.InlineKeyboardMarkup = None):
+                      reply_markup: telebot.types.InlineKeyboardMarkup = None, allow_voice: bool = False):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
     reply_to_long_message(message=message, resp=resp, parse_mode=parse_mode,
                           disable_web_page_preview=disable_web_page_preview,
-                          reply_markup=reply_markup, send_message = True)
+                          reply_markup=reply_markup, send_message = True,
+                          allow_voice=allow_voice)
 
 
 def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str = None,
                           disable_web_page_preview: bool = None,
-                          reply_markup: telebot.types.InlineKeyboardMarkup = None, send_message: bool = False):
+                          reply_markup: telebot.types.InlineKeyboardMarkup = None, send_message: bool = False,
+                          allow_voice: bool = False):
     # отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл
 
     if not resp:
@@ -3624,7 +3628,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         for chunk in chunks:
             # в режиме только голоса ответы идут голосом без текста
             # скорее всего будет всего 1 чанк, не слишком длинный текст
-            if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
+            if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full] and allow_voice:
                 message.text = '/tts ' + chunk
                 tts(message)
             else:
@@ -4052,12 +4056,12 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log_echo(message, f'[Gemini] {answer}')
                         try:
                             bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True)
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
                         except Exception as error:
                             print(f'tb:do_task: {error}')
                             my_log.log2(f'tb:do_task: {error}')
                             bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True)
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))
@@ -4085,20 +4089,17 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log_echo(message, ('[Bard] ' + answer + '\nPHOTO\n' + '\n'.join(images) + '\nLINKS\n' + '\n'.join(links)).strip())
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('bard_chat', message), not_log=True)
+                                                      reply_markup=get_keyboard('bard_chat', message), not_log=True, allow_voice=True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('bard_chat', message))
+                                                      reply_markup=get_keyboard('bard_chat', message), allow_voice=True)
                             if images:
                                 images_group = [telebot.types.InputMediaPhoto(i) for i in images]
                                 photos_ids = bot.send_media_group(message.chat.id, images_group[:10], reply_to_message_id=message.message_id)
-                            # if links:
-                            #     bot_reply(message, text_links, parse_mode='HTML', disable_web_page_preview = True,
-                            #                           reply_markup=get_keyboard('hide', message))
                         else:
-                            bot_reply_tr(message, 'No answer from Bard.')
+                            bot_reply_tr(message, 'No answer from Bard.', allow_voice=True)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))
@@ -4121,12 +4122,12 @@ def do_task(message, custom_prompt: str = ''):
                         if answer:
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('claude_chat', message), not_log=True)
+                                                      reply_markup=get_keyboard('claude_chat', message), not_log=True, allow_voice=True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                      reply_markup=get_keyboard('claude_chat', message), not_log=True)
+                                                      reply_markup=get_keyboard('claude_chat', message), not_log=True, allow_voice=True)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))
@@ -4171,13 +4172,13 @@ def do_task(message, custom_prompt: str = ''):
                 try:
                     bot_reply(message, resp, parse_mode='HTML',
                                             disable_web_page_preview = True,
-                                            reply_markup=get_keyboard('chat', message), not_log=True)
+                                            reply_markup=get_keyboard('chat', message), not_log=True, allow_voice=True)
                 except Exception as error2:
                     print(error2)
                     my_log.log2(resp)
                     bot_reply(message, resp, parse_mode='',
                                             disable_web_page_preview = True,
-                                            reply_markup=get_keyboard('chat', message), not_log=True)
+                                            reply_markup=get_keyboard('chat', message), not_log=True, allow_voice=True)
 
 
 def main():

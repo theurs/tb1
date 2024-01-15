@@ -211,6 +211,9 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
     text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
 
+    # меняем таблицы до возвращения кода
+    text = replace_tables(text)
+
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
         # new_match = html.escape(match)
@@ -224,7 +227,7 @@ def bot_markdown_to_html(text: str) -> str:
 
     text = replace_code_lang(text)
 
-    text = replace_tables(text)
+    # text = replace_tables(text)
 
     return text
 
@@ -554,23 +557,24 @@ if __name__ == '__main__':
     
     # print(get_full_time())    
     
-#     t = """
-# ```
-#                                              _
-#                                             | |
-#                                             | |
-#                                             | |
-#                                             | |
-#                                             | |
-#                                             | |
-#                                             | |
-#                                             | |
-#                                             | |
-#                                             | |
-#                                             | |
-#                                             | |
+    t = """
+```erlang
+[1 | [2,3] | 4 | 5].
+```
 
-# """
-    # print(bot_markdown_to_html(t))
+Этот код можно выполнить в консоли Erlang следующим образом:
 
-    print(mime_from_buffer(open('1.pdf', 'rb').read()))
+```erlang
+1> [1 | [2,3] | 4 | 5].
+[[1,[2,3]],4,5]
+```
+
+В этом примере:
+
+* `[1 | [2,3] | 4 | 5]` создает новый список, который состоит из числа `1`, списка `[2,3]`, числа `4` и числа `5`.
+
+Таким образом, мы построили список `[[1,[2,3]],4,5]` в консоли Erlang, используя только числовые значения и оператор `|`.
+"""
+    print(bot_markdown_to_html(t))
+
+    # print(mime_from_buffer(open('1.pdf', 'rb').read()))

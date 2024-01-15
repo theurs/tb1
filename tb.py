@@ -585,7 +585,7 @@ or use original chat bots at
 • <a>https://www.bing.com/</a> Bing - draw and chatGPT4
 • <a>https://ai.google.dev/</a> Gemini Pro (it doesn't have ready-to-use chat, there are only tools for development)
 
-or donate to this one <code>/help</code>.
+or donate 5$/month to this bot.<code>/help</code>.
 
  <b>It was nice to meet you.</b>'''
             bot_reply_tr(message, msg, disable_web_page_preview=True, parse_mode='HTML')

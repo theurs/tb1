@@ -2732,7 +2732,8 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                         my_log.log_echo(message, ' '.join(images))
                         if pics_group:
                             try:
-                                bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}', disable_web_page_preview = True)
+                                bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
+                                                 link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
                                 bot.send_media_group(pics_group, medias)
                             except Exception as error2:
                                 print(error2)
@@ -2922,8 +2923,7 @@ def alert_thread(message: telebot.types.Message):
                 thread = int(x.split()[1])
                 try:
                     bot.send_message(chat_id = chat, message_thread_id=thread, text = text, parse_mode='HTML',
-                                    disable_notification = True, disable_web_page_preview = True,
-                                    reply_markup=get_keyboard('translate', message))
+                                    disable_notification = True, reply_markup=get_keyboard('translate', message))
                 except Exception as error2:
                     print(f'tb:alert: {error2}')
                     my_log.log2(f'tb:alert: {error2}')
@@ -3606,6 +3606,8 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
 
     chat_id_full = get_topic_id(message)
 
+    preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
+
     if len(resp) < 20000:
         if parse_mode == 'HTML':
             chunks = utils.split_html(resp, 4000)
@@ -3622,10 +3624,10 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                 try:
                     if send_message:
                         bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode=parse_mode,
-                                         disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                                         link_preview_options=preview, reply_markup=reply_markup)
                     else:
                         bot.reply_to(message, chunk, parse_mode=parse_mode,
-                                disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                                link_preview_options=preview, reply_markup=reply_markup)
                 except Exception as error:
                     if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
                         my_log.log_parser_error(f'{DEBUG_MD_TO_HTML[resp]}\n=====================================================\n{resp}')
@@ -3634,9 +3636,9 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                         my_log.log2(chunk)
                     if send_message:
                         bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
-                                            disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                                            link_preview_options=preview, reply_markup=reply_markup)
                     else:
-                        bot.reply_to(message, chunk, parse_mode='', disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
+                        bot.reply_to(message, chunk, parse_mode='', link_preview_options=preview, reply_markup=reply_markup)
             counter -= 1
             if counter < 0:
                 break

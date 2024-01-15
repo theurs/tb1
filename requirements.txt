@@ -30,6 +30,7 @@ pylatexenc
 PyMuPDF
 PyPDF2
 pysocks
+pytelegrambotapi
 pytesseract
 python-Levenshtein
 # python-magic
@@ -41,7 +42,6 @@ replicate
 qrcode
 SpeechRecognition
 sqlitedict
-telebot
 # python -m textblob.download_corpora
 textblob
 tiktoken

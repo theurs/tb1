@@ -3757,10 +3757,12 @@ def do_task(message, custom_prompt: str = ''):
                 chat_mode_ = 'gemini'
                 message.text = message.text.split(maxsplit=1)[1]
                 chat_bot_cmd_was_used = True
+            else:
+                my_log.log2(f'tb:do_task:unknown command: {message.text}')
+                return
         except:
-            pass
-        my_log.log2(f'tb:do_task:unknown command: {message.text}')
-        return
+            my_log.log2(f'tb:do_task:unknown command: {message.text}')
+            return
 
     # если использовано кодовое слово вместо команды /music
     for x in cfg.MUSIC_WORDS:

@@ -159,7 +159,7 @@ def rewrite_prompt_for_open_dalle(prompt: str) -> str:
     Returns:
         str: The rewritten prompt in English.
     """
-    prompt_translated = my_gemini.ai(f'This is a prompt for image generation. Rewrite it in english, in one long sentance, make it better, add one random detail to it:\n\n{prompt}', temperature=1)
+    prompt_translated = my_gemini.ai(f'This is a prompt for image generation. Rewrite it in english, in one long sentance, make it better:\n\n{prompt}', temperature=1)
     if not prompt_translated:
         return translate_prompt_to_en(prompt)
     return translate_prompt_to_en(prompt_translated)
@@ -267,9 +267,13 @@ def huggin_face_api(prompt: str) -> bytes:
     if not hasattr(cfg, 'huggin_face_api'):
         return []
 
-    API_URL = ["https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-               "https://api-inference.huggingface.co/models/dataautogpt3/OpenDalleV1.1",
-               "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",]
+    API_URL = [
+                # "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+                # "https://api-inference.huggingface.co/models/dataautogpt3/OpenDalleV1.1",
+                "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
+                "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
+                "https://api-inference.huggingface.co/models/prompthero/openjourney",
+               ]
 
     api_key = random.choice(cfg.huggin_face_api)
 
@@ -281,7 +285,7 @@ def huggin_face_api(prompt: str) -> bytes:
 
     def request_img(prompt, url, h, p):
         try:
-            response = requests.post(url, headers=h, json=p, timeout=120)
+            response = requests.post(url, headers=h, json=p, timeout=180)
             result = []
             if response.content and ('error' not in str(response.content)[:300]):
                 result.append(response.content)
@@ -291,10 +295,12 @@ def huggin_face_api(prompt: str) -> bytes:
             return []
 
     pool = ThreadPool(processes=6)
-    async_result1 = pool.apply_async(request_img, (prompt, API_URL[0], headers, payload,))
+    async_result1 = pool.apply_async(request_img, (prompt, API_URL[1], headers, payload,))
     async_result2 = pool.apply_async(request_img, (prompt, API_URL[1], headers, payload,))
-    async_result3 = pool.apply_async(request_img, (prompt, API_URL[2], headers, payload,))
-    result = async_result1.get() + async_result2.get() + async_result3.get()
+    # async_result3 = pool.apply_async(request_img, (prompt, API_URL[2], headers, payload,))
+    # async_result4 = pool.apply_async(request_img, (prompt, API_URL[3], headers, payload,))
+    # async_result5 = pool.apply_async(request_img, (prompt, API_URL[4], headers, payload,))
+    result = async_result1.get() + async_result2.get() #+ async_result3.get() #+ async_result4.get() + async_result5.get()
 
     return result
 

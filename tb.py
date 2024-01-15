@@ -69,6 +69,9 @@ if not os.path.exists('db'):
 TRIAL_DAYS = cfg.TRIAL_DAYS if hasattr(cfg, 'TRIAL_DAYS') else 7
 TRIAL_MESSAGES = cfg.TRIAL_MESSAGES if hasattr(cfg, 'TRIAL_MESSAGES') else 300
 
+# сколько картинок нарисовано юзером {id: counter}
+IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=True)
+
 # запоминаем уникальные хелпы и приветствия, сбрасывать при смене языка
 HELLO_MSG = SqliteDict('db/msg_hello.db', autocommit=True)
 HELP_MSG = SqliteDict('db/msg_help.db', autocommit=True)
@@ -2642,6 +2645,17 @@ def ddg_thread(message: telebot.types.Message):
                              chat_id_full)
 
 
+def update_user_image_counter(chat_id_full: str, n: int):
+    if chat_id_full not in IMAGES_BY_USER_COUNTER:
+        IMAGES_BY_USER_COUNTER[chat_id_full] = 0
+    IMAGES_BY_USER_COUNTER[chat_id_full] += n
+
+def get_user_image_counter(chat_id_full: str) -> int:
+    if chat_id_full not in IMAGES_BY_USER_COUNTER:
+        IMAGES_BY_USER_COUNTER[chat_id_full] = 0
+    return IMAGES_BY_USER_COUNTER[chat_id_full]
+
+
 @bot.message_handler(commands=['image','img','i'], func=authorized)
 def image(message: telebot.types.Message):
     thread = threading.Thread(target=image_thread, args=(message,))
@@ -2714,6 +2728,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                 if len(medias) > 0:
                     with SEND_IMG_LOCK:
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                        update_user_image_counter(chat_id_full, len(medias))
                         my_log.log_echo(message, ' '.join(images))
                         if pics_group:
                             try:
@@ -2814,7 +2829,7 @@ def stats_thread(message: telebot.types.Message):
         hrules = prettytable.HEADER,
         junction_char = '|')
 
-    header = ['USER', 'left days', 'left messages']
+    header = ['USER', 'left days', 'left messages', 'lang', 'chat mode', 'images']
     pt.field_names = header
 
     for user in users_sorted:
@@ -2822,7 +2837,10 @@ def stats_thread(message: telebot.types.Message):
             left_days = TRIAL_DAYS - int((time.time()-TRIAL_USERS[user])/60/60/24)
             left_msgs = TRIAL_MESSAGES-TRIAL_USERS_COUNTER[user]
             # users_text += f'{user} - {left_days}d - {left_msgs}m \n'
-            row = [user, left_days, left_msgs]
+            user_lang = LANGUAGE_DB[user] if user in LANGUAGE_DB else cfg.DEFAULT_LANGUAGE
+            chat_mode = CHAT_MODE[user] if user in CHAT_MODE else cfg.chat_mode_default
+            images = get_user_image_counter(user)
+            row = [user, left_days, left_msgs, user_lang, chat_mode, images]
             try:
                 pt.add_row(row)
             except Exception as unknown:

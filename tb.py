@@ -2570,7 +2570,7 @@ def google_thread(message: telebot.types.Message):
             rr = utils.bot_markdown_to_html(r)
             bot_reply(message, rr, parse_mode = 'HTML',
                          disable_web_page_preview = True,
-                         reply_markup=get_keyboard('chat', message))
+                         reply_markup=get_keyboard('chat', message), allow_voice=True)
         except Exception as error2:
             my_log.log2(error2)
 
@@ -2630,7 +2630,7 @@ def ddg_thread(message: telebot.types.Message):
             rr = utils.bot_markdown_to_html(r)
             bot_reply(message, rr, parse_mode = 'HTML',
                          disable_web_page_preview = True,
-                         reply_markup=get_keyboard('chat', message))
+                         reply_markup=get_keyboard('chat', message), allow_voice=True)
         except Exception as error2:
             my_log.log2(error2)
         

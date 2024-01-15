@@ -2686,26 +2686,33 @@ def image_thread(message: telebot.types.Message):
                 # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 medias = []
                 for i in images:
-                    if 'error1_being_reviewed_prompt' in i:
-                        bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
-                        return
-                    elif 'error1_blocked_prompt' in i:
-                        bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                        return
-                    elif 'error1_unsupported_lang' in i:
-                        bot_reply_tr(message, 'Не понятный язык.')
-                        return
-                    elif 'error1_Bad images' in i:
-                        bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                        return
-                    if r'https://r.bing.com' not in i:
+                    if isinstance(i, str):
+                        if 'error1_being_reviewed_prompt' in i:
+                            bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+                            return
+                        elif 'error1_blocked_prompt' in i:
+                            bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
+                            return
+                        elif 'error1_unsupported_lang' in i:
+                            bot_reply_tr(message, 'Не понятный язык.')
+                            return
+                        elif 'error1_Bad images' in i:
+                            bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
+                            return
+                        if 'https://r.bing.com' in i:
+                            continue
+
+                    d = None
+                    if isinstance(i, str):
                         d = utils.download_image_as_bytes(i)
-                        if d:
-                            try:
-                                medias.append(telebot.types.InputMediaPhoto(d, caption = prompt))
-                            except Exception as add_media_error:
-                                error_traceback = traceback.format_exc()
-                                my_log.log2(f'tb:image_thread:add_media_bytes: {add_media_error}\n\n{error_traceback}')
+                    elif isinstance(i, bytes):
+                        d = i
+                    if d:
+                        try:
+                            medias.append(telebot.types.InputMediaPhoto(d, caption = prompt))
+                        except Exception as add_media_error:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:image_thread:add_media_bytes: {add_media_error}\n\n{error_traceback}')
 
                 if chat_id_full not in SUGGEST_ENABLED:
                     SUGGEST_ENABLED[chat_id_full] = False
@@ -2729,7 +2736,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                     with SEND_IMG_LOCK:
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                         update_user_image_counter(chat_id_full, len(medias))
-                        my_log.log_echo(message, ' '.join(images))
+                        my_log.log_echo(message, ' '.join([x for x in images if isinstance(x, str)]))
                         if pics_group:
                             try:
                                 bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
@@ -3732,26 +3739,28 @@ def do_task(message, custom_prompt: str = ''):
     # не обрабатывать неизвестные команды
     chat_bot_cmd_was_used = False
     if message.text.startswith('/'):
-        cmd_ = message.text[1:].split(maxsplit=1)[0].lower().strip()
-        if cmd_ == 'chatgpt':
-            chat_mode_ = 'chatgpt'
-            message.text = message.text.split(maxsplit=1)[1]
-            chat_bot_cmd_was_used = True
-        elif cmd_ == 'bard':
-            chat_mode_ = 'bard'
-            message.text = message.text.split(maxsplit=1)[1]
-            chat_bot_cmd_was_used = True
-        elif cmd_ == 'claude':
-            chat_mode_ = 'claude'
-            message.text = message.text.split(maxsplit=1)[1]
-            chat_bot_cmd_was_used = True
-        elif cmd_ == 'gemini':
-            chat_mode_ = 'gemini'
-            message.text = message.text.split(maxsplit=1)[1]
-            chat_bot_cmd_was_used = True
-        else:
-            my_log.log2(f'tb:do_task:unknown command: {message.text}')
-            return
+        try:
+            cmd_ = message.text[1:].split(maxsplit=1)[0].lower().strip()
+            if cmd_ == 'chatgpt':
+                chat_mode_ = 'chatgpt'
+                message.text = message.text.split(maxsplit=1)[1]
+                chat_bot_cmd_was_used = True
+            elif cmd_ == 'bard':
+                chat_mode_ = 'bard'
+                message.text = message.text.split(maxsplit=1)[1]
+                chat_bot_cmd_was_used = True
+            elif cmd_ == 'claude':
+                chat_mode_ = 'claude'
+                message.text = message.text.split(maxsplit=1)[1]
+                chat_bot_cmd_was_used = True
+            elif cmd_ == 'gemini':
+                chat_mode_ = 'gemini'
+                message.text = message.text.split(maxsplit=1)[1]
+                chat_bot_cmd_was_used = True
+        except:
+            pass
+        my_log.log2(f'tb:do_task:unknown command: {message.text}')
+        return
 
     # если использовано кодовое слово вместо команды /music
     for x in cfg.MUSIC_WORDS:

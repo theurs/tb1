@@ -129,6 +129,42 @@ def wizmodel_com(prompt: str):
     return response.text
 
 
+def translate_prompt_to_en(prompt: str) -> str:
+    """
+    Translates a given prompt to English if it is not already in English.
+
+    Args:
+        prompt (str): The input prompt to be translated.
+
+    Returns:
+        str: The translated prompt in English.
+    """
+    detected_lang = langdetect.detect(prompt)
+    if detected_lang != 'en':
+        prompt_translated = my_gemini.translate(prompt, to_lang='en', help='This is a prompt for image generation. Users can write it in their own language, but only English is supported.')
+        if not prompt_translated:
+            prompt_translated = my_trans.translate_text2(prompt, 'en')
+        if prompt_translated:
+            prompt = prompt_translated
+    return prompt
+
+
+def rewrite_prompt_for_open_dalle(prompt: str) -> str:
+    """
+    Generate a new prompt for OpenDalle image generation by rewriting the given prompt.
+    
+    Args:
+        prompt (str): The original prompt for image generation.
+        
+    Returns:
+        str: The rewritten prompt in English.
+    """
+    prompt_translated = my_gemini.ai(f'This is a prompt for image generation. Rewrite it in english, in one long sentance, make it better, add one random detail to it:\n\n{prompt}', temperature=1)
+    if not prompt_translated:
+        return translate_prompt_to_en(prompt)
+    return translate_prompt_to_en(prompt_translated)
+
+
 def stable_duffision_api(prompt: str):
     """
     Requests an image from the Stable Diffusion API using the provided prompt.
@@ -144,13 +180,8 @@ def stable_duffision_api(prompt: str):
             if prompt in NFSW_CONTENT:
                 return []
             url = "https://stablediffusionapi.com/api/v3/text2img"
-            detected_lang = langdetect.detect(prompt)
-            if detected_lang != 'en':
-                prompt_translated = my_gemini.translate(prompt, to_lang='en', help='This is a prompt for image generation. Users can write it in their own language, but only English is supported.')
-                if not prompt_translated:
-                    prompt_translated = my_trans.translate_text2(prompt, 'en')
-                if prompt_translated:
-                    prompt = prompt_translated
+
+            prompt = translate_prompt_to_en(prompt)
 
             api_keys = cfg.STABLE_DIFFUSION_API[:]
             random.shuffle(api_keys)
@@ -223,6 +254,51 @@ def stable_duffision_api(prompt: str):
     return []
 
 
+def huggin_face_api(prompt: str) -> bytes:
+    """
+    Calls the Hugging Face API to generate text based on a given prompt.
+    
+    Args:
+        prompt (str): The prompt to generate text from.
+    
+    Returns:
+        bytes: The generated text as bytes.
+    """
+    if not hasattr(cfg, 'huggin_face_api'):
+        return []
+
+    API_URL = ["https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+               "https://api-inference.huggingface.co/models/dataautogpt3/OpenDalleV1.1",
+               "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",]
+
+    api_key = random.choice(cfg.huggin_face_api)
+
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    # prompt = translate_prompt_to_en(prompt)
+    prompt = rewrite_prompt_for_open_dalle(prompt)
+    payload = json.dumps({"inputs": prompt})
+
+    def request_img(prompt, url, h, p):
+        try:
+            response = requests.post(url, headers=h, json=p, timeout=120)
+            result = []
+            if response.content and ('error' not in str(response.content)[:300]):
+                result.append(response.content)
+            return result
+        except Exception as error:
+            my_log.log2(f'my_genimg:huggin_face_api: {error}\n\nPrompt: {prompt}')
+            return []
+
+    pool = ThreadPool(processes=6)
+    async_result1 = pool.apply_async(request_img, (prompt, API_URL[0], headers, payload,))
+    async_result2 = pool.apply_async(request_img, (prompt, API_URL[1], headers, payload,))
+    async_result3 = pool.apply_async(request_img, (prompt, API_URL[2], headers, payload,))
+    result = async_result1.get() + async_result2.get() + async_result3.get()
+
+    return result
+
+
 def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """рисует одновременно всеми доступными способами"""
     #return bing(prompt) + chimera(prompt)
@@ -246,8 +322,10 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     #     result = result + ddg_search_images(prompt)
 
     if not result:
-        result += stable_duffision_api(prompt)
-        my_log.log2(f'my_genimg:gen_images: used stable_diffusion_api, result: {result}')
+        r = huggin_face_api(prompt)
+        if r:
+            result = r
+            my_log.log2(f'my_genimg:gen_images: huggin_face_api')
 
     return result[:10]
 
@@ -258,4 +336,5 @@ if __name__ == '__main__':
     # print(stable_duffision_api('гермиона гренджер на коленях перед священником'))
     # print(stable_duffision_api('a man standing in front of a painting, ssr card, avatar for website, archers, ram skull, janapese, jeremy, mall background, young man with short, marvel poster, wlop : :'))
     # print(stable_duffision_api("Hermione Granger looks up, mouth agape, in awe and wonder. The light of magic illuminates her face and sparkles dance in her eyes. A swirl of books and magical artifacts surrounds her, representing her vast knowledge and love of learning. The background is a grand library or a starry night sky, symbolizing her limitless potential and insatiable curiosity. The overall tone is one of amazement and discovery."))
-    print(stable_duffision_api("Гермиона Грейнджер смотрит вверх с разинутым ртом в благоговении и удивлении. Свет волшебства освещает ее лицо и сверкает танцем в глазах. Ее окружает водоворот книг и магических артефактов, символизирующий ее обширные знания и любовь к учебе. Фоном является огромная библиотека или звездное ночное небо, символизирующее ее безграничный потенциал и ненасытное любопытство. Общий тон – изумление и открытие."))
+    # print(stable_duffision_api("Гермиона Грейнджер смотрит вверх с разинутым ртом в благоговении и удивлении. Свет волшебства освещает ее лицо и сверкает танцем в глазах. Ее окружает водоворот книг и магических артефактов, символизирующий ее обширные знания и любовь к учебе. Фоном является огромная библиотека или звездное ночное небо, символизирующее ее безграничный потенциал и ненасытное любопытство. Общий тон – изумление и открытие."))
+    open('1.jpg','wb').write(huggin_face_api('Гермиона Грейнджер смотрит вверх с разинутым ртом в благоговении и удивлении. Свет волшебства освещает ее лицо и сверкает танцем в глазах. Ее окружает водоворот книг и магических артефактов, символизирующий ее обширные знания и любовь к учебе. Фоном является огромная библиотека или звездное ночное небо, символизирующее ее безграничный потенциал и ненасытное любопытство. Общий тон – изумление и открытие.'))

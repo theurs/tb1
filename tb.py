@@ -2801,7 +2801,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                     bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
                     if cfg.enable_image_adv:
                         bot_reply_tr(message,
-                                  "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum",
+                                  "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum or this https://t.me/aibrahma/467",
                                   disable_web_page_preview = True)
                     my_log.log_echo(message, '[image gen error] ')
                     n = [{'role':'system', 'content':f'user {tr("asked to draw", lang)}\n{prompt}'}, 

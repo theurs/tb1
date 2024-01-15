@@ -3403,7 +3403,7 @@ def id_cmd_handler(message: telebot.types.Message):
         if msgs_counter < 0:
             msgs_counter = 0
 
-        msg += f'\n\n{tr("Дней осталось:", lang)} {days_left}\n{tr("Сообщений осталось:", lang)} {msgs_counter}\n\n'
+        msg += f'\n\n{tr("Days left:", lang)} {days_left}\n{tr("Messages left:", lang)} {msgs_counter}\n\n'
     if chat_full_id in BAD_USERS:
         msg += f'{tr("Пользователь забанен.", lang)}\n'
     if str(message.chat.id) in DDOS_BLOCKED_USERS:

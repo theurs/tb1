@@ -2738,14 +2738,22 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                     with SEND_IMG_LOCK:
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                         update_user_image_counter(chat_id_full, len(medias))
-                        my_log.log_echo(message, ' '.join([x for x in images if isinstance(x, str)]))
+
+                        log_msg = '[Send images] '
+                        for x in images:
+                            if isinstance(x, str):
+                                log_msg += x + ' '
+                            elif isinstance(x, bytes):
+                                log_msg += f'[binary file {round(len(x)/1024)}kb] '
+                        my_log.log_echo(message, log_msg)
+
                         if pics_group:
                             try:
                                 bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
                                                  link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
                                 bot.send_media_group(pics_group, medias)
                             except Exception as error2:
-                                print(error2)
+                                my_log.log2(f'tb:image_thread:send to pics_group: {error2}')
                         # caption = ''
                         # remember prompt by key (first image number) and save request and images to database
                         # so that they can be viewed separately later

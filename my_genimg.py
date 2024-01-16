@@ -299,7 +299,8 @@ def huggin_face_api(prompt: str) -> bytes:
                 my_log.log2(f'my_genimg:huggin_face_api:DEBUG: {api_key} response empty')
             return result
         except Exception as error:
-            my_log.log2(f'my_genimg:huggin_face_api: {error}\n\nPrompt: {prompt}')
+            error_traceback = traceback.format_exc()
+            my_log.log2(f'my_genimg:huggin_face_api: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
             return []
 
     pool = ThreadPool(processes=6)

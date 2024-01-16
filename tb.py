@@ -2030,7 +2030,7 @@ def set_trial(message: telebot.types.Message):
                 TRIAL_USERS[user] = time.time()
             TRIAL_USERS[user] = TRIAL_USERS[user] + float(monthes)*60*60*24*30
             time_left = -round((time.time()-TRIAL_USERS[user])/60/60/24/30, 1)
-            msg = f'{tr("User trial updated.", lang)} {user} +{monthes} = [{time_left}]'
+            msg = f'{tr("User trial updated.", lang)}\n\n{user} +{monthes} = [{time_left}] [msgs: {TRIAL_USERS_COUNTER[user]}]'
         except:
             msg = tr('Usage: /trial <userid as integer> <amount of monthes to add>', lang)
     else:

@@ -304,10 +304,10 @@ def huggin_face_api(prompt: str) -> bytes:
     pool = ThreadPool(processes=6)
     async_result1 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
     async_result2 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
-    # async_result3 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
+    async_result3 = pool.apply_async(request_img, (prompt, API_URL[2], payload,))
     # async_result4 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
     # async_result5 = pool.apply_async(request_img, (prompt, API_URL[4], payload,))
-    result = async_result1.get() + async_result2.get() #+ async_result3.get() + async_result4.get() #+ async_result5.get()
+    result = async_result1.get() + async_result2.get() + async_result3.get() #+ async_result4.get() #+ async_result5.get()
 
     return result
 
@@ -322,23 +322,23 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 
     async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
 
-    # async_result2 = pool.apply_async(openai, (prompt_tr,))
+    async_result2 = pool.apply_async(huggin_face_api, (prompt,))
 
     # async_result3 = pool.apply_async(replicate_images, (prompt_tr,))
     # async_result4 = pool.apply_async(replicate_images, (prompt_tr,))
     # async_result5 = pool.apply_async(replicate_images, (prompt_tr,))
     # async_result6 = pool.apply_async(replicate_images, (prompt_tr,))
 
-    result = async_result1.get() #+ async_result2.get() + async_result3.get() + async_result4.get() + async_result5.get() + async_result6.get()
+    result = async_result1.get() + async_result2.get() #+ async_result3.get() + async_result4.get() + async_result5.get() + async_result6.get()
 
     # if len(result) < 10:
     #     result = result + ddg_search_images(prompt)
 
-    if not result:
-        r = huggin_face_api(prompt)
-        if r:
-            result = r
-            my_log.log2(f'my_genimg:gen_images: huggin_face_api')
+    # if not result:
+    #     r = huggin_face_api(prompt)
+    #     if r:
+    #         result = r
+    #         my_log.log2(f'my_genimg:gen_images: huggin_face_api')
 
     return result[:10]
 

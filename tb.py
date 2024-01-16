@@ -210,15 +210,6 @@ supported_langs_tts = [
         'sn', 'so', 'sq', 'sr', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'tk',
         'tl', 'tr', 'tt', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
 
-# MSG_CONFIG = f"""***Панель управления***
-
-# Тут можно:
-
-# - стереть память боту
-# - переключить чат с chatGPT на Google Bard, Claude AI, Gemini Pro
-# - изменить голос
-# - выключить авто переводы иностранных текстов на канале и перевод голосовых сообщений в текст
-# """
 
 class RequestCounter:
     """Ограничитель числа запросов к боту
@@ -1099,9 +1090,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
-        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT}
+        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT} /name
 
-<b>{tr('Bot style(role):', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)}
+<b>{tr('Bot style(role):', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)} /style
 
 <b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
 """
@@ -1884,9 +1875,9 @@ def config(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     try:
-        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT}
+        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT} /name
 
-<b>{tr('Bot style(role):', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)}
+<b>{tr('Bot style(role):', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)} /style
 
 <b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
 """

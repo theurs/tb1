@@ -275,17 +275,20 @@ def huggin_face_api(prompt: str) -> bytes:
                 "https://api-inference.huggingface.co/models/prompthero/openjourney",
                ]
 
-    api_key = random.choice(cfg.huggin_face_api)
-
-    headers = {"Authorization": f"Bearer {api_key}"}
-
     # prompt = translate_prompt_to_en(prompt)
     prompt = rewrite_prompt_for_open_dalle(prompt)
     payload = json.dumps({"inputs": prompt})
 
-    def request_img(prompt, url, h, p):
+    def request_img(prompt, url, p):
         try:
-            response = requests.post(url, headers=h, json=p, timeout=180)
+            if hasattr(cfg, 'bing_proxy'):
+                proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
+            else:
+                proxy = None
+            api_key = random.choice(cfg.huggin_face_api)
+            headers = {"Authorization": f"Bearer {api_key}"}
+
+            response = requests.post(url, headers=headers, json=p, timeout=180, proxies=proxy)
             result = []
             if response.content and ('error' not in str(response.content)[:300]):
                 result.append(response.content)
@@ -295,11 +298,11 @@ def huggin_face_api(prompt: str) -> bytes:
             return []
 
     pool = ThreadPool(processes=6)
-    async_result1 = pool.apply_async(request_img, (prompt, API_URL[1], headers, payload,))
-    async_result2 = pool.apply_async(request_img, (prompt, API_URL[1], headers, payload,))
-    # async_result3 = pool.apply_async(request_img, (prompt, API_URL[2], headers, payload,))
-    # async_result4 = pool.apply_async(request_img, (prompt, API_URL[3], headers, payload,))
-    # async_result5 = pool.apply_async(request_img, (prompt, API_URL[4], headers, payload,))
+    async_result1 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
+    async_result2 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
+    # async_result3 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
+    # async_result4 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
+    # async_result5 = pool.apply_async(request_img, (prompt, API_URL[4], payload,))
     result = async_result1.get() + async_result2.get() #+ async_result3.get() #+ async_result4.get() + async_result5.get()
 
     return result

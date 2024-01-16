@@ -228,7 +228,7 @@ def gen_images(query: str, user_id: str = ''):
                         except Exception as error:
                             if 'location' in str(error) or 'timeout' in str(error):
                                 my_log.log_bing_img(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
-                                break
+                                return []
                             if str(error).startswith('error1'):
                                 BAD_IMAGES_PROMPT[query] = True
                                 return [str(error),]
@@ -240,7 +240,7 @@ def gen_images(query: str, user_id: str = ''):
                     except Exception as error:
                         if 'location' in str(error) or 'timeout' in str(error):
                             my_log.log_bing_img(f'get_images: {error} Cookie: {cookie}')
-                            break
+                            return []
                         if str(error).startswith('error1'):
                             BAD_IMAGES_PROMPT[query] = True
                             return []

@@ -292,6 +292,10 @@ def huggin_face_api(prompt: str) -> bytes:
             result = []
             if response.content and ('error' not in str(response.content)[:300]):
                 result.append(response.content)
+            elif response.content:
+                my_log.log2(f'my_genimg:huggin_face_api:DEBUG: {api_key} response {response.content[:150]}...')
+            else:
+                my_log.log2(f'my_genimg:huggin_face_api:DEBUG: {api_key} response empty')
             return result
         except Exception as error:
             my_log.log2(f'my_genimg:huggin_face_api: {error}\n\nPrompt: {prompt}')
@@ -301,9 +305,9 @@ def huggin_face_api(prompt: str) -> bytes:
     async_result1 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
     async_result2 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
     # async_result3 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
-    # async_result4 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
+    # async_result4 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
     # async_result5 = pool.apply_async(request_img, (prompt, API_URL[4], payload,))
-    result = async_result1.get() + async_result2.get() #+ async_result3.get() #+ async_result4.get() + async_result5.get()
+    result = async_result1.get() + async_result2.get() #+ async_result3.get() + async_result4.get() #+ async_result5.get()
 
     return result
 

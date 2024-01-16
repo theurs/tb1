@@ -965,9 +965,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
         if CHAT_MODE[chat_id_full] == 'chatgpt':
-            button1 = telebot.types.InlineKeyboardButton('✅ChatGPT', callback_data='chatGPT_mode_disable')
+            button1 = telebot.types.InlineKeyboardButton('✅ChatGPT 3.5', callback_data='chatGPT_mode_disable')
         else:
-            button1 = telebot.types.InlineKeyboardButton('☑️ChatGPT', callback_data='chatGPT_mode_enable')
+            button1 = telebot.types.InlineKeyboardButton('☑️ChatGPT 3.5', callback_data='chatGPT_mode_enable')
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='chatGPT_reset')
         markup.row(button1, button2)
 
@@ -3294,7 +3294,7 @@ In private messages, you don't need to mention the bot's name
 🚂 You can send texts longer than 4096 characters. The Telegram client automatically breaks them down into parts,
 and the bot reassembles them. The restrictions for chatbots are as follows:
 
-ChatGPT: {cfg.CHATGPT_MAX_REQUEST}
+ChatGPT3.5: {cfg.CHATGPT_MAX_REQUEST}
 Google Bard: {my_bard.MAX_REQUEST}
 Claude AI: {my_claude.MAX_QUERY}
 GeminiPro: {my_gemini.MAX_REQUEST}

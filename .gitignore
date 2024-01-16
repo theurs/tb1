@@ -10,8 +10,9 @@ test.py
 1.txt
 db/*
 logs/*
-1.mp3
-1.ogg
+*.mp3
+*.ogg
+*.jpg
 *.fb2
 *.doc
 _old/*

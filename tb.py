@@ -1137,12 +1137,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             llang = my_trans.detect_lang(message.text or message.caption or '') or lang
             message.text = f'/tts {llang} {message.text or message.caption or ""}'
             tts(message)
-        elif call.data == 'erase_image':
-            # обработка нажатия кнопки "Стереть ответ"
-            bot.delete_message(message.chat.id, message.message_id)
-            # получаем номер сообщения с картинками из сообщения с ссылками на картинки который идет следом
-            for i in message.text.split('\n')[0].split():
-                bot.delete_message(message.chat.id, int(i))
+        # elif call.data == 'erase_image':
+        #     # обработка нажатия кнопки "Стереть ответ"
+        #     bot.delete_message(message.chat.id, message.message_id)
+        #     # получаем номер сообщения с картинками из сообщения с ссылками на картинки который идет следом
+        #     for i in message.text.split('\n')[0].split():
+        #         bot.delete_message(message.chat.id, int(i))
         # elif call.data == 'repeat_image':
         #     # получаем номер сообщения с картинками (первый из группы)
         #     for i in message.text.split('\n')[0].split():
@@ -1174,10 +1174,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 except Exception as unlink_error:
                     my_log.log2(f'tb:callback_inline_thread:download_tiktok:{unlink_error}\n\nunlink {tmp}')
         elif call.data.startswith('imagecmd_'):
-            hash = call.data[9:]
-            prompt = IMAGE_SUGGEST_BUTTONS[hash]
-            message.text = f'/image {prompt}'
-            image(message)
+            if trial_status(message):
+                hash = call.data[9:]
+                prompt = IMAGE_SUGGEST_BUTTONS[hash]
+                message.text = f'/image {prompt}'
+                image(message)
         elif call.data.startswith('youtube '):
             global YTB_CACHE
             song_id = call.data[8:]

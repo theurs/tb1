@@ -344,14 +344,8 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 
 
 if __name__ == '__main__':
-    # print(ddg_search_images('сочная малина'))
-    # print(gen_images('рисунок мальчика с чёрными волосами в костюме жирафа и девочки с рыжими волосами в костюме лисы, наклейки, логотип, минимализм, в новый год, наряжают ёлку'))
-    # print(stable_duffision_api('гермиона гренджер на коленях перед священником'))
-    # print(stable_duffision_api('a man standing in front of a painting, ssr card, avatar for website, archers, ram skull, janapese, jeremy, mall background, young man with short, marvel poster, wlop : :'))
-    # print(stable_duffision_api("Hermione Granger looks up, mouth agape, in awe and wonder. The light of magic illuminates her face and sparkles dance in her eyes. A swirl of books and magical artifacts surrounds her, representing her vast knowledge and love of learning. The background is a grand library or a starry night sky, symbolizing her limitless potential and insatiable curiosity. The overall tone is one of amazement and discovery."))
-    # print(stable_duffision_api("Гермиона Грейнджер смотрит вверх с разинутым ртом в благоговении и удивлении. Свет волшебства освещает ее лицо и сверкает танцем в глазах. Ее окружает водоворот книг и магических артефактов, символизирующий ее обширные знания и любовь к учебе. Фоном является огромная библиотека или звездное ночное небо, символизирующее ее безграничный потенциал и ненасытное любопытство. Общий тон – изумление и открытие."))
-    
+
     n=0
-    for x in huggin_face_api('Гермиона Грейнджер'):
+    for x in huggin_face_api('букет цветов в вазе на столе'):
         n+=1
         open(f'{n}.jpg','wb').write(x)

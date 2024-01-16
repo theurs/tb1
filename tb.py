@@ -2697,13 +2697,16 @@ def image_thread(message: telebot.types.Message):
                             continue
 
                     d = None
+                    caption_ = prompt
                     if isinstance(i, str):
                         d = utils.download_image_as_bytes(i)
+                        caption_ = 'bing.com\n\n' + caption_
                     elif isinstance(i, bytes):
+                        caption_ = 'dalle-3-xl\n\n' + caption_
                         d = i
                     if d:
                         try:
-                            medias.append(telebot.types.InputMediaPhoto(d, caption = prompt))
+                            medias.append(telebot.types.InputMediaPhoto(d, caption = caption_))
                         except Exception as add_media_error:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:image_thread:add_media_bytes: {add_media_error}\n\n{error_traceback}')

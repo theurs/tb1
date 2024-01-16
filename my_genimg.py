@@ -268,11 +268,12 @@ def huggin_face_api(prompt: str) -> bytes:
         return []
 
     API_URL = [
-                # "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-                # "https://api-inference.huggingface.co/models/dataautogpt3/OpenDalleV1.1",
+                "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+                "https://api-inference.huggingface.co/models/dataautogpt3/OpenDalleV1.1",
                 "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
                 "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
                 "https://api-inference.huggingface.co/models/prompthero/openjourney",
+                "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.0",
                ]
 
     # prompt = translate_prompt_to_en(prompt)
@@ -302,8 +303,8 @@ def huggin_face_api(prompt: str) -> bytes:
             return []
 
     pool = ThreadPool(processes=6)
-    async_result1 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
-    async_result2 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
+    async_result1 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
+    async_result2 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
     # async_result3 = pool.apply_async(request_img, (prompt, API_URL[2], payload,))
     # async_result4 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
     # async_result5 = pool.apply_async(request_img, (prompt, API_URL[4], payload,))
@@ -346,6 +347,6 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 if __name__ == '__main__':
 
     n=0
-    for x in huggin_face_api('букет цветов в вазе на столе'):
+    for x in huggin_face_api('толстый кот сидит под кроватью'):
         n+=1
         open(f'{n}.jpg','wb').write(x)

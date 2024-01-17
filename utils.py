@@ -399,7 +399,7 @@ def split_html(text: str, max_length: int = 1500) -> list:
             in_code_mode = 0
 
         else:
-            if len(chunk) + len(line) > max_length:
+            if len(chunk) + len(line) + 20 > max_length:
 
                 if in_code_mode == 1:
                     chunk += '</code></pre>\n'
@@ -424,7 +424,14 @@ def split_html(text: str, max_length: int = 1500) -> list:
 
     chunks.append(chunk)
 
-    return chunks
+    chunks2 = []
+    for chunk in chunks:
+        if len(chunk) > max_length:
+            chunks2 += split_text(chunk, max_length)
+        else:
+            chunks2.append(chunk)
+
+    return chunks2
 
 
 def text_to_qrcode(text: str) -> str:

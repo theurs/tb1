@@ -11,155 +11,153 @@ bot = telebot.TeleBot(cfg.token, skip_pending=True)
 
 @bot.message_handler(commands=['start'])
 def command_code(message: telebot.types.Message):
-    t = r"""
-```c++
-#include <windows.h>
-#include <iostream>
+    t = r"""Sure, here is the query without the HTML tags:
 
-// Определение идентификатора окна чата в игре Lineage 2
-#define CHAT_WINDOW_ID 0x00000001
-
-// Определение идентификатора кнопки в интерфейсном окне
-#define BUTTON_ID 1
-
-// Определение текста сообщения, которое будет отправлено в чат
-#define MESSAGE_TEXT "Привет!"
-
-// Функция для отправки сообщения в чат игры Lineage 2
-void SendChatMessage(const char* message)
-{
-    // Получение дескриптора окна чата в игре Lineage 2
-    HWND chatWindow = FindWindow(NULL, "Lineage II Chat");
-
-    // Если окно чата не найдено, то вывести сообщение об ошибке и выйти из функции
-    if (chatWindow == NULL)
-    {
-        std::cout << "Error: Could not find chat window." << std::endl;
-        return;
-    }
-
-    // Получение дескриптора поля ввода текста в окне чата
-    HWND chatInput = FindWindowEx(chatWindow, NULL, "RichEdit20W", NULL);
-
-    // Если поле ввода текста не найдено, то вывести сообщение об ошибке и выйти из функции
-    if (chatInput == NULL)
-    {
-        std::cout << "Error: Could not find chat input field." << std::endl;
-        return;
-    }
-
-    // Установка фокуса на поле ввода текста
-    SetFocus(chatInput);
-
-    // Отправка сообщения в поле ввода текста
-    SendMessage(chatInput, WM_SETTEXT, 0, (LPARAM)message);
-
-    // Нажатие клавиши Enter для отправки сообщения в чат
-    SendMessage(chatInput, WM_KEYDOWN, VK_RETURN, 0);
-    SendMessage(chatInput, WM_KEYUP, VK_RETURN, 0);
-}
-
-// Функция для обработки нажатия кнопки в интерфейсном окне
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch (message)
-    {
-        case WM_COMMAND:
-            // Если нажата кнопка с идентификатором BUTTON_ID, то отправить сообщение в чат
-            if (LOWORD(wParam) == BUTTON_ID)
-            {
-                SendChatMessage(MESSAGE_TEXT);
-            }
-            break;
-
-        case WM_DESTROY:
-            // Если окно закрыто, то выйти из программы
-            PostQuitMessage(0);
-            break;
-    }
-
-    return DefWindowProc(hwnd, message, wParam, lParam);
-}
-
-// Точка входа в DLL-библиотеку
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
-{
-    switch (ul_reason_for_call)
-    {
-        case DLL_PROCESS_ATTACH:
-            // DLL-библиотека была внедрена в процесс игры Lineage 2
-
-            // Создание класса окна для интерфейсного окна
-            WNDCLASSEX wc;
-            wc.cbSize = sizeof(WNDCLASSEX);
-            wc.style = CS_HREDRAW | CS_VREDRAW;
-            wc.lpfnWndProc = WindowProc;
-            wc.cbClsExtra = 0;
-            wc.cbWndExtra = 0;
-            wc.hInstance = GetModuleHandle(NULL);
-            wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-            wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-            wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-            wc.lpszMenuName = NULL;
-            wc.lpszClassName = "L2InjectorWindowClass";
-            wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-
-            // Регистрация класса окна
-            if (!RegisterClassEx(&wc))
-            {
-                std::cout << "Error: Could not register window class." << std::endl;
-                return FALSE;
-            }
-
-            // Создание интерфейсного окна
-            HWND window = CreateWindowEx(WS_EX_TOPMOST, "L2InjectorWindowClass", "L2 Injector", WS_POPUP, 0, 0, 200, 100, NULL, NULL, GetModuleHandle(NULL), NULL);
-
-            // Если окно не создано, то вывести сообщение об ошибке и выйти из функции
-            if (window == NULL)
-            {
-                std::cout << "Error: Could not create window." << std::endl;
-                return FALSE;
-            }
-
-            // Создание кнопки в интерфейсном окне
-            HWND button = CreateWindow("BUTTON", "Привет", WS_CHILD | WS_VISIBLE, 10, 10, 100, 25, window, (HMENU)BUTTON_ID, GetModuleHandle(NULL), NULL);
-
-            // Если кнопка не создана, то вывести сообщение об ошибке и выйти из функции
-            if (button == NULL)
-            {
-                std::cout << "Error: Could not create button." << std::endl;
-                return FALSE;
-            }
-
-            // Отображение интерфейсного окна
-            ShowWindow(window, SW_SHOW);
-
-            break;
-
-        case DLL_PROCESS_DETACH:
-            // DLL-библиотека была удалена из процесса игры Lineage 2
-            break;
-    }
-
-    return TRUE;
-}
+```sql
+WITH RECURSIVE catalog ("@Catalog", "Parent", "Name", "Context", "Path") AS (
+    SELECT c."@Catalog", c."Parent", c."Name", "Context", array[c."@Catalog"] as "Path"
+    FROM "Catalog" c
+    WHERE
+        !temp_filter_catalogs_to_recursion
+    UNION
+    SELECT c2."@Catalog", c2."Parent", c2."Name", c2."Context", catalog."Path" || c2."@Catalog"
+    FROM "Catalog" c2 INNER JOIN catalog ON( catalog."@Catalog"= c2."Parent")
+),
+-- Отбираем  константы по фильтрам значений
+constant_with_filtered_values AS (
+    SELECT
+        DISTINCT "@Constant"
+    FROM "Value" val
+        INNER JOIN "Constant" con ON (val."Constant" = con."@Constant")
+    WHERE
+        TRUE
+        {% ifnotnull date_range %}
+            AND !date_range BETWEEN "PeriodStart" and "PeriodEnd"
+        {% endif %}
+        {% iftrue search_by_object_type %}
+        AND "@Value" = ANY(
+            SELECT DISTINCT "Value"
+            FROM "ObjectLink" ol
+                JOIN "ObjectType" ot ON (ol."ObjectType" = ot."@ObjectType")
+            WHERE
+                TRUE
+                {% ifnotnull subdivision %}
+                    AND ot."Code" = 'subdivision' AND ol."ObjectId" = ANY(!subdivision)
+                {% endif %}
+                {% ifnotnull employee %}
+                    AND ot."Code" = 'employee' AND ol."ObjectId" = ANY(!employee)
+                {% endif %}
+                {% ifnotnull region %}
+                    AND ot."Code" = 'region' AND ol."ObjectId" = ANY(!region)
+                {% endif %}
+        )
+        {% endif %}
+        {% ifnotnull user_type %}
+            AND (
+                CASE
+                    WHEN con."System" THEN 'system'
+                    WHEN con."System" IS FALSE AND con."ClientId" IS NULL AND val."ClientId" IS NULL THEN 'typo'
+                    WHEN con."System" IS FALSE AND con."ClientId" IS NULL AND val."ClientId" IS NOT NULL THEN 'changed'
+                    ELSE 'user'
+                END
+            ) = ANY(!user_type)
+        {% endif %}
+    GROUP BY "@Constant", "Catalog"
+),
+-- Получаем константы по фильтрам констант
+filtered_constants as (
+    SELECT con."@Constant", con."Catalog"
+    FROM
+        "Constant" con
+        {% iftrue is_filter_by_value %}
+            -- Соединяем с константами отфильтрованными по значениям только в случае фильтрации по значениям,
+            --      иначе не покажутся константы без значений
+            INNER JOIN constant_with_filtered_values cwfv ON con."@Constant" = cwfv."@Constant"
+        {% endif %}
+    WHERE
+        TRUE
+        {% ifnotnull value_type %}
+            AND con."ValueType" = ANY(
+                SELECT "@ValueType"
+                FROM "ValueType"
+                WHERE "Code" = ANY(!value_type::text[])
+            )
+        {% endif %}
+        {% ifnotnull constant_name %}
+            AND lower(con."Name") like '%'::text  lower(!constant_name)  '%'::text
+        {% endif %}
+),
+-- Получаем каталоги по фильтрам констант
+catalogs_filtered_by_constants as (
+    SELECT
+        fil_con."Catalog",
+        catalog."Path",
+        count(fil_con."@Constant") as "Count"
+    FROM
+        filtered_constants fil_con
+            INNER JOIN catalog ON (fil_con."Catalog" = catalog."@Catalog")
+    GROUP BY fil_con."Catalog", catalog."Path"
+),
+-- Получаем каталоги отфильтрованные по имени
+catalogs_filtered_by_name as (
+    SELECT
+        "@Catalog" as "Catalog",
+        "Path"
+    FROM catalog
+    {% ifnotnull catalog_name %}
+    WHERE
+        lower(catalog."Name") like '%'::text  lower(!catalog_name)  '%'::text
+    {% endif %}
+),
+-- Получаем итоговую выборку каталогов по всем фильтрам
+result_catalog as (
+    SELECT
+        cat_filter_name."Catalog",
+        cat_filter_name."Path",
+        COALESCE(catalogs_filtered_by_constants."Count", 0) as "Count"
+    FROM
+        -- Если фильтруем каталоги по имени, то cte catalogs_filtered_by_name в приоритете,
+        --      т.к. должны показать все каталоги подходящие по имени
+        {% ifnotnull catalog_name %}
+            catalogs_filtered_by_name
+        {% endif %}{% ifnull catalog_name %}
+            catalogs_filtered_by_constants
+        {% endif %}
+        as cat_filter_name
+            LEFT JOIN catalogs_filtered_by_constants on (
+                cat_filter_name."Catalog" = catalogs_filtered_by_constants."Catalog"
+            )
+)
+SELECT DISTINCT ON ("Id")
+    'con_' || catalog."@Catalog" AS "Id",
+    catalog."Name",
+    'con_' || catalog."Parent" AS "Parent",
+    CASE
+        WHEN array_position(result_catalog."Path", catalog."@Catalog") < array_length(result_catalog."Path", 1)
+        THEN TRUE
+    END AS "Parent@",
+    COALESCE(sum(result_catalog."Count") OVER (PARTITION BY path_cat_id)::int, 0) AS "Count",
+    catalog."Context",
+    TRUE AS "CanCreate"
+FROM
+    catalog
+    RIGHT JOIN
+    (
+        -- Строим путь от найденных каталогов до корневых
+        result_catalog CROSS JOIN LATERAL UNNEST(result_catalog."Path") as path_cat_id
+    ) on  path_cat_id = "@Catalog"
+WHERE
+    !temp_filter_catalogs_to_result
+    AND COALESCE(sum(result_catalog."Count") OVER (PARTITION BY path_cat_id)::int, 0) > 0
+ORDER BY "Id", "Parent@"
 ```
 
-Эта DLL-библиотека создает интерфейсное окно поверх игры Lineage 2 с кнопкой "Привет". При нажатии на кнопку в чат игры отправляется сообщение "Привет!".
-
-Чтобы использовать эту DLL-библиотеку, вам нужно:
-
-1. Скомпилировать DLL-библиотеку в файл DLL.
-2. Внедрить DLL-библиотеку в процесс игры Lineage 2 с помощью инжектора.
-3. Запустить игру Lineage 2.
-
-После запуска игры на экране появится интерфейсное окно с кнопкой "Привет". При нажатии на кнопку в чат игры будет отправлено сообщение "Привет!".
-
-Обратите внимание, что использование инжекторов является нарушением правил игры Lineage 2 и может привести к блокировке игрового аккаунта. Поэтому используйте инжектор на свой страх и риск.
+I hope this is helpful!
 """
 
     t = utils.bot_markdown_to_html(t)
     for x in utils.split_html(t, 4000):
+        print(x)
         bot.reply_to(message, x, parse_mode = 'HTML')
 
 

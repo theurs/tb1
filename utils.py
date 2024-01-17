@@ -304,7 +304,7 @@ def replace_tables(text: str) -> str:
     return text
 
 
-def split_html(text: str, max_length: int = 1500) -> list:
+def split_html_old(text: str, max_length: int = 1500) -> list:
     """
     Split the given HTML text into chunks of maximum length, while preserving the integrity
     of HTML tags. The function takes two arguments:
@@ -364,7 +364,17 @@ def split_html(text: str, max_length: int = 1500) -> list:
     return chunks
 
 
-def split_html_new_broken(text: str, max_length: int = 1500) -> list:
+def split_html(text: str, max_length: int = 1500) -> list:
+    """
+    Split the given HTML text into chunks of maximum length specified by `max_length`.
+
+    Parameters:
+        text (str): The HTML text to be split into chunks.
+        max_length (int, optional): The maximum length of each chunk. Defaults to 1500.
+
+    Returns:
+        list: A list of chunks, where each chunk is a string.
+    """
     code_tag = ''
     in_code_mode = 0
 
@@ -372,42 +382,45 @@ def split_html_new_broken(text: str, max_length: int = 1500) -> list:
     chunk = ''
 
     for line in text.split('\n'):
-        if line.startswith == '<code>\n':
+        if line.startswith('<pre><code') and line.find('</code></pre>') == -1:
             in_code_mode = 1
-            code_tag = line
-            chunk += line + '\n'
+            code_tag = line[:line.find('>', 10) + 1]
 
-        elif line.startswith('<pre><code class'):
+        elif line.startswith('<code>') and line.find('</code>') == -1:
             in_code_mode = 2
-            code_tag = line
-            chunk += line + '\n'
+            code_tag = '<code>'
 
-        elif line == '</code>\n':
+        elif line.startswith('<b>') and line.find('</b>') == -1:
+            in_code_mode = 3
+            code_tag = '<b>'
+
+        elif line == '</code></pre>' or line == '</code>' or line == '</b>':
             code_tag = ''
             in_code_mode = 0
-            chunk += '</code>\n'
-
-        elif line == '</code></pre>\n':
-            code_tag = ''
-            in_code_mode = 0
-            chunk += '</code></pre>\n'
 
         else:
             if len(chunk) + len(line) > max_length:
+
                 if in_code_mode == 1:
-                    chunk += '</code>\n'
-                    chunks.append(chunk)
-                    chunk = code_tag
-                elif in_code_mode == 2:
                     chunk += '</code></pre>\n'
                     chunks.append(chunk)
                     chunk = code_tag
-                else:
+
+                if in_code_mode == 2:
+                    chunk += '</code>\n'
+                    chunks.append(chunk)
+                    chunk = code_tag
+
+                if in_code_mode == 3:
+                    chunk += '</b>\n'
+                    chunks.append(chunk)
+                    chunk = code_tag
+
+                elif in_code_mode == 0:
                     chunks.append(chunk)
                     chunk = ''
-                chunk += line + '\n'
-            else:
-                chunk += line + '\n'
+
+        chunk += line + '\n'
 
     chunks.append(chunk)
 
@@ -590,8 +603,7 @@ if __name__ == '__main__':
     
     # print(get_full_time())    
     
-    t = r"""
-<pre><code class = "language-c++">#include &lt;windows.h&gt;
+    t = r"""<pre><code class = "language-c++">#include &lt;windows.h&gt;
 #include &lt;iostream&gt;
 
 // Определение идентификатора окна чата в игре Lineage 2
@@ -737,7 +749,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 """
     r = split_html(t)
+    print('======================================')
     for x in r:
-        print(len(x))
+        print(x)
+        print('======================================')
 
     # print(mime_from_buffer(open('1.pdf', 'rb').read()))

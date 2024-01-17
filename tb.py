@@ -580,6 +580,7 @@ or donate 5$/month to this bot.<code>/help</code>.
 
  <b>It was nice to meet you.</b>'''
             bot_reply_tr(message, msg, disable_web_page_preview=True, parse_mode='HTML')
+            my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
             return False
         else:
             return True
@@ -3744,8 +3745,18 @@ def do_task(message, custom_prompt: str = ''):
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
+    # определяем откуда пришло сообщение  
+    is_private = message.chat.type == 'private'
+    if chat_id_full not in SUPER_CHAT:
+        SUPER_CHAT[chat_id_full] = 0
+    # если бот должен отвечать всем в этом чате то пусть ведет себя как в привате
+    # но если это ответ на чье-то сообщение то игнорируем
+    # if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
+    if SUPER_CHAT[chat_id_full] == 1:
+        is_private = True
+
     chat_mode_ = CHAT_MODE[chat_id_full]
-    # не обрабатывать неизвестные команды
+    # не обрабатывать неизвестные команды, если они не в привате, в привате можно обработать их как простой текст
     chat_bot_cmd_was_used = False
     if message.text.startswith('/'):
         try:
@@ -3767,8 +3778,9 @@ def do_task(message, custom_prompt: str = ''):
                 message.text = message.text.split(maxsplit=1)[1]
                 chat_bot_cmd_was_used = True
             else:
-                my_log.log2(f'tb:do_task:unknown command: {message.text}')
-                return
+                if not is_private:
+                    my_log.log2(f'tb:do_task:unknown command: {message.text}')
+                    return
         except:
             my_log.log2(f'tb:do_task:unknown command: {message.text}')
             return
@@ -3802,16 +3814,6 @@ def do_task(message, custom_prompt: str = ''):
                 # если это ответ в обычном чате но ответ не мне то выход
                 if message.reply_to_message and not is_reply:
                     return
-
-        # определяем откуда пришло сообщение  
-        is_private = message.chat.type == 'private'
-        if chat_id_full not in SUPER_CHAT:
-            SUPER_CHAT[chat_id_full] = 0
-        # если бот должен отвечать всем в этом чате то пусть ведет себя как в привате
-        # но если это ответ на чье-то сообщение то игнорируем
-        # if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
-        if SUPER_CHAT[chat_id_full] == 1:
-            is_private = True
 
         # удаляем пробелы в конце каждой строки
         message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])

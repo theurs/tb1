@@ -12,118 +12,154 @@ bot = telebot.TeleBot(cfg.token, skip_pending=True)
 @bot.message_handler(commands=['start'])
 def command_code(message: telebot.types.Message):
     t = r"""
-There are a few ways to escape data in different contexts.
+```c++
+#include <windows.h>
+#include <iostream>
 
-<b>In SQL:</b>
+// Определение идентификатора окна чата в игре Lineage 2
+#define CHAT_WINDOW_ID 0x00000001
 
-• Use the backslash character (\) to escape special characters, such as single quotes (&#x27;), double quotes (&quot;), and backslashes (\). For example:
+// Определение идентификатора кнопки в интерфейсном окне
+#define BUTTON_ID 1
 
-<pre><code class = "language-sql">INSERT INTO table_name (column_name) VALUES (&#x27;This is a &#x27;&#x27;test&#x27;&#x27;.&#x27;);
-</code></pre>
-• Use the <code>ESCAPE</code> clause to specify a different character to use for escaping. For example:
+// Определение текста сообщения, которое будет отправлено в чат
+#define MESSAGE_TEXT "Привет!"
 
-<pre><code class = "language-sql">INSERT INTO table_name (column_name) VALUES E&#x27;This is a &#x27;&#x27;test&#x27;&#x27;.&#x27; ESCAPE &#x27;\&#x27;&#x27;;
-</code></pre>
-<b>In JSON:</b>
+// Функция для отправки сообщения в чат игры Lineage 2
+void SendChatMessage(const char* message)
+{
+    // Получение дескриптора окна чата в игре Lineage 2
+    HWND chatWindow = FindWindow(NULL, "Lineage II Chat");
 
-• Use the backslash character (\) to escape special characters, such as double quotes (&quot;), backslashes (\), and forward slashes (/). For example:
+    // Если окно чата не найдено, то вывести сообщение об ошибке и выйти из функции
+    if (chatWindow == NULL)
+    {
+        std::cout << "Error: Could not find chat window." << std::endl;
+        return;
+    }
 
-<pre><code class = "language-json">{
-  &quot;name&quot;: &quot;John Doe&quot;,
-  &quot;address&quot;: &quot;123 Main Street&quot;,
-  &quot;city&quot;: &quot;Anytown, USA&quot;,
-  &quot;phone&quot;: &quot;555-123-4567&quot;
+    // Получение дескриптора поля ввода текста в окне чата
+    HWND chatInput = FindWindowEx(chatWindow, NULL, "RichEdit20W", NULL);
+
+    // Если поле ввода текста не найдено, то вывести сообщение об ошибке и выйти из функции
+    if (chatInput == NULL)
+    {
+        std::cout << "Error: Could not find chat input field." << std::endl;
+        return;
+    }
+
+    // Установка фокуса на поле ввода текста
+    SetFocus(chatInput);
+
+    // Отправка сообщения в поле ввода текста
+    SendMessage(chatInput, WM_SETTEXT, 0, (LPARAM)message);
+
+    // Нажатие клавиши Enter для отправки сообщения в чат
+    SendMessage(chatInput, WM_KEYDOWN, VK_RETURN, 0);
+    SendMessage(chatInput, WM_KEYUP, VK_RETURN, 0);
 }
-</code></pre>
-• Use the <code>\u</code> escape sequence to represent Unicode characters. For example:
 
-<pre><code class = "language-json">{
-  &quot;name&quot;: &quot;John Doe&quot;,
-  &quot;address&quot;: &quot;123 Main Street&quot;,
-  &quot;city&quot;: &quot;Anytown, USA&quot;,
-  &quot;phone&quot;: &quot;555-123-4567&quot;,
-  &quot;favorite_emoji&quot;: &quot;\u263a&quot;
+// Функция для обработки нажатия кнопки в интерфейсном окне
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+        case WM_COMMAND:
+            // Если нажата кнопка с идентификатором BUTTON_ID, то отправить сообщение в чат
+            if (LOWORD(wParam) == BUTTON_ID)
+            {
+                SendChatMessage(MESSAGE_TEXT);
+            }
+            break;
+
+        case WM_DESTROY:
+            // Если окно закрыто, то выйти из программы
+            PostQuitMessage(0);
+            break;
+    }
+
+    return DefWindowProc(hwnd, message, wParam, lParam);
 }
-</code></pre>
-<b>In HTML:</b>
 
-• Use the <code>&amp;</code> character followed by the name of the HTML entity to escape special characters, such as less than (&lt;), greater than (&gt;), and ampersand (&amp;). For example:
+// Точка входа в DLL-библиотеку
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+{
+    switch (ul_reason_for_call)
+    {
+        case DLL_PROCESS_ATTACH:
+            // DLL-библиотека была внедрена в процесс игры Lineage 2
 
-<pre><code class = "language-html">&lt;p&gt;This is a &amp;lt;strong&amp;gt;test&amp;lt;/strong&amp;gt;.&lt;/p&gt;
-</code></pre>
-• Use the <code>&amp;#</code> character followed by the decimal or hexadecimal code of the Unicode character to escape Unicode characters. For example:
+            // Создание класса окна для интерфейсного окна
+            WNDCLASSEX wc;
+            wc.cbSize = sizeof(WNDCLASSEX);
+            wc.style = CS_HREDRAW | CS_VREDRAW;
+            wc.lpfnWndProc = WindowProc;
+            wc.cbClsExtra = 0;
+            wc.cbWndExtra = 0;
+            wc.hInstance = GetModuleHandle(NULL);
+            wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+            wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+            wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+            wc.lpszMenuName = NULL;
+            wc.lpszClassName = "L2InjectorWindowClass";
+            wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
-<pre><code class = "language-html">&lt;p&gt;This is a &amp;#x263a;.&lt;/p&gt;
-</code></pre>
-<b>In JavaScript:</b>
+            // Регистрация класса окна
+            if (!RegisterClassEx(&wc))
+            {
+                std::cout << "Error: Could not register window class." << std::endl;
+                return FALSE;
+            }
 
-• Use the backslash character (\) to escape special characters, such as single quotes (&#x27;), double quotes (&quot;), and backslashes (\). For example:
+            // Создание интерфейсного окна
+            HWND window = CreateWindowEx(WS_EX_TOPMOST, "L2InjectorWindowClass", "L2 Injector", WS_POPUP, 0, 0, 200, 100, NULL, NULL, GetModuleHandle(NULL), NULL);
 
-<pre><code class = "language-javascript">var name = &#x27;John Doe&#x27;;
-var address = &quot;123 Main Street&quot;;
-var city = &#x27;Anytown, USA&#x27;;
-var phone = &#x27;555-123-4567&#x27;;
-</code></pre>
-• Use the <code>\u</code> escape sequence to represent Unicode characters. For example:
+            // Если окно не создано, то вывести сообщение об ошибке и выйти из функции
+            if (window == NULL)
+            {
+                std::cout << "Error: Could not create window." << std::endl;
+                return FALSE;
+            }
 
-<pre><code class = "language-javascript">var favorite_emoji = &#x27;\u263a&#x27;;
-</code></pre>
-<b>In Python:</b>
+            // Создание кнопки в интерфейсном окне
+            HWND button = CreateWindow("BUTTON", "Привет", WS_CHILD | WS_VISIBLE, 10, 10, 100, 25, window, (HMENU)BUTTON_ID, GetModuleHandle(NULL), NULL);
 
-• Use the backslash character (\) to escape special characters, such as single quotes (&#x27;), double quotes (&quot;), and backslashes (\). For example:
+            // Если кнопка не создана, то вывести сообщение об ошибке и выйти из функции
+            if (button == NULL)
+            {
+                std::cout << "Error: Could not create button." << std::endl;
+                return FALSE;
+            }
 
-<pre><code class = "language-python">name = &#x27;John Doe&#x27;
-address = &quot;123 Main Street&quot;
-city = &#x27;Anytown, USA&#x27;
-phone = &#x27;555-123-4567&#x27;
-</code></pre>
-• Use the <code>\u</code> escape sequence to represent Unicode characters. For example:
+            // Отображение интерфейсного окна
+            ShowWindow(window, SW_SHOW);
 
-<pre><code class = "language-python">favorite_emoji = &#x27;\u263a&#x27;
-</code></pre>
-<b>In C++:</b>
+            break;
 
-• Use the backslash character (\) to escape special characters, such as single quotes (&#x27;), double quotes (&quot;), and backslashes (\). For example:
+        case DLL_PROCESS_DETACH:
+            // DLL-библиотека была удалена из процесса игры Lineage 2
+            break;
+    }
 
-<pre><code class = "language-c++">string name = &quot;John Doe&quot;;
-string address = &quot;123 Main Street&quot;;
-string city = &quot;Anytown, USA&quot;;
-string phone = &quot;555-123-4567&quot;;
-</code></pre>
-• Use the <code>\u</code> escape sequence to represent Unicode characters. For example:
+    return TRUE;
+}
+```
 
-<pre><code class = "language-c++">string favorite_emoji = &quot;\u263a&quot;;
-</code></pre>
-<b>In Java:</b>
+Эта DLL-библиотека создает интерфейсное окно поверх игры Lineage 2 с кнопкой "Привет". При нажатии на кнопку в чат игры отправляется сообщение "Привет!".
 
-• Use the backslash character (\) to escape special characters, such as single quotes (&#x27;), double quotes (&quot;), and backslashes (\). For example:
+Чтобы использовать эту DLL-библиотеку, вам нужно:
 
-<pre><code class = "language-java">String name = &quot;John Doe&quot;;
-String address = &quot;123 Main Street&quot;;
-String city = &quot;Anytown, USA&quot;;
-String phone = &quot;555-123-4567&quot;;
-</code></pre>
-• Use the <code>\u</code> escape sequence to represent Unicode characters. For example:
+1. Скомпилировать DLL-библиотеку в файл DLL.
+2. Внедрить DLL-библиотеку в процесс игры Lineage 2 с помощью инжектора.
+3. Запустить игру Lineage 2.
 
-<pre><code class = "language-java">String favorite_emoji = &quot;\u263a&quot;;
-</code></pre>
-<b>In PHP:</b>
+После запуска игры на экране появится интерфейсное окно с кнопкой "Привет". При нажатии на кнопку в чат игры будет отправлено сообщение "Привет!".
 
-• Use the backslash character (\) to escape special characters, such as single quotes (&#x27;), double quotes (&quot;), and backslashes (\). For example:
+Обратите внимание, что использование инжекторов является нарушением правил игры Lineage 2 и может привести к блокировке игрового аккаунта. Поэтому используйте инжектор на свой страх и риск.
+"""
 
-<pre><code class = "language-php">$name = &#x27;John Doe&#x27;;
-$address = &quot;123 Main Street&quot;;
-$city = &#x27;Anytown, USA&#x27;;
-$phone = &#x27;555-123-4567&#x27;;
-</code></pre>
-• Use the <code>\u</code> escape sequence to represent Unicode characters. For example:
-
-<pre><code class = "language-php">$favorite_emoji = &#x27;\u263a&#x27;;
-</code></pre>
-    """
-
-    
-    for x in utils.split_html(t, 1000):
+    t = utils.bot_markdown_to_html(t)
+    for x in utils.split_html(t, 4000):
         bot.reply_to(message, x, parse_mode = 'HTML')
 
 

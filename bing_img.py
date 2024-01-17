@@ -91,21 +91,22 @@ def get_images(prompt: str,
         list: A list of normal image links (URLs) from Bing search.
     """
 
-    FORWARDED_IP = get_external_ip(proxy)
+    # FORWARDED_IP = get_external_ip(proxy)
+    # FORWARDED_IP = f"1.0.0.{random.randint(0, 255)}"
     HEADERS = {
         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
                 "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.77",
-        "accept-language": "en,zh-TW;q=0.9,zh;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+        "accept-language": "en;q=0.9,en-US;q=0.8",
         "cache-control": "max-age=0",
         "content-type": "application/x-www-form-urlencoded",
         "referrer": "https://www.bing.com/images/create/",
-        "origin": "https://www.bing.com",
+        "origin": "https://copilot.microsoft.com/",
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/119.0.0.0 "
-                    "Safari/537.36 "
-                    "Edg/119.0.0.0",
-        "x-forwarded-for": FORWARDED_IP,
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/120.0.0.0 "
+                        "Safari/537.36 "
+                        "Edg/120.0.2210.91",
+        # "x-forwarded-for": FORWARDED_IP,
     }
 
     url_encoded_prompt = requests.utils.quote(prompt)

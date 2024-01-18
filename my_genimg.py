@@ -359,7 +359,6 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 
 
 if __name__ == '__main__':
-    import hashlib
     n=0
     t = my_gemini.ai('Напиши промпт для рисования красивой картинки, сделай одно предложение.', temperature=1)
     starttime=time.time()
@@ -367,6 +366,5 @@ if __name__ == '__main__':
     for x in huggin_face_api(t):
         n+=1
         open(f'{n}.jpg','wb').write(x)
-        print(hashlib.sha256(x).hexdigest())
     endtime=time.time()
     print(round(endtime - starttime, 2))

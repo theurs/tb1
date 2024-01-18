@@ -296,7 +296,7 @@ def huggin_face_api(prompt: str) -> bytes:
             headers = {"Authorization": f"Bearer {api_key}"}
 
             try:
-                response = requests.post(url, headers=headers, json=p, timeout=90, proxies=proxy)
+                response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)
             except Exception as error:
                 my_log.log2(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
                 continue

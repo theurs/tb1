@@ -298,7 +298,7 @@ def huggin_face_api(prompt: str) -> bytes:
             try:
                 response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)
             except Exception as error:
-                my_log.log2(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
+                my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
                 continue
 
             resp_text = str(response.content)[:300]
@@ -309,7 +309,7 @@ def huggin_face_api(prompt: str) -> bytes:
                 result.append(response.content)
                 return result
 
-            my_log.log2(f'my_genimg:huggin_face_api: {resp_text} | {proxy} | {url}')
+            my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {resp_text} | {proxy} | {url}')
             time.sleep(10)
 
         return result

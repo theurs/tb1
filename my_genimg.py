@@ -303,6 +303,8 @@ def huggin_face_api(prompt: str) -> bytes:
 
             resp_text = str(response.content)[:300]
             # print(resp_text[:60])
+            if 'read timeout=' in resp_text: # и так долго ждали
+                return []
             if response.content and '{"error"' not in resp_text:
                 result.append(response.content)
                 return result

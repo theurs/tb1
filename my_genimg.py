@@ -4,6 +4,7 @@
 import json
 import os
 import random
+import time
 import traceback
 from multiprocessing.pool import ThreadPool
 
@@ -274,6 +275,7 @@ def huggin_face_api(prompt: str) -> bytes:
                 "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
                 "https://api-inference.huggingface.co/models/prompthero/openjourney",
                 "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.0",
+                "https://api-inference.huggingface.co/models/thibaud/sdxl_dpo_turbo",
                ]
 
     # prompt = translate_prompt_to_en(prompt)
@@ -282,21 +284,29 @@ def huggin_face_api(prompt: str) -> bytes:
 
     def request_img(prompt, url, p):
         try:
-            if hasattr(cfg, 'bing_proxy'):
-                proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
-            else:
-                proxy = None
-            api_key = random.choice(cfg.huggin_face_api)
-            headers = {"Authorization": f"Bearer {api_key}"}
-
-            response = requests.post(url, headers=headers, json=p, timeout=180, proxies=proxy)
+            n = 10
             result = []
-            if response.content and ('error' not in str(response.content)[:300]):
-                result.append(response.content)
-            elif response.content:
-                my_log.log2(f'my_genimg:huggin_face_api:DEBUG: {api_key} response {response.content[:150]}...')
-            else:
-                my_log.log2(f'my_genimg:huggin_face_api:DEBUG: {api_key} response empty')
+            while n > 0:
+                n -= 1
+
+                if hasattr(cfg, 'bing_proxy'):
+                    proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
+                else:
+                    proxy = None
+                api_key = random.choice(cfg.huggin_face_api)
+                headers = {"Authorization": f"Bearer {api_key}"}
+
+                response = requests.post(url, headers=headers, json=p, timeout=90, proxies=proxy)
+                resp_text = str(response.content)[:300]
+                if response.content and not resp_text.startswith('{"error"'):
+                    result.append(response.content)
+                    return result
+
+                if resp_text.startswith('{"error"'):
+                    time.sleep(10)
+
+                my_log.log2(f'my_genimg:huggin_face_api: {resp_text} | {proxy} | {url}')
+
             return result
         except Exception as error:
             error_traceback = traceback.format_exc()
@@ -304,12 +314,12 @@ def huggin_face_api(prompt: str) -> bytes:
             return []
 
     pool = ThreadPool(processes=6)
-    async_result1 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
-    async_result2 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
-    # async_result3 = pool.apply_async(request_img, (prompt, API_URL[2], payload,))
-    # async_result4 = pool.apply_async(request_img, (prompt, API_URL[1], payload,))
+    async_result1 = pool.apply_async(request_img, (prompt, API_URL[6], payload,))
+    async_result2 = pool.apply_async(request_img, (prompt, API_URL[6], payload,))
+    async_result3 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
+    async_result4 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
     # async_result5 = pool.apply_async(request_img, (prompt, API_URL[4], payload,))
-    result = async_result1.get() + async_result2.get() # + async_result3.get() + async_result4.get() #+ async_result5.get()
+    result = async_result1.get() + async_result2.get() + async_result3.get() + async_result4.get() #+ async_result5.get()
 
     return result
 
@@ -348,6 +358,9 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 if __name__ == '__main__':
 
     n=0
-    for x in huggin_face_api('толстый кот сидит под кроватью'):
+    starttime=time.time()
+    for x in huggin_face_api('толстый кот сидит под кроватью и выглядывает наружу'):
         n+=1
         open(f'{n}.jpg','wb').write(x)
+    endtime=time.time()
+    print(round(endtime - starttime, 2))

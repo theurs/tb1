@@ -288,6 +288,9 @@ class ShowAction(threading.Thread):
                     bot.send_chat_action(self.chat_id, self.action)
             except Exception as error:
                 if 'A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests' not in str(error):
+                    if 'Forbidden: bot was blocked by the user' in str(error):
+                        self.stop()
+                        return
                     my_log.log2(f'tb:show_action:run: {error}')
             n = 50
             while n > 0:

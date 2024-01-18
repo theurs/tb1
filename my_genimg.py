@@ -298,14 +298,13 @@ def huggin_face_api(prompt: str) -> bytes:
 
                 response = requests.post(url, headers=headers, json=p, timeout=90, proxies=proxy)
                 resp_text = str(response.content)[:300]
-                if response.content and not resp_text.startswith('{"error"'):
+                print(resp_text[:60])
+                if response.content and '{"error"' not in resp_text:
                     result.append(response.content)
                     return result
 
-                if resp_text.startswith('{"error"'):
-                    time.sleep(10)
-
                 my_log.log2(f'my_genimg:huggin_face_api: {resp_text} | {proxy} | {url}')
+                time.sleep(10)
 
             return result
         except Exception as error:
@@ -358,8 +357,9 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 if __name__ == '__main__':
 
     n=0
+    t = 'frontal editorial fashion portrait of a man 35yo with short hair in a brown cashemir sweater featuring a orange text "CSE", hard and volumetric light, half body view, smiling, dark burgundy solid background, cinematic light'
     starttime=time.time()
-    for x in huggin_face_api('толстый кот сидит под кроватью и выглядывает наружу'):
+    for x in huggin_face_api(t):
         n+=1
         open(f'{n}.jpg','wb').write(x)
     endtime=time.time()

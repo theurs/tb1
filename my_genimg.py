@@ -298,7 +298,7 @@ def huggin_face_api(prompt: str) -> bytes:
 
                 response = requests.post(url, headers=headers, json=p, timeout=90, proxies=proxy)
                 resp_text = str(response.content)[:300]
-                print(resp_text[:60])
+                # print(resp_text[:60])
                 if response.content and '{"error"' not in resp_text:
                     result.append(response.content)
                     return result
@@ -351,16 +351,19 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     #         result = r
     #         my_log.log2(f'my_genimg:gen_images: huggin_face_api')
 
+    result = list(set(result))
     return result[:10]
 
 
 if __name__ == '__main__':
-
+    import hashlib
     n=0
-    t = 'frontal editorial fashion portrait of a man 35yo with short hair in a brown cashemir sweater featuring a orange text "CSE", hard and volumetric light, half body view, smiling, dark burgundy solid background, cinematic light'
+    t = my_gemini.ai('Напиши промпт для рисования красивой картинки, сделай одно предложение.', temperature=1)
     starttime=time.time()
+    print(t)
     for x in huggin_face_api(t):
         n+=1
         open(f'{n}.jpg','wb').write(x)
+        print(hashlib.sha256(x).hexdigest())
     endtime=time.time()
     print(round(endtime - starttime, 2))

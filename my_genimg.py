@@ -283,34 +283,34 @@ def huggin_face_api(prompt: str) -> bytes:
     payload = json.dumps({"inputs": prompt})
 
     def request_img(prompt, url, p):
-        try:
-            n = 10
-            result = []
-            while n > 0:
-                n -= 1
+        n = 10
+        result = []
+        while n > 0:
+            n -= 1
 
-                if hasattr(cfg, 'bing_proxy'):
-                    proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
-                else:
-                    proxy = None
-                api_key = random.choice(cfg.huggin_face_api)
-                headers = {"Authorization": f"Bearer {api_key}"}
+            if hasattr(cfg, 'bing_proxy'):
+                proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
+            else:
+                proxy = None
+            api_key = random.choice(cfg.huggin_face_api)
+            headers = {"Authorization": f"Bearer {api_key}"}
 
+            try:
                 response = requests.post(url, headers=headers, json=p, timeout=90, proxies=proxy)
-                resp_text = str(response.content)[:300]
-                # print(resp_text[:60])
-                if response.content and '{"error"' not in resp_text:
-                    result.append(response.content)
-                    return result
+            except Exception as error:
+                my_log.log2(f'my_genimg:huggin_face_api: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
+                continue
 
-                my_log.log2(f'my_genimg:huggin_face_api: {resp_text} | {proxy} | {url}')
-                time.sleep(10)
+            resp_text = str(response.content)[:300]
+            # print(resp_text[:60])
+            if response.content and '{"error"' not in resp_text:
+                result.append(response.content)
+                return result
 
-            return result
-        except Exception as error:
-            error_traceback = traceback.format_exc()
-            my_log.log2(f'my_genimg:huggin_face_api: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
-            return []
+            my_log.log2(f'my_genimg:huggin_face_api: {resp_text} | {proxy} | {url}')
+            time.sleep(10)
+
+        return result
 
     pool = ThreadPool(processes=6)
     async_result1 = pool.apply_async(request_img, (prompt, API_URL[6], payload,))

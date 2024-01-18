@@ -322,6 +322,8 @@ def huggin_face_api(prompt: str) -> bytes:
     # async_result5 = pool.apply_async(request_img, (prompt, API_URL[4], payload,))
     result = async_result1.get() + async_result2.get() + async_result3.get() + async_result4.get() #+ async_result5.get()
 
+    result = list(set(result))
+
     return result
 
 
@@ -353,7 +355,6 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     #         result = r
     #         my_log.log2(f'my_genimg:gen_images: huggin_face_api')
 
-    result = list(set(result))
     return result[:10]
 
 

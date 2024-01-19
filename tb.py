@@ -848,6 +848,31 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='cancel_command')
         markup.add(button1)
         return markup
+    elif kbd == 'select_lang':
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=2)
+        # most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr','hi',
+        #                    'hu', 'id', 'in', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro',
+        #                    'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'ur', 'vi', 'zh']
+        most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de']
+        pair = []
+        for x in most_used_langs:
+            native_name = langcodes.Language.make(language=x).display_name(language=x)
+            # english_name = langcodes.Language.make(language=x).display_name(language='en')
+            # lang_name = f'{english_name} ({native_name})'
+            lang_name = f'{native_name}'
+            cb = f'select_lang-{x}'
+            button = telebot.types.InlineKeyboardButton(lang_name, callback_data=cb)
+            pair.append(button)
+            if len(pair) == 2:
+                markup.row(pair[0], pair[1])
+                pair = []
+        if len(pair) == 2:
+            markup.row(pair[0], pair[1])
+        if len(pair) == 1:
+            markup.row(pair[0])
+        button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='erase_answer')
+        markup.row(button1)
+        return markup
     elif kbd == 'ytb':
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
         for b in payload:
@@ -1183,6 +1208,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 prompt = IMAGE_SUGGEST_BUTTONS[hash]
                 message.text = f'/image {prompt}'
                 image(message)
+        elif call.data.startswith('select_lang-'):
+            l = call.data[12:]
+            message.text = f'/lang {l}'
+            language(message)
         elif call.data.startswith('youtube '):
             global YTB_CACHE
             song_id = call.data[8:]
@@ -2319,9 +2348,12 @@ def language(message: telebot.types.Message):
         LANGUAGE_DB[chat_id_full] = lang
 
     supported_langs_trans2 = ', '.join([x for x in supported_langs_trans])
+    
+    
+    
     if len(message.text.split()) < 2:
-        msg = f'/lang {tr("двухбуквенный код языка. Меняет язык бота. Ваш язык сейчас: ", lang)} <b>{lang}</b>\n\n{tr("Возможные варианты:", lang)}\n{supported_langs_trans2}\n\n/lang en\n/lang de\n/lang uk\n...'
-        bot_reply(message, msg, parse_mode='HTML')
+        msg = f'/lang {tr("двухбуквенный код языка. Меняет язык бота. Ваш язык сейчас: ", lang)} <b>{lang}</b> ({tr(langcodes.Language.make(language=lang).display_name(language="en"), lang).lower()})\n\n{tr("Возможные варианты:", lang)}\n{supported_langs_trans2}\n\n/lang en\n/lang de\n/lang uk\n...'
+        bot_reply(message, msg, parse_mode='HTML', reply_markup=get_keyboard('select_lang', message))
         return
 
     new_lang = message.text.split(maxsplit=1)[1].strip().lower()
@@ -2329,7 +2361,7 @@ def language(message: telebot.types.Message):
         LANGUAGE_DB[chat_id_full] = new_lang
         HELLO_MSG[chat_id_full] = ''
         HELP_MSG[chat_id_full] = ''
-        msg = f'{tr("Язык бота изменен на:", new_lang)} <b>{new_lang}</b>'
+        msg = f'{tr("Язык бота изменен на:", new_lang)} <b>{new_lang}</b> ({tr(langcodes.Language.make(language=new_lang).display_name(language="en"), new_lang).lower()})'
         bot_reply(message, msg, parse_mode='HTML', reply_markup=get_keyboard('start', message))
     else:
         msg = f'{tr("Такой язык не поддерживается:", lang)} <b>{new_lang}</b>\n\n{tr("Возможные варианты:", lang)}\n{supported_langs_trans2}'
@@ -3423,9 +3455,9 @@ def id_cmd_handler(message: telebot.types.Message):
         d = tr("The bot is free to use for a certain number of days and messages, but once you've used up all your days and messages, the bot will ask you for a donation to continue using it. Alternatively, you can choose to run your own free, unlimited copy of the bot on your own computer.", lang, '_')
         msg += f'{d}\n'
     if chat_full_id in BAD_USERS:
-        msg += f'{tr("Пользователь забанен.", lang)}\n'
+        msg += f'\n{tr("Пользователь забанен.", lang)}\n'
     if str(message.chat.id) in DDOS_BLOCKED_USERS:
-        msg += f'{tr("Пользователь забанен за DDOS.", lang)}\n'
+        msg += f'\n{tr("Пользователь забанен за DDOS.", lang)}\n'
     bot_reply(message, msg)
 
 

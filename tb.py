@@ -2071,7 +2071,8 @@ def set_trial(message: telebot.types.Message):
                     TTS_OPENAI_LIMIT[user] = 0
                 delta = int(float(monthes)*300000)
                 TTS_OPENAI_LIMIT[user] = TTS_OPENAI_LIMIT[user] - delta
-            msg = f'{tr("User trial updated.", lang)}\n\n{user} +{monthes} = [{time_left}] [msgs: {TRIAL_USERS_COUNTER[user]}]'
+            tts_counter = TTS_OPENAI_LIMIT_MAX - TTS_OPENAI_LIMIT[user]
+            msg = f'{tr("User trial updated.", lang)}\n\n{user} +{monthes} = [{time_left}]\n\nmsgs: {TRIAL_USERS_COUNTER[user]}\n\nopenai tts: {tts_counter}'
         except Exception as error:
             my_log.log2(f'tb:set_trial {error}')
             msg = tr('Usage: /trial <userid as integer> <amount of monthes to add>', lang)
@@ -2555,7 +2556,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
             # Microsoft do not support Latin
             if llang == 'la' and (gender=='female' or gender=='male'):
                 gender = 'google_female'
-                bot_reply_tr(message, "Microsoft TTS cannot pronounce text in Latin, switching to Google TTS.")
+                bot_reply_tr(message, "Microsoft TTS cannot pronounce text in Latin language, switching to Google TTS.")
 
             if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
                 text = utils.bot_markdown_to_tts(text)

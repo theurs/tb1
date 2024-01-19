@@ -2337,6 +2337,9 @@ def set_new_temperature(message: telebot.types.Message):
 
 @bot.message_handler(commands=['lang', 'language'], func=authorized_owner)
 def language(message: telebot.types.Message):
+    thread = threading.Thread(target=language_thread, args=(message,))
+    thread.start()
+def language_thread(message: telebot.types.Message):
     """change locale"""
 
     chat_id_full = get_topic_id(message)

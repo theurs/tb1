@@ -665,10 +665,6 @@ def authorized(message: telebot.types.Message) -> bool:
             my_log.log2(f'tb:auth:live_chat_error: {leave_chat_error}')
         return False
 
-    # check free trial status
-    if not trial_status(message):
-        return False
-
     chat_id_full = get_topic_id(message)
 
     # trottle only messages addressed to me
@@ -701,6 +697,9 @@ def authorized(message: telebot.types.Message) -> bool:
             bot_name_used = True
 
         if is_reply or is_private or bot_name_used:
+            # check free trial status
+            if not trial_status(message):
+                return False
             # check if need to update keyboard
             if chat_id_full not in NEED_TO_UPDATE_KEYBOARD:
                 try:

@@ -2351,9 +2351,7 @@ def language_thread(message: telebot.types.Message):
         LANGUAGE_DB[chat_id_full] = lang
 
     supported_langs_trans2 = ', '.join([x for x in supported_langs_trans])
-    
-    
-    
+
     if len(message.text.split()) < 2:
         msg = f'/lang {tr("двухбуквенный код языка. Меняет язык бота. Ваш язык сейчас: ", lang)} <b>{lang}</b> ({tr(langcodes.Language.make(language=lang).display_name(language="en"), lang).lower()})\n\n{tr("Возможные варианты:", lang)}\n{supported_langs_trans2}\n\n/lang en\n/lang de\n/lang uk\n...'
         bot_reply(message, msg, parse_mode='HTML', reply_markup=get_keyboard('select_lang', message))

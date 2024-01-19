@@ -853,11 +853,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         # most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr','hi',
         #                    'hu', 'id', 'in', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro',
         #                    'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'ur', 'vi', 'zh']
-        most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de']
+        # most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de']
+        most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de', 'fr', 'it', 'tr', 'ko', 'id', 'vi']
         pair = []
         for x in most_used_langs:
-            native_name = langcodes.Language.make(language=x).display_name(language=x)
-            # english_name = langcodes.Language.make(language=x).display_name(language='en')
+            native_name = langcodes.Language.make(language=x).display_name(language=x).capitalize()
+            # english_name = langcodes.Language.make(language=x).display_name(language='en').capitalize()
             # lang_name = f'{english_name} ({native_name})'
             lang_name = f'{native_name}'
             cb = f'select_lang-{x}'

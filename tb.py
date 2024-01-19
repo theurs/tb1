@@ -2065,8 +2065,15 @@ def set_trial(message: telebot.types.Message):
                 TRIAL_USERS[user] = time.time()
             TRIAL_USERS[user] = TRIAL_USERS[user] + float(monthes)*60*60*24*30
             time_left = -round((time.time()-TRIAL_USERS[user])/60/60/24/30, 1)
+            # на каждый месяц премиума дается по 300000 символов озвучки голосами опенаи, без накопления
+            if monthes:
+                if user not in TTS_OPENAI_LIMIT:
+                    TTS_OPENAI_LIMIT[user] = 0
+                delta = int(float(monthes)*300000)
+                TTS_OPENAI_LIMIT[user] = TTS_OPENAI_LIMIT[user] - delta
             msg = f'{tr("User trial updated.", lang)}\n\n{user} +{monthes} = [{time_left}] [msgs: {TRIAL_USERS_COUNTER[user]}]'
-        except:
+        except Exception as error:
+            my_log.log2(f'tb:set_trial {error}')
             msg = tr('Usage: /trial <userid as integer> <amount of monthes to add>', lang)
     else:
         msg = tr('Trials not activated in this bot.', lang)
@@ -2525,14 +2532,15 @@ def tts_thread(message: telebot.types.Message, caption = None):
             if chat_id_full not in TTS_OPENAI_LIMIT:
                 TTS_OPENAI_LIMIT[chat_id_full] = 0
 
-            if 'openai' in gender and TTS_OPENAI_LIMIT[chat_id_full] > TTS_OPENAI_LIMIT_MAX:
+            if 'openai' in gender and TTS_OPENAI_LIMIT[chat_id_full] + len(text) > TTS_OPENAI_LIMIT_MAX:
                 my_log.log2(f'Openai tts limit exceeded: {chat_id_full} {TTS_OPENAI_LIMIT[chat_id_full]}')
                 gender = 'google_female'
 
             # OpenAI is not available to everyone, if it is not available then Google is used instead
             if not allowed_chatGPT_user(message.chat.id):
                 gender = 'google_female'
-            if 'openai' in gender and len(text) > cfg.MAX_OPENAI_TTS:
+            if 'openai' in gender and len(text) > 4096:
+                bot_reply_tr(message, 'OpenAI TTS cannot pronounce more than 4k characters at a time, switching to Google TTS.')
                 gender = 'google_female'
 
             if 'openai' in gender:
@@ -2542,10 +2550,12 @@ def tts_thread(message: telebot.types.Message, caption = None):
             if 'ynd' in gender:
                 if len(text) > 1000 or llang not in ['ru', 'en', 'uk', 'he', 'de', 'kk', 'uz']:
                     gender = 'female'
+                    bot_reply_tr(message, "Yandex TTS cannot pronounce more than 1k characters at a time and can only work with languages from the list ['ru', 'en', 'uk', 'he', 'de', 'kk', 'uz'], switching to Microsoft TTS.")
 
             # Microsoft do not support Latin
-            if llang == 'la':
+            if llang == 'la' and (gender=='female' or gender=='male'):
                 gender = 'google_female'
+                bot_reply_tr(message, "Microsoft TTS cannot pronounce text in Latin, switching to Google TTS.")
 
             if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
                 text = utils.bot_markdown_to_tts(text)

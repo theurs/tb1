@@ -245,7 +245,7 @@ def replace_code_lang(t: str) -> str:
     result = ''
     state = 0
     for i in t.split('\n'):
-        if i.startswith('<code>') and len(i) > 7:
+        if i.startswith('<code>') and len(i) > 7 and '</code>' not in i:
             result += f'<pre><code class = "language-{i[6:]}">'
             state = 1
         else:
@@ -606,159 +606,40 @@ def mime_from_buffer(data: bytes) -> str:
 
 
 if __name__ == '__main__':
-    # print(is_image_link('https://keep.google.com/u/0/?pli=1#NOTE/1KA1ADEB_Cn9dNEiBKakN8BebZkOtBVCNpeOeFTFujVKkDYtyKGuNFzW-a6dYK_Q'))
-    
-    # print(get_full_time())    
-    
-    t = r"""<pre><code class = "language-c++">#include &lt;windows.h&gt;
-#include &lt;iostream&gt;
+    t = r"""
+`&nbsp;` - это HTML-код для неразрывного пробела. Неразрывный пробел не учитывается при переносе слов, поэтому он используется для предотвращения разрыва слов в нежелательных местах.
 
-// Определение идентификатора окна чата в игре Lineage 2
-#define CHAT_WINDOW_ID 0x00000001
+Например, следующий код предотвращает разрыв слова "неразрывный" при переносе слов:
 
-// Определение идентификатора кнопки в интерфейсном окне
-#define BUTTON_ID 1
+```html
+<p>Это неразрывный&nbsp;пробел.</p>
+```
 
-// Определение текста сообщения, которое будет отправлено в чат
-#define MESSAGE_TEXT &quot;Привет!&quot;
+Неразрывные пробелы также используются для выравнивания текста. Например, следующий код выравнивает текст в таблице по центру:
 
-// Функция для отправки сообщения в чат игры Lineage 2
-void SendChatMessage(const char* message)
-{
-    // Получение дескриптора окна чата в игре Lineage 2
-    HWND chatWindow = FindWindow(NULL, &quot;Lineage II Chat&quot;);
+```html
+<table>
+  <tr>
+    <td align="center">Column 1</td>
+    <td align="center">Column 2</td>
+    <td align="center">Column 3</td>
+  </tr>
+</table>
+```
 
-    // Если окно чата не найдено, то вывести сообщение об ошибке и выйти из функции
-    if (chatWindow == NULL)
-    {
-        std::cout &lt;&lt; &quot;Error: Could not find chat window.&quot; &lt;&lt; std::endl;
-        return;
-    }
+Неразрывные пробелы также используются для создания отступов. Например, следующий код создает отступ перед первым словом в абзаце:
 
-    // Получение дескриптора поля ввода текста в окне чата
-    HWND chatInput = FindWindowEx(chatWindow, NULL, &quot;RichEdit20W&quot;, NULL);
+```html
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This is a paragraph with an indent.</p>
+```
 
-    // Если поле ввода текста не найдено, то вывести сообщение об ошибке и выйти из функции
-    if (chatInput == NULL)
-    {
-        std::cout &lt;&lt; &quot;Error: Could not find chat input field.&quot; &lt;&lt; std::endl;
-        return;
-    }
+Наконец, неразрывные пробелы используются для создания специальных символов. Например, следующий код создает символ копирайта:
 
-    // Установка фокуса на поле ввода текста
-    SetFocus(chatInput);
+```html
+&copy;
+```
 
-    // Отправка сообщения в поле ввода текста
-    SendMessage(chatInput, WM_SETTEXT, 0, (LPARAM)message);
-
-    // Нажатие клавиши Enter для отправки сообщения в чат
-    SendMessage(chatInput, WM_KEYDOWN, VK_RETURN, 0);
-    SendMessage(chatInput, WM_KEYUP, VK_RETURN, 0);
-}
-
-// Функция для обработки нажатия кнопки в интерфейсном окне
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch (message)
-    {
-        case WM_COMMAND:
-            // Если нажата кнопка с идентификатором BUTTON_ID, то отправить сообщение в чат
-            if (LOWORD(wParam) == BUTTON_ID)
-            {
-                SendChatMessage(MESSAGE_TEXT);
-            }
-            break;
-
-        case WM_DESTROY:
-            // Если окно закрыто, то выйти из программы
-            PostQuitMessage(0);
-            break;
-    }
-
-    return DefWindowProc(hwnd, message, wParam, lParam);
-}
-
-// Точка входа в DLL-библиотеку
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
-{
-    switch (ul_reason_for_call)
-    {
-        case DLL_PROCESS_ATTACH:
-            // DLL-библиотека была внедрена в процесс игры Lineage 2
-
-            // Создание класса окна для интерфейсного окна
-            WNDCLASSEX wc;
-            wc.cbSize = sizeof(WNDCLASSEX);
-            wc.style = CS_HREDRAW | CS_VREDRAW;
-            wc.lpfnWndProc = WindowProc;
-            wc.cbClsExtra = 0;
-            wc.cbWndExtra = 0;
-            wc.hInstance = GetModuleHandle(NULL);
-            wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-            wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-            wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-            wc.lpszMenuName = NULL;
-            wc.lpszClassName = &quot;L2InjectorWindowClass&quot;;
-            wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-
-            // Регистрация класса окна
-            if (!RegisterClassEx(&amp;wc))
-            {
-                std::cout &lt;&lt; &quot;Error: Could not register window class.&quot; &lt;&lt; std::endl;
-                return FALSE;
-            }
-
-            // Создание интерфейсного окна
-            HWND window = CreateWindowEx(WS_EX_TOPMOST, &quot;L2InjectorWindowClass&quot;, &quot;L2 Injector&quot;, WS_POPUP, 0, 0, 200, 100, NULL, NULL, GetModuleHandle(NULL), NULL);
-
-            // Если окно не создано, то вывести сообщение об ошибке и выйти из функции
-            if (window == NULL)
-            {
-                std::cout &lt;&lt; &quot;Error: Could not create window.&quot; &lt;&lt; std::endl;
-                return FALSE;
-            }
-
-            // Создание кнопки в интерфейсном окне
-            HWND button = CreateWindow(&quot;BUTTON&quot;, &quot;Привет&quot;, WS_CHILD | WS_VISIBLE, 10, 10, 100, 25, window, (HMENU)BUTTON_ID, GetModuleHandle(NULL), NULL);
-
-            // Если кнопка не создана, то вывести сообщение об ошибке и выйти из функции
-            if (button == NULL)
-            {
-                std::cout &lt;&lt; &quot;Error: Could not create button.&quot; &lt;&lt; std::endl;
-                return FALSE;
-            }
-
-            // Отображение интерфейсного окна
-            ShowWindow(window, SW_SHOW);
-
-            break;
-
-        case DLL_PROCESS_DETACH:
-            // DLL-библиотека была удалена из процесса игры Lineage 2
-            break;
-    }
-
-    return TRUE;
-}
-</code></pre>
-Эта DLL-библиотека создает интерфейсное окно поверх игры Lineage 2 с кнопкой &quot;Привет&quot;. При нажатии на кнопку в чат игры отправляется сообщение &quot;Привет!&quot;.
-
-Чтобы использовать эту DLL-библиотеку, вам нужно:
-
-1. Скомпилировать DLL-библиотеку в файл DLL.
-2. Внедрить DLL-библиотеку в процесс игры Lineage 2 с помощью инжектора.
-3. Запустить игру Lineage 2.
-
-После запуска игры на экране появится интерфейсное окно с кнопкой &quot;Привет&quot;. При нажатии на кнопку в чат игры будет отправлено сообщение &quot;Привет!&quot;.
-
-Обратите внимание, что использование инжекторов является нарушением правил игры Lineage 2 и может привести к блокировке игрового аккаунта. Поэтому используйте инжектор на свой страх и риск.
-
-
+Это лишь несколько способов использования неразрывных пробелов в HTML. Существует множество других способов сделать это, поэтому не стесняйтесь экспериментировать, чтобы найти тот, который лучше всего подходит для ваших нужд.
 """
-    r = split_html(t)
-    print('======================================')
-    for x in r:
-        print(x)
-        print('======================================')
-
-    # print(mime_from_buffer(open('1.pdf', 'rb').read()))
+    r = bot_markdown_to_html(t)
+    print(r)

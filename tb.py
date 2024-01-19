@@ -713,15 +713,16 @@ def authorized(message: telebot.types.Message) -> bool:
             except:
                 return False
     else:
+        try:
+            check_blocked_user(chat_id_full)
+        except:
+            return False
+
         if is_reply or is_private:
             # check free trial status
             if not trial_status(message):
                 return False
         # check for blocking and throttling
-        try:
-            check_blocked_user(chat_id_full)
-        except:
-            return False
 
     return True
 

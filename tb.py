@@ -175,6 +175,7 @@ TTS_OPENAI_LIMIT_MAX = 10000
 
 # {chat_full_id: time.time()}
 TRIAL_USERS = SqliteDict('db/trial_users.db', autocommit=True)
+# {chat_id_full: int messages counter (for trials)}
 TRIAL_USERS_COUNTER = SqliteDict('db/trial_users_counter.db', autocommit=True)
 
 # Из каких чатов надо выходиьт сразу (забаненые)
@@ -2883,6 +2884,11 @@ def stats_admin(message: telebot.types.Message):
     thread.start()
 def stats_thread(message: telebot.types.Message):
     """Показывает статистику использования бота."""
+    
+    for x in TRIAL_USERS_COUNTER:
+        if '-' in x:
+            TRIAL_USERS_COUNTER[x] = 0
+    
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import random
 import time
 import threading
 
@@ -109,6 +110,8 @@ def get_images(prompt: str,
         # "x-forwarded-for": FORWARDED_IP,
     }
 
+    # print(f'{u_cookie[:5]} {proxy} {prompt}')
+
     url_encoded_prompt = requests.utils.quote(prompt)
 
     payload = f"q={url_encoded_prompt}&qs=ds"
@@ -183,6 +186,7 @@ def get_images(prompt: str,
 
     normal_image_links = [x for x in normal_image_links if not x.startswith('https://r.bing.com/')]
     time.sleep(5)
+    my_log.log_bing_success(f'{u_cookie} {proxy} {prompt} {normal_image_links}')
     return normal_image_links
 
 
@@ -223,7 +227,9 @@ def gen_images(query: str, user_id: str = ''):
                 # сразу обновляем счетчик чтоб этот ключ ушел вниз списка
                 COOKIE[cookie] += 1
                 if cfg.bing_proxy:
-                    for proxy in cfg.bing_proxy:
+                    proxies = cfg.bing_proxy[:]
+                    random.shuffle(proxies)
+                    for proxy in proxies:
                         try:
                             return get_images(query, cookie, proxy)
                         except Exception as error:
@@ -252,4 +258,4 @@ def gen_images(query: str, user_id: str = ''):
 
 
 if __name__ == '__main__':
-    print(gen_images('wolf face big'))
+    print(gen_images('вкусный торт с медом и орехами'))

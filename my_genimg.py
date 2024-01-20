@@ -314,7 +314,8 @@ def huggin_face_api(prompt: str) -> bytes:
 
             if 'is currently loading","estimated_time":' in str(resp_text) or \
                 '"error":"Internal Server Error"' in str(resp_text) or \
-                '"CUDA out of memory' in str(resp_text):
+                '"CUDA out of memory' in str(resp_text) or \
+                '"error":"Service Unavailable"' in str(resp_text):
                 if DEBUG:
                     my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {resp_text} | {proxy} | {url}')
             else: # unknown error

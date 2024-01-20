@@ -22,6 +22,9 @@ import my_log
 import my_trans
 
 
+DEBUG = False
+
+
 NFSW_CONTENT = SqliteDict('db/nfsw_content_stable_diffusion.db', autocommit=True)
 
 
@@ -298,7 +301,13 @@ def huggin_face_api(prompt: str) -> bytes:
             try:
                 response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)
             except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
+                if 'is currently loading","estimated_time":' in str(error) or \
+                    '"error":"Internal Server Error"' in str(error) or \
+                    '"CUDA out of memory' in str(error):
+                    if DEBUG:
+                        my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
+                else: #unknown error
+                    my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
                 continue
 
             resp_text = str(response.content)[:300]

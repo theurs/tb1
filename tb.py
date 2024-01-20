@@ -583,7 +583,8 @@ or use original chat bots at
 or donate 5$/month to this bot.<code>/help</code>.
 
  <b>It was nice to meet you.</b>'''
-            bot_reply_tr(message, msg, disable_web_page_preview=True, parse_mode='HTML')
+            msg = tr(msg, lang, 'keep html tags')
+            bot_reply(message, msg, disable_web_page_preview=True, parse_mode='HTML')
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
             return False
         else:

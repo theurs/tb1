@@ -1931,6 +1931,11 @@ def handle_video_thread(message: telebot.types.Message):
 @bot.message_handler(commands=['config', 'settings', 'setting', 'options'], func=authorized_owner)
 def config(message: telebot.types.Message):
     """Меню настроек"""
+    is_private = message.chat.type == 'private'
+    if not (is_private or is_admin_member(message)):
+        bot_reply_tr(message, "This command is only available to administrators")
+        return False
+
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     try:

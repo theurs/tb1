@@ -564,24 +564,29 @@ def trial_status(message: telebot.types.Message) -> bool:
             return True
 
         if trial_time > TRIAL_DAYS:
-            msg = '''<b>Free trial period ended</b>
+#             msg = '''<b>Free trial period ended</b>
 
-You can run your own free copy of this bot at GitHub:
+# You can run your own free copy of this bot at GitHub:
 
-• <a>https://github.com/theurs/tb1</a>
-• <a>https://github.com/theurs/tbg</a> (simplified version)
+# • <a>https://github.com/theurs/tb1</a>
+# • <a>https://github.com/theurs/tbg</a> (simplified version)
 
-or use original chat bots at
+# or use original chat bots at
 
-• <a>https://openai.com/</a> ChatGPT
-• <a>https://bard.google.com/</a> Google Bard
-• <a>https://claude.ai/</a> Claude
-• <a>https://www.bing.com/</a> Bing - draw and chatGPT4
-• <a>https://ai.google.dev/</a> Gemini Pro (it doesn't have ready-to-use chat, there are only tools for development)
+# • <a>https://openai.com/</a> ChatGPT
+# • <a>https://bard.google.com/</a> Google Bard
+# • <a>https://claude.ai/</a> Claude
+# • <a>https://www.bing.com/</a> Bing - draw and chatGPT4
+# • <a>https://ai.google.dev/</a> Gemini Pro (it doesn't have ready-to-use chat, there are only tools for development)
 
-or donate to this bot.<code>/help</code>.'''
-            msg = tr(msg, lang, 'keep html tags')
-            bot_reply(message, msg, disable_web_page_preview=True, parse_mode='HTML')
+# or donate to this bot.<code>/help</code>.'''
+            msg = """To continue using the bot's services, you need to purchase a $5 per month subscription. The subscription can be purchased on the https://www.donationalerts.com/r/theurs.
+
+After purchasing the subscription, the bot will resume responding to your requests.
+
+Support: https://t.me/kun4_sun_bot_support/3"""
+            msg = tr(msg, lang, '_')
+            bot_reply(message, msg, disable_web_page_preview=True)
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
             return False
         else:

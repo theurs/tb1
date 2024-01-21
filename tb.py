@@ -3363,10 +3363,6 @@ GeminiPro: {my_gemini.MAX_REQUEST}
 This should poison the memory of a normal bot and loosen its tongue (GeminiPro only).
 Use /style command after this to change the mood of the bot.
 
-
-Website:
-https://github.com/theurs/tb1
-
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support
 

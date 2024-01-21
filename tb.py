@@ -106,14 +106,6 @@ IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=Tru
 # {chat_id: True/False}
 SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
 
-# commit to dialogs db every 15 minutes
-# my_gemini.CHATS(SqliteDict)
-# gpt_basic.CHATS(SqliteDict)
-MAX_AUTO_COMMIT_TIME = 15 * 60
-LAST_COMMIT_TIME = {0: time.time()}
-COMMIT_DIALOGS_LOCK = threading.Lock()
-COMMIT_DAEMON_RUN = {0: True}
-
 # {chat_id: True/False} надо ли обновить юзеру клавиатуру принудительно
 # когда надо всем обновить клавиатуру надо остановить бота, удалить этот файл и запустить снова
 NEED_TO_UPDATE_KEYBOARD = SqliteDict('db/need_to_update_keyboard.db', autocommit=True)
@@ -2262,26 +2254,12 @@ def send_debug_history(message: telebot.types.Message):
 @bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin) 
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
-    try:
-        bot_reply_tr(message, 'Restarting bot, please wait')
-        my_log.log2(f'tb:restart: !!!RESTART!!!')
+    bot_reply_tr(message, 'Restarting bot, please wait')
+    my_log.log2(f'tb:restart: !!!RESTART!!!')
 
-        bot.stop_polling()
+    bot.stop_polling()
 
-        my_gemini.STOP_DAEMON = True
-
-        COMMIT_DAEMON_RUN[0] = False
-        time.sleep(2)
-
-        my_gemini.CHATS.commit()
-        gpt_basic.CHATS.commit()
-
-        my_gemini.CHATS.close()
-        gpt_basic.CHATS.close()
-
-    except Exception as unknown:
-        error_traceback = traceback.format_exc()
-        my_log.log2(f'tb:restart: {unknown}\n\n{error_traceback}')
+    my_gemini.STOP_DAEMON = True
 
 
 @bot.message_handler(commands=['leave'], func=authorized_admin) 
@@ -3766,28 +3744,6 @@ def allowed_chatGPT_user(chat_id: int) -> bool:
         return False
 
 
-def commit_dialogs_daemon():
-    """
-    A daemon function that continuously commits dialogs to the respective chats 
-    using the COMMIT_DAEMON_RUN flag to control the loop. 
-    This function does not take any parameters and does not return any value.
-    """
-    while COMMIT_DAEMON_RUN[0]:
-        try:
-            current_time = time.time()
-            last_time = LAST_COMMIT_TIME[0]
-            if current_time - last_time > MAX_AUTO_COMMIT_TIME:
-                with COMMIT_DIALOGS_LOCK:
-                    my_gemini.CHATS.commit()
-                    gpt_basic.CHATS.commit()
-                    LAST_COMMIT_TIME[0] = current_time
-            time.sleep(1)
-        except Exception as unknown_error:
-            error_traceback = traceback.format_exc()
-            my_log.log2(f'tb:commit_dialogs_daemon: {unknown_error}\n{error_traceback}')
-            time.sleep(5*60) # на случай если ошибка будет повторятся очень часто и заполнит логи
-
-
 @bot.message_handler(func=authorized)
 def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
     thread = threading.Thread(target=do_task, args=(message, custom_prompt))
@@ -4303,12 +4259,9 @@ def main():
     """
     Runs the main function, which sets default commands and starts polling the bot.
     """
-    
-    thread = threading.Thread(target=commit_dialogs_daemon)
-    thread.start()
 
     # set_default_commands()
-    
+
     my_gemini.run_proxy_pool_daemon()
     #bing_img.run_proxy_pool_daemon()
 

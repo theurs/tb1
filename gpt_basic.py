@@ -30,10 +30,7 @@ import my_trans
 CUSTOM_MODELS = SqliteDict('db/custom_models.db', autocommit=True)
 
 # память диалогов {id:messages: list}
-# CHATS = SqliteDict('db/dialogs.db', autocommit=True)
-CHATS = SqliteDict('db/dialogs.db', autocommit=False)
-# системные промты для чатов, роли или инструкции что и как делать в этом чате
-# {id:prompt}
+CHATS = SqliteDict('db/dialogs.db', autocommit=True)
 
 # температура chatGPT {id:float(0-2)}
 TEMPERATURE = {}

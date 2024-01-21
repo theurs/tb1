@@ -571,18 +571,15 @@ You can run your own free copy of this bot at GitHub:
 • <a>https://github.com/theurs/tb1</a>
 • <a>https://github.com/theurs/tbg</a> (simplified version)
 
-Or any other projects,
-
 or use original chat bots at
+
 • <a>https://openai.com/</a> ChatGPT
 • <a>https://bard.google.com/</a> Google Bard
 • <a>https://claude.ai/</a> Claude
 • <a>https://www.bing.com/</a> Bing - draw and chatGPT4
 • <a>https://ai.google.dev/</a> Gemini Pro (it doesn't have ready-to-use chat, there are only tools for development)
 
-or donate 5$/month to this bot.<code>/help</code>.
-
- <b>It was nice to meet you.</b>'''
+or donate to this bot.<code>/help</code>.'''
             msg = tr(msg, lang, 'keep html tags')
             bot_reply(message, msg, disable_web_page_preview=True, parse_mode='HTML')
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')

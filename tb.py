@@ -3469,7 +3469,8 @@ def id_cmd_handler(message: telebot.types.Message):
             msgs_counter = 0
 
         msg += f'\n\n{tr("Days left:", lang)} {days_left}\n{tr("Messages left:", lang)} {msgs_counter}\n\n'
-        d = tr("The bot is free to use for a certain number of days and messages, but once you've used up all your days and messages, the bot will ask you for a donation to continue using it. Alternatively, you can choose to run your own free, unlimited copy of the bot on your own computer.", lang, '_')
+        d = tr("The bot is free to use for a certain number of days and messages, but once you've used up all your days and messages, the bot will ask you for a donation to continue using it.", lang, '_')
+        # d = tr("The bot is free to use for a certain number of days and messages, but once you've used up all your days and messages, the bot will ask you for a donation to continue using it. Alternatively, you can choose to run your own free, unlimited copy of the bot on your own computer.", lang, '_')
         msg += f'{d}\n'
     if chat_full_id in BAD_USERS:
         msg += f'\n{tr("Пользователь забанен.", lang)}\n'

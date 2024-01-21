@@ -92,7 +92,7 @@ def get_images(prompt: str,
         list: A list of normal image links (URLs) from Bing search.
     """
 
-    # FORWARDED_IP = get_external_ip(proxy)
+    FORWARDED_IP = get_external_ip(proxy)
     # FORWARDED_IP = f"1.0.0.{random.randint(0, 255)}"
     HEADERS = {
         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
@@ -107,7 +107,7 @@ def get_images(prompt: str,
                         "Chrome/120.0.0.0 "
                         "Safari/537.36 "
                         "Edg/120.0.2210.91",
-        # "x-forwarded-for": FORWARDED_IP,
+        "x-forwarded-for": FORWARDED_IP,
     }
 
     # print(f'{u_cookie[:5]} {proxy} {prompt}')

@@ -43,7 +43,8 @@ MAX_CHAT_SIZE = 25000
 MAX_SUM_REQUEST = 30000
 
 # хранилище диалогов {id:list(mem)}
-CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
+# CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
+CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=False)
 
 
 ##################################################################################

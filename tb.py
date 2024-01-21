@@ -106,6 +106,12 @@ IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=Tru
 # {chat_id: True/False}
 SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
 
+# commit to dialogs db every 15 minutes
+# my_gemini.CHATS(SqliteDict)
+# gpt_basic.CHATS(SqliteDict)
+MAX_AUTO_COMMIT_TIME = 15 * 60
+LAST_COMMIT = {0: time.time()}
+COMMIT_DIALOGS_LOCK = threading.Lock()
 
 # {chat_id: True/False} надо ли обновить юзеру клавиатуру принудительно
 # когда надо всем обновить клавиатуру надо остановить бота, удалить этот файл и запустить снова
@@ -2250,10 +2256,24 @@ def send_debug_history(message: telebot.types.Message):
 @bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin) 
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
-    bot_reply_tr(message, 'Restarting bot, please wait')
-    my_log.log2(f'tb:restart: !!!RESTART!!!')
-    my_gemini.STOP_DAEMON = True
-    bot.stop_polling()
+    try:
+        bot_reply_tr(message, 'Restarting bot, please wait')
+        my_log.log2(f'tb:restart: !!!RESTART!!!')
+
+        bot.stop_polling()
+
+        my_gemini.STOP_DAEMON = True
+
+        my_gemini.CHATS.commit()
+        gpt_basic.CHATS.commit()
+
+        my_gemini.CHATS.close()
+        gpt_basic.CHATS.close()
+
+        time.sleep(5)
+    except Exception as unknown:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'tb:restart: {unknown}\n\n{error_traceback}')
 
 
 @bot.message_handler(commands=['leave'], func=authorized_admin) 
@@ -3738,10 +3758,26 @@ def allowed_chatGPT_user(chat_id: int) -> bool:
         return False
 
 
+def commit_dialogs():
+    """
+    Function to handle committing dialogs if the time since the last
+    commit exceeds the maximum auto commit time.
+    """
+    with COMMIT_DIALOGS_LOCK:
+        current_time = time.time()
+        last_time = LAST_COMMIT[0]
+        if current_time - last_time > MAX_AUTO_COMMIT_TIME:
+            my_gemini.CHATS.commit()
+            gpt_basic.CHATS.commit()
+            LAST_COMMIT[0] = current_time
+
+
 @bot.message_handler(func=authorized)
 def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
     thread = threading.Thread(target=do_task, args=(message, custom_prompt))
     thread.start()
+    thread2 = threading.Thread(target=commit_dialogs)
+    thread2.start()
 def do_task(message, custom_prompt: str = ''):
     """default handler"""
 

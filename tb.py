@@ -466,7 +466,7 @@ def get_topic_id(message: telebot.types.Message) -> str:
     return f'[{chat_id}] [{topic_id}]'
 
 
-def check_blocked_user(id: str, check_trottle = True):
+def check_blocked_user(id: str, from_user_id: int, check_trottle = True):
     """Raises an exception if the user is blocked and should not be replied to"""
     for x in cfg.admins:
         if id == f'[{x}] [0]':
@@ -476,6 +476,12 @@ def check_blocked_user(id: str, check_trottle = True):
         if not request_counter.check_limit(user_id):
             my_log.log2(f'tb:check_blocked_user: User {id} is blocked for DDoS')
             raise Exception(f'user {user_id} in ddos stop list, ignoring')
+
+    from_user_id = f'[{from_user_id}] [0]'
+    if from_user_id in BAD_USERS and BAD_USERS[from_user_id]:
+        my_log.log2(f'tb:check_blocked_user: User {from_user_id} is blocked')
+        raise Exception(f'user {from_user_id} in stop list, ignoring')
+
     for i in BAD_USERS:
         u_id = i.replace('[','').replace(']','').split()[0]
         if u_id == user_id:
@@ -555,10 +561,10 @@ def trial_status(message: telebot.types.Message) -> bool:
         if message.chat.type != 'private':
             chat_full_id = f'[{message.chat.id}] [0]'
 
-        # блокировать тех у кого закончились личные сообщения во всех чатах
-        from_user_id_full = f'[{message.from_user.id}] [0]'
-        if from_user_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[from_user_id_full] > TRIAL_MESSAGES and message.chat.type != 'private':
-            return False
+        # # блокировать тех у кого закончились личные сообщения во всех чатах
+        # from_user_id_full = f'[{message.from_user.id}] [0]'
+        # if from_user_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[from_user_id_full] > TRIAL_MESSAGES and message.chat.type != 'private':
+        #     return False
 
         if chat_full_id not in TRIAL_USERS:
             TRIAL_USERS[chat_full_id] = time.time()
@@ -634,7 +640,7 @@ def authorized_callback(call: telebot.types.CallbackQuery) -> bool:
 
     # check for blocking and throttling
     try:
-        check_blocked_user(chat_id_full, check_trottle=False)
+        check_blocked_user(chat_id_full, call.from_user.id, check_trottle=False)
     except:
         return False
 
@@ -721,12 +727,12 @@ def authorized(message: telebot.types.Message) -> bool:
                     my_log.log2('tb:auth:unkn_kbd: ' + str(unkn_kbd))
             # check for blocking and throttling
             try:
-                check_blocked_user(chat_id_full)
+                check_blocked_user(chat_id_full, message.from_user.id)
             except:
                 return False
     else:
         try:
-            check_blocked_user(chat_id_full)
+            check_blocked_user(chat_id_full, message.from_user.id)
         except:
             return False
 

@@ -3431,6 +3431,7 @@ def report_cmd_handler(message: telebot.types.Message):
             gpt_basic.chat_reset(chat_id_full)
 
             ROLES[chat_id_full] = ''
+            BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
 
             msg = f'{tr("Your logs was purged. Keep in mind there could be a backups and some mixed logs. It is hard to erase you from the internet.", lang)}'
         else:

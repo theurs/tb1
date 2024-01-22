@@ -3535,9 +3535,6 @@ def set_default_commands_thread(message: telebot.types.Message):
     and sets the default commands for the bot.
     """
 
-    chat_full_id = get_topic_id(message)
-    user_lang = get_lang(chat_full_id, message)
-
     def get_seconds(s):
         match = re.search(r"after\s+(?P<seconds>\d+)", s)
         if match:
@@ -3561,6 +3558,7 @@ def set_default_commands_thread(message: telebot.types.Message):
                     command, description = line[1:].strip().split(' - ', 1)
                     if command and description:
                         description = tr(description, lang)
+                        my_log.log2(f'tb:init:command {lang} {description}')
                         commands.append(telebot.types.BotCommand(command, description))
                 except Exception as error:
                     my_log.log2(f'Failed to read default commands for language {lang}: {error}')
@@ -3601,6 +3599,7 @@ def set_default_commands_thread(message: telebot.types.Message):
         try:
             if bot.get_my_name(language_code=lang).name != tr(new_bot_name, lang):
                 result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+                my_log.log2(f'tb:init:name {lang} {tr(new_bot_name, lang)}')
             else:
                 result = True
         except Exception as error_set_name:
@@ -3609,6 +3608,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             try:
                 if bot.get_my_name(language_code=lang).name != tr(new_bot_name, lang):
                     result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+                    my_log.log2(f'tb:init::name {lang} {tr(new_bot_name, lang)}')
                 else:
                     result = True
             except Exception as error_set_name2:
@@ -3625,6 +3625,7 @@ def set_default_commands_thread(message: telebot.types.Message):
         try:
             if bot.get_my_description(language_code=lang).description != tr(new_description, lang):
                 result = bot.set_my_description(tr(new_description, lang), language_code=lang)
+                my_log.log2(f'tb:init:desc {lang} {tr(new_description, lang)}')
             else:
                 result = True
         except Exception as error_set_description:
@@ -3633,6 +3634,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             try:
                 if bot.get_my_description(language_code=lang).description != tr(new_description, lang):
                     result = bot.set_my_description(tr(new_description, lang), language_code=lang)
+                    my_log.log2(f'tb:init::desc {lang} {tr(new_description, lang)}')
                 else:
                     result = True
             except Exception as error_set_description2:
@@ -3651,6 +3653,7 @@ def set_default_commands_thread(message: telebot.types.Message):
         try:
             if bot.get_my_short_description(language_code=lang).short_description != tr(new_short_description, lang):
                 result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
+                my_log.log2(f'tb:init:short_desc {lang} {tr(new_short_description, lang)}')
             else:
                 result = True
         except Exception as error_set_short_description:
@@ -3659,6 +3662,7 @@ def set_default_commands_thread(message: telebot.types.Message):
             try:
                 if bot.get_my_short_description(language_code=lang).short_description != tr(new_short_description, lang):
                     result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
+                    my_log.log2(f'tb:init::short_desc {lang} {tr(new_short_description, lang)}')
                 else:
                     result = True
             except Exception as error_set_short_description2:

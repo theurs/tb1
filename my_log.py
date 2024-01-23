@@ -221,6 +221,11 @@ def log_google(request: str, respond: str):
 
 
 def purge(chat_id: int) -> bool:
+    """
+    Remove log files associated with the given chat_id and return True if successful, False otherwise.
+    :param chat_id: An integer representing the chat ID
+    :return: A boolean indicating the success of the purge operation
+    """
     f1 = glob.glob(f'logs/*.log')
     f2 = glob.glob(f'logs2/*.log')
     f3 = f1 + f2

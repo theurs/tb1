@@ -714,6 +714,10 @@ def authorized(message: telebot.types.Message) -> bool:
         if msg.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
             bot_name_used = True
 
+        # разрешить удаление своей истории всем
+        if msg == '/purge':
+            return True
+
         if is_reply or is_private or bot_name_used:
             # check free trial status
             if not trial_status(message):
@@ -2088,12 +2092,14 @@ def set_trial(message: telebot.types.Message):
             TRIAL_USERS[user] = TRIAL_USERS[user] + float(monthes)*60*60*24*30
             time_left = -round((time.time()-TRIAL_USERS[user])/60/60/24/30, 1)
             # на каждый месяц премиума дается по 300000 символов озвучки голосами опенаи, без накопления
+            if user not in TTS_OPENAI_LIMIT:
+                TTS_OPENAI_LIMIT[user] = 0
             if monthes:
-                if user not in TTS_OPENAI_LIMIT:
-                    TTS_OPENAI_LIMIT[user] = 0
                 delta = int(float(monthes)*300000)
                 TTS_OPENAI_LIMIT[user] = TTS_OPENAI_LIMIT[user] - delta
             tts_counter = TTS_OPENAI_LIMIT_MAX - TTS_OPENAI_LIMIT[user]
+            if user not in TRIAL_USERS_COUNTER:
+                TRIAL_USERS_COUNTER[user] = 0
             msg = f'{tr("User trial updated.", lang)}\n\n{user} +{monthes} = [{time_left}]\n\nmsgs: {TRIAL_USERS_COUNTER[user]}\n\nopenai tts: {tts_counter}'
         except Exception as error:
             my_log.log2(f'tb:set_trial {error}')
@@ -3417,7 +3423,7 @@ def report_cmd_handler(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['purge'], func = authorized_owner)
-def report_cmd_handler(message: telebot.types.Message):
+def purge_cmd_handler(message: telebot.types.Message):
     """удаляет логи юзера"""
     is_private = message.chat.type == 'private'
     if is_private:

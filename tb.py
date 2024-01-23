@@ -3843,18 +3843,30 @@ def do_task(message, custom_prompt: str = ''):
         try:
             cmd_ = message.text[1:].split(maxsplit=1)[0].lower().strip()
             if cmd_ == 'chatgpt':
+                if message.text == '/chatgpt':
+                    bot_reply_tr(message, 'Usage: /chatgpt <text>, you can ask default bot without command, see settings')
+                    return
                 chat_mode_ = 'chatgpt'
                 message.text = message.text.split(maxsplit=1)[1]
                 chat_bot_cmd_was_used = True
             elif cmd_ == 'bard':
+                if message.text == '/bard':
+                    bot_reply_tr(message, 'Usage: /bard <text>, you can ask default bot without command, see settings')
+                    return
                 chat_mode_ = 'bard'
                 message.text = message.text.split(maxsplit=1)[1]
                 chat_bot_cmd_was_used = True
             elif cmd_ == 'claude':
+                if message.text == '/claude':
+                    bot_reply_tr(message, 'Usage: /claude <text>, you can ask default bot without command, see settings')
+                    return
                 chat_mode_ = 'claude'
                 message.text = message.text.split(maxsplit=1)[1]
                 chat_bot_cmd_was_used = True
             elif cmd_ == 'gemini':
+                if message.text == '/gemini':
+                    bot_reply_tr(message, 'Usage: /gemini <text>, you can ask default bot without command, see settings')
+                    return
                 chat_mode_ = 'gemini'
                 message.text = message.text.split(maxsplit=1)[1]
                 chat_bot_cmd_was_used = True

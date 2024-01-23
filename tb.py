@@ -2871,13 +2871,13 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                             bot_reply(message, suggest_msg, parse_mode = 'HTML', reply_markup=markup)
 
                         n = [{'role':'system', 'content':f'user {tr("asked to draw", lang)}\n{prompt}'}, 
-                            {'role':'system', 'content':f'assistant {tr("successfuly generated images", lang)}'}]
+                            {'role':'system', 'content':f'assistant {tr("has generated images successfully", lang)}'}]
                         if chat_id_full in gpt_basic.CHATS:
                             gpt_basic.CHATS[chat_id_full] += n
                         else:
                             gpt_basic.CHATS[chat_id_full] = n
                         my_gemini.update_mem(f'user {tr("asked to draw", lang)}\n{prompt}',
-                                            f'{tr("successfuly generated images", lang)}',
+                                            f'{tr("has generated images successfully", lang)}',
                                             chat_id_full)
                 else:
                     bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')

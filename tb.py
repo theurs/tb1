@@ -3258,10 +3258,7 @@ def ocr_setup(message: telebot.types.Message):
 
     try:
         arg = message.text.split(maxsplit=1)[1]
-    except IndexError as error:
-        print(f'tb:ocr_setup: {error}')
-        my_log.log2(f'tb:ocr_setup: {error}')
-
+    except IndexError:
         msg = f'''/ocr langs
 
 <code>/ocr rus+eng</code>

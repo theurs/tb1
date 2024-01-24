@@ -311,6 +311,14 @@ PHONE_CATCHER = True
 
 # https://huggingface.co/
 # huggin_face_api = ['xxx','yyy']
+# huggin_face_models_urls = [
+#    "https://api-inference.huggingface.co/models/thibaud/sdxl_dpo_turbo",
+#    "https://api-inference.huggingface.co/models/thibaud/sdxl_dpo_turbo",
+#    "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
+#    "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
+#    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+#    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
+#    ]
 
 ```
 

@@ -271,17 +271,18 @@ def huggin_face_api(prompt: str) -> bytes:
     if not hasattr(cfg, 'huggin_face_api'):
         return []
 
-    API_URL = [
-                "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-                "https://api-inference.huggingface.co/models/dataautogpt3/OpenDalleV1.1",
-                "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
-                "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
-                "https://api-inference.huggingface.co/models/prompthero/openjourney",
-                "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.0",
-                "https://api-inference.huggingface.co/models/thibaud/sdxl_dpo_turbo",
-               ]
+    if hasattr(cfg, 'huggin_face_models_urls') and cfg.huggin_face_models_urls:
+        API_URL = cfg.huggin_face_models_urls
+    else:
+        API_URL = [
+            "https://api-inference.huggingface.co/models/thibaud/sdxl_dpo_turbo",
+            "https://api-inference.huggingface.co/models/thibaud/sdxl_dpo_turbo",
+            "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
+            "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
+            "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+            "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
+            ]
 
-    # prompt = translate_prompt_to_en(prompt)
     prompt = rewrite_prompt_for_open_dalle(prompt)
     payload = json.dumps({"inputs": prompt})
 
@@ -324,14 +325,14 @@ def huggin_face_api(prompt: str) -> bytes:
 
         return result
 
-    pool = ThreadPool(processes=6)
-    async_result1 = pool.apply_async(request_img, (prompt, API_URL[6], payload,))
-    async_result2 = pool.apply_async(request_img, (prompt, API_URL[6], payload,))
-    async_result3 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
-    async_result4 = pool.apply_async(request_img, (prompt, API_URL[3], payload,))
-    async_result5 = pool.apply_async(request_img, (prompt, API_URL[0], payload,))
-    async_result6 = pool.apply_async(request_img, (prompt, API_URL[2], payload,))
-    result = async_result1.get() + async_result2.get() + async_result3.get() + async_result4.get() + async_result5.get() + async_result6.get()
+    pool = ThreadPool(processes=len(API_URL))
+    async_results = []
+    for x in API_URL:
+        async_results.append(pool.apply_async(request_img, (prompt, x, payload,)))
+
+    result = []
+    for x in async_results:
+        result += x.get()
 
     result = list(set(result))
 

@@ -3495,10 +3495,17 @@ def report_cmd_handler(message: telebot.types.Message):
 @bot.message_handler(commands=['purge'], func = authorized_owner)
 def purge_cmd_handler(message: telebot.types.Message):
     """удаляет логи юзера"""
-    is_private = message.chat.type == 'private'
-    if is_private:
-        if my_log.purge(message.chat.id):
+    try:
+        is_private = message.chat.type == 'private'
+        if is_private:
             chat_id_full = get_topic_id(message)
+        else:
+            if message.is_topic_message:
+                chat_id_full = get_topic_id(message)
+            else:
+                chat_id_full = f'[{message.chat.id}] [0]'
+
+        if my_log.purge(message.chat.id):
             lang = get_lang(chat_id_full, message)
 
             my_bard.reset_bard_chat(chat_id_full)
@@ -3523,6 +3530,9 @@ def purge_cmd_handler(message: telebot.types.Message):
         else:
             msg = f'{tr("Error. Your logs was NOT purged.", lang)}'
         bot_reply(message, msg)
+    except Exception as unknown:
+        error_traceback = traceback.format_exc()
+        my_log.log(f'tb:purge_cmd_handler: {unknown}\n\n{message.chat.id}\n\n{error_traceback}')
 
 
 @bot.message_handler(commands=['id'], func = authorized_log) 

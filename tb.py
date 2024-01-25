@@ -547,6 +547,57 @@ def is_for_me(cmd: str):
         return (True, cmd)
 
 
+def log_message(message):
+    if not hasattr(cfg, 'LOGS_GROUP') or not cfg.LOGS_GROUP:
+        return
+
+    if isinstance(message, telebot.types.Message):
+        try:
+            if message.chat.type == 'private':
+                chat_full_id = get_topic_id(message)
+                chat_name = message.from_user.full_name
+            else:
+                if message.is_topic_message:
+                    chat_full_id = f'[{message.chat.id}] [{message.message_thread_id}]'
+                    chat_name = f'[{message.chat.title}] [{message.message_thread_id}]'
+                else:
+                    chat_full_id = f'[{message.chat.id}] [0]'
+                    chat_name = message.chat.title
+            if chat_full_id in LOGS_GROUPS_DB:
+                th = LOGS_GROUPS_DB[chat_full_id]
+            else:
+                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
+                LOGS_GROUPS_DB[chat_full_id] = th
+            bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
+        except Exception as error:
+            error_traceback = traceback.format_exc()
+            my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
+    elif isinstance(message, list):
+        try:
+            if message[0].chat.type == 'private':
+                chat_full_id = get_topic_id(message[0])
+                chat_name = message[0].from_user.full_name
+            else:
+                if message[0].is_topic_message:
+                    chat_full_id = f'[{message[0].chat.id}] [{message[0].message_thread_id}]'
+                    chat_name = f'[{message[0].chat.title}] [{message[0].message_thread_id}]'
+                else:
+                    chat_full_id = f'[{message.chat.id}] [0]'
+                    chat_name = message.chat.title            
+            if chat_full_id in LOGS_GROUPS_DB:
+                th = LOGS_GROUPS_DB[chat_full_id]
+            else:
+                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
+                LOGS_GROUPS_DB[chat_full_id] = th
+            m_ids = [x.message_id for x in message]
+            bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
+            # for m in message:
+            #     bot.copy_message(cfg.LOGS_GROUP, m.chat.id, m.message_id, message_thread_id=th)
+        except Exception as error:
+            error_traceback = traceback.format_exc()
+            my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
+
+
 def trial_status(message: telebot.types.Message) -> bool:
     """
     Check the status of a trial.
@@ -754,49 +805,6 @@ def authorized(message: telebot.types.Message) -> bool:
         # check for blocking and throttling
 
     return True
-
-
-def log_message(message):
-    if not hasattr(cfg, 'LOGS_GROUP') or not cfg.LOGS_GROUP:
-        return
-
-    if isinstance(message, telebot.types.Message):
-        try:
-            if message.chat.type == 'private':
-                chat_full_id = get_topic_id(message)
-                chat_name = message.from_user.full_name
-            else:
-                chat_full_id = f'[{message.chat.id}] [{message.message_thread_id}]'
-                chat_name = f'[{message.chat.title}] [{message.message_thread_id}]'
-            if chat_full_id in LOGS_GROUPS_DB:
-                th = LOGS_GROUPS_DB[chat_full_id]
-            else:
-                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                LOGS_GROUPS_DB[chat_full_id] = th
-            bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
-        except Exception as error:
-            error_traceback = traceback.format_exc()
-            my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
-    elif isinstance(message, list):
-        try:
-            if message[0].chat.type == 'private':
-                chat_full_id = get_topic_id(message[0])
-                chat_name = message[0].from_user.full_name
-            else:
-                chat_full_id = f'[{message[0].chat.id}] [{message[0].message_thread_id}]'
-                chat_name = f'[{message[0].chat.title}] [{message[0].message_thread_id}]'
-            if chat_full_id in LOGS_GROUPS_DB:
-                th = LOGS_GROUPS_DB[chat_full_id]
-            else:
-                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                LOGS_GROUPS_DB[chat_full_id] = th
-            m_ids = [x.message_id for x in message]
-            bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
-            # for m in message:
-            #     bot.copy_message(cfg.LOGS_GROUP, m.chat.id, m.message_id, message_thread_id=th)
-        except Exception as error:
-            error_traceback = traceback.format_exc()
-            my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
 
 
 def authorized_log(message: telebot.types.Message) -> bool:

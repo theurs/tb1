@@ -3820,7 +3820,8 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         buf.seek(0)
         m = bot.send_document(message.chat.id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt', reply_markup=reply_markup)
         log_message(m)
-    del DEBUG_MD_TO_HTML[resp]
+    if resp in DEBUG_MD_TO_HTML:
+        del DEBUG_MD_TO_HTML[resp]
 
 
 def allowed_chatGPT_user(chat_id: int) -> bool:

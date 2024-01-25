@@ -3509,10 +3509,20 @@ def purge_cmd_handler(message: telebot.types.Message):
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
 
+            if chat_id_full in LOGS_GROUPS_DB:
+                try:
+                    r = bot.delete_forum_topic(cfg.LOGS_GROUP, LOGS_GROUPS_DB[chat_id_full])
+                    del LOGS_GROUPS_DB[chat_id_full]
+                    if not r:
+                        my_log.log2(f'tb:purge_cmd_handler: {LOGS_GROUPS_DB[chat_id_full]} not deleted')
+                except Exception as unknown:
+                    error_traceback = traceback.format_exc()
+                    my_log.log2(f'tb:purge_cmd_handler: {unknown}\n\n{chat_id_full}\n\n{error_traceback}')
+
             msg = f'{tr("Your logs was purged. Keep in mind there could be a backups and some mixed logs. It is hard to erase you from the internet.", lang)}'
         else:
             msg = f'{tr("Error. Your logs was NOT purged.", lang)}'
-    bot_reply(message, msg)
+        bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['id'], func = authorized_log) 

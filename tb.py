@@ -779,7 +779,7 @@ def log_message(message):
             my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
     elif isinstance(message, list):
         try:
-            if message.chat.type == 'private':
+            if message[0].chat.type == 'private':
                 chat_full_id = get_topic_id(message[0])
                 chat_name = message[0].from_user.full_name
             else:

@@ -98,6 +98,11 @@ TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
 # запоминаем промпты для повторения рисования
 # IMAGE_PROMPTS = SqliteDict('db/image_prompts.db', autocommit=True)
 
+# хранилище номеров тем в группе для логов {full_user_id as str: theme_id as int}
+# full_user_id - полный адрес места которое логируется, либо это юзер ип и 0 либо группа и номер в группе
+# theme_id - номер темы в группе для логов
+LOGS_GROUPS_DB = SqliteDict('db/logs_groups.db', autocommit=True)
+
 # запоминаем пары хеш-промтп для работы клавиатуры которая рисует по сгенерированным с помощью ИИ подсказкам
 # {hash:prompt, ...}
 IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=True)
@@ -669,6 +674,8 @@ def authorized(message: telebot.types.Message) -> bool:
     else:
         my_log.log_media(message)
 
+    log_message(message)
+
     # никаких проверок и тротлинга для админов
     if message.from_user.id in cfg.admins:
         return True
@@ -749,6 +756,39 @@ def authorized(message: telebot.types.Message) -> bool:
     return True
 
 
+def log_message(message):
+    if not hasattr(cfg, 'LOGS_GROUP') or not cfg.LOGS_GROUP:
+        return
+
+    if isinstance(message, telebot.types.Message):
+        try:
+            chat_full_id = get_topic_id(message)
+            if chat_full_id in LOGS_GROUPS_DB:
+                th = LOGS_GROUPS_DB[chat_full_id]
+            else:
+                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + message.from_user.full_name).message_thread_id
+                LOGS_GROUPS_DB[chat_full_id] = th
+            bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
+        except Exception as error:
+            error_traceback = traceback.format_exc()
+            my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
+    elif isinstance(message, list):
+        try:
+            chat_full_id = get_topic_id(message[0])
+            if chat_full_id in LOGS_GROUPS_DB:
+                th = LOGS_GROUPS_DB[chat_full_id]
+            else:
+                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + message[0].from_user.full_name).message_thread_id
+                LOGS_GROUPS_DB[chat_full_id] = th
+            m_ids = [x.message_id for x in message]
+            bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
+            # for m in message:
+            #     bot.copy_message(cfg.LOGS_GROUP, m.chat.id, m.message_id, message_thread_id=th)
+        except Exception as error:
+            error_traceback = traceback.format_exc()
+            my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
+
+
 def authorized_log(message: telebot.types.Message) -> bool:
     """
     Only log and banned
@@ -764,6 +804,8 @@ def authorized_log(message: telebot.types.Message) -> bool:
         my_log.log_echo(message)
     else:
         my_log.log_media(message)
+
+    log_message(message)
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
     # I don't know how to do that, so I have to leave only when receiving any event
@@ -1221,8 +1263,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             with ShowAction(message, 'upload_video'):
                 tmp = my_tiktok.download_video(message.text)
                 try:
-                    bot.send_video(chat_id=message.chat.id, video=open(tmp, 'rb'),
+                    m = bot.send_video(chat_id=message.chat.id, video=open(tmp, 'rb'),
                                    reply_markup=get_keyboard('hide', message))
+                    log_message(m)
                 except Exception as bot_send_tiktok_video_error:
                     my_log.log2(f'tb:callback_inline_thread:download_tiktok:{bot_send_tiktok_video_error}')
                 try:
@@ -1296,6 +1339,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                             parse_mode='HTML')
                             YTB_CACHE[song_id] = m.message_id
                             YTB_CACHE_FROM[song_id] = m.chat.id
+                        log_message(m)
                         if song_id in YTB_CACHE:
                             try:
                                 bot.copy_message(chat_id=message.chat.id,
@@ -1339,6 +1383,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                             parse_mode='HTML')
                             YTB_CACHE[song_id] = m.message_id
                             YTB_CACHE_FROM[song_id] = m.chat.id
+                        log_message(m)
 
                     my_log.log_echo(message, f'Finish sending youtube {song_id} {caption}\n{caption_}')
                 except Exception as send_ytb_error:
@@ -1770,11 +1815,12 @@ def handle_document_thread(message: telebot.types.Message):
                     if len(text) > 4096:
                         with io.StringIO(text) as f:
                             if not is_private:
-                                bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
+                                m = bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
                                                   reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide', message))
                             else:
-                                bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
+                                m = bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
                                                   reply_markup=get_keyboard('hide', message))
+                            log_message(m)
                     else:
                         bot_reply(message, text, reply_markup=get_keyboard('translate', message))
                     my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
@@ -2593,12 +2639,13 @@ def tts_thread(message: telebot.types.Message, caption = None):
             audio = my_tts.tts(text, llang, rate, gender=gender)
             if audio:
                 if message.chat.type != 'private':
-                    bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id,
+                    m = bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id,
                                    reply_markup=get_keyboard('hide', message), caption=caption)
                 else:
                     # In private, you don't need to add a keyboard with a delete button,
                     # you can delete it there without it, and accidental deletion is useless
-                    bot.send_voice(message.chat.id, audio, caption=caption)
+                    m = bot.send_voice(message.chat.id, audio, caption=caption)
+                log_message(m)
                 my_log.log_echo(message, f'[Sent voice message] [{gender}]')
             else:
                 bot_reply_tr(message, 'Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.')
@@ -2811,6 +2858,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                 if len(medias) > 0:
                     with SEND_IMG_LOCK:
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                        log_message(msgs_ids)
                         update_user_image_counter(chat_id_full, len(medias))
 
                         log_msg = '[Send images] '
@@ -3039,8 +3087,9 @@ def qrcode_text(message: telebot.types.Message):
             bio.name = 'qr.png'
             image.save(bio, 'PNG')
             bio.seek(0)
-            bot.send_photo(chat_id = message.chat.id, message_thread_id = message.message_thread_id, photo=bio,
+            m = bot.send_photo(chat_id = message.chat.id, message_thread_id = message.message_thread_id, photo=bio,
                            reply_markup=get_keyboard('hide', message))
+            log_message(m)
             my_log.log_echo(message, '[QR code]')
             return
 
@@ -3524,7 +3573,8 @@ def dump_translation_thread(message: telebot.types.Message):
             with open('AUTO_TRANSLATIONS.json', 'w', encoding='utf-8') as f:
                 json.dump(AUTO_TRANSLATIONS, f, indent=4, sort_keys=True, ensure_ascii=False)
             # отправить файл пользователю
-            bot.send_document(message.chat.id, open('AUTO_TRANSLATIONS.json', 'rb'))
+            m = bot.send_document(message.chat.id, open('AUTO_TRANSLATIONS.json', 'rb'))
+            log_message(m)
             try:
                 os.remove('AUTO_TRANSLATIONS.json')
             except Exception as error:
@@ -3723,11 +3773,12 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
             else:
                 try:
                     if send_message:
-                        bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode=parse_mode,
+                        m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode=parse_mode,
                                          link_preview_options=preview, reply_markup=reply_markup)
                     else:
-                        bot.reply_to(message, chunk, parse_mode=parse_mode,
+                        m = bot.reply_to(message, chunk, parse_mode=parse_mode,
                                 link_preview_options=preview, reply_markup=reply_markup)
+                    log_message(m)
                 except Exception as error:
                     if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
                         error_traceback = traceback.format_exc()
@@ -3736,10 +3787,11 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                         my_log.log2(f'tb:reply_to_long_message: {error}')
                         my_log.log2(chunk)
                     if send_message:
-                        bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
+                        m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
                                             link_preview_options=preview, reply_markup=reply_markup)
                     else:
-                        bot.reply_to(message, chunk, parse_mode='', link_preview_options=preview, reply_markup=reply_markup)
+                        m = bot.reply_to(message, chunk, parse_mode='', link_preview_options=preview, reply_markup=reply_markup)
+                    log_message(m)
             counter -= 1
             if counter < 0:
                 break
@@ -3748,8 +3800,9 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         buf = io.BytesIO()
         buf.write(resp.encode())
         buf.seek(0)
-        bot.send_document(message.chat.id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt', reply_markup=reply_markup)
-        del DEBUG_MD_TO_HTML[resp]
+        m = bot.send_document(message.chat.id, document=buf, caption='resp.txt', visible_file_name = 'resp.txt', reply_markup=reply_markup)
+        log_message(m)
+    del DEBUG_MD_TO_HTML[resp]
 
 
 def allowed_chatGPT_user(chat_id: int) -> bool:
@@ -4076,7 +4129,7 @@ def do_task(message, custom_prompt: str = ''):
                 return
 
         # проверяем просят ли нарисовать что-нибудь
-        if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', 'нарисуй ', 'нарисуй,')):
+        if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', 'нарисуй ', 'нарисуй,', 'draw ', 'draw,')):
             prompt = message.text.split(' ', 1)[1]
             message.text = f'/image {prompt}'
             image_thread(message)
@@ -4205,6 +4258,7 @@ def do_task(message, custom_prompt: str = ''):
                             if images:
                                 images_group = [telebot.types.InputMediaPhoto(i) for i in images]
                                 photos_ids = bot.send_media_group(message.chat.id, images_group[:10], reply_to_message_id=message.message_id)
+                                log_message(photos_ids)
                         else:
                             bot_reply_tr(message, 'No answer from Bard.', allow_voice=True)
                     except Exception as error3:

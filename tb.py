@@ -770,7 +770,6 @@ def log_message(message):
                 chat_name = f'[{message.chat.title}] [{message.message_thread_id}]'
             if chat_full_id in LOGS_GROUPS_DB:
                 th = LOGS_GROUPS_DB[chat_full_id]
-                
             else:
                 th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
                 LOGS_GROUPS_DB[chat_full_id] = th

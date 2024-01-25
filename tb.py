@@ -3303,7 +3303,9 @@ def send_welcome_start_thread(message: telebot.types.Message):
 
 I provide free access to various chatbots like ChatGPT, Google Bard, Claude AI, and more. Additionally, I can create drawings from text descriptions, recognize text in images, voice messages, and documents. I can work in group chats, have a voice mode, and even search for answers on Google. I can also provide concise summaries of web pages and YouTube videos.
 
-If you need assistance with anything, feel free to reach out to me anytime. Just ask your question, and I'll do my best to help you! 🌟"""
+If you need assistance with anything, feel free to reach out to me anytime. Just ask your question, and I'll do my best to help you! 🌟
+
+You can change bot language with /lang command."""
 
     if is_private:
         start_generated = f'''You are a Chatbot. You work in telegram messenger.
@@ -3312,6 +3314,8 @@ Write a SHORT welcome message to a user who has just come to you, use emojis if 
 Your options: Chat, search the web, find and download music from YouTube,
 summarize web pages and YouTube videos, convert voice messages to text,
 recognize text from images and answer questions about them, draw pictures.
+
+Mension that user can change bot language with /lang command.
 
 User name: {user_name}
 User language: {lang}'''
@@ -3322,6 +3326,8 @@ Write a SHORT welcome message to a chat you have just been invited to, use emoji
 Your options: Chat, search the web, find and download music from YouTube,
 summarize web pages and YouTube videos, convert voice messages to text,
 recognize text from images and answer questions about them, draw pictures.
+
+Mension that user can change bot language with /lang command.
 
 Chat name: {chat_name}
 Chat language: {lang}'''
@@ -3724,7 +3730,8 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                                 link_preview_options=preview, reply_markup=reply_markup)
                 except Exception as error:
                     if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
-                        my_log.log_parser_error(f'{DEBUG_MD_TO_HTML[resp]}\n=====================================================\n{resp}')
+                        error_traceback = traceback.format_exc()
+                        my_log.log_parser_error(f'{str(error)}\n\n{error_traceback}\n\n{DEBUG_MD_TO_HTML[resp]}\n=====================================================\n{resp}')
                     else:
                         my_log.log2(f'tb:reply_to_long_message: {error}')
                         my_log.log2(chunk)
@@ -4069,7 +4076,7 @@ def do_task(message, custom_prompt: str = ''):
                 return
 
         # проверяем просят ли нарисовать что-нибудь
-        if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',')):
+        if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', 'нарисуй ', 'нарисуй,')):
             prompt = message.text.split(' ', 1)[1]
             message.text = f'/image {prompt}'
             image_thread(message)

@@ -28,6 +28,7 @@ import my_genimg
 import my_dic
 import my_google
 import my_gemini
+import my_gigachat
 import my_log
 import my_ocr
 import my_pandoc
@@ -1021,6 +1022,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1, button2, button3)
         markup.row(button4, button5, button6)
         return markup
+    elif kbd == 'giga_chat':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gigaAI_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
     elif kbd == 'claude_chat':
         if disabled_kbd(chat_id_full):
             return None
@@ -1438,6 +1450,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'claudeAI_reset':
             my_claude.reset_claude_chat(chat_id_full)
             bot_reply_tr(message, 'История диалога с Claude AI очищена.')
+        elif call.data == 'gigaAI_reset':
+            my_gigachat.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с GigaChat очищена.')
         elif call.data == 'chatGPT_reset':
             gpt_basic.chat_reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с chatGPT очищена.')
@@ -2184,6 +2199,8 @@ def reset_(message: telebot.types.Message):
             my_gemini.reset(chat_id_full)
         elif CHAT_MODE[chat_id_full] == 'claude':
             my_claude.reset_claude_chat(chat_id_full)
+        elif CHAT_MODE[chat_id_full] == 'gigachat':
+            my_gigachat.reset(chat_id_full)
         elif CHAT_MODE[chat_id_full] == 'chatgpt':
             gpt_basic.chat_reset(chat_id_full)
         bot_reply_tr(message, 'History cleared.')
@@ -2322,6 +2339,9 @@ def send_debug_history(message: telebot.types.Message):
     elif CHAT_MODE[chat_id_full] == 'gemini':
         prompt = 'Gemini Pro\n\n'
         prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+    elif CHAT_MODE[chat_id_full] == 'gigachat':
+        prompt = 'GigaChat\n\n'
+        prompt += my_gigachat.get_mem_as_string(chat_id_full) or tr('Empty', lang)
     else:
         return
     bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
@@ -3512,6 +3532,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_gemini.reset(chat_id_full)
             my_claude.reset_claude_chat(chat_id_full)
             gpt_basic.chat_reset(chat_id_full)
+            my_gigachat.reset(chat_id_full)
 
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
@@ -3962,6 +3983,17 @@ def do_task(message, custom_prompt: str = ''):
                 chat_mode_ = 'claude'
                 message.text = message.text.split(maxsplit=1)[1]
                 chat_bot_cmd_was_used = True
+            elif cmd_ == 'gigachat':
+                if message.text == '/gigachat':
+                    bot_reply_tr(message, 'Usage: /gigachat <text>, you can ask default bot without command, see settings')
+                    return
+                chat_mode_ = 'gigachat'
+                message.text = message.text.split(maxsplit=1)[1]
+                chat_bot_cmd_was_used = True
+                ####################################
+                # убрать это после релиза, а пока гигачат активируется командой /gigachat
+                CHAT_MODE[chat_id_full] = 'gigachat'
+                ####################################
             elif cmd_ == 'gemini':
                 if message.text == '/gemini':
                     bot_reply_tr(message, 'Usage: /gemini <text>, you can ask default bot without command, see settings')
@@ -4329,8 +4361,35 @@ def do_task(message, custom_prompt: str = ''):
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('claude_chat', message), not_log=True, allow_voice=True)
                     except Exception as error3:
-                        print(error3)
                         my_log.log2(str(error3))
+                    return
+
+            # если активирован режим общения с гига чатом
+            if chat_mode_ == 'gigachat' and not FIRST_DOT:
+                if len(msg) > my_gigachat.MAX_QUERY:
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Гигачата:", lang)} {len(msg)} {tr("из", lang)} {my_gigachat.MAX_QUERY}')
+                    return
+
+                with ShowAction(message, action):
+                    try:
+                        answer = my_gigachat.chat(message.text, chat_id_full, hidden_text)
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
+                        my_log.log_echo(message, f'[GigaChat] {answer}')
+                        if answer:
+                            try:
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('giga_chat', message), not_log=True, allow_voice=True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('giga_chat', message), not_log=True, allow_voice=True)
+                    except Exception as error4:
+                        error_traceback = traceback.format_exc()
+                        my_log.log2(str(error4) + '\n\n' + error_traceback)
                     return
 
             # chatGPT

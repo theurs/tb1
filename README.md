@@ -155,7 +155,7 @@ bot_name = "Бот"
 default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
-# 'bard', 'claude', 'chatgpt', 'gemini'
+# 'bard', 'claude', 'chatgpt', 'gemini', 'gigachat'
 #chat_mode_default = 'chatgpt'
 chat_mode_default = 'gemini'
 #chat_mode_default = 'bard'
@@ -325,6 +325,19 @@ PHONE_CATCHER = True
 #    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
 #    ]
 
+# gigachat api ['xxx1','xxx2',...]
+# https://developers.sber.ru/studio/workspaces/
+# Используйте ключи для подключения сервиса -> Сгенерировать новый Client Secret -> Авторизационные данные
+# дают бесплатно 1млн токенов в год и далее 5млн за 1000р или 25млн за 4850р
+# GIGACHAT_API = [
+#     'xxx1', 'xxx2'
+#     ]
+# сколько сообщений помнить (запрос+ответ=2 сообщения)
+# GIGACHAT_MAX_MESSAGES = 20
+# сколько символов помнить (какие лимиты хз, сколько стоит тоже хз, токены и символы это разные вещи)
+# GIGACHAT_MAX_SYMBOLS = 10000
+# не принимать запросы больше чем, это ограничение для телеграм бота (какие лимиты - хз)
+# GIGACHAT_MAX_QUERY = 4000
 ```
 
 Что бы работало рисование бингом надо заменить куки, взять с сайта bing.com раздел чат, попасть туда можно только с ип приличных стран и с аккаунтом в микрософте. С помощью браузерного расширения cookie editor надо достать куки с именем _U и передать боту через команду /bingcookie xxx

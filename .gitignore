@@ -16,3 +16,4 @@ logs/*
 *.fb2
 *.doc
 _old/*
+*.db

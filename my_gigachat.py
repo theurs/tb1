@@ -16,7 +16,7 @@ import my_log
 
 
 # {chat_id (str):messages(list)}
-CHATS = sqlitedict.SqliteDict('gigachat_chats.db', autocommit=True)
+CHATS = sqlitedict.SqliteDict('db/gigachat_chats.db', autocommit=True)
 
 # {key:lock} каждый ключ может работать только одним потоком
 KEY_LOCKS = {}

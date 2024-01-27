@@ -3992,7 +3992,7 @@ def do_task(message, custom_prompt: str = ''):
                 chat_bot_cmd_was_used = True
                 ####################################
                 # убрать это после релиза, а пока гигачат активируется командой /gigachat
-                CHAT_MODE[chat_id_full] = 'gigachat'
+                # CHAT_MODE[chat_id_full] = 'gigachat'
                 ####################################
             elif cmd_ == 'gemini':
                 if message.text == '/gemini':

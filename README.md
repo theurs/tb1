@@ -83,6 +83,7 @@
 
 /bard - обращение к bard из другого режима
 
+/gigachat - обращение к gigachat из другого режима, его в меню нет тк он слишком дорогой
 
 ![Скриншоты](pics/README.md)
 
@@ -325,6 +326,7 @@ PHONE_CATCHER = True
 #    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
 #    ]
 
+# !!постоплата!! можно сильно влететь
 # gigachat api ['xxx1','xxx2',...]
 # https://developers.sber.ru/studio/workspaces/
 # Используйте ключи для подключения сервиса -> Сгенерировать новый Client Secret -> Авторизационные данные

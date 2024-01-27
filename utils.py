@@ -304,66 +304,6 @@ def replace_tables(text: str) -> str:
     return text
 
 
-def split_html_old(text: str, max_length: int = 1500) -> list:
-    """
-    Split the given HTML text into chunks of maximum length, while preserving the integrity
-    of HTML tags. The function takes two arguments:
-    
-    Parameters:
-        - text (str): The HTML text to be split.
-        - max_length (int): The maximum length of each chunk. Default is 1500.
-        
-    Returns:
-        - list: A list of chunks, where each chunk is a part of the original text.
-        
-    Raises:
-        - AssertionError: If the length of the text is less than or equal to 299.
-    """
-    if len(text) <= max_length:
-        return [text,]
-    def find_all(a_str, sub):
-        start = 0
-        while True:
-            start = a_str.find(sub, start)
-            if start == -1:
-                return
-            if sub.startswith('\n'):
-                yield start+1
-            else:
-                yield start+len(sub)
-            start += len(sub) # use start += 1 to find overlapping matches
-
-    # find all end tags positions with \n after them
-    positions = []
-    # ищем либо открывающий тег в начале, либо закрывающий в конце
-    tags = ['</b>\n','</a>\n','</pre>\n', '</code>\n',
-            '\n<b>', '\n<a>', '\n<pre>', '\n<code>']
-
-    for i in tags:
-        for j in find_all(text, i):
-            positions.append(j)
-
-    chunks = []
-
-    # нет ни одной найденной позиции, тупо режем по границе
-    if not positions:
-        chunks.append(text[:max_length])
-        chunks += split_html(text[max_length:], max_length)
-        return chunks
-
-    for i in list(reversed(positions)):
-        if i < max_length:
-            chunks.append(text[:i])
-            chunks += split_html(text[i:], max_length)
-            return chunks
-
-    # позиции есть но нет такой по которой можно резать,
-    # значит придется резать просто по границе
-    chunks.append(text[:max_length])
-    chunks += split_html(text[max_length:], max_length)
-    return chunks
-
-
 def split_html(text: str, max_length: int = 1500) -> list:
     """
     Split the given HTML text into chunks of maximum length specified by `max_length`.

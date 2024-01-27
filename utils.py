@@ -299,7 +299,7 @@ def replace_tables(text: str) -> str:
                 my_log.log2(f'tb:replace_tables: {error2}')
                 continue
         new_table = x.get_string()
-        text = text.replace(table, f'<pre><code>{new_table}</code></pre>')
+        text = text.replace(table, f'<pre><code>{new_table}\n</code></pre>')
 
     return text
 

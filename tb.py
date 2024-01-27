@@ -116,6 +116,10 @@ SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
 # когда надо всем обновить клавиатуру надо остановить бота, удалить этот файл и запустить снова
 NEED_TO_UPDATE_KEYBOARD = SqliteDict('db/need_to_update_keyboard.db', autocommit=True)
 
+# в каком чате включен режим без подсказок, боту не будет сообщаться время место и роль,
+# он будет работать как в оригинале {id:True/False}
+ORIGINAL_MODE = SqliteDict('db/original_mode.db', autocommit=True)
+
 # запоминаем у какого юзера какой язык OCR выбран
 OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
 
@@ -651,14 +655,23 @@ def trial_status(message: telebot.types.Message) -> bool:
 # • <a>https://ai.google.dev/</a> Gemini Pro (it doesn't have ready-to-use chat, there are only tools for development)
 
 # or donate to this bot.<code>/help</code>.'''
-            msg = """To continue using the bot's services, you need to purchase a $5 per month subscription. The subscription can be purchased on the https://www.donationalerts.com/r/theurs.
+#             msg = """To continue using the bot's services, you need to purchase a $5 per month subscription. The subscription can be purchased on the https://www.donationalerts.com/r/theurs.
 
-After purchasing the subscription, the bot will resume responding to your requests.
+# After purchasing the subscription, the bot will resume responding to your requests.
 
-Support: https://t.me/kun4_sun_bot_support/3"""
+# Support: https://t.me/kun4_sun_bot_support/3"""
+            msg = """To continue using the bot's services, I kindly request your support through a donation. Your contribution, no matter how small, will help cover the resources required for the bot to function and continue providing you with valuable assistance.
+
+You can make your donation through the following link: https://www.donationalerts.com/r/theurs.
+
+Thank you for your understanding and support.
+
+For any inquiries or concerns, please reach out to our support team at https://t.me/kun4_sun_bot_support/3."""
             msg = tr(msg, lang, '_')
             bot_reply(message, msg, disable_web_page_preview=True)
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
+            # give little more messages
+            TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_USERS_COUNTER[chat_full_id] - 20
             return False
         else:
             return True
@@ -2025,6 +2038,25 @@ def config(message: telebot.types.Message):
     except Exception as error:
         my_log.log2(f'tb:config:{error}')
         print(error)
+
+
+@bot.message_handler(commands=['original_mode'], func=authorized_owner)
+def original_mode(message: telebot.types.Message):
+    """
+    Handles the 'original_mode' command for authorized owners. 
+    Toggles the original mode for the chat based on the current state.
+    """
+    chat_id_full = get_topic_id(message)
+
+    if chat_id_full not in ORIGINAL_MODE:
+        ORIGINAL_MODE[chat_id_full] = False
+
+    if ORIGINAL_MODE[chat_id_full]:
+        ORIGINAL_MODE[chat_id_full] = False
+        bot_reply_tr(message, 'Original mode disabled. Bot will be informed about place, names, roles etc.')
+    else:
+        ORIGINAL_MODE[chat_id_full] = True
+        bot_reply_tr(message, 'Original mode enabled. Bot will not be informed about place, names, roles etc. It will work same as original chatbot.')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)
@@ -4253,7 +4285,12 @@ def do_task(message, custom_prompt: str = ''):
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
                 else:
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}".]'
-            helped_query = f'{hidden_text} {message.text}'
+            if chat_id_full not in ORIGINAL_MODE:
+                ORIGINAL_MODE[chat_id_full] = False
+            if ORIGINAL_MODE[chat_id_full]:
+                helped_query = message.text
+            else:
+                helped_query = f'{hidden_text} {message.text}'
 
             # если активирован режим общения с Gemini Pro
             if chat_mode_ == 'gemini' and not FIRST_DOT:
@@ -4372,7 +4409,10 @@ def do_task(message, custom_prompt: str = ''):
 
                 with ShowAction(message, action):
                     try:
-                        answer = my_gigachat.chat(message.text, chat_id_full, hidden_text)
+                        if ORIGINAL_MODE[chat_id_full]:
+                            answer = my_gigachat.chat(message.text, chat_id_full)
+                        else:
+                            answer = my_gigachat.chat(message.text, chat_id_full, hidden_text)
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)
                             DEBUG_MD_TO_HTML[answer_] = answer

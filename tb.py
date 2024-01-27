@@ -671,7 +671,7 @@ For any inquiries or concerns, please reach out to our support team at https://t
             bot_reply(message, msg, disable_web_page_preview=True)
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
             # give little more messages
-            TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_USERS_COUNTER[chat_full_id] - 20
+            TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
             return False
         else:
             return True

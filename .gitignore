@@ -17,3 +17,4 @@ logs/*
 *.doc
 _old/*
 *.db
+*.db-journal

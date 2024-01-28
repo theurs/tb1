@@ -462,10 +462,11 @@ def chat_cli():
 
 def check_phone_number(number: str) -> str:
     """проверяет чей номер, откуда звонили"""
-    urls = [f'https://zvonili.com/phone/{number}',
-            f'https://abonentik.ru/7{number}',
-            f'https://www.list-org.com/search?type=phone&val=%2B7{number}'
-            ]
+    urls = [
+        f'https://zvonili.com/phone/{number}',
+        # этот сайт похоже тупо врёт обо всех номерах f'https://abonentik.ru/7{number}',
+        f'https://www.list-org.com/search?type=phone&val=%2B7{number}'
+    ]
     text = my_google.download_text(urls, no_links=True)
     query = f'''
 Определи по тексту какой регион, какой оператор, и не связан ли он с мошенничеством,
@@ -721,7 +722,7 @@ if __name__ == '__main__':
 
     # print(get_models())
 
-    chat_cli()
+    # chat_cli()
 
     # print(translate('مرحبا', to_lang='nl'))
     # print(translate('Γεια σας', 'el', 'pt'))
@@ -732,3 +733,4 @@ if __name__ == '__main__':
     # data = open('1.jpg', 'rb').read()
     # print(img2txt(data))
 
+    print(check_phone_number('9243348422'))

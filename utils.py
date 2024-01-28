@@ -545,41 +545,23 @@ def mime_from_buffer(data: bytes) -> str:
         return 'plain'
 
 
+def seconds_to_str(seconds: float) -> str:
+    """
+    Convert seconds to a string in the format "HH:MM:SS".
+
+    Parameters:
+        seconds (float): The number of seconds to convert.
+
+    Returns:
+        str: A string representing the time in the format "HH:MM:SS".
+    """
+    seconds = int(seconds)
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    return f'{hours:02}:{minutes:02}:{seconds:02}'
+
+
 if __name__ == '__main__':
-    t = r"""
-`&nbsp;` - это HTML-код для неразрывного пробела. Неразрывный пробел не учитывается при переносе слов, поэтому он используется для предотвращения разрыва слов в нежелательных местах.
-
-Например, следующий код предотвращает разрыв слова "неразрывный" при переносе слов:
-
-```html
-<p>Это неразрывный&nbsp;пробел.</p>
-```
-
-Неразрывные пробелы также используются для выравнивания текста. Например, следующий код выравнивает текст в таблице по центру:
-
-```html
-<table>
-  <tr>
-    <td align="center">Column 1</td>
-    <td align="center">Column 2</td>
-    <td align="center">Column 3</td>
-  </tr>
-</table>
-```
-
-Неразрывные пробелы также используются для создания отступов. Например, следующий код создает отступ перед первым словом в абзаце:
-
-```html
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This is a paragraph with an indent.</p>
-```
-
-Наконец, неразрывные пробелы используются для создания специальных символов. Например, следующий код создает символ копирайта:
-
-```html
-&copy;
-```
-
-Это лишь несколько способов использования неразрывных пробелов в HTML. Существует множество других способов сделать это, поэтому не стесняйтесь экспериментировать, чтобы найти тот, который лучше всего подходит для ваших нужд.
-"""
-    r = bot_markdown_to_html(t)
-    print(r)
+    
+    print(seconds_to_str('360,20'))

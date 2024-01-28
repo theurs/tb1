@@ -200,6 +200,9 @@ BOT_NAME_DEFAULT = cfg.default_bot_name
 # это нужно только что бы записать в логи пару если html версия не пролезла через телеграм фильтр
 DEBUG_MD_TO_HTML = {}
 
+# запоминаем кто ответил что бы добавить это в лог в группу
+# {user_id: 'chatbot'(chatgpt, bard etc)}
+WHO_ANSWERED = {}
 
 supported_langs_trans = [
         "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
@@ -573,6 +576,10 @@ def log_message(message):
             else:
                 th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
                 LOGS_GROUPS_DB[chat_full_id] = th
+            chat_id_full = get_topic_id(message)
+            if chat_id_full in WHO_ANSWERED:
+                bot.send_message(cfg.LOGS_GROUP, f'[{WHO_ANSWERED[chat_id_full]}]', message_thread_id=th)
+                del WHO_ANSWERED[chat_id_full]
             bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
         except Exception as error:
             error_traceback = traceback.format_exc()
@@ -4292,6 +4299,11 @@ def do_task(message, custom_prompt: str = ''):
             else:
                 helped_query = f'{hidden_text} {message.text}'
 
+
+            WHO_ANSWERED[chat_id_full] = chat_mode_
+            time_to_answer_start = time.time()
+
+
             # если активирован режим общения с Gemini Pro
             if chat_mode_ == 'gemini' and not FIRST_DOT:
                 if len(msg) > my_gemini.MAX_REQUEST:
@@ -4304,7 +4316,8 @@ def do_task(message, custom_prompt: str = ''):
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
                         answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full])
-                        
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
                         flag_gpt_help = False
                         if not answer:
                             if not answer:
@@ -4343,6 +4356,7 @@ def do_task(message, custom_prompt: str = ''):
                 with ShowAction(message, action):
                     try:
                         answer = my_bard.chat(helped_query, chat_id_full)
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                         for x in my_bard.REPLIES:
                             if x[0] == answer:
@@ -4383,6 +4397,7 @@ def do_task(message, custom_prompt: str = ''):
                 with ShowAction(message, action):
                     try:
                         answer = my_claude.chat(helped_query, chat_id_full)
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)
                             DEBUG_MD_TO_HTML[answer_] = answer
@@ -4413,6 +4428,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = my_gigachat.chat(message.text, chat_id_full)
                         else:
                             answer = my_gigachat.chat(message.text, chat_id_full, hidden_text)
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)
                             DEBUG_MD_TO_HTML[answer_] = answer
@@ -4458,7 +4474,7 @@ def do_task(message, custom_prompt: str = ''):
                         resp = gpt_basic.chat(chat_id_full, helped_query,
                                             user_name = user_name, lang=lang,
                                             is_private = is_private, chat_name=chat_name)
-
+                    WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                 if resp and FIRST_DOT:
                     my_gemini.update_mem(message.text, resp, chat_id_full)
 

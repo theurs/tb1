@@ -8,6 +8,7 @@ import threading
 import re
 import requests
 from sqlitedict import SqliteDict
+from fake_useragent import UserAgent
 
 import cfg
 import my_log
@@ -32,7 +33,7 @@ COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 # storage of requests that Bing rejected, they cannot be repeated
 BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
 
-
+ua = UserAgent(browsers=["edge"])
 BING_URL = "https://www.bing.com"
 
 # {proxy: (timestamp, external_ip)}
@@ -92,25 +93,19 @@ def get_images(prompt: str,
         list: A list of normal image links (URLs) from Bing search.
     """
 
-    FORWARDED_IP = get_external_ip(proxy)
+    # FORWARDED_IP = get_external_ip(proxy)
     # FORWARDED_IP = f"1.0.0.{random.randint(0, 255)}"
+    FORWARDED_IP = f"13.{random.randint(104, 107)}.{random.randint(0, 255)}.{random.randint(0, 255)}"
     HEADERS = {
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
-                "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.77",
-        "accept-language": "en;q=0.9,en-US;q=0.8",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "accept-language": "en-US,en;q=0.9",
         "cache-control": "max-age=0",
         "content-type": "application/x-www-form-urlencoded",
         "referrer": "https://www.bing.com/images/create/",
-        "origin": "https://copilot.microsoft.com/",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/120.0.0.0 "
-                        "Safari/537.36 "
-                        "Edg/120.0.2210.91",
+        "origin": "https://www.bing.com",
+        "user-agent": ua.random,
         "x-forwarded-for": FORWARDED_IP,
     }
-
-    # print(f'{u_cookie[:5]} {proxy} {prompt}')
 
     url_encoded_prompt = requests.utils.quote(prompt)
 
@@ -123,7 +118,7 @@ def get_images(prompt: str,
         session.proxies.update({'http': proxy, 'https': proxy})
     session.headers = HEADERS
     session.cookies.set("_U", u_cookie)
-
+    session.headers["user-agent"] = ua.random
     response = session.post(
         url,
         allow_redirects=False,

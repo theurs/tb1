@@ -18,6 +18,9 @@ import my_log
 # {chat_id (str):messages(list)}
 CHATS = sqlitedict.SqliteDict('db/gigachat_chats.db', autocommit=True)
 
+# {chat_id (str):lock} каждый чат может работать только одним потоком что бы не портить память
+CHATS_LOCKS = {}
+
 # {key:lock} каждый ключ может работать только одним потоком
 KEY_LOCKS = {}
 
@@ -35,67 +38,70 @@ def chat(prompt: str, chat_id: str, role: str = ''):
     or an empty string if the chat fails.
     """
     try:
-        # это для сообщений об ошибке
-        res_ = None
-        messages = []
-        key = None
+        if chat_id not in CHATS_LOCKS:
+            CHATS_LOCKS[chat_id] = threading.Lock()
+        with CHATS_LOCKS[chat_id]:
+            # это для сообщений об ошибке
+            res_ = None
+            messages = []
+            key = None
 
-        if not hasattr(cfg, 'GIGACHAT_API'):
+            if not hasattr(cfg, 'GIGACHAT_API'):
+                return ''
+
+            if not role:
+                role = "Ты эмпатичный бот-психолог, который помогает пользователю решить его проблемы."
+
+            messages = CHATS[chat_id] if chat_id in CHATS else []
+
+            keys = cfg.GIGACHAT_API[:]
+            key = random.choice(keys)
+
+            if key not in KEY_LOCKS:
+                KEY_LOCKS[key] = threading.Lock()
+
+            with KEY_LOCKS[key]:
+                chat_ = GigaChat(credentials=key, verify_ssl_certs=False)
+
+                messages_ = [SystemMessage(content=role)]
+                role = 'h'
+                for m in messages:
+                    if role == 'h':
+                        role = 'a'
+                        messages_.append(HumanMessage(content=m))
+                    elif role == 'a':
+                        role = 'h'
+                        messages_.append(AIMessage(content=m))
+
+                messages.append(prompt)
+                messages_.append(HumanMessage(content=prompt))
+
+                res_ = chat_(messages_)
+
+                res = res_.content
+
+                if res:
+                    messages.append(res)
+
+                    # помнить не больше чем MAX_MESSAGES последних сообщений
+                    if len(messages) >= (MAX_MESSAGES+2):
+                        messages = messages[-MAX_MESSAGES:]
+                    # помнить не больше чем MAX_SYMBOLS символов
+                    while 1:
+                        sizeof_messages = 0
+                        for m in messages:
+                            sizeof_messages += len(m)
+                        if sizeof_messages < MAX_SYMBOLS:
+                            break
+                        messages = messages[2:]
+
+                    CHATS[chat_id] = messages
+
+                    return res
+                else:
+                    messages.pop()
+
             return ''
-
-        if not role:
-            role = "Ты эмпатичный бот-психолог, который помогает пользователю решить его проблемы."
-
-        messages = CHATS[chat_id] if chat_id in CHATS else []
-
-        keys = cfg.GIGACHAT_API[:]
-        key = random.choice(keys)
-
-        if key not in KEY_LOCKS:
-            KEY_LOCKS[key] = threading.Lock()
-
-        with KEY_LOCKS[key]:
-            chat_ = GigaChat(credentials=key, verify_ssl_certs=False)
-
-            messages_ = [SystemMessage(content=role)]
-            role = 'h'
-            for m in messages:
-                if role == 'h':
-                    role = 'a'
-                    messages_.append(HumanMessage(content=m))
-                elif role == 'a':
-                    role = 'h'
-                    messages_.append(AIMessage(content=m))
-
-            messages.append(prompt)
-            messages_.append(HumanMessage(content=prompt))
-
-            res_ = chat_(messages_)
-
-            res = res_.content
-
-            if res:
-                messages.append(res)
-
-                # помнить не больше чем MAX_MESSAGES последних сообщений
-                if len(messages) >= (MAX_MESSAGES+2):
-                    messages = messages[-MAX_MESSAGES:]
-                # помнить не больше чем MAX_SYMBOLS символов
-                while 1:
-                    sizeof_messages = 0
-                    for m in messages:
-                        sizeof_messages += len(m)
-                    if sizeof_messages < MAX_SYMBOLS:
-                        break
-                    messages = messages[2:]
-
-                CHATS[chat_id] = messages
-
-                return res
-            else:
-                messages.pop()
-
-        return ''
     except Exception as unknown_error:
         error_traceback = traceback.format_exc()
         _messages_ = '\n'.join(messages)

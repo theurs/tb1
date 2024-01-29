@@ -629,8 +629,8 @@ def trial_status(message: telebot.types.Message) -> bool:
     if hasattr(cfg, 'TRIALS') and cfg.TRIALS:
         chat_full_id = get_topic_id(message)
         lang = get_lang(chat_full_id, message)
-        # if lang == 'uk':
-        #     return True
+        if lang == 'uk':
+            return True
 
         if message.chat.type != 'private':
             chat_full_id = f'[{message.chat.id}] [0]'

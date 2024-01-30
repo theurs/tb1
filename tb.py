@@ -1827,7 +1827,7 @@ def handle_document_thread(message: telebot.types.Message):
 
         # если прислали текстовый файл или pdf
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
-        if is_private and message.document.mime_type in ('text/plain', 'application/pdf'):
+        if is_private and message.document.mime_type in ('text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'):
             with ShowAction(message, 'typing'):
                 # file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
@@ -1839,6 +1839,8 @@ def handle_document_thread(message: telebot.types.Message):
                         text += page.extract_text()
                 elif message.document.mime_type == 'text/plain':
                     text = file_bytes.read().decode('utf-8')
+                elif message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                    text = my_pandoc.fb2_to_text(downloaded_file)
 
                 if text.strip():
                     summary = my_sum.summ_text(text)

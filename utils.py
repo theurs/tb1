@@ -498,8 +498,8 @@ def mime_from_buffer(data: bytes) -> str:
     """
     pdf_signature = b'%PDF-1.'
     epub_signature = b'%!PS-Adobe-3.0'
-    docx_signature = b'\x00\x00\x00\x0c'
-    doc_signature = b'PK\x03\x04'
+    doc_signature = b'\x00\x00\x00\x0c'
+    docx_signature = b'PK\x03\x04'
     html_signature = b'<!DOCTYPE html>'
     odt_signature = b'<!DOCTYPE html>'
     rtf_signature = b'<!DOCTYPE html>'

@@ -82,7 +82,7 @@ def split_text_of_book(text: str, chunk_size: int) -> list:
 
 
 if __name__ == '__main__':
-    result = fb2_to_text(open('1.xls', 'rb').read())
+    result = fb2_to_text(open('1.docx', 'rb').read())
 
     # for i in split_text_of_book(result, 5000):
     #     print(i)

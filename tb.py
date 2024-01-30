@@ -589,7 +589,13 @@ def log_message(message):
                     del WHO_ANSWERED[chat_id_full]
                 except KeyError:
                     pass
-            bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
+            try:
+                bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
+            except Exception as unknown:
+                if 'Bad Request: message thread not found' in str(unknown):
+                    LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
+                    th = LOGS_GROUPS_DB[chat_full_id]
+                    bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
         elif isinstance(message, list):
             if message[0].chat.type == 'private':
                 chat_full_id = get_topic_id(message[0])
@@ -3167,30 +3173,6 @@ def alert_thread(message: telebot.types.Message):
             return
 
     bot_reply_tr(message, '/alert <текст сообщения которое бот отправит всем кого знает, форматирование маркдаун> Только администраторы могут использовать эту команду')
-
-
-@bot.message_handler(commands=['qr'], func=authorized)
-def qrcode_text(message: telebot.types.Message):
-    """переводит текст в qrcode"""
-
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
-
-    text = message.text[3:]
-    if text:
-        image = utils.text_to_qrcode(text)
-        if image:
-            bio = io.BytesIO()
-            bio.name = 'qr.png'
-            image.save(bio, 'PNG')
-            bio.seek(0)
-            m = bot.send_photo(chat_id = message.chat.id, message_thread_id = message.message_thread_id, photo=bio,
-                           reply_markup=get_keyboard('hide', message))
-            log_message(m)
-            my_log.log_echo(message, '[QR code]')
-            return
-
-    bot_reply_tr(message, '/qr текст который надо перевести в qrcode')
 
 
 @bot.message_handler(commands=['sum'], func=authorized)

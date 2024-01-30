@@ -16,7 +16,6 @@ import traceback
 import platform as platform_module
 from urllib.request import urlopen
 
-import qrcode
 import prettytable
 import telebot
 from bs4 import BeautifulSoup
@@ -372,25 +371,6 @@ def split_html(text: str, max_length: int = 1500) -> list:
             chunks2.append(chunk)
 
     return chunks2
-
-
-def text_to_qrcode(text: str) -> str:
-    """Преобразует текст в qr-код"""
-    try:
-        qr = qrcode.QRCode(
-            version=None,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(text)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        return img
-    except Exception as error:
-        print(f'utils:qr: {error}')
-        my_log.log2(f'utils:qr: {error}')
-    return None
 
 
 def get_tmp_fname() -> str:

@@ -41,7 +41,6 @@ python-Levenshtein
 pytube
 re_edge_gpt
 replicate
-qrcode
 SpeechRecognition
 sqlitedict
 # python -m textblob.download_corpora

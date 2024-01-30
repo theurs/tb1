@@ -1840,7 +1840,8 @@ def handle_document_thread(message: telebot.types.Message):
 
                 if text.strip():
                     summary = my_sum.summ_text(text)
-                    bot_reply(message, summary, parse_mode='',
+                    summary_html = utils.bot_markdown_to_html(summary)
+                    bot_reply(message, summary_html, parse_mode='HTML',
                                           disable_web_page_preview = True,
                                           reply_markup=get_keyboard('translate', message))
                 else:

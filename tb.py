@@ -688,6 +688,9 @@ For any inquiries or concerns, please reach out to our support team at https://t
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
             # give little more messages
             TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
+            # disable chatgpt for this user
+            if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] == 'chatgpt':
+                CHAT_MODE[chat_full_id] = cfg.chat_mode_default
             return False
         else:
             return True

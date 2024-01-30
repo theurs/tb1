@@ -135,8 +135,7 @@ def stt_my_whisper_api(audio_file: str, language: str = 'ru') -> str:
         print(time.time() - t1)
         if response.status_code == 200:
             r = base64.b64decode(response.content.decode("UTF-8")).decode('UTF-8')
-            rr = my_gemini.repair_text_after_speech_to_text(r)
-            return rr
+            return r
 
     return ''
 
@@ -196,10 +195,13 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
             except Exception as error:
                 my_log.log2(f'{error}\n\n{text}')
 
-        if data:
-            STT_CACHE.append([data, text])
+        if text:
+            text_ = my_gemini.repair_text_after_speech_to_text(text)
+            STT_CACHE.append([data, text_])
             STT_CACHE = STT_CACHE[-CACHE_SIZE:]
-        return text
+            return text_
+
+    return ''
 
 
 if __name__ == "__main__":

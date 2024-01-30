@@ -156,7 +156,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
         LOCKS[chat_id] = threading.Lock()
     with LOCKS[chat_id]:
         text = ''
-        
+
         data = hashlib.sha256(open(input_file, 'rb').read()).hexdigest()
         global STT_CACHE
         for x in STT_CACHE:
@@ -205,5 +205,5 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
 
 
 if __name__ == "__main__":
-    text = stt('1.opus')
+    text = stt('3.ogg')
     print(text)

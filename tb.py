@@ -638,8 +638,8 @@ def trial_status(message: telebot.types.Message) -> bool:
     if hasattr(cfg, 'TRIALS') and cfg.TRIALS:
         chat_full_id = get_topic_id(message)
         lang = get_lang(chat_full_id, message)
-        if lang == 'uk':
-            return True
+        # if lang == 'uk':
+        #     return True
 
         if message.chat.type != 'private':
             chat_full_id = f'[{message.chat.id}] [0]'
@@ -692,11 +692,13 @@ For any inquiries or concerns, please reach out to our support team at https://t
             msg = tr(msg, lang, '_')
             bot_reply(message, msg, disable_web_page_preview=True)
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
+
             # give little more messages
-            TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
+            # TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
             # disable chatgpt for this user
-            if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] == 'chatgpt':
-                CHAT_MODE[chat_full_id] = cfg.chat_mode_default
+            # if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] == 'chatgpt':
+                # CHAT_MODE[chat_full_id] = cfg.chat_mode_default
+
             return False
         else:
             return True

@@ -4494,7 +4494,10 @@ def do_task(message, custom_prompt: str = ''):
                         resp = gpt_basic.chat(chat_id_full, helped_query,
                                             user_name = user_name, lang=lang,
                                             is_private = is_private, chat_name=chat_name)
-                    WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                    try:
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                    except KeyError:
+                        WHO_ANSWERED[chat_id_full] = f'👇chatgpt {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                 if resp and FIRST_DOT:
                     my_gemini.update_mem(message.text, resp, chat_id_full)
 

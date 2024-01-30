@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
 
 
+import base64
 import hashlib
 import os
+import random
+import requests
 import subprocess
 import tempfile
+import time
 import threading
+import traceback
+
 import speech_recognition as sr
 
+import cfg
 import gpt_basic
 import my_log
+import my_gemini
 
 
 # locks for chat_ids
@@ -84,6 +92,55 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     return text
 
 
+def stt_my_whisper_api(audio_file: str, language: str = 'ru') -> str:
+    """
+    Speech-to-text using MyWhisper API.
+    
+    Args:
+        audio_file (str): The path to the audio file to be transcribed.
+        language (str, optional): The language of the audio file. Defaults to 'ru'.
+    
+    Returns:
+        str: The transcribed text from the audio file.
+    """
+    if not(hasattr(cfg, 'MY_WHISPER_API') and cfg.MY_WHISPER_API):
+        return ''
+
+    # assert audio_duration(audio_file) < 1200, 'Too big'
+
+    servers = cfg.MY_WHISPER_API[:]
+    random.shuffle(servers)
+
+    for server in servers:
+        addr = server[0]
+        port = server[1]
+        with open(audio_file, 'rb') as af:
+            audio_bytes = af.read()
+
+        audio_bytes_base64 = base64.b64encode(audio_bytes).decode('UTF-8')
+
+        data = {"data": audio_bytes_base64, "lang": language}
+
+        # Проверить доступность сервера
+        response = requests.head(f"http://{addr}:{port}/stt", timeout=3)
+        if response.status_code != 405:
+            continue
+        t1 = time.time()
+        response = requests.post(
+            f"http://{addr}:{port}/stt",
+            json=data,
+            headers={"Content-Type": "application/json"},
+            timeout=600,
+        )
+        print(time.time() - t1)
+        if response.status_code == 200:
+            r = base64.b64decode(response.content.decode("UTF-8")).decode('UTF-8')
+            rr = my_gemini.repair_text_after_speech_to_text(r)
+            return rr
+
+    return ''
+
+
 def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
     """
     Generate the function comment for the given function body in a markdown code block with the correct language syntax.
@@ -122,6 +179,14 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
             print(unknown_error)
             my_log.log2(str(unknown_error))
 
+        #затем через локальный (моя реализация) whisper
+        if not text:
+            try:
+                text = stt_my_whisper_api(input_file, lang)
+            except Exception as error:
+                error_traceback = traceback.format_exc()
+                my_log.log2(f'my_stt:stt:{error}\n\n{error_traceback}')
+
         if not text:
             try:
                 # затем opanai
@@ -129,11 +194,11 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                 # auto detect language?
                 text = gpt_basic.stt(input_file)
             except Exception as error:
-                print(error, text)
                 my_log.log2(f'{error}\n\n{text}')
 
-        STT_CACHE.append([data, text])
-        STT_CACHE = STT_CACHE[-CACHE_SIZE:]
+        if data:
+            STT_CACHE.append([data, text])
+            STT_CACHE = STT_CACHE[-CACHE_SIZE:]
         return text
 
 

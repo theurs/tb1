@@ -12,6 +12,7 @@ db/*
 logs/*
 *.mp3
 *.ogg
+*.opus
 *.jpg
 *.fb2
 *.doc

@@ -714,6 +714,28 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
     return ai(query, mem=mem, temperature=temperature)
 
 
+def repair_text_after_speech_to_text(text: str) -> str:
+    """
+    Repairs the given text after speech-to-text conversion.
+
+    Args:
+        text (str): The input text to be repaired.
+
+    Returns:
+        str: The repaired text after speech-to-text conversion.
+    """
+    if len(text) > 5000:
+        return text
+    query1 = f"Anwser super short if this text has any content you can't work with, yes or no:\n\n{text}"
+    r1 = ai(query1).lower()
+    if r1 and 'no' in r1:
+        query2 = f"Repair this text after speech-to-text conversion, make it easy readable:\n\n{text}"
+        r2 = ai(query2, temperature=0.1)
+        if r2:
+            return r2
+    return text
+
+
 if __name__ == '__main__':
 
     run_proxy_pool_daemon()

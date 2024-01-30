@@ -585,7 +585,10 @@ def log_message(message):
                         LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
                         th = LOGS_GROUPS_DB[chat_full_id]
                         bot.send_message(cfg.LOGS_GROUP, f'[{WHO_ANSWERED[chat_id_full]}]', message_thread_id=th)
-                del WHO_ANSWERED[chat_id_full]
+                try:
+                    del WHO_ANSWERED[chat_id_full]
+                except KeyError:
+                    pass
             bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
         elif isinstance(message, list):
             if message[0].chat.type == 'private':

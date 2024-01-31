@@ -662,9 +662,9 @@ def trial_status(message: telebot.types.Message) -> bool:
         if TRIAL_USERS_COUNTER[chat_full_id] < TRIAL_MESSAGES:
             return True
 
-        # не блокировать юзеров которые используют бесплатных ботов
-        if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] != 'chatgpt':
-            return True
+        # # не блокировать юзеров которые используют бесплатных ботов
+        # if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] != 'chatgpt':
+        #     return True
 
         if trial_time > TRIAL_DAYS:
 #             msg = '''<b>Free trial period ended</b>
@@ -699,9 +699,9 @@ For any inquiries or concerns, please reach out to our support team at https://t
             bot_reply(message, msg, disable_web_page_preview=True)
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
 
-            TRIAL_USED[chat_full_id] = True
+            # TRIAL_USED[chat_full_id] = True
             # give little more messages
-            TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
+            # TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
             # disable chatgpt for this user
             # if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] == 'chatgpt':
             #    CHAT_MODE[chat_full_id] = cfg.chat_mode_default

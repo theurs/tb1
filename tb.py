@@ -662,6 +662,10 @@ def trial_status(message: telebot.types.Message) -> bool:
         if TRIAL_USERS_COUNTER[chat_full_id] < TRIAL_MESSAGES:
             return True
 
+        # не блокировать юзеров которые используют бесплатных ботов
+        if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] != 'chatgpt':
+            return True
+
         if trial_time > TRIAL_DAYS:
 #             msg = '''<b>Free trial period ended</b>
 
@@ -4182,6 +4186,7 @@ def do_task(message, custom_prompt: str = ''):
                 if number:
                     if number.startswith(('7', '8')):
                         number = number[1:]
+                    gemini_resp = False
                     if len(number) == 10:
                         if number in CACHE_CHECK_PHONE:
                             response = CACHE_CHECK_PHONE[number]

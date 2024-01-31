@@ -196,7 +196,8 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                 my_log.log2(f'{error}\n\n{text}')
 
         if text:
-            text_ = my_gemini.repair_text_after_speech_to_text(text)
+            # text_ = my_gemini.repair_text_after_speech_to_text(text)
+            text_ = text
             STT_CACHE.append([data, text_])
             STT_CACHE = STT_CACHE[-CACHE_SIZE:]
             return text_

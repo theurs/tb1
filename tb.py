@@ -69,6 +69,8 @@ if not os.path.exists('db'):
 # сколько дней триальный период
 TRIAL_DAYS = cfg.TRIAL_DAYS if hasattr(cfg, 'TRIAL_DAYS') else 7
 TRIAL_MESSAGES = cfg.TRIAL_MESSAGES if hasattr(cfg, 'TRIAL_MESSAGES') else 300
+# {userid: True/False} если юзер достигает дна то ему отключают оступ к гпт
+TRIAL_USED = SqliteDict('db/trial_used.db', autocommit=True)
 
 # сколько картинок нарисовано юзером {id: counter}
 IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=True)
@@ -693,11 +695,12 @@ For any inquiries or concerns, please reach out to our support team at https://t
             bot_reply(message, msg, disable_web_page_preview=True)
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
 
+            TRIAL_USED[chat_full_id] = True
             # give little more messages
-            # TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
+            TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
             # disable chatgpt for this user
             # if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] == 'chatgpt':
-                # CHAT_MODE[chat_full_id] = cfg.chat_mode_default
+            #    CHAT_MODE[chat_full_id] = cfg.chat_mode_default
 
             return False
         else:
@@ -2239,6 +2242,8 @@ def set_trial(message: telebot.types.Message):
             if user not in TRIAL_USERS:
                 TRIAL_USERS[user] = time.time()
             TRIAL_USERS[user] = TRIAL_USERS[user] + float(monthes)*60*60*24*30
+            if monthes > 0:
+                TRIAL_USED[chat_id_full] = False
             time_left = -round((time.time()-TRIAL_USERS[user])/60/60/24/30, 1)
             # на каждый месяц премиума дается по 300000 символов озвучки голосами опенаи, без накопления
             if user not in TTS_OPENAI_LIMIT:
@@ -4054,6 +4059,13 @@ def do_task(message, custom_prompt: str = ''):
         except:
             my_log.log2(f'tb:do_task:unknown command: {message.text}')
             return
+
+    # если юзер прошел триальный период то отключаем ему газ(чатгпт)
+    if chat_id_full not in TRIAL_USED:
+        TRIAL_USED[chat_id_full] = False
+    if TRIAL_USED[chat_id_full] and chat_mode_ == 'chatgpt':
+        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+        chat_mode_ = cfg.chat_mode_default
 
     # если использовано кодовое слово вместо команды /music
     for x in cfg.MUSIC_WORDS:

@@ -167,10 +167,16 @@ def bot_markdown_to_html(text: str) -> str:
     
     # найти все куски кода между ``` и заменить на хеши
     # спрятать код на время преобразований
-    matches = re.findall('```(.*?)```', text, flags=re.DOTALL)
+    matches = re.findall('```(.*?)```\n', text, flags=re.DOTALL)
     list_of_code_blocks = []
     for match in matches:
-        random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+        random_string = str(hash(match))
+        list_of_code_blocks.append([match, random_string])
+        text = text.replace(f'```{match}```', random_string)
+
+    matches = re.findall('```(.*?)```', text, flags=re.DOTALL)
+    for match in matches:
+        random_string = str(hash(match))
         list_of_code_blocks.append([match, random_string])
         text = text.replace(f'```{match}```', random_string)
 
@@ -225,8 +231,6 @@ def bot_markdown_to_html(text: str) -> str:
         text = text.replace(random_string, f'<code>{new_match}</code>')
 
     text = replace_code_lang(text)
-
-    # text = replace_tables(text)
 
     return text
 
@@ -543,5 +547,34 @@ def seconds_to_str(seconds: float) -> str:
 
 
 if __name__ == '__main__':
-    
-    print(seconds_to_str('360,20'))
+    t=r"""
+
+Вот пример
+
+```python
+import time
+
+def```(n, delay):
+    def decorator(func):
+        def```(*args, **```):
+            for i in range(n):
+                func(*args, **```)
+                time.sleep(```)
+        return```
+    return decorator
+
+
+@```(3, 1)
+def print_```():
+    print("Hello```
+
+
+#```мер использования
+
+print_```()
+```
+
+В данном примере
+
+    """
+    print(bot_markdown_to_html(t))

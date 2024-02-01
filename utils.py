@@ -183,7 +183,7 @@ def bot_markdown_to_html(text: str) -> str:
     # тут могут быть одиночные поворяющиеся `, меняем их на '
     text = text.replace('```', "'''")
 
-    matches = re.findall('`(.*?)`', text, flags=re.DOTALL)
+    matches = re.findall('`(.*?)`', text)
     list_of_code_blocks2 = []
     for match in matches:
         random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))

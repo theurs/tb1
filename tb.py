@@ -2923,7 +2923,7 @@ def image_thread(message: telebot.types.Message):
                 # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 medias = []
                 has_good_images = False
-                for x in medias:
+                for x in images:
                     if isinstance(x, bytes):
                         has_good_images = True
                         break
@@ -2936,14 +2936,12 @@ def image_thread(message: telebot.types.Message):
                             return
                         elif 'error1_blocked_prompt' in i:
                             bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                            my_log.log_bing_img(i + str(medias))
                             return
                         elif 'error1_unsupported_lang' in i:
                             bot_reply_tr(message, 'Не понятный язык.')
                             return
                         elif 'error1_Bad images' in i:
                             bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                            my_log.log_bing_img(i + str(medias))
                             return
                         if 'https://r.bing.com' in i:
                             continue

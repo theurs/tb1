@@ -283,7 +283,11 @@ def huggin_face_api(prompt: str) -> bytes:
             "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
             ]
 
+    prompt_ = prompt
     prompt = rewrite_prompt_for_open_dalle(prompt)
+    if prompt_ != prompt:
+        my_log.log_reprompts(f'{prompt_}\n\n{prompt}')
+
     payload = json.dumps({"inputs": prompt})
 
     def request_img(prompt, url, p):

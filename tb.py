@@ -2922,21 +2922,28 @@ def image_thread(message: telebot.types.Message):
                 images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full)
                 # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 medias = []
+                has_good_images = False
+                for x in medias:
+                    if isinstance(x, bytes):
+                        has_good_images = True
+                        break
                 for i in images:
                     if isinstance(i, str):
-                        if 'error1_being_reviewed_prompt' in i:
+                        if 'error1_being_reviewed_prompt' in i and not has_good_images:
                             bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
                             return
-                        elif 'error1_blocked_prompt' in i:
+                        elif 'error1_blocked_prompt' in i and not has_good_images:
                             bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
                             return
-                        elif 'error1_unsupported_lang' in i:
+                        elif 'error1_unsupported_lang' in i and not has_good_images:
                             bot_reply_tr(message, 'Не понятный язык.')
                             return
-                        elif 'error1_Bad images' in i:
+                        elif 'error1_Bad images' in i and not has_good_images:
                             bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
                             return
                         if 'https://r.bing.com' in i:
+                            continue
+                        if i.startswith('error1_'):
                             continue
 
                     d = None

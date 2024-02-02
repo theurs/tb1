@@ -607,8 +607,8 @@ def log_message(message):
                     chat_full_id = f'[{message[0].chat.id}] [{message[0].message_thread_id}]'
                     chat_name = f'[{message[0].chat.title}] [{message[0].message_thread_id}]'
                 else:
-                    chat_full_id = f'[{message.chat.id}] [0]'
-                    chat_name = message.chat.title            
+                    chat_full_id = f'[{message[0].chat.id}] [0]'
+                    chat_name = message[0].chat.title            
             if chat_full_id in LOGS_GROUPS_DB:
                 th = LOGS_GROUPS_DB[chat_full_id]
             else:

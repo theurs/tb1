@@ -11,7 +11,6 @@ import PyPDF2
 import pandas as pd
 
 import utils
-import my_yo
 
 
 pandoc_cmd = 'pandoc'
@@ -38,7 +37,7 @@ def fb2_to_text(data: bytes) -> str:
         proc = subprocess.run([pandoc_cmd, '-f', 'rtf', '-t', 'plain', input_file], stdout=subprocess.PIPE)
     elif 'plain' in book_type:
         os.remove(input_file)
-        return my_yo.yo_text(data.decode('utf-8').replace(u'\xa0', u' '))
+        return data.decode('utf-8').replace(u'\xa0', u' ')
     elif 'msword' in book_type:
         proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
     elif 'pdf' in book_type:
@@ -62,7 +61,7 @@ def fb2_to_text(data: bytes) -> str:
     os.remove(input_file)
 
     # result = output.replace(u'\xa0', u' ')
-    result = my_yo.yo_text(output)
+    result = output
 
     return result
 

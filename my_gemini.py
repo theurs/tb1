@@ -269,18 +269,18 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                         break
                     else:
                         remove_proxy(proxy)
-                        my_log.log2(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}')
+                        my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}')
             else:
                 response = requests.post(url, json=mem_, timeout=60)
                 if response.status_code == 200:
                     result = response.json()['candidates'][0]['content']['parts'][0]['text']
                 else:
-                    my_log.log2(f'my_gemini:ai:{key} {str(response)} {response.text}')
+                    my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text}')
 
             if result:
                 break
     except Exception as unknown_error:
-        my_log.log2(f'my_gemini:ai:{unknown_error}')
+        my_log.log_gemini(f'my_gemini:ai:{unknown_error}')
 
     return result.strip()
 

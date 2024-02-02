@@ -2929,21 +2929,21 @@ def image_thread(message: telebot.types.Message):
                         break
                 for i in images:
                     if isinstance(i, str):
-                        if 'error1_being_reviewed_prompt' in i and not has_good_images:
+                        if i.startswith('error1_') and has_good_images:
+                            continue
+                        if 'error1_being_reviewed_prompt' in i:
                             bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
                             return
-                        elif 'error1_blocked_prompt' in i and not has_good_images:
+                        elif 'error1_blocked_prompt' in i:
                             bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
                             return
-                        elif 'error1_unsupported_lang' in i and not has_good_images:
+                        elif 'error1_unsupported_lang' in i:
                             bot_reply_tr(message, 'Не понятный язык.')
                             return
-                        elif 'error1_Bad images' in i and not has_good_images:
+                        elif 'error1_Bad images' in i:
                             bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
                             return
                         if 'https://r.bing.com' in i:
-                            continue
-                        if i.startswith('error1_'):
                             continue
 
                     d = None

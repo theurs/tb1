@@ -2936,12 +2936,14 @@ def image_thread(message: telebot.types.Message):
                             return
                         elif 'error1_blocked_prompt' in i:
                             bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
+                            my_log.log_bing_img(i)
                             return
                         elif 'error1_unsupported_lang' in i:
                             bot_reply_tr(message, 'Не понятный язык.')
                             return
                         elif 'error1_Bad images' in i:
                             bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
+                            my_log.log_bing_img(i)
                             return
                         if 'https://r.bing.com' in i:
                             continue

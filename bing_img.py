@@ -68,7 +68,7 @@ def get_external_ip(proxy):
 def get_images(prompt: str,
                u_cookie: str,
                proxy: str = None,
-               timeout: int = 200,
+               timeout: int = 60,
                max_generate_time_sec: int = 60):
     """
     Retrieves a list of normal image links from Bing search based on a given prompt.
@@ -228,7 +228,7 @@ def gen_images(query: str, user_id: str = ''):
                         try:
                             return get_images(query, cookie, proxy)
                         except Exception as error:
-                            if 'location' in str(error) or 'timeout' in str(error):
+                            if 'location' in str(error) or 'timeout' in str(error) or 'Out of generate time' in str(error):
                                 my_log.log_bing_img(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
                                 return []
                             if str(error).startswith('error1'):
@@ -240,7 +240,7 @@ def gen_images(query: str, user_id: str = ''):
                     try:
                         return get_images(query, cookie)
                     except Exception as error:
-                        if 'location' in str(error) or 'timeout' in str(error):
+                        if 'location' in str(error) or 'timeout' in str(error) or 'Out of generate time' in str(error):
                             my_log.log_bing_img(f'get_images: {error} Cookie: {cookie}')
                             return []
                         if str(error).startswith('error1'):

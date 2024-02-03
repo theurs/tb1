@@ -563,16 +563,8 @@ def log_message(message):
             return
 
         if isinstance(message, telebot.types.Message):
-            if message.chat.type == 'private':
-                chat_full_id = get_topic_id(message)
-                chat_name = message.from_user.full_name
-            else:
-                if message.is_topic_message:
-                    chat_full_id = f'[{message.chat.id}] [{message.message_thread_id}]'
-                    chat_name = f'[{message.chat.title}] [{message.message_thread_id}]'
-                else:
-                    chat_full_id = f'[{message.chat.id}] [0]'
-                    chat_name = message.chat.title
+            chat_full_id = get_topic_id(message)
+            chat_name = utils.get_username_for_log(message)
             if chat_full_id in LOGS_GROUPS_DB:
                 th = LOGS_GROUPS_DB[chat_full_id]
             else:
@@ -599,16 +591,8 @@ def log_message(message):
                     th = LOGS_GROUPS_DB[chat_full_id]
                     bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
         elif isinstance(message, list):
-            if message[0].chat.type == 'private':
-                chat_full_id = get_topic_id(message[0])
-                chat_name = message[0].from_user.full_name
-            else:
-                if message[0].is_topic_message:
-                    chat_full_id = f'[{message[0].chat.id}] [{message[0].message_thread_id}]'
-                    chat_name = f'[{message[0].chat.title}] [{message[0].message_thread_id}]'
-                else:
-                    chat_full_id = f'[{message[0].chat.id}] [0]'
-                    chat_name = message[0].chat.title            
+            chat_full_id = get_topic_id(message[0])
+            chat_name = utils.get_username_for_log(message[0])
             if chat_full_id in LOGS_GROUPS_DB:
                 th = LOGS_GROUPS_DB[chat_full_id]
             else:

@@ -546,6 +546,29 @@ def seconds_to_str(seconds: float) -> str:
     return f'{hours:02}:{minutes:02}:{seconds:02}'
 
 
+def get_username_for_log(message) -> str:
+    """
+    Returns the username for logging purposes based on the given message.
+
+    Args:
+        message: The message object to extract the username from.
+                 My be a group of messages (list).
+
+    Returns:
+        str: The username for logging.
+    """
+    if isinstance(message, list):
+        message = message[0]
+
+    if message.chat.type == 'private':
+        return message.from_user.full_name or message.from_user.username or 'noname'
+    else:
+        if message.is_topic_message:
+            return f'[{message.chat.title or message.chat.username or message.chat.first_name or "nonamechat"}] [{message.message_thread_id}]'
+        else:
+            return message.chat.title or message.chat.username or message.chat.first_name or 'nonamechat'
+
+
 if __name__ == '__main__':
     t=r"""
 

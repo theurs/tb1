@@ -2937,7 +2937,7 @@ def image_thread(message: telebot.types.Message):
                             continue
 
                     d = None
-                    caption_ = prompt
+                    caption_ = prompt[:1000]
                     if isinstance(i, str):
                         d = utils.download_image_as_bytes(i)
                         caption_ = 'bing.com\n\n' + caption_

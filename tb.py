@@ -1655,6 +1655,9 @@ def handle_voice_thread(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
+    if chat_id_full not in VOICE_ONLY_MODE:
+        VOICE_ONLY_MODE[chat_id_full] = False
+
     if chat_id_full not in SUPER_CHAT:
         SUPER_CHAT[chat_id_full] = 0
     if SUPER_CHAT[chat_id_full] == 1:

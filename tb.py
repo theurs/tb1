@@ -3559,7 +3559,7 @@ Donate:"""
         else:
             help = tr(help, lang)
 
-        help = f'{help}\n\n[<a href = "https://www.donationalerts.com/r/theurs">DonationAlerts</a> 💸 <a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> 💸 <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> 💸 <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>]'
+        help = f'{help}\n\n[<a href = "https://destream.net/live/theurs/donate">Destream.net</a> 💸 <a href = "https://www.donationalerts.com/r/theurs">DonationAlerts</a> 💸 <a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> 💸 <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> 💸 <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>]'
 
         try:
             bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)

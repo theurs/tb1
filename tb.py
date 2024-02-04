@@ -1101,6 +1101,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
         markup.add(button0, button1, button2, button3, button4)
         return markup
+    elif kbd == 'bing_chat':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='bing_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
     elif kbd == 'config':
         if chat_id_full in TTS_GENDER:
             voice = f'tts_{TTS_GENDER[chat_id_full]}'
@@ -4435,11 +4446,11 @@ def do_task(message, custom_prompt: str = ''):
                         my_log.log_echo(message, f'[Bing] {answer}')
                         try:
                             bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                                                    reply_markup=get_keyboard('bing_chat', message), not_log=True, allow_voice = True)
                         except Exception as error:
                             my_log.log2(f'tb:do_task: {error}')
                             bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                                                    reply_markup=get_keyboard('bing_chat', message), not_log=True, allow_voice = True)
                     except Exception as error3:
                         my_log.log2(str(error3))
                     return

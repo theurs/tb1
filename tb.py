@@ -4466,7 +4466,8 @@ def do_task(message, custom_prompt: str = ''):
                                 images, links = x[1][:10], x[2]
                                 break
 
-                        if not VOICE_ONLY_MODE[chat_id_full]:
+                        answer = answer.strip()
+                        if answer and (not VOICE_ONLY_MODE[chat_id_full]):
                             answer_ = utils.bot_markdown_to_html(answer)
                             DEBUG_MD_TO_HTML[answer_] = answer
                             answer = answer_

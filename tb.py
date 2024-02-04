@@ -676,9 +676,9 @@ def trial_status(message: telebot.types.Message) -> bool:
 # After purchasing the subscription, the bot will resume responding to your requests.
 
 # Support: https://t.me/kun4_sun_bot_support/3"""
-            msg = """To continue using the bot's services, I kindly request your support through a donation. Your contribution, no matter how small, will help cover the resources required for the bot to function and continue providing you with valuable assistance.
+            msg = """Your contribution, no matter how small, will help cover the resources required for the bot to function and continue providing you with valuable assistance.
 
-You can make your donation through the following link: https://www.donationalerts.com/r/theurs.
+You can make your donation /help
 
 Thank you for your understanding and support.
 
@@ -687,12 +687,12 @@ For any inquiries or concerns, please reach out to our support team at https://t
             bot_reply(message, msg, disable_web_page_preview=True)
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
 
-            # TRIAL_USED[chat_full_id] = True
+            TRIAL_USED[chat_full_id] = True
             # give little more messages
-            # TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
+            TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
             # disable chatgpt for this user
-            # if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] == 'chatgpt':
-            #    CHAT_MODE[chat_full_id] = cfg.chat_mode_default
+            if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] == 'chatgpt':
+               CHAT_MODE[chat_full_id] = cfg.chat_mode_default
 
             return False
         else:
@@ -3875,6 +3875,7 @@ def set_default_commands_thread(message: telebot.types.Message):
         else:
             msg_descriptions += "❌ New bot's short description set for language " + lang + '\n'
     bot_reply(message, msg_descriptions)
+    bot_reply_tr(message, 'Init finished.')
 
 
 def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,

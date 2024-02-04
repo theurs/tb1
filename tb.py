@@ -4459,6 +4459,8 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task:bard answer: {bard_error}')
                         WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
+                        images = []
+                        links = []
                         for x in my_bard.REPLIES:
                             if x[0] == answer:
                                 images, links = x[1][:10], x[2]

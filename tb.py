@@ -4433,7 +4433,10 @@ def do_task(message, custom_prompt: str = ''):
                         else:
                             t = 1
                         answer = bingai.chat(helped_query, chat_id_full, style = t)
-                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                        try:
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                        except KeyError:
+                            pass
 
                         if not answer:
                             if not answer:

@@ -4520,7 +4520,7 @@ def do_task(message, custom_prompt: str = ''):
                             DEBUG_MD_TO_HTML[answer_] = answer
                             answer = answer_
                         my_log.log_echo(message, f'[Claude] {answer}')
-                        if answer:
+                        if answer.strip():
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('claude_chat', message), not_log=True, allow_voice=True)
@@ -4529,6 +4529,8 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('claude_chat', message), not_log=True, allow_voice=True)
+                        else:
+                            bot_reply_tr(message, 'Claude returned no answer.', allow_voice=True)
                     except Exception as error3:
                         my_log.log2(str(error3))
                     return

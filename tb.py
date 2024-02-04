@@ -3382,7 +3382,7 @@ def trans_thread(message: telebot.types.Message):
                         # l = my_trans.lang_name_by_code(x.lang)
                         l = tr(langcodes.Language.make(language=x.lang).display_name(language='en'), lang, 'это перевод названия языка, одно слово, прилагательное')
                         p = round(x.prob*100, 2)
-                        detected_langs.append(f'{tr(l, lang)} {p}%')
+                        detected_langs.append(f'{l} {p}%')
                 except Exception as detect_error:
                     my_log.log2(f'tb:trans:detect_langs: {detect_error}')
                 if match and match.group(1):

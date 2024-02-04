@@ -4452,7 +4452,7 @@ def do_task(message, custom_prompt: str = ''):
                     return
                 with ShowAction(message, action):
                     try:
-                        answer = 'No answer from bard.'
+                        answer = tr('No answer from bard.', lang)
                         try:
                             answer = my_bard.chat(helped_query, chat_id_full)
                         except Exception as bard_error:

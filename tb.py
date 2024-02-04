@@ -631,13 +631,13 @@ def trial_status(message: telebot.types.Message) -> bool:
         if message.chat.type != 'private':
             chat_full_id = f'[{message.chat.id}] [0]'
 
-        # блокировать тех у кого закончились личные сообщения во всех чатах
-        from_user_id_full = f'[{message.from_user.id}] [0]'
-        if from_user_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[from_user_id_full] > TRIAL_MESSAGES and message.chat.type != 'private':
-            time_left = (time.time() - TRIAL_USERS[from_user_id_full])
-            if time_left > (60*60*24 * TRIAL_DAYS):
-                my_log.log_trial(f'[{message.from_user.id}] [0] - trial counter {TRIAL_USERS_COUNTER[from_user_id_full]} > trial messages {TRIAL_MESSAGES}')
-                return False
+        # # блокировать тех у кого закончились личные сообщения во всех чатах
+        # from_user_id_full = f'[{message.from_user.id}] [0]'
+        # if from_user_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[from_user_id_full] > TRIAL_MESSAGES and message.chat.type != 'private':
+        #     time_left = (time.time() - TRIAL_USERS[from_user_id_full])
+        #     if time_left > (60*60*24 * TRIAL_DAYS):
+        #         my_log.log_trial(f'[{message.from_user.id}] [0] - trial counter {TRIAL_USERS_COUNTER[from_user_id_full]} > trial messages {TRIAL_MESSAGES}')
+        #         return False
 
         if chat_full_id not in TRIAL_USERS:
             TRIAL_USERS[chat_full_id] = time.time()

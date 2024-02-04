@@ -26,7 +26,6 @@ Pillow
 prettytable
 Proxy-List-Scrapper
 #py_trans
-pycountry
 pyenchant
 pylatexenc
 PyMuPDF

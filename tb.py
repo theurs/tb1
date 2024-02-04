@@ -3379,7 +3379,8 @@ def trans_thread(message: telebot.types.Message):
                 detected_langs = []
                 try:
                     for x in my_trans.detect_langs(text):
-                        l = my_trans.lang_name_by_code(x.lang)
+                        # l = my_trans.lang_name_by_code(x.lang)
+                        l = tr(langcodes.Language.make(language=x.lang).display_name(language='en'), lang)
                         p = round(x.prob*100, 2)
                         detected_langs.append(f'{tr(l, lang)} {p}%')
                 except Exception as detect_error:

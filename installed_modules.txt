@@ -136,7 +136,6 @@ py-trans==0.5.5
 pyarrow==12.0.1
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
-pycountry==22.3.5
 pycparser==2.21
 pycryptodome==3.18.0
 pycryptodomex==3.18.0

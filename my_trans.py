@@ -6,7 +6,6 @@ import subprocess
 
 from duckduckgo_search import DDGS
 import enchant
-import pycountry
 from langdetect import detect, detect_langs
 # from py_trans import PyTranslator
 
@@ -206,23 +205,6 @@ def translate(text):
         return translate_text2(text) or None
         # return translate_text2(text) or translate_text(text) or None
     return None
-
-
-def lang_name_by_code(code: str) -> str:
-    """
-    Returns the name of a language based on its two-letter code.
-
-    Args:
-        code (str): The two-letter code representing the language.
-
-    Returns:
-        str: The name of the language if it is found, otherwise None.
-    """
-    try:
-        lang = pycountry.languages.get(alpha_2=code).name 
-    except AttributeError:
-        lang = None
-    return lang
 
 
 if __name__ == "__main__":

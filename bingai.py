@@ -87,7 +87,7 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         st = ConversationStyle.creative
 
     if dialog not in DIALOGS:
-        cookies_files = glob.glob("cookies*.json")
+        cookies_files = glob.glob("cookie*.json")
         cookies_file = random.choice(cookies_files)
         cookies = json.loads(open(cookies_file, encoding="utf-8").read())
         if hasattr(cfg, 'bing_proxy_chat'):

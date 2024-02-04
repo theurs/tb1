@@ -167,10 +167,14 @@ def rewrite_prompt_for_open_dalle(prompt: str) -> str:
     Returns:
         str: The rewritten prompt in English.
     """
-    prompt_translated = my_gemini.ai(f'This is a prompt for image generation. Rewrite it in english, in one long sentance, make it better:\n\n{prompt}', temperature=1)
-    if not prompt_translated:
-        return translate_prompt_to_en(prompt)
-    return translate_prompt_to_en(prompt_translated)
+    detected_lang = langdetect.detect(prompt)
+    if detected_lang != 'en':
+        prompt_translated = my_gemini.ai(f'This is a prompt for image generation. Rewrite it in english, in one long sentance, make it better:\n\n{prompt}', temperature=1)
+        if not prompt_translated:
+            return translate_prompt_to_en(prompt)
+        return translate_prompt_to_en(prompt_translated)
+    else:
+        return prompt
 
 
 def stable_duffision_api(prompt: str):

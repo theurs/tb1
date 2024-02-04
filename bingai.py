@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
+# pip install -U re_edge_gpt
 
 
 import asyncio
+import glob
 import json
+import random
 import re
 import threading
 import time
@@ -19,6 +22,9 @@ CHAT_LOCKS = {}
 # {id:fifo queue}
 DIALOGS_QUEUE = {}
 FINAL_SIGN = '85db82jbdv9874h5896sdjf7598lng07234bhlkjh'
+
+
+MAX_REQUEST = 60000
 
 
 lock_gen_img = threading.Lock()
@@ -81,7 +87,9 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         st = ConversationStyle.creative
 
     if dialog not in DIALOGS:
-        cookies = json.loads(open("cookies.json", encoding="utf-8").read())
+        cookies_files = glob.glob("cookies*.json")
+        cookies_file = random.choice(cookies_files)
+        cookies = json.loads(open(cookies_file, encoding="utf-8").read())
         if hasattr(cfg, 'bing_proxy_chat'):
             proxy = cfg.bing_proxy_chat
         else:
@@ -90,7 +98,7 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         DIALOGS[dialog] = await Chatbot.create(cookies=cookies, proxy=proxy)
 
     try:
-        r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
+        r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True)
     except Exception as error:
         print(f'bingai.chat_async:2: {error}')
         my_log.log2(f'bingai.chat_async:2: {error}')
@@ -105,7 +113,7 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
             print(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
             my_log.log2(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
         try:
-            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
+            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True)
         except Exception as error:
             print(f'bingai.chat_async:2: {error}')
             my_log.log2(f'bingai.chat_async:2: {error}')

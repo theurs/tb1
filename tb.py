@@ -22,6 +22,7 @@ from sqlitedict import SqliteDict
 import cfg
 import gpt_basic
 import my_bard
+import bingai
 import bing_img
 import my_claude
 import my_genimg
@@ -1156,7 +1157,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
         markup.row(button1, button2)
-        
+
+        if CHAT_MODE[chat_id_full] == 'bing':
+            button1 = telebot.types.InlineKeyboardButton('✅Copilot (GPT4)', callback_data='bing_mode_disable')
+        else:
+            button1 = telebot.types.InlineKeyboardButton('☑️Copilot (GPT4)', callback_data='bing_mode_enable')
+
+        button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='bing_reset')
+        markup.row(button1, button2)
+
         button1 = telebot.types.InlineKeyboardButton(tr('❌ Стереть всех сразу ❌', lang), callback_data='reset_all_memory')
         markup.row(button1)
 
@@ -1277,7 +1286,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             return
         elif call.data == 'forget_all':
             # обработка нажатия кнопки "Забудь всё"
-            gpt_basic.chat_reset(chat_id_full)
+            reset_(chat_id_full)
         elif call.data == 'cancel_command':
             # обработка нажатия кнопки "Отменить ввод команды"
             COMMAND_MODE[chat_id_full] = ''
@@ -1485,6 +1494,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Gemini Pro очищена.')
+        elif call.data == 'bing_reset':
+            bingai.reset_bing_chat(chat_id_full)
+            bot_reply_tr(message, 'История диалога с Bing очищена.')
         elif call.data == 'claudeAI_reset':
             my_claude.reset_claude_chat(chat_id_full)
             bot_reply_tr(message, 'История диалога с Claude AI очищена.')
@@ -1499,6 +1511,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_claude.reset_claude_chat(chat_id_full)
             my_gemini.reset(chat_id_full)
             my_bard.reset_bard_chat(chat_id_full)
+            bingai.reset_bing_chat(chat_id_full)
             bot_reply_tr(message, 'Chats with all bots was cleared.')
         elif call.data == 'tts_female' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'male'
@@ -1596,7 +1609,15 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             CHAT_MODE[chat_id_full] = 'gemini'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'claude_mode_disable' and is_admin_member(call):
+        elif call.data == 'gemini_mode_disable' and is_admin_member(call):
+            del CHAT_MODE[chat_id_full]
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'bing_mode_enable' and is_admin_member(call):
+            CHAT_MODE[chat_id_full] = 'bing'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'bing_mode_disable' and is_admin_member(call):
             del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
@@ -2257,15 +2278,21 @@ def set_trial(message: telebot.types.Message):
     bot_reply(message, msg)
 
 
-def reset_(message: telebot.types.Message):
-    """Clear chat history (bot's memory)"""
-    chat_id_full = get_topic_id(message)
+def reset_(message):
+    """Clear chat history (bot's memory)
+    message - is chat id or message object"""
+    if isinstance(message, str):
+        chat_id_full = message    
+    else:
+        chat_id_full = get_topic_id(message)
 
     if chat_id_full in CHAT_MODE:
         if CHAT_MODE[chat_id_full] == 'bard':
             my_bard.reset_bard_chat(chat_id_full)
         if CHAT_MODE[chat_id_full] == 'gemini':
             my_gemini.reset(chat_id_full)
+        if CHAT_MODE[chat_id_full] == 'bing':
+            bingai.reset_bing_chat(chat_id_full)
         elif CHAT_MODE[chat_id_full] == 'claude':
             my_claude.reset_claude_chat(chat_id_full)
         elif CHAT_MODE[chat_id_full] == 'gigachat':
@@ -3520,6 +3547,7 @@ ChatGPT3.5: {cfg.CHATGPT_MAX_REQUEST}
 Google Bard: {my_bard.MAX_REQUEST}
 Claude AI: {my_claude.MAX_QUERY}
 GeminiPro: {my_gemini.MAX_REQUEST}
+CopilotAI: {bingai.MAX_REQUEST}
 
 🍒 Start query with DOT to access censored content:
 
@@ -3586,6 +3614,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_claude.reset_claude_chat(chat_id_full)
             gpt_basic.chat_reset(chat_id_full)
             my_gigachat.reset(chat_id_full)
+            bingai.reset_bing_chat(chat_id_full)
 
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
@@ -4054,6 +4083,13 @@ def do_task(message, custom_prompt: str = ''):
                 chat_mode_ = 'gemini'
                 message.text = message.text.split(maxsplit=1)[1]
                 chat_bot_cmd_was_used = True
+            elif cmd_ == 'copilot':
+                if message.text == '/copilot':
+                    bot_reply_tr(message, 'Usage: /copilot <text>, you can ask default bot without command, see settings')
+                    return
+                chat_mode_ = 'bing'
+                message.text = message.text.split(maxsplit=1)[1]
+                chat_bot_cmd_was_used = True
             else:
                 if not is_private:
                     my_log.log2(f'tb:do_task:unknown command: {message.text}')
@@ -4316,7 +4352,7 @@ def do_task(message, custom_prompt: str = ''):
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}".]'
             if chat_id_full not in ORIGINAL_MODE:
                 ORIGINAL_MODE[chat_id_full] = False
-            if ORIGINAL_MODE[chat_id_full]:
+            if ORIGINAL_MODE[chat_id_full] or chat_mode_ == 'bing':
                 helped_query = message.text
             else:
                 helped_query = f'{hidden_text} {message.text}'
@@ -4369,6 +4405,45 @@ def do_task(message, custom_prompt: str = ''):
                         print(error3)
                         my_log.log2(str(error3))
                     return
+
+            # если активирован режим общения с Bing
+            if chat_mode_ == 'bing' and not FIRST_DOT:
+                if len(msg) > bingai.MAX_REQUEST:
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Bing:", lang)} {len(msg)} {tr("из", lang)} {bingai.MAX_REQUEST}')
+                    return
+
+                with ShowAction(message, action):
+                    try:
+                        if GEMIMI_TEMP[chat_id_full] < 0.8:
+                            t = 3
+                        elif GEMIMI_TEMP[chat_id_full] < 1.2:
+                            t = 2
+                        else:
+                            t = 1
+                        answer = bingai.chat(helped_query, chat_id_full, style = t)
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                        if not answer:
+                            if not answer:
+                                answer = 'BingAI ' + tr('did not answered', lang)
+
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
+
+                        my_log.log_echo(message, f'[Bing] {answer}')
+                        try:
+                            bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error:
+                            my_log.log2(f'tb:do_task: {error}')
+                            bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                    except Exception as error3:
+                        my_log.log2(str(error3))
+                    return
+
 
             # если активирован режим общения с бард чатом
             if chat_mode_ == 'bard' and not FIRST_DOT:

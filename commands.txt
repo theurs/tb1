@@ -7,6 +7,7 @@
 /gemini - Спросить у GeminiPro
 /bard - Спросить у GoogleBard
 /claude - Спросить у ClaudeAnthropic
+/copilot - Спросить у Microsoft Copilot
 /tts - Преобразует текст в речь и отправляет аудиосообщение, с указанием языка и скорости (/tts [ru|en|uk|...] [+|-50%] hello all)
 /trans - Переводит текст на другой язык (/trans en привет как дела)
 /image - (или img) рисует картинки по текстовому описанию

@@ -4426,21 +4426,23 @@ def do_task(message, custom_prompt: str = ''):
 
                 with ShowAction(message, action):
                     try:
-                        if GEMIMI_TEMP[chat_id_full] < 0.8:
-                            t = 3
-                        elif GEMIMI_TEMP[chat_id_full] < 1.2:
-                            t = 2
+                        if chat_id_full in GEMIMI_TEMP:
+                            if GEMIMI_TEMP[chat_id_full] < 0.8:
+                                t = 3
+                            elif GEMIMI_TEMP[chat_id_full] < 1.2:
+                                t = 2
+                            else:
+                                t = 1
                         else:
-                            t = 1
-                        answer = bingai.chat(helped_query, chat_id_full, style = t)
+                            t = 3
+                        answer = bingai.chat(helped_query, chat_id_full, style = t).strip()
                         try:
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                         except KeyError:
                             pass
 
                         if not answer:
-                            if not answer:
-                                answer = 'BingAI ' + tr('did not answered', lang)
+                            answer = 'BingAI ' + tr('did not answered', lang)
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)

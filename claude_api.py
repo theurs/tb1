@@ -75,7 +75,8 @@ class Client:
 
   # Send Message to Claude
   def send_message(self, prompt, conversation_id, attachment=None,timeout=500):
-    url = "https://claude.ai/api/append_message"
+    # url = "https://claude.ai/api/append_message"
+    url = f"https://claude.ai/api/organizations/{self.organization_id}/chat_conversations/{conversation_id}/completion"
 
     # Upload attachment if provided
     attachments = []
@@ -90,16 +91,24 @@ class Client:
     if not attachment:
       attachments = []
 
+    # payload = json.dumps({
+    #   "completion": {
+    #     "prompt": f"{prompt}",
+    #     "timezone": "Asia/Kolkata",
+    #     "model": "claude-2.0"
+    #   },
+    #   "organization_uuid": f"{self.organization_id}",
+    #   "conversation_uuid": f"{conversation_id}",
+    #   "text": f"{prompt}",
+    #   "attachments": attachments
+    # })
+
     payload = json.dumps({
-      "completion": {
-        "prompt": f"{prompt}",
-        "timezone": "Asia/Kolkata",
-        "model": "claude-2.0"
-      },
-      "organization_uuid": f"{self.organization_id}",
-      "conversation_uuid": f"{conversation_id}",
-      "text": f"{prompt}",
-      "attachments": attachments
+        "prompt": prompt,
+        "timezone": "Asia/Singapore",
+        "model": f"claude-2.0",
+        "attachments": [],
+        "files": []
     })
 
     headers = {

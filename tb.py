@@ -4452,7 +4452,8 @@ def do_task(message, custom_prompt: str = ''):
                             bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                     reply_markup=get_keyboard('bing_chat', message), not_log=True, allow_voice = True)
                     except Exception as error3:
-                        my_log.log2(str(error3))
+                        traceback_error = traceback.format_exc()
+                        my_log.log2(f'{str(error3)}\n\n{traceback_error}')
                     return
 
 

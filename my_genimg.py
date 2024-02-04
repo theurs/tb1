@@ -28,6 +28,10 @@ DEBUG = False
 NFSW_CONTENT = SqliteDict('db/nfsw_content_stable_diffusion.db', autocommit=True)
 
 
+# {hash of image:model name, ...}
+WHO_AUTOR = {}
+
+
 def replicate_images(prompt: str, amount: int = 1):
     """рисует 1 картинку с помощью replicate и возвращает сколько смог нарисовать"""
     os.environ["REPLICATE_API_TOKEN"] = cfg.replicate_token
@@ -310,11 +314,13 @@ def huggin_face_api(prompt: str) -> bytes:
                 continue
 
             resp_text = str(response.content)[:300]
-            # print(resp_text[:60])
+            # if isinstance(resp_text, str):
+            #     print(resp_text[:300])
             if 'read timeout=' in resp_text or "SOCKSHTTPSConnectionPool(host='api-inference.huggingface.co', port=443): Max retries exceeded with url" in resp_text: # и так долго ждали
                 return []
             if response.content and '{"error"' not in resp_text:
                 result.append(response.content)
+                WHO_AUTOR[hash(response.content)] = url.split('/')[-1]
                 return result
 
             if 'is currently loading","estimated_time":' in str(resp_text) or \

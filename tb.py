@@ -4518,7 +4518,8 @@ def do_task(message, custom_prompt: str = ''):
 
                 with ShowAction(message, action):
                     try:
-                        answer = my_claude.chat(helped_query, chat_id_full)
+                        # answer = my_claude.chat(helped_query, chat_id_full)
+                        answer = tr('Claude did not answer', lang)
                         WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)

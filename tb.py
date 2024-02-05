@@ -3911,11 +3911,11 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
 
     preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
 
-    if len(resp) < 20000:
+    if len(resp) < 32000:
         if parse_mode == 'HTML':
-            chunks = utils.split_html(resp, 4000)
+            chunks = utils.split_html(resp, 3800)
         else:
-            chunks = utils.split_text(resp, 4000)
+            chunks = utils.split_text(resp, 3800)
         counter = len(chunks)
         for chunk in chunks:
             # в режиме только голоса ответы идут голосом без текста

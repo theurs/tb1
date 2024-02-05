@@ -4391,7 +4391,7 @@ def do_task(message, custom_prompt: str = ''):
                         flag_gpt_help = False
                         if not answer:
                             if not answer:
-                                answer = 'Gemini Pro ' + tr('did not answered', lang)
+                                answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
                             else:
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
                                 flag_gpt_help = True
@@ -4442,7 +4442,7 @@ def do_task(message, custom_prompt: str = ''):
                             pass
 
                         if not answer:
-                            answer = 'BingAI ' + tr('did not answered', lang)
+                            answer = 'Copilot ' + tr('did not answered, try to /reset and start again', lang)
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)
@@ -4504,7 +4504,7 @@ def do_task(message, custom_prompt: str = ''):
                                 photos_ids = bot.send_media_group(message.chat.id, images_group[:10], reply_to_message_id=message.message_id)
                                 log_message(photos_ids)
                         else:
-                            bot_reply_tr(message, 'No answer from Bard.', allow_voice=True)
+                            bot_reply_tr(message, 'No answer from Bard, try to /reset and start again', allow_voice=True)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))
@@ -4536,7 +4536,7 @@ def do_task(message, custom_prompt: str = ''):
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('claude_chat', message), not_log=True, allow_voice=True)
                         else:
-                            bot_reply_tr(message, 'Claude returned no answer.', allow_voice=True)
+                            bot_reply_tr(message, 'Claude returned no answer, try to /reset and start again', allow_voice=True)
                     except Exception as error3:
                         my_log.log2(str(error3))
                     return
@@ -4603,6 +4603,11 @@ def do_task(message, custom_prompt: str = ''):
                         WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                     except KeyError:
                         WHO_ANSWERED[chat_id_full] = f'👇chatgpt {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                if not resp:
+                    bot_reply_tr(message, 'ChatGPT returned no answer, try to /reset and start again', allow_voice=True)
+                    return
+
                 if resp and FIRST_DOT:
                     my_gemini.update_mem(message.text, resp, chat_id_full)
 

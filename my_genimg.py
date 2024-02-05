@@ -168,6 +168,7 @@ def rewrite_prompt_for_open_dalle(prompt: str) -> str:
     Returns:
         str: The rewritten prompt in English.
     """
+    # small text detect fails :(
     detected_lang = langdetect.detect(prompt)
     if detected_lang != 'en':
         prompt_translated = my_gemini.ai(f'This is a prompt for image generation. Rewrite it in english, in one long sentance, make it better:\n\n{prompt}', temperature=1)

@@ -254,7 +254,7 @@ def replace_code_lang(t: str) -> str:
         else:
             if state == 1:
                 if i == '</code>':
-                    result += '</code></pre>'
+                    result += '</code></pre>\n'
                     state = 0
                 else:
                     result += i + '\n'

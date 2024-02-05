@@ -4183,7 +4183,7 @@ def do_task(message, custom_prompt: str = ''):
         msg = message.text.lower()
 
         # если предварительно была введена какая то команда то этот текст надо отправить в неё
-        if chat_id_full in COMMAND_MODE:
+        if chat_id_full in COMMAND_MODE and not chat_bot_cmd_was_used:
             if COMMAND_MODE[chat_id_full]:
                 if COMMAND_MODE[chat_id_full] == 'image':
                     message.text = f'/image {message.text}'

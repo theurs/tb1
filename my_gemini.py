@@ -744,7 +744,7 @@ if __name__ == '__main__':
 
     # print(get_models())
 
-    # chat_cli()
+    chat_cli()
 
     # print(translate('مرحبا', to_lang='nl'))
     # print(translate('Γεια σας', 'el', 'pt'))

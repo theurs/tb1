@@ -62,7 +62,7 @@ def shrink_text_for_bing(text: str, max_size = 60000) -> str:
     return text2
 
 
-def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru') -> str:
+def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') -> str:
     """параллельный воркер для summ_text
        subj == 'text' or 'pdf'  - обычный текст о котором ничего не известно
        subj == 'chat_log'       - журнал чата
@@ -117,6 +117,8 @@ BEGIN:
                 qq = f'Summarize the content of this YouTube video using only the subtitles, what this video about, in no more than 1000 words, answer in [{lang}] language.'
             else:
                 qq = f'Summarize the content of this article using only provided text, what this text about, in no more than 1000 words, answer in [{lang}] language.'
+            if query:
+                qq = query
             r = my_gemini.sum_big_text(text[:my_gemini.MAX_SUM_REQUEST], qq).strip()
             if r != '':
                 result = f'{r}\n\n--\nGemini Pro [{len(prompt[:my_gemini.MAX_SUM_REQUEST])} {tr("символов", lang)}]'
@@ -137,11 +139,11 @@ BEGIN:
     return result
 
 
-def summ_text(text: str, subj: str = 'text', lang: str = 'ru') -> str:
+def summ_text(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') -> str:
     """сумморизирует текст с помощью бинга или гптчата или клод-100к, возвращает краткое содержание, только первые 30(60)(99)т символов
     subj - смотрите summ_text_worker()
     """
-    return summ_text_worker(text, subj, lang)
+    return summ_text_worker(text, subj, lang, query)
 
 
 def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:

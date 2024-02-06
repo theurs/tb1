@@ -1875,7 +1875,8 @@ def handle_document_thread(message: telebot.types.Message):
                     text = my_pandoc.fb2_to_text(downloaded_file)
 
                 if text.strip():
-                    summary = my_sum.summ_text(text)
+                    caption = message.caption or ''
+                    summary = my_sum.summ_text(text, 'text', lang, caption.strip())
                     summary_html = utils.bot_markdown_to_html(summary)
                     bot_reply(message, summary_html, parse_mode='HTML',
                                           disable_web_page_preview = True,

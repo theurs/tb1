@@ -4426,7 +4426,7 @@ def do_task(message, custom_prompt: str = ''):
             # если активирован режим общения с Bing
             if chat_mode_ == 'bing' and not FIRST_DOT:
                 if len(msg) > bingai.MAX_REQUEST:
-                    bot_reply(message, f'{tr("Слишком длинное сообщение для Bing:", lang)} {len(msg)} {tr("из", lang)} {bingai.MAX_REQUEST}')
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Copilot:", lang)} {len(msg)} {tr("из", lang)} {bingai.MAX_REQUEST}')
                     return
 
                 with ShowAction(message, action):

@@ -687,6 +687,9 @@ For any inquiries or concerns, please reach out to our support team at https://t
             bot_reply(message, msg, disable_web_page_preview=True)
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
 
+            # блокировать на пару минут
+            DDOS_BLOCKED_USERS[chat_full_id] = time.time() + (5*60)
+
             TRIAL_USED[chat_full_id] = True
             # give little more messages
             TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
@@ -3700,9 +3703,9 @@ def id_cmd_handler(message: telebot.types.Message):
         # d = tr("The bot is free to use for a certain number of days and messages, but once you've used up all your days and messages, the bot will ask you for a donation to continue using it.", lang, '_')
         # msg += f'{d}\n'
     if chat_full_id in BAD_USERS:
-        msg += f'\n{tr("Пользователь забанен.", lang)}\n'
+        msg += f'\n{tr("User was banned.", lang)}\n'
     if str(message.chat.id) in DDOS_BLOCKED_USERS:
-        msg += f'\n{tr("Пользователь забанен за DDOS.", lang)}\n'
+        msg += f'\n{tr("User was temporarily banned.", lang)}\n'
     bot_reply(message, msg)
 
 

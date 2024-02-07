@@ -4447,7 +4447,7 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task:bing error: {error_bing}')
                             if 'Authentication failed' in str(error_bing):
                                 if cfg.admins:
-                                    bot.send_message(cfg.admins[0], str(error_bing))
+                                    bot.send_message(cfg.admins[0], 'Bing auth error, check cookies.')
                         try:
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                         except KeyError:

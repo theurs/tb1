@@ -197,7 +197,7 @@ def bot_markdown_to_html(text: str) -> str:
         if ii.startswith('* '):
             i = i.replace('* ', '• ', 1)
         if ii.startswith('- '):
-            i = i.replace('- ', '— ', 1)
+            i = i.replace('- ', '– ', 1)
         new_text += i + '\n'
     text = new_text.strip()
 

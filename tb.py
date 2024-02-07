@@ -4118,7 +4118,7 @@ def do_task(message, custom_prompt: str = ''):
     # если юзер прошел триальный период то отключаем ему газ(чатгпт)
     if chat_id_full not in TRIAL_USED:
         TRIAL_USED[chat_id_full] = False
-    if TRIAL_USED[chat_id_full] and chat_mode_ == 'chatgpt':
+    if (TRIAL_USED[chat_id_full] and chat_mode_ == 'chatgpt') or (chat_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[chat_id_full] > TRIAL_MESSAGES):
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
         chat_mode_ = cfg.chat_mode_default
 
@@ -4440,7 +4440,14 @@ def do_task(message, custom_prompt: str = ''):
                                 t = 1
                         else:
                             t = 3
-                        answer = bingai.chat(helped_query, chat_id_full, style = t).strip()
+                        try:
+                            answer = bingai.chat(helped_query, chat_id_full, style = t).strip()
+                        except Exception as error_bing:
+                            answer = ''
+                            my_log.log2(f'tb:do_task:bing error: {error_bing}')
+                            if 'Authentication failed' in str(error_bing):
+                                if cfg.admins:
+                                    bot.send_message(cfg.admins[0], str(error_bing))
                         try:
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                         except KeyError:

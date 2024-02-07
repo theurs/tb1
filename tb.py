@@ -60,8 +60,8 @@ videos_group = cfg.videos_group
 videos_group_url = cfg.videos_group_url
 
 
-# до 40 одновременных потоков для чата с гпт
-semaphore_talks = threading.Semaphore(40)
+# до 500 одновременных потоков для чата с гпт
+semaphore_talks = threading.Semaphore(500)
 
 # папка для постоянных словарей, памяти бота
 if not os.path.exists('db'):

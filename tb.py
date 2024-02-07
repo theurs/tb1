@@ -405,6 +405,16 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
                 text = my_gemini.img2txt(data, query)
             except Exception as img_from_link_error2:
                 my_log.log2(f'tb:img2txt: {img_from_link_error2}')
+    # elif CHAT_MODE[chat_id_full] == 'bing':
+    #     try:
+    #         text = bingai.chat(query, chat_id_full, 3, attachment=data)
+    #     except Exception as img_from_link_error:
+    #         my_log.log2(f'tb:img2txt: {img_from_link_error}')
+    #     if not text:
+    #         try:
+    #             text = my_gemini.img2txt(data, query)
+    #         except Exception as img_from_link_error2:
+    #             my_log.log2(f'tb:img2txt: {img_from_link_error2}')
     else:
         try:
             text = my_gemini.img2txt(data, query)
@@ -688,7 +698,8 @@ For any inquiries or concerns, please reach out to our support team at https://t
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
 
             # блокировать на пару минут
-            DDOS_BLOCKED_USERS[chat_full_id] = time.time() + (5*60)
+            DDOS_BLOCKED_USERS[str(message.chat.id)] = time.time() + (5*60)
+            DDOS_BLOCKED_USERS[str(message.from_user.id)] = time.time() + (5*60)
 
             TRIAL_USED[chat_full_id] = True
             # give little more messages
@@ -4031,6 +4042,10 @@ def do_task(message, custom_prompt: str = ''):
         del MESSAGE_QUEUE[chat_id_full]
     else:
         MESSAGE_QUEUE[chat_id_full] += message.text + '\n\n'
+        u_id_ = str(message.chat.id)
+        if u_id_ in request_counter.counts:
+            if request_counter.counts[u_id_]:
+                request_counter.counts[u_id_].pop(0)
         return
 
     b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')

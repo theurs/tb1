@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import base64
 import datetime
 import hashlib
 import html
@@ -567,6 +568,19 @@ def get_username_for_log(message) -> str:
             return f'[{message.chat.title or message.chat.username or message.chat.first_name or "nonamechat"}] [{message.message_thread_id}]'
         else:
             return message.chat.title or message.chat.username or message.chat.first_name or 'nonamechat'
+
+
+def bytes_to_base64(data: bytes) -> str:
+    """
+    Convert bytes to base64 string.
+
+    Parameters:
+        data (bytes): The bytes to convert.
+
+    Returns:
+        str: The base64 string.
+    """
+    return base64.b64encode(data).decode('utf-8')
 
 
 if __name__ == '__main__':

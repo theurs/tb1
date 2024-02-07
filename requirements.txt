@@ -38,7 +38,7 @@ python-Levenshtein
 # python-magic-bin
 # pylibmagic
 pytube
-re_edge_gpt
+re_edge_gpt==0.0.28
 replicate
 SpeechRecognition
 sqlitedict

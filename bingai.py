@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pip install -U re_edge_gpt
+# pip install -U re_edge_gpt==0.0.28
 
 
 import asyncio
@@ -9,12 +9,14 @@ import random
 import re
 import threading
 import time
+import traceback
 import queue
 
 from re_edge_gpt import Chatbot, ConversationStyle, ImageGen
 
 import cfg
 import my_log
+import utils
 
 
 DIALOGS = {}
@@ -38,7 +40,7 @@ def reset_bing_chat(chat_id: str):
         print(f'bingai.reset_bing_chat: {error2}')
 
 
-async def chat_async(query: str, dialog: str, style = 3, reset = False):
+async def chat_async(query: str, dialog: str, style = 3, reset = False, attachment = None):
     """
     Asynchronously chats with a chatbot using the specified query and dialog.
 
@@ -47,6 +49,7 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         dialog (str): The identifier of the dialog to use.
         style (int, optional): The conversation style to use. Defaults to 3.
         reset (bool, optional): Whether to reset the dialog before sending the query. Defaults to False.
+        attachment (str or bytes, optional): image url or bytes.
 
     Returns:
         dict: A dictionary containing the chatbot's response, including the text, suggestions, 
@@ -66,6 +69,12 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
         chatbot's response, including the text, suggestions, number of messages left, and maximum number 
         of messages.
     """
+    if attachment:
+        if isinstance(attachment, str):
+            attachment = utils.download_image_as_bytes(attachment)
+
+        attachment = {"base64_image": utils.bytes_to_base64(attachment)}
+            
     if reset:
         try:
             await DIALOGS[dialog].close()
@@ -89,19 +98,27 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
     if dialog not in DIALOGS:
         cookies_files = glob.glob("cookie*.json")
         cookies_file = random.choice(cookies_files)
+
+        # cookies_file = 'bing_cookies.json'
+
         cookies = json.loads(open(cookies_file, encoding="utf-8").read())
         if hasattr(cfg, 'bing_proxy_chat'):
             proxy = cfg.bing_proxy_chat
         else:
             proxy = None
-        # DIALOGS[dialog] = await Chatbot.create(cookies=cookies, proxy=proxy)
         DIALOGS[dialog] = await Chatbot.create(cookies=cookies, proxy=proxy)
 
     try:
-        r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True)
+        if attachment:
+            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True, attachment=attachment)
+            # r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, attachment=attachment)
+        else:
+            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True)
+            # r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
     except Exception as error:
-        print(f'bingai.chat_async:2: {error}')
-        my_log.log2(f'bingai.chat_async:2: {error}')
+        error_traceback = traceback.format_exc()
+        print(f'bingai.chat_async:2: {error}\n\n{error_traceback}')
+        my_log.log2(f'bingai.chat_async:2: {error}\n\n{error_traceback}')
         try:
             await DIALOGS[dialog].close()
         except KeyError:
@@ -113,7 +130,12 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
             print(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
             my_log.log2(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
         try:
-            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True)
+            if attachment:
+                r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True, attachment=attachment)
+                # r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, attachment=attachment)
+            else:
+                r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True)
+                # r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
         except Exception as error:
             print(f'bingai.chat_async:2: {error}')
             my_log.log2(f'bingai.chat_async:2: {error}')
@@ -124,8 +146,10 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
     messages_left = r['messages_left']
     messages_max = r['max_messages']
 
-    # sources_text = r['sources_text']
+    ## sources_text = r['sources_text']
+    # sources_text = r['sources_texts']
     sources_text = r['sources_link']
+    #sources_text = r['sources_links']
 
     urls = re.findall(r'\[(.*?)\]\((.*?)\)', sources_text)
     urls2 = []
@@ -155,7 +179,7 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False):
     return text
 
 
-def chat(query: str, dialog: str, style: int = 3, reset: bool = False):
+def chat(query: str, dialog: str, style: int = 3, reset: bool = False, attachment = None) -> str:
     """
     This function is used to chat with a bing. It takes in a query string,
     a dialog id, and optional parameters for style and reset. It returns a string as the chat response.
@@ -165,6 +189,7 @@ def chat(query: str, dialog: str, style: int = 3, reset: bool = False):
     - dialog (str): The current dialog id.
     - style (int, optional): The style parameter for the chat. Defaults to 3.
     - reset (bool, optional): Whether to reset the dialog. Defaults to False.
+    - attachment (str or bytes, optional): The attachment, image url or bytes. Defaults to None.
     
     Returns:
     - Dictionary: The chat response as a dictionary with the keys 'text', 'suggestions', 'messages_left', and 'messages_max'.
@@ -176,18 +201,16 @@ def chat(query: str, dialog: str, style: int = 3, reset: bool = False):
         CHAT_LOCKS[dialog] = lock
     with lock:
         try:
-            result = asyncio.run(chat_async(query, dialog, style, reset))
+            result = asyncio.run(chat_async(query, dialog, style, reset, attachment))
         except Exception as error:
-            print(f'my_bingai.chat: {error}')
             my_log.log2(f'my_bingai.chat: {error}')
-            result = asyncio.run(chat_async(query, dialog, style, reset))
+            result = asyncio.run(chat_async(query, dialog, style, reset, attachment))
         if not result:
             try:
-                result = asyncio.run(chat_async(query, dialog, style, reset))
+                result = asyncio.run(chat_async(query, dialog, style, reset, attachment))
             except Exception as error2:
-                print(f'my_bingai.chat:2: {error2}')
                 my_log.log2(f'my_bingai.chat:2: {error2}')
-                result = asyncio.run(chat_async(query, dialog, style, reset))
+                result = asyncio.run(chat_async(query, dialog, style, reset, attachment))
     return result
 
 
@@ -319,7 +342,6 @@ async def chat_async_stream(query: str, dialog: str, style = 3, reset = False):
         dialog (str): The dialog identifier.
         style (int, optional): The conversation style. Defaults to 3.
         reset (bool, optional): Whether to reset the dialog. Defaults to False.
-
     Returns:
 
     """
@@ -423,6 +445,8 @@ def test_chat():
 if __name__ == "__main__":
     
     test_chat()
+    
+    # r = chat('реши задачу', 'test', 3, attachment=open('1.jpg', 'rb').read())
 
     # print(chat('brent oil price', 'test-chat-id', 3, False)['text'])
     #print(ai('hi'))

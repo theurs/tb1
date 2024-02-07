@@ -20,3 +20,4 @@ _old/*
 *.db
 *.db-journal
 *.pickle
+*.txt

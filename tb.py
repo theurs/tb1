@@ -1906,6 +1906,20 @@ def handle_document_thread(message: telebot.types.Message):
                             bot_reply(message, text, parse_mode='',
                                                   reply_markup=get_keyboard('translate', message),
                                                   disable_web_page_preview = True)
+
+                            text = text[:8000]
+                            if chat_id_full not in gpt_basic.CHATS:
+                                gpt_basic.CHATS[chat_id_full] = []
+                            gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
+                                    "content": f'user {tr("попросил распознать текст с картинки", lang)}'},
+                                    {"role":    'system',
+                                    "content": f'assistant {tr("распознал текст и ответил:", lang)} {text}'}
+                                ]
+                            gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+                            my_gemini.update_mem(f'user {tr("попросил распознать текст с картинки", lang)}',
+                                                f'{tr("распознал текст и ответил:", lang)} {text}',
+                                                chat_id_full)
+
                         else:
                             bot_reply_tr(message, 'Не смог распознать текст.',
                                          reply_markup=get_keyboard('translate', message))
@@ -2011,6 +2025,20 @@ def handle_photo_thread(message: telebot.types.Message):
                     bot_reply(message, text, parse_mode='',
                                         reply_markup=get_keyboard('translate', message),
                                         disable_web_page_preview = True)
+
+                    text = text[:8000]
+                    if chat_id_full not in gpt_basic.CHATS:
+                        gpt_basic.CHATS[chat_id_full] = []
+                    gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
+                            "content": f'user {tr("попросил распознать текст с картинки", lang)}'},
+                            {"role":    'system',
+                            "content": f'assistant {tr("распознал текст и ответил:", lang)} {text}'}
+                        ]
+                    gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+                    my_gemini.update_mem(f'user {tr("попросил распознать текст с картинки", lang)}',
+                                        f'{tr("распознал текст и ответил:", lang)} {text}',
+                                        chat_id_full)
+
                 else:
                     bot_reply_tr(message, '[OCR] no results')
             return

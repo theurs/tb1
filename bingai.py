@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pip install -U re_edge_gpt==0.0.28
+# pip install -U re_edge_gpt==0.0.31
 
 
 import asyncio
@@ -110,10 +110,10 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False, attachme
 
     try:
         if attachment:
-            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True, attachment=attachment)
+            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=False, attachment=attachment)
             # r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, attachment=attachment)
         else:
-            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True)
+            r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=False)
             # r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
     except Exception as error:
         error_traceback = traceback.format_exc()
@@ -131,30 +131,32 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False, attachme
             my_log.log2(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
         try:
             if attachment:
-                r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True, attachment=attachment)
+                r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=False, attachment=attachment)
                 # r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, attachment=attachment)
             else:
-                r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=True)
+                r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=False)
                 # r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
         except Exception as error:
             print(f'bingai.chat_async:2: {error}')
             my_log.log2(f'bingai.chat_async:2: {error}')
             return ''
 
-    text = r['text']
-    suggestions = r['suggestions']
-    messages_left = r['messages_left']
-    messages_max = r['max_messages']
+    text = r['text'].split('Generating answers for you...', maxsplit=1)[0]
+
+    # suggestions = r['suggestions']
+    # messages_left = r['messages_left']
+    # messages_max = r['max_messages']
 
     ## sources_text = r['sources_text']
     # sources_text = r['sources_texts']
-    sources_text = r['sources_link']
-    #sources_text = r['sources_links']
+    # sources_text = r['sources_link']
 
-    urls = re.findall(r'\[(.*?)\]\((.*?)\)', sources_text)
-    urls2 = []
-    for _, url in urls:
-        urls2.append(url.strip())
+    urls2 = r['source_values']
+
+    # urls = re.findall(r'\[(.*?)\]\((.*?)\)', sources_text)
+    # urls2 = []
+    # for _, url in urls:
+    #     urls2.append(url.strip())
 
     def replace_links(match):
         index = int(match.group(1)) - 1
@@ -171,8 +173,10 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False, attachme
             return match.group(0)
 
     # my_log.log2(text)
+
     text = re.sub(r'\[\^(\d{1,2})\^\]', replace_links2, text)
     text = re.sub(r'\(\^(\d{1,2})\^\)', replace_links, text)
+
     # my_log.log2(text)
 
     # return {'text': text, 'suggestions': suggestions, 'messages_left': messages_left, 'messages_max': messages_max}

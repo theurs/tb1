@@ -405,16 +405,16 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
                 text = my_gemini.img2txt(data, query)
             except Exception as img_from_link_error2:
                 my_log.log2(f'tb:img2txt: {img_from_link_error2}')
-    # elif CHAT_MODE[chat_id_full] == 'bing':
-    #     try:
-    #         text = bingai.chat(query, chat_id_full, 3, attachment=data)
-    #     except Exception as img_from_link_error:
-    #         my_log.log2(f'tb:img2txt: {img_from_link_error}')
-    #     if not text:
-    #         try:
-    #             text = my_gemini.img2txt(data, query)
-    #         except Exception as img_from_link_error2:
-    #             my_log.log2(f'tb:img2txt: {img_from_link_error2}')
+    elif CHAT_MODE[chat_id_full] == 'bing':
+        try:
+            text = bingai.chat(query, chat_id_full, 3, attachment=data)
+        except Exception as img_from_link_error:
+            my_log.log2(f'tb:img2txt: {img_from_link_error}')
+        if not text:
+            try:
+                text = my_gemini.img2txt(data, query)
+            except Exception as img_from_link_error2:
+                my_log.log2(f'tb:img2txt: {img_from_link_error2}')
     else:
         try:
             text = my_gemini.img2txt(data, query)
@@ -692,7 +692,10 @@ You can make your donation /help
 
 Thank you for your understanding and support.
 
-For any inquiries or concerns, please reach out to our support team at https://t.me/kun4_sun_bot_support/3."""
+For any inquiries or concerns, please reach out to our support team at https://t.me/kun4_sun_bot_support/3.
+
+Access suspend for 5 minutes.
+"""
             msg = tr(msg, lang, '_')
             bot_reply(message, msg, disable_web_page_preview=True)
             my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
@@ -4161,7 +4164,7 @@ def do_task(message, custom_prompt: str = ''):
     # если юзер прошел триальный период то отключаем ему газ(чатгпт)
     if chat_id_full not in TRIAL_USED:
         TRIAL_USED[chat_id_full] = False
-    if (TRIAL_USED[chat_id_full] and chat_mode_ == 'chatgpt') or (chat_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[chat_id_full] > TRIAL_MESSAGES):
+    if (TRIAL_USED[chat_id_full] and chat_mode_ == 'chatgpt') or (chat_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[chat_id_full] > TRIAL_MESSAGES and chat_mode_ == 'chatgpt'):
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
         chat_mode_ = cfg.chat_mode_default
 

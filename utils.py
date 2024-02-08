@@ -165,7 +165,7 @@ def bot_markdown_to_html(text: str) -> str:
 
     # экранируем весь текст для html
     text = html.escape(text)
-    
+
     # найти все куски кода между ``` и заменить на хеши
     # спрятать код на время преобразований
     matches = re.findall('```(.*?)```\n', text, flags=re.DOTALL)
@@ -215,7 +215,7 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем маркдаун ссылки на хтмл
     text = re.sub(r'\[([^\]]*)\]\(([^\)]*)\)', r'<a href="\2">\1</a>', text)
     # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
-    text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
+    # а зачем собственно? text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
 
     # меняем таблицы до возвращения кода
     text = replace_tables(text)
@@ -585,33 +585,10 @@ def bytes_to_base64(data: bytes) -> str:
 
 if __name__ == '__main__':
     t=r"""
+**Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.**
 
-Вот пример
-
-```python
-import time
-
-def```(n, delay):
-    def decorator(func):
-        def```(*args, **```):
-            for i in range(n):
-                func(*args, **```)
-                time.sleep(```)
-        return```
-    return decorator
-
-
-@```(3, 1)
-def print_```():
-    print("Hello```
-
-
-#```мер использования
-
-print_```()
-```
-
-В данном примере
-
+Для этого необходимо настроить библиотеку Vosk и подключиться к ресурсу https://speechpad.ru/. Затем необходимо создать функцию, которая будет принимать на вход аудиоданные и возвращать распознанный текст.
+[hi](https://example.com)
+**Шаг 3:**
     """
     print(bot_markdown_to_html(t))

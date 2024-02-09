@@ -657,14 +657,17 @@ def trial_status(message: telebot.types.Message) -> bool:
             TRIAL_USERS_COUNTER[chat_full_id] += 1
         else:
             TRIAL_USERS_COUNTER[chat_full_id] = 0
-        if TRIAL_USERS_COUNTER[chat_full_id] < TRIAL_MESSAGES:
-            return True
+
+        return True
+
+        # if TRIAL_USERS_COUNTER[chat_full_id] < TRIAL_MESSAGES:
+        #     return True
 
         # # не блокировать юзеров которые используют бесплатных ботов
         # if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] != 'chatgpt':
         #     return True
 
-        if trial_time > TRIAL_DAYS:
+        # if trial_time > TRIAL_DAYS:
 #             msg = '''<b>Free trial period ended</b>
 
 # You can run your own free copy of this bot at GitHub:
@@ -686,34 +689,35 @@ def trial_status(message: telebot.types.Message) -> bool:
 # After purchasing the subscription, the bot will resume responding to your requests.
 
 # Support: https://t.me/kun4_sun_bot_support/3"""
-            msg = """Your contribution, no matter how small, will help cover the resources required for the bot to function and continue providing you with valuable assistance.
+#             msg = """Your contribution, no matter how small, will help cover the resources required for the bot to function and continue providing you with valuable assistance.
 
-You can make your donation /help
+# You can make your donation /help
 
-Thank you for your understanding and support.
+# Thank you for your understanding and support.
 
-For any inquiries or concerns, please reach out to our support team at https://t.me/kun4_sun_bot_support/3.
+# For any inquiries or concerns, please reach out to our support team at https://t.me/kun4_sun_bot_support/3.
 
-Access suspend for 5 minutes.
-"""
-            msg = tr(msg, lang, '_')
-            bot_reply(message, msg, disable_web_page_preview=True)
-            my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
+# Access suspend for 5 minutes.
+# """
+            # msg = tr(msg, lang, '_')
+            # bot_reply(message, msg, disable_web_page_preview=True)
+            # my_log.log_trial(f'{chat_full_id} {lang}\n\n{message.text}\n\n{msg}')
 
             # блокировать на пару минут
-            DDOS_BLOCKED_USERS[str(message.chat.id)] = time.time() + (5*60)
-            DDOS_BLOCKED_USERS[str(message.from_user.id)] = time.time() + (5*60)
+            # DDOS_BLOCKED_USERS[str(message.chat.id)] = time.time() + (5*60)
+            # DDOS_BLOCKED_USERS[str(message.from_user.id)] = time.time() + (5*60)
 
-            TRIAL_USED[chat_full_id] = True
+            # TRIAL_USED[chat_full_id] = True
             # give little more messages
-            TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
+            # TRIAL_USERS_COUNTER[chat_full_id] = TRIAL_MESSAGES - 20
             # disable chatgpt for this user
-            if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] == 'chatgpt':
-               CHAT_MODE[chat_full_id] = cfg.chat_mode_default
+            # if chat_full_id in CHAT_MODE and CHAT_MODE[chat_full_id] == 'chatgpt':
+            #    CHAT_MODE[chat_full_id] = cfg.chat_mode_default
 
-            return False
-        else:
-            return True
+            # return False
+    #         return True
+    #     else:
+    #         return True
     else:
         return True
 
@@ -4162,11 +4166,13 @@ def do_task(message, custom_prompt: str = ''):
             return
 
     # если юзер прошел триальный период то отключаем ему газ(чатгпт)
-    if chat_id_full not in TRIAL_USED:
-        TRIAL_USED[chat_id_full] = False
-    if (TRIAL_USED[chat_id_full] and chat_mode_ == 'chatgpt') or (chat_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[chat_id_full] > TRIAL_MESSAGES and chat_mode_ == 'chatgpt'):
-        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
-        chat_mode_ = cfg.chat_mode_default
+    # if chat_id_full not in TRIAL_USED:
+    #     TRIAL_USED[chat_id_full] = False
+    # if (TRIAL_USED[chat_id_full] and chat_mode_ == 'chatgpt') or (chat_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[chat_id_full] > TRIAL_MESSAGES and chat_mode_ == 'chatgpt'):
+    if message.chat.id not in cfg.admins and message.from_user.id not in cfg.admins:
+        if chat_id_full in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[chat_id_full] > TRIAL_MESSAGES:
+            CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+            chat_mode_ = cfg.chat_mode_default
 
     # если использовано кодовое слово вместо команды /music
     for x in cfg.MUSIC_WORDS:

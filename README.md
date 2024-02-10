@@ -124,14 +124,7 @@
    cd tb1
    ```
    
-5. Установите зависимости, выполнив команду:
-
-   ```
-   pip install -r requirements.txt
-   python -m textblob.download_corpora
-   ```
-
-6. Создайте файл cfg.py и добавьте в него строку
+5. Создайте файл cfg.py и добавьте в него строку
 ```
 # [urs, port, addr] | None
 # webhook = ["https://mydomain.com/bot", 33333, '0.0.0.0']
@@ -282,10 +275,6 @@ ocr_language = 'rus'
 claudeai_keys = ['sessionKey=sk-xxxxxxxxxx',] или None
 # прокси для клода не получилось сделать, так что надо использовать впн туннель, 
 # перенаправить в него адреса которые резолвятся из nslookup claude.ai
-
-# для рисования (платное и пока отключено)
-# https://replicate.com/account/api-tokens
-replicate_token = 'ххх'
 
 # показывать ли рекламу группы Neural Networks Forum при рисовании,
 # что бы люди туда уходили рисовать и отстали от моего бота

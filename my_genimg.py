@@ -11,7 +11,6 @@ from multiprocessing.pool import ThreadPool
 
 import langdetect
 import requests
-import replicate
 from duckduckgo_search import DDGS
 from sqlitedict import SqliteDict
 
@@ -31,38 +30,6 @@ NFSW_CONTENT = SqliteDict('db/nfsw_content_stable_diffusion.db', autocommit=True
 
 # {hash of image:model name, ...}
 WHO_AUTOR = {}
-
-
-def replicate_images(prompt: str, amount: int = 1):
-    """рисует 1 картинку с помощью replicate и возвращает сколько смог нарисовать"""
-    os.environ["REPLICATE_API_TOKEN"] = cfg.replicate_token
-
-    MODELS = [  "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-                "ai-forever/kandinsky-2:601eea49d49003e6ea75a11527209c4f510a93e2112c969d548fbb45b9c4f19f",
-                "stability-ai/stable-diffusion:27b93a2413e7f36cd83da926f3656280b2931564ff050bf9575f1fdf9bcd7478"]
-
-    results = []
-
-    # model = random.choice(MODELS)
-    model = MODELS[1]
-
-    for _ in range(amount):
-        if len(results) > amount:
-            break
-
-        try:
-            r = replicate.run(
-                model,
-                input={"prompt": prompt, "width": 1024, "height": 1024},
-            )
-            for x in r:
-                results.append(x)
-            if len(results) > amount:
-                break
-        except Exception as error_replicate_img:
-            my_log.log2(f'my_genimg:replicate: {error_replicate_img}')
-
-    return results
 
 
 def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
@@ -367,21 +334,7 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 
     async_result2 = pool.apply_async(huggin_face_api, (prompt,))
 
-    # async_result3 = pool.apply_async(replicate_images, (prompt_tr,))
-    # async_result4 = pool.apply_async(replicate_images, (prompt_tr,))
-    # async_result5 = pool.apply_async(replicate_images, (prompt_tr,))
-    # async_result6 = pool.apply_async(replicate_images, (prompt_tr,))
-
-    result = async_result1.get() + async_result2.get() #+ async_result3.get() + async_result4.get() + async_result5.get() + async_result6.get()
-
-    # if len(result) < 10:
-    #     result = result + ddg_search_images(prompt)
-
-    # if not result:
-    #     r = huggin_face_api(prompt)
-    #     if r:
-    #         result = r
-    #         my_log.log2(f'my_genimg:gen_images: huggin_face_api')
+    result = async_result1.get() + async_result2.get()
 
     return result[:10]
 

@@ -1026,17 +1026,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
         markup.add(button2)
         return markup
-    elif kbd == 'translate_and_repair':
-        if disabled_kbd(chat_id_full):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
-        button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button3 = telebot.types.InlineKeyboardButton(lang, callback_data='translate')
-        button4 = telebot.types.InlineKeyboardButton(tr("✨Исправить✨", lang), callback_data='voice_repair')
-        markup.row(button1, button2, button3)
-        markup.row(button4)
-        return markup
     elif kbd == 'translate':
         if disabled_kbd(chat_id_full):
             return None
@@ -1344,29 +1333,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             llang = my_trans.detect_lang(message.text or message.caption or '') or lang
             message.text = f'/tts {llang} {message.text or message.caption or ""}'
             tts(message)
-        # elif call.data == 'erase_image':
-        #     # обработка нажатия кнопки "Стереть ответ"
-        #     bot.delete_message(message.chat.id, message.message_id)
-        #     # получаем номер сообщения с картинками из сообщения с ссылками на картинки который идет следом
-        #     for i in message.text.split('\n')[0].split():
-        #         bot.delete_message(message.chat.id, int(i))
-        # elif call.data == 'repeat_image':
-        #     # получаем номер сообщения с картинками (первый из группы)
-        #     for i in message.text.split('\n')[0].split():
-        #         p_id = int(i)
-        #         break
-        #     p = IMAGE_PROMPTS[p_id]
-        #     message.text = f'/image {p}'
-        #     # рисуем еще картинки с тем же запросом
-        #     image(message)
-        elif call.data == 'voice_repair':
-            # реакция на клавиатуру для исправить текст после распознавания
-            with ShowAction(message, 'typing'):
-                translated = my_bard.bard_clear_text_chunk_voice(message.text)
-            if translated and translated != message.text:
-                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated,
-                                      reply_markup=get_keyboard('translate', message))
-                # bot_reply(message, translated, reply_markup=get_keyboard('translate', message))
         elif call.data == 'download_tiktok':
             # реакция на клавиатуру для tiktok
             with ShowAction(message, 'upload_video'):

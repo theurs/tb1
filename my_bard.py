@@ -6,11 +6,9 @@ import re
 import requests
 
 from bardapi import Bard
-from textblob import TextBlob
 
 import cfg
 import my_log
-import utils
 
 
 # хранилище для ссылок и картинок в ответах [(text, [images], [links]),...]
@@ -267,75 +265,6 @@ def chat_image(query: str, dialog: str, image: bytes, reset: bool = False) -> st
     return result
 
 
-def split_text(text: str, max_size: int = MAX_REQUEST) -> list:
-    """
-    Split the given text into chunks of sentences, where each chunk does not exceed the maximum size.
-
-    Args:
-        text (str): The text to be split.
-        max_size (int, optional): The maximum size of each chunk. Defaults to MAX_REQUEST.
-
-    Returns:
-        list: A list of chunks, where each chunk contains a group of sentences.
-    """
-    if len(text) < 500:
-        return text
-
-    text = text.replace(u"\xa0\xa0", " ")
-    text = text.replace(u"\xa0", " ")
-
-    blob = TextBlob(text)
-    sentences = blob.sentences
-    chunk = ''
-    chunks = []
-    sentences2 = []
-
-    for sentence in sentences:
-        if len(sentence) > max_size-300:
-            sentences2 += [x for x in utils.split_text(sentence, int(max_size/2))]
-        else:
-            sentences2.append(sentence)
-
-    for sentence in sentences2:
-        sentence = sentence.replace("\n", " ")
-        sentence = re.sub(r'\s{2,}', ' ', str(sentence))
-        if len(chunk) + len(sentence) < max_size:
-            chunk += str(sentence) + ' '
-        else:
-            chunks.append(chunk)
-            chunk = sentence
-    if chunk:
-        chunks.append(chunk)
-    return chunks
-
-
-def bard_clear_text_chunk_voice(chunk: str) -> str:
-    """
-    Clears a text chunk from voice by making it more readable and correcting typical
-    voice recognition errors.
-
-    :param chunk: The text chunk to be cleared.
-    :type chunk: str
-    :return: The cleared text chunk.
-    :rtype: str
-    """
-    query = '''Исправь форматирование текста аудиосообщения, сделай его легко читаемым, разбей на абзацы,
-исправь характерные ошибки распознавания голоса, убери лишние переносы строк, в ответе должен быть
-только исправленный текст, максимально короткий ответ.
-
-
-''' + chunk
-
-    try:
-        response = chat(query, 0)
-    except Exception as error:
-        print(error)
-        my_log.log2(f'my_bard.py:bard_clear_text_chunk_voice:{error}')
-        return chunk
-
-    return response.strip()
-
-
 def test_chat():
     while 1:
         q = input('you: ')
@@ -343,32 +272,10 @@ def test_chat():
         print(f'bot: {r}')
 
 
-def clear_voice_message_text(text: str) -> str:
-    """
-    Clear the voice message text with using Bard AI.
-
-    Parameters:
-        text (str): The voice message text to be cleared.
-    
-    Returns:
-        str: The cleared voice message text as a single string.
-    """
-    result = ''
-    for chunk in split_text(text, 2500):
-        result += bard_clear_text_chunk_voice(chunk) + '\n\n'
-    result = result.strip()
-    return result
-
-
 if __name__ == "__main__":
 
     # print(chat_image('Что изображено на картинке? Отвечай на языке [de]', 0, open('1.jpg', 'rb').read()))
     # pass
-
-    # for i in split_text(test_text, 2500):
-    #     print(i)
-    #     print('\n\n')
-
 
     test_chat()
 

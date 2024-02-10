@@ -1,12 +1,11 @@
-attrs==23.1.0
-bardapi==0.1.32
+# attrs==23.1.0
+bardapi
 bs4
 chardet
 # claude-api
 curl_cffi
 duckduckgo_search
 edge_tts
-# EdgeGPT
 fake_useragent
 flask
 fuzzywuzzy
@@ -25,7 +24,6 @@ pandas
 Pillow
 prettytable
 Proxy-List-Scrapper
-#py_trans
 pyenchant
 pylatexenc
 PyMuPDF
@@ -34,16 +32,10 @@ pysocks
 pytelegrambotapi
 pytesseract
 python-Levenshtein
-# python-magic
-# python-magic-bin
-# pylibmagic
 pytube
-re_edge_gpt==0.0.31
-replicate
+re_edge_gpt
 SpeechRecognition
 sqlitedict
-# python -m textblob.download_corpora
-textblob
 tiktoken
 #trafilatura==1.6.1
 trafilatura

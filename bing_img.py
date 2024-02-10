@@ -221,7 +221,7 @@ def gen_images(query: str, user_id: str = ''):
             with LOCKS[cookie]:
                 # сразу обновляем счетчик чтоб этот ключ ушел вниз списка
                 COOKIE[cookie] += 1
-                if cfg.bing_proxy:
+                if hasattr(cfg, 'bing_proxy') and cfg.bing_proxy:
                     proxies = cfg.bing_proxy[:]
                     random.shuffle(proxies)
                     for proxy in proxies:

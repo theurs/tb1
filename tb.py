@@ -2771,7 +2771,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
                 TTS_OPENAI_LIMIT[chat_id_full] = 0
 
             if 'openai' in gender and TTS_OPENAI_LIMIT[chat_id_full] + len(text) > TTS_OPENAI_LIMIT_MAX:
-                bot_reply_tr(message, 'OpenAI TTS token limit exceeded, switching to Google TTS. Donate to get more tokens.')
+                bot_reply_tr(message, 'OpenAI TTS token limit exceeded, switching to Google TTS. Donate to get more.')
                 TTS_GENDER[chat_id_full] = 'google_female'
                 gender = 'google_female'
 

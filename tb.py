@@ -1860,11 +1860,27 @@ def handle_document_thread(message: telebot.types.Message):
 
                 if text.strip():
                     caption = message.caption or ''
-                    summary = my_sum.summ_text(text, 'text', lang, caption.strip())
+                    caption = caption.strip()
+                    summary = my_sum.summ_text(text, 'text', lang, caption)
                     summary_html = utils.bot_markdown_to_html(summary)
                     bot_reply(message, summary_html, parse_mode='HTML',
                                           disable_web_page_preview = True,
                                           reply_markup=get_keyboard('translate', message))
+
+                    if chat_id_full not in gpt_basic.CHATS:
+                        gpt_basic.CHATS[chat_id_full] = []
+                    caption_ = tr("попросил ответить по содержанию файла", lang)
+                    if caption:
+                        caption_ += ', ' + caption
+                    gpt_basic.CHATS[chat_id_full] += [{"role":    'system',
+                                                       "content": f'user {caption_}'},
+                                                      {"role":    'system',
+                                                       "content": f'assistant {tr("посмотрел файл и ответил:", lang)} {summary}'}
+                            ]
+                    gpt_basic.CHATS[chat_id_full] = gpt_basic.CHATS[chat_id_full][-cfg.max_hist_lines:]
+                    my_gemini.update_mem(caption_,
+                                        f'{tr("посмотрел файл и ответил:", lang)} {summary}',
+                                        chat_id_full)
                 else:
                     bot_reply_tr(message, 'Не удалось получить никакого текста из документа.')
                 return

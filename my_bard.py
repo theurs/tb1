@@ -54,7 +54,7 @@ def get_new_session():
     session.proxies = proxies
 
     # bard = Bard(token = token[0], proxies = proxies, multi_cookies_bool = True, cookie_dict=cookie_dict, session=session, timeout=60)
-    bard = BardCookies(cookie_dict=cookie_dict, session=session)  
+    bard = BardCookies(cookie_dict=cookie_dict)  
 
     return bard
 

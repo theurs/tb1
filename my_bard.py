@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pip install git+https://github.com/dsdanielpark/Bard-API.git
 
 
 import threading
@@ -6,6 +7,7 @@ import re
 import requests
 
 from bardapi import Bard
+from bardapi import BardCookies
 
 import cfg
 import my_log
@@ -35,15 +37,11 @@ loop_detector = {}
 
 
 def get_new_session():
-    session = requests.Session()
-    session.cookies.set("__Secure-1PSID", cfg.bard_tokens[current_token])
-    session.headers = {
-        "Host": "bard.google.com",
-        "X-Same-Domain": "1",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
-        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-        "Origin": "https://bard.google.com",
-        "Referer": "https://bard.google.com/",
+    token = cfg.bard_tokens[current_token]
+    cookie_dict = {
+        "__Secure-1PSID": token[0],
+        "__Secure-1PSIDTS": token[1],
+        "__Secure-1PSIDCC": token[2]
         }
 
     # if hasattr(cfg, 'bard_proxies') and cfg.bard_proxies:
@@ -51,7 +49,12 @@ def get_new_session():
     # else:
     #     proxies = None
     proxies = None
-    bard = Bard(token=cfg.bard_tokens[current_token], proxies=proxies, session=session, timeout=30)
+    
+    session = requests.Session()
+    session.proxies = proxies
+
+    # bard = Bard(token = token[0], proxies = proxies, multi_cookies_bool = True, cookie_dict=cookie_dict, session=session, timeout=60)
+    bard = BardCookies(cookie_dict=cookie_dict, session=session)  
 
     return bard
 

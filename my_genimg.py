@@ -343,7 +343,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         t = ' '.join(sys.argv[1:])
     else:
-        t = my_gemini.ai('Напиши промпт для рисования красивой картинки на английском языке, сделай одно предложение.', temperature=1)
+        t = my_gemini.ai('Write a prompt for drawing a beautiful picture, make one sentence.', temperature=1)
     n=0
 
     r = str(random.randint(1000000000,9000000000))

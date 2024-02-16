@@ -252,10 +252,22 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                     start_time = time.time()
                     session = requests.Session()
                     session.proxies = {"http": proxy, "https": proxy}
-                    try:
-                        response = session.post(url, json=mem_, timeout=60)
-                    except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
-                        remove_proxy(proxy)
+
+                    n = 6
+                    c_s = False
+                    while n > 0:
+                        n -= 1
+                        try:
+                            response = session.post(url, json=mem_, timeout=60)
+                        except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
+                            remove_proxy(proxy)
+                            c_s = True
+                            break
+                        if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):
+                            time.sleep(5)
+                        else:
+                            break
+                    if c_s:
                         continue
 
                     if response.status_code == 200:

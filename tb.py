@@ -1155,13 +1155,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='chatGPT_reset')
         markup.row(button1, button2)
 
-        # if CHAT_MODE[chat_id_full] == 'bard':
-        #     button1 = telebot.types.InlineKeyboardButton('✅Bard AI', callback_data='bard_mode_disable')
-        # else:
-        #     button1 = telebot.types.InlineKeyboardButton('☑️Bard AI', callback_data='bard_mode_enable')
+        if CHAT_MODE[chat_id_full] == 'bard':
+            button1 = telebot.types.InlineKeyboardButton('✅Bard AI', callback_data='bard_mode_disable')
+        else:
+            button1 = telebot.types.InlineKeyboardButton('☑️Bard AI', callback_data='bard_mode_enable')
 
-        # button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='bardAI_reset')
-        # markup.row(button1, button2)
+        button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='bardAI_reset')
+        markup.row(button1, button2)
 
         # if CHAT_MODE[chat_id_full] == 'claude':
         #     button1 = telebot.types.InlineKeyboardButton('✅Claude AI', callback_data='claude_mode_disable')

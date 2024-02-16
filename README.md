@@ -205,11 +205,14 @@ openai_servers = [
 # openai_proxy = 'socks5://172.28.1.4:1080'
 # openai_proxy = 'http://172.28.1.4:3128'
 
-# токены для google bard
-# искать __Secure-1PSID в куках с сайта https://bard.google.com/
-# можно указать только 1
-bard_tokens = ['xxx',
-               'yyy']
+
+# искать (__Secure-1PSID, __Secure-1PSIDTS, __Secure-1PSIDCC) в куках с сайта https://gemini.google.com/
+# [(__Secure-1PSID, __Secure-1PSIDTS, __Secure-1PSIDCC), ...]
+bard_tokens = [
+    ('xxx',
+     'yyy',
+     'zzz'),
+]
 
 
 # id телеграм группы куда скидываются все сгенерированные картинки

@@ -283,12 +283,19 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                         remove_proxy(proxy)
                         my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}')
             else:
-                response = requests.post(url, json=mem_, timeout=60)
-                if response.status_code == 200:
-                    result = response.json()['candidates'][0]['content']['parts'][0]['text']
-                else:
-                    my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text}')
-
+                n = 6
+                while n > 0:
+                    n -= 1
+                    response = requests.post(url, json=mem_, timeout=60)
+                    if response.status_code == 200:
+                        result = response.json()['candidates'][0]['content']['parts'][0]['text']
+                        break
+                    else:
+                        my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text}')
+                        if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):
+                            time.sleep(5)
+                        else:
+                            break
             if result:
                 break
     except Exception as unknown_error:

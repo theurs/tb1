@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pip install git+https://github.com/dsdanielpark/Bard-API.git
+# pip install -U git+https://github.com/dsdanielpark/Bard-API.git
 
 
 import threading

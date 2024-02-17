@@ -22,7 +22,7 @@ import my_log
 import my_trans
 
 
-DEBUG = False
+DEBUG = cfg.DEBUG if hasattr(cfg, 'DEBUG') else False
 
 
 NFSW_CONTENT = SqliteDict('db/nfsw_content_stable_diffusion.db', autocommit=True)

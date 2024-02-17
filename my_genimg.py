@@ -268,7 +268,7 @@ def huggin_face_api(prompt: str) -> bytes:
     payload = json.dumps({"inputs": prompt})
 
     def request_img(prompt, url, p):
-        n = 2
+        n = 1
         result = []
         while n > 0:
             n -= 1

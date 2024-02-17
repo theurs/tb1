@@ -234,6 +234,8 @@ def log_media(message: telebot.types.Message) -> None:
     user_name = message.from_user.first_name or message.from_user.username or ''
     chat_name = chat_name.replace('/', '⁄')
     user_name = user_name.replace('/', '⁄')
+    if message.chat.type != 'private':
+        user_name = f'{user_name} {message.from_user.id}'
 
     caption = message.caption or ''
 

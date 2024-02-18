@@ -4001,6 +4001,10 @@ def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
 def do_task(message, custom_prompt: str = ''):
     """default handler"""
 
+    from_user_id = f'[{message.from_user.id}] [0]'
+    if from_user_id in BAD_USERS and BAD_USERS[from_user_id]:
+        return
+
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 

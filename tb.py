@@ -3585,6 +3585,9 @@ In private messages, you don't need to mention the bot's name
 
 🎙️ You can issue commands and make requests using voice messages.
 
+`/tts <url>` - download text from url
+Request starting with dot will be redirected to gpt-3.5-turbo-instruct (uncensored version of gpt-3.5-turbo)
+
 
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support

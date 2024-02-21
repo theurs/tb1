@@ -3486,7 +3486,7 @@ def send_welcome_start(message: telebot.types.Message) -> None:
     thread.start()
 def send_welcome_start_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
-    help = 'Welcome! Ask me anything. Send me you text/image/audio documents with questions.'
+    help = 'Welcome! Ask me anything. Send me you text/image/audio/documents with questions.'
     bot_reply_tr(message, help, parse_mode='HTML', disable_web_page_preview=True)
 
 

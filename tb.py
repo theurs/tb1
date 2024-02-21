@@ -115,10 +115,6 @@ IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=Tru
 # {chat_id: True/False}
 SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
 
-# {chat_id: True/False} надо ли обновить юзеру клавиатуру принудительно
-# когда надо всем обновить клавиатуру надо остановить бота, удалить этот файл и запустить снова
-NEED_TO_UPDATE_KEYBOARD = SqliteDict('db/need_to_update_keyboard.db', autocommit=True)
-
 # в каком чате включен режим без подсказок, боту не будет сообщаться время место и роль,
 # он будет работать как в оригинале {id:True/False}
 ORIGINAL_MODE = SqliteDict('db/original_mode.db', autocommit=True)
@@ -837,13 +833,6 @@ def authorized(message: telebot.types.Message) -> bool:
             # check free trial status
             if not trial_status(message):
                 return False
-            # check if need to update keyboard
-            if chat_id_full not in NEED_TO_UPDATE_KEYBOARD:
-                try:
-                    bot_reply_tr(message, 'Клавиатура была обновлена, убрать её можно командой /remove_keyboard', parse_mode='HTML', reply_markup=get_keyboard('start', message))
-                    NEED_TO_UPDATE_KEYBOARD[chat_id_full] = False
-                except Exception as unkn_kbd:
-                    my_log.log2('tb:auth:unkn_kbd: ' + str(unkn_kbd))
             # check for blocking and throttling
             try:
                 check_blocked_user(chat_id_full, message.from_user.id)
@@ -1043,30 +1032,24 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
                                                      callback_data='erase_answer')
         markup.add(button1, button2)
         return markup
-    # elif kbd == 'hide_image':
-    #     markup  = telebot.types.InlineKeyboardMarkup()
-    #     button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_image')
-    #     button2 = telebot.types.InlineKeyboardButton(tr("Повторить", lang), callback_data='repeat_image')
-    #     markup.add(button1, button2)
-    #     return markup
-    elif kbd == 'start':
-        b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_search = tr('🌐 Найди', lang, 'это кнопка в телеграм боте для поиска в гугле, после того как юзер на нее нажимает бот спрашивает у него что надо найти, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_summary = tr('📋 Перескажи', lang, 'это кнопка в телеграм боте для пересказа текста, после того как юзер на нее нажимает бот спрашивает у него ссылку на текст или файл с текстом, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_tts = tr('🎧 Озвучь', lang, 'это кнопка в телеграм боте для озвучивания текста, после того как юзер на нее нажимает бот спрашивает у него текст для озвучивания, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_translate = tr('🈶 Перевод', lang, 'это кнопка в телеграм боте для перевода текста, после того как юзер на нее нажимает бот спрашивает у него текст для перевода, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_settings = tr('⚙️ Настройки', lang, 'это кнопка в телеграм боте для перехода в настройки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    # elif kbd == 'start':
+    #     b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    #     b_msg_search = tr('🌐 Найди', lang, 'это кнопка в телеграм боте для поиска в гугле, после того как юзер на нее нажимает бот спрашивает у него что надо найти, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    #     b_msg_summary = tr('📋 Перескажи', lang, 'это кнопка в телеграм боте для пересказа текста, после того как юзер на нее нажимает бот спрашивает у него ссылку на текст или файл с текстом, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    #     b_msg_tts = tr('🎧 Озвучь', lang, 'это кнопка в телеграм боте для озвучивания текста, после того как юзер на нее нажимает бот спрашивает у него текст для озвучивания, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    #     b_msg_translate = tr('🈶 Перевод', lang, 'это кнопка в телеграм боте для перевода текста, после того как юзер на нее нажимает бот спрашивает у него текст для перевода, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    #     b_msg_settings = tr('⚙️ Настройки', lang, 'это кнопка в телеграм боте для перехода в настройки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
 
-        markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = telebot.types.KeyboardButton(b_msg_draw)
-        button2 = telebot.types.KeyboardButton(b_msg_search)
-        button3 = telebot.types.KeyboardButton(b_msg_summary)
-        button4 = telebot.types.KeyboardButton(b_msg_tts)
-        button5 = telebot.types.KeyboardButton(b_msg_translate)
-        button6 = telebot.types.KeyboardButton(b_msg_settings)
-        markup.row(button1, button2, button3)
-        markup.row(button4, button5, button6)
-        return markup
+    #     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    #     button1 = telebot.types.KeyboardButton(b_msg_draw)
+    #     button2 = telebot.types.KeyboardButton(b_msg_search)
+    #     button3 = telebot.types.KeyboardButton(b_msg_summary)
+    #     button4 = telebot.types.KeyboardButton(b_msg_tts)
+    #     button5 = telebot.types.KeyboardButton(b_msg_translate)
+    #     button6 = telebot.types.KeyboardButton(b_msg_settings)
+    #     markup.row(button1, button2, button3)
+    #     markup.row(button4, button5, button6)
+    #     return markup
     elif kbd == 'giga_chat':
         if disabled_kbd(chat_id_full):
             return None
@@ -2625,7 +2608,7 @@ def language_thread(message: telebot.types.Message):
         HELLO_MSG[chat_id_full] = ''
         HELP_MSG[chat_id_full] = ''
         msg = f'{tr("Язык бота изменен на:", new_lang)} <b>{new_lang}</b> ({tr(langcodes.Language.make(language=new_lang).display_name(language="en"), new_lang).lower()})'
-        bot_reply(message, msg, parse_mode='HTML', reply_markup=get_keyboard('start', message))
+        bot_reply(message, msg, parse_mode='HTML')
     else:
         msg = f'{tr("Такой язык не поддерживается:", lang)} <b>{new_lang}</b>\n\n{tr("Возможные варианты:", lang)}\n{supported_langs_trans2}'
         bot_reply(message, msg, parse_mode='HTML')
@@ -3503,66 +3486,8 @@ def send_welcome_start(message: telebot.types.Message) -> None:
     thread.start()
 def send_welcome_start_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
-
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-
-    is_private = message.chat.type == 'private'
-    user_name = message.from_user.full_name or message.from_user.username or ''
-    chat_name = message.chat.username or message.chat.title or ''
-
-    help = """Hello! I'm your personal multi-functional assistant 🤖
-
-I provide free access to various chatbots like ChatGPT, Google Bard, Claude AI, and more. Additionally, I can create drawings from text descriptions, recognize text in images, voice messages, and documents. I can work in group chats, have a voice mode, and even search for answers on Google. I can also provide concise summaries of web pages and YouTube videos.
-
-If you need assistance with anything, feel free to reach out to me anytime. Just ask your question, and I'll do my best to help you! 🌟
-
-You can change bot language with /lang command."""
-
-    if is_private:
-        start_generated = f'''You are a Chatbot. You work in telegram messenger.
-Write a SHORT welcome message to a user who has just come to you, use emojis if suitable.
-
-Your options: Chat, search the web, find and download music from YouTube,
-summarize web pages and YouTube videos, convert voice messages to text,
-recognize text from images and answer questions about them, draw pictures.
-
-Mension that user can change bot language with /lang command.
-
-User name: {user_name}
-User language: {lang}'''
-    else:
-        start_generated = f'''You are a Chatbot. You work in telegram messenger.
-Write a SHORT welcome message to a chat you have just been invited to, use emojis if suitable.
-
-Your options: Chat, search the web, find and download music from YouTube,
-summarize web pages and YouTube videos, convert voice messages to text,
-recognize text from images and answer questions about them, draw pictures.
-
-Mension that user can change bot language with /lang command.
-
-Chat name: {chat_name}
-Chat language: {lang}'''
-
-    with ShowAction(message, 'typing'):
-        if chat_id_full in HELLO_MSG and HELLO_MSG[chat_id_full]:
-            start_generated = HELLO_MSG[chat_id_full]
-            new_run = False
-        else:
-            start_generated = my_gemini.chat(start_generated, chat_id_full, update_memory=False)
-            new_run = True
-
-        if start_generated:
-            if new_run:
-                help = utils.bot_markdown_to_html(start_generated)
-                HELLO_MSG[chat_id_full] = help
-            else:
-                help = start_generated
-        else:
-            help = tr(help, lang)
-
-        bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
-        NEED_TO_UPDATE_KEYBOARD[chat_id_full] = False
+    help = 'Welcome! Ask me anything. Send me you text/image/audio documents with questions.'
+    bot_reply_tr(message, help, parse_mode='HTML', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['help'], func = authorized_log)

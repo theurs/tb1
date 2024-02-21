@@ -11,6 +11,7 @@ flask
 fuzzywuzzy
 gigachain
 gigachat
+gradio_client
 httpx[socks]
 google
 gTTS

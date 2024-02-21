@@ -9,6 +9,7 @@ import time
 import traceback
 from multiprocessing.pool import ThreadPool
 
+import gradio_client
 import langdetect
 import requests
 from duckduckgo_search import DDGS
@@ -268,6 +269,9 @@ def huggin_face_api(prompt: str) -> bytes:
     payload = json.dumps({"inputs": prompt})
 
     def request_img(prompt, url, p):
+        if 'stable-cascade' in url:
+            return stable_cascade(prompt, url)
+
         n = 1
         result = []
         while n > 0:
@@ -322,6 +326,50 @@ def huggin_face_api(prompt: str) -> bytes:
     return result
 
 
+def stable_cascade(prompt: str, url: str) -> bytes:
+    """
+    url = "multimodalart/stable-cascade" only?
+    """
+    client = gradio_client.Client(url)
+    result = None
+    try:
+        result = client.predict(
+            prompt,	# str  in 'Prompt' Textbox component
+            "",	# str  in 'Negative prompt' Textbox component
+            0,	# float (numeric value between 0 and 2147483647) in 'Seed' Slider component
+            1024,	# float (numeric value between 1024 and 1536) in 'Width' Slider component
+            1024,	# float (numeric value between 1024 and 1536) in 'Height' Slider component
+            10,	# float (numeric value between 10 and 30) in 'Prior Inference Steps' Slider component
+            0,	# float (numeric value between 0 and 20) in 'Prior Guidance Scale' Slider component
+            4,	# float (numeric value between 4 and 12) in 'Decoder Inference Steps' Slider component
+            0,	# float (numeric value between 0 and 0) in 'Decoder Guidance Scale' Slider component
+            1,	# float (numeric value between 1 and 2) in 'Number of Images' Slider component
+            api_name="/run"
+        )
+    except Exception as error:
+        my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    fname = result
+    base_path = os.path.dirname(fname)
+    if fname:
+        try:
+            data = None
+            with open(fname, 'rb') as f:
+                data = f.read()
+            try:
+                os.remove(fname)
+                os.rmdir(base_path)
+            except Exception as error:
+                my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            if data:
+                WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                return [data,]
+        except Exception as error:
+            my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return []
+
+
 def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """рисует одновременно всеми доступными способами"""
     #return bing(prompt) + chimera(prompt)
@@ -333,8 +381,10 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
 
     async_result2 = pool.apply_async(huggin_face_api, (prompt,))
+    
+    async_result3 = pool.apply_async(stable_cascade, (prompt,))
 
-    result = async_result1.get() + async_result2.get()
+    result = async_result1.get() + async_result2.get() + async_result3.get()
 
     return result[:10]
 

@@ -381,10 +381,8 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
 
     async_result2 = pool.apply_async(huggin_face_api, (prompt,))
-    
-    async_result3 = pool.apply_async(stable_cascade, (prompt,))
 
-    result = async_result1.get() + async_result2.get() + async_result3.get()
+    result = async_result1.get() + async_result2.get()
 
     return result[:10]
 

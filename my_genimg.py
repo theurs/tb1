@@ -347,7 +347,8 @@ def stable_cascade(prompt: str, url: str) -> bytes:
             api_name="/run"
         )
     except Exception as error:
-        my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        if 'No GPU is currently available for you after 60s' not in str(error):
+            my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []
 
     fname = result

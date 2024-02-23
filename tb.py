@@ -418,7 +418,8 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
             my_log.log2(f'tb:img2txt: {img_from_link_error}')
         if not text:
             try:
-                text = my_bard.chat_image(query, chat_id_full, data)
+                if cfg.bard_tokens:
+                    text = my_bard.chat_image(query, chat_id_full, data)
             except Exception as img_from_link_error2:
                 my_log.log2(f'tb:img2txt: {img_from_link_error2}')
 
@@ -1138,13 +1139,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='chatGPT_reset')
         markup.row(button1, button2)
 
-        if CHAT_MODE[chat_id_full] == 'bard':
-            button1 = telebot.types.InlineKeyboardButton('✅Bard AI', callback_data='bard_mode_disable')
-        else:
-            button1 = telebot.types.InlineKeyboardButton('☑️Bard AI', callback_data='bard_mode_enable')
+        if cfg.bard_tokens:
+            if CHAT_MODE[chat_id_full] == 'bard':
+                button1 = telebot.types.InlineKeyboardButton('✅Bard AI', callback_data='bard_mode_disable')
+            else:
+                button1 = telebot.types.InlineKeyboardButton('☑️Bard AI', callback_data='bard_mode_enable')
 
-        button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='bardAI_reset')
-        markup.row(button1, button2)
+            button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='bardAI_reset')
+            markup.row(button1, button2)
 
         # if CHAT_MODE[chat_id_full] == 'claude':
         #     button1 = telebot.types.InlineKeyboardButton('✅Claude AI', callback_data='claude_mode_disable')

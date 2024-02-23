@@ -44,17 +44,17 @@ def get_new_session():
         "__Secure-1PSIDCC": token[2]
         }
 
-    # if hasattr(cfg, 'bard_proxies') and cfg.bard_proxies:
-    #     proxies = {"http": cfg.bard_proxies, "https": cfg.bard_proxies}
-    # else:
-    #     proxies = None
-    proxies = None
+    if hasattr(cfg, 'bard_proxies') and cfg.bard_proxies:
+        proxies = {"http": cfg.bard_proxies, "https": cfg.bard_proxies}
+    else:
+        proxies = None
+    # proxies = None
     
     session = requests.Session()
     session.proxies = proxies
 
     # bard = Bard(token = token[0], proxies = proxies, multi_cookies_bool = True, cookie_dict=cookie_dict, session=session, timeout=60)
-    bard = BardCookies(cookie_dict=cookie_dict)  
+    bard = BardCookies(cookie_dict=cookie_dict, session=session, timeout=60)  
 
     return bard
 

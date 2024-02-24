@@ -347,7 +347,7 @@ def stable_cascade(prompt: str, url: str) -> bytes:
             api_name="/run"
         )
     except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error):
+        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
             my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []
 

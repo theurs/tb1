@@ -372,7 +372,7 @@ def stable_cascade(prompt: str, url: str) -> bytes:
     return []
 
 
-def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
+def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 2):
     """
     Generates images based on a prompt using the KANDINSKI_API.
 

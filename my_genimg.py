@@ -372,7 +372,7 @@ def stable_cascade(prompt: str, url: str) -> bytes:
     return []
 
 
-def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 2):
+def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
     """
     Generates images based on a prompt using the KANDINSKI_API.
 
@@ -454,8 +454,10 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     async_result2 = pool.apply_async(huggin_face_api, (prompt,))
     
     async_result3 = pool.apply_async(kandinski, (prompt,))
+    
+    async_result4 = pool.apply_async(kandinski, (prompt,))
 
-    result = async_result1.get() + async_result2.get() + async_result3.get()
+    result = async_result1.get() + async_result2.get() + async_result3.get() + async_result4.get()
 
     return result[:10]
 

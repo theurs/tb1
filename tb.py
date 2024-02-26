@@ -2999,8 +2999,11 @@ def image_thread(message: telebot.types.Message):
                         d = utils.download_image_as_bytes(i)
                         caption_ = 'bing.com\n\n' + caption_
                     elif isinstance(i, bytes):
-                        caption_ = my_genimg.WHO_AUTOR[hash(i)] + '\n\n' + caption_
-                        del my_genimg.WHO_AUTOR[hash(i)]
+                        if hash(i) in my_genimg.WHO_AUTOR:
+                            caption_ = my_genimg.WHO_AUTOR[hash(i)] + '\n\n' + caption_
+                            del my_genimg.WHO_AUTOR[hash(i)]
+                        else:
+                            caption_ = 'error'
                         d = i
                     if d:
                         try:

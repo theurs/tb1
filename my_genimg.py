@@ -41,6 +41,11 @@ kandinski_hashes = SqliteDict('db/kandinski_hashes.db', autocommit=True)
 kandinski_hashes_temp = {}
 
 
+# запоминаем промпты для хаггинг фейса, они не должны повторятся
+# {prompt:True/False, ...}
+huggingface_prompts = SqliteDict('db/kandinski_prompts.db', autocommit=True)
+
+
 def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
     if moderation_flag:
@@ -145,8 +150,15 @@ def rewrite_prompt_for_open_dalle(prompt: str) -> str:
         str: The rewritten prompt in English.
     """
     # small text detect fails :(
+
+    force = False
+    if hash(prompt) in huggingface_prompts:
+        force = True
+    else:
+        huggingface_prompts[hash(prompt)] = True
+
     detected_lang = langdetect.detect(prompt)
-    if detected_lang != 'en':
+    if detected_lang != 'en' or force:
         prompt_translated = my_gemini.ai(f'This is a prompt for image generation. Rewrite it in english, in one long sentance, make it better:\n\n{prompt}', temperature=1)
         if not prompt_translated:
             return translate_prompt_to_en(prompt)

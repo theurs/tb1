@@ -34,13 +34,6 @@ NFSW_CONTENT = SqliteDict('db/nfsw_content_stable_diffusion.db', autocommit=True
 WHO_AUTOR = {}
 
 
-# kandinski hashes
-# запоминаем все хеши, и если они повторяются (скорее всего это заглушка) то не показываем
-# {hash of image:count, ...}
-kandinski_hashes = SqliteDict('db/kandinski_hashes.db', autocommit=True)
-kandinski_hashes_temp = {}
-
-
 # запоминаем промпты для хаггинг фейса, они не должны повторятся
 # {prompt:True/False, ...}
 huggingface_prompts = SqliteDict('db/kandinski_prompts.db', autocommit=True)
@@ -439,6 +432,8 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
             while attempts > 0:
                 response = requests.get('https://api-key.fusionbrain.ai/key/api/v1/text2image/status/' + request_id, headers=AUTH_HEADERS)
                 data = response.json()
+                if  data['censored']:
+                    return []
                 if data['status'] == 'DONE':
                     return data['images']
                 attempts -= 1
@@ -449,17 +444,6 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
             results = []
             for image in images:
                 data = base64.b64decode(image)
-                h_ = hash(data)
-                if h_ in kandinski_hashes:
-                    kandinski_hashes[h_] = kandinski_hashes[h_] + 1
-                    continue
-                else:
-                    if h_ in kandinski_hashes_temp:
-                        kandinski_hashes[h_] = 2
-                        del kandinski_hashes_temp[h_]
-                        continue
-                    else:
-                        kandinski_hashes_temp[h_] = 1
                 WHO_AUTOR[hash(data)] = 'fusionbrain.ai'
                 results.append(data)
             return results
@@ -498,6 +482,7 @@ if __name__ == '__main__':
         t = ' '.join(sys.argv[1:])
     else:
         t = my_gemini.ai('Write a prompt for drawing a beautiful picture, make one sentence.', temperature=1)
+
     n=0
 
     r = str(random.randint(1000000000,9000000000))

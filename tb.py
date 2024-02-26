@@ -3104,7 +3104,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                             chat_id_full)
                 else:
                     bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
-                    if cfg.enable_image_adv:
+                    if hasattr(cfg, 'enable_image_adv') and cfg.enable_image_adv:
                         bot_reply_tr(message,
                                   "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum or this https://t.me/aibrahma/467",
                                   disable_web_page_preview = True)

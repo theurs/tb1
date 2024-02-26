@@ -652,7 +652,7 @@ def chat(chat_id: str, query: str, user_name: str = 'noname', lang: str = 'ru',
                               messages = current_prompt + messages,
                               chat_id=chat_id)
                 except Exception as error3:
-                    print(error3)
+                    my_log.log2(error3)
                     return tr('ChatGPT не ответил.', lang)
 
                 # добавляем в историю новый запрос и отправляем в GPT, если он не
@@ -663,7 +663,7 @@ def chat(chat_id: str, query: str, user_name: str = 'noname', lang: str = 'ru',
                 else:
                     return tr('ChatGPT не ответил.', lang)
             else:
-                print(error2)
+                my_log.log2(error2)
                 return tr('ChatGPT не ответил.', lang)
 
         # сохраняем диалог, на данном этапе в истории разговора должны быть 2 последних 

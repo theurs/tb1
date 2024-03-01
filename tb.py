@@ -3229,12 +3229,27 @@ def alert_thread(message: telebot.types.Message):
             text = utils.bot_markdown_to_html(text)
             text = f'<b>{tr("Широковещательное сообщение от Верховного Адмнистратора, не обращайте внимания", lang)}</b>' + '\n\n\n' + text
 
+            ids = []
             for x, _ in CHAT_MODE.items():
                 x = x.replace('[','').replace(']','')
                 chat = int(x.split()[0])
                 # if chat not in cfg.admins:
                 #     return
                 thread = int(x.split()[1])
+
+                # в чаты не слать
+                if chat < 0:
+                    continue
+                chat_id = f'[{chat}] [{thread}]'
+                # заблокированым не посылать
+                if chat_id in DDOS_BLOCKED_USERS:
+                    continue
+                if chat_id in BAD_USERS:
+                    continue
+                if chat_id not in TRIAL_USERS_COUNTER or TRIAL_USERS_COUNTER[chat_id] < 100:
+                    continue
+                
+                ids.append(chat_id)
                 try:
                     bot.send_message(chat_id = chat, message_thread_id=thread, text = text, parse_mode='HTML',
                                     disable_notification = True, reply_markup=get_keyboard('translate', message))

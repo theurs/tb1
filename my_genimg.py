@@ -478,18 +478,20 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 
 if __name__ == '__main__':
 
-    if len(sys.argv) > 1:
-        t = ' '.join(sys.argv[1:])
-    else:
-        t = my_gemini.ai('Write a prompt for drawing a beautiful picture, make one sentence.', temperature=1)
+    print(huggin_face_api('An austronaut is sitting on a moon.'))
 
-    n=0
+    # if len(sys.argv) > 1:
+    #     t = ' '.join(sys.argv[1:])
+    # else:
+    #     t = my_gemini.ai('Write a prompt for drawing a beautiful picture, make one sentence.', temperature=1)
 
-    r = str(random.randint(1000000000,9000000000))
-    starttime=time.time()
-    print(t)
-    for x in huggin_face_api(t):
-        n+=1
-        open(f'{n} - {r}.jpg','wb').write(x)
-    endtime=time.time()
-    print(round(endtime - starttime, 2))
+    # n=0
+
+    # r = str(random.randint(1000000000,9000000000))
+    # starttime=time.time()
+    # print(t)
+    # for x in huggin_face_api(t):
+    #     n+=1
+    #     open(f'{n} - {r}.jpg','wb').write(x)
+    # endtime=time.time()
+    # print(round(endtime - starttime, 2))

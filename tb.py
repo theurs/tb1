@@ -551,7 +551,7 @@ def is_for_me(cmd: str):
 
     # если это не команда значит ко мне
     if not cmd.startswith('/'):
-        (True, cmd)
+        return (True, cmd)
 
     command_parts = cmd.split()
     first_arg = command_parts[0]

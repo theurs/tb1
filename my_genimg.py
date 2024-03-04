@@ -283,9 +283,15 @@ def huggin_face_api(prompt: str) -> bytes:
 
     def request_img(prompt, url, p):
         if 'stable-cascade' in url:
-            return stable_cascade(prompt, url)
+            try:
+                return stable_cascade(prompt, url)
+            except:
+                return []
         if 'playgroundai/playground-v2.5-1024px-aesthetic' in url:
-            return playground25(prompt, url)
+            try:
+                return playground25(prompt, url)
+            except:
+                return []
 
         n = 1
         result = []
@@ -345,7 +351,7 @@ def playground25(prompt: str, url: str) -> bytes:
     """
     url = "playgroundai/playground-v2.5-1024px-aesthetic" only?
     """
-    client = gradio_client.Client("https://playgroundai-playground-v2-5.hf.space/--replicas/9kuov/")
+    client = gradio_client.Client("https://playgroundai-playground-v2-5.hf.space/--replicas/mqedc/")
     result = None
     try:
         result = client.predict(

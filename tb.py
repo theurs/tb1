@@ -12,6 +12,7 @@ import string
 import threading
 import time
 
+import fuzzywuzzy
 import langcodes
 import prettytable
 import PyPDF2
@@ -3046,8 +3047,13 @@ the original prompt:""", lang) + '\n\n\n' + prompt
 
                         if pics_group:
                             try:
+                                translated_prompt = tr(prompt, 'ru')
                                 bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
                                                  link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
+                                ratio = fuzzywuzzy.fuzz.ratio(translated_prompt, prompt)
+                                if ratio < 70:
+                                    bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{utils.nice_hash(chat_id_full)}',
+                                                     link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
                                 bot.send_media_group(pics_group, medias)
                             except Exception as error2:
                                 my_log.log2(f'tb:image_thread:send to pics_group: {error2}')

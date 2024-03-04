@@ -284,6 +284,8 @@ def huggin_face_api(prompt: str) -> bytes:
     def request_img(prompt, url, p):
         if 'stable-cascade' in url:
             return stable_cascade(prompt, url)
+        if 'playgroundai/playground-v2.5-1024px-aesthetic' in url:
+            return playground25(prompt, url)
 
         n = 1
         result = []
@@ -337,6 +339,49 @@ def huggin_face_api(prompt: str) -> bytes:
     result = list(set(result))
 
     return result
+
+
+def playground25(prompt: str, url: str) -> bytes:
+    """
+    url = "playgroundai/playground-v2.5-1024px-aesthetic" only?
+    """
+    client = gradio_client.Client("https://playgroundai-playground-v2-5.hf.space/--replicas/9kuov/")
+    result = None
+    try:
+        result = client.predict(
+            prompt,	# str  in 'Prompt' Textbox component
+            "",	# str  in 'Negative prompt' Textbox component
+            False,	# bool  in 'Use negative prompt' Checkbox component
+            random.randint(0, 2147483647),	    # float (numeric value between 0 and 2147483647) in 'Seed' Slider component
+            1024,	# float (numeric value between 256 and 1536) in 'Width' Slider component
+            1024,	# float (numeric value between 256 and 1536) in 'Height' Slider component
+            3,	# float (numeric value between 0.1 and 20) in 'Guidance Scale' Slider component
+            True,	# bool  in 'Randomize seed' Checkbox component
+            api_name="/run"
+        )
+    except Exception as error:
+        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
+            my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    fname = result[0][0]['image']
+    base_path = os.path.dirname(fname)
+    if fname:
+        try:
+            data = None
+            with open(fname, 'rb') as f:
+                data = f.read()
+            try:
+                os.remove(fname)
+                os.rmdir(base_path)
+            except Exception as error:
+                my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            if data:
+                WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                return [data,]
+        except Exception as error:
+            my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return []
 
 
 def stable_cascade(prompt: str, url: str) -> bytes:

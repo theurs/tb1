@@ -290,7 +290,8 @@ def huggin_face_api(prompt: str) -> bytes:
         if 'playgroundai/playground-v2.5-1024px-aesthetic' in url:
             try:
                 return playground25(prompt, url)
-            except:
+            except exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:playgroundai/playground-v2.5-1024px-aesthetic: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
                 return []
 
         n = 1

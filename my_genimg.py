@@ -2,9 +2,11 @@
 
 
 import base64
+import glob
 import json
 import os
 import random
+import shutil
 import sys
 import time
 import traceback
@@ -533,6 +535,20 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     async_result4 = pool.apply_async(kandinski, (prompt,))
 
     result = async_result1.get() + async_result2.get() + async_result3.get() + async_result4.get()
+
+    # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
+    # может удалить то что рисуют параллельные запросы и второй бот?
+    try:
+        for f in glob.glob('/tmp/*'):
+            if len(f) == 45:
+                try:
+                    os.rmdir(f)
+                except Exception as unknown:
+                    my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{f}')
+        shutil.rmtree('/tmp/gradio')
+    except Exception as unknown:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
 
     return result[:10]
 

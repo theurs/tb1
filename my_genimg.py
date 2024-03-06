@@ -355,7 +355,7 @@ def playground25(prompt: str, url: str) -> bytes:
     url = "playgroundai/playground-v2.5-1024px-aesthetic" only?
     """
     try:
-        client = gradio_client.Client("https://playgroundai-playground-v2-5.hf.space/--replicas/apmyw/")
+        client = gradio_client.Client("https://playgroundai-playground-v2-5.hf.space/--replicas/2hate/")
     except Exception as error:
         my_log.log2(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []

@@ -352,7 +352,11 @@ def playground25(prompt: str, url: str) -> bytes:
     """
     url = "playgroundai/playground-v2.5-1024px-aesthetic" only?
     """
-    client = gradio_client.Client("https://playgroundai-playground-v2-5.hf.space/--replicas/apmyw/")
+    try:
+        client = gradio_client.Client("https://playgroundai-playground-v2-5.hf.space/--replicas/apmyw/")
+    except Exception as error:
+        my_log.log2(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
     result = None
     try:
         result = client.predict(
@@ -368,7 +372,7 @@ def playground25(prompt: str, url: str) -> bytes:
         )
     except Exception as error:
         if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            my_log.log2(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []
 
     fname = result[0][0]['image']
@@ -382,12 +386,12 @@ def playground25(prompt: str, url: str) -> bytes:
                 os.remove(fname)
                 os.rmdir(base_path)
             except Exception as error:
-                my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+                my_log.log2(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
             if data:
                 WHO_AUTOR[hash(data)] = url.split('/')[-1]
                 return [data,]
         except Exception as error:
-            my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            my_log.log2(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
     return []
 
 
@@ -395,7 +399,12 @@ def stable_cascade(prompt: str, url: str) -> bytes:
     """
     url = "multimodalart/stable-cascade" only?
     """
-    client = gradio_client.Client(url)
+    try:
+        client = gradio_client.Client(url)
+    except Exception as error:
+        my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
     result = None
     try:
         result = client.predict(
@@ -530,7 +539,7 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 
 if __name__ == '__main__':
 
-    print(huggin_face_api('An austronaut is sitting on a moon.'))
+    print(playground25('An austronaut is sitting on a moon.', 'playgroundai/playground-v2.5-1024px-aesthetic'))
 
     # if len(sys.argv) > 1:
     #     t = ' '.join(sys.argv[1:])

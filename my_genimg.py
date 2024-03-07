@@ -269,10 +269,11 @@ def huggin_face_api(prompt: str) -> bytes:
     else:
         API_URL = [
             "https://api-inference.huggingface.co/models/stablediffusionapi/juggernaut-xl-v8",
-            'playgroundai/playground-v2.5-1024px-aesthetic',
             # "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl",
             # "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl",
             'AP123/SDXL-Lightning',
+            'AP123/SDXL-Lightning',
+            'playgroundai/playground-v2.5-1024px-aesthetic',
             'playgroundai/playground-v2.5-1024px-aesthetic',
             "multimodalart/stable-cascade",
         ]

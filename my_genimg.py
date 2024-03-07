@@ -272,7 +272,7 @@ def huggin_face_api(prompt: str) -> bytes:
             # "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl",
             # "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl",
             'AP123/SDXL-Lightning',
-            'AP123/SDXL-Lightning',
+            #'AP123/SDXL-Lightning',
             'playgroundai/playground-v2.5-1024px-aesthetic',
             'playgroundai/playground-v2.5-1024px-aesthetic',
             "multimodalart/stable-cascade",
@@ -295,13 +295,13 @@ def huggin_face_api(prompt: str) -> bytes:
             try:
                 return playground25(prompt, url)
             except exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:playgroundai/playground-v2.5-1024px-aesthetic: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
+                my_log.log_huggin_face_api(f'my_genimg:playgroundai/playground-v2.5-1024px-aesthetic: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
         if 'AP123/SDXL-Lightning' in url:
             try:
                 return SDXL_Lightning(prompt, url)
             except exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
+                my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
 
         n = 1

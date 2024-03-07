@@ -270,8 +270,9 @@ def huggin_face_api(prompt: str) -> bytes:
         API_URL = [
             "https://api-inference.huggingface.co/models/stablediffusionapi/juggernaut-xl-v8",
             'playgroundai/playground-v2.5-1024px-aesthetic',
-            "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl",
-            "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl",
+            # "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl",
+            # "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl",
+            'AP123/SDXL-Lightning',
             'playgroundai/playground-v2.5-1024px-aesthetic',
             "multimodalart/stable-cascade",
         ]
@@ -294,6 +295,12 @@ def huggin_face_api(prompt: str) -> bytes:
                 return playground25(prompt, url)
             except exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:playgroundai/playground-v2.5-1024px-aesthetic: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
+                return []
+        if 'AP123/SDXL-Lightning' in url:
+            try:
+                return SDXL_Lightning(prompt, url)
+            except exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
                 return []
 
         n = 1
@@ -348,6 +355,47 @@ def huggin_face_api(prompt: str) -> bytes:
     result = list(set(result))
 
     return result
+
+
+def SDXL_Lightning(prompt: str, url: str) -> bytes:
+    """
+    url = "AP123/SDXL-Lightning" only?
+    """
+    try:
+        client = gradio_client.Client("AP123/SDXL-Lightning")
+    except Exception as error:
+        my_log.log2(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+    result = None
+    try:
+        result = client.predict(
+            prompt,
+            "8-Step",	# Literal['1-Step', '2-Step', '4-Step', '8-Step']  in 'Select inference steps' Dropdown component
+            api_name="/generate_image"
+        )
+    except Exception as error:
+        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
+            my_log.log2(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    fname = result
+    base_path = os.path.dirname(fname)
+    if fname:
+        try:
+            data = None
+            with open(fname, 'rb') as f:
+                data = f.read()
+            try:
+                os.remove(fname)
+                os.rmdir(base_path)
+            except Exception as error:
+                my_log.log2(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            if data:
+                WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                return [data,]
+        except Exception as error:
+            my_log.log2(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return []
 
 
 def playground25(prompt: str, url: str) -> bytes:
@@ -555,7 +603,7 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 
 if __name__ == '__main__':
 
-    print(playground25('An austronaut is sitting on a moon.', 'playgroundai/playground-v2.5-1024px-aesthetic'))
+    print(SDXL_Lightning('An austronaut is sitting on a moon.', 'AP123/SDXL-Lightning'))
 
     # if len(sys.argv) > 1:
     #     t = ' '.join(sys.argv[1:])

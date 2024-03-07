@@ -1994,6 +1994,8 @@ def handle_photo_thread(message: telebot.types.Message):
                     text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
                     bot_reply(message, text, parse_mode='HTML',
                                           reply_markup=get_keyboard('translate', message))
+                else:
+                    bot_reply_tr(message, 'Sorry, I could not answer your question.')
             return
         elif state == 'ocr':
             with ShowAction(message, 'typing'):
@@ -4286,7 +4288,9 @@ def do_task(message, custom_prompt: str = ''):
                         text = utils.bot_markdown_to_html(text)
                         bot_reply(message, text, parse_mode='HTML',
                                             reply_markup=get_keyboard('translate', message))
-                        return
+                    else:
+                        bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                    return
             else:
                 message.text = '/sum ' + message.text
                 summ_text(message)

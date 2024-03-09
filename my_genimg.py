@@ -391,7 +391,7 @@ def SDXL_Lightning(prompt: str, url: str) -> bytes:
                 os.rmdir(base_path)
             except Exception as error:
                 my_log.log2(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
-            if data:
+            if data and hash(data) != 8472368669764427782:
                 WHO_AUTOR[hash(data)] = url.split('/')[-1]
                 return [data,]
         except Exception as error:

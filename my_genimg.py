@@ -3,6 +3,7 @@
 
 import base64
 import glob
+import io
 import json
 import os
 import random
@@ -14,6 +15,7 @@ from multiprocessing.pool import ThreadPool
 
 import gradio_client
 import langdetect
+import PIL
 import requests
 from duckduckgo_search import DDGS
 from sqlitedict import SqliteDict
@@ -358,6 +360,11 @@ def huggin_face_api(prompt: str) -> bytes:
     return result
 
 
+def size_of_image(data: bytes):
+    img = PIL.Image.open(io.BytesIO(data))
+    return img.size
+
+
 def SDXL_Lightning(prompt: str, url: str) -> bytes:
     """
     url = "AP123/SDXL-Lightning" only?
@@ -391,7 +398,8 @@ def SDXL_Lightning(prompt: str, url: str) -> bytes:
                 os.rmdir(base_path)
             except Exception as error:
                 my_log.log2(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
-            if data and hash(data) != 8472368669764427782:
+            imgsize = size_of_image(data)
+            if data and imgsize == (1024, 1024):
                 WHO_AUTOR[hash(data)] = url.split('/')[-1]
                 return [data,]
         except Exception as error:

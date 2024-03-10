@@ -588,7 +588,7 @@ User's prompt: {prompt}
 Dialog history: {conversation_history}
 """
     reprompt = my_gemini.ai(query, temperature=1.2)
-    my_log.log_reprompts(reprompt)
+    my_log.log_reprompts(f'{prompt}\n\n{reprompt}')
 
     query2 = f"""
 Does this text look like a user request to generate an image? Yes or No, answer supershort.

@@ -575,11 +575,40 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
         my_log.log2(f'my_genimg:kandinski: {error}\n\n{error_traceback}')
 
 
-def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = ''):
+def get_reprompt(prompt: str, conversation_history: str) -> str:
+    conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
+    conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
+    query = f"""
+User want to create image with text to image generator.
+Repromt user's prompt for image generation.
+Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
+
+User's prompt: {prompt}
+
+Dialog history: {conversation_history}
+"""
+    reprompt = my_gemini.ai(query, temperature=1.2)
+    my_log.log_reprompts(reprompt)
+
+    query2 = f"""
+Does this text look like a user request to generate an image? Yes or No, answer supershort.
+
+Text: {reprompt}
+"""
+    if 'yes' in my_gemini.ai(query2, temperature=0.1).lower():
+        return reprompt
+    else:
+        return prompt
+
+
+def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', conversation_history: str = ''):
     """рисует одновременно всеми доступными способами"""
     #return bing(prompt) + chimera(prompt)
 
     # prompt_tr = gpt_basic.translate_image_prompt(prompt)
+
+    reprompt = get_reprompt(prompt, conversation_history)
+    prompt = reprompt
 
     pool = ThreadPool(processes=6)
 

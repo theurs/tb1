@@ -2962,6 +2962,19 @@ def image_thread(message: telebot.types.Message):
 
         if len(prompt) > 1:
             prompt = prompt[1]
+
+            # get chat history for content
+            conversation_history = ''
+            if chat_id_full not in CHAT_MODE:
+                CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+            if CHAT_MODE[chat_id_full] == 'chatgpt':
+                 conversation_history = gpt_basic.get_mem_as_string(chat_id_full) or ''
+            elif CHAT_MODE[chat_id_full] == 'gemini':
+                conversation_history = my_gemini.get_mem_as_string(chat_id_full) or ''
+            elif CHAT_MODE[chat_id_full] == 'gigachat':
+                conversation_history = my_gigachat.get_mem_as_string(chat_id_full) or ''
+            conversation_history = conversation_history[-8000:]
+
             with ShowAction(message, 'upload_photo'):
                 moderation_flag = gpt_basic.moderation(prompt)
                 if moderation_flag:
@@ -2969,7 +2982,7 @@ def image_thread(message: telebot.types.Message):
                     return
 
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
-                images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full)
+                images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history)
                 # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 medias = []
                 has_good_images = False

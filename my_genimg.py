@@ -361,6 +361,15 @@ def huggin_face_api(prompt: str) -> bytes:
 
 
 def size_of_image(data: bytes):
+    """
+    Calculate the size of an image from the given byte data.
+
+    Args:
+        data (bytes): The byte data of the image.
+
+    Returns:
+        tuple: A tuple containing the width and height of the image.
+    """
     img = PIL.Image.open(io.BytesIO(data))
     return img.size
 
@@ -576,6 +585,14 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
 
 
 def get_reprompt(prompt: str, conversation_history: str) -> str:
+    """
+    Function to get a reprompt for image generation based on user's prompt and conversation history.
+    Parameters:
+    - prompt: a string containing the user's prompt
+    - conversation_history: a string containing the conversation history
+    Returns:
+    - a string representing the reprompt for image generation
+    """
     conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
     conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
     query = f"""

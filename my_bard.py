@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
-# pip install -U git+https://github.com/dsdanielpark/Bard-API.git
 
 
 import threading
 import re
 import requests
 
-from bardapi import Bard
-from bardapi import BardCookies
+from gemini import Gemini, GeminiImage
 
 import cfg
 import my_log
 
-
-# хранилище для ссылок и картинок в ответах [(text, [images], [links]),...]
-REPLIES = []
 
 # хранилище сессий {chat_id(int):session(bardapi.Bard),...}
 DIALOGS = {}
@@ -38,23 +33,18 @@ loop_detector = {}
 
 def get_new_session():
     token = cfg.bard_tokens[current_token]
-    cookie_dict = {
-        "__Secure-1PSID": token[0],
-        "__Secure-1PSIDTS": token[1],
-        "__Secure-1PSIDCC": token[2]
+    cookies = {
+        "__Secure-1PSIDCC": token[0],
+        "__Secure-1PSID":   token[1],
+        "__Secure-1PSIDTS": token[2],
+        "NID":              token[3]
         }
 
     if hasattr(cfg, 'bard_proxies') and cfg.bard_proxies:
         proxies = {"http": cfg.bard_proxies, "https": cfg.bard_proxies}
     else:
         proxies = None
-    # proxies = None
-    
-    session = requests.Session()
-    session.proxies = proxies
-
-    # bard = Bard(token = token[0], proxies = proxies, multi_cookies_bool = True, cookie_dict=cookie_dict, session=session, timeout=60)
-    bard = BardCookies(cookie_dict=cookie_dict, session=session, timeout=60)  
+    bard = Gemini(cookies=cookies, proxies=proxies, timeout=90)
 
     return bard
 
@@ -100,7 +90,7 @@ def chat_request(query: str, dialog: str, reset = False) -> str:
         DIALOGS[dialog] = session
 
     try:
-        response = session.get_answer(query)
+        response = session.generate_content(query)
     except Exception as error:
         print(error)
         my_log.log2(str(error))
@@ -114,68 +104,55 @@ def chat_request(query: str, dialog: str, reset = False) -> str:
             my_log.log2(f'my_bard.py:chat_request:no such key in DIALOGS: {dialog}')
 
         try:
-            response = session.get_answer(query)
+            response = session.generate_content(query)
         except Exception as error2:
             print(error2)
             my_log.log2(str(error2))
             return ''
 
-    result = response['content']
+    result = response.text
+    web_images_ = response.web_images
+    generated_images_ = response.generated_images
+    web_images = []
+    generated_images = []
+    
+    
+    if web_images_:
+        for web_image in web_images_:
+            web_image_url = str(web_image.url)
+            web_image_title = web_image.title
+            web_image_alt = web_image.alt
+            web_images.append((web_image_url, web_image_title, web_image_alt))
+            result = result.replace(web_image_title, ' ')
 
-    # удалить картинки из текста, телеграм все равно не может их показывать посреди текста
-    result = re.sub("\[Image of .*?\]", "", result)
-    result = result.replace("\n\n", "\n")
-    result = result.replace("\n\n", "\n")
+    if generated_images_:
+        token = cfg.bard_tokens[current_token]
+        cookies = {
+            "__Secure-1PSIDCC": token[0],
+            "__Secure-1PSID":   token[1],
+            "__Secure-1PSIDTS": token[2],
+            "NID":              token[3]
+        }
+        bytes_images_dict = GeminiImage.fetch_images_dict_sync(generated_images_, cookies=cookies)
 
-    images = []
-    if response['images']:
-        for key in response['images']:
-            if key:
-                images.append(key)
+        for generated_image in bytes_images_dict.keys():
+            generated_images.append(bytes_images_dict[generated_image])
 
-    links = []
-    if response['links']:
-        for key in response['links']:
-            if key:
-                links.append(key)
+        result = re.sub(r"\[Imagen of .*\]", "", result)
 
-    global REPLIES
-    REPLIES.append((result, images, links))
-    REPLIES = REPLIES[-20:]
-
-    try:
-        links = list(set([x for x in response['links'] if 'http://' not in x]))
-    except Exception as links_error:
-        # вероятно получили ответ с ошибкой слишком частого доступа, надо сменить ключ
-        global current_token
-        if dialog in loop_detector:
-            loop_detector[dialog] += 1
-        else:
-            loop_detector[dialog] = 1
-        if loop_detector[dialog] >= len(cfg.bard_tokens):
-            loop_detector[dialog] = 0
-            return ''
-        current_token += 1
-        if current_token >= len(cfg.bard_tokens):
-            current_token = 0
-        print(links_error)
-        my_log.log2(f'my_bard.py:chat_request:bard token rotated:current_token: {current_token}\n\n{links_error}')
-        chat_request(query, dialog, reset = True)
-        return chat_request(query, dialog, reset)
-
-    return result
+    return result, web_images, generated_images
 
 
 def chat_request_image(query: str, dialog: str, image: bytes, reset = False):
     """
     Function to make a chat request with an image.
-    
+
     Args:
         query (str): The query for the chat request.
         dialog (str): The index of the dialog.
         image (bytes): The image to be used in the chat request.
         reset (bool, optional): Whether to reset the chat dialog. Defaults to False.
-    
+
     Returns:
         str: The response from the chat request.
     """
@@ -190,7 +167,7 @@ def chat_request_image(query: str, dialog: str, image: bytes, reset = False):
         DIALOGS[dialog] = session
 
     try:
-        response = session.ask_about_image(query, image)['content']
+        response = session.generate_content(query, image=image)
     except Exception as error:
         print(error)
         my_log.log2(str(error))
@@ -204,13 +181,13 @@ def chat_request_image(query: str, dialog: str, image: bytes, reset = False):
             my_log.log2(f'my_bard.py:chat:no such key in DIALOGS: {dialog}')
 
         try:
-            response = session.ask_about_image(query, image)['content']
+            response = session.generate_content('query', image=image)
         except Exception as error2:
             print(error2)
             my_log.log2(str(error2))
             return ''
 
-    return response
+    return response.text
 
 
 def chat(query: str, dialog: str, reset: bool = False) -> str:

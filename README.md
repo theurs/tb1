@@ -206,12 +206,13 @@ openai_servers = [
 # openai_proxy = 'http://172.28.1.4:3128'
 
 
-# искать (__Secure-1PSID, __Secure-1PSIDTS, __Secure-1PSIDCC) в куках с сайта https://gemini.google.com/
-# [(__Secure-1PSID, __Secure-1PSIDTS, __Secure-1PSIDCC), ...]
+# искать (__Secure-1PSIDCC, __Secure-1PSID, __Secure-1PSIDTS, NID) в куках с сайта https://gemini.google.com/
+# [(__Secure-1PSIDCC, __Secure-1PSID, __Secure-1PSIDTS, NID), ...]
 bard_tokens = [
     ('xxx',
      'yyy',
-     'zzz'),
+     'zzz',
+     'aaa'),
 ]
 
 

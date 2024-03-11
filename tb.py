@@ -4480,17 +4480,10 @@ def do_task(message, custom_prompt: str = ''):
                     try:
                         answer = tr('No answer from bard.', lang)
                         try:
-                            answer = my_bard.chat(helped_query, chat_id_full)
+                            answer, web_images, generated_images = my_bard.chat(helped_query, chat_id_full)
                         except Exception as bard_error:
                             my_log.log2(f'tb:do_task:bard answer: {bard_error}')
                         WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                        images = []
-                        links = []
-                        for x in my_bard.REPLIES:
-                            if x[0] == answer:
-                                images, links = x[1][:10], x[2]
-                                break
 
                         answer = answer.strip()
                         if answer and (not VOICE_ONLY_MODE[chat_id_full]):
@@ -4498,7 +4491,7 @@ def do_task(message, custom_prompt: str = ''):
                             DEBUG_MD_TO_HTML[answer_] = answer
                             answer = answer_
                         if answer:
-                            my_log.log_echo(message, ('[Bard] ' + answer + '\nPHOTO\n' + '\n'.join(images) + '\nLINKS\n' + '\n'.join(links)).strip())
+                            my_log.log_echo(message, ('[Bard] ' + answer + '\nPHOTO\n' + '\n'.join([x[0] for x in web_images])).strip())
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message), not_log=True, allow_voice=True)
@@ -4507,8 +4500,12 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('bard_chat', message), allow_voice=True)
-                            if images:
-                                images_group = [telebot.types.InputMediaPhoto(i) for i in images]
+                            if web_images:
+                                images_group = [telebot.types.InputMediaPhoto(i) for i in [x[0] for x in web_images]]
+                                photos_ids = bot.send_media_group(message.chat.id, images_group[:10], reply_to_message_id=message.message_id)
+                                log_message(photos_ids)
+                            if generated_images:
+                                images_group = [telebot.types.InputMediaPhoto(i) for i in generated_images]
                                 photos_ids = bot.send_media_group(message.chat.id, images_group[:10], reply_to_message_id=message.message_id)
                                 log_message(photos_ids)
                         else:

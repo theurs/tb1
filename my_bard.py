@@ -67,17 +67,17 @@ def reset_bard_chat(dialog: str):
     return
 
 
-def chat_request(query: str, dialog: str, reset = False) -> str:
+def chat_request(query: str, dialog: str, reset = False):
     """
-    Generates the function comment for the given function body in a markdown code block with the correct language syntax.
+    Function to handle chat requests.
 
     Args:
-        query (str): The query string.
-        dialog (str): The dialog string.
-        reset (bool, optional): Whether to reset the chat. Defaults to False.
+        query (str): The user's input query.
+        dialog (str): The dialog identifier.
+        reset (bool, optional): Whether to reset the dialog state. Defaults to False.
 
     Returns:
-        str: The function comment in markdown format.
+        tuple: A tuple containing the response text, web images, and generated images.
     """
     if reset:
         reset_bard_chat(dialog)
@@ -108,7 +108,7 @@ def chat_request(query: str, dialog: str, reset = False) -> str:
         except Exception as error2:
             print(error2)
             my_log.log2(str(error2))
-            return ''
+            return '', [], []
 
     result = response.text
     web_images_ = response.web_images
@@ -245,6 +245,11 @@ def chat_image(query: str, dialog: str, image: bytes, reset: bool = False) -> st
     return result
 
 
+def generate_images(prompt: str, dialog: str = 'image_gen'):
+    text, web, gen = chat_request(prompt, dialog)
+    return gen
+
+
 def test_chat():
     while 1:
         q = input('you: ')
@@ -258,6 +263,10 @@ if __name__ == "__main__":
     # pass
 
     test_chat()
+
+    for i in generate_images('generate image of wild makeup'):
+        with open(f'{hash(i)}.jpg', 'wb') as f:
+            f.write(i)
 
     # n = -1
 

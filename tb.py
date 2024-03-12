@@ -3048,8 +3048,14 @@ the original prompt:""", lang) + '\n\n\n' + prompt
 
                 if len(medias) > 0:
                     with SEND_IMG_LOCK:
-                        msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
-                        log_message(msgs_ids)
+
+                        # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
+                        chunk_size = 10
+                        chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
+
+                        for x in chunks:
+                            msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
+                            log_message(msgs_ids)
                         update_user_image_counter(chat_id_full, len(medias))
 
                         log_msg = '[Send images] '
@@ -3069,20 +3075,10 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                 if ratio < 70:
                                     bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{utils.nice_hash(chat_id_full)}',
                                                      link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
-                                bot.send_media_group(pics_group, medias)
+                                for x in chunks:
+                                    bot.send_media_group(pics_group, x)
                             except Exception as error2:
                                 my_log.log2(f'tb:image_thread:send to pics_group: {error2}')
-                        # caption = ''
-                        # remember prompt by key (first image number) and save request and images to database
-                        # so that they can be viewed separately later
-                        # IMAGE_PROMPTS[msgs_ids[0].message_id] = prompt
-
-                        # for i in msgs_ids:
-                        #     caption += f'{i.message_id} '
-                        # caption += '\n'
-                        # caption += ', '.join([f'<a href="{x}">PIC</a>' for x in images])
-                        # bot_reply(message, caption, parse_mode = 'HTML', disable_web_page_preview = True, 
-                        #             reply_markup=get_keyboard('hide_image', message))
 
                         if suggest:
                             suggest = [f'{x}'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).strip() for x in suggest.split('\n')]

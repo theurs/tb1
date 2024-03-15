@@ -25,6 +25,10 @@ import my_proxy
 STOP_DAEMON = False
 
 
+# максимальное время для запросов к gemini
+TIMEOUT = 120
+
+
 # блокировка чатов что бы не испортить историю 
 # {id:lock}
 LOCKS = {}
@@ -115,7 +119,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                     session = requests.Session()
                     session.proxies = {"http": proxy, "https": proxy}
                     try:
-                        response = session.post(url, json=data, timeout=60).json()
+                        response = session.post(url, json=data, timeout=TIMEOUT).json()
                         result = response['candidates'][0]['content']['parts'][0]['text']
                         if result:
                             end_time = time.time()
@@ -128,7 +132,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                         continue
             else:
                 try:
-                    response = requests.post(url, json=data, timeout=60).json()
+                    response = requests.post(url, json=data, timeout=TIMEOUT).json()
                     try:
                         result = response['candidates'][0]['content']['parts'][0]['text']
                     except AttributeError:
@@ -258,7 +262,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                     while n > 0:
                         n -= 1
                         try:
-                            response = session.post(url, json=mem_, timeout=60)
+                            response = session.post(url, json=mem_, timeout=TIMEOUT)
                         except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
                             remove_proxy(proxy)
                             c_s = True
@@ -286,7 +290,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                 n = 6
                 while n > 0:
                     n -= 1
-                    response = requests.post(url, json=mem_, timeout=60)
+                    response = requests.post(url, json=mem_, timeout=TIMEOUT)
                     if response.status_code == 200:
                         result = response.json()['candidates'][0]['content']['parts'][0]['text']
                         break
@@ -325,7 +329,7 @@ def get_models() -> str:
                     session = requests.Session()
                     session.proxies = {"http": proxy, "https": proxy}
                     try:
-                        response = session.post(url, timeout=60)
+                        response = session.post(url, timeout=TIMEOUT)
                     except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
                         continue
 
@@ -336,7 +340,7 @@ def get_models() -> str:
                         remove_proxy(proxy)
                         my_log.log2(f'my_gemini:get_models:{proxy} {key} {str(response)} {response.text}')
             else:
-                response = requests.post(url, timeout=60)
+                response = requests.post(url, timeout=TIMEOUT)
                 if response.status_code == 200:
                     result = response.json()###############
                 else:

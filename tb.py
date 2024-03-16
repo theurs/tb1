@@ -1177,6 +1177,10 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button1 = telebot.types.InlineKeyboardButton(tr('❌ Стереть всех сразу ❌', lang), callback_data='reset_all_memory')
         markup.row(button1)
 
+        if hasattr(cfg, 'coze_bot') and cfg.coze_bot:
+            button1 = telebot.types.InlineKeyboardButton("🤜 ChatGPT4 Turbo + Dalle3 (coze.com) 🤛",  url = cfg.coze_bot)
+            markup.row(button1)
+
         button = telebot.types.InlineKeyboardButton(tr('🔍История ChatGPT/Gemini Pro', lang), callback_data='chatGPT_memory_debug')
         markup.add(button)
 

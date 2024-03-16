@@ -3275,7 +3275,6 @@ def alert_thread(message: telebot.types.Message):
                     bot.send_message(chat_id = chat, message_thread_id=thread, text = text, parse_mode='HTML',
                                     disable_notification = True, reply_markup=get_keyboard('translate', message))
                 except Exception as error2:
-                    print(f'tb:alert: {error2}')
                     my_log.log2(f'tb:alert: {error2}')
                 time.sleep(0.3)
             return

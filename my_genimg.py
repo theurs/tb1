@@ -280,7 +280,9 @@ def huggin_face_api(prompt: str) -> bytes:
             # 'playgroundai/playground-v2.5-1024px-aesthetic',
             'playgroundai/playground-v2.5-1024px-aesthetic',
             "multimodalart/stable-cascade",
+            "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
+            "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1",
         ]
 
     prompt_ = prompt

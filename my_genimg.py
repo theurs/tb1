@@ -646,11 +646,13 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
                 try:
                     os.rmdir(f)
                 except Exception as unknown:
-                    my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{f}')
+                    if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
+                        my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{f}')
         shutil.rmtree('/tmp/gradio')
     except Exception as unknown:
         error_traceback = traceback.format_exc()
-        my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
+        if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
+            my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
 
     return result
 

@@ -328,7 +328,7 @@ def huggin_face_api(prompt: str) -> bytes:
             #     print(resp_text[:300])
             if 'read timeout=' in resp_text or "SOCKSHTTPSConnectionPool(host='api-inference.huggingface.co', port=443): Max retries exceeded with url" in resp_text: # и так долго ждали
                 return []
-            if response.content and '{"error"' not in resp_text and len(response.content) > 5000:
+            if response.content and '{"error"' not in resp_text and len(response.content) > 10000:
                 result.append(response.content)
                 WHO_AUTOR[hash(response.content)] = url.split('/')[-1]
                 return result

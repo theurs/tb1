@@ -422,7 +422,7 @@ def playground25(prompt: str, url: str) -> bytes:
     try:
         client = gradio_client.Client("https://playgroundai-playground-v2-5.hf.space/")
     except Exception as error:
-        my_log.log2(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        my_log.log_huggin_face_api(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []
     result = None
     try:
@@ -439,7 +439,7 @@ def playground25(prompt: str, url: str) -> bytes:
         )
     except Exception as error:
         if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log2(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            my_log.log_huggin_face_api(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []
 
     fname = result[0][0]['image']
@@ -453,12 +453,12 @@ def playground25(prompt: str, url: str) -> bytes:
                 os.remove(fname)
                 os.rmdir(base_path)
             except Exception as error:
-                my_log.log2(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
+                my_log.log_huggin_face_api(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
             if data:
                 WHO_AUTOR[hash(data)] = url.split('/')[-1]
                 return [data,]
         except Exception as error:
-            my_log.log2(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            my_log.log_huggin_face_api(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
     return []
 
 
@@ -554,7 +554,10 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
         }
         response = requests.post('https://api-key.fusionbrain.ai/key/api/v1/text2image/run', headers=AUTH_HEADERS, files=data)
         data = response.json()
-        uuid = data['uuid']
+        try:
+            uuid = data['uuid']
+        except KeyError:
+            return []
 
         def check_generation(request_id, attempts=10, delay=10):
             while attempts > 0:

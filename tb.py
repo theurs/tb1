@@ -1134,9 +1134,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
         if CHAT_MODE[chat_id_full] == 'chatgpt':
-            button1 = telebot.types.InlineKeyboardButton('✅ChatGPT 3.5', callback_data='chatGPT_mode_disable')
+            button1 = telebot.types.InlineKeyboardButton('✅ChatGPT 3.5 [16k]', callback_data='chatGPT_mode_disable')
         else:
-            button1 = telebot.types.InlineKeyboardButton('☑️ChatGPT 3.5', callback_data='chatGPT_mode_enable')
+            button1 = telebot.types.InlineKeyboardButton('☑️ChatGPT 3.5 [16k]', callback_data='chatGPT_mode_enable')
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='chatGPT_reset')
         markup.row(button1, button2)
 
@@ -1159,9 +1159,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             markup.row(button1, button2)
 
         if CHAT_MODE[chat_id_full] == 'gemini':
-            button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro', callback_data='gemini_mode_disable')
+            button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro 1.0 [32k]', callback_data='gemini_mode_disable')
         else:
-            button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro', callback_data='gemini_mode_enable')
+            button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro 1.0 [32k]', callback_data='gemini_mode_enable')
 
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
         markup.row(button1, button2)

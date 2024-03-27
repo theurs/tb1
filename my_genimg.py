@@ -52,7 +52,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
         if type(images) == list:
             return images
     except Exception as error_bing_img:
-        my_log.log2(f'my_genimg:bing: {error_bing_img}')
+        my_log.log_bing_img(f'my_genimg:bing: {error_bing_img}')
     return []
 
 
@@ -249,7 +249,7 @@ def stable_duffision_api(prompt: str):
                         my_log.log_stable_diffusion_api(f'{response_json}\n\nPrompt: {prompt}\nAPI key: {api_key}')
     except Exception as unknown:
         error_traceback = traceback.format_exc()
-        my_log.log2(f'my_genimg:stable_diffusion_api: {str(unknown)}\n\n{error_traceback}')
+        my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_api: {str(unknown)}\n\n{error_traceback}')
     return []
 
 
@@ -469,7 +469,7 @@ def stable_cascade(prompt: str, url: str) -> bytes:
     try:
         client = gradio_client.Client(url)
     except Exception as error:
-        my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []
 
     result = None
@@ -489,7 +489,7 @@ def stable_cascade(prompt: str, url: str) -> bytes:
         )
     except Exception as error:
         if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []
 
     fname = result
@@ -503,12 +503,12 @@ def stable_cascade(prompt: str, url: str) -> bytes:
                 os.remove(fname)
                 os.rmdir(base_path)
             except Exception as error:
-                my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+                my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
             if data:
                 WHO_AUTOR[hash(data)] = url.split('/')[-1]
                 return [data,]
         except Exception as error:
-            my_log.log2(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
     return []
 
 

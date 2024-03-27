@@ -69,8 +69,8 @@ def reset_claude_chat(dialog: str):
     try:
         del DIALOGS[dialog]
     except KeyError:
-        print(f'my_claude.py:reset_claude_chat:no such key in DIALOGS: {dialog}')
-        my_log.log2(f'my_claude.py:reset_claude_chat:no such key in DIALOGS: {dialog}')
+        # my_log.log2(f'my_claude.py:reset_claude_chat:no such key in DIALOGS: {dialog}')
+        pass
     return
 
 

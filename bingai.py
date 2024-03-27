@@ -79,13 +79,13 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False, attachme
         try:
             await DIALOGS[dialog].close()
         except KeyError:
-            print(f'bingai.chat_async:1:no such key in DIALOGS: {dialog}')
-            my_log.log2(f'bingai.chat_async:1:no such key in DIALOGS: {dialog}')
+            # my_log.log2(f'bingai.chat_async:1:no such key in DIALOGS: {dialog}')
+            pass
         try:
             del DIALOGS[dialog]
         except KeyError:
-            print(f'bingai.chat_async:2:no such key in DIALOGS: {dialog}')
-            my_log.log2(f'bingai.chat_async:2:no such key in DIALOGS: {dialog}')
+            # my_log.log2(f'bingai.chat_async:2:no such key in DIALOGS: {dialog}')
+            pass
         return
 
     if style == 1:
@@ -122,13 +122,13 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False, attachme
         try:
             await DIALOGS[dialog].close()
         except KeyError:
-            print(f'bingai.chat_async:3:no such key in DIALOGS: {dialog}')
-            my_log.log2(f'bingai.chat_async:3:no such key in DIALOGS: {dialog}')
+            pass
+            # my_log.log2(f'bingai.chat_async:3:no such key in DIALOGS: {dialog}')
         try:
             del DIALOGS[dialog]
         except KeyError:
-            print(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
-            my_log.log2(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
+            # my_log.log2(f'bingai.chat_async:4:no such key in DIALOGS: {dialog}')
+            pass
         try:
             if attachment:
                 r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=False, attachment=attachment)
@@ -137,7 +137,6 @@ async def chat_async(query: str, dialog: str, style = 3, reset = False, attachme
                 r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True, search_result=False)
                 # r = await DIALOGS[dialog].ask(prompt=query, conversation_style=st, simplify_response=True)
         except Exception as error:
-            print(f'bingai.chat_async:2: {error}')
             my_log.log2(f'bingai.chat_async:2: {error}')
             return ''
 

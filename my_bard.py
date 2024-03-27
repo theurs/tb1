@@ -62,8 +62,8 @@ def reset_bard_chat(dialog: str):
     try:
         del DIALOGS[dialog]
     except KeyError:
-        print(f'no such key in DIALOGS: {dialog}')
-        my_log.log2(f'my_bard.py:reset_bard_chat:no such key in DIALOGS: {dialog}')
+        # my_log.log2(f'my_bard.py:reset_bard_chat:no such key in DIALOGS: {dialog}')
+        pass
     return
 
 

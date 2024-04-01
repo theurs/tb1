@@ -687,15 +687,15 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
     async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
 
     async_result2 = pool.apply_async(huggin_face_api, (prompt,))
-    
+
     async_result3 = pool.apply_async(kandinski, (prompt,))
-    
-    async_result4 = pool.apply_async(kandinski, (prompt,))
-    
+
+    #async_result4 = pool.apply_async(kandinski, (prompt,))
+
     async_result5 = pool.apply_async(stability_ai, (prompt,))
     async_result6 = pool.apply_async(stability_ai, (prompt,))
 
-    result = async_result1.get() + async_result5.get() + async_result6.get() + async_result2.get() + async_result3.get() + async_result4.get()
+    result = async_result1.get() + async_result5.get() + async_result6.get() + async_result2.get() + async_result3.get()
 
     # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
     # может удалить то что рисуют параллельные запросы и второй бот?

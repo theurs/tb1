@@ -587,6 +587,16 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
 
 
 def stability_ai(prompt: str = 'An australian cat', amount: int = 1):
+    """
+    Generate stable image using stability.ai API.
+
+    Args:
+        prompt (str): The prompt for generating the stable image.
+        amount (int): The number of stable images to generate.
+
+    Returns:
+        List: A list of stable images generated.
+    """
     if amount > 1:
         result = []
         for i in range(amount):
@@ -617,8 +627,7 @@ def stability_ai(prompt: str = 'An australian cat', amount: int = 1):
             )
 
             if response.status_code == 200:
-                data = base64.b64decode(response.content)
-                WHO_AUTOR[hash(data)] = 'stability.ai'
+                WHO_AUTOR[hash(response.content)] = 'stability.ai'
                 return [response.content, ]
             else:
                 raise Exception(str(response.json()))

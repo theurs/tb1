@@ -276,7 +276,7 @@ def huggin_face_api(prompt: str) -> bytes:
             "multimodalart/stable-cascade",
             "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
-            "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1",
+            # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1",
         ]
 
     prompt_ = prompt
@@ -295,13 +295,13 @@ def huggin_face_api(prompt: str) -> bytes:
         if 'playgroundai/playground-v2.5-1024px-aesthetic' in url:
             try:
                 return playground25(prompt, url)
-            except exception as error:
+            except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:playgroundai/playground-v2.5-1024px-aesthetic: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
         if 'AP123/SDXL-Lightning' in url:
             try:
                 return SDXL_Lightning(prompt, url)
-            except exception as error:
+            except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
 
@@ -675,9 +675,6 @@ Text: {reprompt}
 
 def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', conversation_history: str = ''):
     """рисует одновременно всеми доступными способами"""
-    #return bing(prompt) + chimera(prompt)
-
-    # prompt_tr = gpt_basic.translate_image_prompt(prompt)
 
     reprompt = get_reprompt(prompt, conversation_history)
     prompt = reprompt

@@ -13,8 +13,10 @@ import time
 import traceback
 from multiprocessing.pool import ThreadPool
 
+import cv2
 import gradio_client
 import langdetect
+import numpy as np
 import PIL
 import requests
 from duckduckgo_search import DDGS
@@ -586,6 +588,27 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
         my_log.log_huggin_face_api(f'my_genimg:kandinski: {error}\n\n{error_traceback}')
 
 
+
+def is_blurry(image_bytes: bytes, threshold: int = 100):
+    """
+    Check if the given image is blurry by calculating the Laplacian variance and comparing it with the given threshold.
+
+    Parameters:
+    - image_bytes: bytes, the bytes of the image to be checked for blurriness
+    - threshold: int, the threshold value for the Laplacian variance (default is 100)
+
+    Returns:
+    - bool, True if the image is blurry, False otherwise
+    """
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if image is None:
+        return False
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    laplacian_var = cv2.Laplacian(gray_image, cv2.CV_64F).var()
+    return laplacian_var < threshold
+
+
 def stability_ai(prompt: str = 'An australian cat', amount: int = 1):
     """
     Generate stable image using stability.ai API.
@@ -626,7 +649,7 @@ def stability_ai(prompt: str = 'An australian cat', amount: int = 1):
                 timeout=90,
             )
 
-            if response.status_code == 200:
+            if response.status_code == 200 and not is_blurry(response.content):
                 WHO_AUTOR[hash(response.content)] = 'stability.ai'
                 return [response.content, ]
             else:

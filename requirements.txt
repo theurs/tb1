@@ -19,6 +19,7 @@ langcodes[data]
 natsort
 openai
 openai-whisper
+opencv-python
 websocket-client
 pandas
 Pillow

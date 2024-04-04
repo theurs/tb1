@@ -2168,8 +2168,8 @@ def users_keys_for_gemini(message: telebot.types.Message):
                     if key not in my_gemini.ALL_KEYS and key not in cfg.gemini_keys:
                         my_gemini.ALL_KEYS.append(key)
             bot_reply_tr(message, 'Added keys successfully!')
-    else:
-        bot_reply_tr(message, 'Usage: /keys GEMINI API KEYS space separated\n\nGet it at https://ai.google.dev/')
+            return
+    bot_reply_tr(message, 'Usage: /keys GEMINI API KEYS space separated\n\nGet it at https://ai.google.dev/')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)

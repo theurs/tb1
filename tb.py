@@ -2157,6 +2157,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
     Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл
     """
     chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
 
     args = message.text.split(maxsplit=1)
     if len(args) > 1:
@@ -2169,7 +2170,13 @@ def users_keys_for_gemini(message: telebot.types.Message):
                         my_gemini.ALL_KEYS.append(key)
             bot_reply_tr(message, 'Added keys successfully!')
             return
-    bot_reply_tr(message, 'Usage: /keys GEMINI API KEYS space separated\n\nGet it at https://ai.google.dev/')
+
+    if message.from_user.id in cfg.admins:
+        msg = tr('Total users keys:', lang)
+        msg = f'{msg} {len(my_gemini.ALL_KEYS)}'
+        bot_reply(message, msg)
+
+    bot_reply_tr(message, 'Usage: /keys GEMINI API KEYS space separated\n\nThis bot needs free api keys. Get it at https://ai.google.dev/')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)

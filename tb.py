@@ -2151,6 +2151,26 @@ def original_mode(message: telebot.types.Message):
         bot_reply_tr(message, 'Original mode enabled. Bot will not be informed about place, names, roles etc. It will work same as original chatbot.')
 
 
+@bot.message_handler(commands=['keys'], func=authorized_owner)
+def users_keys_for_gemini(message: telebot.types.Message):
+    """
+    Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл
+    """
+    chat_id_full = get_topic_id(message)
+
+    args = message.text.split(maxsplit=1)
+    if len(args) > 1:
+        keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
+        if keys:
+            with my_gemini.USER_KEYS_LOCK:
+                my_gemini.USER_KEYS[chat_id_full] = keys
+                for key in keys:
+                    if key not in my_gemini.ALL_KEYS and key not in cfg.gemini_keys:
+                        my_gemini.ALL_KEYS.append(key)
+    else:
+        bot_reply_tr(message, 'Usage: /keys GEMINI API KEYS space separated\n\nGet it at https://ai.google.dev/')
+
+
 @bot.message_handler(commands=['style'], func=authorized_owner)
 def change_mode(message: telebot.types.Message):
     """

@@ -25,6 +25,17 @@ import my_proxy
 STOP_DAEMON = False
 
 
+# каждый юзер дает свои ключи и они используются совместно со всеми
+# каждый ключ дает всего 50 запросов в день так что чем больше тем лучше
+# другие ограничения - 32к токенов в минуту, 2 запроса в минуту
+# {full_chat_id as str: list of keys as list of str}
+# {'[2654672534] [0]': ['key1','key2','key3'], ...}
+USER_KEYS = SqliteDict('db/gemini_user_keys.db', autocommit=True)
+# list of all users keys
+ALL_KEYS = []
+USER_KEYS_LOCK = threading.Lock()
+
+
 # максимальное время для запросов к gemini
 TIMEOUT = 120
 
@@ -40,7 +51,11 @@ SAVE_LOCK = threading.Lock()
 MAX_REQUEST = 14000
 
 # максимальный размер истории (32к ограничение Google?)
-MAX_CHAT_SIZE = 25000
+# MAX_CHAT_SIZE = 25000
+MAX_CHAT_SIZE = 20000
+# сколько последних запросов помнить, для экономии токенов (Должно быть >2 и кратно 2)
+# 20 - значит помнить последние 10 запросов и ответов
+MAX_CHAT_LINES = 20
 
 # можно сделать 2 запроса по 15000 в сумме получится запрос размером 30000
 # может быть полезно для сумморизации текстов
@@ -103,7 +118,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
             }
 
         result = ''
-        keys = cfg.gemini_keys[:]
+        keys = cfg.gemini_keys[:]  + ALL_KEYS
         random.shuffle(keys)
 
         proxies = PROXY_POOL[:]
@@ -147,7 +162,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
         return ''
 
 
-def update_mem(query: str, resp: str, mem) -> list:
+def update_mem(query: str, resp: str, mem):
     """
     Update the memory with the given query and response.
 
@@ -167,22 +182,22 @@ def update_mem(query: str, resp: str, mem) -> list:
             CHATS[mem] = []
         mem = CHATS[mem]
 
-    if resp:
-        mem.append({"role": "user", "parts": [{"text": query}]})
-        mem.append({"role": "model", "parts": [{"text": resp}]})
+    mem.append({"role": "user", "parts": [{"text": query}]})
+    mem.append({"role": "model", "parts": [{"text": resp}]})
+    size = 0
+    for x in mem:
+        text = x['parts'][0]['text']
+        size += len(text)
+    while size > MAX_CHAT_SIZE:
+        mem = mem[2:]
         size = 0
         for x in mem:
             text = x['parts'][0]['text']
             size += len(text)
-        while size > MAX_CHAT_SIZE:
-            mem = mem[2:]
-            size = 0
-            for x in mem:
-                text = x['parts'][0]['text']
-                size += len(text)
-        if chat_id:
-            CHATS[chat_id] = mem
-        return mem
+    mem = mem[-MAX_CHAT_LINES:]
+    if chat_id:
+        CHATS[chat_id] = mem
+    return mem
 
 
 def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
@@ -233,7 +248,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
                 }
             }
 
-    keys = cfg.gemini_keys[:]
+    keys = cfg.gemini_keys[:] + ALL_KEYS
     random.shuffle(keys)
     result = ''
 
@@ -315,7 +330,7 @@ def get_models() -> str:
     random.shuffle(keys)
     result = ''
 
-    proxies = PROXY_POOL[:]
+    proxies = PROXY_POOL[:] + ALL_KEYS
     random.shuffle(proxies)
 
     proxy = ''
@@ -661,6 +676,18 @@ def update_proxy_pool_daemon():
             time.sleep(2)
 
 
+def load_users_keys():
+    """
+    Load users' keys into memory and update the list of all keys available.
+    """
+    with USER_KEYS_LOCK:
+        global USER_KEYS, ALL_KEYS
+        for user in USER_KEYS:
+            for key in USER_KEYS[user]:
+                if key not in ALL_KEYS:
+                    ALL_KEYS.append(key)
+
+
 def run_proxy_pool_daemon():
     """
     Run the proxy pool daemon.
@@ -683,6 +710,11 @@ def run_proxy_pool_daemon():
     Returns:
     None
     """
+
+    # сначала загрузить ключи юзеров
+    load_users_keys()
+
+
     global PROXY_POOL
     try:
         proxies = cfg.gemini_proxies

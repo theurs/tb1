@@ -588,7 +588,6 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
         my_log.log_huggin_face_api(f'my_genimg:kandinski: {error}\n\n{error_traceback}')
 
 
-
 def is_blurry(image_bytes: bytes, threshold: int = 100):
     """
     Check if the given image is blurry by calculating the Laplacian variance and comparing it with the given threshold.

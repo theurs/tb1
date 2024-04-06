@@ -279,6 +279,7 @@ def huggin_face_api(prompt: str) -> bytes:
             "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
             # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1",
+            "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
         ]
 
     prompt_ = prompt

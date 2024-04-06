@@ -653,7 +653,10 @@ def stability_ai(prompt: str = 'An australian cat', amount: int = 1):
                 WHO_AUTOR[hash(response.content)] = 'stability.ai'
                 return [response.content, ]
             else:
-                raise Exception(str(response.json()))
+                if 'Expecting value: line 1 column 1 (char 0)' not in response.json():
+                    raise Exception(str(response.json()))
+                else:
+                    return []
     except Exception as error:
         if not ('api.stability.ai' in str(error) and 'Read timed out' in str(error)):
             error_traceback = traceback.format_exc()

@@ -658,7 +658,7 @@ def stability_ai(prompt: str = 'An australian cat', amount: int = 1):
                 else:
                     return []
     except Exception as error:
-        if not ('api.stability.ai' in str(error) and 'Read timed out' in str(error)):
+        if 'Read timed out' not in str(error):
             error_traceback = traceback.format_exc()
             my_log.log_huggin_face_api(f'my_genimg:stability_ai: {error}\n\n{error_traceback}')
 

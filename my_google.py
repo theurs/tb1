@@ -142,7 +142,7 @@ def search_google_v2(query: str, max_search: int = 20, lang: str = 'ru') -> str:
 
     n = 0
     maxn = 10
-    qq = f'User googles for [{query}], you have to anwser if there is a good answer in this text. Answer very short - yes or no.'
+    qq = f'User googles for [{query}], you have to anwser if there is a good positive answer in this text or should we search more. Answer very short - yes or no.'
     qqq = f'User googles for [{query}], compile a good answer using this text only, answer in [{lang}] language.'
     qqqq = f"The user searched for [{query}] on Google but couldn't find anything. Generate a good answer for user."
     for url in urls:

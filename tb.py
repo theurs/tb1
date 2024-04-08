@@ -2986,7 +2986,7 @@ def image_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     with semaphore_talks:
-        draw_text = {tr('draw', lang)}
+        draw_text = tr('draw', lang)
         if lang == 'ru': draw_text = 'нарисуй'
         if lang == 'en': draw_text = 'draw'
         help = f"""/image {tr('Text description of the picture, what to draw.', lang)}

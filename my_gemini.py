@@ -263,7 +263,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '') -> str:
     proxy = ''
     try:
         for key in keys:
-            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + key
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=" + key
 
             if proxies:
                 sort_proxies_by_speed(proxies)

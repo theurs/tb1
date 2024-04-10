@@ -1604,6 +1604,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'gemini_mode_enable' and is_admin_member(call):
+            bot_reply_tr(message, 'This bot needs free API keys to function, but please note that it may not work in all countries. Obtain keys from https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions: https://www.youtube.com/watch?v=6aj5a7qGcb4', lang)
             CHAT_MODE[chat_id_full] = 'gemini'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
@@ -1612,6 +1613,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'gemini15_mode_enable' and is_admin_member(call):
+            bot_reply_tr(message, 'This bot needs free API keys to function, but please note that it may not work in all countries. Obtain keys from https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions: https://www.youtube.com/watch?v=6aj5a7qGcb4', lang)
             CHAT_MODE[chat_id_full] = 'gemini15'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))

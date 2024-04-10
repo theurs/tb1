@@ -722,7 +722,7 @@ def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, ti
             url = f" https://llm.api.cloud.yandex.net:443/operations/{response.json()['id']}"
             while timeout > 0:
                 try:
-                    response = requests.get(url, headers=headers, timeout=10)
+                    response = requests.get(url, headers=headers, timeout=30)
                     if response.status_code == 200:
                         if hasattr(response, 'text'):
                             response = response.json()

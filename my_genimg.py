@@ -747,6 +747,7 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
     random.shuffle(iam_tokens)
     iam_token = get_ynd_iam_token(iam_tokens)
     results = []
+    prompt = 'High detail. ' + prompt
     for _ in range(amount):
         result = yandex_cloud_generate_image_async(iam_token, prompt)
         if result:

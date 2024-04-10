@@ -3320,7 +3320,7 @@ def alert_thread(message: telebot.types.Message):
                     continue
                 if chat_id in BAD_USERS:
                     continue
-                if chat_id not in TRIAL_USERS_COUNTER or TRIAL_USERS_COUNTER[chat_id] < 100:
+                if chat_id not in TRIAL_USERS_COUNTER or TRIAL_USERS_COUNTER[chat_id] < 300:
                     continue
 
                 ids.append(chat_id)

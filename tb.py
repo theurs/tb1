@@ -899,6 +899,7 @@ def disabled_kbd(chat_id_full):
         DISABLED_KBD[chat_id_full] = True
     return DISABLED_KBD[chat_id_full]
 
+
 def bot_reply_tr(message: telebot.types.Message,
               msg: str,
               parse_mode: str = None,
@@ -1162,6 +1163,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro 1.0 [32k]', callback_data='gemini_mode_disable')
         else:
             button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro 1.0 [32k]', callback_data='gemini_mode_enable')
+
+        button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
+        markup.row(button1, button2)
+
+        if CHAT_MODE[chat_id_full] == 'gemini 1.5':
+            button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_disable')
+        else:
+            button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_enable')
 
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
         markup.row(button1, button2)
@@ -1599,6 +1608,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'gemini_mode_disable' and is_admin_member(call):
+            del CHAT_MODE[chat_id_full]
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'gemini15_mode_enable' and is_admin_member(call):
+            CHAT_MODE[chat_id_full] = 'gemini 1.5'
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'gemini15_mode_disable' and is_admin_member(call):
             del CHAT_MODE[chat_id_full]
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
@@ -4421,7 +4438,53 @@ def do_task(message, custom_prompt: str = ''):
                         if chat_id_full not in GEMIMI_TEMP:
                             GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
-                        answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full])
+                        answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
+                                                model = 'gemini-1.0-pro-latest')
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                        flag_gpt_help = False
+                        if not answer:
+                            if not answer:
+                                answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
+                            else:
+                                my_gemini.update_mem(message.text, answer, chat_id_full)
+                                flag_gpt_help = True
+
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
+
+                        if flag_gpt_help:
+                            my_log.log_echo(message, f'[Gemini + gpt_instruct] {answer}')
+                        else:
+                            my_log.log_echo(message, f'[Gemini] {answer}')
+                        try:
+                            bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error:
+                            print(f'tb:do_task: {error}')
+                            my_log.log2(f'tb:do_task: {error}')
+                            bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                    except Exception as error3:
+                        print(error3)
+                        my_log.log2(str(error3))
+                    return
+
+            # если активирован режим общения с Gemini Pro 1.5
+            if chat_mode_ == 'gemini 1.5' and not FIRST_DOT:
+                if len(msg) > my_gemini.MAX_REQUEST:
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                    return
+
+                with ShowAction(message, action):
+                    try:
+                        if chat_id_full not in GEMIMI_TEMP:
+                            GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+
+                        answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
+                                                model = 'gemini-1.5-pro-latest')
                         WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                         flag_gpt_help = False

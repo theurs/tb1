@@ -151,8 +151,8 @@ bot_name = "Бот"
 default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
-# 'bard', 'claude', 'chatgpt', 'gemini', 'gemini 1.5', 'gigachat', 'bing'
-chat_mode_default = 'gemini 1.5'
+# 'bard', 'claude', 'chatgpt', 'gemini', 'gemini15', 'gigachat', 'bing'
+chat_mode_default = 'gemini15'
 
 # default locale, язык на который переводятся все сообщения
 DEFAULT_LANGUAGE = 'ru'

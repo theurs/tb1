@@ -1167,7 +1167,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
         markup.row(button1, button2)
 
-        if CHAT_MODE[chat_id_full] == 'gemini 1.5':
+        if CHAT_MODE[chat_id_full] == 'gemini15':
             button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_disable')
         else:
             button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_enable')
@@ -1612,7 +1612,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'gemini15_mode_enable' and is_admin_member(call):
-            CHAT_MODE[chat_id_full] = 'gemini 1.5'
+            CHAT_MODE[chat_id_full] = 'gemini15'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'gemini15_mode_disable' and is_admin_member(call):
@@ -4473,7 +4473,7 @@ def do_task(message, custom_prompt: str = ''):
                     return
 
             # если активирован режим общения с Gemini Pro 1.5
-            if chat_mode_ == 'gemini 1.5' and not FIRST_DOT:
+            if chat_mode_ == 'gemini15' and not FIRST_DOT:
                 if len(msg) > my_gemini.MAX_REQUEST:
                     bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                     return

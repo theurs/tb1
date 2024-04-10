@@ -209,14 +209,14 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
     - mem (list): A list of previous memory contents.
     - temperature (float): Controls the randomness of the generated content, default is 0.1.
     - proxy_str (str): A string indicating the proxy settings.
-    - model (str): The pretrained model to be used for content generation, default is 'gemini-1.5-pro-latest'.
+    - model (str): The pretrained model to be used for content generation, default is 'gemini-1.0-pro-latest'.
     
     Returns:
     - str: The generated content based on the input question.
     """
     if model == '':
-        model = 'gemini-1.5-pro-latest'
-        # model = 'gemini-1.0-pro-latest'
+        # model = 'gemini-1.5-pro-latest'
+        model = 'gemini-1.0-pro-latest'
         # model = 'gemini-1.0-pro'
         # model = 'gemini-pro'
     global PROXY_POOL, PROXY_POLL_SPEED

@@ -325,7 +325,11 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
     except Exception as unknown_error:
         my_log.log_gemini(f'my_gemini:ai:{unknown_error}')
 
-    return result.strip()
+    answer = result.strip()
+    if not answer and model == 'gemini-1.5-pro-latest':
+        answer = ai(q, mem, temperature, proxy_str, 'gemini-1.0-pro-latest')
+
+    return answer
 
 
 def get_models() -> str:

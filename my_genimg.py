@@ -730,8 +730,7 @@ def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, ti
                                 return response['response']['image']
                 except Exception as error2:
                     error_traceback2 = traceback.format_exc()
-                    print(error2)
-                    print(error_traceback2)
+                    my_log.log_huggin_face_api(f'my_genimg:yandex_cloud_generate_image_async: {error2}\n\n{error_traceback2}')
                 time.sleep(10)
                 timeout -= 10
         else:

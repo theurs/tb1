@@ -721,14 +721,19 @@ def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, ti
         if response.status_code == 200:
             url = f" https://llm.api.cloud.yandex.net:443/operations/{response.json()['id']}"
             while timeout > 0:
-                timeout -= 10
-                response = requests.get(url, headers=headers, timeout=10)
+                try:
+                    response = requests.get(url, headers=headers, timeout=10)
+                    if response.status_code == 200:
+                        if hasattr(response, 'text'):
+                            response = response.json()
+                            if response['done']:
+                                return response['response']['image']
+                except Exception as error2:
+                    error_traceback2 = traceback.format_exc()
+                    print(error2)
+                    print(error_traceback2)
                 time.sleep(10)
-                if response.status_code == 200:
-                    if hasattr(response, 'text'):
-                        response = response.json()
-                        if response['done']:
-                            return response['response']['image']
+                timeout -= 10
         else:
             print(f"Ошибка: {response.status_code}")
     except Exception as error:

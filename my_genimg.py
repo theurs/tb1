@@ -666,6 +666,15 @@ def stability_ai(prompt: str = 'An australian cat', amount: int = 1):
 
 
 def get_ynd_iam_token(oauth_tokens):
+  """
+  Get Yandex IAM token using OAuth tokens.
+
+  Parameters:
+    oauth_tokens (list): List of OAuth tokens.
+
+  Returns:
+    str: Yandex IAM token if successful, None otherwise.
+  """
   url = "https://iam.api.cloud.yandex.net/iam/v1/tokens"
   headers = {"Content-Type": "application/json"}
   for oauth_token in oauth_tokens:
@@ -680,30 +689,60 @@ def get_ynd_iam_token(oauth_tokens):
     return None
 
 
-def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None):
-    url = "https://llm.api.cloud.yandex.net:443/foundationModels/v1/imageGenerationAsync"
-    headers = {"Authorization": f"Bearer {iam_token}"}
-    data = {
-        "model_uri": "art://b1gcvk4tetlvtrjkktek/yandex-art/latest",
-        "messages": [{"text": prompt, "weight": 1}],
-        "generation_options": {"mime_type": "image/jpeg"}
-    }
+def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, timeout: int = 120):
+    """
+    A function to asynchronously generate an image using the Yandex Cloud API.
 
-    if seed:
-        data["generation_options"]["seed"] = seed
-    else:
-        data["generation_options"]["seed"] = random.randint(0, 2**48 - 1)
+    Parameters:
+    - iam_token (str): The IAM token for authentication.
+    - prompt (str): The text prompt for image generation.
+    - seed (int, optional): The seed for random generation. Defaults to None.
+    - timeout (int, optional): The timeout for the API request. Defaults to 120.
 
-    response = requests.post(url, headers=headers, json=data, timeout=120)
+    Returns:
+    - list: list of images as bytes.
+    """
+    try:
+        url = "https://llm.api.cloud.yandex.net:443/foundationModels/v1/imageGenerationAsync"
+        headers = {"Authorization": f"Bearer {iam_token}"}
+        data = {
+            "model_uri": "art://b1gcvk4tetlvtrjkktek/yandex-art/latest",
+            "messages": [{"text": prompt, "weight": 1}],
+            "generation_options": {"mime_type": "image/jpeg"}
+        }
 
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Ошибка: {response.status_code}")
-        return None
+        if seed:
+            data["generation_options"]["seed"] = seed
+        else:
+            data["generation_options"]["seed"] = random.randint(0, 2**48 - 1)
+
+        response = requests.post(url, headers=headers, json=data, timeout=120)
+
+        if response.status_code == 200:
+            url = f" https://llm.api.cloud.yandex.net:443/operations/{response.json()['id']}"
+            while timeout > 0:
+                timeout -= 10
+                response = requests.get(url, headers=headers, timeout=10)
+                time.sleep(10)
+                if response.status_code == 200:
+                    if hasattr(response, 'text'):
+                        response = response.json()
+                        if response['done']:
+                            return response['response']['image']
+        else:
+            print(f"Ошибка: {response.status_code}")
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_huggin_face_api(f'my_genimg:yandex_cloud_generate_image_async: {error}\n\n{error_traceback}')
+    return []
 
 
 def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
+    """
+    Function to generate images using Yandex Cloud API. 
+    Takes a prompt string and an amount of images to generate. 
+    Returns a list of generated images as bytes.
+    """
     iam_tokens = cfg.YND_OAUTH[:]
     random.shuffle(iam_tokens)
     iam_token = get_ynd_iam_token(iam_tokens)
@@ -711,7 +750,9 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
     for _ in range(amount):
         result = yandex_cloud_generate_image_async(iam_token, prompt)
         if result:
-            results.append(result)
+            data = base64.b64decode(result)
+            WHO_AUTOR[hash(data)] = 'shedevrum.ai (yandex cloud)'
+            results.append(data)
     return results
 
 
@@ -762,12 +803,16 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
     async_result2 = pool.apply_async(huggin_face_api, (prompt,))
 
     async_result3 = pool.apply_async(kandinski, (prompt,))
+    
+    async_result4 = pool.apply_async(yandex_cloud, (prompt,))
+    async_result5 = pool.apply_async(yandex_cloud, (prompt,))
 
-    #async_result4 = pool.apply_async(kandinski, (prompt,))
 
     result = (async_result1.get() or []) + \
              (async_result2.get() or []) + \
-             (async_result3.get() or [])
+             (async_result3.get() or []) + \
+             (async_result4.get() or []) + \
+             (async_result5.get() or [])
 
     # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
     # может удалить то что рисуют параллельные запросы и второй бот?
@@ -790,7 +835,7 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
 
 if __name__ == '__main__':
 
-    print(yandex_cloud('An austronaut is sitting on a moon.', 1))
+    open('yan.jpg','wb').write(yandex_cloud('An austronaut is sitting on a moon.', 1)[0])
 
     # print(SDXL_Lightning('An austronaut is sitting on a moon.', 'AP123/SDXL-Lightning'))
 

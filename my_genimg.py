@@ -722,7 +722,7 @@ def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, ti
             url = f" https://llm.api.cloud.yandex.net:443/operations/{response.json()['id']}"
             while timeout > 0:
                 try:
-                    response = requests.get(url, headers=headers, timeout=30)
+                    response = requests.get(url, headers=headers, timeout=20)
                     if response.status_code == 200:
                         if hasattr(response, 'text'):
                             response = response.json()
@@ -731,8 +731,8 @@ def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, ti
                 except Exception as error2:
                     error_traceback2 = traceback.format_exc()
                     my_log.log_huggin_face_api(f'my_genimg:yandex_cloud_generate_image_async: {error2}\n\n{error_traceback2}')
-                time.sleep(10)
-                timeout -= 10
+                time.sleep(20)
+                timeout -= 20
         else:
             print(f"Ошибка: {response.status_code}")
     except Exception as error:

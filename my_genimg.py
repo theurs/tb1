@@ -776,6 +776,7 @@ def get_reprompt(prompt: str, conversation_history: str) -> str:
 User want to create image with text to image generator.
 Repromt user's prompt for image generation.
 Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
+Answer very short but completely grammatically correct and future rich.
 
 User's prompt: {prompt}
 

@@ -665,6 +665,56 @@ def stability_ai(prompt: str = 'An australian cat', amount: int = 1):
     return []
 
 
+def get_ynd_iam_token(oauth_tokens):
+  url = "https://iam.api.cloud.yandex.net/iam/v1/tokens"
+  headers = {"Content-Type": "application/json"}
+  for oauth_token in oauth_tokens:
+    data = {"yandexPassportOauthToken": oauth_token}
+
+    response = requests.post(url, headers=headers, json=data, timeout=10)
+
+    if response.status_code == 200:
+        return response.json()['iamToken']
+    else:
+        my_log.log2(f'my_genimg:get_ynd_iam_token: {response.status_code} {oauth_token}')
+    return None
+
+
+def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None):
+    url = "https://llm.api.cloud.yandex.net:443/foundationModels/v1/imageGenerationAsync"
+    headers = {"Authorization": f"Bearer {iam_token}"}
+    data = {
+        "model_uri": "art://b1gcvk4tetlvtrjkktek/yandex-art/latest",
+        "messages": [{"text": prompt, "weight": 1}],
+        "generation_options": {"mime_type": "image/jpeg"}
+    }
+
+    if seed:
+        data["generation_options"]["seed"] = seed
+    else:
+        data["generation_options"]["seed"] = random.randint(0, 2**48 - 1)
+
+    response = requests.post(url, headers=headers, json=data, timeout=120)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Ошибка: {response.status_code}")
+        return None
+
+
+def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
+    iam_tokens = cfg.YND_OAUTH[:]
+    random.shuffle(iam_tokens)
+    iam_token = get_ynd_iam_token(iam_tokens)
+    results = []
+    for _ in range(amount):
+        result = yandex_cloud_generate_image_async(iam_token, prompt)
+        if result:
+            results.append(result)
+    return results
+
+
 def get_reprompt(prompt: str, conversation_history: str) -> str:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
@@ -740,9 +790,11 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
 
 if __name__ == '__main__':
 
+    print(yandex_cloud('An austronaut is sitting on a moon.', 1))
+
     # print(SDXL_Lightning('An austronaut is sitting on a moon.', 'AP123/SDXL-Lightning'))
 
-    print(stability_ai('An austronaut is sitting on a moon.', 4))    
+    # print(stability_ai('An austronaut is sitting on a moon.', 4))    
 
     # if len(sys.argv) > 1:
     #     t = ' '.join(sys.argv[1:])

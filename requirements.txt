@@ -1,4 +1,5 @@
 # attrs==23.1.0
+bingart
 bs4
 chardet
 # claude-api

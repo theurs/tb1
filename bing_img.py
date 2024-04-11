@@ -9,6 +9,7 @@ import re
 import requests
 from sqlitedict import SqliteDict
 from fake_useragent import UserAgent
+from bingart import BingArt
 
 import cfg
 import my_log
@@ -185,6 +186,35 @@ def get_images(prompt: str,
     return normal_image_links
 
 
+def get_images_v2(prompt: str,
+               u_cookie: str,
+               proxy: str = None,
+               timeout: int = 60,
+               max_generate_time_sec: int = 60):
+
+    results = []
+    cookies = [x for x in COOKIE.items()]
+    if cookies:
+        c = random.choice(cookies)[0]
+
+        bing_art = BingArt(auth_cookie_U=c)
+
+        try:
+            results = bing_art.generate_images(prompt)
+        except Exception as error:
+            if 'Your prompt has been rejected' in str(error):
+                BAD_IMAGES_PROMPT[prompt] = True
+            my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
+        finally:
+            bing_art.close_session()
+            
+    if results:
+        results = [image['url'] for image in results['images']]
+        my_log.log_bing_success(f'{u_cookie}\n{proxy}\n{prompt}\n{results}')
+
+    return results
+
+
 def gen_images(query: str, user_id: str = ''):
     """
     Generate images based on the given query.
@@ -226,7 +256,8 @@ def gen_images(query: str, user_id: str = ''):
                     random.shuffle(proxies)
                     for proxy in proxies:
                         try:
-                            return get_images(query, cookie, proxy)
+                            # return get_images(query, cookie, proxy)
+                            return get_images_v2(query, cookie, proxy)
                         except Exception as error:
                             if 'location' in str(error) or 'timeout' in str(error) or 'Out of generate time' in str(error):
                                 my_log.log_bing_img(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
@@ -238,7 +269,8 @@ def gen_images(query: str, user_id: str = ''):
                                 my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
                 else:
                     try:
-                        return get_images(query, cookie)
+                        # return get_images(query, cookie)
+                        return get_images_v2(query, cookie)
                     except Exception as error:
                         if 'location' in str(error) or 'timeout' in str(error) or 'Out of generate time' in str(error):
                             my_log.log_bing_img(f'get_images: {error} Cookie: {cookie}')

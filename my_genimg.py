@@ -841,7 +841,7 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
 
 if __name__ == '__main__':
 
-    open('yan.jpg','wb').write(yandex_cloud('An austronaut is sitting on a moon.', 1)[0])
+    print (bing_v2('An austronaut is sitting on a moon.', moderation_flag=False, user_id='test1'))
 
     # print(SDXL_Lightning('An austronaut is sitting on a moon.', 'AP123/SDXL-Lightning'))
 

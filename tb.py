@@ -2197,7 +2197,8 @@ def users_keys_for_gemini(message: telebot.types.Message):
         msg = f'{msg} {len(my_gemini.ALL_KEYS)}'
         bot_reply(message, msg)
 
-    bot_reply_tr(message, 'Usage: /keys GEMINI API KEYS space separated\n\nThis bot needs free api keys. Get it at https://ai.google.dev/ \n\nHowto video https://www.youtube.com/watch?v=6aj5a7qGcb4 ', disable_web_page_preview = True)
+    msg = tr('Usage: /keys GEMINI API KEYS space separated\n\nThis bot needs free api keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + 'https://www.youtube.com/watch?v=6aj5a7qGcb4'
+    bot_reply(message, msg, disable_web_page_preview = True)
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)

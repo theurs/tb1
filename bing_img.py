@@ -15,7 +15,9 @@ import cfg
 import my_log
 
 
-# BIG_LOCK = threading.Lock()
+# {cookie str: threading.Lock()}
+COOKIE_LOCKS = {}
+
 
 # limit user to 3 concurrent requests
 # {id: threading.Semaphore(3)}
@@ -196,18 +198,20 @@ def get_images_v2(prompt: str,
     cookies = [x for x in COOKIE.items()]
     if cookies:
         c = random.choice(cookies)[0]
+        if c not in COOKIE_LOCKS:
+            COOKIE_LOCKS[c] = threading.Lock()
 
-        bing_art = BingArt(auth_cookie_U=c)
+        with COOKIE_LOCKS[c]:
+            bing_art = BingArt(auth_cookie_U=c)
+            try:
+                results = bing_art.generate_images(prompt)
+            except Exception as error:
+                if 'Your prompt has been rejected' in str(error):
+                    BAD_IMAGES_PROMPT[prompt] = True
+                my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
+            finally:
+                bing_art.close_session()
 
-        try:
-            results = bing_art.generate_images(prompt)
-        except Exception as error:
-            if 'Your prompt has been rejected' in str(error):
-                BAD_IMAGES_PROMPT[prompt] = True
-            my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
-        finally:
-            bing_art.close_session()
-            
     if results:
         results = [image['url'] for image in results['images']]
         my_log.log_bing_success(f'{u_cookie}\n{proxy}\n{prompt}\n{results}')

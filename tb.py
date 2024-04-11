@@ -1302,7 +1302,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть историю"
             if CHAT_MODE[chat_id_full] == 'chatgpt':
                 gpt_basic.chat_reset(chat_id_full)
-            elif CHAT_MODE[chat_id_full] == 'gemini':
+            elif 'gemini' in CHAT_MODE[chat_id_full]:
                 my_gemini.reset(chat_id_full)
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
@@ -2380,7 +2380,7 @@ def reset_(message):
     if chat_id_full in CHAT_MODE:
         if CHAT_MODE[chat_id_full] == 'bard':
             my_bard.reset_bard_chat(chat_id_full)
-        if CHAT_MODE[chat_id_full] == 'gemini':
+        if 'gemini' in CHAT_MODE[chat_id_full]:
             my_gemini.reset(chat_id_full)
         if CHAT_MODE[chat_id_full] == 'bing':
             bingai.reset_bing_chat(chat_id_full)
@@ -2523,7 +2523,7 @@ def send_debug_history(message: telebot.types.Message):
     if CHAT_MODE[chat_id_full] == 'chatgpt':
         prompt = 'ChatGPT\n\n'
         prompt += gpt_basic.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-    elif CHAT_MODE[chat_id_full] == 'gemini':
+    elif 'gemini' in CHAT_MODE[chat_id_full]:
         prompt = 'Gemini Pro\n\n'
         prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
     elif CHAT_MODE[chat_id_full] == 'gigachat':

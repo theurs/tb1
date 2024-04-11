@@ -68,6 +68,9 @@ semaphore_talks = threading.Semaphore(500)
 if not os.path.exists('db'):
     os.mkdir('db')
 
+# запоминаем время последнего обращения к боту
+LAST_TIME_ACCESS = SqliteDict('db/last_time_access.db', autocommit=True)
+
 # сколько дней триальный период
 TRIAL_DAYS = cfg.TRIAL_DAYS if hasattr(cfg, 'TRIAL_DAYS') else 7
 TRIAL_MESSAGES = cfg.TRIAL_MESSAGES if hasattr(cfg, 'TRIAL_MESSAGES') else 300
@@ -797,6 +800,8 @@ def authorized(message: telebot.types.Message) -> bool:
         return False
 
     chat_id_full = get_topic_id(message)
+
+    LAST_TIME_ACCESS[chat_id_full] = time.time()
 
     # trottle only messages addressed to me
     is_private = message.chat.type == 'private'
@@ -3325,7 +3330,11 @@ def alert_thread(message: telebot.types.Message):
                     continue
                 if chat_id in BAD_USERS:
                     continue
-                if chat_id not in TRIAL_USERS_COUNTER or TRIAL_USERS_COUNTER[chat_id] < 300:
+                # только тех кто сделал больше 100 запросов
+                if chat_id not in TRIAL_USERS_COUNTER or TRIAL_USERS_COUNTER[chat_id] < 100:
+                    continue
+                # только тех кто был активен в течение 48 часов
+                if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*48) < time.time():
                     continue
 
                 ids.append(chat_id)

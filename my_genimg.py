@@ -714,7 +714,7 @@ def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, ti
         if seed:
             data["generation_options"]["seed"] = seed
         else:
-            data["generation_options"]["seed"] = random.randint(0, 2**48 - 1)
+            data["generation_options"]["seed"] = random.randint(0, 2**64 - 1)
 
         response = requests.post(url, headers=headers, json=data, timeout=120)
 
@@ -751,7 +751,7 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
     random.shuffle(iam_tokens)
     iam_token = get_ynd_iam_token(iam_tokens)
     results = []
-    prompt = 'High detail. ' + prompt
+    prompt = 'High detail, high quality. ' + prompt
     for _ in range(amount):
         result = yandex_cloud_generate_image_async(iam_token, prompt)
         if result:

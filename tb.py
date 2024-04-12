@@ -3219,7 +3219,7 @@ def stats_thread(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    last_time_access = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24) < time.time()]
+    last_time_access = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24) > time.time()]
     msg = tr('Активны за последние 24 часа:', lang) + ' ' + str(len(last_time_access))
     bot_reply(message, msg)
 

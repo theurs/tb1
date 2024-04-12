@@ -689,7 +689,7 @@ def get_ynd_iam_token(oauth_tokens):
     return None
 
 
-def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, timeout: int = 120):
+def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, timeout: int = 60):
     """
     A function to asynchronously generate an image using the Yandex Cloud API.
 
@@ -716,10 +716,11 @@ def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, ti
         else:
             data["generation_options"]["seed"] = random.randint(0, 2**64 - 1)
 
-        response = requests.post(url, headers=headers, json=data, timeout=120)
+        response = requests.post(url, headers=headers, json=data, timeout=20)
 
         if response.status_code == 200:
             url = f" https://llm.api.cloud.yandex.net:443/operations/{response.json()['id']}"
+            time.sleep(30)
             while timeout > 0:
                 try:
                     response = requests.get(url, headers=headers, timeout=20)
@@ -730,7 +731,10 @@ def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, ti
                                 return response['response']['image']
                 except Exception as error2:
                     error_traceback2 = traceback.format_exc()
-                    my_log.log_huggin_face_api(f'my_genimg:yandex_cloud_generate_image_async: {error2}\n\n{error_traceback2}')
+                    if 'Read timed out.' in str(error2) or 'Read timed out.' in str(error_traceback2):
+                        pass
+                    else:
+                        my_log.log_huggin_face_api(f'my_genimg:yandex_cloud_generate_image_async: {error2}\n\n{error_traceback2}')
                 time.sleep(20)
                 timeout -= 20
         else:

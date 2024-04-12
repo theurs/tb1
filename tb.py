@@ -3318,7 +3318,8 @@ def alert_thread(message: telebot.types.Message):
             text = f'<b>{tr("Широковещательное сообщение от Верховного Адмнистратора, не обращайте внимания", lang)}</b>' + '\n\n\n' + text
 
             ids = []
-            for x, _ in my_gemini.CHATS.items():
+            all_users = set(list(my_gemini.CHATS.items() + CHAT_MODE.items()))
+            for x, _ in all_users:
                 x = x.replace('[','').replace(']','')
                 chat = int(x.split()[0])
                 # if chat not in cfg.admins:

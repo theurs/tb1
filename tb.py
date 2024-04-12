@@ -3223,7 +3223,7 @@ def stats_thread(message: telebot.types.Message):
     msg = tr('Активны за последние 24 часа:', lang) + ' ' + str(len(last_time_access))
     bot_reply(message, msg)
 
-    users = [x for x in CHAT_MODE.keys() if x in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[x] > 0]
+    users = [x for x in my_gemini.CHATS.keys() if x in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[x] > 0]
     users_sorted = natsorted(users, lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else TRIAL_MESSAGES, reverse = True)
     users_text = ''
     pt = prettytable.PrettyTable(

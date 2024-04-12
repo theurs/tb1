@@ -3318,7 +3318,7 @@ def alert_thread(message: telebot.types.Message):
             text = f'<b>{tr("Широковещательное сообщение от Верховного Адмнистратора, не обращайте внимания", lang)}</b>' + '\n\n\n' + text
 
             ids = []
-            for x, _ in CHAT_MODE.items():
+            for x, _ in my_gemini.CHATS.items():
                 x = x.replace('[','').replace(']','')
                 chat = int(x.split()[0])
                 # if chat not in cfg.admins:
@@ -3338,13 +3338,14 @@ def alert_thread(message: telebot.types.Message):
                 if chat_id not in TRIAL_USERS_COUNTER or TRIAL_USERS_COUNTER[chat_id] < 100:
                     continue
                 # только тех кто был активен в течение 48 часов
-                if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*48) < time.time():
+                if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*48) > time.time():
                     continue
 
                 ids.append(chat_id)
                 try:
                     bot.send_message(chat_id = chat, message_thread_id=thread, text = text, parse_mode='HTML',
                                     disable_notification = True, reply_markup=get_keyboard('translate', message))
+                    my_log.log2(f'tb:alert: sent to {chat_id}')
                 except Exception as error2:
                     my_log.log2(f'tb:alert: {error2}')
                 time.sleep(0.3)

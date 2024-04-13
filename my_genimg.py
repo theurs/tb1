@@ -281,7 +281,6 @@ def huggin_face_api(prompt: str) -> bytes:
             # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1",
             #"https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
             "multimodalart/cosxl",
-            "cocktailpeanut/cosxl",
         ]
 
     prompt_ = prompt
@@ -774,7 +773,7 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
 
 def cosxl(prompt: str, url: str) -> bytes:
     """
-    url = "multimodalart/cosxl" only? and 'cocktailpeanut/cosxl'?
+    url = "multimodalart/cosxl" only?
     """
     try:
         client = gradio_client.Client(url)

@@ -279,7 +279,9 @@ def huggin_face_api(prompt: str) -> bytes:
             "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
             # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1",
-            "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
+            #"https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
+            "multimodalart/cosxl",
+            "multimodalart/cosxl",
         ]
 
     prompt_ = prompt
@@ -290,6 +292,11 @@ def huggin_face_api(prompt: str) -> bytes:
     payload = json.dumps({"inputs": prompt})
 
     def request_img(prompt, url, p):
+        if 'cosxl' in url:
+            try:
+                return cosxl(prompt)
+            except:
+                return []
         if 'stable-cascade' in url:
             try:
                 return stable_cascade(prompt, url)
@@ -765,6 +772,44 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
     return results
 
 
+def cosxl(prompt: str, url: str = 'multimodalart/cosxl') -> bytes:
+    """
+    url = "multimodalart/cosxl" only?
+    """
+    try:
+        client = gradio_client.Client(url)
+    except Exception as error:
+        my_log.log_huggin_face_api(f'my_genimg:cosxl: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    result = None
+    try:
+        result = client.predict(prompt, "", 7, api_name="/run_normal")
+    except Exception as error:
+        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
+            my_log.log_huggin_face_api(f'my_genimg:cosxl: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    fname = result
+    base_path = os.path.dirname(fname)
+    if fname:
+        try:
+            data = None
+            with open(fname, 'rb') as f:
+                data = f.read()
+            try:
+                os.remove(fname)
+                os.rmdir(base_path)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:cosxl: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            if data:
+                WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                return [data,]
+        except Exception as error:
+            my_log.log_huggin_face_api(f'my_genimg:cosxl: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return []
+
+
 def get_reprompt(prompt: str, conversation_history: str) -> str:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
@@ -845,7 +890,7 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
 
 if __name__ == '__main__':
 
-    print (bing_v2('An austronaut is sitting on a moon.', moderation_flag=False, user_id='test1'))
+    print(cosxl('An austronaut is sitting on a moon.'))
 
     # print(SDXL_Lightning('An austronaut is sitting on a moon.', 'AP123/SDXL-Lightning'))
 

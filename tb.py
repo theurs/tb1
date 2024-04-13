@@ -3695,6 +3695,10 @@ def purge_cmd_handler(message: telebot.types.Message):
             gpt_basic.chat_reset(chat_id_full)
             my_gigachat.reset(chat_id_full)
             bingai.reset_bing_chat(chat_id_full)
+            # if chat_id_full in my_gemini.USER_KEYS:
+            #     for key in my_gemini.USER_KEYS[chat_id_full]:
+            #         my_gemini.ALL_KEYS.remove(key)
+            #     del my_gemini.USER_KEYS[chat_id_full]
 
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT

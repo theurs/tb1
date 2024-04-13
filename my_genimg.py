@@ -281,7 +281,7 @@ def huggin_face_api(prompt: str) -> bytes:
             # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1",
             #"https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
             "multimodalart/cosxl",
-            "multimodalart/cosxl",
+            "cocktailpeanut/cosxl",
         ]
 
     prompt_ = prompt
@@ -294,7 +294,7 @@ def huggin_face_api(prompt: str) -> bytes:
     def request_img(prompt, url, p):
         if 'cosxl' in url:
             try:
-                return cosxl(prompt)
+                return cosxl(prompt, url)
             except:
                 return []
         if 'stable-cascade' in url:
@@ -772,9 +772,9 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
     return results
 
 
-def cosxl(prompt: str, url: str = 'multimodalart/cosxl') -> bytes:
+def cosxl(prompt: str, url: str) -> bytes:
     """
-    url = "multimodalart/cosxl" only?
+    url = "multimodalart/cosxl" only? and 'cocktailpeanut/cosxl'?
     """
     try:
         client = gradio_client.Client(url)

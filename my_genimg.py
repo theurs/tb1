@@ -278,9 +278,8 @@ def huggin_face_api(prompt: str) -> bytes:
             "multimodalart/stable-cascade",
             "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
-            # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1",
-            #"https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
-            "multimodalart/cosxl",
+            "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
+            # "multimodalart/cosxl",
         ]
 
     prompt_ = prompt

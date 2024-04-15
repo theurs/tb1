@@ -3230,11 +3230,11 @@ def stats_thread(message: telebot.types.Message):
     last_time_access_24 = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24) > time.time()]
     msg = tr('Активны за последние 24 часа:', lang) + ' ' + str(len(last_time_access_24)) + '\n\n'
     last_time_access_48 = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*48) > time.time()]
-    msg = tr('Активны за последние 48 часов:', lang) + ' ' + str(len(last_time_access_48)) + '\n\n'
+    msg += tr('Активны за последние 48 часов:', lang) + ' ' + str(len(last_time_access_48)) + '\n\n'
     last_time_access_7d = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24*7) > time.time()]
-    msg = tr('Активны за последние 7 дней:', lang) + ' ' + str(len(last_time_access_7d)) + '\n\n'
+    msg += tr('Активны за последние 7 дней:', lang) + ' ' + str(len(last_time_access_7d)) + '\n\n'
     last_time_access_30d = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24*30) > time.time()]
-    msg = tr('Активны за последние 30 дней:', lang) + ' ' + str(len(last_time_access_30d))
+    msg += tr('Активны за последние 30 дней:', lang) + ' ' + str(len(last_time_access_30d))
     bot_reply(message, msg)
 
     users = [x for x in my_gemini.CHATS.keys() if x in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[x] > 0]

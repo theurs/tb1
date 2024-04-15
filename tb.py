@@ -4132,6 +4132,13 @@ def do_task(message, custom_prompt: str = ''):
         is_private = True
 
     chat_mode_ = CHAT_MODE[chat_id_full]
+
+    # обработка \image это неправильное /image
+    if message.text.startswith('\\image ') and is_private:
+        message.text = message.text.replace('/', '\\', 1)
+        image(message)
+        return
+
     # не обрабатывать неизвестные команды, если они не в привате, в привате можно обработать их как простой текст
     chat_bot_cmd_was_used = False
     if message.text.startswith('/'):

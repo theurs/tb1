@@ -3773,7 +3773,7 @@ def id_cmd_handler(message: telebot.types.Message):
         # msg += f'{d}\n'
     if chat_full_id in BAD_USERS:
         msg += f'\n{tr("User was banned.", lang)}\n'
-    if str(message.chat.id) in DDOS_BLOCKED_USERS:
+    if str(message.chat.id) in DDOS_BLOCKED_USERS and chat_full_id not in BAD_USERS:
         msg += f'\n{tr("User was temporarily banned.", lang)}\n'
     bot_reply(message, msg)
 

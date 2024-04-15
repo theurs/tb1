@@ -4540,9 +4540,9 @@ def do_task(message, custom_prompt: str = ''):
                             answer = answer_
 
                         if flag_gpt_help:
-                            my_log.log_echo(message, f'[Gemini + gpt_instruct] {answer}')
+                            my_log.log_echo(message, f'[Gemini15 + gpt_instruct] {answer}')
                         else:
-                            my_log.log_echo(message, f'[Gemini] {answer}')
+                            my_log.log_echo(message, f'[Gemini15] {answer}')
                         try:
                             bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                     reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)

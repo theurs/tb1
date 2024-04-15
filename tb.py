@@ -3237,6 +3237,17 @@ def stats_thread(message: telebot.types.Message):
     msg += tr('Активны за последние 30 дней:', lang) + ' ' + str(len(last_time_access_30d))
     bot_reply(message, msg)
 
+
+@bot.message_handler(commands=['stats2'], func=authorized_admin)
+def stats2_admin(message: telebot.types.Message):
+    """Показывает статистику использования бота."""
+    thread = threading.Thread(target=stats2_thread, args=(message,))
+    thread.start()
+def stats2_thread(message: telebot.types.Message):
+    """Показывает статистику использования бота."""
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+
     users = [x for x in my_gemini.CHATS.keys() if x in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[x] > 0]
     users_sorted = natsorted(users, lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else TRIAL_MESSAGES, reverse = True)
     users_text = ''

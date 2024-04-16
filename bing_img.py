@@ -34,7 +34,8 @@ COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 # {cookie:datetime, ...}
 
 # storage of requests that Bing rejected, they cannot be repeated
-BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
+# BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
+BAD_IMAGES_PROMPT = {}
 
 ua = UserAgent(browsers=["edge"])
 BING_URL = "https://www.bing.com"

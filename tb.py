@@ -3037,6 +3037,7 @@ def image_thread(message: telebot.types.Message):
 
         if len(prompt) > 1:
             prompt = prompt[1]
+            COMMAND_MODE[chat_id_full] = ''
 
             # get chat history for content
             conversation_history = ''

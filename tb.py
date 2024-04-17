@@ -97,6 +97,10 @@ BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
 # 'bard', 'claude', 'chatgpt', 'gemini'
 CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 
+# учет сообщений, кто с кем и сколько говорил
+# {chat_mode: (user_id, time)}
+CHAT_STATS = SqliteDict('db/chat_stats.db', autocommit=True)
+
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
 BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
 
@@ -3231,8 +3235,58 @@ def stats_thread(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
+    gemini15_msg_total_24 = 0
+    gemini15_msg_total_48 = 0
+    gemini15_msg_total_7d = 0
+    gemini15_msg_total_30d = 0
+
+    gemini10_msg_total_24 = 0
+    gemini10_msg_total_48 = 0
+    gemini10_msg_total_7d = 0
+    gemini10_msg_total_30d = 0
+
+    chatgpt_msg_total_24 = 0
+    chatgpt_msg_total_48 = 0
+    chatgpt_msg_total_7d = 0
+    chatgpt_msg_total_30d = 0
+
+    for chat_mode in CHAT_STATS.keys():
+        time_ = time.time()
+        item = CHAT_STATS[chat_mode]
+        if chat_mode == 'gemini15':
+            if time_ > item[1]+(3600*24):
+                gemini15_msg_total_24 += item[1]
+            if time_ > item[1]+(3600*48):
+                gemini15_msg_total_48 += item[1]
+            if time_ > item[1]+(3600*24*7):
+                gemini15_msg_total_7d += item[1]
+            if time_ > item[1]+(3600*24*30):
+                gemini15_msg_total_30d += item[1]
+        if chat_mode == 'gemini10':
+            if time_ > item[1]+(3600*24):
+                gemini10_msg_total_24 += item[1]
+            if time_ > item[1]+(3600*48):
+                gemini10_msg_total_48 += item[1]
+            if time_ > item[1]+(3600*24*7):
+                gemini10_msg_total_7d += item[1]
+            if time_ > item[1]+(3600*24*30):
+                gemini10_msg_total_30d += item[1]
+        if chat_mode == 'chatgpt':
+            if time_ > item[1]+(3600*24):
+                chatgpt_msg_total_24 += item[1]
+            if time_ > item[1]+(3600*48):
+                chatgpt_msg_total_48 += item[1]
+            if time_ > item[1]+(3600*24*7):
+                chatgpt_msg_total_7d += item[1]
+            if time_ > item[1]+(3600*24*30):
+                chatgpt_msg_total_30d += item[1]
+
+    msg = tr('gemini-1.5 24h/28h/7d/30d:', lang) + f'{gemini15_msg_total_7d}/{gemini15_msg_total_48}/{gemini15_msg_total_24}/{gemini15_msg_total_30d}\n\n'
+    msg += tr('gemini-1.0 24h/28h/7d/30d:', lang) + f'{gemini10_msg_total_7d}/{gemini10_msg_total_48}/{gemini10_msg_total_24}/{gemini10_msg_total_30d}\n\n'
+    msg += tr('chatgpt-3.5 24h/28h/7d/30d:', lang) + f'{chatgpt_msg_total_7d}/{chatgpt_msg_total_48}/{chatgpt_msg_total_24}/{chatgpt_msg_total_30d}\n\n'
+
     last_time_access_24 = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24) > time.time()]
-    msg = tr('Активны за последние 24 часа:', lang) + ' ' + str(len(last_time_access_24)) + '\n\n'
+    msg += tr('Активны за последние 24 часа:', lang) + ' ' + str(len(last_time_access_24)) + '\n\n'
     last_time_access_48 = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*48) > time.time()]
     msg += tr('Активны за последние 48 часов:', lang) + ' ' + str(len(last_time_access_48)) + '\n\n'
     last_time_access_7d = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24*7) > time.time()]
@@ -4482,10 +4536,13 @@ def do_task(message, custom_prompt: str = ''):
             else:
                 helped_query = f'{hidden_text} {message.text}'
 
-
             WHO_ANSWERED[chat_id_full] = chat_mode_
             time_to_answer_start = time.time()
 
+            if FIRST_DOT:
+                CHAT_STATS['chatgpt'] = (chat_id_full, time.time())
+            else:
+                CHAT_STATS[chat_mode_] = (chat_id_full, time.time())
 
             # если активирован режим общения с Gemini Pro
             if chat_mode_ == 'gemini' and not FIRST_DOT:
@@ -4627,7 +4684,6 @@ def do_task(message, custom_prompt: str = ''):
                         traceback_error = traceback.format_exc()
                         my_log.log2(f'{str(error3)}\n\n{traceback_error}')
                     return
-
 
             # если активирован режим общения с бард чатом
             if chat_mode_ == 'bard' and not FIRST_DOT:

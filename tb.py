@@ -98,7 +98,7 @@ BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
 CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 
 # учет сообщений, кто с кем и сколько говорил
-# {chat_mode: (user_id, time)}
+# {time: (user_id, chat_mode)}
 CHAT_STATS = SqliteDict('db/chat_stats.db', autocommit=True)
 
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
@@ -3250,35 +3250,36 @@ def stats_thread(message: telebot.types.Message):
     chatgpt_msg_total_7d = 0
     chatgpt_msg_total_30d = 0
 
-    for chat_mode in CHAT_STATS.keys():
+    for time__ in CHAT_STATS.keys():
         time_ = time.time()
-        item = CHAT_STATS[chat_mode]
+        item = CHAT_STATS[time__]
+        chat_mode = item[1]
         if chat_mode == 'gemini15':
-            if item[1]+(3600*24) > time_:
+            if time__+(3600*24) > time_:
                 gemini15_msg_total_24 += 1
-            if item[1]+(3600*48) > time_:
+            if time__+(3600*48) > time_:
                 gemini15_msg_total_48 += 1
-            if item[1]+(3600*24*7) > time_:
+            if time__+(3600*24*7) > time_:
                 gemini15_msg_total_7d += 1
-            if item[1]+(3600*24*30) > time_:
+            if time__+(3600*24*30) > time_:
                 gemini15_msg_total_30d += 1
         if chat_mode == 'gemini10':
-            if item[1]+(3600*24) > time_:
+            if time__+(3600*24) > time_:
                 gemini10_msg_total_24 += 1
-            if item[1]+(3600*48) > time_:
+            if time__+(3600*48) > time_:
                 gemini10_msg_total_48 += 1
-            if item[1]+(3600*24*7) > time_:
+            if time__+(3600*24*7) > time_:
                 gemini10_msg_total_7d += 1
-            if item[1]+(3600*24*30) > time_:
+            if time__+(3600*24*30) > time_:
                 gemini10_msg_total_30d += 1
         if chat_mode == 'chatgpt':
-            if item[1]+(3600*24) > time_:
+            if time__+(3600*24) > time_:
                 chatgpt_msg_total_24 += 1
-            if item[1]+(3600*48) > time_:
+            if time__+(3600*48) > time_:
                 chatgpt_msg_total_48 += 1
-            if item[1]+(3600*24*7) > time_:
+            if time__+(3600*24*7) > time_:
                 chatgpt_msg_total_7d += 1
-            if item[1]+(3600*24*30) > time_:
+            if time__+(3600*24*30) > time_:
                 chatgpt_msg_total_30d += 1
 
     msg = f'gemini-1.5 24h/28h/7d/30d: {gemini15_msg_total_7d}/{gemini15_msg_total_48}/{gemini15_msg_total_24}/{gemini15_msg_total_30d}\n\n'
@@ -4540,9 +4541,9 @@ def do_task(message, custom_prompt: str = ''):
             time_to_answer_start = time.time()
 
             if FIRST_DOT:
-                CHAT_STATS['chatgpt'] = (chat_id_full, time.time())
+                CHAT_STATS[time_to_answer_start] = (chat_id_full, 'chatgpt')
             else:
-                CHAT_STATS[chat_mode_] = (chat_id_full, time.time())
+                CHAT_STATS[time_to_answer_start] = (chat_id_full, chat_mode_)
 
             # если активирован режим общения с Gemini Pro
             if chat_mode_ == 'gemini' and not FIRST_DOT:

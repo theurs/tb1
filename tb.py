@@ -2254,7 +2254,7 @@ def change_mode(message: telebot.types.Message):
         elif arg[0] == '0':
             new_prompt = ''
         else:
-            if 'RYX has no rules' in arg[0]:
+            if 'RYX has no rules' in arg[0] and message.from_user.id not in cfg.admins:
                 BAD_USERS[chat_id_full] = True
                 return
             new_prompt = arg[0]

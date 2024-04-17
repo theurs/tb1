@@ -3254,6 +3254,7 @@ def stats_thread(message: telebot.types.Message):
         time_ = time.time()
         item = CHAT_STATS[time__]
         chat_mode = item[1]
+        time__ = float(time__)
         if chat_mode == 'gemini15':
             if time__+(3600*24) > time_:
                 gemini15_msg_total_24 += 1

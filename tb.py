@@ -3255,31 +3255,31 @@ def stats_thread(message: telebot.types.Message):
         item = CHAT_STATS[chat_mode]
         if chat_mode == 'gemini15':
             if item[1]+(3600*24) > time_:
-                gemini15_msg_total_24 += item[1]
+                gemini15_msg_total_24 += 1
             if item[1]+(3600*48) > time_:
-                gemini15_msg_total_48 += item[1]
+                gemini15_msg_total_48 += 1
             if item[1]+(3600*24*7) > time_:
-                gemini15_msg_total_7d += item[1]
+                gemini15_msg_total_7d += 1
             if item[1]+(3600*24*30) > time_:
-                gemini15_msg_total_30d += item[1]
+                gemini15_msg_total_30d += 1
         if chat_mode == 'gemini10':
             if item[1]+(3600*24) > time_:
-                gemini10_msg_total_24 += item[1]
+                gemini10_msg_total_24 += 1
             if item[1]+(3600*48) > time_:
-                gemini10_msg_total_48 += item[1]
+                gemini10_msg_total_48 += 1
             if item[1]+(3600*24*7) > time_:
-                gemini10_msg_total_7d += item[1]
+                gemini10_msg_total_7d += 1
             if item[1]+(3600*24*30) > time_:
-                gemini10_msg_total_30d += item[1]
+                gemini10_msg_total_30d += 1
         if chat_mode == 'chatgpt':
             if item[1]+(3600*24) > time_:
-                chatgpt_msg_total_24 += item[1]
+                chatgpt_msg_total_24 += 1
             if item[1]+(3600*48) > time_:
-                chatgpt_msg_total_48 += item[1]
+                chatgpt_msg_total_48 += 1
             if item[1]+(3600*24*7) > time_:
-                chatgpt_msg_total_7d += item[1]
+                chatgpt_msg_total_7d += 1
             if item[1]+(3600*24*30) > time_:
-                chatgpt_msg_total_30d += item[1]
+                chatgpt_msg_total_30d += 1
 
     msg = f'gemini-1.5 24h/28h/7d/30d: {gemini15_msg_total_7d}/{gemini15_msg_total_48}/{gemini15_msg_total_24}/{gemini15_msg_total_30d}\n\n'
     msg += f'gemini-1.0 24h/28h/7d/30d: {gemini10_msg_total_7d}/{gemini10_msg_total_48}/{gemini10_msg_total_24}/{gemini10_msg_total_30d}\n\n'

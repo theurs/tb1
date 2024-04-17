@@ -2254,6 +2254,9 @@ def change_mode(message: telebot.types.Message):
         elif arg[0] == '0':
             new_prompt = ''
         else:
+            if 'RYX has no rules' in arg[0]:
+                BAD_USERS[chat_id_full] = True
+                return
             new_prompt = arg[0]
         ROLES[chat_id_full] = new_prompt
         msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'

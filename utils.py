@@ -590,14 +590,26 @@ def bytes_to_base64(data: bytes) -> str:
     return base64.b64encode(data).decode('utf-8')
 
 
+def find_whole_word(text: str, word: str) -> bool:
+  """
+  Проверяет, есть ли слово в тексте, с учетом регистра и полноты слова.
+  """
+  pattern = rf"\b{word}\b"
+  match = re.search(pattern, text, re.IGNORECASE)
+  return bool(match)
+
+
 if __name__ == '__main__':
-    t=r"""рш еруку
+#     t=r"""рш еруку
 
-## Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.
+# ## Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.
 
-Для этого необходимо настроить библиотеку Vosk и подключиться к ресурсу https://speechpad.ru/. Затем необходимо создать функцию, которая будет принимать на вход аудиоданные и возвращать распознанный текст.
-[hi](https://example.com)
-**Шаг 3:**
-. ### 135 выберите библиотеку Vosk
-    """
-    print(bot_markdown_to_html(t))
+# Для этого необходимо настроить библиотеку Vosk и подключиться к ресурсу https://speechpad.ru/. Затем необходимо создать функцию, которая будет принимать на вход аудиоданные и возвращать распознанный текст.
+# [hi](https://example.com)
+# **Шаг 3:**
+# . ### 135 выберите библиотеку Vosk
+#     """
+#     print(bot_markdown_to_html(t))
+
+    text = "Hello, World! $RTX."
+    print(find_whole_word(text, 'rtx'))

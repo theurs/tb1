@@ -208,6 +208,7 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub('^## (.*)$', '<b>\\1</b>', text, flags=re.MULTILINE)
     # точка пробел три хеша и пробел в начале тоже делать жирным
     text = re.sub('^\. ### (.*)$', '<b>\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^\.  ### (.*)$', '<b>\\1</b>', text, flags=re.MULTILINE)
 
     # 1 или 2 * в <b></b>
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
@@ -600,16 +601,13 @@ def find_whole_word(text: str, word: str) -> bool:
 
 
 if __name__ == '__main__':
-#     t=r"""рш еруку
+    t=r"""рш еруку
 
-# ## Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.
+## Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.
 
-# Для этого необходимо настроить библиотеку Vosk и подключиться к ресурсу https://speechpad.ru/. Затем необходимо создать функцию, которая будет принимать на вход аудиоданные и возвращать распознанный текст.
-# [hi](https://example.com)
-# **Шаг 3:**
-# . ### 135 выберите библиотеку Vosk
-#     """
-#     print(bot_markdown_to_html(t))
-
-    text = "Hello, World! $RTX."
-    print(find_whole_word(text, 'rtx'))
+Для этого необходимо настроить библиотеку Vosk и подключиться к ресурсу https://speechpad.ru/. Затем необходимо создать функцию, которая будет принимать на вход аудиоданные и возвращать распознанный текст.
+[hi](https://example.com)
+**Шаг 3:**
+. ### 135 выберите библиотеку Vosk
+    """
+    print(bot_markdown_to_html(t))

@@ -4159,7 +4159,10 @@ def do_task(message, custom_prompt: str = ''):
         return
 
     # detect /tts command
-    if message.text.lower().startswith('/tts ') or message.text.lower().startswith(f'/tts@{_bot_name} '):
+    if message.text.lower().startswith('/tts ') \
+        or message.text.lower().startswith(f'/tts@{_bot_name} ') \
+        or message.text.lower().strip() == '/tts' \
+        or message.text.lower().strip() == f'/tts@{_bot_name}':
         tts(message)
         return
 

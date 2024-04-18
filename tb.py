@@ -4140,7 +4140,7 @@ def do_task(message, custom_prompt: str = ''):
     if chat_id_full not in MESSAGE_QUEUE:
         MESSAGE_QUEUE[chat_id_full] = message.text
         last_state = MESSAGE_QUEUE[chat_id_full]
-        n = 5
+        n = 10
         while n > 0:
             n -= 1
             time.sleep(0.1)

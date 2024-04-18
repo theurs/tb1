@@ -2781,7 +2781,7 @@ def set_new_model_thread(message: telebot.types.Message):
     bot_reply(message, msg, parse_mode='Markdown')
 
 
-@bot.message_handler(commands=['tts'], func=authorized)
+# @bot.message_handler(commands=['tts'], func=authorized)
 def tts(message: telebot.types.Message, caption = None):
     thread = threading.Thread(target=tts_thread, args=(message,caption))
     thread.start()
@@ -4156,6 +4156,11 @@ def do_task(message, custom_prompt: str = ''):
         if u_id_ in request_counter.counts:
             if request_counter.counts[u_id_]:
                 request_counter.counts[u_id_].pop(0)
+        return
+
+    # detect /tts command
+    if message.text.lower().startswith('/tts ') or message.text.lower().startswith(f'/tts@{_bot_name} '):
+        tts(message)
         return
 
     b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')

@@ -3283,9 +3283,9 @@ def stats_thread(message: telebot.types.Message):
             if time__+(3600*24*30) > time_:
                 chatgpt_msg_total_30d += 1
 
-    msg = f'gemini-1.5 24h/28h/7d/30d: {gemini15_msg_total_7d}/{gemini15_msg_total_48}/{gemini15_msg_total_24}/{gemini15_msg_total_30d}\n\n'
-    msg += f'gemini-1.0 24h/28h/7d/30d: {gemini10_msg_total_7d}/{gemini10_msg_total_48}/{gemini10_msg_total_24}/{gemini10_msg_total_30d}\n\n'
-    msg += f'chatgpt-3.5 24h/28h/7d/30d: {chatgpt_msg_total_7d}/{chatgpt_msg_total_48}/{chatgpt_msg_total_24}/{chatgpt_msg_total_30d}\n\n'
+    msg = f'gemini-1.5 24h/48h/7d/30d: {gemini15_msg_total_7d}/{gemini15_msg_total_48}/{gemini15_msg_total_7d}/{gemini15_msg_total_30d}\n\n'
+    msg += f'gemini-1.0 24h/48h/7d/30d: {gemini10_msg_total_7d}/{gemini10_msg_total_48}/{gemini10_msg_total_7d}/{gemini10_msg_total_30d}\n\n'
+    msg += f'chatgpt-3.5 24h/48h/7d/30d: {chatgpt_msg_total_7d}/{chatgpt_msg_total_48}/{chatgpt_msg_total_7d}/{chatgpt_msg_total_30d}\n\n'
 
     last_time_access_24 = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24) > time.time()]
     msg += tr('Активны за последние 24 часа:', lang) + ' ' + str(len(last_time_access_24)) + '\n\n'

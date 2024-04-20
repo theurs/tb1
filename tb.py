@@ -3423,8 +3423,8 @@ def alert_thread(message: telebot.types.Message):
                 # только тех кто сделал больше 100 запросов
                 if chat_id not in TRIAL_USERS_COUNTER or TRIAL_USERS_COUNTER[chat_id] < 100:
                     continue
-                # только тех кто был активен в течение 48 часов
-                if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*48) > time.time():
+                # только тех кто был активен в течение 7 дней
+                if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*7*24) > time.time():
                     continue
 
                 ids.append(chat_id)

@@ -3431,8 +3431,8 @@ def alert_thread(message: telebot.types.Message):
 
                 ids.append(chat_id)
                 try:
-                    # bot.send_message(chat_id = chat, message_thread_id=thread, text = text, parse_mode='HTML',
-                    #                 disable_notification = True, reply_markup=get_keyboard('translate', message))
+                    bot.send_message(chat_id = chat, message_thread_id=thread, text = text, parse_mode='HTML',
+                                    disable_notification = True, reply_markup=get_keyboard('translate', message))
                     my_log.log2(f'tb:alert: sent to {chat_id}')
                 except Exception as error2:
                     my_log.log2(f'tb:alert: {error2}')

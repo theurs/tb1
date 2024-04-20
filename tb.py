@@ -3403,8 +3403,10 @@ def alert_thread(message: telebot.types.Message):
             text = f'<b>{tr("Широковещательное сообщение от Верховного Адмнистратора, не обращайте внимания", lang)}</b>' + '\n\n\n' + text
 
             ids = []
-            all_users = set(list([x for x in my_gemini.CHATS.items()] + [x for x in CHAT_MODE.items()]))
-            for x, _ in all_users:
+            all_users = [x[0] for x in my_gemini.CHATS.items()] + [x[0] for x in CHAT_MODE.items()]
+            all_users = list(set(CHAT_MODE.items()))
+            for x in all_users:
+                x = x[0]
                 x = x.replace('[','').replace(']','')
                 chat = int(x.split()[0])
                 # if chat not in cfg.admins:
@@ -3424,7 +3426,7 @@ def alert_thread(message: telebot.types.Message):
                 if chat_id not in TRIAL_USERS_COUNTER or TRIAL_USERS_COUNTER[chat_id] < 100:
                     continue
                 # только тех кто был активен в течение 7 дней
-                if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*7*24) > time.time():
+                if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*7*24) < time.time():
                     continue
 
                 ids.append(chat_id)
@@ -3435,6 +3437,7 @@ def alert_thread(message: telebot.types.Message):
                 except Exception as error2:
                     my_log.log2(f'tb:alert: {error2}')
                 time.sleep(0.3)
+            bot_reply(message, 'Sent to: ' + ', '.join(ids) + '\n\nTotal: ' + str(len(ids)))
             return
 
     bot_reply_tr(message, '/alert <текст сообщения которое бот отправит всем кого знает, форматирование маркдаун> Только администраторы могут использовать эту команду')

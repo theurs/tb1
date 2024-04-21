@@ -3066,6 +3066,8 @@ def image_thread(message: telebot.types.Message):
 
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
                 images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history)
+                # 1 а может и больше запросы к репромптеру
+                CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                 # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                 medias = []
                 has_good_images = False
@@ -3114,6 +3116,8 @@ def image_thread(message: telebot.types.Message):
                 if chat_id_full not in SUGGEST_ENABLED:
                     SUGGEST_ENABLED[chat_id_full] = False
                 if medias and SUGGEST_ENABLED[chat_id_full]:
+                    # 1 запрос на генерацию предложений
+                    CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                     suggest_query = tr("""Suggest a wide range options for a request to a neural network that
 generates images according to the description, show 5 options with no numbers and trailing symbols, add many details, 1 on 1 line, output example:
 
@@ -4163,7 +4167,9 @@ def do_task(message, custom_prompt: str = ''):
 
     # detect /tts command
     if message.text.lower().startswith('/tts ') \
+        message.text.lower().startswith('/tts\n') \
         or message.text.lower().startswith(f'/tts@{_bot_name} ') \
+        or message.text.lower().startswith(f'/tts@{_bot_name}\n') \
         or message.text.lower().strip() == '/tts' \
         or message.text.lower().strip() == f'/tts@{_bot_name}':
         tts(message)

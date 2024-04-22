@@ -855,20 +855,22 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
     pool = ThreadPool(processes=6)
 
     async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
-
-    async_result2 = pool.apply_async(huggin_face_api, (prompt,))
-
-    async_result3 = pool.apply_async(kandinski, (prompt,))
     
-    async_result4 = pool.apply_async(yandex_cloud, (prompt,))
+    async_result2 = pool.apply_async(kandinski, (prompt,))
+    async_result3 = pool.apply_async(kandinski, (prompt,))
+
+    async_result4 = pool.apply_async(huggin_face_api, (prompt,))
+
     async_result5 = pool.apply_async(yandex_cloud, (prompt,))
+    async_result6 = pool.apply_async(yandex_cloud, (prompt,))
 
 
     result = (async_result1.get() or []) + \
              (async_result2.get() or []) + \
              (async_result3.get() or []) + \
              (async_result4.get() or []) + \
-             (async_result5.get() or [])
+             (async_result5.get() or []) + \
+             (async_result6.get() or [])
 
     # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
     # может удалить то что рисуют параллельные запросы и второй бот?
@@ -890,25 +892,5 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
 
 
 if __name__ == '__main__':
-
-    print(cosxl('An austronaut is sitting on a moon.'))
-
-    # print(SDXL_Lightning('An austronaut is sitting on a moon.', 'AP123/SDXL-Lightning'))
-
-    # print(stability_ai('An austronaut is sitting on a moon.', 4))    
-
-    # if len(sys.argv) > 1:
-    #     t = ' '.join(sys.argv[1:])
-    # else:
-    #     t = my_gemini.ai('Write a prompt for drawing a beautiful picture, make one sentence.', temperature=1)
-
-    # n=0
-
-    # r = str(random.randint(1000000000,9000000000))
-    # starttime=time.time()
-    # print(t)
-    # for x in huggin_face_api(t):
-    #     n+=1
-    #     open(f'{n} - {r}.jpg','wb').write(x)
-    # endtime=time.time()
-    # print(round(endtime - starttime, 2))
+    imgs = kandinski('собака кусака')
+    open('kandinski1.jpg', 'wb').write(imgs[0])

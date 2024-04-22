@@ -4228,7 +4228,8 @@ def do_task(message, custom_prompt: str = ''):
     chat_mode_ = CHAT_MODE[chat_id_full]
 
     # обработка \image это неправильное /image
-    if message.text.startswith('\\image ') and is_private:
+    if (message.text.startswith('\\image ') and is_private) \
+       or (message.text.startswith('\\Image ') and is_private):
         message.text = message.text.replace('/', '\\', 1)
         image(message)
         return

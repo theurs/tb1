@@ -546,9 +546,9 @@ def is_admin_member(message: telebot.types.Message):
 
 def is_for_me(message: telebot.types.Message):
     """Checks who the command is addressed to, this bot or another one.
-    
+
     /cmd@botname args
-    
+
     Returns (True/False, 'the same command but without the bot name').
     If there is no bot name at all, assumes that the command is addressed to this bot.
     """

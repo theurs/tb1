@@ -4175,16 +4175,6 @@ def do_task(message, custom_prompt: str = ''):
                 request_counter.counts[u_id_].pop(0)
         return
 
-    # detect /tts command
-    if message.text.lower().startswith('/tts ') \
-        or message.text.lower().startswith('/tts\n') \
-        or message.text.lower().startswith(f'/tts@{_bot_name} ') \
-        or message.text.lower().startswith(f'/tts@{_bot_name}\n') \
-        or message.text.lower().strip() == '/tts' \
-        or message.text.lower().strip() == f'/tts@{_bot_name}':
-        tts(message)
-        return
-
     b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
     b_msg_search = tr('🌐 Найди', lang, 'это кнопка в телеграм боте для поиска в гугле, после того как юзер на нее нажимает бот спрашивает у него что надо найти, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
     b_msg_summary = tr('📋 Перескажи', lang, 'это кнопка в телеграм боте для пересказа текста, после того как юзер на нее нажимает бот спрашивает у него ссылку на текст или файл с текстом, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
@@ -4234,6 +4224,16 @@ def do_task(message, custom_prompt: str = ''):
     # if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
     if SUPER_CHAT[chat_id_full] == 1:
         is_private = True
+
+    # detect /tts command
+    if (message.text.lower().startswith('/tts ') and is_private) \
+       or (message.text.lower().startswith('/tts\n') and is_private) \
+       or message.text.lower().startswith(f'/tts@{_bot_name} ') \
+       or message.text.lower().startswith(f'/tts@{_bot_name}\n') \
+       or (message.text.lower().strip() == '/tts' and is_private) \
+       or message.text.lower().strip() == f'/tts@{_bot_name}':
+        tts(message)
+        return
 
     chat_mode_ = CHAT_MODE[chat_id_full]
 

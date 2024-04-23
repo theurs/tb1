@@ -544,7 +544,7 @@ def is_admin_member(message: telebot.types.Message):
     return True if 'creator' in member or 'administrator' in member else False
 
 
-def is_for_me(cmd: str):
+def is_for_me(message: telebot.types.Message):
     """Checks who the command is addressed to, this bot or another one.
     
     /cmd@botname args
@@ -552,6 +552,16 @@ def is_for_me(cmd: str):
     Returns (True/False, 'the same command but without the bot name').
     If there is no bot name at all, assumes that the command is addressed to this bot.
     """
+    cmd = message.text
+    is_private = message.chat.type == 'private'
+
+    # если не в привате, то есть в чате
+    if not is_private:
+        if message.text.lower().startswith('/'):
+            cmd_ = message.text.lower().split(maxsplit=1)[0].strip()
+            # и если команда не обращена к этому боту
+            if not cmd_.endswith(f'@{_bot_name}'):
+                return (False, cmd)
 
     # for not text command (audio, video, documents etc)
     if not cmd:
@@ -573,7 +583,7 @@ def is_for_me(cmd: str):
         return (True, cmd)
 
 
-def log_message(message):
+def log_message(message: telebot.types.Message):
     try:
         if not hasattr(cfg, 'LOGS_GROUP') or not cfg.LOGS_GROUP:
             return
@@ -777,8 +787,8 @@ def authorized(message: telebot.types.Message) -> bool:
     """
 
     # do not process commands to another bot /cmd@botname args
-    if is_for_me(message.text)[0]:
-        message.text = is_for_me(message.text)[1]
+    if is_for_me(message)[0]:
+        message.text = is_for_me(message)[1]
     else:
         return False
 
@@ -870,8 +880,8 @@ def authorized_log(message: telebot.types.Message) -> bool:
     """
 
     # do not process commands to another bot /cmd@botname args
-    if is_for_me(message.text)[0]:
-        message.text = is_for_me(message.text)[1]
+    if is_for_me(message)[0]:
+        message.text = is_for_me(message)[1]
     else:
         return False
 

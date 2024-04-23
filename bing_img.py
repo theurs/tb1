@@ -9,7 +9,7 @@ import re
 import requests
 from sqlitedict import SqliteDict
 from fake_useragent import UserAgent
-from bingart import BingArt
+from my_bingart import BingArt
 
 import cfg
 import my_log

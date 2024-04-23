@@ -272,16 +272,16 @@ def huggin_face_api(prompt: str) -> bytes:
         API_URL = cfg.huggin_face_models_urls
     else:
         API_URL = [
+            'playgroundai/playground-v2.5-1024px-aesthetic',
             "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
             'AP123/SDXL-Lightning',
-            'playgroundai/playground-v2.5-1024px-aesthetic',
             "multimodalart/stable-cascade",
             "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
             "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
-            "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
-            "https://api-inference.huggingface.co/models/KBlueLeaf/Kohaku-XL-Epsilon",
-            # "multimodalart/cosxl",
+            # "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
+            # "https://api-inference.huggingface.co/models/KBlueLeaf/Kohaku-XL-Epsilon",
+            ### "multimodalart/cosxl",
         ]
 
     prompt_ = prompt

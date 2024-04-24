@@ -40,7 +40,8 @@ class BingArt:
         if proxy_:
             self.proxy = {"http": proxy_, "https": proxy_}
 
-        self.session.proxies.update(self.proxy)
+        if self.proxy:
+            self.session.proxies.update(self.proxy)
 
         if auto:
             self.auth_cookie_U, self.auth_cookie_KievRPSSecAuth = self.get_auth_cookies()

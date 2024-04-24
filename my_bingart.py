@@ -1,9 +1,12 @@
+import random
 import requests
 import re
 import time
 import psutil
 import browser_cookie_3x as bc
 from urllib.parse import urlencode
+
+import cfg
 
 TIMEOUT = 120
 
@@ -23,10 +26,21 @@ class BingArt:
         bc.opera_gx: 'launcher.exe'
     }
 
-    def __init__(self, auth_cookie_U, auth_cookie_KievRPSSecAuth=None, auto=False):
+    def __init__(self, auth_cookie_U, auth_cookie_KievRPSSecAuth=None, auto=False, timeout_ = None, proxy_ = None):
         self.session = requests.Session()
         self.base_url = 'https://www.bing.com/images/create'
-        self.timeout = TIMEOUT
+        self.timeout = timeout_ or TIMEOUT
+
+        self.proxy = None
+
+        if hasattr(cfg, 'bing_proxy') and cfg.bing_proxy:
+            bing_proxy = random.choice(cfg.bing_proxy)
+            self.proxy = {"http": bing_proxy, "https": bing_proxy}
+
+        if proxy_:
+            self.proxy = {"http": proxy_, "https": proxy_}
+
+        self.session.proxies.update(self.proxy)
 
         if auto:
             self.auth_cookie_U, self.auth_cookie_KievRPSSecAuth = self.get_auth_cookies()

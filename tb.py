@@ -3027,7 +3027,7 @@ def get_user_image_counter(chat_id_full: str) -> int:
     return IMAGES_BY_USER_COUNTER[chat_id_full]
 
 
-@bot.message_handler(commands=['image','img', 'Image', 'Img', 'i', 'I', 'Image', 'Img', 'imagine', 'imagine:', 'generate', 'gen', 'Imagine', 'Imagine:', 'Generate', 'Gen'], func=authorized)
+@bot.message_handler(commands=['image','img', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen'], func=authorized)
 def image(message: telebot.types.Message):
     thread = threading.Thread(target=image_thread, args=(message,))
     thread.start()

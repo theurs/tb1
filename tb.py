@@ -782,6 +782,7 @@ def check_subscription(message: telebot.types.Message) -> bool:
     """проверка обязательной подписки на канал"""
 
     current_time = time.time()
+    u_id = message.from_user.id
 
     try:
         # имеет смысл только в привате?
@@ -791,7 +792,6 @@ def check_subscription(message: telebot.types.Message) -> bool:
         if hasattr(cfg, 'subscribe_channel_id') \
             and hasattr(cfg, 'subscribe_channel_mes') \
             and hasattr(cfg, 'subscribe_channel_time'):
-            u_id = message.from_user.id
 
             # Проверяем, есть ли пользователь в кэше и не истекло ли время
             if u_id in subscription_cache and current_time - subscription_cache[u_id] < cfg.subscribe_channel_cache:

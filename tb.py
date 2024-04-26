@@ -3967,7 +3967,7 @@ def dump_translation_thread(message: telebot.types.Message):
                 my_log.log2(f'ERROR: {error}')
 
 
-@bot.message_handler(commands=['enable'], func=authorized_admin)
+@bot.message_handler(commands=['enable'], func=authorized_owner)
 def enable_chat(message: telebot.types.Message):
     """что бы бот работал в чате надо его активировать там"""
     chat_full_id = get_topic_id(message)
@@ -3975,7 +3975,7 @@ def enable_chat(message: telebot.types.Message):
     bot_reply_tr(message, 'Chat enabled.')
 
 
-@bot.message_handler(commands=['disable'], func=authorized_admin)
+@bot.message_handler(commands=['disable'], func=authorized_owner)
 def disable_chat(message: telebot.types.Message):
     """что бы бот не работал в чате надо его деактивировать там"""
     chat_full_id = get_topic_id(message)

@@ -164,6 +164,9 @@ CACHE_CHECK_PHONE = {}
 # {user_id:lang(2 symbol codes)}
 LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
 
+# Глобальный массив для хранения состояния подписки (user_id: timestamp)
+subscription_cache = {}
+
 # хранилище для переводов сообщений сделанных гугл переводчиком
 # key: (text, lang)
 # value: translated text
@@ -775,6 +778,37 @@ def authorized_callback(call: telebot.types.CallbackQuery) -> bool:
     return True
 
 
+def check_subscription(message: telebot.types.Message) -> bool:
+    """проверка обязательной подписки на канал"""
+
+    current_time = time.time()
+
+    try:
+        # имеет смысл только в привате?
+        if message.chat.type != 'private':
+            return True
+
+        if hasattr(cfg, 'subscribe_channel_id') \
+            and hasattr(cfg, 'subscribe_channel_mes') \
+            and hasattr(cfg, 'subscribe_channel_time'):
+            u_id = message.from_user.id
+
+            # Проверяем, есть ли пользователь в кэше и не истекло ли время
+            if u_id in subscription_cache and current_time - subscription_cache[u_id] < cfg.subscribe_channel_time:
+                return True  # Пользователь подписан (по кэшу)
+            st = bot.get_chat_member(cfg.subscribe_channel_id, u_id).status
+            if not st:
+                bot_reply_tr(message, cfg.subscribe_channel_mes)
+                return False
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'tb:check_blocks: {error}\n\n{error_traceback}\n\n{u_id}')
+
+    # Пользователь подписан, обновляем кэш
+    subscription_cache[u_id] = current_time
+    return True
+
+
 def authorized(message: telebot.types.Message) -> bool:
     """
     Check if the user is authorized based on the given message.
@@ -870,6 +904,9 @@ def authorized(message: telebot.types.Message) -> bool:
             if not trial_status(message):
                 return False
         # check for blocking and throttling
+
+    if not check_subscription(message):
+        return False
 
     return True
 

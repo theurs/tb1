@@ -123,6 +123,9 @@ IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=Tru
 # {chat_id: True/False}
 SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
 
+# что бы бот работал в публичном чате администратор должен его активировать {id:True/False}
+CHAT_ENABLED = SqliteDict('db/chat_enabled.db', autocommit=True)
+
 # в каком чате включен режим без подсказок, боту не будет сообщаться время место и роль,
 # он будет работать как в оригинале {id:True/False}
 ORIGINAL_MODE = SqliteDict('db/original_mode.db', autocommit=True)
@@ -809,6 +812,16 @@ def check_subscription(message: telebot.types.Message) -> bool:
     return True
 
 
+def chat_enabled(message: telebot.types.Message) -> bool:
+    """check if chat is enabled"""
+    chat_id_full = get_topic_id(message)
+    if message.chat.type == 'private':
+        return True
+    if chat_id_full in CHAT_ENABLED and CHAT_ENABLED[chat_id_full]:
+        return True
+    return False
+
+
 def authorized(message: telebot.types.Message) -> bool:
     """
     Check if the user is authorized based on the given message.
@@ -905,6 +918,8 @@ def authorized(message: telebot.types.Message) -> bool:
                 return False
         # check for blocking and throttling
 
+    if not chat_enabled(message):
+        return False
     if not check_subscription(message):
         return False
 
@@ -3950,6 +3965,22 @@ def dump_translation_thread(message: telebot.types.Message):
                 os.remove('AUTO_TRANSLATIONS.json')
             except Exception as error:
                 my_log.log2(f'ERROR: {error}')
+
+
+@bot.message_handler(commands=['enable'], func=authorized_admin)
+def enable_chat(message: telebot.types.Message):
+    """что бы бот работал в чате надо его активировать там"""
+    chat_full_id = get_topic_id(message)
+    CHAT_ENABLED[chat_full_id] = True
+    bot_reply_tr(message, 'Chat enabled.')
+
+
+@bot.message_handler(commands=['disable'], func=authorized_admin)
+def disable_chat(message: telebot.types.Message):
+    """что бы бот не работал в чате надо его деактивировать там"""
+    chat_full_id = get_topic_id(message)
+    del CHAT_ENABLED[chat_full_id]
+    bot_reply_tr(message, 'Chat disabled.')
 
 
 @bot.message_handler(commands=['init'], func=authorized_admin)

@@ -182,7 +182,7 @@ admins = [xxx,]
 # бот должен быть в группе и возможно иметь какие то права что бы проверять есть ли в ней юзер
 # subscribe_channel_id = -xxx
 # subscribe_channel_mes = 'Подпишитесь на наш канал http://t.me/blabla'
-# subscribe_channel_time = 3600*24 # сутки
+# subscribe_channel_cache = 3600*24 # сутки
 
 
 # список юзеров кому доступен chatGPT (он хоть и дешевый но не бесплатный)

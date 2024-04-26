@@ -794,7 +794,7 @@ def check_subscription(message: telebot.types.Message) -> bool:
             u_id = message.from_user.id
 
             # Проверяем, есть ли пользователь в кэше и не истекло ли время
-            if u_id in subscription_cache and current_time - subscription_cache[u_id] < cfg.subscribe_channel_time:
+            if u_id in subscription_cache and current_time - subscription_cache[u_id] < cfg.subscribe_channel_cache:
                 return True  # Пользователь подписан (по кэшу)
             st = bot.get_chat_member(cfg.subscribe_channel_id, u_id).status
             if not st:

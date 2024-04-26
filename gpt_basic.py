@@ -698,8 +698,15 @@ def undo(chat_id: str):
     Args:
         chat_id (str): The ID of the chat.
     """
-    if chat_id in CHATS:
-        CHATS[chat_id] = CHATS[chat_id][:-2]
+    if chat_id in CHAT_LOCKS:
+        lock = CHAT_LOCKS[chat_id]
+    else:
+        lock = threading.Lock()
+        CHAT_LOCKS[chat_id] = lock
+
+    with lock:
+        if chat_id in CHATS:
+            CHATS[chat_id] = CHATS[chat_id][:-2]
 
 
 def chat_reset(chat_id: str):
@@ -712,8 +719,15 @@ def chat_reset(chat_id: str):
     Returns:
         None
     """
-    if chat_id in CHATS:
-        CHATS[chat_id] = []
+    if chat_id in CHAT_LOCKS:
+        lock = CHAT_LOCKS[chat_id]
+    else:
+        lock = threading.Lock()
+        CHAT_LOCKS[chat_id] = lock
+
+    with lock:
+        if chat_id in CHATS:
+            CHATS[chat_id] = []
 
 
 def console_chat_test():

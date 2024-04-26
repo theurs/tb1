@@ -180,7 +180,7 @@ admins = [xxx,]
 
 # id группы на которую юзеры должны подписаться что бы юзать бота
 # бот должен быть в группе и возможно иметь какие то права что бы проверять есть ли в ней юзер
-# subscribe_channel_id = -1002076014228
+# subscribe_channel_id = -xxx
 # subscribe_channel_mes = 'Подпишитесь на наш канал http://t.me/blabla'
 # subscribe_channel_time = 3600*24 # сутки
 

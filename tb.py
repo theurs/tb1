@@ -2394,7 +2394,23 @@ def set_trial(message: telebot.types.Message):
     bot_reply(message, msg)
 
 
-def reset_(message):
+@bot.message_handler(commands=['undo', 'u', 'U', 'Undo'], func=authorized_log)
+def undo(message: telebot.types.Message):
+    """Clear chat history last message (bot's memory)"""
+    chat_id_full = get_topic_id(message)
+    if chat_id_full in CHAT_MODE:
+        if 'gemini' in CHAT_MODE[chat_id_full]:
+            my_gemini.undo(chat_id_full)
+        elif CHAT_MODE[chat_id_full] == 'chatgpt':
+            gpt_basic.undo(chat_id_full)
+        else:
+            return
+        bot_reply_tr(message, 'Ok.')
+    else:
+        bot_reply_tr(message, 'Usage: /undo\n\nYou can remove last message from bot memory with this command.')
+
+
+def reset_(message: telebot.types.Message):
     """Clear chat history (bot's memory)
     message - is chat id or message object"""
     if isinstance(message, str):

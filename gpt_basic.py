@@ -691,6 +691,17 @@ def chat(chat_id: str, query: str, user_name: str = 'noname', lang: str = 'ru',
         return resp or tr('ChatGPT не ответил.', lang)
 
 
+def undo(chat_id: str):
+    """
+    Undo the last two lines of chat history for a given chat ID.
+
+    Args:
+        chat_id (str): The ID of the chat.
+    """
+    if chat_id in CHATS:
+        CHATS[chat_id] = CHATS[chat_id][:-2]
+
+
 def chat_reset(chat_id: str):
     """
     Reset the chat with the given chat_id.

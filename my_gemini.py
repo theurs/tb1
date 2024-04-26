@@ -200,6 +200,38 @@ def update_mem(query: str, resp: str, mem):
     return mem
 
 
+def undo(chat_id: str):
+    """
+    Undo the last two lines of chat history for a given chat ID.
+
+    Args:
+        chat_id (str): The ID of the chat.
+
+    Raises:
+        Exception: If there is an error while undoing the chat history.
+
+    Returns:
+        None
+    """
+    try:
+        global LOCKS, CHATS
+
+        if chat_id in LOCKS:
+            lock = LOCKS[chat_id]
+        else:
+            lock = threading.Lock()
+            LOCKS[chat_id] = lock
+        with lock:
+            if chat_id in CHATS:
+                mem = CHATS[chat_id]
+                # remove 2 last lines from mem
+                mem = mem[:-2]
+                CHATS[chat_id] = mem
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
+
+
 def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: str = '') -> str:
     """
     A function that utilizes a pretrained model to generate content based on a given input question.

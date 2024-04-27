@@ -208,7 +208,9 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub('^## (.*)$', '<b>\\1</b>', text, flags=re.MULTILINE)
     # точка пробел три хеша и пробел в начале тоже делать жирным
     text = re.sub('^\. ### (.*)$', '<b>\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^\.  ## (.*)$', '<b>\\1</b>', text, flags=re.MULTILINE)
     text = re.sub('^\.  ### (.*)$', '<b>\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^\.  #### (.*)$', '<b>\\1</b>', text, flags=re.MULTILINE)
 
     # 1 или 2 * в <b></b>
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)

@@ -3416,11 +3416,12 @@ def stats2_thread(message: telebot.types.Message):
             except Exception as unknown:
                 my_log.log2(f'tb:stats_thread:add_row {unknown}')
 
-    for sorting in ['left messages', 'left days', 'lang', 'chat mode', 'images']:
-        bot_reply_tr(message, sorting)
-        users_text = f'{tr("Usage statistics sorted by:", lang)} {sorting}\n\n<pre><code>{pt.get_string(sortby=sorting)}</code></pre>'
-        users_text += f'\n\n{tr("Total:", lang)} {str(len(users_sorted))}'
-        bot_reply(message, users_text, parse_mode='HTML')
+    bot_reply(message, pt.get_csv_string())
+    # for sorting in ['left messages', 'left days', 'lang', 'chat mode', 'images']:
+    #     bot_reply(message, sorting)
+    #     users_text = f'{tr("Usage statistics sorted by:", lang)} {sorting}\n\n<pre><code>{pt.get_string(sortby=sorting)}</code></pre>'
+    #     users_text += f'\n\n{tr("Total:", lang)} {str(len(users_sorted))}'
+    #     bot_reply(message, users_text, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['blockadd'], func=authorized_admin)

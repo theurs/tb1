@@ -827,17 +827,29 @@ def get_reprompt(prompt: str, conversation_history: str) -> str:
     """
     conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
     conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
+#     query = f"""
+# User want to create image with text to image generator.
+# Repromt user's prompt for image generation.
+# Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
+# If the query mentions celebrity names, try to replace them with movie character names, for example, Emma Watson -> Hermione Granger, Schwarzenegger -> Terminator.
+# Answer as a professional image prompt engineer, very short but completely grammatically correct and future rich, add details if it was short.
+
+# User's prompt: {prompt}
+
+# Dialog history: {conversation_history}
+# """
+
     query = f"""
 User want to create image with text to image generator.
 Repromt user's prompt for image generation.
 Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
-If the query mentions celebrity names, try to replace them with movie character names, for example, Emma Watson -> Hermione Granger, Schwarzenegger -> Terminator.
-Answer as a professional image prompt engineer, very short but completely grammatically correct and future rich, add details if it was short.
+Answer as a professional image prompt engineer, completely grammatically correct and future rich, add details if it was short.
 
 User's prompt: {prompt}
 
-Dialog history: {conversation_history}
+Dialog history for help you understand context: {conversation_history}
 """
+
     reprompt = my_gemini.ai(query, temperature=1.2)
     my_log.log_reprompts(f'{prompt}\n\n{reprompt}')
 

@@ -3137,10 +3137,11 @@ def image_thread(message: telebot.types.Message):
             conversation_history = conversation_history[-8000:]
 
             with ShowAction(message, 'upload_photo'):
-                moderation_flag = gpt_basic.moderation(prompt)
-                if moderation_flag:
-                    bot_reply_tr(message, 'There is something suspicious in your request, try to rewrite it differently.')
-                    return
+                # moderation_flag = gpt_basic.moderation(prompt)
+                # if moderation_flag:
+                #     bot_reply_tr(message, 'There is something suspicious in your request, try to rewrite it differently.')
+                #     return
+                moderation_flag = false
 
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
                 images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history)

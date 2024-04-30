@@ -10,6 +10,7 @@ import random
 import shutil
 import sys
 import time
+import threading
 import traceback
 from multiprocessing.pool import ThreadPool
 
@@ -43,6 +44,11 @@ WHO_AUTOR = {}
 # запоминаем промпты для хаггинг фейса, они не должны повторятся
 # {prompt:True/False, ...}
 huggingface_prompts = SqliteDict('db/kandinski_prompts.db', autocommit=True)
+
+
+# не давать генерировать картинки больше чем 1 за раз для 1 юзера
+# {userid:lock}
+LOCKS = {}
 
 
 def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
@@ -279,7 +285,7 @@ def huggin_face_api(prompt: str) -> bytes:
             "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
             "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
-            "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.0",
+            # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.0",
             # "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
             # "https://api-inference.huggingface.co/models/KBlueLeaf/Kohaku-XL-Epsilon",
             ### "multimodalart/cosxl",
@@ -850,46 +856,53 @@ Text: {reprompt}
 def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', conversation_history: str = ''):
     """рисует одновременно всеми доступными способами"""
 
-    reprompt = get_reprompt(prompt, conversation_history)
-    prompt = reprompt
+    if user_id in LOCKS:
+        lock = LOCKS[user_id]
+    else:
+        lock = threading.Lock()
+        LOCKS[user_id] = lock
 
-    pool = ThreadPool(processes=6)
+    with lock:
+        reprompt = get_reprompt(prompt, conversation_history)
+        prompt = reprompt
 
-    async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
-    
-    async_result2 = pool.apply_async(kandinski, (prompt,))
-    async_result3 = pool.apply_async(kandinski, (prompt,))
+        pool = ThreadPool(processes=6)
 
-    async_result4 = pool.apply_async(huggin_face_api, (prompt,))
+        async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
+        
+        async_result2 = pool.apply_async(kandinski, (prompt,))
+        async_result3 = pool.apply_async(kandinski, (prompt,))
 
-    async_result5 = pool.apply_async(yandex_cloud, (prompt,))
-    async_result6 = pool.apply_async(yandex_cloud, (prompt,))
+        async_result4 = pool.apply_async(huggin_face_api, (prompt,))
+
+        async_result5 = pool.apply_async(yandex_cloud, (prompt,))
+        async_result6 = pool.apply_async(yandex_cloud, (prompt,))
 
 
-    result = (async_result1.get() or []) + \
-             (async_result2.get() or []) + \
-             (async_result3.get() or []) + \
-             (async_result4.get() or []) + \
-             (async_result5.get() or []) + \
-             (async_result6.get() or [])
+        result = (async_result1.get() or []) + \
+                (async_result2.get() or []) + \
+                (async_result3.get() or []) + \
+                (async_result4.get() or []) + \
+                (async_result5.get() or []) + \
+                (async_result6.get() or [])
 
-    # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
-    # может удалить то что рисуют параллельные запросы и второй бот?
-    try:
-        for f in glob.glob('/tmp/*'):
-            if len(f) == 45:
-                try:
-                    os.rmdir(f)
-                except Exception as unknown:
-                    if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
-                        my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{f}')
-        shutil.rmtree('/tmp/gradio')
-    except Exception as unknown:
-        error_traceback = traceback.format_exc()
-        if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
-            my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
+        # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
+        # может удалить то что рисуют параллельные запросы и второй бот?
+        try:
+            for f in glob.glob('/tmp/*'):
+                if len(f) == 45:
+                    try:
+                        os.rmdir(f)
+                    except Exception as unknown:
+                        if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
+                            my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{f}')
+            shutil.rmtree('/tmp/gradio')
+        except Exception as unknown:
+            error_traceback = traceback.format_exc()
+            if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
+                my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
 
-    return result
+        return result
 
 
 if __name__ == '__main__':

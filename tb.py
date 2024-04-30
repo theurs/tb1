@@ -921,7 +921,7 @@ def authorized(message: telebot.types.Message) -> bool:
                 return False
         # check for blocking and throttling
 
-    if message.text != None:
+    if message.text:
         if not chat_enabled(message) and not message.text.startswith('/enable'):
             return False
     if not check_subscription(message):

@@ -3141,7 +3141,7 @@ def image_thread(message: telebot.types.Message):
                 # if moderation_flag:
                 #     bot_reply_tr(message, 'There is something suspicious in your request, try to rewrite it differently.')
                 #     return
-                moderation_flag = false
+                moderation_flag = False
 
                 images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
                 images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history)

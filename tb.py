@@ -1194,12 +1194,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
                   'tts_google_female': 'Google',
                   'tts_female_ynd': tr('Ynd жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Yandex женский", тут имеется в виду женский голос для TTS от яндекса, сделай перевод таким же коротким что бы уместится на кнопке'),
                   'tts_male_ynd': tr('Ynd муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Yandex мужской", тут имеется в виду мужской голос для TTS от яндекса, сделай перевод таким же коротким что бы уместится на кнопке'),
-                  'tts_openai_alloy': 'Alloy',
-                  'tts_openai_echo': 'Echo',
-                  'tts_openai_fable': 'Fable',
-                  'tts_openai_onyx': 'Onyx',
-                  'tts_openai_nova': 'Nova',
-                  'tts_openai_shimmer': 'Shimmer',
+                #   'tts_openai_alloy': 'Alloy',
+                #   'tts_openai_echo': 'Echo',
+                #   'tts_openai_fable': 'Fable',
+                #   'tts_openai_onyx': 'Onyx',
+                #   'tts_openai_nova': 'Nova',
+                #   'tts_openai_shimmer': 'Shimmer',
                   }
         voice_title = voices[voice]
 
@@ -1209,12 +1209,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
-        if CHAT_MODE[chat_id_full] == 'chatgpt':
-            button1 = telebot.types.InlineKeyboardButton('✅ChatGPT 3.5 [16k]', callback_data='chatGPT_mode_disable')
-        else:
-            button1 = telebot.types.InlineKeyboardButton('☑️ChatGPT 3.5 [16k]', callback_data='chatGPT_mode_enable')
-        button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='chatGPT_reset')
-        markup.row(button1, button2)
+        if hasattr(cfg, 'openai_servers') and cfg.openai_servers:
+            if CHAT_MODE[chat_id_full] == 'chatgpt':
+                button1 = telebot.types.InlineKeyboardButton('✅ChatGPT 3.5 [16k]', callback_data='chatGPT_mode_disable')
+            else:
+                button1 = telebot.types.InlineKeyboardButton('☑️ChatGPT 3.5 [16k]', callback_data='chatGPT_mode_enable')
+            button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='chatGPT_reset')
+            markup.row(button1, button2)
 
         if cfg.bard_tokens:
             if CHAT_MODE[chat_id_full] == 'bard':
@@ -1602,34 +1603,35 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             TTS_GENDER[chat_id_full] = 'female_ynd'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_female_ynd' and is_admin_member(call):
-            TTS_GENDER[chat_id_full] = 'openai_alloy'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_alloy' and is_admin_member(call):
-            TTS_GENDER[chat_id_full] = 'openai_echo'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_echo' and is_admin_member(call):
-            TTS_GENDER[chat_id_full] = 'openai_fable'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_fable' and is_admin_member(call):
-            TTS_GENDER[chat_id_full] = 'openai_onyx'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_onyx' and is_admin_member(call):
-            TTS_GENDER[chat_id_full] = 'openai_nova'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_nova' and is_admin_member(call):
-            TTS_GENDER[chat_id_full] = 'openai_shimmer'
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_shimmer' and is_admin_member(call):
+        elif (call.data == 'tts_female_ynd' or 'openai' in call.data) and is_admin_member(call):
+            # TTS_GENDER[chat_id_full] = 'openai_alloy'
             TTS_GENDER[chat_id_full] = 'female'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'tts_openai_alloy' and is_admin_member(call):
+        #     TTS_GENDER[chat_id_full] = 'openai_echo'
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'tts_openai_echo' and is_admin_member(call):
+        #     TTS_GENDER[chat_id_full] = 'openai_fable'
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'tts_openai_fable' and is_admin_member(call):
+        #     TTS_GENDER[chat_id_full] = 'openai_onyx'
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'tts_openai_onyx' and is_admin_member(call):
+        #     TTS_GENDER[chat_id_full] = 'openai_nova'
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'tts_openai_nova' and is_admin_member(call):
+        #     TTS_GENDER[chat_id_full] = 'openai_shimmer'
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'tts_openai_shimmer' and is_admin_member(call):
+        #     TTS_GENDER[chat_id_full] = 'female'
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
             VOICE_ONLY_MODE[chat_id_full] = False
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 

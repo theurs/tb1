@@ -33,6 +33,7 @@ import my_gemini
 import my_gigachat
 import my_log
 import my_ocr
+import my_openrouter
 import my_pandoc
 import my_stt
 import my_sum
@@ -1128,6 +1129,19 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1, button2, button3)
         markup.row(button4, button5, button6)
         return markup
+
+    elif kbd == 'gemma7':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gemma7_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'giga_chat':
         if disabled_kbd(chat_id_full):
             return None
@@ -1208,6 +1222,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
+
+        if hasattr(cfg, 'openrouter_api') and cfg.openrouter_api:
+            if CHAT_MODE[chat_id_full] == 'gemma7':
+                button1 = telebot.types.InlineKeyboardButton('✅Google Gemma 7b', callback_data='gemma7_mode_disable')
+            else:
+                button1 = telebot.types.InlineKeyboardButton('☑️Google Gemma 7b', callback_data='gemma7_mode_enable')
+            button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemma7_reset')
+            markup.row(button1, button2)
 
         if hasattr(cfg, 'openai_servers') and cfg.openai_servers:
             if CHAT_MODE[chat_id_full] == 'chatgpt':
@@ -1580,7 +1602,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'chatGPT_reset':
             gpt_basic.chat_reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с chatGPT очищена.')
+        elif call.data == 'gemma7_reset':
+            my_openrouter.chat_reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с Google gemma 7 очищена.')
         elif call.data == 'reset_all_memory':
+            my_openrouter.chat_reset(chat_id_full)
             gpt_basic.chat_reset(chat_id_full)
             my_claude.reset_claude_chat(chat_id_full)
             my_gemini.reset(chat_id_full)
@@ -1654,6 +1680,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'transcribe_only_chat_enable'  and is_admin_member(call):
             TRANSCRIBE_ONLY_CHAT[chat_id_full] = True
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'gemma7_mode_disable' and is_admin_member(call):
+            del CHAT_MODE[chat_id_full]
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'gemma7_mode_enable' and is_admin_member(call):
+            CHAT_MODE[chat_id_full] = 'gemma7'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'chatGPT_mode_disable' and is_admin_member(call):
@@ -2489,6 +2523,8 @@ def reset_(message: telebot.types.Message):
             my_gigachat.reset(chat_id_full)
         elif CHAT_MODE[chat_id_full] == 'chatgpt':
             gpt_basic.chat_reset(chat_id_full)
+        elif CHAT_MODE[chat_id_full] == 'gemma7':
+            my_openrouter.chat_reset(chat_id_full)
         bot_reply_tr(message, 'History cleared.')
     else:
         bot_reply_tr(message, 'History was not found.')
@@ -2622,6 +2658,9 @@ def send_debug_history(message: telebot.types.Message):
     if CHAT_MODE[chat_id_full] == 'chatgpt':
         prompt = 'ChatGPT\n\n'
         prompt += gpt_basic.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+    elif CHAT_MODE[chat_id_full] == 'gemma7':
+        prompt = 'Google Gemma 7\n\n'
+        prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
     elif 'gemini' in CHAT_MODE[chat_id_full]:
         prompt = 'Gemini Pro\n\n'
         prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -4916,6 +4955,35 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                       reply_markup=get_keyboard('giga_chat', message), not_log=True, allow_voice=True)
+                    except Exception as error4:
+                        error_traceback = traceback.format_exc()
+                        my_log.log2(str(error4) + '\n\n' + error_traceback)
+                    return
+
+            # если активирован режим общения с gemma7
+            if chat_mode_ == 'gemma7' and not FIRST_DOT:
+                if len(msg) > my_openrouter.MAX_QUERY:
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Google Gemma 7:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter.MAX_QUERY}')
+                    return
+
+                with ShowAction(message, action):
+                    try:
+                        answer = my_openrouter.chat(chat_id_full, message.text)
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
+                        my_log.log_echo(message, f'[gemma7] {answer}')
+                        if answer:
+                            try:
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('gemma7', message), not_log=True, allow_voice=True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                      reply_markup=get_keyboard('gemma7', message), not_log=True, allow_voice=True)
                     except Exception as error4:
                         error_traceback = traceback.format_exc()
                         my_log.log2(str(error4) + '\n\n' + error_traceback)

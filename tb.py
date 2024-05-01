@@ -1266,13 +1266,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
         markup.row(button1, button2)
 
-        if CHAT_MODE[chat_id_full] == 'gemini15':
-            button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_disable')
-        else:
-            button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_enable')
+        # if CHAT_MODE[chat_id_full] == 'gemini15':
+        #     button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_disable')
+        # else:
+        #     button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_enable')
 
-        button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
-        markup.row(button1, button2)
+        # button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
+        # markup.row(button1, button2)
 
         # if CHAT_MODE[chat_id_full] == 'bing':
         #     button1 = telebot.types.InlineKeyboardButton('✅Copilot (GPT4)', callback_data='bing_mode_disable')
@@ -3853,9 +3853,6 @@ In private messages, you don't need to mention the bot's name
 
 🎙️ You can issue commands and make requests using voice messages.
 
-`/tts <url>` - download text from url
-Request starting with dot will be redirected to gpt-3.5-turbo-instruct (uncensored version of gpt-3.5-turbo)
-
 
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support
@@ -4357,14 +4354,17 @@ def do_task(message, custom_prompt: str = ''):
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
-    # для джемини теперь требуется ключ
-    if 'gemini' in CHAT_MODE[chat_id_full]:
+    # для джемини теперь требуется ключ, требуем его у юзера а не у чата
+    chat_id_full__ = f'[{message.from_user.id}] [0]'
+    if chat_id_full__ not in CHAT_MODE:
+        CHAT_MODE[chat_id_full__] = cfg.chat_mode_default
+    if 'gemini' in CHAT_MODE[chat_id_full__] and message.from_user.id not in cfg.admins:
         total_messages__ = 0
         with CHAT_STATS_LOCK:
             for k__ in CHAT_STATS.keys():
-                if CHAT_STATS[k__][0] == chat_id_full and CHAT_STATS[k__][1] in ('gemini', 'gemini15'):
+                if CHAT_STATS[k__][0] == chat_id_full__ and CHAT_STATS[k__][1] in ('gemini', 'gemini15'):
                     total_messages__ += 1
-        if chat_id_full not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full]:
+        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
             if total_messages__ > 100:
                 bot_reply_tr(message, 'This bot needs free API keys to function, but please note that it may not work in all countries. Obtain keys from https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions: https://www.youtube.com/watch?v=6aj5a7qGcb4')
                 return
@@ -4399,62 +4399,62 @@ def do_task(message, custom_prompt: str = ''):
 
     # не обрабатывать неизвестные команды, если они не в привате, в привате можно обработать их как простой текст
     chat_bot_cmd_was_used = False
-    if message.text.startswith('/'):
-        try:
-            cmd_ = message.text[1:].split(maxsplit=1)[0].lower().strip()
-            if cmd_ == 'chatgpt':
-                if message.text == '/chatgpt':
-                    bot_reply_tr(message, 'Usage: /chatgpt <text>, you can ask default bot without command, see settings')
-                    return
-                chat_mode_ = 'chatgpt'
-                message.text = message.text.split(maxsplit=1)[1]
-                chat_bot_cmd_was_used = True
-            elif cmd_ == 'bard':
-                if message.text == '/bard':
-                    bot_reply_tr(message, 'Usage: /bard <text>, you can ask default bot without command, see settings')
-                    return
-                chat_mode_ = 'bard'
-                message.text = message.text.split(maxsplit=1)[1]
-                chat_bot_cmd_was_used = True
-            elif cmd_ == 'claude':
-                if message.text == '/claude':
-                    bot_reply_tr(message, 'Usage: /claude <text>, you can ask default bot without command, see settings')
-                    return
-                chat_mode_ = 'claude'
-                message.text = message.text.split(maxsplit=1)[1]
-                chat_bot_cmd_was_used = True
-            elif cmd_ == 'gigachat':
-                if message.text == '/gigachat':
-                    bot_reply_tr(message, 'Usage: /gigachat <text>, you can ask default bot without command, see settings')
-                    return
-                chat_mode_ = 'gigachat'
-                message.text = message.text.split(maxsplit=1)[1]
-                chat_bot_cmd_was_used = True
-                ####################################
-                # убрать это после релиза, а пока гигачат активируется командой /gigachat
-                # CHAT_MODE[chat_id_full] = 'gigachat'
-                ####################################
-            elif cmd_ == 'gemini':
-                if message.text == '/gemini':
-                    bot_reply_tr(message, 'Usage: /gemini <text>, you can ask default bot without command, see settings')
-                    return
-                chat_mode_ = 'gemini'
-                message.text = message.text.split(maxsplit=1)[1]
-                chat_bot_cmd_was_used = True
-            elif cmd_ == 'copilot':
-                if message.text == '/copilot':
-                    bot_reply_tr(message, 'Usage: /copilot <text>, you can ask default bot without command, see settings')
-                    return
-                chat_mode_ = 'bing'
-                message.text = message.text.split(maxsplit=1)[1]
-                chat_bot_cmd_was_used = True
-            else:
-                if not is_private:
-                    my_log.log2(f'tb:do_task:unknown command: {message.text}')
-                    return
-        except:
-            my_log.log2(f'tb:do_task:unknown command: {message.text}')
-            return
+    # if message.text.startswith('/'):
+        # try:
+        #     cmd_ = message.text[1:].split(maxsplit=1)[0].lower().strip()
+        #     if cmd_ == 'chatgpt':
+        #         if message.text == '/chatgpt':
+        #             bot_reply_tr(message, 'Usage: /chatgpt <text>, you can ask default bot without command, see settings')
+        #             return
+        #         chat_mode_ = 'chatgpt'
+        #         message.text = message.text.split(maxsplit=1)[1]
+        #         chat_bot_cmd_was_used = True
+        #     elif cmd_ == 'bard':
+        #         if message.text == '/bard':
+        #             bot_reply_tr(message, 'Usage: /bard <text>, you can ask default bot without command, see settings')
+        #             return
+        #         chat_mode_ = 'bard'
+        #         message.text = message.text.split(maxsplit=1)[1]
+        #         chat_bot_cmd_was_used = True
+        #     elif cmd_ == 'claude':
+        #         if message.text == '/claude':
+        #             bot_reply_tr(message, 'Usage: /claude <text>, you can ask default bot without command, see settings')
+        #             return
+        #         chat_mode_ = 'claude'
+        #         message.text = message.text.split(maxsplit=1)[1]
+        #         chat_bot_cmd_was_used = True
+        #     elif cmd_ == 'gigachat':
+        #         if message.text == '/gigachat':
+        #             bot_reply_tr(message, 'Usage: /gigachat <text>, you can ask default bot without command, see settings')
+        #             return
+        #         chat_mode_ = 'gigachat'
+        #         message.text = message.text.split(maxsplit=1)[1]
+        #         chat_bot_cmd_was_used = True
+        #         ####################################
+        #         # убрать это после релиза, а пока гигачат активируется командой /gigachat
+        #         # CHAT_MODE[chat_id_full] = 'gigachat'
+        #         ####################################
+            # elif cmd_ == 'gemini':
+            #     if message.text == '/gemini':
+            #         bot_reply_tr(message, 'Usage: /gemini <text>, you can ask default bot without command, see settings')
+            #         return
+            #     chat_mode_ = 'gemini'
+            #     message.text = message.text.split(maxsplit=1)[1]
+            #     chat_bot_cmd_was_used = True
+            # elif cmd_ == 'copilot':
+            #     if message.text == '/copilot':
+            #         bot_reply_tr(message, 'Usage: /copilot <text>, you can ask default bot without command, see settings')
+            #         return
+            #     chat_mode_ = 'bing'
+            #     message.text = message.text.split(maxsplit=1)[1]
+            #     chat_bot_cmd_was_used = True
+            # else:
+            #     if not is_private:
+            #         my_log.log2(f'tb:do_task:unknown command: {message.text}')
+            #         return
+        # except:
+        #     my_log.log2(f'tb:do_task:unknown command: {message.text}')
+        #     return
 
     # если юзер прошел триальный период то отключаем ему газ(чатгпт)
     # if chat_id_full not in TRIAL_USED:

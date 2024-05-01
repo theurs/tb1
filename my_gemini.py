@@ -55,13 +55,13 @@ MAX_REQUEST = 14000
 MAX_CHAT_SIZE = 20000
 # сколько последних запросов помнить, для экономии токенов (Должно быть >2 и кратно 2)
 # 20 - значит помнить последние 10 запросов и ответов
-MAX_CHAT_LINES = 40
+MAX_CHAT_LINES = 20
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
     MAX_CHAT_LINES = cfg.GEMINI_MAX_CHAT_LINES
 
 # можно сделать 2 запроса по 15000 в сумме получится запрос размером 30000
 # может быть полезно для сумморизации текстов
-MAX_SUM_REQUEST = 30000
+MAX_SUM_REQUEST = 25000
 
 # хранилище диалогов {id:list(mem)}
 CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)

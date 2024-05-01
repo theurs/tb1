@@ -383,6 +383,10 @@ STABILITY_API = [
 # https://yandex.cloud/ru/docs/iam/operations/iam-token/create#api_1
 YND_OAUTH = ['xxx1','xxx2']
 
+
+# https://openrouter.ai/
+# openrouter_api = ['xxx','yyy',]
+
 ```
 
 Что бы работало рисование бингом надо заменить куки, взять с сайта bing.com раздел чат, попасть туда можно только с ип приличных стран и с аккаунтом в микрософте. С помощью браузерного расширения cookie editor надо достать куки с именем _U и передать боту через команду /bingcookie xxx

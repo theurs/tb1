@@ -101,6 +101,7 @@ CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 # учет сообщений, кто с кем и сколько говорил
 # {time: (user_id, chat_mode)}
 CHAT_STATS = SqliteDict('db/chat_stats.db', autocommit=True)
+CHAT_STATS_LOCK = threading.Lock()
 
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
 BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
@@ -3199,7 +3200,8 @@ def image_thread(message: telebot.types.Message):
                     images = gpt_basic.image_gen(prompt, 4, size = '1024x1024')
                     images += my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history)
                     # 1 а может и больше запросы к репромптеру
-                    CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                    with CHAT_STATS_LOCK:
+                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                     # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                     medias = []
                     has_good_images = False
@@ -3249,7 +3251,8 @@ def image_thread(message: telebot.types.Message):
                         SUGGEST_ENABLED[chat_id_full] = False
                     if medias and SUGGEST_ENABLED[chat_id_full]:
                         # 1 запрос на генерацию предложений
-                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                        with CHAT_STATS_LOCK:
+                            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                         suggest_query = tr("""Suggest a wide range options for a request to a neural network that
     generates images according to the description, show 5 options with no numbers and trailing symbols, add many details, 1 on 1 line, output example:
 
@@ -3386,38 +3389,39 @@ def stats_thread(message: telebot.types.Message):
     chatgpt_msg_total_7d = 0
     chatgpt_msg_total_30d = 0
 
-    for time__ in CHAT_STATS.keys():
-        time_ = time.time()
-        item = CHAT_STATS[time__]
-        chat_mode = item[1]
-        time__ = float(time__)
-        if chat_mode == 'gemini15':
-            if time__+(3600*24) > time_:
-                gemini15_msg_total_24 += 1
-            if time__+(3600*48) > time_:
-                gemini15_msg_total_48 += 1
-            if time__+(3600*24*7) > time_:
-                gemini15_msg_total_7d += 1
-            if time__+(3600*24*30) > time_:
-                gemini15_msg_total_30d += 1
-        if chat_mode == 'gemini':
-            if time__+(3600*24) > time_:
-                gemini10_msg_total_24 += 1
-            if time__+(3600*48) > time_:
-                gemini10_msg_total_48 += 1
-            if time__+(3600*24*7) > time_:
-                gemini10_msg_total_7d += 1
-            if time__+(3600*24*30) > time_:
-                gemini10_msg_total_30d += 1
-        if chat_mode == 'chatgpt':
-            if time__+(3600*24) > time_:
-                chatgpt_msg_total_24 += 1
-            if time__+(3600*48) > time_:
-                chatgpt_msg_total_48 += 1
-            if time__+(3600*24*7) > time_:
-                chatgpt_msg_total_7d += 1
-            if time__+(3600*24*30) > time_:
-                chatgpt_msg_total_30d += 1
+    with CHAT_STATS_LOCK:
+        for time__ in CHAT_STATS.keys():
+            time_ = time.time()
+            item = CHAT_STATS[time__]
+            chat_mode = item[1]
+            time__ = float(time__)
+            if chat_mode == 'gemini15':
+                if time__+(3600*24) > time_:
+                    gemini15_msg_total_24 += 1
+                if time__+(3600*48) > time_:
+                    gemini15_msg_total_48 += 1
+                if time__+(3600*24*7) > time_:
+                    gemini15_msg_total_7d += 1
+                if time__+(3600*24*30) > time_:
+                    gemini15_msg_total_30d += 1
+            if chat_mode == 'gemini':
+                if time__+(3600*24) > time_:
+                    gemini10_msg_total_24 += 1
+                if time__+(3600*48) > time_:
+                    gemini10_msg_total_48 += 1
+                if time__+(3600*24*7) > time_:
+                    gemini10_msg_total_7d += 1
+                if time__+(3600*24*30) > time_:
+                    gemini10_msg_total_30d += 1
+            if chat_mode == 'chatgpt':
+                if time__+(3600*24) > time_:
+                    chatgpt_msg_total_24 += 1
+                if time__+(3600*48) > time_:
+                    chatgpt_msg_total_48 += 1
+                if time__+(3600*24*7) > time_:
+                    chatgpt_msg_total_7d += 1
+                if time__+(3600*24*30) > time_:
+                    chatgpt_msg_total_30d += 1
 
     msg = f'gemini-1.5 24h/48h/7d/30d: {gemini15_msg_total_24}/{gemini15_msg_total_48}/{gemini15_msg_total_7d}/{gemini15_msg_total_30d}\n\n'
     msg += f'gemini-1.0 24h/48h/7d/30d: {gemini10_msg_total_24}/{gemini10_msg_total_48}/{gemini10_msg_total_7d}/{gemini10_msg_total_30d}\n\n'
@@ -4355,9 +4359,15 @@ def do_task(message, custom_prompt: str = ''):
 
     # для джемини теперь требуется ключ
     if 'gemini' in CHAT_MODE[chat_id_full]:
+        total_messages__ = 0
+        with CHAT_STATS_LOCK:
+            for k__ in CHAT_STATS.keys():
+                if CHAT_STATS[k__][0] == chat_id_full and CHAT_STATS[k__][1] in ('gemini', 'gemini15'):
+                    total_messages__ += 1
         if chat_id_full not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full]:
-            bot_reply_tr(message, 'This bot needs free API keys to function, but please note that it may not work in all countries. Obtain keys from https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions: https://www.youtube.com/watch?v=6aj5a7qGcb4')
-            return
+            if total_messages__ > 100:
+                bot_reply_tr(message, 'This bot needs free API keys to function, but please note that it may not work in all countries. Obtain keys from https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions: https://www.youtube.com/watch?v=6aj5a7qGcb4')
+                return
 
     # определяем откуда пришло сообщение  
     is_private = message.chat.type == 'private'
@@ -4712,10 +4722,11 @@ def do_task(message, custom_prompt: str = ''):
             WHO_ANSWERED[chat_id_full] = chat_mode_
             time_to_answer_start = time.time()
 
-            if FIRST_DOT:
-                CHAT_STATS[time_to_answer_start] = (chat_id_full, 'chatgpt')
-            else:
-                CHAT_STATS[time_to_answer_start] = (chat_id_full, chat_mode_)
+            with CHAT_STATS_LOCK:
+                if FIRST_DOT:
+                    CHAT_STATS[time_to_answer_start] = (chat_id_full, 'chatgpt')
+                else:
+                    CHAT_STATS[time_to_answer_start] = (chat_id_full, chat_mode_)
 
             # если активирован режим общения с Gemini Pro
             if chat_mode_ == 'gemini' and not FIRST_DOT:

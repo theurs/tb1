@@ -4374,7 +4374,7 @@ def do_task(message, custom_prompt: str = ''):
     if chat_id_full__ not in CHAT_MODE:
         CHAT_MODE[chat_id_full__] = cfg.chat_mode_default
     if 'gemini' in CHAT_MODE[chat_id_full__] and message.from_user.id not in cfg.admins and message.chat.type == 'private':
-        total_messages__ = CHAT_STATS_TEMP[chat_id_full__] or 0
+        total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
         if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
             my_log.log2(f'Chat {chat_id_full__} does not have any keys, total messages = {total_messages__}')
             if total_messages__ > 100:

@@ -1273,13 +1273,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
         markup.row(button1, button2)
 
-        # if CHAT_MODE[chat_id_full] == 'gemini15':
-        #     button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_disable')
-        # else:
-        #     button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_enable')
+        if CHAT_MODE[chat_id_full] == 'gemini15':
+            button1 = telebot.types.InlineKeyboardButton('✅Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_disable')
+        else:
+            button1 = telebot.types.InlineKeyboardButton('☑️Gemini Pro 1.5 [1kk]', callback_data='gemini15_mode_enable')
 
-        # button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
-        # markup.row(button1, button2)
+        button2 = telebot.types.InlineKeyboardButton(tr('❌Стереть', lang), callback_data='gemini_reset')
+        markup.row(button1, button2)
 
         # if CHAT_MODE[chat_id_full] == 'bing':
         #     button1 = telebot.types.InlineKeyboardButton('✅Copilot (GPT4)', callback_data='bing_mode_disable')

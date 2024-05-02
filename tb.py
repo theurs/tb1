@@ -4378,7 +4378,8 @@ def do_task(message, custom_prompt: str = ''):
         if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
             my_log.log2(f'Chat {chat_id_full__} does not have any keys, total messages = {total_messages__}')
             if total_messages__ > 100:
-                bot_reply_tr(message, 'This bot needs free API keys to function, but please note that it may not work in all countries. Obtain keys from https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions: https://www.youtube.com/watch?v=6aj5a7qGcb4')
+                msg = tr('This bot needs free API keys to function, but please note that it may not work in all countries. Obtain keys from https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:') + ' ' + 'https://www.youtube.com/watch?v=6aj5a7qGcb4'
+                bot_reply(message, msg)
                 return
 
     # определяем откуда пришло сообщение  

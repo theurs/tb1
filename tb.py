@@ -931,6 +931,11 @@ def authorized(message: telebot.types.Message) -> bool:
     if not check_subscription(message):
         return False
 
+    # этого тут быть не должно но яхз что пошло не так, дополнительная проверка
+    if chat_id_full in BAD_USERS and BAD_USERS[chat_id_full]:
+        my_log.log2(f'tb:authorized: User {chat_id_full} is blocked')
+        return False
+
     return True
 
 

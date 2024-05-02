@@ -4046,7 +4046,7 @@ def enable_chat(message: telebot.types.Message):
     bot_reply_tr(message, 'Chat enabled.')
 
 
-@bot.message_handler(commands=['disable'], func=authorized_owner)
+@bot.message_handler(commands=['disable'], func=authorized_admin)
 def disable_chat(message: telebot.types.Message):
     """что бы бот не работал в чате надо его деактивировать там"""
     chat_full_id = get_topic_id(message)

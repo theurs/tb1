@@ -4038,7 +4038,7 @@ def dump_translation_thread(message: telebot.types.Message):
                 my_log.log2(f'ERROR: {error}')
 
 
-@bot.message_handler(commands=['enable'], func=authorized_owner)
+@bot.message_handler(commands=['enable'], func=authorized_admin)
 def enable_chat(message: telebot.types.Message):
     """что бы бот работал в чате надо его активировать там"""
     chat_full_id = get_topic_id(message)

@@ -102,6 +102,8 @@ CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 # {time: (user_id, chat_mode)}
 CHAT_STATS = SqliteDict('db/chat_stats.db', autocommit=True)
 CHAT_STATS_LOCK = threading.Lock()
+# cache, {userid:gemini message counter}
+CHAT_STATS_TEMP = {}
 
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
 BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
@@ -3202,6 +3204,10 @@ def image_thread(message: telebot.types.Message):
                     # 1 а может и больше запросы к репромптеру
                     with CHAT_STATS_LOCK:
                         CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                        if chat_id_full in CHAT_STATS_TEMP:
+                            CHAT_STATS_TEMP[chat_id_full] += 1
+                        else:
+                            CHAT_STATS_TEMP[chat_id_full] = 1
                     # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                     medias = []
                     has_good_images = False
@@ -3253,6 +3259,10 @@ def image_thread(message: telebot.types.Message):
                         # 1 запрос на генерацию предложений
                         with CHAT_STATS_LOCK:
                             CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                            if chat_id_full in CHAT_STATS_TEMP:
+                                CHAT_STATS_TEMP[chat_id_full] += 1
+                            else:
+                                CHAT_STATS_TEMP[chat_id_full] = 1
                         suggest_query = tr("""Suggest a wide range options for a request to a neural network that
     generates images according to the description, show 5 options with no numbers and trailing symbols, add many details, 1 on 1 line, output example:
 
@@ -4359,11 +4369,7 @@ def do_task(message, custom_prompt: str = ''):
     if chat_id_full__ not in CHAT_MODE:
         CHAT_MODE[chat_id_full__] = cfg.chat_mode_default
     if 'gemini' in CHAT_MODE[chat_id_full__] and message.from_user.id not in cfg.admins:
-        total_messages__ = 0
-        with CHAT_STATS_LOCK:
-            for k__ in CHAT_STATS.keys():
-                if CHAT_STATS[k__][0] == chat_id_full__ and CHAT_STATS[k__][1] in ('gemini', 'gemini15'):
-                    total_messages__ += 1
+        total_messages__ = CHAT_STATS_TEMP[chat_id_full__] or 0
         if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
             my_log.log2(f'Chat {chat_id_full__} does not have any keys, total messages = {total_messages__}')
             if total_messages__ > 100:
@@ -4728,6 +4734,11 @@ def do_task(message, custom_prompt: str = ''):
                     CHAT_STATS[time_to_answer_start] = (chat_id_full, 'chatgpt')
                 else:
                     CHAT_STATS[time_to_answer_start] = (chat_id_full, chat_mode_)
+                    if 'gemini' in chat_mode_:
+                        if chat_id_full in CHAT_STATS_TEMP:
+                            CHAT_STATS_TEMP[chat_id_full] += 1
+                        else:
+                            CHAT_STATS_TEMP[chat_id_full] = 1
 
             # если активирован режим общения с Gemini Pro
             if chat_mode_ == 'gemini' and not FIRST_DOT:
@@ -5066,6 +5077,16 @@ def main():
     """
     Runs the main function, which sets default commands and starts polling the bot.
     """
+
+    for x in CHAT_STATS.keys():
+        uid = CHAT_STATS[x][0]
+        cm = CHAT_STATS[x][1]
+        if 'gemini' in str(cm):
+            if uid in CHAT_STATS_TEMP:
+                CHAT_STATS_TEMP[uid] += 1
+            else:
+                CHAT_STATS_TEMP[uid] = 1
+
 
     # set_default_commands()
 

@@ -822,7 +822,7 @@ def check_subscription(message: telebot.types.Message) -> bool:
 def chat_enabled(message: telebot.types.Message) -> bool:
     """check if chat is enabled"""
     chat_id_full = get_topic_id(message)
-    if message.chat.type == 'private' or ' [0]' in chat_id_full:
+    if message.chat.type == 'private':
         return True
     if chat_id_full in CHAT_ENABLED and CHAT_ENABLED[chat_id_full]:
         return True

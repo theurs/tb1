@@ -15,9 +15,7 @@ import traceback
 import speech_recognition as sr
 
 import cfg
-import gpt_basic
 import my_log
-import my_gemini
 
 
 # locks for chat_ids
@@ -185,15 +183,6 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
             except Exception as error:
                 error_traceback = traceback.format_exc()
                 my_log.log2(f'my_stt:stt:{error}\n\n{error_traceback}')
-
-        if not text:
-            try:
-                # затем opanai
-                assert audio_duration(input_file) < 600, 'Too big for free speech recognition'
-                # auto detect language?
-                text = gpt_basic.stt(input_file)
-            except Exception as error:
-                my_log.log2(f'{error}\n\n{text}')
 
         if text:
             # text_ = my_gemini.repair_text_after_speech_to_text(text)

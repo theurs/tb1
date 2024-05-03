@@ -14,10 +14,7 @@ import PyPDF2
 import requests
 import trafilatura
 
-import cfg
-import gpt_basic
 import my_log
-import my_claude
 import my_gemini
 import my_trans
 import utils
@@ -99,19 +96,8 @@ BEGIN:
     result = ''
     tr = my_trans.translate_text2
 
-    # if len(prompt) > cfg.max_request:
-    #     try:
-    #         # r = my_claude.chat(prompt[:my_claude.MAX_QUERY], 'my_summ')
-    #         r = my_claude.chat(prompt_gemini[:my_claude.MAX_QUERY], 'my_summ')
-    #         if r.strip():
-    #             result = f'{r}\n\n--\nClaude - Anthropic [{len(prompt[:my_claude.MAX_QUERY])} {tr("символов", lang)}]'
-    #     except Exception as error:
-    #         print(f'my_sum:summ_text_worker:claude: {error}')
-    #         my_log.log2(f'my_sum:summ_text_worker:claude: {error}')
-
     if not result:
         try:
-            # r = my_gemini.ai(prompt_gemini[:cfg.max_request]).strip()
             
             if subj == 'youtube_video':
                 qq = f'Summarize the content of this YouTube video using only the subtitles, what this video about, in no more than 1000 words, answer in [{lang}] language.'
@@ -122,16 +108,6 @@ BEGIN:
             r = my_gemini.sum_big_text(text[:my_gemini.MAX_SUM_REQUEST], qq).strip()
             if r != '':
                 result = f'{r}\n\n--\nGemini Pro [{len(prompt[:my_gemini.MAX_SUM_REQUEST])} {tr("символов", lang)}]'
-        except Exception as error:
-            print(f'my_sum:summ_text_worker:gpt: {error}')
-            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
-
-
-    if not result:
-        try:
-            r = gpt_basic.ai(prompt[:cfg.max_request]).strip()
-            if r:
-                result = f'{r}\n\n--\nchatGPT-3.5-turbo-16k [{len(prompt[:cfg.max_request])} {tr("символов", lang)}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')

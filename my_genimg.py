@@ -24,7 +24,6 @@ from sqlitedict import SqliteDict
 
 import bing_img
 import cfg
-import gpt_basic
 import my_gemini
 import my_log
 import my_trans
@@ -60,16 +59,6 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
             return images
     except Exception as error_bing_img:
         my_log.log_bing_img(f'my_genimg:bing: {error_bing_img}')
-    return []
-
-
-def openai(prompt: str):
-    """рисует 4 картинки с помощью openai и возвращает сколько смог нарисовать"""
-    try:
-        return gpt_basic.image_gen(prompt, amount = 4)
-    except Exception as error_openai_img:
-        print(f'my_genimg:openai: {error_openai_img}')
-        my_log.log2(f'my_genimg:openai: {error_openai_img}')
     return []
 
 

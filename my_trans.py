@@ -134,29 +134,6 @@ def translate_text_ddg(text: str, lang: str = 'ru', _from: str = None) -> str:
     return result
 
 
-# def translate_text(text, lang = 'ru'):
-#     """
-#     Translates the given text into the specified language.
-
-#     Parameters:
-#         text (str): The text to be translated.
-#         lang (str, optional): The language code to translate the text into. Defaults to 'ru'.
-
-#     Returns:
-#         str or None: The translated text if successful, or None if the translation fails.
-#     """
-#     key = str((text, lang))
-#     if key in TRANSLATE_CACHE:
-#         return TRANSLATE_CACHE[key]
-#     x = PyTranslator()
-#     result = x.translate(text, lang)
-#     if result['status'] == 'success':
-#         TRANSLATE_CACHE[key] = result['translation']
-#         return result['translation']
-#     my_log.log2(f'my_trans:translate_text: {result["status"]}\n\n{text}\n\n{lang}')
-#     return None
-
-
 def translate_text2(text, lang = 'ru'):
     """
     Translates the given text into the specified language using an external 
@@ -208,16 +185,4 @@ def translate(text):
 
 
 if __name__ == "__main__":
-
-    # code = 'ja'
-    # print(lang_name_by_code(code))
-    
-    
-
-    # text = "Вітаю! Я - інфармацыйная сістэма, якая можа адказаць на запытанні ў вас."
-    text = ''
-    # text = '/trans me'
-
-    print(translate_text2(text, 'ru'))
-
-    # print(translate_text(text))
+    pass

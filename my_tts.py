@@ -9,9 +9,6 @@ import tempfile
 
 import edge_tts
 import gtts
-import yandex_speech
-
-import gpt_basic
 
 
 #cache for TTS
@@ -45,79 +42,6 @@ def tts_google(text: str, lang: str = 'ru') -> bytes:
     data = mp3_fp.read()
     global TTS_CACHE
     TTS_CACHE.append([text, data, lang, '+0%', 'google_female'])
-    TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
-    return data
-
-
-def tts_openai(text: str, voice: str = 'alloy', lang = 'ru') -> bytes:
-    """
-    Generate text to speech audio using OpenAI's TTS API.
-
-    Args:
-        text (str): The text to be converted to speech.
-        voice (str, optional): The voice to be used for the speech. Defaults to 'alloy'.
-
-    Returns:
-        bytes: The audio data in bytes format.
-
-    """
-    voice_ = voice
-    if 'alloy' in voice:
-        voice = 'alloy'
-    elif 'echo' in voice:
-        voice = 'echo'
-    elif 'fable' in voice:
-        voice = 'fable'
-    elif 'onyx' in voice:
-        voice = 'onyx'
-    elif 'nova' in voice:
-        voice = 'nova'
-    elif 'shimmer' in voice:
-        voice = 'shimmer'
-    else:
-        voice = 'alloy'
-    data = gpt_basic.tts(text, voice)
-    global TTS_CACHE
-    TTS_CACHE.append([text, data, lang, '+0%', voice_])
-    TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
-    return data
-
-
-def tts_yandex(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
-    """
-    Generate text-to-speech (TTS) audio using the Yandex API.
-    
-    Parameters:
-        text (str): The text to convert to speech.
-        voice (str, optional): The voice to use for the speech. Defaults to 'ru'.
-        rate (str, optional): The rate of the speech. Defaults to '+0%'.
-        gender (str, optional): The gender of the voice. Defaults to 'female'.
-        
-    Returns:
-        bytes: The generated audio data in binary format.
-    """
-    # female - "jane", "oksana", "alyss", "omazh"
-    # male - "zahar", "ermil"
-    KEY = '60589d42-0e42-b742-8942-thekeyisalie'
-    FORMAT = 'mp3'
-    lang = f'{voice}-{voice.upper()}'
-    # convert rate to decimal
-    rate_decimal = 1.0 + (float(rate.strip('%')) / 100)
-    
-    if 'female' in gender:
-        voice = 'oksana'
-    elif 'male' in gender:
-        voice = 'zahar'
-
-    tts = yandex_speech.TTS(voice, FORMAT, KEY, lang, speed=rate_decimal)
-    tts.generate(text)
-    
-    data = b''
-    for d in tts._data:
-        data += d
-
-    global TTS_CACHE
-    TTS_CACHE.append([text, data, lang, rate, gender])
     TTS_CACHE = TTS_CACHE[-CACHE_SIZE:]
     return data
 
@@ -232,10 +156,6 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
 
     if gender == 'google_female':
         return tts_google(text, lang)
-    if 'openai' in gender:
-        return tts_openai(text, gender, lang)
-    if 'ynd' in gender:
-        return tts_yandex(text, voice, rate, gender)
 
     voice = get_voice(voice, gender)
 
@@ -265,6 +185,4 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
 
 
 if __name__ == "__main__":
-    r = tts_yandex('hello 1+1=2', voice='zh', rate='+0%', gender='male')
-    open('1.mp3', 'wb').write(r)
-    
+    pass

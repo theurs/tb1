@@ -8,7 +8,6 @@ from duckduckgo_search import DDGS
 import googlesearch
 import trafilatura
 
-import gpt_basic
 import cfg
 import my_log
 import my_gemini
@@ -88,8 +87,7 @@ def ask_gpt(query: str, max_req: int, history: str, result: str, engine: str,
 {result}"""
 
     result = my_gemini.ai(text[:max_req])
-    if result == '':
-        result = gpt_basic.ai(text[:max_req], max_tok=cfg.max_google_answer)
+
     my_log.log_google(text[:max_req], result)
     return result
 
@@ -242,12 +240,9 @@ def search(query: str, lang: str = 'ru') -> str:
         str: The search result.
     """
     try:
-        # result = search_google(query, lang=lang)
         result = search_google_v2(query, lang=lang)
-        # result = search_ddg_v2(query, lang=lang)
     except urllib.error.HTTPError as error:
         if 'HTTP Error 429: Too Many Requests' in str(error):
-            # result = search_ddg(query, lang=lang)
             result = search_ddg_v2(query, lang=lang)
             my_log.log2(query)
         else:
@@ -264,10 +259,9 @@ if __name__ == "__main__":
 
     #print(download_text(['https://www.google.com/search?q=курс+доллара'], 10))    
 
-    # print(search('3 закона робототехники'), '\n\n')
-    sys.exit(0)
+    print(search('3 закона робототехники'), '\n\n')
 
-    #print(gpt_basic.ai('1+1'))
+
     
     # print(search_google('курс доллара'), '\n\n')
     

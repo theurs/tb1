@@ -10,10 +10,6 @@ import enchant
 import fitz
 import pytesseract
 
-import gpt_basic
-import utils
-import my_log
-
 
 # запрещаем запускать больше чем 1 процесс распознавания
 lock = threading.Lock()
@@ -87,8 +83,7 @@ def get_text_from_image(data: bytes, language: str = 'rus+eng') -> str:
     # if 'Windows' not in utils.platform():
     #     if find_words(result) < 4: return ''
 
-    result_cleared = gpt_basic.clear_after_ocr(result)
-    return result_cleared
+    return result
 
 
 # Определяем функцию для извлечения текста из PDF-файла

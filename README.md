@@ -176,29 +176,6 @@ DDOS_BAN_TIME = 60*20
 # telegram bot token
 token   = "xxx"
 
-# openai tokens and addresses
-# список  серверов для chatGPT [['address', 'token', True/False(распознавание голоса), True/False(рисование)], [], ...]
-# можно использовать стороннии сервисы работающие так же как openai например https://vsegpt.ru/
-openai_servers = [
-    ['https://api.openai.com/v1', 'sk-xxx', False, False],
-    ['https://api.vsegpt.ru:6070/v1/', 'sk-or-vv-xxx', False, False],
-    ['https://yyy.com/xxx', 'key', False, False]
-]
-
-# proxy for access openai
-# openai_proxy = 'socks5://172.28.1.4:1080'
-# openai_proxy = 'http://172.28.1.4:3128'
-
-
-# искать (__Secure-1PSIDCC, __Secure-1PSID, __Secure-1PSIDTS, NID) в куках с сайта https://gemini.google.com/
-# [(__Secure-1PSIDCC, __Secure-1PSID, __Secure-1PSIDTS, NID), ...]
-bard_tokens = [
-    ('xxx',
-     'yyy',
-     'zzz',
-     'aaa'),
-]
-
 
 # id телеграм группы куда скидываются все сгенерированные картинки
 # группы надо создать, добавить туда бота и дать права на публикацию
@@ -331,24 +308,6 @@ YND_OAUTH = ['xxx1','xxx2']
 
 7. Запустить ./tb.py
 
-Можно собрать и запустить докер образ. Ну или нельзя Ж) давно не проверял.
-
-В докер файл можно добавить свой файл cfg.py
-
-
-```
-docker build  -t tb1 .
-или
-docker build --no-cache -t tb1 .
-или
-docker build --no-cache -t tb1 . &> build.log
-
-docker run -d --env TOKEN='xxx' --name tb1 --restart unless-stopped tb1
-или
-docker run --env TOKEN='xxx' --name tb1 --restart unless-stopped tb1
-или
-docker run -d --env TOKEN='xxx' --env OPENAI_KEY='yyy' -e TZ=Asia/Vladivostok --name tb1 --restart unless-stopped tb1
-```
 
 
 ## Использование

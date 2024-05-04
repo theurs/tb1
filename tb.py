@@ -1689,6 +1689,14 @@ def users_keys_for_gemini(message: telebot.types.Message):
         msg = tr('Total users keys:', lang)
         msg = f'{msg} {len(my_gemini.ALL_KEYS)}'
         bot_reply(message, msg)
+        keys = []
+        for x in my_gemini.USER_KEYS.keys():
+            keys += my_gemini.USER_KEYS[x]
+
+        msg = tr('All user`s keys:', lang) + '\n\n'
+        for key in keys:
+            msg = f'{msg}{key}\n'
+        bot_reply(message, msg)
 
     # показать юзеру его ключи
     if chat_id_full in my_gemini.USER_KEYS:

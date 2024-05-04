@@ -1695,7 +1695,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
 
         msg = tr('All user`s keys:', lang) + '\n\n<code>'
         for key in keys:
-            msg = f'"{msg}{key}",\n'
+            msg += f'"{key}",\n'
         bot_reply(message, msg+'</code>', parse_mode='HTML')
 
     # показать юзеру его ключи
@@ -1703,8 +1703,8 @@ def users_keys_for_gemini(message: telebot.types.Message):
         keys = my_gemini.USER_KEYS[chat_id_full]
         msg = tr('Your keys:', lang) + '\n\n'
         for key in keys:
-            msg = f'{msg}{key}\n'
-        bot_reply(message, msg)
+            msg = f'{msg}<code>{key}</code>\n'
+        bot_reply(message, msg, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)

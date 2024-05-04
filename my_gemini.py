@@ -363,6 +363,9 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
     if not answer and model == 'gemini-1.5-pro-latest':
         answer = ai(q, mem, temperature, proxy_str, 'gemini-1.0-pro-latest')
 
+    if answer.startswith('[Info to help you answer.'):
+        pos = answer.find('"]')
+        answer = answer[pos + 2:]
     return answer
 
 

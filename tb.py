@@ -58,12 +58,6 @@ if not os.path.exists('db'):
 # запоминаем время последнего обращения к боту
 LAST_TIME_ACCESS = SqliteDict('db/last_time_access.db', autocommit=True)
 
-# сколько дней триальный период
-TRIAL_DAYS = cfg.TRIAL_DAYS if hasattr(cfg, 'TRIAL_DAYS') else 7
-TRIAL_MESSAGES = cfg.TRIAL_MESSAGES if hasattr(cfg, 'TRIAL_MESSAGES') else 300
-# {userid: True/False} если юзер достигает дна то ему отключают оступ к гпт
-TRIAL_USED = SqliteDict('db/trial_used.db', autocommit=True)
-
 # сколько картинок нарисовано юзером {id: counter}
 IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=True)
 
@@ -170,11 +164,6 @@ IMG_GEN_LOCKS = {}
 # настройки температуры для gemini {chat_id:temp}
 GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
 GEMIMI_TEMP_DEFAULT = 0.2
-
-# {chat_full_id: time.time()}
-TRIAL_USERS = SqliteDict('db/trial_users.db', autocommit=True)
-# {chat_id_full: int messages counter (for trials)}
-TRIAL_USERS_COUNTER = SqliteDict('db/trial_users_counter.db', autocommit=True)
 
 # Из каких чатов надо выходиьт сразу (забаненые)
 LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
@@ -592,40 +581,6 @@ def log_message(message: telebot.types.Message):
         my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
 
 
-def trial_status(message: telebot.types.Message) -> bool:
-    """
-    Check the status of a trial.
-
-    Parameters:
-        message (telebot.types.Message): The message object.
-
-    Returns:
-        bool: True if the trial is active, False otherwise.
-    """
-    if hasattr(cfg, 'TRIALS') and cfg.TRIALS:
-        chat_full_id = get_topic_id(message)
-        # if lang == 'uk':
-        #     return True
-
-        if message.chat.type != 'private':
-            chat_full_id = f'[{message.chat.id}] [0]'
-
-
-        if chat_full_id not in TRIAL_USERS:
-            TRIAL_USERS[chat_full_id] = time.time()
-        trial_time = (time.time() - TRIAL_USERS[chat_full_id]) / (60*60*24)
-
-        if chat_full_id in TRIAL_USERS_COUNTER:
-            TRIAL_USERS_COUNTER[chat_full_id] += 1
-        else:
-            TRIAL_USERS_COUNTER[chat_full_id] = 0
-
-        return True
-
-    else:
-        return True
-
-
 def authorized_owner(message: telebot.types.Message) -> bool:
     """if chanel owner or private"""
     is_private = message.chat.type == 'private'
@@ -777,9 +732,6 @@ def authorized(message: telebot.types.Message) -> bool:
             return True
 
         if is_reply or is_private or bot_name_used:
-            # check free trial status
-            if not trial_status(message):
-                return False
             # check for blocking and throttling
             try:
                 check_blocked_user(chat_id_full, message.from_user.id)
@@ -790,12 +742,6 @@ def authorized(message: telebot.types.Message) -> bool:
             check_blocked_user(chat_id_full, message.from_user.id)
         except:
             return False
-
-        if is_reply or is_private:
-            # check free trial status
-            if not trial_status(message):
-                return False
-        # check for blocking and throttling
 
     if message.text:
         if not chat_enabled(message) and not message.text.startswith('/enable'):
@@ -1145,11 +1091,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             message.text = f'/tts {llang} {message.text or message.caption or ""}'
             tts(message)
         elif call.data.startswith('imagecmd_'):
-            if trial_status(message):
-                hash = call.data[9:]
-                prompt = IMAGE_SUGGEST_BUTTONS[hash]
-                message.text = f'/image {prompt}'
-                image(message)
+            hash = call.data[9:]
+            prompt = IMAGE_SUGGEST_BUTTONS[hash]
+            message.text = f'/image {prompt}'
+            image(message)
         elif call.data.startswith('select_lang-'):
             l = call.data[12:]
             message.text = f'/lang {l}'
@@ -2553,34 +2498,10 @@ def stats2_admin(message: telebot.types.Message):
     thread.start()
 def stats2_thread(message: telebot.types.Message):
     """Показывает статистику использования бота."""
-    chat_full_id = get_topic_id(message)
-
-    users = [x for x in my_gemini.CHATS.keys() if x in TRIAL_USERS_COUNTER and TRIAL_USERS_COUNTER[x] > 0]
-    users_sorted = natsorted(users, lambda x: TRIAL_USERS_COUNTER[x] if x in TRIAL_USERS_COUNTER else TRIAL_MESSAGES, reverse = True)
-    pt = prettytable.PrettyTable(
-        align = "r",
-        set_style = prettytable.MSWORD_FRIENDLY,
-        hrules = prettytable.HEADER,
-        junction_char = '|')
-
-    header = ['USER', 'left days', 'left messages', 'lang', 'chat mode', 'images']
-    pt.field_names = header
-
-    for user in users_sorted:
-        if user in TRIAL_USERS:
-            left_days = TRIAL_DAYS - int((time.time()-TRIAL_USERS[user])/60/60/24)
-            left_msgs = TRIAL_MESSAGES-TRIAL_USERS_COUNTER[user]
-            # users_text += f'{user} - {left_days}d - {left_msgs}m \n'
-            user_lang = LANGUAGE_DB[user] if user in LANGUAGE_DB else cfg.DEFAULT_LANGUAGE
-            chat_mode = CHAT_MODE[user] if user in CHAT_MODE else cfg.chat_mode_default
-            images = get_user_image_counter(user)
-            row = [user, left_days, left_msgs, user_lang, chat_mode, images]
-            try:
-                pt.add_row(row)
-            except Exception as unknown:
-                my_log.log2(f'tb:stats_thread:add_row {unknown}')
-
-    bot_reply(message, pt.get_csv_string())
+    # with CHAT_STATS_LOCK:
+    #     users = list(set([CHAT_STATS[x][0] for x in CHAT_STATS.keys()]))
+        
+    # users_sorted = natsorted(users, reverse = True)
 
 
 @bot.message_handler(commands=['blockadd'], func=authorized_admin)
@@ -2663,9 +2584,6 @@ def alert_thread(message: telebot.types.Message):
                 if chat_id in DDOS_BLOCKED_USERS:
                     continue
                 if chat_id in BAD_USERS:
-                    continue
-                # только тех кто сделал больше 100 запросов
-                if chat_id not in TRIAL_USERS_COUNTER or TRIAL_USERS_COUNTER[chat_id] < 100:
                     continue
                 # только тех кто был активен в течение 7 дней
                 if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*7*24) < time.time():
@@ -3385,6 +3303,11 @@ def do_task(message, custom_prompt: str = ''):
         return
 
     chat_mode_ = CHAT_MODE[chat_id_full]
+
+    # # не давать тем у кого нет ключей доступ к 1.5
+    # if chat_mode_ == 'gemini15':
+    #     if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+    #         chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):

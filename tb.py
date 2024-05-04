@@ -3480,7 +3480,7 @@ def do_task(message, custom_prompt: str = ''):
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}".]'
             if chat_id_full not in ORIGINAL_MODE:
                 ORIGINAL_MODE[chat_id_full] = False
-            if ORIGINAL_MODE[chat_id_full] or chat_mode_ == 'bing':
+            if ORIGINAL_MODE[chat_id_full]:
                 helped_query = message.text
             else:
                 helped_query = f'{hidden_text} {message.text}'

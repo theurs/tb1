@@ -9,11 +9,11 @@ import traceback
 import threading
 import time
 
-import fuzzywuzzy
 import langcodes
 import prettytable
 import PyPDF2
 import telebot
+from fuzzywuzzy import fuzz
 from natsort import natsorted
 from sqlitedict import SqliteDict
 
@@ -2406,7 +2406,7 @@ def image_thread(message: telebot.types.Message):
                                     translated_prompt = tr(prompt, 'ru')
                                     bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
                                                     link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
-                                    ratio = fuzzywuzzy.fuzz.ratio(translated_prompt, prompt)
+                                    ratio = fuzz.ratio(translated_prompt, prompt)
                                     if ratio < 70:
                                         bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{utils.nice_hash(chat_id_full)}',
                                                         link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))

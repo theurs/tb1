@@ -3304,10 +3304,10 @@ def do_task(message, custom_prompt: str = ''):
 
     chat_mode_ = CHAT_MODE[chat_id_full]
 
-    # не давать тем у кого нет ключей доступ к 1.5
-    if chat_mode_ == 'gemini15':
-        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-            chat_mode_ = 'gemini'
+    # # не давать тем у кого нет ключей доступ к 1.5
+    # if chat_mode_ == 'gemini15':
+    #     if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+    #         chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):

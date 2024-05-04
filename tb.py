@@ -3361,7 +3361,7 @@ def do_task(message, custom_prompt: str = ''):
             my_log.log2(f'Chat {chat_id_full__} does not have any keys, total messages = {total_messages__}')
             if total_messages__ > 100:
                 msg = tr('This bot needs free API keys to function, but please note that it may not work in all countries. Obtain keys from https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-                bot_reply(message, msg)
+                bot_reply(message, msg, disable_web_page_preview = True)
                 return
 
     # определяем откуда пришло сообщение  

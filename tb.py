@@ -1693,10 +1693,10 @@ def users_keys_for_gemini(message: telebot.types.Message):
         for x in my_gemini.USER_KEYS.keys():
             keys += my_gemini.USER_KEYS[x]
 
-        msg = tr('All user`s keys:', lang) + '\n\n```'
+        msg = tr('All user`s keys:', lang) + '\n\n<code>'
         for key in keys:
             msg = f'"{msg}{key}",\n'
-        bot_reply(message, msg+'```', parse_mode='Markdown')
+        bot_reply(message, msg+'</code>', parse_mode='HTML')
 
     # показать юзеру его ключи
     if chat_id_full in my_gemini.USER_KEYS:

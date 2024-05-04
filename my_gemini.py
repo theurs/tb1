@@ -66,6 +66,9 @@ MAX_SUM_REQUEST = 25000
 # хранилище диалогов {id:list(mem)}
 CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
 
+# magic string
+CANDIDATES = '78fgh892890df@d7gkln2937DHf98723Dgh'
+
 
 ##################################################################################
 # If no proxies are specified in the config, then we first try to work directly
@@ -332,7 +335,11 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                         continue
 
                     if response.status_code == 200:
-                        result = response.json()['candidates'][0]['content']['parts'][0]['text']
+                        try:
+                            result = response.json()['candidates'][0]['content']['parts'][0]['text']
+                        except Exception as error_:
+                            if 'candidates' in str(error_):
+                                result = CANDIDATES
                         end_time = time.time()
                         total_time = end_time - start_time
                         if total_time > 50:
@@ -349,7 +356,11 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                     n -= 1
                     response = requests.post(url, json=mem_, timeout=TIMEOUT)
                     if response.status_code == 200:
-                        result = response.json()['candidates'][0]['content']['parts'][0]['text']
+                        try:
+                            result = response.json()['candidates'][0]['content']['parts'][0]['text']
+                        except Exception as error_:
+                            if 'candidates' in str(error_):
+                                result = CANDIDATES
                         break
                     else:
                         my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text}')
@@ -369,6 +380,8 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
     if answer.startswith('[Info to help you answer.'):
         pos = answer.find('"]')
         answer = answer[pos + 2:]
+    if answer == CANDIDATES:
+        return ''
     return answer
 
 

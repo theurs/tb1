@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import datetime
 import io
 import json
 import os
@@ -3304,10 +3305,12 @@ def do_task(message, custom_prompt: str = ''):
 
     chat_mode_ = CHAT_MODE[chat_id_full]
 
-    # # не давать тем у кого нет ключей доступ к 1.5
-    # if chat_mode_ == 'gemini15':
-    #     if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-    #         chat_mode_ = 'gemini'
+    # начиная с 14 мая
+    # не давать тем у кого нет ключей доступ к 1.5
+    if datetime.date.today().month >= 5 and datetime.date.today().day >= 14 and datetime.date.today().year >= 2024:
+        if chat_mode_ == 'gemini15':
+            if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+                chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):

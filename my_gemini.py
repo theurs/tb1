@@ -155,12 +155,15 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                     except AttributeError:
                         my_log.log2(f'img2txt:{api_key} {str(response)} {response.text}')
                 except Exception as error:
+                    if 'content' in str(error):
+                        return ''
                     my_log.log2(f'img2txt:{error}')
             if result:
                 break
         return result.strip()
     except Exception as unknown_error:
-        my_log.log2(f'my_gemini:img2txt:{unknown_error}')
+        if 'content' not in str(error):
+            my_log.log2(f'my_gemini:img2txt:{unknown_error}')
         return ''
 
 

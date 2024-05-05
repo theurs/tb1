@@ -858,6 +858,11 @@ Text: {reprompt}
 def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', conversation_history: str = ''):
     """рисует одновременно всеми доступными способами"""
 
+    if prompt.startswith('– '):
+        prompt = prompt[2:]
+    if prompt.strip() == '':
+        return []
+
     reprompt = get_reprompt(prompt, conversation_history)
     prompt = reprompt
 

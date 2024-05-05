@@ -2372,6 +2372,13 @@ def image_thread(message: telebot.types.Message):
                             if suggest:
                                 suggest = [f'{x}'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).strip() for x in suggest.split('\n')]
                                 suggest = [x for x in suggest if x]
+                                suggest__ = suggest[:]
+                                suggest = []
+                                for x__ in suggest__:
+                                    if x__.startswith('– '):
+                                        x__ = x__[2:]
+                                    suggest.append(x__)
+
                                 suggest_hashes = [utils.nice_hash(x, 12) for x in suggest]
                                 markup  = telebot.types.InlineKeyboardMarkup()
                                 for s, h in zip(suggest, suggest_hashes):

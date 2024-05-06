@@ -1,59 +1,22 @@
 #!/usr/bin/env python3
 
 
-import base64
 import datetime
 import hashlib
 import html
-import os
-import multiprocessing
 import random
 import re
 import requests
 import string
-import subprocess
 import tempfile
 import traceback
 import platform as platform_module
-from urllib.request import urlopen
 
 import prettytable
 import telebot
-from bs4 import BeautifulSoup
 from pylatexenc.latex2text import LatexNodes2Text
 
 import my_log
-
-
-def count_tokens(messages):
-    """
-    Count the number of tokens in the given messages.
-
-    Parameters:
-        messages (list): A list of messages.
-
-    Returns:
-        int: The number of tokens in the messages. Returns 0 if messages is empty.
-    """
-    # токенты никто из пиратов не считает, так что просто считаем символы
-    if messages:
-       return len(str(messages))
-    return 0
-
-
-def remove_vowels(text: str) -> str:
-    """
-    Функция для удаления из текста русских и английских гласных букв "а", "о", "e" и "a".
-    :param text: текст, в котором нужно удалить гласные буквы
-    :type text: str
-    :return: текст без указанных гласных букв
-    :rtype: str
-    """
-    vowels = [  'а', 'о',   # русские
-                'a', 'e']   # английские. не стоит наверное удалять слишком много
-    for vowel in vowels:
-        text = text.replace(vowel, '') # заменяем гласные буквы на пустую строку
-    return text
 
 
 def split_text(text: str, chunk_limit: int = 1500):
@@ -101,32 +64,6 @@ def platform() -> str:
     Return the platform information.
     """
     return platform_module.platform()
-
-
-def convert_to_mp3(input_file: str) -> str:
-    """
-    Converts an audio file to the MP3 format.
-
-    Args:
-        input_file (str): The path to the input audio file.
-
-    Returns:
-        str: The path to the converted MP3 file.
-    """
-    # Создаем временный файл с расширением .mp3
-    temp_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
-    temp_file.close()
-    output_file = temp_file.name
-    os.remove(output_file)
-    # Конвертируем аудиофайл в wav с помощью ffmpeg
-    command = ["ffmpeg", "-i", input_file, '-b:a', '96k', '-map', 'a', output_file]
-    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    # Проверяем, успешно ли прошла конвертация
-    if os.path.exists(output_file):
-        return output_file
-    else:
-        return None
 
 
 def bot_markdown_to_tts(text: str) -> str:
@@ -416,21 +353,6 @@ def split_long_string(long_string: str, header = False, MAX_LENGTH = 24) -> str:
     return result
 
 
-def get_page_name(url: str) -> str:
-    try:
-        soup = BeautifulSoup(urlopen(url), features="lxml")
-        return soup.title.get_text()
-    except:
-        return ''
-
-
-def get_page_names(urls):
-    with multiprocessing.Pool(processes=10) as pool:
-        results = pool.map(get_page_name, urls)
-    return results
-    # return [x for x in map(get_page_name, urls)]
-
-
 def is_image_link(url: str) -> bool:
   """Проверяет, является ли URL-адрес ссылкой на картинку.
 
@@ -578,28 +500,6 @@ def get_username_for_log(message) -> str:
             return f'[{message.chat.title or message.chat.username or message.chat.first_name or "nonamechat"}] [{message.message_thread_id}]'
         else:
             return message.chat.title or message.chat.username or message.chat.first_name or 'nonamechat'
-
-
-def bytes_to_base64(data: bytes) -> str:
-    """
-    Convert bytes to base64 string.
-
-    Parameters:
-        data (bytes): The bytes to convert.
-
-    Returns:
-        str: The base64 string.
-    """
-    return base64.b64encode(data).decode('utf-8')
-
-
-def find_whole_word(text: str, word: str) -> bool:
-  """
-  Проверяет, есть ли слово в тексте, с учетом регистра и полноты слова.
-  """
-  pattern = rf"\b{word}\b"
-  match = re.search(pattern, text, re.IGNORECASE)
-  return bool(match)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,5 @@
 # attrs==23.1.0
 bingart
-bs4
 chardet
 duckduckgo_search
 edge_tts

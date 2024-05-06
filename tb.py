@@ -15,7 +15,6 @@ import prettytable
 import PyPDF2
 import telebot
 from fuzzywuzzy import fuzz
-from natsort import natsorted
 from sqlitedict import SqliteDict
 
 import cfg
@@ -2425,7 +2424,7 @@ def image_thread(message: telebot.types.Message):
                 bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
-@bot.message_handler(commands=['stats'], func=authorized_admin)
+@bot.message_handler(commands=['stats', 'stat'], func=authorized_admin)
 def stats_admin(message: telebot.types.Message):
     """Показывает статистику использования бота."""
     thread = threading.Thread(target=stats_thread, args=(message,))
@@ -2444,18 +2443,18 @@ def stats_thread(message: telebot.types.Message):
     gemini10_msg_total_48 = 0
     gemini10_msg_total_7d = 0
     gemini10_msg_total_30d = 0
-
-    chatgpt_msg_total_24 = 0
-    chatgpt_msg_total_48 = 0
-    chatgpt_msg_total_7d = 0
-    chatgpt_msg_total_30d = 0
+    
+    all_users = []
 
     with CHAT_STATS_LOCK:
         for time__ in CHAT_STATS.keys():
             time_ = time.time()
             item = CHAT_STATS[time__]
+            user_id = item[0]
             chat_mode = item[1]
             time__ = float(time__)
+            if user_id not in all_users:
+                all_users.append(user_id)
             if chat_mode == 'gemini15':
                 if time__+(3600*24) > time_:
                     gemini15_msg_total_24 += 1
@@ -2474,19 +2473,9 @@ def stats_thread(message: telebot.types.Message):
                     gemini10_msg_total_7d += 1
                 if time__+(3600*24*30) > time_:
                     gemini10_msg_total_30d += 1
-            if chat_mode == 'chatgpt':
-                if time__+(3600*24) > time_:
-                    chatgpt_msg_total_24 += 1
-                if time__+(3600*48) > time_:
-                    chatgpt_msg_total_48 += 1
-                if time__+(3600*24*7) > time_:
-                    chatgpt_msg_total_7d += 1
-                if time__+(3600*24*30) > time_:
-                    chatgpt_msg_total_30d += 1
 
     msg = f'gemini-1.5 24h/48h/7d/30d: {gemini15_msg_total_24}/{gemini15_msg_total_48}/{gemini15_msg_total_7d}/{gemini15_msg_total_30d}\n\n'
     msg += f'gemini-1.0 24h/48h/7d/30d: {gemini10_msg_total_24}/{gemini10_msg_total_48}/{gemini10_msg_total_7d}/{gemini10_msg_total_30d}\n\n'
-    msg += f'chatgpt-3.5 24h/48h/7d/30d: {chatgpt_msg_total_24}/{chatgpt_msg_total_48}/{chatgpt_msg_total_7d}/{chatgpt_msg_total_30d}\n\n'
 
     last_time_access_24 = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24) > time.time()]
     msg += tr('Активны за последние 24 часа:', lang) + ' ' + str(len(last_time_access_24)) + '\n\n'
@@ -2496,20 +2485,8 @@ def stats_thread(message: telebot.types.Message):
     msg += tr('Активны за последние 7 дней:', lang) + ' ' + str(len(last_time_access_7d)) + '\n\n'
     last_time_access_30d = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24*30) > time.time()]
     msg += tr('Активны за последние 30 дней:', lang) + ' ' + str(len(last_time_access_30d))
+    msg += '\n\n' + tr('Всего активных юзеров:', lang) + ' ' + str(len(all_users))
     bot_reply(message, msg)
-
-
-@bot.message_handler(commands=['stats2'], func=authorized_admin)
-def stats2_admin(message: telebot.types.Message):
-    """Показывает статистику использования бота."""
-    thread = threading.Thread(target=stats2_thread, args=(message,))
-    thread.start()
-def stats2_thread(message: telebot.types.Message):
-    """Показывает статистику использования бота."""
-    # with CHAT_STATS_LOCK:
-    #     users = list(set([CHAT_STATS[x][0] for x in CHAT_STATS.keys()]))
-        
-    # users_sorted = natsorted(users, reverse = True)
 
 
 @bot.message_handler(commands=['blockadd'], func=authorized_admin)

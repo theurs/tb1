@@ -613,62 +613,6 @@ def is_blurry(image_bytes: bytes, threshold: int = 100):
     return laplacian_var < threshold
 
 
-def stability_ai(prompt: str = 'An australian cat', amount: int = 1):
-    """
-    Generate stable image using stability.ai API.
-
-    Args:
-        prompt (str): The prompt for generating the stable image.
-        amount (int): The number of stable images to generate.
-
-    Returns:
-        List: A list of stable images generated.
-    """
-    if amount > 1:
-        result = []
-        for i in range(amount):
-            result.append(stability_ai(prompt, 1))
-        return result
-
-    try:
-        if hasattr(cfg, 'STABILITY_API') and cfg.STABILITY_API:
-
-            keys = cfg.STABILITY_API[:]
-            random.shuffle(keys)
-            key = keys[0]
-
-            response = requests.post(
-                f"https://api.stability.ai/v2beta/stable-image/generate/core",
-                headers={
-                    "authorization": f"Bearer {key}",
-                    "accept": "image/*"
-                },
-                files={
-                    "none": ''
-                },
-                data={
-                    "prompt": prompt,
-                    "output_format": "webp",
-                },
-                timeout=90,
-            )
-
-            if response.status_code == 200 and not is_blurry(response.content):
-                WHO_AUTOR[hash(response.content)] = 'stability.ai'
-                return [response.content, ]
-            else:
-                if 'Expecting value: line 1 column 1 (char 0)' not in response.json():
-                    raise Exception(str(response.json()))
-                else:
-                    return []
-    except Exception as error:
-        if 'Expecting value: line 1 column 1 (char 0)' not in str(error):
-            error_traceback = traceback.format_exc()
-            my_log.log_huggin_face_api(f'my_genimg:stability_ai: {error}\n\n{error_traceback}')
-
-    return []
-
-
 def get_ynd_iam_token(oauth_tokens):
   """
   Get Yandex IAM token using OAuth tokens.

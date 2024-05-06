@@ -2443,7 +2443,7 @@ def stats_thread(message: telebot.types.Message):
     gemini10_msg_total_48 = 0
     gemini10_msg_total_7d = 0
     gemini10_msg_total_30d = 0
-    
+
     all_users = []
 
     with CHAT_STATS_LOCK:

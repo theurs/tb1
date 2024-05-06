@@ -699,6 +699,8 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
     Takes a prompt string and an amount of images to generate. 
     Returns a list of generated images as bytes.
     """
+    if not hasattr(cfg, 'YND_OAUTH') or not cfg.YND_OAUTH:
+        return []
     iam_tokens = cfg.YND_OAUTH[:]
     random.shuffle(iam_tokens)
     iam_token = get_ynd_iam_token(iam_tokens)

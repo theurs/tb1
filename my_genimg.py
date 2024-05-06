@@ -610,7 +610,6 @@ def get_reprompt(prompt: str, conversation_history: str) -> str:
 User want to create image with text to image generator.
 Repromt user's prompt for image generation.
 Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
-If the query mentions celebrity names, try to replace them with movie character names, for example, Emma Watson -> Hermione Granger, Schwarzenegger -> Terminator.
 Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
 Start your prompt with word Generate.
 

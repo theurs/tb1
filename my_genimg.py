@@ -716,6 +716,7 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:yandex_cloud: {error}\n\nPrompt: {prompt}\nAmount: {amount}\n{error_traceback}')
+        return []
 
 
 def cosxl(prompt: str, url: str) -> bytes:

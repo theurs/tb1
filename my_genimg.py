@@ -8,7 +8,6 @@ import json
 import os
 import random
 import shutil
-import sys
 import time
 import traceback
 from multiprocessing.pool import ThreadPool
@@ -699,20 +698,24 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
     Takes a prompt string and an amount of images to generate. 
     Returns a list of generated images as bytes.
     """
-    if not hasattr(cfg, 'YND_OAUTH') or not cfg.YND_OAUTH:
-        return []
-    iam_tokens = cfg.YND_OAUTH[:]
-    random.shuffle(iam_tokens)
-    iam_token = get_ynd_iam_token(iam_tokens)
-    results = []
-    prompt = 'High detail, high quality. ' + prompt
-    for _ in range(amount):
-        result = yandex_cloud_generate_image_async(iam_token, prompt)
-        if result:
-            data = base64.b64decode(result)
-            WHO_AUTOR[hash(data)] = 'shedevrum.ai (yandex cloud)'
-            results.append(data)
-    return results
+    try:
+        if not hasattr(cfg, 'YND_OAUTH') or not cfg.YND_OAUTH:
+            return []
+        iam_tokens = cfg.YND_OAUTH[:]
+        random.shuffle(iam_tokens)
+        iam_token = get_ynd_iam_token(iam_tokens)
+        results = []
+        prompt = 'High detail, high quality. ' + prompt
+        for _ in range(amount):
+            result = yandex_cloud_generate_image_async(iam_token, prompt)
+            if result:
+                data = base64.b64decode(result)
+                WHO_AUTOR[hash(data)] = 'shedevrum.ai (yandex cloud)'
+                results.append(data)
+        return results
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_huggin_face_api(f'my_genimg:yandex_cloud: {error}\n\nPrompt: {prompt}\nAmount: {amount}\n{error_traceback}')
 
 
 def cosxl(prompt: str, url: str) -> bytes:

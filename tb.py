@@ -2,7 +2,6 @@
 
 import datetime
 import io
-import json
 import os
 import re
 import tempfile
@@ -14,6 +13,7 @@ import langcodes
 import prettytable
 import PyPDF2
 import telebot
+from collections import defaultdict
 from fuzzywuzzy import fuzz
 from sqlitedict import SqliteDict
 
@@ -2403,62 +2403,74 @@ def stats_admin(message: telebot.types.Message):
     thread = threading.Thread(target=stats_thread, args=(message,))
     thread.start()
 def stats_thread(message: telebot.types.Message):
-    """Показывает статистику использования бота."""
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
-
-    gemini15_msg_total_24 = 0
-    gemini15_msg_total_48 = 0
-    gemini15_msg_total_7d = 0
-    gemini15_msg_total_30d = 0
-
-    gemini10_msg_total_24 = 0
-    gemini10_msg_total_48 = 0
-    gemini10_msg_total_7d = 0
-    gemini10_msg_total_30d = 0
-
-    all_users = []
+    """Обновленная функция, показывающая статистику использования бота."""
+    now = time.time()
+    
+    # Инициализация счетчиков
+    stats = {
+        'gemini15': defaultdict(int),
+        'gemini': defaultdict(int),
+        'new_users': defaultdict(int),
+        'active_24h': set(),
+        'active_48h': set(),
+        'active_7d': set(),
+        'active_30d': set(),
+        'all_users': set()
+    }
 
     with CHAT_STATS_LOCK:
-        for time__ in CHAT_STATS.keys():
-            time_ = time.time()
-            item = CHAT_STATS[time__]
-            user_id = item[0]
-            chat_mode = item[1]
-            time__ = float(time__)
-            if user_id not in all_users:
-                all_users.append(user_id)
-            if chat_mode == 'gemini15':
-                if time__+(3600*24) > time_:
-                    gemini15_msg_total_24 += 1
-                if time__+(3600*48) > time_:
-                    gemini15_msg_total_48 += 1
-                if time__+(3600*24*7) > time_:
-                    gemini15_msg_total_7d += 1
-                if time__+(3600*24*30) > time_:
-                    gemini15_msg_total_30d += 1
-            if chat_mode == 'gemini':
-                if time__+(3600*24) > time_:
-                    gemini10_msg_total_24 += 1
-                if time__+(3600*48) > time_:
-                    gemini10_msg_total_48 += 1
-                if time__+(3600*24*7) > time_:
-                    gemini10_msg_total_7d += 1
-                if time__+(3600*24*30) > time_:
-                    gemini10_msg_total_30d += 1
+        for time_stamp, (user_id, chat_mode) in CHAT_STATS.items():
+            time_stamp = float(time_stamp)
 
-    msg = f'gemini-1.5 24h/48h/7d/30d: {gemini15_msg_total_24}/{gemini15_msg_total_48}/{gemini15_msg_total_7d}/{gemini15_msg_total_30d}\n\n'
-    msg += f'gemini-1.0 24h/48h/7d/30d: {gemini10_msg_total_24}/{gemini10_msg_total_48}/{gemini10_msg_total_7d}/{gemini10_msg_total_30d}\n\n'
+            if user_id not in stats['all_users']:
+                # Определяем, является ли пользователь новым за определенные периоды
+                if now - time_stamp <= 86400:  # 24 hours in seconds
+                    stats['new_users']['1d'] += 1
+                if now - time_stamp <= 604800:  # 7 days in seconds
+                    stats['new_users']['7d'] += 1
+                if now - time_stamp <= 2592000:  # 30 days in seconds
+                    stats['new_users']['30d'] += 1
 
-    last_time_access_24 = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24) > time.time()]
-    msg += tr('Активны за последние 24 часа:', lang) + ' ' + str(len(last_time_access_24)) + '\n\n'
-    last_time_access_48 = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*48) > time.time()]
-    msg += tr('Активны за последние 48 часов:', lang) + ' ' + str(len(last_time_access_48)) + '\n\n'
-    last_time_access_7d = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24*7) > time.time()]
-    msg += tr('Активны за последние 7 дней:', lang) + ' ' + str(len(last_time_access_7d)) + '\n\n'
-    last_time_access_30d = [x[0] for x in LAST_TIME_ACCESS.items() if x[1]+(3600*24*30) > time.time()]
-    msg += tr('Активны за последние 30 дней:', lang) + ' ' + str(len(last_time_access_30d))
-    msg += '\n\n' + tr('Всего активных юзеров:', lang) + ' ' + str(len(all_users))
+            stats['all_users'].add(user_id)
+
+            # Подсчет активных пользователей за разные периоды
+            if now - time_stamp <= 86400:
+                stats['active_24h'].add(user_id)
+            if now - time_stamp <= 172800:
+                stats['active_48h'].add(user_id)
+            if now - time_stamp <= 604800:
+                stats['active_7d'].add(user_id)
+            if now - time_stamp <= 2592000:
+                stats['active_30d'].add(user_id)
+
+            # Подсчет сообщений в зависимости от режима
+            if chat_mode in ['gemini15', 'gemini']:
+                if now - time_stamp <= 86400:
+                    stats[chat_mode]['24'] += 1
+                if now - time_stamp <= 172800:
+                    stats[chat_mode]['48'] += 1
+                if now - time_stamp <= 604800:
+                    stats[chat_mode]['7d'] += 1
+                if now - time_stamp <= 2592000:
+                    stats[chat_mode]['30d'] += 1
+
+    # Строим сообщение для пользователя
+    msg = ""
+    for mode in ['gemini15', 'gemini']:
+        msg += (f"{mode} за 24ч/48ч/7д/30д: "
+                f"{stats[mode]['24']}/{stats[mode]['48']}/"
+                f"{stats[mode]['7d']}/{stats[mode]['30d']}\n\n")
+
+    msg += (f"Новые пользователи за 1д/7д/30д: "
+            f"{stats['new_users']['1d']}/{stats['new_users']['7d']}/"
+            f"{stats['new_users']['30d']}\n\n")
+
+    msg += f"Активны за 24ч/48ч/7д/30д: {len(stats['active_24h'])}/{len(stats['active_48h'])}/"
+    msg += f"{len(stats['active_7d'])}/{len(stats['active_30d'])}\n\n"
+
+    msg += f"Всего пользователей: {len(stats['all_users'])}"
+
+    # Отправка сообщения
     bot_reply(message, msg)
 
 

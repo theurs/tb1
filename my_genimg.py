@@ -449,6 +449,8 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:kandinski: {error}\n\n{error_traceback}')
 
+    return []
+
 
 def get_ynd_iam_token(oauth_tokens):
   """

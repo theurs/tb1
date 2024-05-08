@@ -179,7 +179,7 @@ BOT_NAME_DEFAULT = cfg.default_bot_name
 DEBUG_MD_TO_HTML = {}
 
 # запоминаем кто ответил что бы добавить это в лог в группу
-# {user_id: 'chatbot'(chatgpt, bard etc)}
+# {user_id: 'chatbot'(gemini, gemini15 etc)}
 WHO_ANSWERED = {}
 
 supported_langs_trans = [
@@ -1966,7 +1966,7 @@ def revoke_thread(message: telebot.types.Message):
 
 @bot.message_handler(commands=['temperature', 'temp'], func=authorized_owner)
 def set_new_temperature(message: telebot.types.Message):
-    """Changes the temperature for chatGPT and Gemini
+    """Changes the temperature for Gemini
     /temperature <0...2>
     Default is 0 - automatic
     The lower the temperature, the less creative the response, the less nonsense and lies,
@@ -1994,7 +1994,7 @@ def set_new_temperature(message: telebot.types.Message):
 
 Температура это параметр, который контролирует степень случайности генерируемого текста. Чем выше температура, тем более случайным и креативным будет текст. Чем ниже температура, тем более точным и сфокусированным будет текст.
 
-Например, если вы хотите, чтобы бот сгенерировал стихотворение, вы можете установить температуру выше 1,5. Это будет способствовать тому, что ChatGPT будет выбирать более неожиданные и уникальные слова. Однако, если вы хотите, чтобы ChatGPT сгенерировал текст, который является более точным и сфокусированным, вы можете установить температуру ниже 0,5. Это будет способствовать тому, что бот будет выбирать более вероятные и ожидаемые слова.
+Например, если вы хотите, чтобы бот сгенерировал стихотворение, вы можете установить температуру выше 1,5. Это будет способствовать тому, что бот будет выбирать более неожиданные и уникальные слова. Однако, если вы хотите, чтобы бот сгенерировал текст, который является более точным и сфокусированным, вы можете установить температуру ниже 0,5. Это будет способствовать тому, что бот будет выбирать более вероятные и ожидаемые слова.
 
 По-умолчанию 0.1''', lang)}
 
@@ -2130,7 +2130,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
                 bot_reply_tr(message, 'Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.')
 
 
-@bot.message_handler(commands=['google',], func=authorized)
+@bot.message_handler(commands=['google','Google'], func=authorized)
 def google(message: telebot.types.Message):
     thread = threading.Thread(target=google_thread, args=(message,))
     thread.start()

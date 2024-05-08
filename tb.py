@@ -1283,35 +1283,6 @@ def handle_document_thread(message: telebot.types.Message):
         return
 
     with semaphore_talks:
-        # если прислали файл с исправленными переводами
-        if 'AUTO_TRANSLATIONS' in message.document.file_name and '.json' in message.document.file_name:
-            if message.from_user.id in cfg.admins:
-                try:
-                    # file_info = bot.get_file(message.document.file_id)
-                    file = bot.download_file(file_info.file_path)
-                    with open('AUTO_TRANSLATIONS.json', 'wb') as new_file:
-                        new_file.write(file)
-                    global AUTO_TRANSLATIONS
-                    with open('AUTO_TRANSLATIONS.json', 'r', encoding='utf-8') as f:
-                        a = json.load(f)
-                        for key, value in a.items():
-                            AUTO_TRANSLATIONS[key] = value
-                    try:
-                        os.remove('AUTO_TRANSLATIONS.json')
-                    except Exception as error:
-                        print(f'tb:handle_document_thread: {error}')
-                        my_log.log2(f'tb:handle_document_thread: {error}')
-
-                    bot_reply_tr(message, 'Переводы загружены')
-                except Exception as error:
-                    print(f'tb:handle_document_thread: {error}')
-                    my_log.log2(f'tb:handle_document_thread: {error}')
-                    msg = f"{tr('Не удалось принять файл автопереводов ', lang)} {str(error)}"
-                    bot_reply(message, msg)
-                    my_log.log2(msg)
-                    return
-                return
-
         # если прислали текстовый файл или pdf
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
         if is_private and message.document.mime_type in ('text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'):

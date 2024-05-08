@@ -1607,7 +1607,7 @@ def original_mode(message: telebot.types.Message):
         bot_reply_tr(message, 'Original mode enabled. Bot will not be informed about place, names, roles etc. It will work same as original chatbot.')
 
 
-@bot.message_handler(commands=['keys'], func=authorized_owner)
+@bot.message_handler(commands=['keys', 'key'], func=authorized_owner)
 def users_keys_for_gemini(message: telebot.types.Message):
     """
     Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл
@@ -1618,12 +1618,14 @@ def users_keys_for_gemini(message: telebot.types.Message):
     args = message.text.split(maxsplit=1)
     if len(args) > 1:
         keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
+        keys = [x for x in keys if x not in my_gemini.ALL_KEYS and x.startswith('AIza')]
         if keys:
             with my_gemini.USER_KEYS_LOCK:
                 my_gemini.USER_KEYS[chat_id_full] = keys
                 for key in keys:
                     if key not in my_gemini.ALL_KEYS and key not in cfg.gemini_keys:
                         my_gemini.ALL_KEYS.append(key)
+                        my_log.log_keys(f'Added new gemini key: {key}')
             bot_reply_tr(message, 'Added keys successfully!')
             return
 

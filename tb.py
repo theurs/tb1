@@ -73,7 +73,7 @@ BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
 CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 
 # учет сообщений, кто с кем и сколько говорил
-# {time: (user_id, chat_mode)}
+# {time(str(timestamp)): (user_id(str), chat_mode(str))}
 CHAT_STATS = SqliteDict('db/chat_stats.db', autocommit=True)
 CHAT_STATS_LOCK = threading.Lock()
 # cache, {userid:gemini message counter}

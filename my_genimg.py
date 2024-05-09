@@ -47,7 +47,7 @@ LOCKS = {}
 
 def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
-    if moderation_flag:
+    if moderation_flag or prompt.strip() == '':
         return []
     try:
         images = bing_img.gen_images(prompt, user_id)

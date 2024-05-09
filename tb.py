@@ -2850,7 +2850,7 @@ In private messages, you don't need to mention the bot's name
 
 🎙️ You can issue commands and make requests using voice messages.
 
-👻 /purge command to remove all your history
+👻 /purge command to remove all your data
 
 
 Report issues on Telegram:

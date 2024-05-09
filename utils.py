@@ -389,7 +389,7 @@ def download_image_as_bytes(url: str) -> bytes:
     """
 
     try:
-        response = requests.get(url, timeout=20)
+        response = requests.get(url, timeout=30)
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log2(f'download_image_as_bytes: {error}\n\n{error_traceback}')

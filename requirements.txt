@@ -5,7 +5,7 @@ duckduckgo_search
 edge_tts
 fake_useragent
 fuzzywuzzy
-gradio_client==0.10.0
+gradio_client
 google
 gTTS
 langdetect

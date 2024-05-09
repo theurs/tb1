@@ -124,6 +124,7 @@ def huggin_face_api(prompt: str) -> bytes:
     else:
         API_URL = [
             'PixArt-alpha/PixArt-Sigma',
+            'PixArt-alpha/PixArt-Sigma',
             'playgroundai/playground-v2.5-1024px-aesthetic',
             "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
             'AP123/SDXL-Lightning',
@@ -296,7 +297,7 @@ def size_of_image(data: bytes):
     return img.size
 
 
-def SDXL_Lightning(prompt: str, url: str) -> bytes:
+def SDXL_Lightning(prompt: str, url: str = 'AP123/SDXL-Lightning') -> bytes:
     """
     url = "AP123/SDXL-Lightning" only?
     """
@@ -338,7 +339,7 @@ def SDXL_Lightning(prompt: str, url: str) -> bytes:
     return []
 
 
-def playground25(prompt: str, url: str) -> bytes:
+def playground25(prompt: str, url: str = "https://playgroundai-playground-v2-5.hf.space/") -> bytes:
     """
     url = "playgroundai/playground-v2.5-1024px-aesthetic" only?
     """
@@ -385,7 +386,7 @@ def playground25(prompt: str, url: str) -> bytes:
     return []
 
 
-def stable_cascade(prompt: str, url: str) -> bytes:
+def stable_cascade(prompt: str, url: str = "multimodalart/stable-cascade") -> bytes:
     """
     url = "multimodalart/stable-cascade" only?
     """
@@ -618,7 +619,7 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
         return []
 
 
-def cosxl(prompt: str, url: str) -> bytes:
+def cosxl(prompt: str, url: str = "multimodalart/cosxl") -> bytes:
     """
     url = "multimodalart/cosxl" only?
     """
@@ -754,4 +755,16 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
 
 if __name__ == '__main__':
     imgs = PixArtSigma('an apple made of gold')
-    open('pixart1.png', 'wb').write(imgs[0])
+    open('_PixArtSigma.png', 'wb').write(imgs[0])
+
+    imgs = SDXL_Lightning('an apple made of gold')
+    open('_sdxl-lightning.png', 'wb').write(imgs[0])
+
+    imgs = playground25('an apple made of gold')
+    open('_playground25.png', 'wb').write(imgs[0])
+
+    imgs = stable_cascade('an apple made of gold')
+    open('_stable_cascade.png', 'wb').write(imgs[0])
+
+    imgs = cosxl('an apple made of gold')
+    open('_cosxl.png', 'wb').write(imgs[0])

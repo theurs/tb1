@@ -5,7 +5,10 @@ duckduckgo_search
 edge_tts
 fake_useragent
 fuzzywuzzy
-gradio_client
+
+# свежая версия выжирает цпу на сервере
+gradio_client==0.10.0
+
 google
 gTTS
 langdetect

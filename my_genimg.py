@@ -123,11 +123,10 @@ def huggin_face_api(prompt: str) -> bytes:
         API_URL = cfg.huggin_face_models_urls
     else:
         API_URL = [
-            'PixArt-alpha/PixArt-Sigma',
             'playgroundai/playground-v2.5-1024px-aesthetic',
             "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
             'AP123/SDXL-Lightning',
-            # "multimodalart/stable-cascade",
+            "multimodalart/stable-cascade",
             "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
             "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
@@ -137,6 +136,7 @@ def huggin_face_api(prompt: str) -> bytes:
             # "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
             # "https://api-inference.huggingface.co/models/KBlueLeaf/Kohaku-XL-Epsilon",
             ### "multimodalart/cosxl",
+            ### 'PixArt-alpha/PixArt-Sigma',
         ]
 
     prompt_ = prompt
@@ -755,20 +755,20 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
 
 
 if __name__ == '__main__':
-    imgs = PixArtSigma('''Generate a detailed and intricate image of a golden katana in the Japanese style. The katana should be elaborately decorated with intricate engravings and a luxurious golden
-finish. The background should be a minimalist Japanese-style setting, with cherry blossoms and a traditional Japanese house in the distance.''')
-    open('_PixArtSigma.png', 'wb').write(imgs[0])
+#     imgs = PixArtSigma('''Generate a detailed and intricate image of a golden katana in the Japanese style. The katana should be elaborately decorated with intricate engravings and a luxurious golden
+# finish. The background should be a minimalist Japanese-style setting, with cherry blossoms and a traditional Japanese house in the distance.''')
+#     open('_PixArtSigma.png', 'wb').write(imgs[0])
 
-    # imgs = SDXL_Lightning('an apple made of gold')
-    # open('_sdxl-lightning.png', 'wb').write(imgs[0])
+    imgs = SDXL_Lightning('an apple made of gold')
+    open('_sdxl-lightning.png', 'wb').write(imgs[0])
 
-    # imgs = playground25('an apple made of gold')
-    # open('_playground25.png', 'wb').write(imgs[0])
+    imgs = playground25('an apple made of gold')
+    open('_playground25.png', 'wb').write(imgs[0])
 
-    # imgs = stable_cascade('an apple made of gold')
-    # open('_stable_cascade.png', 'wb').write(imgs[0])
+    imgs = stable_cascade('an apple made of gold')
+    open('_stable_cascade.png', 'wb').write(imgs[0])
 
-    # imgs = cosxl('an apple made of gold')
-    # open('_cosxl.png', 'wb').write(imgs[0])
+    imgs = cosxl('an apple made of gold')
+    open('_cosxl.png', 'wb').write(imgs[0])
 
     # huggin_face_api('an apple made of gold')

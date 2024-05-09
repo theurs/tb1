@@ -14,6 +14,7 @@ logs/*
 *.ogg
 *.opus
 *.jpg
+*.png
 *.fb2
 *.doc
 _old/*

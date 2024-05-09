@@ -140,7 +140,12 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                     session.proxies = {"http": proxy, "https": proxy}
                     try:
                         response = session.post(url, json=data, timeout=TIMEOUT).json()
-                        result = response['candidates'][0]['content']['parts'][0]['text']
+                        try:
+                            result = response['candidates'][0]['content']['parts'][0]['text']
+                        except Exception as error_ca:
+                            if 'candidates' in str(error_ca):
+                                my_log.log2(f'my_gemini:img2txt:{error_ca}')
+                                return ''
                         if result:
                             end_time = time.time()
                             total_time = end_time - start_time
@@ -155,8 +160,10 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                     response = requests.post(url, json=data, timeout=TIMEOUT).json()
                     try:
                         result = response['candidates'][0]['content']['parts'][0]['text']
-                    except AttributeError:
-                        my_log.log2(f'img2txt:{api_key} {str(response)} {response.text}')
+                    except Exception as error_ca:
+                        if 'candidates' in str(error_ca):
+                            my_log.log2(f'my_gemini:img2txt:{error_ca}')
+                            return ''
                 except Exception as error:
                     if 'content' in str(error):
                         return ''

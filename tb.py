@@ -2231,7 +2231,7 @@ def image_thread(message: telebot.types.Message):
 
 🚫{tr('NSFW is not allowed here', lang)}🚫
 
-{tr(Write what to draw, what it looks like.', lang)}
+{tr('Write what to draw, what it looks like.', lang)}
 """
             prompt = message.text.split(maxsplit = 1)
 

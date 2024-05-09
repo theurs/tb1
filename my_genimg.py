@@ -131,6 +131,7 @@ def huggin_face_api(prompt: str) -> bytes:
             "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
             "https://api-inference.huggingface.co/models/UnfilteredAI/NSFW-gen-v2",
+            "https://api-inference.huggingface.co/models/PixArt-alpha/PixArt-Sigma-XL-2-1024-MS",
             
             # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.0",
             # "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",

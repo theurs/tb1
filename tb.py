@@ -2224,14 +2224,14 @@ def image_thread(message: telebot.types.Message):
             if lang == 'en': draw_text = 'draw'
             help = f"""/image {tr('Text description of the picture, what to draw.', lang)}
 
-    {tr('Write what to draw, what it looks like.', lang)}
-
 /image {tr('an apple', lang)}
 /img {tr('an apple', lang)}
 /i {tr('an apple', lang)}
 {draw_text} {tr('an apple', lang)}
 
 🚫{tr('NSFW is not allowed here', lang)}🚫"""
+
+{tr('Write what to draw, what it looks like.', lang)}
     """
             prompt = message.text.split(maxsplit = 1)
 

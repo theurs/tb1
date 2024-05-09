@@ -1592,6 +1592,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
     """
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
 
     args = message.text.split(maxsplit=1)
     if len(args) > 1:
@@ -1763,6 +1764,7 @@ def disable_chat_mode(message: telebot.types.Message):
 def undo(message: telebot.types.Message):
     """Clear chat history last message (bot's memory)"""
     chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
     my_gemini.undo(chat_id_full)
     bot_reply_tr(message, 'Ok.')
 
@@ -1782,6 +1784,8 @@ def reset_(message: telebot.types.Message):
 @bot.message_handler(commands=['reset'], func=authorized_log)
 def reset(message: telebot.types.Message):
     """Clear chat history (bot's memory)"""
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
     reset_(message)
 
 
@@ -1789,6 +1793,7 @@ def reset(message: telebot.types.Message):
 def remove_keyboard(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
+        COMMAND_MODE[chat_id_full] = ''
         lang = get_lang(chat_id_full, message)
         kbd = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         button1 = telebot.types.KeyboardButton(tr('777', lang))
@@ -1901,6 +1906,7 @@ def send_debug_history(message: telebot.types.Message):
     """
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
 
     prompt = 'Gemini Pro\n\n'
     prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -1983,6 +1989,8 @@ def set_new_temperature(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
+    COMMAND_MODE[chat_id_full] = ''
+
     if len(message.text.split()) == 2:
         try:
             new_temp = float(message.text.split()[1])
@@ -2025,6 +2033,8 @@ def language_thread(message: telebot.types.Message):
     """change locale"""
 
     chat_id_full = get_topic_id(message)
+
+    COMMAND_MODE[chat_id_full] = ''
 
     if chat_id_full in LANGUAGE_DB:
         lang = LANGUAGE_DB[chat_id_full]

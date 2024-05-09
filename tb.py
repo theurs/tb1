@@ -2229,10 +2229,10 @@ def image_thread(message: telebot.types.Message):
 /i {tr('an apple', lang)}
 {draw_text} {tr('an apple', lang)}
 
-🚫{tr('NSFW is not allowed here', lang)}🚫"""
+🚫{tr('NSFW is not allowed here', lang)}🚫
 
-{tr('Write what to draw, what it looks like.', lang)}
-    """
+{tr(Write what to draw, what it looks like.', lang)}
+"""
             prompt = message.text.split(maxsplit = 1)
 
             if len(prompt) > 1:

@@ -1266,6 +1266,8 @@ def handle_document_thread(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
+    COMMAND_MODE[chat_id_full] = ''
+
     is_private = message.chat.type == 'private'
     if chat_id_full not in SUPER_CHAT:
         SUPER_CHAT[chat_id_full] = 0
@@ -1539,9 +1541,13 @@ def handle_video_thread(message: telebot.types.Message):
 
 @bot.message_handler(commands=['config', 'settings', 'setting', 'options'], func=authorized_owner)
 def config(message: telebot.types.Message):
+    thread = threading.Thread(target=config_thread, args=(message,))
+    thread.start()
+def config_thread(message: telebot.types.Message):
     """Меню настроек"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
     try:
         MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT} /name
 
@@ -1566,6 +1572,7 @@ def original_mode(message: telebot.types.Message):
     Toggles the original mode for the chat based on the current state.
     """
     chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
 
     if chat_id_full not in ORIGINAL_MODE:
         ORIGINAL_MODE[chat_id_full] = False
@@ -1694,7 +1701,7 @@ def change_mode(message: telebot.types.Message):
 5 - `/style {DEFAULT_ROLES[4]}`
     """
 
-        bot_reply(message, msg, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
+        bot_reply(message, msg, parse_mode='Markdown')
 
 
 @bot.message_handler(commands=['gemini_proxy'], func=authorized_admin)
@@ -2762,6 +2769,7 @@ def ocr_setup(message: telebot.types.Message):
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
 
     try:
         arg = message.text.split(maxsplit=1)[1]
@@ -2798,6 +2806,8 @@ def send_welcome_start(message: telebot.types.Message) -> None:
     thread.start()
 def send_welcome_start_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
     help = 'Welcome! Ask me anything. Send me you text/image/audio/documents with questions.'
     bot_reply_tr(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 
@@ -2811,6 +2821,7 @@ def send_welcome_help_thread(message: telebot.types.Message):
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
 
     help = f"""The chatbot responds to the name bot.
 For example, you can say bot, tell me a joke.
@@ -2855,6 +2866,8 @@ https://t.me/kun4_sun_bot_support
 
 @bot.message_handler(commands=['report'], func = authorized_log) 
 def report_cmd_handler(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
     bot_reply_tr(message, 'Support telegram group https://t.me/kun4_sun_bot_support')
 
 
@@ -2870,6 +2883,8 @@ def purge_cmd_handler(message: telebot.types.Message):
                 chat_id_full = get_topic_id(message)
             else:
                 chat_id_full = f'[{message.chat.id}] [0]'
+
+        COMMAND_MODE[chat_id_full] = ''
 
         if my_log.purge(message.chat.id):
             lang = get_lang(chat_id_full, message)
@@ -2901,11 +2916,12 @@ def purge_cmd_handler(message: telebot.types.Message):
 @bot.message_handler(commands=['id'], func = authorized_log) 
 def id_cmd_handler(message: telebot.types.Message):
     """показывает id юзера и группы в которой сообщение отправлено"""
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    COMMAND_MODE[chat_id_full] = ''
 
     user_id = message.from_user.id
-    chat_id_full = get_topic_id(message)
     reported_language = message.from_user.language_code
     msg = f'''{tr("ID пользователя:", lang)} {user_id}
                  
@@ -2914,9 +2930,9 @@ def id_cmd_handler(message: telebot.types.Message):
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
 '''
 
-    if chat_full_id in BAD_USERS:
+    if chat_id_full in BAD_USERS:
         msg += f'\n{tr("User was banned.", lang)}\n'
-    if str(message.chat.id) in DDOS_BLOCKED_USERS and chat_full_id not in BAD_USERS:
+    if str(message.chat.id) in DDOS_BLOCKED_USERS and chat_id_full not in BAD_USERS:
         msg += f'\n{tr("User was temporarily banned.", lang)}\n'
     bot_reply(message, msg)
 

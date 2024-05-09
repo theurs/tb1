@@ -2850,6 +2850,8 @@ In private messages, you don't need to mention the bot's name
 
 🎙️ You can issue commands and make requests using voice messages.
 
+👻 /purge command to remove all your history
+
 
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support

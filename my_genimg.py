@@ -753,8 +753,9 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
 
 
 if __name__ == '__main__':
-    # imgs = PixArtSigma('an apple made of gold')
-    # open('_PixArtSigma.png', 'wb').write(imgs[0])
+    imgs = PixArtSigma('''Generate a detailed and intricate image of a golden katana in the Japanese style. The katana should be elaborately decorated with intricate engravings and a luxurious golden
+finish. The background should be a minimalist Japanese-style setting, with cherry blossoms and a traditional Japanese house in the distance.''')
+    open('_PixArtSigma.png', 'wb').write(imgs[0])
 
     # imgs = SDXL_Lightning('an apple made of gold')
     # open('_sdxl-lightning.png', 'wb').write(imgs[0])
@@ -768,4 +769,4 @@ if __name__ == '__main__':
     # imgs = cosxl('an apple made of gold')
     # open('_cosxl.png', 'wb').write(imgs[0])
 
-    huggin_face_api('an apple made of gold')
+    # huggin_face_api('an apple made of gold')

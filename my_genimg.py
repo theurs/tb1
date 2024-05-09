@@ -260,6 +260,8 @@ def PixArtSigma(prompt: str, url: str = 'PixArt-alpha/PixArt-Sigma') -> bytes:
     except Exception as error:
         if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
             my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        else:
+            my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []
 
     fname = result[0][0]['image']

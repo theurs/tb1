@@ -123,6 +123,7 @@ def huggin_face_api(prompt: str) -> bytes:
         API_URL = cfg.huggin_face_models_urls
     else:
         API_URL = [
+            'PixArt-alpha/PixArt-Sigma',
             'playgroundai/playground-v2.5-1024px-aesthetic',
             "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
             'AP123/SDXL-Lightning',
@@ -131,8 +132,7 @@ def huggin_face_api(prompt: str) -> bytes:
             "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
             "https://api-inference.huggingface.co/models/UnfilteredAI/NSFW-gen-v2",
-            "https://api-inference.huggingface.co/models/PixArt-alpha/PixArt-Sigma-XL-2-1024-MS",
-            
+
             # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.0",
             # "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
             # "https://api-inference.huggingface.co/models/KBlueLeaf/Kohaku-XL-Epsilon",
@@ -147,6 +147,11 @@ def huggin_face_api(prompt: str) -> bytes:
     payload = json.dumps({"inputs": prompt})
 
     def request_img(prompt, url, p):
+        if 'PixArt-Sigma' in url:
+            try:
+                return PixArtSigma(prompt, url)
+            except:
+                return []
         if 'cosxl' in url:
             try:
                 return cosxl(prompt, url)
@@ -222,6 +227,59 @@ def huggin_face_api(prompt: str) -> bytes:
     result = list(set(result))
 
     return result
+
+
+def PixArtSigma(prompt: str, url: str = 'PixArt-alpha/PixArt-Sigma') -> bytes:
+    """
+    url = "PixArt-alpha/PixArt-Sigma" only?
+    """
+    try:
+        client = gradio_client.Client(url)
+    except Exception as error:
+        my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+    result = None
+    try:
+        result = client.predict(
+                prompt=prompt,
+                negative_prompt="",
+                style="(No style)",
+                use_negative_prompt=False,
+                num_imgs=1,
+                seed=0,
+                width=1024,
+                height=1024,
+                schedule="DPM-Solver",
+                dpms_guidance_scale=4.5,
+                sas_guidance_scale=3,
+                dpms_inference_steps=14,
+                sas_inference_steps=25,
+                randomize_seed=True,
+                api_name="/run"
+        )
+    except Exception as error:
+        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
+            my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    fname = result[0][0]['image']
+    base_path = os.path.dirname(fname)
+    if fname:
+        try:
+            data = None
+            with open(fname, 'rb') as f:
+                data = f.read()
+            try:
+                os.remove(fname)
+                os.rmdir(base_path)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            if data:
+                WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                return [data,]
+        except Exception as error:
+            my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return []
 
 
 def size_of_image(data: bytes):
@@ -695,5 +753,5 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
 
 
 if __name__ == '__main__':
-    imgs = kandinski('собака кусака')
-    open('kandinski1.jpg', 'wb').write(imgs[0])
+    imgs = PixArtSigma('an apple made of gold')
+    open('pixart1.png', 'wb').write(imgs[0])

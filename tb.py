@@ -2822,9 +2822,9 @@ def send_welcome_start_thread(message: telebot.types.Message):
     COMMAND_MODE[chat_id_full] = ''
     help = '''Hello, I`m Google Gemini [1.0/1.5/Vision]! Ask me anything. Send me you text/image/audio/documents with questions.
 
-You can change language with <code>/lang</code> command.
+You can change language with /lang command.
 
-You can generate images with <code>/image</code> command. Image editing is not supported yet.
+You can generate images with /image command. Image editing is not supported yet.
 '''
     bot_reply_tr(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 

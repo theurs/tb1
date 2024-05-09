@@ -2820,7 +2820,7 @@ def send_welcome_start_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
-    help = 'Welcome! Ask me anything. Send me you text/image/audio/documents with questions.'
+    help = 'Hello, I`m Google Gemini [1.0/1.5/Vision]! Ask me anything. Send me you text/image/audio/documents with questions.'
     bot_reply_tr(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 
 

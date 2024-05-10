@@ -258,14 +258,14 @@ def remove_key(key: str):
         None
     """
     try:
-        global ALL_KEYS, USER_KEYS
         if key in ALL_KEYS:
-            ALL_KEYS = [x for x in ALL_KEYS if x != key]
+            del ALL_KEYS[ALL_KEYS.index(key)]
         with USER_KEYS_LOCK:
-            for user, keys in USER_KEYS.items():
-                if key in keys:
-                    USER_KEYS[user] = [x for x in keys if x != key]
-                    my_log.log_gemini(f'Invalid key {key} removed from user {user}')
+            # remove key from USER_KEYS
+            for user in USER_KEYS:
+                if key in USER_KEYS[user]:
+                    USER_KEYS[user] = [x for x in USER_KEYS[user] if x != key]
+            my_log.log_gemini(f'Invalid key {key} removed from user {user}')
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
@@ -339,6 +339,8 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
     proxy = ''
     try:
         for key in keys:
+            if 'AIzaSyD08ez1hyiW7cBo2UuXtQp_e5dZwOgU4P3' not in key:
+                continue
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
             if proxies:
@@ -378,7 +380,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                         else:
                             PROXY_POLL_SPEED[proxy] = total_time
                         break
-                    elif response.status_code == 400 and 'API Key not found. Please pass a valid API key.' in response.text:
+                    elif response.status_code == 400 and 'API key not valid. Please pass a valid API key.' in response.text:
                         remove_key(key)
                         continue
                     else:

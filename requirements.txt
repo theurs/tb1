@@ -7,7 +7,7 @@ fake_useragent
 fuzzywuzzy
 
 # свежая версия выжирает цпу на сервере, а с этой не работают новые модные модельки
-gradio_client==0.10.0
+gradio_client==0.14.0
 
 google
 gTTS

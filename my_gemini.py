@@ -258,7 +258,9 @@ def remove_key(key: str):
         None
     """
     try:
-        del ALL_KEYS[ALL_KEYS.index(key)]
+        global ALL_KEYS
+        if key in ALL_KEYS:
+            ALL_KEYS = list(filter(lambda x: x != key, ALL_KEYS))
         with USER_KEYS_LOCK:
             for user, keys in USER_KEYS.items():
                 if key in keys:

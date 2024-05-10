@@ -2534,6 +2534,26 @@ def block_user_list(message: telebot.types.Message):
         bot_reply(message, '\n'.join(users))
 
 
+@bot.message_handler(commands=['msg', 'm', 'message'], func=authorized_admin)
+def message_to_user(message: telebot.types.Message):
+    thread = threading.Thread(target=message_to_user_thread, args=(message,))
+    thread.start()
+def message_to_user_thread(message: telebot.types.Message):
+    """отправка сообщения от админа юзеру"""
+    args = message.text.split(maxsplit=2)
+
+    try:
+        uid = int(args[1])
+        text = args[2]
+        bot.send_message(uid, text, disable_notification=True)
+        bot_reply_tr(message, 'ok')
+        my_log.log_echo(message, f'Admin sent message to user {uid}: {text}')
+        return
+    except:
+        pass
+    bot_reply_tr(message, 'Usage: /msg userid_as_int text to send from admin to user')
+
+
 @bot.message_handler(commands=['alert'], func=authorized_admin)
 def alert(message: telebot.types.Message):
     """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 

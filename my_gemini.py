@@ -339,8 +339,6 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
     proxy = ''
     try:
         for key in keys:
-            if 'AIzaSyD08ez1hyiW7cBo2UuXtQp_e5dZwOgU4P3' not in key:
-                continue
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
             if proxies:

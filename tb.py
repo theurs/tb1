@@ -363,7 +363,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     else:
         data = utils.download_image_as_bytes(text)
     if not query:
-        query = tr('Что изображено на картинке? Дай мне подробное описание, и объясни подробно что это может означать.', lang)
+        query = tr('Что изображено на картинке? Напиши подробное описание, и объясни подробно что это может означать. Затем напиши длинный подробный промпт одним предложением для рисования этой картинки с помощью нейросетей, начни промпт со слов /image Create image of...', lang)
 
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default

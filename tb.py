@@ -1629,7 +1629,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
         keys = my_gemini.USER_KEYS[chat_id_full]
         msg = tr('Your keys:', lang) + '\n\n'
         for key in keys:
-            msg += f'{msg}<code>{key}</code>\n'
+            msg = f'<code>{key}</code>\n'
         bot_reply(message, msg, parse_mode='HTML')
 
 

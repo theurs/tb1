@@ -258,13 +258,13 @@ def remove_key(key: str):
         None
     """
     try:
-        global ALL_KEYS
+        global ALL_KEYS, USER_KEYS
         if key in ALL_KEYS:
-            ALL_KEYS = list(filter(lambda x: x != key, ALL_KEYS))
+            ALL_KEYS = [x for x in ALL_KEYS if x != key]
         with USER_KEYS_LOCK:
             for user, keys in USER_KEYS.items():
                 if key in keys:
-                    USER_KEYS[user] = list(filter(lambda x: x != key, keys))
+                    USER_KEYS[user] = [x for x in keys if x != key]
                     my_log.log_gemini(f'Invalid key {key} removed from user {user}')
     except Exception as error:
         error_traceback = traceback.format_exc()

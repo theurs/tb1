@@ -247,6 +247,28 @@ def undo(chat_id: str):
         my_log.log_gemini(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
 
 
+def remove_key(key: str):
+    """
+    Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.
+    
+    Args:
+        key (str): The key to be removed.
+        
+    Returns:
+        None
+    """
+    try:
+        del ALL_KEYS[ALL_KEYS.index(key)]
+        with USER_KEYS_LOCK:
+            for user, keys in USER_KEYS.items():
+                if key in keys:
+                    USER_KEYS[user] = list(filter(lambda x: x != key, keys))
+                    my_log.log_gemini(f'Invalid key {key} removed from user {user}')
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
+
+
 def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: str = '') -> str:
     """
     A function that utilizes a pretrained model to generate content based on a given input question.
@@ -354,6 +376,9 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                         else:
                             PROXY_POLL_SPEED[proxy] = total_time
                         break
+                    elif response.status_code == 400 and 'API Key not found. Please pass a valid API key.' in response.text:
+                        remove_key(key)
+                        continue
                     else:
                         remove_proxy(proxy)
                         my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}')
@@ -369,6 +394,9 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                             if 'candidates' in str(error_):
                                 result = CANDIDATES
                         break
+                    elif response.status_code == 400 and 'API Key not found. Please pass a valid API key.' in response.text:
+                        remove_key(key)
+                        continue
                     else:
                         my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text}')
                         if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):

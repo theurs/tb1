@@ -911,8 +911,8 @@ def test_new_key(key: str) -> bool:
         bool: True if the key is valid, False otherwise.
     """
     try:
-        # result = ai('1+1= answer very short', model = 'gemini-1.0-pro', key__=key)
-        result = ai('1+1= answer very short', key__=key)
+        result = ai('1+1= answer very short', model = 'gemini-1.0-pro-latest', key__=key)
+        # result = ai('1+1= answer very short', key__=key)
         if result.strip():
             return True
     except Exception as error:

@@ -386,7 +386,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                         else:
                             PROXY_POLL_SPEED[proxy] = total_time
                         break
-                    elif response.status_code == 400 and 'API_KEY_INVALID' in str(response):
+                    elif 'API_KEY_INVALID' in str(response):
                         remove_key(key)
                         continue
                     else:
@@ -404,7 +404,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                             if 'candidates' in str(error_):
                                 result = CANDIDATES
                         break
-                    elif response.status_code == 400 and 'API_KEY_INVALID' in str(response):
+                    elif 'API_KEY_INVALID' in str(response):
                         remove_key(key)
                         continue
                     else:

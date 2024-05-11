@@ -386,7 +386,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                         else:
                             PROXY_POLL_SPEED[proxy] = total_time
                         break
-                    elif 'API_KEY_INVALID' in str(response):
+                    elif response.status_code == 400 and 'API_KEY_INVALID' in str(response.text):
                         remove_key(key)
                         continue
                     else:
@@ -404,7 +404,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                             if 'candidates' in str(error_):
                                 result = CANDIDATES
                         break
-                    elif 'API_KEY_INVALID' in str(response):
+                    elif response.status_code == 400 and 'API_KEY_INVALID' in str(response.text):
                         remove_key(key)
                         continue
                     else:
@@ -911,6 +911,7 @@ def test_new_key(key: str) -> bool:
         bool: True if the key is valid, False otherwise.
     """
     try:
+        # result = ai('1+1= answer very short', model = 'gemini-1.0-pro', key__=key)
         result = ai('1+1= answer very short', key__=key)
         if result.strip():
             return True
@@ -931,8 +932,7 @@ if __name__ == '__main__':
 
     # chat_cli()
     
-    print(test_new_key('AIzaSyD08ez1hyiW7cBo2UuXtQp_e5dZwOgU4PM'))
-    print(test_new_key('AIzaSyD08ez1hyiW7cBo2UuXtQp_e5dZwOgU4P1'))
+    print(test_new_key('123'))
 
     # print(translate('مرحبا', to_lang='nl'))
     # print(translate('Γεια σας', 'el', 'pt'))

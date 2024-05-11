@@ -1587,9 +1587,11 @@ def original_mode(message: telebot.types.Message):
 
 @bot.message_handler(commands=['keys', 'key'], func=authorized_owner)
 def users_keys_for_gemini(message: telebot.types.Message):
-    """
-    Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл
-    """
+    """Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл"""
+    thread = threading.Thread(target=users_keys_for_gemini_thread, args=(message,))
+    thread.start()
+def users_keys_for_gemini_thread(message: telebot.types.Message):
+    """Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
@@ -1599,14 +1601,22 @@ def users_keys_for_gemini(message: telebot.types.Message):
         keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
         keys = [x for x in keys if x not in my_gemini.ALL_KEYS and x.startswith('AIza')]
         if keys:
+            added_flag = False
             with my_gemini.USER_KEYS_LOCK:
                 my_gemini.USER_KEYS[chat_id_full] = keys
                 for key in keys:
                     if key not in my_gemini.ALL_KEYS and key not in cfg.gemini_keys:
-                        my_gemini.ALL_KEYS.append(key)
-                        my_log.log_keys(f'Added new gemini key: {key}')
-            bot_reply_tr(message, 'Added keys successfully!')
-            return
+                        if my_gemini.test_new_key(key):
+                            my_gemini.ALL_KEYS.append(key)
+                            added_flag = True
+                            my_log.log_keys(f'Added new gemini key: {key}')
+                        else:
+                            my_log.log_keys(f'Failed to add new gemini key: {key}')
+                            msg = tr('Failed to add new gemini key:', lang) + ' key'
+                            bot_reply(message, msg)
+            if added_flag:
+                bot_reply_tr(message, 'Added keys successfully!')
+                return
 
     msg = tr('Usage: /keys GEMINI API KEYS space separated\n\nThis bot needs free api keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
     bot_reply(message, msg, disable_web_page_preview = True)

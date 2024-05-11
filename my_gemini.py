@@ -271,19 +271,23 @@ def remove_key(key: str):
         my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
-def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: str = '') -> str:
+def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: str = '', key__: str = None) -> str:
     """
-    A function that utilizes a pretrained model to generate content based on a given input question.
+    Generates a response to a given question using the Generative AI model.
     
-    Parameters:
-    - q (str): The input question for which content needs to be generated.
-    - mem (list): A list of previous memory contents.
-    - temperature (float): Controls the randomness of the generated content, default is 0.1.
-    - proxy_str (str): A string indicating the proxy settings.
-    - model (str): The pretrained model to be used for content generation, default is 'gemini-1.0-pro-latest'.
-    
+    Args:
+        q (str): The question to be answered.
+        mem (list, optional): The memory to be used for generating the response. Defaults to [].
+        temperature (float, optional): The temperature parameter for the model. Defaults to 0.1.
+        proxy_str (str, optional): The proxy to be used for the request. Defaults to ''.
+        model (str, optional): The model to be used for generating the response. Defaults to ''.
+        key__ (str, optional): The API key to be used for the request. Defaults to None.
+        
     Returns:
-    - str: The generated content based on the input question.
+        str: The generated response to the question.
+        
+    Raises:
+        Exception: If an error occurs during the request or response handling.
     """
     if model == '':
         # model = 'gemini-1.5-pro-latest'
@@ -324,8 +328,12 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                 }
             }
 
-    keys = cfg.gemini_keys[:] + ALL_KEYS
-    random.shuffle(keys)
+    if key__:
+        keys = [key__, ]
+    else:
+        keys = cfg.gemini_keys[:] + ALL_KEYS
+        random.shuffle(keys)
+
     result = ''
 
     if proxy_str == 'probe':
@@ -892,6 +900,27 @@ def repair_text_after_speech_to_text(text: str) -> str:
     return text
 
 
+def test_new_key(key: str) -> bool:
+    """
+    Test if a new key is valid.
+
+    Args:
+        key (str): The key to be tested.
+
+    Returns:
+        bool: True if the key is valid, False otherwise.
+    """
+    try:
+        result = ai('1+1= answer very short', key__=key)
+        if result.strip():
+            return True
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_gemini:test_new_key: {error}\n\n{error_traceback}')
+
+    return False
+
+
 if __name__ == '__main__':
 
     run_proxy_pool_daemon()
@@ -900,7 +929,10 @@ if __name__ == '__main__':
 
     # print(get_models())
 
-    chat_cli()
+    # chat_cli()
+    
+    print(test_new_key('AIzaSyD08ez1hyiW7cBo2UuXtQp_e5dZwOgU4PM'))
+    print(test_new_key('AIzaSyD08ez1hyiW7cBo2UuXtQp_e5dZwOgU4P1'))
 
     # print(translate('مرحبا', to_lang='nl'))
     # print(translate('Γεια σας', 'el', 'pt'))
@@ -910,5 +942,3 @@ if __name__ == '__main__':
 
     # data = open('1.jpg', 'rb').read()
     # print(img2txt(data))
-
-    print(check_phone_number('9243348422'))

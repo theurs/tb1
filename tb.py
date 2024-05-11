@@ -1612,7 +1612,7 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
                             my_log.log_keys(f'Added new gemini key: {key}')
                         else:
                             my_log.log_keys(f'Failed to add new gemini key: {key}')
-                            msg = tr('Failed to add new gemini key:', lang) + ' key'
+                            msg = tr('Failed to add new gemini key:', lang) + f' {key}'
                             bot_reply(message, msg)
             if added_flag:
                 bot_reply_tr(message, 'Added keys successfully!')

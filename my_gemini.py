@@ -265,7 +265,7 @@ def remove_key(key: str):
             for user in USER_KEYS:
                 if key in USER_KEYS[user]:
                     USER_KEYS[user] = [x for x in USER_KEYS[user] if x != key]
-            my_log.log_gemini(f'Invalid key {key} removed from user {user}')
+                    my_log.log_gemini(f'Invalid key {key} removed from user {user}')
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')

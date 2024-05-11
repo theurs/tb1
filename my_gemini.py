@@ -383,7 +383,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                         continue
                     else:
                         remove_proxy(proxy)
-                        my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}')
+                        my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}\n\n{q}')
             else:
                 n = 6
                 while n > 0:
@@ -400,7 +400,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                         remove_key(key)
                         continue
                     else:
-                        my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text}')
+                        my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text}\n\n{q}')
                         if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):
                             time.sleep(5)
                         else:
@@ -408,7 +408,8 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
             if result:
                 break
     except Exception as unknown_error:
-        my_log.log_gemini(f'my_gemini:ai:{unknown_error}')
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini(f'my_gemini:ai:{unknown_error}\n\n{error_traceback}')
 
     answer = result.strip()
     if not answer and model == 'gemini-1.5-pro-latest':

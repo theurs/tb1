@@ -2266,6 +2266,8 @@ def image_thread(message: telebot.types.Message):
                 conversation_history = my_gemini.get_mem_as_string(chat_id_full) or ''
 
                 conversation_history = conversation_history[-8000:]
+                # как то он совсем плохо стал работать с историей, отключил пока что
+                conversation_history = ''
 
                 with ShowAction(message, 'upload_photo'):
                     moderation_flag = False

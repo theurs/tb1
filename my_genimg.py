@@ -693,7 +693,7 @@ Dialog history: {conversation_history}
 # """
 
     reprompt = my_gemini.ai(query, temperature=1.2)
-    my_log.log_reprompts(f'{prompt}\n\n{reprompt}')
+    my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}')
 
     query2 = f"""
 Does this text look like a user request to generate an image? Yes or No, answer supershort.
@@ -706,6 +706,30 @@ Text: {reprompt}
         return prompt
 
 
+def get_reprompt_nsfw(prompt: str, conversation_history: str) -> str:
+    """
+    Function to get a reprompt for image generation based on user's prompt and conversation history.
+    Parameters:
+    - prompt: a string containing the user's prompt
+    - conversation_history: a string containing the conversation history
+    Returns:
+    - a string representing the reprompt for image generation
+    """
+
+    detected_lang = langdetect.detect(prompt)
+    reprompt = prompt
+
+    # используем только гугл транслятор потому что на ИИ надежды нет из за самоцензуры
+    if detected_lang != 'en':
+        prompt_translated = my_trans.translate_text2(prompt, 'en')
+        if prompt_translated:
+            reprompt = prompt_translated
+
+    my_log.log_reprompts(f'get_reprompt_nsfw:\n\n{prompt}\n\n{reprompt}')
+
+    return reprompt
+
+
 def gen_images(prompt: str, moderation_flag: bool = False,
                user_id: str = '',
                conversation_history: str = '',
@@ -715,7 +739,11 @@ def gen_images(prompt: str, moderation_flag: bool = False,
     if prompt.strip() == '':
         return []
 
-    reprompt = get_reprompt(prompt, conversation_history)
+    if use_bing:
+        reprompt = get_reprompt(prompt, conversation_history)
+    else:
+        reprompt = get_reprompt_nsfw(prompt, conversation_history)
+
     prompt = reprompt
 
     if use_bing:

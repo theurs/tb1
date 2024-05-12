@@ -868,18 +868,21 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
     Returns:
         str: The generated response from the AI model.
     """
-    t1 = text[:int(MAX_SUM_REQUEST/2)]
-    t2 = text[int(MAX_SUM_REQUEST/2):MAX_SUM_REQUEST] if len(text) > int(MAX_SUM_REQUEST/2) else ''
-    mem = []
-    if t2:
-        mem.append({"role": "user", "parts": [{"text": f'Dont answer before get part 2 and question.\n\nPart 1:\n\n{t1}'}]})
-        mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
-        mem.append({"role": "user", "parts": [{"text": f'Part 2:\n\n{t2}'}]})
-        mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
-    else:
-        mem.append({"role": "user", "parts": [{"text": f'Dont answer before get part 1 and question.\n\nPart 1:\n\n{t1}'}]})
-        mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
-    return ai(query, mem=mem, temperature=temperature)
+    query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
+    # t1 = text[:int(MAX_SUM_REQUEST/2)]
+    # t2 = text[int(MAX_SUM_REQUEST/2):MAX_SUM_REQUEST] if len(text) > int(MAX_SUM_REQUEST/2) else ''
+    # mem = []
+    # if t2:
+    #     mem.append({"role": "user", "parts": [{"text": f'Dont answer before get part 2 and question.\n\nPart 1:\n\n{t1}'}]})
+    #     mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
+    #     mem.append({"role": "user", "parts": [{"text": f'Part 2:\n\n{t2}'}]})
+    #     mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
+    # else:
+    #     mem.append({"role": "user", "parts": [{"text": f'Dont answer before get part 1 and question.\n\nPart 1:\n\n{t1}'}]})
+    #     mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
+
+    # return ai(query, mem=mem, temperature=temperature)
+    return ai(query, temperature=temperature, model='gemini-1.5-pro-latest')
 
 
 def repair_text_after_speech_to_text(text: str) -> str:

@@ -1643,6 +1643,20 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
         bot_reply(message, msg, parse_mode='HTML')
 
 
+@bot.message_handler(commands=['gemini10'], func=authorized_owner)
+def gemini10_mode(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    CHAT_MODE[chat_id_full] = 'gemini'
+    bot_reply_tr(message, 'Gemini Pro 1.0 model selected.')
+
+
+@bot.message_handler(commands=['gemini15'], func=authorized_owner)
+def gemini15_mode(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    CHAT_MODE[chat_id_full] = 'gemini15'
+    bot_reply_tr(message, 'Gemini Pro 1.5 model selected.')
+
+
 @bot.message_handler(commands=['style'], func=authorized_owner)
 def change_mode(message: telebot.types.Message):
     """

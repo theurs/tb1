@@ -2226,6 +2226,10 @@ def get_user_image_counter(chat_id_full: str) -> int:
 
 @bot.message_handler(commands=['image2','img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
 def image2(message: telebot.types.Message):
+    is_private = message.chat.type == 'private'
+    if not is_private:
+        bot_reply_tr(message, 'This command is only available in private chats.')
+        return
     message.text += 'NSFW'
     thread = threading.Thread(target=image_thread, args=(message,))
     thread.start()

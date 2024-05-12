@@ -706,7 +706,10 @@ Text: {reprompt}
         return prompt
 
 
-def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', conversation_history: str = ''):
+def gen_images(prompt: str, moderation_flag: bool = False,
+               user_id: str = '',
+               conversation_history: str = '',
+               use_bing: bool = True) -> list:
     """рисует одновременно всеми доступными способами"""
 
     if prompt.strip() == '':
@@ -715,25 +718,41 @@ def gen_images(prompt: str, moderation_flag: bool = False, user_id: str = '', co
     reprompt = get_reprompt(prompt, conversation_history)
     prompt = reprompt
 
-    pool = ThreadPool(processes=6)
+    if use_bing:
+        pool = ThreadPool(processes=6)
 
-    async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
-    
-    async_result2 = pool.apply_async(kandinski, (prompt,))
-    async_result3 = pool.apply_async(kandinski, (prompt,))
+        async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
+        
+        async_result2 = pool.apply_async(kandinski, (prompt,))
+        async_result3 = pool.apply_async(kandinski, (prompt,))
 
-    async_result4 = pool.apply_async(huggin_face_api, (prompt,))
+        async_result4 = pool.apply_async(huggin_face_api, (prompt,))
 
-    async_result5 = pool.apply_async(yandex_cloud, (prompt,))
-    async_result6 = pool.apply_async(yandex_cloud, (prompt,))
+        async_result5 = pool.apply_async(yandex_cloud, (prompt,))
+        async_result6 = pool.apply_async(yandex_cloud, (prompt,))
 
+        result = (async_result1.get() or []) + \
+                 (async_result2.get() or []) + \
+                 (async_result3.get() or []) + \
+                 (async_result4.get() or []) + \
+                 (async_result5.get() or []) + \
+                 (async_result6.get() or [])
+    else:
+        pool = ThreadPool(processes=6)
 
-    result = (async_result1.get() or []) + \
-            (async_result2.get() or []) + \
-            (async_result3.get() or []) + \
-            (async_result4.get() or []) + \
-            (async_result5.get() or []) + \
-            (async_result6.get() or [])
+        async_result2 = pool.apply_async(kandinski, (prompt,))
+        async_result3 = pool.apply_async(kandinski, (prompt,))
+
+        async_result4 = pool.apply_async(huggin_face_api, (prompt,))
+
+        async_result5 = pool.apply_async(yandex_cloud, (prompt,))
+        async_result6 = pool.apply_async(yandex_cloud, (prompt,))
+
+        result = (async_result2.get() or []) + \
+                 (async_result3.get() or []) + \
+                 (async_result4.get() or []) + \
+                 (async_result5.get() or []) + \
+                 (async_result6.get() or [])
 
     # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
     # может удалить то что рисуют параллельные запросы и второй бот?

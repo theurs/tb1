@@ -2210,15 +2210,27 @@ def get_user_image_counter(chat_id_full: str) -> int:
     return IMAGES_BY_USER_COUNTER[chat_id_full]
 
 
+@bot.message_handler(commands=['image2','img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
+def image2(message: telebot.types.Message):
+    message.text += 'NSFW'
+    thread = threading.Thread(target=image_thread, args=(message,))
+    thread.start()
+
+
 @bot.message_handler(commands=['image','img', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen'], func=authorized)
 def image(message: telebot.types.Message):
     thread = threading.Thread(target=image_thread, args=(message,))
     thread.start()
 def image_thread(message: telebot.types.Message):
     """Generates a picture from a description"""
-
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+
+    # не использовать бинг для рисования запрещенки, он за это банит
+    NSFW_FLAG = False
+    if message.text.endswith('NSFW'):
+        NSFW_FLAG = True
+        message.text = message.text[:-4]
 
     if chat_id_full in IMG_GEN_LOCKS:
         lock = IMG_GEN_LOCKS[chat_id_full]
@@ -2258,7 +2270,10 @@ def image_thread(message: telebot.types.Message):
                 with ShowAction(message, 'upload_photo'):
                     moderation_flag = False
 
-                    images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history)
+                    if NSFW_FLAG:
+                        images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
+                    else:
+                        images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
                     # 1 а может и больше запросы к репромптеру
                     with CHAT_STATS_LOCK:
                         CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
@@ -2356,7 +2371,7 @@ def image_thread(message: telebot.types.Message):
                                     log_msg += f'[binary file {round(len(x)/1024)}kb] '
                             my_log.log_echo(message, log_msg)
 
-                            if pics_group:
+                            if pics_group and not NSFW_FLAG:
                                 try:
                                     translated_prompt = tr(prompt, 'ru')
                                     bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',

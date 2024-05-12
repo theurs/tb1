@@ -98,7 +98,6 @@ BEGIN:
 
     if not result:
         try:
-            
             if subj == 'youtube_video':
                 qq = f'Summarize the content of this YouTube video using only the subtitles, what this video about, in no more than 2000 words, answer in [{lang}] language.'
             else:

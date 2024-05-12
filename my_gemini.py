@@ -142,8 +142,10 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                         response = session.post(url, json=data, timeout=TIMEOUT).json()
                         try:
                             result = response['candidates'][0]['content']['parts'][0]['text']
+                            if result == '' or result:
+                                return result.strip()
                         except Exception as error_ca:
-                            if 'candidates' in str(error_ca):
+                            if 'candidates' in str(error_ca) or 'content' in str(error_ca):
                                 my_log.log2(f'my_gemini:img2txt:{error_ca}')
                                 return ''
                         if result:
@@ -151,6 +153,8 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                             total_time = end_time - start_time
                             if total_time > 45:
                                 remove_proxy(proxy)
+                            break
+                        if result == '':
                             break
                     except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
                         remove_proxy(proxy)
@@ -160,16 +164,16 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                     response = requests.post(url, json=data, timeout=TIMEOUT).json()
                     try:
                         result = response['candidates'][0]['content']['parts'][0]['text']
+                        if result == '' or result:
+                            return result.strip()
                     except Exception as error_ca:
-                        if 'candidates' in str(error_ca):
+                        if 'candidates' in str(error_ca) or 'content' in str(error_ca):
                             my_log.log2(f'my_gemini:img2txt:{error_ca}')
                             return ''
                 except Exception as error:
                     if 'content' in str(error):
                         return ''
                     my_log.log2(f'img2txt:{error}')
-            if result:
-                break
         return result.strip()
     except Exception as unknown_error:
         if 'content' not in str(error):

@@ -68,7 +68,13 @@ def translate_prompt_to_en(prompt: str) -> str:
     Returns:
         str: The translated prompt in English.
     """
-    detected_lang = langdetect.detect(prompt)
+    try:
+        detected_lang = langdetect.detect(prompt)
+    except Exception as error:
+        if 'No features in text' not in str(error):
+            my_log.log2(f'my_genimg:rewrite_prompt_for_open_dalle: error: {error}')
+        detected_lang = 'unknown'
+
     if detected_lang != 'en':
         prompt_translated = my_gemini.translate(prompt, to_lang='en', help='This is a prompt for image generation. Users can write it in their own language, but only English is supported.')
         if not prompt_translated:
@@ -96,7 +102,13 @@ def rewrite_prompt_for_open_dalle(prompt: str) -> str:
     else:
         huggingface_prompts[hash(prompt)] = True
 
-    detected_lang = langdetect.detect(prompt)
+    try:
+        detected_lang = langdetect.detect(prompt)
+    except Exception as error:
+        if 'No features in text' not in str(error):
+            my_log.log2(f'my_genimg:rewrite_prompt_for_open_dalle: error: {error}')
+        detected_lang = 'unknown'
+
     if detected_lang != 'en' or force:
         prompt_translated = my_gemini.ai(f'This is a prompt for image generation. Rewrite it in english, in one long sentance, make it better:\n\n{prompt}', temperature=1)
         if not prompt_translated:
@@ -715,9 +727,14 @@ def get_reprompt_nsfw(prompt: str, conversation_history: str) -> str:
     Returns:
     - a string representing the reprompt for image generation
     """
-
-    detected_lang = langdetect.detect(prompt)
     reprompt = prompt
+
+    try:
+        detected_lang = langdetect.detect(prompt)
+    except Exception as error:
+        if 'No features in text' not in str(error):
+            my_log.log2(f'my_genimg:rewrite_prompt_for_open_dalle: error: {error}')
+        detected_lang = 'unknown'
 
     # используем только гугл транслятор потому что на ИИ надежды нет из за самоцензуры
     if detected_lang != 'en':

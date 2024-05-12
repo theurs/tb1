@@ -153,7 +153,7 @@ def search_google_v2(query: str, max_search: int = 20, lang: str = 'ru') -> str:
         if n == maxn:
             break
 
-    return my_gemini.ai(qqqq)
+    return my_gemini.ai(qqqq, model='gemini-1.5-pro-latest')
 
 
 def search_ddg_v2(query: str, lang: str = 'ru') -> str:
@@ -185,7 +185,7 @@ def search_ddg_v2(query: str, lang: str = 'ru') -> str:
         if n == maxn:
             break
 
-    return my_gemini.ai(qqqq)
+    return my_gemini.ai(qqqq, model='gemini-1.5-pro-latest')
 
 
 def ddg_text(query: str) -> str:

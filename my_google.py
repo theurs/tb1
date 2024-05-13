@@ -283,7 +283,7 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 10) -> str:
         if len(text) > my_gemini.MAX_SUM_REQUEST:
             break
 
-    q = f'''Answer to users search query using search results and your own knowledge.
+    q = f'''Answer in "{lang}" language to users search query using search results and your own knowledge.
 User query: "{query}"
 
 Search results:

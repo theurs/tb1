@@ -2244,7 +2244,8 @@ def google_thread(message: telebot.types.Message):
 
     with ShowAction(message, 'typing'):
         with semaphore_talks:
-            r = my_google.search(q, lang)
+            # r = my_google.search(q, lang)
+            r = my_google.search_v3(q, lang)
         try:
             rr = utils.bot_markdown_to_html(r)
             bot_reply(message, rr, parse_mode = 'HTML',

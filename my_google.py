@@ -256,11 +256,7 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 10) -> str:
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
     try:
-        r = []
-        # r = googlesearch.search(query, stop = max_search, lang=lang)
-        with DDGS() as ddgs:
-            for result in ddgs.text(query, safesearch='Off', timelimit='y', region = 'ru-ru'):
-                r.append(result['href'])
+        r = googlesearch.search(query, stop = max_search, lang=lang)
     except Exception as error:
         my_log.log2(f'my_google:search_google_v2: {error}')
         try:

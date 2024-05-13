@@ -278,7 +278,7 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 10) -> str:
 
     text = ''
     for url in urls:
-        print(url)
+        # print(url)
         text += download_text([url,], 20000)
         if len(text) > my_gemini.MAX_SUM_REQUEST:
             break

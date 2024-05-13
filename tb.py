@@ -1674,7 +1674,7 @@ def gemini15_mode(message: telebot.types.Message):
     bot_reply_tr(message, 'Gemini Pro 1.5 model selected.')
 
 
-@bot.message_handler(commands=['llama3-70'], func=authorized_owner)
+@bot.message_handler(commands=['llama370'], func=authorized_owner)
 def llama3_70(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     CHAT_MODE[chat_id_full] = 'groq-llama370'

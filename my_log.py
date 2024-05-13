@@ -177,6 +177,9 @@ def log_translate(text: str) -> None:
 
 def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bool = False) -> None:
     """записывает в журнал сообщение полученное обработчиком обычных сообщений либо ответ бота"""
+    if hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
+        return
+
     if LOG_MODE == -1:
         return
 
@@ -224,6 +227,9 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
 
 def log_media(message: telebot.types.Message) -> None:
     """записывает в журнал сообщение полученное обработчиком медиа файлов"""
+    if hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
+        return
+
     if LOG_MODE == -1:
         return
 
@@ -309,6 +315,9 @@ def log_media(message: telebot.types.Message) -> None:
 
 def log_google(request: str, respond: str):
     """записывает в журнал сообщение полученное обработчиком google"""
+    if hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
+        return
+
     if LOG_MODE == -1:
         return
 
@@ -343,4 +352,3 @@ def purge(chat_id: int) -> bool:
 
 if __name__ == '__main__':
     pass
-    purge(1651196)

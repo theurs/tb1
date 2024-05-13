@@ -273,17 +273,31 @@ def stt(data: bytes = None, lang: str = '', key_: str = '') -> str:
     return ''
 
 
-def summ_text_file(path: str) -> str:
-    with open(path, 'r', encoding='utf-8') as f:
-        text = f.read()
-    prompt = f'Перескажи текст:\n\n{text[:MAX_QUERY_LENGTH]}'
-    system = 'Отвечай на русском языке в удобном для чтения формате, 500-3000 слов.'
-    return ai(prompt, system)
+def reprompt_image(prompt: str) -> str:
+    '''плохо работает'''
+    query = f'''Rewrite the prompt for drawing a picture using a neural network,
+make it bigger but keep close to the original, into English,
+answer with a single long sentence, start with the words Create image of...\n\nPrompt: {prompt}
+'''
+    result = ai(query, temperature=1)
+    if result:
+        return result
+    else:
+        return prompt
+
+
+# def summ_text_file(path: str) -> str:
+#     with open(path, 'r', encoding='utf-8') as f:
+#         text = f.read()
+#     prompt = f'Перескажи текст:\n\n{text[:MAX_QUERY_LENGTH]}'
+#     system = 'Отвечай на русском языке в удобном для чтения формате, 500-3000 слов.'
+#     return ai(prompt, system)
 
 
 if __name__ == '__main__':
     # print(ai('привет как дела'))
     # print(summ_text_file('1.txt'))
-    chat_cli()
+    # chat_cli()
 
     # stt()
+    pass

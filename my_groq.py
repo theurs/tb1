@@ -286,6 +286,28 @@ answer with a single long sentence, start with the words Create image of...\n\nP
         return prompt
 
 
+def translate_text(text: str, lang: str = 'ru') -> str:
+    """
+    Translates the given text to the specified language using the Groq API.
+
+    Args:
+        text (str): The text to be translated.
+        lang (str, optional): The target language for translation. Defaults to 'ru'.
+
+    Returns:
+        str: The translated text.
+
+    Raises:
+        None
+
+    Examples:
+        >>> translate_text("Hello, world!", "es")
+        "¡Hola, mundo!"
+    """
+    query = f'Translate the following text to language "{lang}", in your answer should be only the translated text:\n\n{text}'
+    return ai(query, temperature=0, max_tokens_ = 8000)
+
+
 # def summ_text_file(path: str) -> str:
 #     with open(path, 'r', encoding='utf-8') as f:
 #         text = f.read()
@@ -297,7 +319,14 @@ answer with a single long sentence, start with the words Create image of...\n\nP
 if __name__ == '__main__':
     # print(ai('привет как дела'))
     # print(summ_text_file('1.txt'))
-    # chat_cli()
+
+    chat_cli()
 
     # stt()
-    pass
+
+    # test_cases = [
+    #     'print("Hello, World!")',
+    #     'Let me learn how to code in Python.',
+    # ]
+    # for x in test_cases:
+    #     print(x, '->', translate_text(x, 'ru'))

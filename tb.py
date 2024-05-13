@@ -2955,7 +2955,7 @@ In private messages, you don't need to mention the bot's name
 Change model:
 /gemini10 - Google Gemini 1.0
 /gemini15 - Google Gemini 1.5
-/llama3-70 - LLaMa 3 70b (Groq)
+/llama370 - LLaMa 3 70b (Groq)
 
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support

@@ -1075,6 +1075,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 {tr('Disable/enable the context, the bot will not know who it is, where it is, who it is talking to, it will work as on the original website', lang, '_')}
 
 /original_mode
+
+<b>{tr('Available ai models:', lang)}</b>
+/llama370 - llama 3 70b (groq)
+/gemini10 - Google Gemini 1.0
+/gemini15 - Google Gemini 1.5
+
 """
 
         if call.data == 'clear_history':
@@ -1585,6 +1591,12 @@ def config_thread(message: telebot.types.Message):
 {tr('Disable/enable the context, the bot will not know who it is, where it is, who it is talking to, it will work as on the original website', lang, '_')}
 
 /original_mode
+
+<b>{tr('Available ai models:', lang)}</b>
+/llama370 - llama 3 70b (groq)
+/gemini10 - Google Gemini 1.0
+/gemini15 - Google Gemini 1.5
+
 """
         bot_reply(message, MSG_CONFIG, parse_mode='HTML', reply_markup=get_keyboard('config', message))
     except Exception as error:

@@ -395,7 +395,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                         continue
                     else:
                         remove_proxy(proxy)
-                        my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text}\n\n{q}')
+                        my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text[:10000]}\n\n{q}')
             else:
                 n = 6
                 while n > 0:
@@ -412,7 +412,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                         remove_key(key)
                         continue
                     else:
-                        my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text}\n\n{q}')
+                        my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text[:10000]}\n\n{q}')
                         if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):
                             time.sleep(5)
                         else:
@@ -937,9 +937,9 @@ if __name__ == '__main__':
 
     # print(get_models())
 
-    # chat_cli()
+    chat_cli()
     
-    print(test_new_key('123'))
+    # print(test_new_key('123'))
 
     # print(translate('مرحبا', to_lang='nl'))
     # print(translate('Γεια σας', 'el', 'pt'))

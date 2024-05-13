@@ -251,6 +251,48 @@ def search(query: str, lang: str = 'ru') -> str:
     return result
 
 
+def search_v3(query: str, lang: str = 'ru', max_search: int = 10) -> str:
+    # добавляем в список выдачу самого гугла, и она же первая и главная
+    urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
+    # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
+    try:
+        r = googlesearch.search(query, stop = max_search, lang=lang)
+    except Exception as error:
+        my_log.log2(f'my_google:search_google_v2: {error}')
+        try:
+            r = [x for x in ddg_text(query)]
+        except Exception as error:
+            my_log.log2(f'my_google:search_google_v2: {error}')
+            return ''
+
+    bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
+
+    try:
+        for url in r:
+            if any(s.lower() in url.lower() for s in bad_results):
+                continue
+            urls.append(url)
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
+
+    text = ''
+    for url in urls:
+        print(url)
+        text += download_text([url,], 20000)
+        if len(text) > my_gemini.MAX_SUM_REQUEST:
+            break
+
+    q = f'''Answer to users search query using search results and your own knowledge.
+User query: "{query}"
+
+Search results:
+
+{text[:my_gemini.MAX_SUM_REQUEST]}
+'''
+    return my_gemini.ai(q, model='gemini-1.5-pro-latest')
+
+
 if __name__ == "__main__":
     #text, links = shorten_links(text)
     #print(text)
@@ -259,13 +301,15 @@ if __name__ == "__main__":
 
     #print(download_text(['https://www.google.com/search?q=курс+доллара'], 10))    
 
-    print(search('3 закона робототехники'), '\n\n')
+    # print(search('3 закона робототехники'), '\n\n')
 
 
     
     # print(search_google('курс доллара'), '\n\n')
     
-    # print(search('полный текст песни doni ft валерия ты такой'), '\n\n')
+    # print(search_v3('полный текст песни doni ft валерия ты такой'), '\n\n')
+
+    print(search_v3('перспектива наступления в харковщине'), '\n\n')
 
     # print(search('курс доллара'), '\n\n')
     # print(search('текст песни егора пикачу'), '\n\n')

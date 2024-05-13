@@ -3710,7 +3710,7 @@ def do_task(message, custom_prompt: str = ''):
 
                         # answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full],
                         #                         model = '', style = hidden_text)
-                        answer = my_groq.chat(message.text, chat_id_full)
+                        answer = my_groq.chat(message.text, chat_id_full, style=f'Answer in language of user - {lang}')
 
                         WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 

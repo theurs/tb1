@@ -235,6 +235,35 @@ def chat_cli():
         print(r)
 
 
+def stt(data: bytes = None, lang: str = '', key_: str = '') -> str:
+    '''not work - need access to groq cloud'''
+    try:
+        if not data:
+            with open('1.ogg', 'rb') as f:
+                data = f.read()
+
+        key = key_ if key_ else random.choice(cfg.GROQ_API_KEY)
+        if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
+            client = Groq(
+                api_key=key,
+                http_client = httpx.Client(proxy = random.choice(cfg.GROQ_PROXIES)),
+                timeout = 120,
+            )
+        else:
+            client = Groq(api_key=key, timeout = 120,)
+        transcription = client.audio.transcriptions.create(file=("123.ogg", data),
+                                                           model="whisper-large-v3",
+                                                           language=lang,
+                                                           response_format = 'text',
+                                                           timeout=120,)
+        return transcription.text
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_groq(f'my_groq:stt: {error}\n\n{error_traceback}\n\n{lang}\n\n{key_}')
+
+    return ''
+
+
 def summ_text_file(path: str) -> str:
     with open(path, 'r', encoding='utf-8') as f:
         text = f.read()
@@ -247,3 +276,5 @@ if __name__ == '__main__':
     # print(ai('привет как дела'))
     # print(summ_text_file('1.txt'))
     chat_cli()
+
+    # stt()

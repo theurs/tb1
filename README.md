@@ -36,6 +36,7 @@
 
 /gemini15 - поменять модель джемини на 1.5
 
+/llama3-70 - поменять модель groq llama 3 70b 
 
 **Команды для администратора**
 
@@ -251,6 +252,15 @@ YND_OAUTH = ['xxx', 'yyy']
 
 # гпт4 и далли3. просто ссылка в меню на отдельного бота с гпт4-турбо и далли3
 coze_bot = 'https://t.me/kun6sun_bot'
+
+
+# https://console.groq.com/keys
+GROQ_API_KEY = [
+    'gsk_xxx',
+    'gsk_yyy',
+    ]
+# GROQ_PROXIES = ['socks5://172.28.1.8:1080',]
+
 
 # DEBUG = False
 ```

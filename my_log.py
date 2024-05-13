@@ -70,6 +70,21 @@ def log_gemini(text: str) -> None:
             open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
 
 
+def log_groq(text: str) -> None:
+    """для логов groq"""
+    if LOG_MODE == -1:
+        return
+
+    global lock
+    with lock:
+        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        log_file_path = 'logs/debug_groq.log'
+        if LOG_MODE in (1,):
+            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+        if LOG_MODE in (1,0):
+            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+
+
 def log_bing_success(text: str) -> None:
     """для логов удачных комбинаций бинга, когда ему удалось нарисовать что-нибудь"""
     if LOG_MODE == -1:

@@ -23,6 +23,7 @@ import my_genimg
 import my_dic
 import my_google
 import my_gemini
+import my_groq
 import my_log
 import my_ocr
 import my_pandoc
@@ -923,6 +924,19 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1, button2, button3)
         markup.row(button4, button5, button6)
         return markup
+
+    elif kbd == 'groq_groq-llama370_chat':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='groq-llama370_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'gemini_chat' or kbd == 'chat':
         if disabled_kbd(chat_id_full):
             return None
@@ -1118,6 +1132,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
                                       reply_markup=get_keyboard('chat', message))
+        elif call.data == 'groq-llama370_reset':
+            my_groq.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с Groq llama 3 70b очищена.')
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Gemini Pro очищена.')
@@ -1657,6 +1674,13 @@ def gemini15_mode(message: telebot.types.Message):
     bot_reply_tr(message, 'Gemini Pro 1.5 model selected.')
 
 
+@bot.message_handler(commands=['llama3-70'], func=authorized_owner)
+def llama3_70(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    CHAT_MODE[chat_id_full] = 'groq-llama370'
+    bot_reply_tr(message, 'Groq llama 3 70b model selected.')
+
+
 @bot.message_handler(commands=['style'], func=authorized_owner)
 def change_mode(message: telebot.types.Message):
     """
@@ -1801,7 +1825,13 @@ def reset_(message: telebot.types.Message):
     else:
         chat_id_full = get_topic_id(message)
 
-        my_gemini.reset(chat_id_full)
+        if 'gemini' in CHAT_MODE[chat_id_full]:
+            my_gemini.reset(chat_id_full)
+        elif 'groq' in CHAT_MODE[chat_id_full]:
+            my_groq.reset(chat_id_full)
+        else:
+            bot_reply_tr(message, 'History WAS NOT cleared.')
+            return
         bot_reply_tr(message, 'History cleared.')
 
 
@@ -1932,9 +1962,14 @@ def send_debug_history(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
 
-    prompt = 'Gemini Pro\n\n'
-    prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-    bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if 'gemini' in CHAT_MODE[chat_id_full]:
+        prompt = 'Gemini Pro\n\n'
+        prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if 'groq' in CHAT_MODE[chat_id_full]:
+        prompt = 'Groq llama 3 70b\n\n'
+        prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
 @bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin) 
@@ -2917,6 +2952,10 @@ In private messages, you don't need to mention the bot's name
 
 👻 /purge command to remove all your data
 
+Change model:
+/gemini10 - Google Gemini 1.0
+/gemini15 - Google Gemini 1.5
+/llama3-70 - LLaMa 3 70b (Groq)
 
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support
@@ -2974,6 +3013,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             lang = get_lang(chat_id_full, message)
 
             my_gemini.reset(chat_id_full)
+            my_groq.reset(chat_id_full)
 
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
@@ -3652,6 +3692,45 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task: {error}')
                             bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                     reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                    except Exception as error3:
+                        print(error3)
+                        my_log.log2(str(error3))
+                    return
+
+            # если активирован режим общения с groq llama 3 70b
+            if chat_mode_ == 'groq-llama370':
+                if len(msg) > my_groq.MAX_REQUEST:
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3 70b:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST}')
+                    return
+
+                with ShowAction(message, action):
+                    try:
+                        if chat_id_full not in GEMIMI_TEMP:
+                            GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+
+                        # answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full],
+                        #                         model = '', style = hidden_text)
+                        answer = my_groq.chat(message.text, chat_id_full)
+
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                        if not answer:
+                            answer = 'Groq llama 3 70b ' + tr('did not answered, try to /reset and start again', lang)
+
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
+
+                        my_log.log_echo(message, f'[groq-llama370] {answer}')
+                        try:
+                            bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                    reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error:
+                            print(f'tb:do_task: {error}')
+                            my_log.log2(f'tb:do_task: {error}')
+                            bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))

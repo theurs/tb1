@@ -347,6 +347,13 @@ def tr(text: str, lang: str, help: str = '') -> str:
     return AUTO_TRANSLATIONS[key]
 
 
+def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
+    if 'gemini' in CHAT_MODE[chat_id_full]:
+        my_gemini.update_mem(query, resp, chat_id_full)
+    elif 'llama3' in CHAT_MODE[chat_id_full]:
+        my_groq.update_mem(query, resp, chat_id_full)
+
+
 def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     """
     Generate the text description of an image.
@@ -377,7 +384,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
     if text:
-        my_gemini.update_mem(tr('User asked about a picture:', lang) + ' ' + query, text, chat_id_full)
+        add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + query, text, chat_id_full)
 
     return text
 
@@ -1331,7 +1338,7 @@ def handle_document_thread(message: telebot.types.Message):
                     caption_ = tr("попросил ответить по содержанию файла", lang)
                     if caption:
                         caption_ += ', ' + caption
-                    my_gemini.update_mem(caption_,
+                    add_to_bots_mem(caption_,
                                         f'{tr("посмотрел файл и ответил:", lang)} {summary}',
                                         chat_id_full)
                 else:
@@ -1361,7 +1368,7 @@ def handle_document_thread(message: telebot.types.Message):
                                                   disable_web_page_preview = True)
 
                             text = text[:8000]
-                            my_gemini.update_mem(f'user {tr("попросил распознать текст с картинки", lang)}',
+                            add_to_bots_mem(f'user {tr("попросил распознать текст с картинки", lang)}',
                                                 f'{tr("распознал текст и ответил:", lang)} {text}',
                                                 chat_id_full)
 
@@ -1474,7 +1481,7 @@ def handle_photo_thread(message: telebot.types.Message):
                                         disable_web_page_preview = True)
 
                     text = text[:8000]
-                    my_gemini.update_mem(f'user {tr("попросил распознать текст с картинки", lang)}',
+                    add_to_bots_mem(f'user {tr("попросил распознать текст с картинки", lang)}',
                                         f'{tr("распознал текст и ответил:", lang)} {text}',
                                         chat_id_full)
 
@@ -2243,7 +2250,7 @@ def google_thread(message: telebot.types.Message):
         except Exception as error2:
             my_log.log2(f'tb.py:google_thread: {error2}')
 
-        my_gemini.update_mem(f'user {tr("попросил сделать запрос в Google:", lang)} {q}',
+        add_to_bots_mem(f'user {tr("попросил сделать запрос в Google:", lang)} {q}',
                              f'{tr("поискал в Google и ответил:", lang)} {r}',
                              chat_id_full)
 
@@ -2477,7 +2484,7 @@ def image_thread(message: telebot.types.Message):
                                     n += 1
                                 bot_reply(message, suggest_msg, parse_mode = 'HTML', reply_markup=markup)
 
-                            my_gemini.update_mem(f'user {tr("asked to draw", lang)}\n{prompt}',
+                            add_to_bots_mem(f'user {tr("asked to draw", lang)}\n{prompt}',
                                                 f'{tr("has generated images successfully", lang)}',
                                                 chat_id_full)
                     else:
@@ -2487,7 +2494,7 @@ def image_thread(message: telebot.types.Message):
                                     "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum or this https://t.me/aibrahma/467",
                                     disable_web_page_preview = True)
                         my_log.log_echo(message, '[image gen error] ')
-                        my_gemini.update_mem(f'user {tr("asked to draw", lang)}\n{prompt}',
+                        add_to_bots_mem(f'user {tr("asked to draw", lang)}\n{prompt}',
                                                 f'{tr("did not want or could not draw this using DALL-E", lang)}',
                                                 chat_id_full)
 
@@ -2723,7 +2730,7 @@ def summ_text_thread(message: telebot.types.Message):
                     bot_reply(message, rr, disable_web_page_preview = True,
                                           parse_mode='HTML',
                                           reply_markup=get_keyboard('translate', message))
-                    my_gemini.update_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
+                    add_to_bots_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
                                          f'{tr("прочитал и ответил:", lang)} {r}',
                                          chat_id_full)
                     return
@@ -2742,7 +2749,7 @@ def summ_text_thread(message: telebot.types.Message):
                                               disable_web_page_preview = True,
                                               reply_markup=get_keyboard('translate', message))
                         SUM_CACHE[url_id] = res
-                        my_gemini.update_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
+                        add_to_bots_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
                                          f'{tr("прочитал и ответил:", lang)} {r}',
                                          chat_id_full)
                         return

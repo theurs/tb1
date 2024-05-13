@@ -115,12 +115,21 @@ def token_count(mem, model:str = "meta-llama/Meta-Llama-3-8B") -> int:
 
 
 def update_mem(query: str, resp: str, mem):
+    chat_id = None
+    if isinstance(mem, str): # if mem - chat_id
+        chat_id = mem
+        if mem not in CHATS:
+            CHATS[mem] = []
+        mem = CHATS[mem]
     mem += [{'role': 'user', 'content': query}]
     mem += [{'role': 'assistant', 'content': resp}]
     while token_count(mem) > MAX_QUERY_LENGTH:
         mem = mem[2:]
     mem = mem[:MAX_LINES*2]
-    return mem
+    if chat_id:
+        CHATS[chat_id] = mem
+    else:
+        return mem
 
 
 def chat(query: str, chat_id: str,

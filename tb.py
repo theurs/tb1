@@ -2766,7 +2766,7 @@ def summ_text_thread(message: telebot.types.Message):
                                               reply_markup=get_keyboard('translate', message))
                         SUM_CACHE[url_id] = res
                         add_to_bots_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                         f'{tr("прочитал и ответил:", lang)} {r}',
+                                         f'{tr("прочитал и ответил:", lang)} {res}',
                                          chat_id_full)
                         return
                     else:

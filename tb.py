@@ -3605,14 +3605,14 @@ def do_task(message, custom_prompt: str = ''):
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello every time.]'
                 else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}".]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", do not say hello every time.]'
             else:
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}".]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello every time.]'
                 else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}".]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", do not say hello every time.]'
             if chat_id_full not in ORIGINAL_MODE:
                 ORIGINAL_MODE[chat_id_full] = False
             if ORIGINAL_MODE[chat_id_full]:

@@ -61,8 +61,8 @@ if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
 
 # можно сделать 2 запроса по 15000 в сумме получится запрос размером 30000
 # может быть полезно для сумморизации текстов
-# MAX_SUM_REQUEST = 180000
-MAX_SUM_REQUEST = 31000
+MAX_SUM_REQUEST = 180000
+# MAX_SUM_REQUEST = 31000
 
 # хранилище диалогов {id:list(mem)}
 CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)

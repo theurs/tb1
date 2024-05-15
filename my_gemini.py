@@ -61,7 +61,7 @@ if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
 
 # можно сделать 2 запроса по 15000 в сумме получится запрос размером 30000
 # может быть полезно для сумморизации текстов
-MAX_SUM_REQUEST = 180000
+MAX_SUM_REQUEST = 250000
 # MAX_SUM_REQUEST = 31000
 
 # хранилище диалогов {id:list(mem)}
@@ -276,7 +276,12 @@ def remove_key(key: str):
         my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
-def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: str = '', key__: str = None) -> str:
+def ai(q: str, mem = [],
+       temperature: float = 0.1,
+       proxy_str: str = '',
+       model: str = '',
+       key__: str = None,
+       tokens_limit: int = 8000) -> str:
     """
     Generates a response to a given question using the Generative AI model.
     
@@ -295,10 +300,15 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
         Exception: If an error occurs during the request or response handling.
     """
     if model == '':
-        # model = 'gemini-1.5-pro-latest'
-        model = 'gemini-1.0-pro-latest'
-        # model = 'gemini-1.0-pro'
-        # model = 'gemini-pro'
+        model = 'gemini-1.5-flash-latest'
+        # models/gemini-1.0-pro
+        # models/gemini-1.0-pro-001
+        # models/gemini-1.0-pro-latest
+        # models/gemini-1.0-pro-vision-latest
+        # models/gemini-1.5-flash-latest
+        # models/gemini-1.5-pro-latest
+        # models/gemini-pro
+        # models/gemini-pro-vision
     global PROXY_POOL, PROXY_POLL_SPEED
     # bugfix температура на самом деле от 0 до 1 а не от 0 до 2
     temperature = round(temperature / 2, 2)
@@ -327,7 +337,7 @@ def ai(q: str, mem = [], temperature: float = 0.1, proxy_str: str = '', model: s
                 #     "Title"
                 # ],
                 "temperature": temperature,
-                # "maxOutputTokens": 8000,
+                "maxOutputTokens": tokens_limit,
                 # "topP": 0.8,
                 # "topK": 10
                 }
@@ -883,7 +893,7 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
     #     mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
 
     # return ai(query, mem=mem, temperature=temperature)
-    return ai(query, temperature=temperature, model='gemini-1.5-pro-latest')
+    return ai(query, temperature=temperature, model='gemini-1.5-flash-latest')
 
 
 def repair_text_after_speech_to_text(text: str) -> str:
@@ -939,6 +949,12 @@ if __name__ == '__main__':
     # print(get_models())
 
     chat_cli()
+
+    # for _ in range(100):
+    #     t1 = time.time()
+    #     r = ai('напиши рассказ про слона 4000 слов', temperature=1, model='gemini-1.5-flash-latest')
+    #     t2 = time.time()
+    #     print(len(r), round(t2 - t1, 2), f'{r[:20]}...{r[-20:]}'.replace('\n', ' '))
 
     # print(test_new_key('123'))
 

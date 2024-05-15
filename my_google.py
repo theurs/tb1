@@ -154,7 +154,7 @@ def search_google_v2(query: str, max_search: int = 20, lang: str = 'ru') -> str:
         if n == maxn:
             break
 
-    return my_gemini.ai(qqqq, model='gemini-1.5-pro-latest')
+    return my_gemini.ai(qqqq, model='gemini-1.5-flash-latest')
 
 
 def search_ddg_v2(query: str, lang: str = 'ru') -> str:
@@ -186,7 +186,7 @@ def search_ddg_v2(query: str, lang: str = 'ru') -> str:
         if n == maxn:
             break
 
-    return my_gemini.ai(qqqq, model='gemini-1.5-pro-latest')
+    return my_gemini.ai(qqqq, model='gemini-1.5-flash-latest')
 
 
 def ddg_text(query: str) -> str:
@@ -291,7 +291,7 @@ Search results:
 
 {text[:my_gemini.MAX_SUM_REQUEST]}
 '''
-    return my_gemini.ai(q, model='gemini-1.5-pro-latest')
+    return my_gemini.ai(q, model='gemini-1.5-flash-latest')
 
 
 def search_v4(query: str, lang: str = 'ru', max_search: int = 10) -> str:
@@ -375,7 +375,7 @@ Search results:
 
 {text[:31000]}
 '''
-    return my_gemini.ai(q, model='gemini-1.5-pro-latest')
+    return my_gemini.ai(q, model='gemini-1.5-flash-latest')
 
 
 if __name__ == "__main__":

@@ -3402,18 +3402,18 @@ def do_task(message, custom_prompt: str = ''):
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
-    # для джемини теперь требуется ключ, требуем его у юзера а не у чата
+    # # для джемини теперь требуется ключ, требуем его у юзера а не у чата
     chat_id_full__ = f'[{message.from_user.id}] [0]'
-    if chat_id_full__ not in CHAT_MODE:
-        CHAT_MODE[chat_id_full__] = cfg.chat_mode_default
-    if 'gemini' in CHAT_MODE[chat_id_full__] and message.from_user.id not in cfg.admins and message.chat.type == 'private':
-        total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
-        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-            # my_log.log2(f'Chat {chat_id_full__} does not have any keys, total messages = {total_messages__}')
-            if total_messages__ > 100:
-                msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-                bot_reply(message, msg, disable_web_page_preview = True)
-                return
+    # if chat_id_full__ not in CHAT_MODE:
+    #     CHAT_MODE[chat_id_full__] = cfg.chat_mode_default
+    # if 'gemini' in CHAT_MODE[chat_id_full__] and message.from_user.id not in cfg.admins and message.chat.type == 'private':
+    #     total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
+    #     if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+    #         # my_log.log2(f'Chat {chat_id_full__} does not have any keys, total messages = {total_messages__}')
+    #         if total_messages__ > 100:
+    #             msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+    #             bot_reply(message, msg, disable_web_page_preview = True)
+    #             return
 
     # определяем откуда пришло сообщение  
     is_private = message.chat.type == 'private'
@@ -3438,11 +3438,10 @@ def do_task(message, custom_prompt: str = ''):
     chat_mode_ = CHAT_MODE[chat_id_full]
 
     # начиная с 14 мая
-    # не давать тем у кого нет ключей доступ к 1.5
-    # if datetime.date.today().month >= 5 and datetime.date.today().day >= 14 and datetime.date.today().year >= 2024:
-    #     if chat_mode_ == 'gemini15':
-    #         if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-    #             chat_mode_ = 'gemini'
+    # не давать тем у кого нет ключей доступ к 1.5 pro
+    if chat_mode_ == 'gemini15':
+        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+            chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):
@@ -3605,14 +3604,14 @@ def do_task(message, custom_prompt: str = ''):
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello every time.]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello username every time.]'
                 else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", do not say hello every time.]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", do not say hello username every time.]'
             else:
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello every time.]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello username every time.]'
                 else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", do not say hello every time.]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", do not say hello username every time.]'
             if chat_id_full not in ORIGINAL_MODE:
                 ORIGINAL_MODE[chat_id_full] = False
             if ORIGINAL_MODE[chat_id_full]:
@@ -3733,7 +3732,8 @@ def do_task(message, custom_prompt: str = ''):
 
                         # answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full],
                         #                         model = '', style = hidden_text)
-                        answer = my_groq.chat(message.text, chat_id_full, style=f'Answer in language of user - {lang}')
+                        style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
+                        answer = my_groq.chat(message.text, chat_id_full, style=style_)
 
                         WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 

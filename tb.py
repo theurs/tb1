@@ -3443,8 +3443,8 @@ def do_task(message, custom_prompt: str = ''):
     if is_private:
         if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
             total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
-            # каждые 100 сообщение напоминать о ключах
-            if total_messages__ % 100 == 0:
+            # каждые 50 сообщение напоминать о ключах
+            if total_messages__ % 50 == 0:
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
 

@@ -3441,7 +3441,13 @@ def do_task(message, custom_prompt: str = ''):
     # не давать тем у кого нет ключей доступ к 1.5 pro
     if chat_mode_ == 'gemini15':
         if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-            chat_mode_ = 'gemini'
+            total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
+            if total_messages__ > 100:
+                chat_mode_ = 'gemini'
+                # каждые 100 сообщение напоминать о ключах
+                if total_messages__ % 100 == 0:
+                    msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+                    bot_reply(message, msg, disable_web_page_preview = True)
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):

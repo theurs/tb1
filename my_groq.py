@@ -4,6 +4,7 @@
 
 
 import random
+import time
 import threading
 import traceback
 
@@ -320,7 +321,13 @@ if __name__ == '__main__':
     # print(ai('привет как дела'))
     # print(summ_text_file('1.txt'))
 
-    chat_cli()
+    # chat_cli()
+
+    for _ in range(100):
+        t1 = time.time()
+        r = ai('напиши рассказ про слона 4000 слов', temperature=1, max_tokens_ = 8000)
+        t2 = time.time()
+        print(len(r), round(t2 - t1, 2), f'{r[:20]}...{r[-20:]}'.replace('\n', ' '))
 
     # stt()
 

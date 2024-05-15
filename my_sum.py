@@ -99,9 +99,9 @@ BEGIN:
     if not result:
         try:
             if subj == 'youtube_video':
-                qq = f'Summarize the content of this YouTube video using only the subtitles, what this video about, in no more than 2000 words, answer in [{lang}] language.'
+                qq = f'Summarize the content of this YouTube video using only the subtitles, what this video about, in 500-4000 words, answer in [{lang}] language.'
             else:
-                qq = f'Summarize the content of this article using only provided text, what this text about, in no more than 2000 words, answer in [{lang}] language.'
+                qq = f'Summarize the content of this article using only provided text, what this text about, in 500-4000 words, answer in [{lang}] language.'
             if query:
                 qq = query
             r = my_gemini.sum_big_text(text[:my_gemini.MAX_SUM_REQUEST], qq).strip()

@@ -177,7 +177,7 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
             r = summ_text(text, 'pdf', lang)
         else:
             r = summ_text(text, 'text', lang)
-        return r
+        return r, text
 
 
 def is_valid_url(url: str) -> bool:

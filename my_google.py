@@ -293,7 +293,7 @@ Search results:
 '''
     # print(len(q))
     # print(f'{q[:1000]}...')
-    return my_gemini.ai(q, model='gemini-1.5-pro-latest')
+    return my_gemini.ai(q, model='gemini-1.5-pro-latest'), f'Data extracted from Google with query "{query}":\n\n' + text
 
 
 def search_v4(query: str, lang: str = 'ru', max_search: int = 10) -> str:

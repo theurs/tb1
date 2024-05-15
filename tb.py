@@ -66,6 +66,10 @@ IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=T
 HELLO_MSG = SqliteDict('db/msg_hello.db', autocommit=True)
 HELP_MSG = SqliteDict('db/msg_help.db', autocommit=True)
 
+# для хранения загруженных юзерами текстов, по этим текстам можно делать запросы командой /file
+# {user_id(str): (filename or link (str), text(str))}
+USER_FILES = SqliteDict('db/user_files.db', autocommit=True)
+
 # заблокированные юзера {id:True/False}
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
 
@@ -1339,6 +1343,7 @@ def handle_document_thread(message: telebot.types.Message):
                     caption = message.caption or ''
                     caption = caption.strip()
                     summary = my_sum.summ_text(text, 'text', lang, caption)
+                    USER_FILES[chat_id_full] = (message.document.file_name if hasattr(message, 'document') else 'text file', text)
                     summary_html = utils.bot_markdown_to_html(summary)
                     bot_reply(message, summary_html, parse_mode='HTML',
                                           disable_web_page_preview = True,
@@ -2257,7 +2262,8 @@ def google_thread(message: telebot.types.Message):
     with ShowAction(message, 'typing'):
         with semaphore_talks:
             # r = my_google.search(q, lang)
-            r = my_google.search_v3(q, lang)
+            r, text = my_google.search_v3(q, lang)
+            USER_FILES[chat_id_full] = ('google: ' + q, text)
         try:
             rr = utils.bot_markdown_to_html(r)
             bot_reply(message, rr, parse_mode = 'HTML',
@@ -2716,6 +2722,54 @@ def alert_thread(message: telebot.types.Message):
     bot_reply_tr(message, '/alert <текст сообщения которое бот отправит всем кого знает, форматирование маркдаун> Только администраторы могут использовать эту команду')
 
 
+
+
+@bot.message_handler(commands=['ask', 'а'], func=authorized)
+def ask_file(message: telebot.types.Message):
+    '''ответ по сохраненному файлу'''
+    thread = threading.Thread(target=ask_file_thread, args=(message,))
+    thread.start()
+def ask_file_thread(message: telebot.types.Message):
+    '''ответ по сохраненному файлу'''
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    try:
+        query = message.text.split(maxsplit=1)[1]
+    except IndexError:
+        bot_reply_tr(message, 'Usage: /ask <query saved text>')
+        if chat_id_full in USER_FILES:
+            msg = f'{tr("Загружен файл/ссылка:", lang)} {USER_FILES[chat_id_full][0]}\n\n{tr("Размер текста:", lang)} {len(USER_FILES[chat_id_full][1])}'
+            bot_reply(message, msg)
+            return
+
+    if chat_id_full in USER_FILES:
+        with ShowAction(message, 'typing'):
+            q = f'''{tr('Answer to your query.', lang)}
+
+    {tr('User query:', lang)} {query}
+
+    {tr('URL/file:', lang)} {USER_FILES[chat_id_full][0]}
+
+    {tr('Text:', lang)} {USER_FILES[chat_id_full][1]}
+    '''
+            result = my_gemini.ai(q, temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
+            if result:
+                answer = utils.bot_markdown_to_html(result)
+                bot_reply(message, answer, parse_mode='HTML')
+                add_to_bots_mem(tr("The user asked to answer a question based on the saved text:", lang) + ' ' + USER_FILES[chat_id_full][0],
+                                result, chat_id_full)
+            else:
+                bot_reply_tr(message, 'No reply from AI')
+                return
+    else:
+        bot_reply_tr(message, 'Usage: /ask <query saved text>')
+        bot_reply_tr(message, 'No text was saved')
+        return
+
+
+
+
 @bot.message_handler(commands=['sum'], func=authorized)
 def summ_text(message: telebot.types.Message):
     # автоматически выходить из забаненых чатов
@@ -2743,6 +2797,7 @@ def summ_text_thread(message: telebot.types.Message):
                 if url_id in SUM_CACHE:
                     r = SUM_CACHE[url_id]
                 if r:
+                    USER_FILES[chat_id_full] = (url, r)
                     rr = utils.bot_markdown_to_html(r)
                     bot_reply(message, rr, disable_web_page_preview = True,
                                           parse_mode='HTML',
@@ -2755,7 +2810,8 @@ def summ_text_thread(message: telebot.types.Message):
                 with ShowAction(message, 'typing'):
                     res = ''
                     try:
-                        res = my_sum.summ_url(url, lang = lang)
+                        res, text = my_sum.summ_url(url, lang = lang)
+                        USER_FILES[chat_id_full] = (url, text)
                     except Exception as error2:
                         print(error2)
                         bot_reply_tr(message, 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', parse_mode='Markdown')
@@ -3043,6 +3099,8 @@ def purge_cmd_handler(message: telebot.types.Message):
 
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
+            if chat_id_full in USER_FILES:
+                del USER_FILES[chat_id_full]
 
             if chat_id_full in LOGS_GROUPS_DB:
                 try:

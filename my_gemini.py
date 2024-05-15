@@ -940,6 +940,10 @@ def test_new_key(key: str) -> bool:
     return False
 
 
+def detect_intent(text: str) -> str:
+    pass
+
+
 if __name__ == '__main__':
 
     run_proxy_pool_daemon()

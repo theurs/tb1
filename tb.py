@@ -3404,19 +3404,6 @@ def do_task(message, custom_prompt: str = ''):
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
-    # # для джемини теперь требуется ключ, требуем его у юзера а не у чата
-    chat_id_full__ = f'[{message.from_user.id}] [0]'
-    # if chat_id_full__ not in CHAT_MODE:
-    #     CHAT_MODE[chat_id_full__] = cfg.chat_mode_default
-    # if 'gemini' in CHAT_MODE[chat_id_full__] and message.from_user.id not in cfg.admins and message.chat.type == 'private':
-    #     total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
-    #     if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-    #         # my_log.log2(f'Chat {chat_id_full__} does not have any keys, total messages = {total_messages__}')
-    #         if total_messages__ > 100:
-    #             msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-    #             bot_reply(message, msg, disable_web_page_preview = True)
-    #             return
-
     # определяем откуда пришло сообщение  
     is_private = message.chat.type == 'private'
     if chat_id_full not in SUPER_CHAT:
@@ -3439,17 +3426,30 @@ def do_task(message, custom_prompt: str = ''):
 
     chat_mode_ = CHAT_MODE[chat_id_full]
 
-    # начиная с 14 мая
-    # не давать тем у кого нет ключей доступ к 1.5 pro
-    if chat_mode_ == 'gemini15' and is_private:
+
+
+    # # начиная с 30 мая
+    # # не давать тем у кого нет ключей доступ к 1.5 pro
+    chat_id_full__ = f'[{message.from_user.id}] [0]'
+    # if chat_mode_ == 'gemini15' and is_private:
+    #     if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+    #         total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
+    #         if total_messages__ > 100:
+    #             chat_mode_ = 'gemini'
+    #             # каждые 100 сообщение напоминать о ключах
+    #             if total_messages__ % 100 == 0:
+    #                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+    #                 bot_reply(message, msg, disable_web_page_preview = True)
+    if is_private:
         if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
             total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
-            if total_messages__ > 100:
-                chat_mode_ = 'gemini'
-                # каждые 100 сообщение напоминать о ключах
-                if total_messages__ % 100 == 0:
-                    msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-                    bot_reply(message, msg, disable_web_page_preview = True)
+            # каждые 100 сообщение напоминать о ключах
+            if total_messages__ % 100 == 0:
+                msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+                bot_reply(message, msg, disable_web_page_preview = True)
+
+
+
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):

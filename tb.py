@@ -3439,7 +3439,7 @@ def do_task(message, custom_prompt: str = ''):
 
     # начиная с 14 мая
     # не давать тем у кого нет ключей доступ к 1.5 pro
-    if chat_mode_ == 'gemini15':
+    if chat_mode_ == 'gemini15' and is_private:
         if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
             total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
             if total_messages__ > 100:

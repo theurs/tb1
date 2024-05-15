@@ -352,6 +352,8 @@ def tr(text: str, lang: str, help: str = '') -> str:
 
 
 def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
+    if chat_id_full not in CHAT_MODE:
+        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
     if 'gemini' in CHAT_MODE[chat_id_full]:
         my_gemini.update_mem(query, resp, chat_id_full)
     elif 'llama3' in CHAT_MODE[chat_id_full]:

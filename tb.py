@@ -2742,7 +2742,7 @@ def ask_file_thread(message: telebot.types.Message):
         bot_reply_tr(message, 'Usage: /ask <query saved text>')
         if chat_id_full in USER_FILES:
             msg = f'{tr("Загружен файл/ссылка:", lang)} {USER_FILES[chat_id_full][0]}\n\n{tr("Размер текста:", lang)} {len(USER_FILES[chat_id_full][1])}'
-            bot_reply(message, msg)
+            bot_reply(message, msg, disable_web_page_preview = True)
             return
 
     if chat_id_full in USER_FILES:

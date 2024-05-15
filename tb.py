@@ -2739,7 +2739,7 @@ def ask_file_thread(message: telebot.types.Message):
     try:
         query = message.text.split(maxsplit=1)[1]
     except IndexError:
-        bot_reply_tr(message, 'Usage: /ask <query saved text>')
+        bot_reply_tr(message, 'Usage: /ask <query saved text>\n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.')
         if chat_id_full in USER_FILES:
             msg = f'{tr("Загружен файл/ссылка:", lang)} {USER_FILES[chat_id_full][0]}\n\n{tr("Размер текста:", lang)} {len(USER_FILES[chat_id_full][1])}'
             bot_reply(message, msg, disable_web_page_preview = True)
@@ -2747,19 +2747,19 @@ def ask_file_thread(message: telebot.types.Message):
 
     if chat_id_full in USER_FILES:
         with ShowAction(message, 'typing'):
-            q = f'''{tr('Answer to your query.', lang)}
+            q = f'''{tr('Answer the user`s query using saved text.', lang)}
 
     {tr('User query:', lang)} {query}
 
     {tr('URL/file:', lang)} {USER_FILES[chat_id_full][0]}
 
-    {tr('Text:', lang)} {USER_FILES[chat_id_full][1]}
+    {tr('Saved text:', lang)} {USER_FILES[chat_id_full][1]}
     '''
             result = my_gemini.ai(q, temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
             if result:
                 answer = utils.bot_markdown_to_html(result)
                 bot_reply(message, answer, parse_mode='HTML')
-                add_to_bots_mem(tr("The user asked to answer a question based on the saved text:", lang) + ' ' + USER_FILES[chat_id_full][0],
+                add_to_bots_mem(tr("The user asked to answer the question based on the saved text:", lang) + ' ' + USER_FILES[chat_id_full][0],
                                 result, chat_id_full)
             else:
                 bot_reply_tr(message, 'No reply from AI')

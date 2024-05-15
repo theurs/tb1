@@ -2532,6 +2532,7 @@ def stats_thread(message: telebot.types.Message):
     stats = {
         'gemini15': defaultdict(int),
         'gemini': defaultdict(int),
+        'groq-llama370': defaultdict(int),
         'new_users': defaultdict(int),
         'active_24h': set(),
         'active_48h': set(),
@@ -2566,7 +2567,7 @@ def stats_thread(message: telebot.types.Message):
                 stats['active_30d'].add(user_id)
 
             # Подсчет сообщений в зависимости от режима
-            if chat_mode in ['gemini15', 'gemini']:
+            if chat_mode in ['gemini15', 'gemini', 'groq-llama370']:
                 if now - time_stamp <= 86400:
                     stats[chat_mode]['24'] += 1
                 if now - time_stamp <= 172800:
@@ -2578,7 +2579,7 @@ def stats_thread(message: telebot.types.Message):
 
     # Строим сообщение для пользователя
     msg = ""
-    for mode in ['gemini15', 'gemini']:
+    for mode in ['gemini15', 'gemini', 'groq-llama370']:
         msg += (f"{mode} за 24ч/48ч/7д/30д: "
                 f"{stats[mode]['24']}/{stats[mode]['48']}/"
                 f"{stats[mode]['7d']}/{stats[mode]['30d']}\n\n")
@@ -3776,7 +3777,7 @@ def main():
     for x in CHAT_STATS.keys():
         uid = CHAT_STATS[x][0]
         cm = CHAT_STATS[x][1]
-        if 'gemini' in str(cm):
+        if 'gemini' in str(cm) or 'llama' in str(cm):
             if uid in CHAT_STATS_TEMP:
                 CHAT_STATS_TEMP[uid] += 1
             else:

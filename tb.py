@@ -3075,6 +3075,8 @@ def id_cmd_handler(message: telebot.types.Message):
 {tr("ID группы:", lang)} {chat_id_full}
 
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
+
+{tr("Выбранная чат модель:", lang)} {CHAT_MODE[chat_id_full] if chat_id_full in CHAT_MODE else cfg.chat_mode_default}
 '''
 
     if chat_id_full in BAD_USERS:

@@ -291,6 +291,8 @@ Search results:
 
 {text[:my_gemini.MAX_SUM_REQUEST]}
 '''
+    print(len(q))
+    print(f'{q[:100]}...')
     return my_gemini.ai(q, model='gemini-1.5-flash-latest')
 
 

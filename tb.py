@@ -1078,7 +1078,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
 <b>{tr('Available ai models:', lang)}</b>
 /llama370 - llama 3 70b (groq)
-/gemini10 - Google Gemini 1.0
+/gemini10 - Google Gemini 1.5 flash
 /gemini15 - Google Gemini 1.5
 
 """
@@ -1594,7 +1594,7 @@ def config_thread(message: telebot.types.Message):
 
 <b>{tr('Available ai models:', lang)}</b>
 /llama370 - llama 3 70b (groq)
-/gemini10 - Google Gemini 1.0
+/gemini10 - Google Gemini 1.5 flash
 /gemini15 - Google Gemini 1.5
 
 """
@@ -2943,7 +2943,7 @@ def send_welcome_start_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
-    help = '''Hello, I`m Google Gemini [1.0/1.5/Vision]! Ask me anything. Send me you text/image/audio/documents with questions.
+    help = '''Hello, I`m Google Gemini [1.0/1.5/Vision/Flash/llama3-70]! Ask me anything. Send me you text/image/audio/documents with questions.
 
 You can change language with /lang command.
 
@@ -2976,7 +2976,7 @@ In private messages, you don't need to mention the bot's name
 👻 /purge command to remove all your data
 
 Change model:
-/gemini10 - Google Gemini 1.0
+/gemini10 - Google Gemini 1.5 flash
 /gemini15 - Google Gemini 1.5
 /llama370 - LLaMa 3 70b (Groq)
 

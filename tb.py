@@ -1325,7 +1325,7 @@ def handle_document_thread(message: telebot.types.Message):
     with semaphore_talks:
         # если прислали текстовый файл или pdf
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
-        if is_private and message.document.mime_type in ('text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'):
+        if is_private and message.document.mime_type in ('text/plain', 'text/x-log', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'):
             with ShowAction(message, 'typing'):
                 # file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
@@ -1335,7 +1335,7 @@ def handle_document_thread(message: telebot.types.Message):
                     pdf_reader = PyPDF2.PdfReader(file_bytes)
                     for page in pdf_reader.pages:
                         text += page.extract_text()
-                elif message.document.mime_type == 'text/plain':
+                elif message.document.mime_type == 'text/plain' or message.document.mime_type == 'text/x-log':
                     text = file_bytes.read().decode('utf-8')
                 elif message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
                     text = my_pandoc.fb2_to_text(downloaded_file)

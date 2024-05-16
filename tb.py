@@ -3728,7 +3728,6 @@ def do_task(message, custom_prompt: str = ''):
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
                             else:
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
-                                flag_gpt_help = True
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)
@@ -3779,7 +3778,6 @@ def do_task(message, custom_prompt: str = ''):
                             my_gemini.update_mem(message.text, answer, chat_id_full)
                         else:
                             my_gemini.update_mem(message.text, answer, chat_id_full)
-                            flag_gpt_help = True
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)

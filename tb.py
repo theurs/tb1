@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import datetime
 import io
 import os
 import re
@@ -3735,6 +3734,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = answer_
 
                         if flag_gpt_help:
+                            WHO_ANSWERED[chat_id_full] = f'👇{'llama3-70'} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                             my_log.log_echo(message, f'[Gemini + llama3-70] {answer}')
                         else:
                             my_log.log_echo(message, f'[Gemini] {answer}')
@@ -3765,7 +3765,6 @@ def do_task(message, custom_prompt: str = ''):
                         answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
                                                 model = 'gemini-1.5-pro-latest')
                         WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
                         flag_gpt_help = False
                         if not answer:
                             style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
@@ -3785,6 +3784,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = answer_
 
                         if flag_gpt_help:
+                            WHO_ANSWERED[chat_id_full] = f'👇{'llama3-70'} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                             my_log.log_echo(message, f'[Gemini15 + llama3-70] {answer}')
                         else:
                             my_log.log_echo(message, f'[Gemini15] {answer}')

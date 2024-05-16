@@ -3620,7 +3620,7 @@ def do_task(message, custom_prompt: str = ''):
                                 response, text__ = my_gemini.check_phone_number(number)
                         if response:
                             USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
-                            CACHE_CHECK_PHONE[number] = (response, text)
+                            CACHE_CHECK_PHONE[number] = (response, text__)
                             response = utils.bot_markdown_to_html(response)
                             bot_reply(message, response, parse_mode='HTML', not_log=True)
                             my_log.log_echo(message, '[gemini] ' + response)

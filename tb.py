@@ -2026,7 +2026,7 @@ def leave_thread(message: telebot.types.Message):
         bot_reply_tr(message, '/leave <группа из которой на выйти либо любой текст в котором есть список групп из которых надо выйти>')
         return
 
-    chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
+    chat_ids = [int(x) for x in re.findall(r"-?\d{9,14}", args)]
     for chat_id in chat_ids:
         if chat_id not in LEAVED_CHATS or LEAVED_CHATS[chat_id] == False:
             LEAVED_CHATS[chat_id] = True

@@ -643,7 +643,7 @@ def check_phone_number(number: str) -> str:
 {text}
 '''
     response = ai(query)
-    return response
+    return response, text
 
 
 def remove_proxy(proxy: str):

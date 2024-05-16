@@ -3614,10 +3614,12 @@ def do_task(message, custom_prompt: str = ''):
                     if len(number) == 10:
                         if number in CACHE_CHECK_PHONE:
                             response = CACHE_CHECK_PHONE[number]
+                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', response)
                         else:
                             with ShowAction(message, 'typing'):
                                 response = my_gemini.check_phone_number(number)
                         if response:
+                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', response)
                             CACHE_CHECK_PHONE[number] = response
                             response = utils.bot_markdown_to_html(response)
                             bot_reply(message, response, parse_mode='HTML', not_log=True)
@@ -3631,7 +3633,6 @@ def do_task(message, custom_prompt: str = ''):
                 with ShowAction(message, 'typing'):
                     text = img2txt(message.text, lang, chat_id_full)
                     if text:
-                        USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text)
                         text = utils.bot_markdown_to_html(text)
                         bot_reply(message, text, parse_mode='HTML',
                                             reply_markup=get_keyboard('translate', message))
@@ -3764,7 +3765,10 @@ def do_task(message, custom_prompt: str = ''):
                         flag_gpt_help = False
                         if not answer:
                             if not answer:
-                                answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
+                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
+                                answer = my_groq.chat(message.text, chat_id_full, style=style_)
+                                if not answer:
+                                    answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
                             else:
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
                                 flag_gpt_help = True

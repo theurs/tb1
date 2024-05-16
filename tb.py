@@ -3613,13 +3613,14 @@ def do_task(message, custom_prompt: str = ''):
                         number = number[1:]
                     if len(number) == 10:
                         if number in CACHE_CHECK_PHONE:
-                            response = CACHE_CHECK_PHONE[number]
+                            response = CACHE_CHECK_PHONE[number][0]
+                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', CACHE_CHECK_PHONE[number][1])
                         else:
                             with ShowAction(message, 'typing'):
                                 response, text__ = my_gemini.check_phone_number(number)
                         if response:
                             USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
-                            CACHE_CHECK_PHONE[number] = response
+                            CACHE_CHECK_PHONE[number] = (response, text)
                             response = utils.bot_markdown_to_html(response)
                             bot_reply(message, response, parse_mode='HTML', not_log=True)
                             my_log.log_echo(message, '[gemini] ' + response)

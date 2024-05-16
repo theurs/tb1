@@ -3614,7 +3614,8 @@ def do_task(message, custom_prompt: str = ''):
                     if len(number) == 10:
                         if number in CACHE_CHECK_PHONE:
                             response = CACHE_CHECK_PHONE[number][0]
-                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', CACHE_CHECK_PHONE[number][1])
+                            text__ = CACHE_CHECK_PHONE[number][1]
+                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
                         else:
                             with ShowAction(message, 'typing'):
                                 response, text__ = my_gemini.check_phone_number(number)

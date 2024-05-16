@@ -2474,7 +2474,7 @@ def image_thread(message: telebot.types.Message):
                             if suggest:
                                 suggest = [f'{x}'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).strip() for x in suggest.split('\n')]
                                 suggest = [x for x in suggest if x]
-                                suggest__ = suggest[:]
+                                suggest__ = suggest[:5]
                                 suggest = []
                                 for x__ in suggest__:
                                     if x__.startswith('– '):
@@ -3631,6 +3631,7 @@ def do_task(message, custom_prompt: str = ''):
                 with ShowAction(message, 'typing'):
                     text = img2txt(message.text, lang, chat_id_full)
                     if text:
+                        USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text)
                         text = utils.bot_markdown_to_html(text)
                         bot_reply(message, text, parse_mode='HTML',
                                             reply_markup=get_keyboard('translate', message))

@@ -4,6 +4,7 @@
 import datetime
 import hashlib
 import html
+import pytz
 import random
 import re
 import requests
@@ -418,7 +419,7 @@ def get_full_time() -> str:
     Returns:
         str: A string representing the current time in the format "YYYY-MM-DD HH:MM:SS TZ".
     """
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(pytz.timezone('Europe/Moscow'))
     time_string = now.strftime("%Y-%m-%d %H:%M:%S %Z")
     return time_string
 
@@ -513,3 +514,6 @@ if __name__ == '__main__':
 . ### 135 выберите библиотеку Vosk
     """
     print(bot_markdown_to_html(t))
+
+
+    # print(get_full_time())

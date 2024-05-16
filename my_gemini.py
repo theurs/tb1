@@ -406,7 +406,7 @@ def ai(q: str, mem = [],
                         continue
                     else:
                         remove_proxy(proxy)
-                        my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text[:10000]}\n\n{q}')
+                        my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text[:1000]}\n\n{q}')
             else:
                 n = 6
                 while n > 0:
@@ -423,7 +423,7 @@ def ai(q: str, mem = [],
                         remove_key(key)
                         continue
                     else:
-                        my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text[:10000]}\n\n{q}')
+                        my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text[:1000]}\n\n{q}')
                         if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):
                             time.sleep(5)
                         else:
@@ -535,6 +535,41 @@ def reset(chat_id: str):
     """
     global CHATS
     CHATS[chat_id] = []
+
+
+def get_mem_for_llama(chat_id: str, l: int = 3):
+    """
+    Retrieves the recent chat history for a given chat_id. For using with llama.
+
+    Parameters:
+        chat_id (str): The unique identifier for the chat session.
+        l (int, optional): The number of lines to retrieve. Defaults to 3.
+
+    Returns:
+        list: The recent chat history as a list of dictionaries with role and content.
+    """
+    global CHATS
+
+    res_mem = []
+    l = l*2
+
+    if chat_id not in CHATS:
+        CHATS[chat_id] = []
+    mem = CHATS[chat_id]
+    mem = mem[-l:]
+
+    for x in mem:
+        role = x['role']
+        try:
+            text = x['parts'][0]['text'].split(']: ', maxsplit=1)[1]
+        except IndexError:
+            text = x['parts'][0]['text']
+        if role == 'user':
+            res_mem += [{'role': 'user', 'content': text}]
+        else:
+            res_mem += [{'role': 'assistant', 'content': text}]
+
+    return res_mem
 
 
 def get_mem_as_string(chat_id: str) -> str:
@@ -952,7 +987,9 @@ if __name__ == '__main__':
 
     # print(get_models())
 
-    chat_cli()
+    print(get_mem_for_llama('test'))
+
+    # chat_cli()
 
     # for _ in range(100):
     #     t1 = time.time()

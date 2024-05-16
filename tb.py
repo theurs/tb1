@@ -3587,9 +3587,6 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'google':
                     message.text = f'/google {message.text}'
                     google(message)
-                elif COMMAND_MODE[chat_id_full] == 'ddg':
-                    message.text = f'/ddg {message.text}'
-                    ddg(message)
                 elif COMMAND_MODE[chat_id_full] == 'name':
                     message.text = f'/name {message.text}'
                     send_name(message)
@@ -3721,7 +3718,14 @@ def do_task(message, custom_prompt: str = ''):
                         flag_gpt_help = False
                         if not answer:
                             if not answer:
-                                answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
+                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
+                                mem__ = my_gemini.get_mem_for_llama(chat_id_full)
+                                answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
+                                flag_gpt_help = True
+                                if not answer:
+                                    answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
+                                    return
+                                my_gemini.update_mem(message.text, answer, chat_id_full)
                             else:
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
                                 flag_gpt_help = True
@@ -3732,7 +3736,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = answer_
 
                         if flag_gpt_help:
-                            my_log.log_echo(message, f'[Gemini + gpt_instruct] {answer}')
+                            my_log.log_echo(message, f'[Gemini + llama3-70] {answer}')
                         else:
                             my_log.log_echo(message, f'[Gemini] {answer}')
                         try:
@@ -3765,14 +3769,17 @@ def do_task(message, custom_prompt: str = ''):
 
                         flag_gpt_help = False
                         if not answer:
+                            style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
+                            mem__ = my_gemini.get_mem_for_llama(chat_id_full)
+                            answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
+                            flag_gpt_help = True
                             if not answer:
-                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
-                                answer = my_groq.chat(message.text, chat_id_full, style=style_)
-                                if not answer:
-                                    answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
-                            else:
-                                my_gemini.update_mem(message.text, answer, chat_id_full)
-                                flag_gpt_help = True
+                                answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
+                                return
+                            my_gemini.update_mem(message.text, answer, chat_id_full)
+                        else:
+                            my_gemini.update_mem(message.text, answer, chat_id_full)
+                            flag_gpt_help = True
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)
@@ -3780,7 +3787,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = answer_
 
                         if flag_gpt_help:
-                            my_log.log_echo(message, f'[Gemini15 + gpt_instruct] {answer}')
+                            my_log.log_echo(message, f'[Gemini15 + llama3-70] {answer}')
                         else:
                             my_log.log_echo(message, f'[Gemini15] {answer}')
                         try:

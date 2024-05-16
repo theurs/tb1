@@ -3725,9 +3725,6 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
                                     return
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
-                            else:
-                                pass
-                                # my_gemini.update_mem(message.text, answer, chat_id_full)
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)
@@ -3776,9 +3773,6 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
                                 return
                             my_gemini.update_mem(message.text, answer, chat_id_full)
-                        else:
-                            pass
-                            # my_gemini.update_mem(message.text, answer, chat_id_full)
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)

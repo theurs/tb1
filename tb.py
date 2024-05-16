@@ -141,7 +141,7 @@ DISABLED_KBD = my_dic.PersistentDict('db/disabled_kbd.pkl')
 # {user_id:Time to release in seconds - дата когда можно выпускать из бана} 
 DDOS_BLOCKED_USERS = my_dic.PersistentDict('db/ddos_blocked_users.pkl')
 
-# кешировать запросы типа кто звонил {number:result}
+# кешировать запросы типа кто звонил {number:(result, full text searched)}
 CACHE_CHECK_PHONE = {}
 
 # {user_id:lang(2 symbol codes)}

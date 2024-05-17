@@ -4,7 +4,6 @@ import chardet
 import datetime
 import io
 import os
-import queue
 import re
 import tempfile
 import traceback
@@ -213,24 +212,6 @@ supported_langs_tts = [
         'or', 'pa', 'pl', 'ps', 'pt', 'ro', 'ru', 'rw', 'sd', 'si', 'sk', 'sl', 'sm',
         'sn', 'so', 'sq', 'sr', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'tk',
         'tl', 'tr', 'tt', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
-
-
-class QueueLock:
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.queue = queue.Queue()
-        self.queue.put(threading.Event())  # Добавляем начальное событие
-
-    def __enter__(self):
-        item = self.queue.get()
-        item.set()  # Устанавливаем событие для текущего потока
-        self.lock.acquire()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.lock.release()
-        if not self.queue.empty():
-            next_item = self.queue.get()
-            next_item.set()  # Разрешаем следующему элементу в очереди
 
 
 class MessageCounter:
@@ -3776,7 +3757,7 @@ def do_task(message, custom_prompt: str = ''):
 
 
             if chat_id_full not in CHATS_LOCK:
-                CHATS_LOCK[chat_id_full] = QueueLock()
+                CHATS_LOCK[chat_id_full] = threading.Lock()
 
             with CHATS_LOCK[chat_id_full]:
 

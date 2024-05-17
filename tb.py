@@ -189,10 +189,6 @@ DEBUG_MD_TO_HTML = {}
 # {user_id: 'chatbot'(gemini, gemini15 etc)}
 WHO_ANSWERED = {}
 
-# блокировка для выполнения запросов к чату чтоб не выполнять больше одного за раз
-# {id: threading.Lock}
-CHATS_LOCK = {}
-
 
 supported_langs_trans = [
         "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
@@ -3756,77 +3752,23 @@ def do_task(message, custom_prompt: str = ''):
                     CHAT_STATS_TEMP[chat_id_full] = 1
 
 
-            if chat_id_full not in CHATS_LOCK:
-                CHATS_LOCK[chat_id_full] = threading.Lock()
+            # если активирован режим общения с Gemini Pro
+            if chat_mode_ == 'gemini':
+                if len(msg) > my_gemini.MAX_REQUEST:
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                    return
 
-            with CHATS_LOCK[chat_id_full]:
+                with ShowAction(message, action):
+                    try:
+                        if chat_id_full not in GEMIMI_TEMP:
+                            GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
+                        answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
+                                                model = 'gemini-1.0-pro-latest')
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-                # если активирован режим общения с Gemini Pro
-                if chat_mode_ == 'gemini':
-                    if len(msg) > my_gemini.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            if chat_id_full not in GEMIMI_TEMP:
-                                GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
-
-                            answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
-                                                    model = 'gemini-1.0-pro-latest')
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            flag_gpt_help = False
-                            if not answer:
-                                if not answer:
-                                    style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
-                                    mem__ = my_gemini.get_mem_for_llama(chat_id_full)
-                                    answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
-                                    flag_gpt_help = True
-                                    if not answer:
-                                        answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
-                                        return
-                                    my_gemini.update_mem(message.text, answer, chat_id_full)
-
-                            if not VOICE_ONLY_MODE[chat_id_full]:
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
-
-                            if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[Gemini + llama3-70] {answer}')
-                            else:
-                                my_log.log_echo(message, f'[Gemini] {answer}')
-                            try:
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            print(error3)
-                            my_log.log2(str(error3))
-                        return
-
-                # если активирован режим общения с Gemini Pro 1.5
-                if chat_mode_ == 'gemini15':
-                    if len(msg) > my_gemini.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            if chat_id_full not in GEMIMI_TEMP:
-                                GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
-
-                            answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
-                                                    model = 'gemini-1.5-pro-latest')
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                            flag_gpt_help = False
+                        flag_gpt_help = False
+                        if not answer:
                             if not answer:
                                 style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
@@ -3836,71 +3778,119 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
                                     return
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
-                            else:
-                                GEMINI15_COUNTER.increment(chat_id_full)
 
-                            if not VOICE_ONLY_MODE[chat_id_full]:
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
 
-                            if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[Gemini15 + llama3-70] {answer}')
-                            else:
-                                my_log.log_echo(message, f'[Gemini15] {answer}')
-                            try:
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            print(error3)
-                            my_log.log2(str(error3))
-                        return
-
-                # если активирован режим общения с groq llama 3 70b
-                if chat_mode_ == 'groq-llama370':
-                    if len(msg) > my_groq.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3 70b:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST}')
-                        return
-
-                    with ShowAction(message, action):
+                        if flag_gpt_help:
+                            WHO_ANSWERED[chat_id_full] = f'👇llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            my_log.log_echo(message, f'[Gemini + llama3-70] {answer}')
+                        else:
+                            my_log.log_echo(message, f'[Gemini] {answer}')
                         try:
-                            if chat_id_full not in GEMIMI_TEMP:
-                                GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+                            bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error:
+                            print(f'tb:do_task: {error}')
+                            my_log.log2(f'tb:do_task: {error}')
+                            bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                    except Exception as error3:
+                        print(error3)
+                        my_log.log2(str(error3))
+                    return
 
-                            # answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full],
-                            #                         model = '', style = hidden_text)
+            # если активирован режим общения с Gemini Pro 1.5
+            if chat_mode_ == 'gemini15':
+                if len(msg) > my_gemini.MAX_REQUEST:
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                    return
+
+                with ShowAction(message, action):
+                    try:
+                        if chat_id_full not in GEMIMI_TEMP:
+                            GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+
+                        answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
+                                                model = 'gemini-1.5-pro-latest')
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                        flag_gpt_help = False
+                        if not answer:
                             style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
-                            answer = my_groq.chat(message.text, chat_id_full, style=style_)
-
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
+                            mem__ = my_gemini.get_mem_for_llama(chat_id_full)
+                            answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
+                            flag_gpt_help = True
                             if not answer:
-                                answer = 'Groq llama 3 70b ' + tr('did not answered, try to /reset and start again', lang)
+                                answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
+                                return
+                            my_gemini.update_mem(message.text, answer, chat_id_full)
+                        else:
+                            GEMINI15_COUNTER.increment(chat_id_full)
 
-                            if not VOICE_ONLY_MODE[chat_id_full]:
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
 
-                            my_log.log_echo(message, f'[groq-llama370] {answer}')
-                            try:
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            print(error3)
-                            my_log.log2(str(error3))
-                        return
+                        if flag_gpt_help:
+                            WHO_ANSWERED[chat_id_full] = f'👇llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            my_log.log_echo(message, f'[Gemini15 + llama3-70] {answer}')
+                        else:
+                            my_log.log_echo(message, f'[Gemini15] {answer}')
+                        try:
+                            bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error:
+                            print(f'tb:do_task: {error}')
+                            my_log.log2(f'tb:do_task: {error}')
+                            bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                    except Exception as error3:
+                        print(error3)
+                        my_log.log2(str(error3))
+                    return
+
+            # если активирован режим общения с groq llama 3 70b
+            if chat_mode_ == 'groq-llama370':
+                if len(msg) > my_groq.MAX_REQUEST:
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3 70b:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST}')
+                    return
+
+                with ShowAction(message, action):
+                    try:
+                        if chat_id_full not in GEMIMI_TEMP:
+                            GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+
+                        # answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full],
+                        #                         model = '', style = hidden_text)
+                        style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
+                        answer = my_groq.chat(message.text, chat_id_full, style=style_)
+
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                        if not answer:
+                            answer = 'Groq llama 3 70b ' + tr('did not answered, try to /reset and start again', lang)
+
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
+
+                        my_log.log_echo(message, f'[groq-llama370] {answer}')
+                        try:
+                            bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                    reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error:
+                            print(f'tb:do_task: {error}')
+                            my_log.log2(f'tb:do_task: {error}')
+                            bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                    except Exception as error3:
+                        print(error3)
+                        my_log.log2(str(error3))
+                    return
 
 
 def main():

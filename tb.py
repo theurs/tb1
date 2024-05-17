@@ -221,6 +221,8 @@ class MessageCounter:
         now = datetime.datetime.now()
         with self.lock:
             for _ in range(n):
+                if userid not in self.messages:
+                    self.messages[userid] = []
                 self.messages[userid].append(now)
             self._cleanup(userid)
 

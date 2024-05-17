@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import chardet
+import datetime
 import io
 import os
 import re
@@ -16,6 +17,7 @@ import telebot
 from collections import defaultdict
 from fuzzywuzzy import fuzz
 from sqlitedict import SqliteDict
+from datetime import timedelta
 
 import cfg
 import bing_img
@@ -83,9 +85,6 @@ CHAT_STATS = SqliteDict('db/chat_stats.db', autocommit=True)
 CHAT_STATS_LOCK = threading.Lock()
 # cache, {userid:gemini message counter}
 CHAT_STATS_TEMP = {}
-
-# запоминаем сколько сообщений от юзера за сутки было
-GEMINI15_COUNTER = utils.MessageCounter()
 
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
 BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
@@ -208,6 +207,35 @@ supported_langs_tts = [
         'or', 'pa', 'pl', 'ps', 'pt', 'ro', 'ru', 'rw', 'sd', 'si', 'sk', 'sl', 'sm',
         'sn', 'so', 'sq', 'sr', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'tk',
         'tl', 'tr', 'tt', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
+
+
+class MessageCounter:
+    def __init__(self):
+        self.messages = SqliteDict('db/message_counter.db', autocommit=True)
+        self.lock = threading.Lock()
+
+    def increment(self, userid, n=1):
+        now = datetime.datetime.now()
+        with self.lock:
+            for _ in range(n):
+                self.messages[userid].append(now)
+            self._cleanup(userid)
+
+    def status(self, userid):
+        with self.lock:
+            self._cleanup(userid)
+            return len(self.messages[userid])
+
+    def _cleanup(self, userid):
+        now = datetime.datetime.now()
+        one_day_ago = now - timedelta(days=1)
+        if userid not in self.messages:
+            self.messages[userid] = []
+        self.messages[userid] = [timestamp for timestamp in self.messages[userid] if timestamp > one_day_ago]
+
+
+# запоминаем сколько сообщений от юзера за сутки было
+GEMINI15_COUNTER = MessageCounter()
 
 
 class RequestCounter:
@@ -2440,11 +2468,11 @@ def image_thread(message: telebot.types.Message):
                         suggest_query = tr("""Suggest a wide range options for a request to a neural network that
 generates images according to the description, show 5 options with no numbers and trailing symbols, add many rich details, 1 on 1 line, output example:
 
-Create image of ... first option
-Create image of ... second option
-Create image of ... third option
-Create image of ... fourth option
-Create image of ... fifth option
+Create image of ...
+Create image of ...
+Create image of ...
+Create image of ...
+Create image of ...
 
 5 lines total in answer
 

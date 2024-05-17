@@ -83,6 +83,9 @@ CHAT_STATS_LOCK = threading.Lock()
 # cache, {userid:gemini message counter}
 CHAT_STATS_TEMP = {}
 
+# запоминаем сколько сообщений от юзера за сутки было
+GEMINI15_COUNTER = utils.MessageCounter()
+
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
 BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
 
@@ -1325,7 +1328,9 @@ def handle_document_thread(message: telebot.types.Message):
     with semaphore_talks:
         # если прислали текстовый файл или pdf
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
-        if is_private and message.document.mime_type in ('text/plain', 'text/x-log', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'):
+        if is_private and \
+            (message.document.mime_type in ('application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') or \
+                message.document.mime_type.startswith('text/')):
             with ShowAction(message, 'typing'):
                 # file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
@@ -1335,7 +1340,7 @@ def handle_document_thread(message: telebot.types.Message):
                     pdf_reader = PyPDF2.PdfReader(file_bytes)
                     for page in pdf_reader.pages:
                         text += page.extract_text()
-                elif message.document.mime_type == 'text/plain' or message.document.mime_type == 'text/x-log':
+                elif message.document.mime_type.startswith('text/'):
                     text = file_bytes.read().decode('utf-8')
                 elif message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
                     text = my_pandoc.fb2_to_text(downloaded_file)
@@ -3509,8 +3514,13 @@ def do_task(message, custom_prompt: str = ''):
             if total_messages__ > 1 and total_messages__ % 50 == 0:
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
-
-
+    
+    if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+        if GEMINI15_COUNTER.status(chat_id_full__) > 50 and chat_mode_ == 'gemini15':
+            chat_mode_ = 'gemini'
+    else:
+        if GEMINI15_COUNTER.status(chat_id_full__) > 300 and chat_mode_ == 'gemini15':
+            chat_mode_ = 'gemini'
 
 
     # обработка \image это неправильное /image
@@ -3773,6 +3783,8 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
                                 return
                             my_gemini.update_mem(message.text, answer, chat_id_full)
+                        else:
+                            GEMINI15_COUNTER.increment(chat_id_full)
 
                         if not VOICE_ONLY_MODE[chat_id_full]:
                             answer_ = utils.bot_markdown_to_html(answer)

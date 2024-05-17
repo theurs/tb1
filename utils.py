@@ -10,14 +10,40 @@ import re
 import requests
 import string
 import tempfile
+import threading
 import traceback
 import platform as platform_module
+from collections import defaultdict
+from datetime import timedelta
 
 import prettytable
 import telebot
 from pylatexenc.latex2text import LatexNodes2Text
 
 import my_log
+
+
+class MessageCounter:
+    def __init__(self):
+        self.messages = defaultdict(list)
+        self.lock = threading.Lock()
+
+    def increment(self, userid, n=1):
+        now = datetime.datetime.now()
+        with self.lock:
+            for _ in range(n):
+                self.messages[userid].append(now)
+            self._cleanup(userid)
+
+    def status(self, userid):
+        with self.lock:
+            self._cleanup(userid)
+            return len(self.messages[userid])
+
+    def _cleanup(self, userid):
+        now = datetime.datetime.now()
+        one_day_ago = now - timedelta(days=1)
+        self.messages[userid] = [timestamp for timestamp in self.messages[userid] if timestamp > one_day_ago]
 
 
 def split_text(text: str, chunk_limit: int = 1500):
@@ -504,16 +530,23 @@ def get_username_for_log(message) -> str:
 
 
 if __name__ == '__main__':
-    t=r"""рш еруку
+#     t=r"""рш еруку
 
-## Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.
+# ## Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.
 
-.  ## Для этого необходимо настроить библиотеку Vosk и подключиться к ресурсу https://speechpad.ru/. Затем необходимо создать функцию, которая будет принимать на вход аудиоданные и возвращать распознанный текст.
-[hi](https://example.com)
-**Шаг 3:**
-. ### 135 выберите библиотеку Vosk
-    """
-    print(bot_markdown_to_html(t))
+# .  ## Для этого необходимо настроить библиотеку Vosk и подключиться к ресурсу https://speechpad.ru/. Затем необходимо создать функцию, которая будет принимать на вход аудиоданные и возвращать распознанный текст.
+# [hi](https://example.com)
+# **Шаг 3:**
+# . ### 135 выберите библиотеку Vosk
+#     """
+#     print(bot_markdown_to_html(t))
 
 
     # print(get_full_time())
+
+    counter = MessageCounter()
+    print(counter.status('user1'))
+    counter.increment('user1', 5)
+    print(counter.status('user1'))
+    counter.increment('user1', 1)
+    print(counter.status('user1'))

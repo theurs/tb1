@@ -45,20 +45,6 @@ def get_text_from_youtube(url: str) -> str:
     return text or ''
 
 
-def shrink_text_for_bing(text: str, max_size = 60000) -> str:
-    """уменьшаем текст до 60000 байт (не символов!)"""
-    text2 = text
-    if len(text2) > max_size:
-        text2 = text2[:max_size]
-    text_bytes = text2.encode()
-
-    while len(text_bytes) > max_size:
-        text2 = text2[:-1]
-        text_bytes = text2.encode()
-
-    return text2
-
-
 def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') -> str:
     """параллельный воркер для summ_text
        subj == 'text' or 'pdf'  - обычный текст о котором ничего не известно

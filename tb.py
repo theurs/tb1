@@ -225,6 +225,7 @@ class MessageCounter:
     def status(self, userid):
         with self.lock:
             self._cleanup(userid)
+            my_log.log2(f'message_counter: {userid} {len(self.messages[userid])}')
             return len(self.messages[userid])
 
     def _cleanup(self, userid):

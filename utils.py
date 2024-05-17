@@ -519,9 +519,11 @@ if __name__ == '__main__':
 
     # print(get_full_time())
 
-    counter = MessageCounter()
-    print(counter.status('user1'))
-    counter.increment('user1', 5)
-    print(counter.status('user1'))
-    counter.increment('user1', 1)
-    print(counter.status('user1'))
+    # counter = MessageCounter()
+    # print(counter.status('user1'))
+    # counter.increment('user1', 5)
+    # print(counter.status('user1'))
+    # counter.increment('user1', 1)
+    # print(counter.status('user1'))
+
+    pass

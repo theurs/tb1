@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import chardet
 import io
 import os
 import re
@@ -1341,7 +1342,14 @@ def handle_document_thread(message: telebot.types.Message):
                     for page in pdf_reader.pages:
                         text += page.extract_text()
                 elif message.document.mime_type.startswith('text/'):
-                    text = file_bytes.read().decode('utf-8')
+                    data__ = file_bytes.read()
+                    try:
+                        text = data__.decode('utf-8')
+                    except:
+                        # Определение кодировки
+                        result = chardet.detect(data__)
+                        encoding = result['encoding']
+                        text = data__.decode(encoding)
                 elif message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
                     text = my_pandoc.fb2_to_text(downloaded_file)
 

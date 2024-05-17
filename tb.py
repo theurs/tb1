@@ -2438,15 +2438,17 @@ def image_thread(message: telebot.types.Message):
                             else:
                                 CHAT_STATS_TEMP[chat_id_full] = 1
                         suggest_query = tr("""Suggest a wide range options for a request to a neural network that
-    generates images according to the description, show 5 options with no numbers and trailing symbols, add many details, 1 on 1 line, output example:
+generates images according to the description, show 5 options with no numbers and trailing symbols, add many details, 1 on 1 line, output example:
 
-    some option
-    some more option
-    some more option
-    some more option
-    some more option
+Create image of ... first option
+Create image of ... second option
+Create image of ... third option
+Create image of ... fourth option
+Create image of ... fifth option
 
-    the original prompt:""", lang) + '\n\n\n' + prompt
+5 lines total in answer
+
+the original prompt:""", lang) + '\n\n\n' + prompt
                         suggest = my_gemini.ai(suggest_query, temperature=1.5)
                         suggest = utils.bot_markdown_to_html(suggest).strip()
                     else:

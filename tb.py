@@ -3478,287 +3478,289 @@ def do_task(message, custom_prompt: str = ''):
                 request_counter.counts[u_id_].pop(0)
         return
 
-    if chat_id_full not in CHATS_LOCK:
-        CHATS_LOCK[chat_id_full] = threading.Lock()
+    b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_search = tr('🌐 Найди', lang, 'это кнопка в телеграм боте для поиска в гугле, после того как юзер на нее нажимает бот спрашивает у него что надо найти, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_summary = tr('📋 Перескажи', lang, 'это кнопка в телеграм боте для пересказа текста, после того как юзер на нее нажимает бот спрашивает у него ссылку на текст или файл с текстом, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_tts = tr('🎧 Озвучь', lang, 'это кнопка в телеграм боте для озвучивания текста, после того как юзер на нее нажимает бот спрашивает у него текст для озвучивания, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_translate = tr('🈶 Перевод', lang, 'это кнопка в телеграм боте для перевода текста, после того как юзер на нее нажимает бот спрашивает у него текст для перевода, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
+    b_msg_settings = tr('⚙️ Настройки', lang, 'это кнопка в телеграм боте для перехода в настройки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
 
-    with CHATS_LOCK[chat_id_full]:
-
-        b_msg_draw = tr('🎨 Нарисуй', lang, 'это кнопка в телеграм боте для рисования, после того как юзер на нее нажимает у него запрашивается описание картинки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_search = tr('🌐 Найди', lang, 'это кнопка в телеграм боте для поиска в гугле, после того как юзер на нее нажимает бот спрашивает у него что надо найти, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_summary = tr('📋 Перескажи', lang, 'это кнопка в телеграм боте для пересказа текста, после того как юзер на нее нажимает бот спрашивает у него ссылку на текст или файл с текстом, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_tts = tr('🎧 Озвучь', lang, 'это кнопка в телеграм боте для озвучивания текста, после того как юзер на нее нажимает бот спрашивает у него текст для озвучивания, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_translate = tr('🈶 Перевод', lang, 'это кнопка в телеграм боте для перевода текста, после того как юзер на нее нажимает бот спрашивает у него текст для перевода, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-        b_msg_settings = tr('⚙️ Настройки', lang, 'это кнопка в телеграм боте для перехода в настройки, сделай перевод таким же коротким что бы надпись уместилась на кнопке, сохрани оригинальную эмодзи')
-
-        if any([x for x in (b_msg_draw, b_msg_search, b_msg_summary, b_msg_tts, b_msg_translate, b_msg_settings) if x == message.text]):
-            if any([x for x in (b_msg_draw,) if x == message.text]):
-                message.text = '/image'
-                image(message)
-            if any([x for x in (b_msg_search,) if x == message.text]):
-                message.text = '/google'
-                google(message)
-            if any([x for x in (b_msg_summary,) if x == message.text]):
-                message.text = '/sum'
-                summ_text(message)
-            if any([x for x in (b_msg_tts,) if x == message.text]):
-                message.text = '/tts'
-                tts(message)
-            if any([x for x in (b_msg_translate,) if x == message.text]):
-                message.text = '/trans'
-                trans(message)
-            if any([x for x in (b_msg_settings,) if x == message.text]):
-                # если не админ в чате то нельзя вызывать меню
-                if not (message.chat.type == 'private' or is_admin_member(message)):
-                    bot_reply_tr(message, "This command is only available to administrators")
-                    return
-                message.text = '/config'
-                config(message)
-            return
-
-        if custom_prompt:
-            message.text = custom_prompt
-
-        # кто по умолчанию отвечает
-        if chat_id_full not in CHAT_MODE:
-            CHAT_MODE[chat_id_full] = cfg.chat_mode_default
-
-        # определяем откуда пришло сообщение  
-        is_private = message.chat.type == 'private'
-        if chat_id_full not in SUPER_CHAT:
-            SUPER_CHAT[chat_id_full] = 0
-        # если бот должен отвечать всем в этом чате то пусть ведет себя как в привате
-        # но если это ответ на чье-то сообщение то игнорируем
-        # if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
-        if SUPER_CHAT[chat_id_full] == 1:
-            is_private = True
-
-        # detect /tts command
-        if (message.text.lower().startswith('/tts ') and is_private) \
-        or (message.text.lower().startswith('/tts\n') and is_private) \
-        or message.text.lower().startswith(f'/tts@{_bot_name} ') \
-        or message.text.lower().startswith(f'/tts@{_bot_name}\n') \
-        or (message.text.lower().strip() == '/tts' and is_private) \
-        or message.text.lower().strip() == f'/tts@{_bot_name}':
-            tts(message)
-            return
-
-        chat_mode_ = CHAT_MODE[chat_id_full]
-
-
-
-        # # начиная с 30 мая
-        # # не давать тем у кого нет ключей доступ к 1.5 pro
-        chat_id_full__ = f'[{message.from_user.id}] [0]'
-        # if chat_mode_ == 'gemini15' and is_private:
-        #     if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-        #         total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
-        #         if total_messages__ > 100:
-        #             chat_mode_ = 'gemini'
-        #             # каждые 100 сообщение напоминать о ключах
-        #             if total_messages__ % 100 == 0:
-        #                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-        #                 bot_reply(message, msg, disable_web_page_preview = True)
-        if is_private:
-            if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-                total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
-                # каждые 50 сообщение напоминать о ключах
-                if total_messages__ > 1 and total_messages__ % 50 == 0:
-                    msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-                    bot_reply(message, msg, disable_web_page_preview = True)
-        
-        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-            if GEMINI15_COUNTER.status(chat_id_full__) > 50 and chat_mode_ == 'gemini15':
-                chat_mode_ = 'gemini'
-        else:
-            if GEMINI15_COUNTER.status(chat_id_full__) > 300 and chat_mode_ == 'gemini15':
-                chat_mode_ = 'gemini'
-
-
-        # обработка \image это неправильное /image
-        if (message.text.lower().startswith('\\image ') and is_private):
-            message.text = message.text.replace('/', '\\', 1)
+    if any([x for x in (b_msg_draw, b_msg_search, b_msg_summary, b_msg_tts, b_msg_translate, b_msg_settings) if x == message.text]):
+        if any([x for x in (b_msg_draw,) if x == message.text]):
+            message.text = '/image'
             image(message)
+        if any([x for x in (b_msg_search,) if x == message.text]):
+            message.text = '/google'
+            google(message)
+        if any([x for x in (b_msg_summary,) if x == message.text]):
+            message.text = '/sum'
+            summ_text(message)
+        if any([x for x in (b_msg_tts,) if x == message.text]):
+            message.text = '/tts'
+            tts(message)
+        if any([x for x in (b_msg_translate,) if x == message.text]):
+            message.text = '/trans'
+            trans(message)
+        if any([x for x in (b_msg_settings,) if x == message.text]):
+            # если не админ в чате то нельзя вызывать меню
+            if not (message.chat.type == 'private' or is_admin_member(message)):
+                bot_reply_tr(message, "This command is only available to administrators")
+                return
+            message.text = '/config'
+            config(message)
+        return
+
+    if custom_prompt:
+        message.text = custom_prompt
+
+    # кто по умолчанию отвечает
+    if chat_id_full not in CHAT_MODE:
+        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+
+    # определяем откуда пришло сообщение  
+    is_private = message.chat.type == 'private'
+    if chat_id_full not in SUPER_CHAT:
+        SUPER_CHAT[chat_id_full] = 0
+    # если бот должен отвечать всем в этом чате то пусть ведет себя как в привате
+    # но если это ответ на чье-то сообщение то игнорируем
+    # if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
+    if SUPER_CHAT[chat_id_full] == 1:
+        is_private = True
+
+    # detect /tts command
+    if (message.text.lower().startswith('/tts ') and is_private) \
+    or (message.text.lower().startswith('/tts\n') and is_private) \
+    or message.text.lower().startswith(f'/tts@{_bot_name} ') \
+    or message.text.lower().startswith(f'/tts@{_bot_name}\n') \
+    or (message.text.lower().strip() == '/tts' and is_private) \
+    or message.text.lower().strip() == f'/tts@{_bot_name}':
+        tts(message)
+        return
+
+    chat_mode_ = CHAT_MODE[chat_id_full]
+
+
+
+    # # начиная с 30 мая
+    # # не давать тем у кого нет ключей доступ к 1.5 pro
+    chat_id_full__ = f'[{message.from_user.id}] [0]'
+    # if chat_mode_ == 'gemini15' and is_private:
+    #     if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+    #         total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
+    #         if total_messages__ > 100:
+    #             chat_mode_ = 'gemini'
+    #             # каждые 100 сообщение напоминать о ключах
+    #             if total_messages__ % 100 == 0:
+    #                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+    #                 bot_reply(message, msg, disable_web_page_preview = True)
+    if is_private:
+        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+            total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
+            # каждые 50 сообщение напоминать о ключах
+            if total_messages__ > 1 and total_messages__ % 50 == 0:
+                msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+                bot_reply(message, msg, disable_web_page_preview = True)
+    
+    if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+        if GEMINI15_COUNTER.status(chat_id_full__) > 50 and chat_mode_ == 'gemini15':
+            chat_mode_ = 'gemini'
+    else:
+        if GEMINI15_COUNTER.status(chat_id_full__) > 300 and chat_mode_ == 'gemini15':
+            chat_mode_ = 'gemini'
+
+
+    # обработка \image это неправильное /image
+    if (message.text.lower().startswith('\\image ') and is_private):
+        message.text = message.text.replace('/', '\\', 1)
+        image(message)
+        return
+
+    # не обрабатывать неизвестные команды, если они не в привате, в привате можно обработать их как простой текст
+    chat_bot_cmd_was_used = False
+
+    with semaphore_talks:
+
+        # является ли это сообщение топика, темы (особые чаты внутри чатов)
+        is_topic = message.is_topic_message or (message.reply_to_message and message.reply_to_message.is_topic_message)
+        # является ли это ответом на сообщение бота
+        is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
+
+        # не отвечать если это ответ юзера другому юзеру
+        try:
+            _ = message.dont_check_topic
+        except AttributeError:
+            message.dont_check_topic = False
+        if not message.dont_check_topic:
+            if is_topic: # в топиках всё не так как в обычных чатах
+                # если ответ не мне либо запрос ко всем(в топике он выглядит как ответ с content_type == 'forum_topic_created')
+                if not (is_reply or message.reply_to_message.content_type == 'forum_topic_created'):
+                    return
+            else:
+                # если это ответ в обычном чате но ответ не мне то выход
+                if message.reply_to_message and not is_reply:
+                    return
+
+        # удаляем пробелы в конце каждой строки
+        message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
+
+        msg = message.text.lower()
+
+        # определяем какое имя у бота в этом чате, на какое слово он отзывается
+        if chat_id_full in BOT_NAMES:
+            bot_name = BOT_NAMES[chat_id_full]
+        else:
+            bot_name = BOT_NAME_DEFAULT
+            BOT_NAMES[chat_id_full] = bot_name
+
+        bot_name_used = False
+        # убираем из запроса кодовое слово
+        if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
+            bot_name_used = True
+            message.text = message.text[len(f'{bot_name} '):].strip()
+
+        bot_name2 = f'@{_bot_name}'
+        # убираем из запроса имя бота в телеграме
+        if msg.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
+            bot_name_used = True
+            message.text = message.text[len(f'{bot_name2} '):].strip()
+
+        message.text = message.text.strip()
+        msg = message.text.lower()
+
+        # если предварительно была введена какая то команда то этот текст надо отправить в неё
+        if chat_id_full in COMMAND_MODE and not chat_bot_cmd_was_used:
+            if COMMAND_MODE[chat_id_full]:
+                if COMMAND_MODE[chat_id_full] == 'image':
+                    message.text = f'/image {message.text}'
+                    image(message)
+                elif COMMAND_MODE[chat_id_full] == 'tts':
+                    message.text = f'/tts {message.text}'
+                    tts(message)
+                elif COMMAND_MODE[chat_id_full] == 'trans':
+                    message.text = f'/trans {message.text}'
+                    trans(message)
+                elif COMMAND_MODE[chat_id_full] == 'google':
+                    message.text = f'/google {message.text}'
+                    google(message)
+                elif COMMAND_MODE[chat_id_full] == 'name':
+                    message.text = f'/name {message.text}'
+                    send_name(message)
+                elif COMMAND_MODE[chat_id_full] == 'sum':
+                    message.text = f'/sum {message.text}'
+                    summ_text(message)
+                COMMAND_MODE[chat_id_full] = ''
+                return
+
+        if msg == tr('забудь', lang) and (is_private or is_reply) or bot_name_used and msg==tr('забудь', lang):
+            reset_(message)
             return
 
-        # не обрабатывать неизвестные команды, если они не в привате, в привате можно обработать их как простой текст
-        chat_bot_cmd_was_used = False
-
-        with semaphore_talks:
-
-            # является ли это сообщение топика, темы (особые чаты внутри чатов)
-            is_topic = message.is_topic_message or (message.reply_to_message and message.reply_to_message.is_topic_message)
-            # является ли это ответом на сообщение бота
-            is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
-
-            # не отвечать если это ответ юзера другому юзеру
-            try:
-                _ = message.dont_check_topic
-            except AttributeError:
-                message.dont_check_topic = False
-            if not message.dont_check_topic:
-                if is_topic: # в топиках всё не так как в обычных чатах
-                    # если ответ не мне либо запрос ко всем(в топике он выглядит как ответ с content_type == 'forum_topic_created')
-                    if not (is_reply or message.reply_to_message.content_type == 'forum_topic_created'):
-                        return
-                else:
-                    # если это ответ в обычном чате но ответ не мне то выход
-                    if message.reply_to_message and not is_reply:
-                        return
-
-            # удаляем пробелы в конце каждой строки
-            message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
-
-            msg = message.text.lower()
-
-            # определяем какое имя у бота в этом чате, на какое слово он отзывается
-            if chat_id_full in BOT_NAMES:
-                bot_name = BOT_NAMES[chat_id_full]
-            else:
-                bot_name = BOT_NAME_DEFAULT
-                BOT_NAMES[chat_id_full] = bot_name
-
-            bot_name_used = False
-            # убираем из запроса кодовое слово
-            if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
-                bot_name_used = True
-                message.text = message.text[len(f'{bot_name} '):].strip()
-
-            bot_name2 = f'@{_bot_name}'
-            # убираем из запроса имя бота в телеграме
-            if msg.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
-                bot_name_used = True
-                message.text = message.text[len(f'{bot_name2} '):].strip()
-
-            message.text = message.text.strip()
-            msg = message.text.lower()
-
-            # если предварительно была введена какая то команда то этот текст надо отправить в неё
-            if chat_id_full in COMMAND_MODE and not chat_bot_cmd_was_used:
-                if COMMAND_MODE[chat_id_full]:
-                    if COMMAND_MODE[chat_id_full] == 'image':
-                        message.text = f'/image {message.text}'
-                        image(message)
-                    elif COMMAND_MODE[chat_id_full] == 'tts':
-                        message.text = f'/tts {message.text}'
-                        tts(message)
-                    elif COMMAND_MODE[chat_id_full] == 'trans':
-                        message.text = f'/trans {message.text}'
-                        trans(message)
-                    elif COMMAND_MODE[chat_id_full] == 'google':
-                        message.text = f'/google {message.text}'
-                        google(message)
-                    elif COMMAND_MODE[chat_id_full] == 'name':
-                        message.text = f'/name {message.text}'
-                        send_name(message)
-                    elif COMMAND_MODE[chat_id_full] == 'sum':
-                        message.text = f'/sum {message.text}'
-                        summ_text(message)
-                    COMMAND_MODE[chat_id_full] = ''
-                    return
-
-            if msg == tr('забудь', lang) and (is_private or is_reply) or bot_name_used and msg==tr('забудь', lang):
-                reset_(message)
-                return
-
-            if hasattr(cfg, 'PHONE_CATCHER') and cfg.PHONE_CATCHER:
-                # если это номер телефона
-                # удалить из текста все символы кроме цифр
-                if len(msg) < 18 and len(msg) > 9  and not re.search(r"[^0-9+\-()\s]", msg):
-                    number = re.sub(r'[^0-9]', '', msg)
-                    if number:
-                        if number.startswith(('7', '8')):
-                            number = number[1:]
-                        if len(number) == 10:
-                            if number in CACHE_CHECK_PHONE:
-                                response = CACHE_CHECK_PHONE[number][0]
-                                text__ = CACHE_CHECK_PHONE[number][1]
-                                USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
-                            else:
-                                with ShowAction(message, 'typing'):
-                                    response, text__ = my_gemini.check_phone_number(number)
-                            if response:
-                                USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
-                                CACHE_CHECK_PHONE[number] = (response, text__)
-                                response = utils.bot_markdown_to_html(response)
-                                bot_reply(message, response, parse_mode='HTML', not_log=True)
-                                my_log.log_echo(message, '[gemini] ' + response)
-                                return
-
-            # если в сообщении только ссылка и она отправлена боту в приват
-            # тогда сумморизируем текст из неё
-            if my_sum.is_valid_url(message.text) and is_private:
-                if utils.is_image_link(message.text):
-                    with ShowAction(message, 'typing'):
-                        text = img2txt(message.text, lang, chat_id_full)
-                        if text:
-                            text = utils.bot_markdown_to_html(text)
-                            bot_reply(message, text, parse_mode='HTML',
-                                                reply_markup=get_keyboard('translate', message))
+        if hasattr(cfg, 'PHONE_CATCHER') and cfg.PHONE_CATCHER:
+            # если это номер телефона
+            # удалить из текста все символы кроме цифр
+            if len(msg) < 18 and len(msg) > 9  and not re.search(r"[^0-9+\-()\s]", msg):
+                number = re.sub(r'[^0-9]', '', msg)
+                if number:
+                    if number.startswith(('7', '8')):
+                        number = number[1:]
+                    if len(number) == 10:
+                        if number in CACHE_CHECK_PHONE:
+                            response = CACHE_CHECK_PHONE[number][0]
+                            text__ = CACHE_CHECK_PHONE[number][1]
+                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
                         else:
-                            bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                        return
-                else:
-                    message.text = '/sum ' + message.text
-                    summ_text(message)
-                    return
+                            with ShowAction(message, 'typing'):
+                                response, text__ = my_gemini.check_phone_number(number)
+                        if response:
+                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
+                            CACHE_CHECK_PHONE[number] = (response, text__)
+                            response = utils.bot_markdown_to_html(response)
+                            bot_reply(message, response, parse_mode='HTML', not_log=True)
+                            my_log.log_echo(message, '[gemini] ' + response)
+                            return
 
-            # проверяем просят ли нарисовать что-нибудь
-            if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', 'нарисуй ', 'нарисуй,', 'нарисуйте ', 'нарисуйте,', 'draw ', 'draw,')):
-                prompt = message.text.split(' ', 1)[1]
-                message.text = f'/image {prompt}'
-                image_thread(message)
+        # если в сообщении только ссылка и она отправлена боту в приват
+        # тогда сумморизируем текст из неё
+        if my_sum.is_valid_url(message.text) and is_private:
+            if utils.is_image_link(message.text):
+                with ShowAction(message, 'typing'):
+                    text = img2txt(message.text, lang, chat_id_full)
+                    if text:
+                        text = utils.bot_markdown_to_html(text)
+                        bot_reply(message, text, parse_mode='HTML',
+                                            reply_markup=get_keyboard('translate', message))
+                    else:
+                        bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                    return
+            else:
+                message.text = '/sum ' + message.text
+                summ_text(message)
                 return
 
-            # можно перенаправить запрос к гуглу, но он долго отвечает
-            # не локализуем
-            if msg.startswith(('гугл ', 'гугл,', 'гугл\n')):
-                message.text = f'/google {msg[5:]}'
-                google(message)
+        # проверяем просят ли нарисовать что-нибудь
+        if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', 'нарисуй ', 'нарисуй,', 'нарисуйте ', 'нарисуйте,', 'draw ', 'draw,')):
+            prompt = message.text.split(' ', 1)[1]
+            message.text = f'/image {prompt}'
+            image_thread(message)
+            return
+
+        # можно перенаправить запрос к гуглу, но он долго отвечает
+        # не локализуем
+        if msg.startswith(('гугл ', 'гугл,', 'гугл\n')):
+            message.text = f'/google {msg[5:]}'
+            google(message)
+            return
+
+        # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
+        elif is_reply or is_private or bot_name_used or chat_bot_cmd_was_used:
+            if len(msg) > cfg.max_message_from_user:
+                bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
                 return
 
-            # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
-            elif is_reply or is_private or bot_name_used or chat_bot_cmd_was_used:
-                if len(msg) > cfg.max_message_from_user:
-                    bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
-                    return
+            if chat_id_full not in VOICE_ONLY_MODE:
+                VOICE_ONLY_MODE[chat_id_full] = False
+            if VOICE_ONLY_MODE[chat_id_full]:
+                action = 'record_audio'
+                message.text = f'[{tr("голосовое сообщение, возможны ошибки распознавания речи, отвечай просто без форматирования текста - ответ будет зачитан вслух", lang)}]: ' + message.text
+            else:
+                action = 'typing'
 
-                if chat_id_full not in VOICE_ONLY_MODE:
-                    VOICE_ONLY_MODE[chat_id_full] = False
-                if VOICE_ONLY_MODE[chat_id_full]:
-                    action = 'record_audio'
-                    message.text = f'[{tr("голосовое сообщение, возможны ошибки распознавания речи, отвечай просто без форматирования текста - ответ будет зачитан вслух", lang)}]: ' + message.text
+            # подсказка для ботов что бы понимали где и с кем общаются
+            formatted_date = utils.get_full_time()
+            if message.chat.title:
+                lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
+                if chat_id_full in ROLES and ROLES[chat_id_full]:
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello username every time.]'
                 else:
-                    action = 'typing'
-
-                # подсказка для ботов что бы понимали где и с кем общаются
-                formatted_date = utils.get_full_time()
-                if message.chat.title:
-                    lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                    if chat_id_full in ROLES and ROLES[chat_id_full]:
-                        hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello username every time.]'
-                    else:
-                        hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", do not say hello username every time.]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", user name is "{message.from_user.full_name}", user language code is "{lang_of_user}", your current date is "{formatted_date}", do not say hello username every time.]'
+            else:
+                if chat_id_full in ROLES and ROLES[chat_id_full]:
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello username every time.]'
                 else:
-                    if chat_id_full in ROLES and ROLES[chat_id_full]:
-                        hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not say hello username every time.]'
-                    else:
-                        hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", do not say hello username every time.]'
-                if chat_id_full not in ORIGINAL_MODE:
-                    ORIGINAL_MODE[chat_id_full] = False
-                if ORIGINAL_MODE[chat_id_full]:
-                    helped_query = message.text
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", user language code is "{lang}", your current date is "{formatted_date}", do not say hello username every time.]'
+            if chat_id_full not in ORIGINAL_MODE:
+                ORIGINAL_MODE[chat_id_full] = False
+            if ORIGINAL_MODE[chat_id_full]:
+                helped_query = message.text
+            else:
+                helped_query = f'{hidden_text} {message.text}'
+
+            WHO_ANSWERED[chat_id_full] = chat_mode_
+            time_to_answer_start = time.time()
+
+            with CHAT_STATS_LOCK:
+                CHAT_STATS[time_to_answer_start] = (chat_id_full, chat_mode_)
+                if chat_id_full in CHAT_STATS_TEMP:
+                    CHAT_STATS_TEMP[chat_id_full] += 1
                 else:
-                    helped_query = f'{hidden_text} {message.text}'
+                    CHAT_STATS_TEMP[chat_id_full] = 1
 
-                WHO_ANSWERED[chat_id_full] = chat_mode_
-                time_to_answer_start = time.time()
 
-                with CHAT_STATS_LOCK:
-                    CHAT_STATS[time_to_answer_start] = (chat_id_full, chat_mode_)
-                    if chat_id_full in CHAT_STATS_TEMP:
-                        CHAT_STATS_TEMP[chat_id_full] += 1
-                    else:
-                        CHAT_STATS_TEMP[chat_id_full] = 1
+            if chat_id_full not in CHATS_LOCK:
+                CHATS_LOCK[chat_id_full] = threading.Lock()
+
+            with CHATS_LOCK[chat_id_full]:
+
 
                 # если активирован режим общения с Gemini Pro
                 if chat_mode_ == 'gemini':

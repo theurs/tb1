@@ -2446,7 +2446,7 @@ Create image of ... third option
 Create image of ... fourth option
 Create image of ... fifth option
 
-5 lines total in answer
+5 big rich sentences total in answer
 
 the original prompt:""", lang) + '\n\n\n' + prompt
                         suggest = my_gemini.ai(suggest_query, temperature=1.5)

@@ -28,6 +28,7 @@ import my_gemini
 import my_groq
 import my_log
 import my_ocr
+import my_openrouter
 import my_pandoc
 import my_stt
 import my_sum
@@ -395,6 +396,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_gemini.update_mem(query, resp, chat_id_full)
     elif 'llama3' in CHAT_MODE[chat_id_full]:
         my_groq.update_mem(query, resp, chat_id_full)
+    elif 'gemma' in CHAT_MODE[chat_id_full]:
+        my_openrouter.update_mem(query, resp, chat_id_full)
 
 
 def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
@@ -978,6 +981,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button4, button5, button6)
         return markup
 
+    elif kbd == 'gemma7_chat':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gemma7_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'groq_groq-llama370_chat':
         if disabled_kbd(chat_id_full):
             return None
@@ -1194,6 +1209,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'groq-llama370_reset':
             my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Groq llama 3 70b очищена.')
+        elif call.data == 'gemma7_reset':
+            my_openrouter.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с Google gemma 7 очищена.')
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Gemini Pro очищена.')
@@ -1752,6 +1770,19 @@ def gemini15_mode(message: telebot.types.Message):
     bot_reply_tr(message, 'Gemini Pro 1.5 model selected.')
 
 
+@bot.message_handler(commands=['donate'], func=authorized_owner)
+def donate(message: telebot.types.Message):
+    help = f'[<a href = "https://www.donationalerts.com/r/theurs">DonationAlerts</a> 💸 <a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> 💸 <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> 💸 <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>]'
+    bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
+
+
+@bot.message_handler(commands=['gemma7'], func=authorized_owner)
+def llama3_70(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    CHAT_MODE[chat_id_full] = 'gemma7'
+    bot_reply_tr(message, 'Google gemma 7 model selected.')
+
+
 @bot.message_handler(commands=['llama370'], func=authorized_owner)
 def llama3_70(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
@@ -1907,6 +1938,8 @@ def reset_(message: telebot.types.Message):
             my_gemini.reset(chat_id_full)
         elif 'groq' in CHAT_MODE[chat_id_full]:
             my_groq.reset(chat_id_full)
+        elif 'gemma' in CHAT_MODE[chat_id_full]:
+            my_openrouter.reset(chat_id_full)
         else:
             bot_reply_tr(message, 'History WAS NOT cleared.')
             return
@@ -2047,6 +2080,10 @@ def send_debug_history(message: telebot.types.Message):
     if 'groq' in CHAT_MODE[chat_id_full]:
         prompt = 'Groq llama 3 70b\n\n'
         prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if 'gemma' in CHAT_MODE[chat_id_full]:
+        prompt = 'Google gemma 7\n\n'
+        prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
@@ -3149,6 +3186,7 @@ def purge_cmd_handler(message: telebot.types.Message):
 
             my_gemini.reset(chat_id_full)
             my_groq.reset(chat_id_full)
+            my_openrouter.reset(chat_id_full)
 
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
@@ -3892,6 +3930,46 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task: {error}')
                             bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                     reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                    except Exception as error3:
+                        print(error3)
+                        my_log.log2(str(error3))
+                    return
+
+
+            # если активирован режим общения с google gemma 7
+            if chat_mode_ == 'gemma7':
+                if len(msg) > my_openrouter.MAX_REQUEST:
+                    bot_reply(message, f'{tr("Слишком длинное сообщение для Google gemma 7:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter.MAX_REQUEST}')
+                    return
+
+                with ShowAction(message, action):
+                    try:
+                        if chat_id_full not in GEMIMI_TEMP:
+                            GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+
+                        # style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
+                        # answer = my_groq.chat(message.text, chat_id_full, style=style_)
+                        status, answer = my_openrouter.chat(message.text, chat_id_full)
+
+                        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                        if not answer:
+                            answer = 'Google gemma 7 ' + tr('did not answered, try to /reset and start again', lang)
+
+                        if not VOICE_ONLY_MODE[chat_id_full]:
+                            answer_ = utils.bot_markdown_to_html(answer)
+                            DEBUG_MD_TO_HTML[answer_] = answer
+                            answer = answer_
+
+                        my_log.log_echo(message, f'[gemma7] {answer}')
+                        try:
+                            bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                    reply_markup=get_keyboard('gemma7_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error:
+                            print(f'tb:do_task: {error}')
+                            my_log.log2(f'tb:do_task: {error}')
+                            bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                    reply_markup=get_keyboard('gemma7_chat', message), not_log=True, allow_voice = True)
                     except Exception as error3:
                         print(error3)
                         my_log.log2(str(error3))

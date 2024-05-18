@@ -44,9 +44,6 @@ TIMEOUT = 120
 # {id:lock}
 LOCKS = {}
 
-# memory save lock
-SAVE_LOCK = threading.Lock()
-
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 25000
 
@@ -85,7 +82,6 @@ MAX_PROXY_POOL = 10
 # начинать повторный поиск если осталось всего 5 проксей
 MAX_PROXY_POOL_LOW_MARGIN = 5
 
-SAVE_LOCK = threading.Lock()
 POOL_MAX_WORKERS = 50
 ##################################################################################
 

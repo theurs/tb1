@@ -2812,6 +2812,13 @@ def alert_thread(message: telebot.types.Message):
     bot_reply_tr(message, '/alert <текст сообщения которое бот отправит всем кого знает, форматирование маркдаун> Только администраторы могут использовать эту команду')
 
 
+@bot.message_handler(commands=['ask2', 'а2'], func=authorized)
+def ask_file(message: telebot.types.Message):
+    '''ответ по сохраненному файлу, вариант с чистым промптом'''
+    message.text += '[123CLEAR321]'
+    ask_file(message)
+
+
 @bot.message_handler(commands=['ask', 'а'], func=authorized)
 def ask_file(message: telebot.types.Message):
     '''ответ по сохраненному файлу'''
@@ -2833,7 +2840,11 @@ def ask_file_thread(message: telebot.types.Message):
 
     if chat_id_full in USER_FILES:
         with ShowAction(message, 'typing'):
-            q = f'''{tr('Answer the user`s query using saved text and your own mind.', lang)}
+            if message.text.endswith('[123CLEAR321]'):
+                message.text = message.text[:-13]
+                q = f"{message.text}\n\n{tr('URL/file:', lang)} {USER_FILES[chat_id_full][0]}\n\n{tr('Saved text:', lang)} {USER_FILES[chat_id_full][1]}"
+            else:
+                q = f'''{tr('Answer the user`s query using saved text and your own mind.', lang)}
 
 {tr('User query:', lang)} {query}
 
@@ -3597,13 +3608,13 @@ def do_task(message, custom_prompt: str = ''):
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
     
-    if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-        if GEMINI15_COUNTER.status(chat_id_full__) > 50 and chat_mode_ == 'gemini15':
-            chat_mode_ = 'gemini'
-    else:
-        if GEMINI15_COUNTER.status(chat_id_full__) > 300 and chat_mode_ == 'gemini15':
-            chat_mode_ = 'gemini'
-
+    if datetime.datetime.now() < datetime.datetime(2022, 5, 30):
+        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+            if GEMINI15_COUNTER.status(chat_id_full__) > 50 and chat_mode_ == 'gemini15':
+                chat_mode_ = 'gemini'
+        else:
+            if GEMINI15_COUNTER.status(chat_id_full__) > 300 and chat_mode_ == 'gemini15':
+                chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):

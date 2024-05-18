@@ -35,7 +35,7 @@ def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) 
         content = trafilatura.fetch_url(url)
         # text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
         #                            include_comments = True)
-        text = trafilatura.extract(content, config=newconfig, include_links = True, deduplicate=True)
+        text = trafilatura.extract(content, config=newconfig, include_links = False, deduplicate=True)
         if text:
             if no_links:
                 result += f'\n\n{text}\n\n'
@@ -390,10 +390,8 @@ if __name__ == "__main__":
 
     # print(search('3 закона робототехники'), '\n\n')
 
-    # print(search_v3('курс доллара'), '\n\n')
-    # print(search_v3('погода во владивостоке'), '\n\n')
-    print(search_v3('страницы в соцсетях, певица Капелька, контакты'), '\n\n')
-
+    print(search_v3('курс доллара'), '\n\n')
+ 
     # print(search_v3('полный текст песни doni ft валерия ты такой'), '\n\n')
 
     # print(search_v4('полный текст песни малиновая лада'), '\n\n')

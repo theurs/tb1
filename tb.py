@@ -2835,7 +2835,7 @@ def ask_file_thread(message: telebot.types.Message):
 
     if chat_id_full in USER_FILES:
         with ShowAction(message, 'typing'):
-            q = f'''{tr('Answer the user`s query using saved text and your own vision.', lang)}
+            q = f'''{tr('Answer the user`s query using saved text and your own mind.', lang)}
 
 {tr('User query:', lang)} {query}
 

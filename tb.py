@@ -2859,8 +2859,6 @@ def ask_file_thread(message: telebot.types.Message):
         return
 
 
-
-
 @bot.message_handler(commands=['sum'], func=authorized)
 def summ_text(message: telebot.types.Message):
     # автоматически выходить из забаненых чатов

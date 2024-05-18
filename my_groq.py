@@ -27,6 +27,9 @@ MAX_QUERY_LENGTH = 10000
 # максимальное количество запросов которые можно хранить в памяти
 MAX_LINES = 20
 
+# limit for summarize
+MAX_SUM_REQUEST = 12000
+
 # хранилище диалогов {id:list(mem)}
 CHATS = SqliteDict('db/groq_dialogs.db', autocommit=True)
 
@@ -309,12 +312,21 @@ def translate_text(text: str, lang: str = 'ru') -> str:
     return ai(query, temperature=0, max_tokens_ = 8000)
 
 
-# def summ_text_file(path: str) -> str:
-#     with open(path, 'r', encoding='utf-8') as f:
-#         text = f.read()
-#     prompt = f'Перескажи текст:\n\n{text[:MAX_QUERY_LENGTH]}'
-#     system = 'Отвечай на русском языке в удобном для чтения формате, 500-3000 слов.'
-#     return ai(prompt, system)
+def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
+    """
+    Generates a response from an AI model based on a given text,
+    query, and temperature.
+
+    Args:
+        text (str): The complete text to be used as input.
+        query (str): The query to be used for generating the response.
+        temperature (float, optional): The temperature parameter for controlling the randomness of the response. Defaults to 0.1.
+
+    Returns:
+        str: The generated response from the AI model.
+    """
+    query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
+    return ai(query, temperature=temperature)
 
 
 if __name__ == '__main__':

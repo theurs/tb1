@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-
+import datetime
 import io
 import os
 import re
@@ -16,7 +16,7 @@ import trafilatura
 
 import my_log
 import my_gemini
-import my_trans
+import my_groq
 import utils
 
 
@@ -41,8 +41,22 @@ def get_text_from_youtube(url: str) -> str:
         t = ''
 
     text = '\n'.join([x['text'] for x in t])
+    
+    # text = f'Subtitles extracted from {url} text:\n\n'
+    # for x in t:
+    #     line = x['text'].strip()
+    #     start_time = x['start']
+    #     start_time_ = str(datetime.timedelta(seconds=int(start_time)))
+    #     if len(start_time_) == 7:
+    #         start_time_ = '0' + start_time_
+    #     duration = x['duration']
+    #     end_time_ = str(datetime.timedelta(seconds=int(start_time + duration)))
+    #     if len(end_time_) == 7:
+    #         end_time_ = '0' + end_time_
+    #     text += f'[{start_time_} - {end_time_}] {line}\n'
+    # return text.strip() if text.count('\n') > 2 else ''
 
-    return text or ''
+    return text.strip() or ''
 
 
 def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') -> str:
@@ -56,43 +70,33 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str
     if isinstance(text, tuple):
         text, subj, _ = text[0], text[1], text[2]
 
-    if subj == 'text' or subj == 'pdf':
-        prompt = f"""Summarize the following, briefly answer in [{lang}] language with easy-to-read formatting:
--------------
-{text}
--------------
-BEGIN:
-"""
-    elif subj == 'chat_log':
-        prompt = f"""Summarize the following telegram chat log, briefly answer in [{lang}] language with easy-to-read formatting:
--------------
-{text}
--------------
-BEGIN:
-"""
-    elif subj == 'youtube_video':
-        prompt = f"""Summarize the following video subtitles extracted from youtube, briefly answer in [{lang}] language with easy-to-read formatting:
--------------
-{text}
--------------
-"""
-
     if type(text) != str or len(text) < 1: return ''
 
     result = ''
-    tr = my_trans.translate_text2
+
+    if subj == 'youtube_video':
+        qq = f'Summarize the content of this YouTube video using only the subtitles, what this video about, in 500-4000 words, answer in [{lang}] language.'
+    else:
+        qq = f'Summarize the content of this text using only provided text, what this text about, in 500-4000 words, answer in [{lang}] language.'
 
     if not result:
         try:
-            if subj == 'youtube_video':
-                qq = f'Summarize the content of this YouTube video using only the subtitles, what this video about, in 500-4000 words, answer in [{lang}] language.'
-            else:
-                qq = f'Summarize the content of this article using only provided text, what this text about, in 500-4000 words, answer in [{lang}] language.'
             if query:
                 qq = query
             r = my_gemini.sum_big_text(text[:my_gemini.MAX_SUM_REQUEST], qq).strip()
             if r != '':
-                result = f'{r}\n\n--\nGemini Pro [{len(prompt[:my_gemini.MAX_SUM_REQUEST])} {tr("символов", lang)}]'
+                result = f'{r}\n\n--\nGemini Pro [{len(text[:my_gemini.MAX_SUM_REQUEST])}]'
+        except Exception as error:
+            print(f'my_sum:summ_text_worker:gpt: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
+
+    if not result:
+        try:
+            if query:
+                qq = query
+            r = my_groq.sum_big_text(text[:my_groq.MAX_QUERY_LENGTH], qq).strip()
+            if r != '':
+                result = f'{r}\n\n--\Llama3 70b [Groq] [{len(text[:my_groq.MAX_QUERY_LENGTH])}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
@@ -177,30 +181,33 @@ def is_valid_url(url: str) -> bool:
 
 
 if __name__ == "__main__":
-    """Usage ./summarize.py '|URL|filename"""
-    urls = [
-        # 'https://habr.com/ru/articles/780688/',
-        # 'https://habr.com/ru/articles/785320/',
-        # 'https://habr.com/ru/articles/784858/',
-        # 'https://habr.com/ru/articles/785328/',
-        # 'https://www.youtube.com/watch?v=grMAWQBwijw',
-        # 'https://www.youtube.com/watch?v=x9hfUXAlVd0',
-        # 'https://www.youtube.com/watch?v=kW3_syJruKs&t=623s',
-        # 'https://www.youtube.com/watch?v=8Aov8WhV4ME',
-        # 'https://www.youtube.com/watch?v=WlUT-szZQWg',
-        # 'https://www.youtube.com/watch?v=rbL6hJR1k0I',
-        'https://www.youtube.com/watch?v=nrFjjsAc_E8',
-    ]
-    for url in urls:
-        print(summ_url(url))
 
-    sys.exit(0)
+    print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8'))
+
+    # """Usage ./summarize.py '|URL|filename"""
+    # urls = [
+    #     # 'https://habr.com/ru/articles/780688/',
+    #     # 'https://habr.com/ru/articles/785320/',
+    #     # 'https://habr.com/ru/articles/784858/',
+    #     # 'https://habr.com/ru/articles/785328/',
+    #     # 'https://www.youtube.com/watch?v=grMAWQBwijw',
+    #     # 'https://www.youtube.com/watch?v=x9hfUXAlVd0',
+    #     # 'https://www.youtube.com/watch?v=kW3_syJruKs&t=623s',
+    #     # 'https://www.youtube.com/watch?v=8Aov8WhV4ME',
+    #     # 'https://www.youtube.com/watch?v=WlUT-szZQWg',
+    #     # 'https://www.youtube.com/watch?v=rbL6hJR1k0I',
+    #     'https://www.youtube.com/watch?v=nrFjjsAc_E8',
+    # ]
+    # for url in urls:
+    #     print(summ_url(url))
+
+    # sys.exit(0)
     
-    t = sys.argv[1]
+    # t = sys.argv[1]
     
-    if is_valid_url(t):
-        print(summ_url(t))
-    elif os.path.exists(t):
-        print(summ_text(open(t).read()))
-    else:
-        print("""Usage ./summarize.py '|URL|filename""")
+    # if is_valid_url(t):
+    #     print(summ_url(t))
+    # elif os.path.exists(t):
+    #     print(summ_text(open(t).read()))
+    # else:
+    #     print("""Usage ./summarize.py '|URL|filename""")

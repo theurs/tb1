@@ -2812,8 +2812,6 @@ def alert_thread(message: telebot.types.Message):
     bot_reply_tr(message, '/alert <текст сообщения которое бот отправит всем кого знает, форматирование маркдаун> Только администраторы могут использовать эту команду')
 
 
-
-
 @bot.message_handler(commands=['ask', 'а'], func=authorized)
 def ask_file(message: telebot.types.Message):
     '''ответ по сохраненному файлу'''

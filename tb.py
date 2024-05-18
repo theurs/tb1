@@ -2835,15 +2835,16 @@ def ask_file_thread(message: telebot.types.Message):
 
     if chat_id_full in USER_FILES:
         with ShowAction(message, 'typing'):
-            q = f'''{tr('Answer the user`s query using saved text.', lang)}
+            q = f'''{tr('Answer the user`s query using saved text and your own vision.', lang)}
 
-    {tr('User query:', lang)} {query}
+{tr('User query:', lang)} {query}
 
-    {tr('URL/file:', lang)} {USER_FILES[chat_id_full][0]}
+{tr('URL/file:', lang)} {USER_FILES[chat_id_full][0]}
 
-    {tr('Saved text:', lang)} {USER_FILES[chat_id_full][1]}
+{tr('Saved text:', lang)} {USER_FILES[chat_id_full][1]}
     '''
-            result = my_gemini.ai(q, temperature=1.5, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
+            # result = my_gemini.ai(q, temperature=1.5, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
+            result = my_gemini.ai(q, temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
             if result:
                 answer = utils.bot_markdown_to_html(result)
                 bot_reply(message, answer, parse_mode='HTML')

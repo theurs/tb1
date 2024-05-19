@@ -432,8 +432,6 @@ def ai(q: str, mem = [],
         my_log.log_gemini(f'my_gemini:ai:{unknown_error}\n\n{error_traceback}')
 
     answer = result.strip()
-    if not answer and model == 'gemini-1.5-pro-latest':
-        answer = ai(q, mem, temperature, proxy_str, 'gemini-1.0-pro-latest')
 
     if answer.startswith('[Info to help you answer.'):
         pos = answer.find('"]')
@@ -518,6 +516,11 @@ def chat(query: str, chat_id: str, temperature: float = 0.1, update_memory: bool
             r = ai(query, mem, temperature, model = model)
         except Exception as error:
             my_log.log_gemini(f'my_gemini:chat:{error}\n\n{query[:500]}')
+            time.sleep(5)
+            try:
+                r = ai(query, mem, temperature, model = model)
+            except Exception as error:
+                my_log.log_gemini(f'my_gemini:chat:{error}\n\n{query[:500]}')
         if r and update_memory:
             mem = update_mem(query, r, mem)
             CHATS[chat_id] = mem
@@ -916,19 +919,6 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    # t1 = text[:int(MAX_SUM_REQUEST/2)]
-    # t2 = text[int(MAX_SUM_REQUEST/2):MAX_SUM_REQUEST] if len(text) > int(MAX_SUM_REQUEST/2) else ''
-    # mem = []
-    # if t2:
-    #     mem.append({"role": "user", "parts": [{"text": f'Dont answer before get part 2 and question.\n\nPart 1:\n\n{t1}'}]})
-    #     mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
-    #     mem.append({"role": "user", "parts": [{"text": f'Part 2:\n\n{t2}'}]})
-    #     mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
-    # else:
-    #     mem.append({"role": "user", "parts": [{"text": f'Dont answer before get part 1 and question.\n\nPart 1:\n\n{t1}'}]})
-    #     mem.append({"role": "model", "parts": [{"text": 'Ok.'}]})
-
-    # return ai(query, mem=mem, temperature=temperature)
     return ai(query, temperature=temperature, model='gemini-1.5-flash-latest')
 
 
@@ -965,7 +955,7 @@ def test_new_key(key: str) -> bool:
         bool: True if the key is valid, False otherwise.
     """
     try:
-        result = ai('1+1= answer very short', model = 'gemini-1.0-pro-latest', key__=key)
+        result = ai('1+1= answer very short', model = 'gemini-1.0-pro', key__=key)
         # result = ai('1+1= answer very short', key__=key)
         if result.strip():
             return True

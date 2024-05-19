@@ -2860,7 +2860,6 @@ def ask_file_thread(message: telebot.types.Message):
 
 {tr('Saved text:', lang)} {USER_FILES[chat_id_full][1]}
     '''
-            # result = my_gemini.ai(q, temperature=1.5, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
             result = my_gemini.ai(q, temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
             if result:
                 answer = utils.bot_markdown_to_html(result)
@@ -3833,22 +3832,21 @@ def do_task(message, custom_prompt: str = ''):
                                 GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
                             answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
-                                                    model = 'gemini-1.0-pro-latest')
+                                                    model = 'gemini-1.0-pro')
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'gemini'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             flag_gpt_help = False
                             if not answer:
+                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
+                                mem__ = my_gemini.get_mem_for_llama(chat_id_full)
+                                answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
+                                flag_gpt_help = True
                                 if not answer:
-                                    style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
-                                    mem__ = my_gemini.get_mem_for_llama(chat_id_full)
-                                    answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
-                                    flag_gpt_help = True
-                                    if not answer:
-                                        answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
-                                        return
-                                    my_gemini.update_mem(message.text, answer, chat_id_full)
+                                    answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
+                                    return
+                                my_gemini.update_mem(message.text, answer, chat_id_full)
 
                             if not VOICE_ONLY_MODE[chat_id_full]:
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -3885,7 +3883,7 @@ def do_task(message, custom_prompt: str = ''):
                                 GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
                             answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
-                                                    model = 'gemini-1.5-pro-latest')
+                                                    model = 'gemini-1.5-pro')
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'gemini15'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'

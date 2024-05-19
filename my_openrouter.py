@@ -105,7 +105,19 @@ def update_mem(query: str, resp: str, chat_id: str):
     mem += [{'role': 'user', 'content': query}]
     mem += [{'role': 'assistant', 'content': resp}]
     mem = clear_mem(mem)
-    CHATS[chat_id] = mem
+
+    mem__ = []
+    try:
+        i = 0
+        while i < len(mem):
+            if i == 0 or mem[i] != mem[i-1]:
+                mem__.append(mem[i])
+            i += 1
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_groq(f'my_openrouter:update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
+
+    CHATS[chat_id] = mem__
 
 
 def chat(query: str, chat_id: str = '', temperature: float = 0.1, system: str = '') -> str:
@@ -134,7 +146,7 @@ def chat_cli():
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        s, r = chat(q, 'test')
+        s, r = chat(f'(отвечай всегда на языке [ru]) ' + q, 'test')
         print(r)
 
 

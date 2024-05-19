@@ -31,7 +31,10 @@ def get_text_from_youtube(url: str) -> str:
     """
     top_langs = ('ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro')
 
-    video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
+    try:
+        video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
+    except:
+        return ''
 
     try:
         t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
@@ -125,13 +128,16 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
                 
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 
-        response = requests.get(url, stream=True, headers=headers, timeout=20)
-        content = b''
-        # Ограничиваем размер
-        for chunk in response.iter_content(chunk_size=1024):
-            content += chunk
-            if len(content) > 1 * 1024 * 1024: # 1 MB
-                break
+        try:
+            response = requests.get(url, stream=True, headers=headers, timeout=20)
+            content = b''
+            # Ограничиваем размер
+            for chunk in response.iter_content(chunk_size=1024):
+                content += chunk
+                if len(content) > 1 * 1024 * 1024: # 1 MB
+                    break
+        except:
+            return ''
 
         if utils.mime_from_buffer(content) == 'application/pdf':
             pdf = True

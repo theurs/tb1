@@ -489,7 +489,7 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
             'model_id': (None, get_model()),
             'params': (None, json.dumps(params), 'application/json')
         }
-        response = requests.post('https://api-key.fusionbrain.ai/key/api/v1/text2image/run', headers=AUTH_HEADERS, files=data)
+        response = requests.post('https://api-key.fusionbrain.ai/key/api/v1/text2image/run', headers=AUTH_HEADERS, files=data, timeout=120)
         data = response.json()
         try:
             uuid = data['uuid']

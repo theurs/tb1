@@ -3608,7 +3608,7 @@ def do_task(message, custom_prompt: str = ''):
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
     
-    if datetime.datetime.now() > datetime.datetime(2022, 5, 30):
+    if datetime.datetime.now() > datetime.datetime(2024, 5, 30):
         if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
             if GEMINI15_COUNTER.status(chat_id_full__) > 50 and chat_mode_ == 'gemini15':
                 chat_mode_ = 'gemini'

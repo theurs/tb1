@@ -1137,7 +1137,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 <b>{tr('Available ai models:', lang)}</b>
 /llama370 - llama 3 70b (groq)
 /gemini10 - Google Gemini 1.5 flash
-/gemini15 - Google Gemini 1.5
+/gemini15 - Google Gemini 1.5 pro
 
 """
 
@@ -1669,7 +1669,7 @@ def config_thread(message: telebot.types.Message):
 <b>{tr('Available ai models:', lang)}</b>
 /llama370 - llama 3 70b (groq)
 /gemini10 - Google Gemini 1.5 flash
-/gemini15 - Google Gemini 1.5
+/gemini15 - Google Gemini 1.5 pro
 
 """
         bot_reply(message, MSG_CONFIG, parse_mode='HTML', reply_markup=get_keyboard('config', message))
@@ -3134,7 +3134,7 @@ In private messages, you don't need to mention the bot's name
 
 Change model:
 /gemini10 - Google Gemini 1.5 flash
-/gemini15 - Google Gemini 1.5
+/gemini15 - Google Gemini 1.5 pro
 /llama370 - LLaMa 3 70b (Groq)
 
 Report issues on Telegram:

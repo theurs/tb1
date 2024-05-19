@@ -3128,6 +3128,7 @@ For example, you can say bot, tell me a joke.
 In private messages, you don't need to mention the bot's name
 
 🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
+After the file or link is downloaded, you can ask questions using the /ask command.
 
 🛸 To get text from an image, send the image with the caption "ocr". Send message with caption starting "?" for image describe.
 

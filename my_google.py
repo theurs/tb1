@@ -67,7 +67,7 @@ def ddg_text(query: str) -> str:
 def download_in_parallel(urls, max_sum_request):
     text = ''
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        future_to_url = {executor.submit(download_text_v2, url, 40000): url for url in urls}
+        future_to_url = {executor.submit(download_text_v2, url, 30000): url for url in urls}
         for future in concurrent.futures.as_completed(future_to_url):
             try:
                 result = future.result()
@@ -80,7 +80,7 @@ def download_in_parallel(urls, max_sum_request):
     return text
 
 
-def search_v3(query: str, lang: str = 'ru', max_search: int = 20) -> str:
+def search_v3(query: str, lang: str = 'ru', max_search: int = 15) -> str:
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп

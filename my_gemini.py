@@ -50,9 +50,8 @@ MAX_REQUEST = 25000
 # максимальный размер истории (32к ограничение Google?)
 # MAX_CHAT_SIZE = 25000
 MAX_CHAT_SIZE = 31000
-# сколько последних запросов помнить, для экономии токенов (Должно быть >2 и кратно 2)
-# 20 - значит помнить последние 10 запросов и ответов
-MAX_CHAT_LINES = 20
+# сколько последних запросов помнить, для экономии токенов
+MAX_CHAT_LINES = 40
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
     MAX_CHAT_LINES = cfg.GEMINI_MAX_CHAT_LINES
 
@@ -211,7 +210,7 @@ def update_mem(query: str, resp: str, mem):
         for x in mem:
             text = x['parts'][0]['text']
             size += len(text)
-    mem = mem[-MAX_CHAT_LINES:]
+    mem = mem[-MAX_CHAT_LINES*2:]
     if chat_id:
         CHATS[chat_id] = mem
     return mem

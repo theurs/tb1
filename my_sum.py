@@ -137,7 +137,7 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
                 if len(content) > 1 * 1024 * 1024: # 1 MB
                     break
         except:
-            if download_only
+            if download_only:
                 return ''
             else:
                 return '', ''

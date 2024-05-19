@@ -155,8 +155,14 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
             # Декодируем содержимое страницы
             try:
                 content = content.decode(encoding)
-            except UnicodeDecodeError as error:
-                content = content.decode('utf-8')
+            except:
+                try:
+                    content = content.decode('utf-8')
+                except:
+                    if download_only:
+                        return ''
+                    else:
+                        return '', ''
 
             # newconfig = trafilatura.settings.use_config()
             # newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")

@@ -202,7 +202,7 @@ supported_langs_trans = [
         "ka","kk","km","kn","ko","ku","ky","la","lb","lo","lt","lv","mg","mi","mk",
         "ml","mn","mr","ms","mt","my","ne","nl","no","ny","or","pa","pl","ps","pt",
         "ro","ru","rw","sd","si","sk","sl","sm","sn","so","sq","sr","st","su","sv",
-        "sw","ta","te","tg","th","tl","tr","uk","ur","uz","vi","xh","yi","yo","zh",
+        "sw","ta","te","tg","th","tl","tr","ua","uk","ur","uz","vi","xh","yi","yo","zh",
         "zh-TW","zu"]
 supported_langs_tts = [
         'af', 'am', 'ar', 'as', 'az', 'be', 'bg', 'bn', 'bs', 'ca', 'cs', 'cy', 'da',
@@ -212,7 +212,7 @@ supported_langs_tts = [
         'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'my', 'nb', 'ne', 'nl', 'nn', 'no', 'ny',
         'or', 'pa', 'pl', 'ps', 'pt', 'ro', 'ru', 'rw', 'sd', 'si', 'sk', 'sl', 'sm',
         'sn', 'so', 'sq', 'sr', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'tk',
-        'tl', 'tr', 'tt', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
+        'tl', 'tr', 'tt', 'ua', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
 
 
 class MessageCounter:
@@ -2279,6 +2279,8 @@ def tts_thread(message: telebot.types.Message, caption = None):
     else:
         text = llang = rate = ''
     llang = llang.strip()
+    if llang == 'ua':
+        llang = 'uk'
     rate = rate.strip()
 
     if not text or llang not in supported_langs_tts:
@@ -3003,6 +3005,8 @@ def trans_thread(message: telebot.types.Message):
                          reply_markup=get_keyboard('command_mode', message))
             return
         llang = llang.strip()
+        if llang == 'ua':
+            llang = 'uk'
 
         with ShowAction(message, 'typing'):
             translated = my_trans.translate_text2(text, llang)

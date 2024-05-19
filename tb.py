@@ -2359,6 +2359,9 @@ def google_thread(message: telebot.types.Message):
     with ShowAction(message, 'typing'):
         with semaphore_talks:
             r, text = my_google.search_v3(q, lang)
+            if not r.strip():
+                bot_reply_tr(message, 'Search failed.')
+                return
             USER_FILES[chat_id_full] = ('google: ' + q, text)
         try:
             rr = utils.bot_markdown_to_html(r)

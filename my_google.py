@@ -70,8 +70,8 @@ def download_in_parallel(urls, max_sum_request):
                 if len(text) > max_sum_request:
                     break
             except Exception as exc:
-                if "'NoneType' object has no attribute 'group'" not in str(exc):
-                    my_log.log2(f'my_google:download_in_parallel: {exc}')
+                error_traceback = traceback.format_exc()
+                my_log.log2(f'my_google:download_in_parallel: {exc}\n\n{error_traceback}')
     return text
 
 

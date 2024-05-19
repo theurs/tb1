@@ -6,12 +6,12 @@ import traceback
 
 from duckduckgo_search import DDGS
 import googlesearch
-import trafilatura
 
 import cfg
 import my_log
 import my_gemini
 import my_groq
+import my_sum
 
 
 def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) -> str:
@@ -28,13 +28,8 @@ def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) 
     """
     #max_req += 5000 # 5000 дополнительно под длинные ссылки с запасом
     result = ''
-    newconfig = trafilatura.settings.use_config()
-    newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
     for url in urls:
-        content = trafilatura.fetch_url(url)
-        # text = trafilatura.extract(content, config=newconfig, include_links=True, deduplicate=True, \
-        #                            include_comments = True)
-        text = trafilatura.extract(content, config=newconfig, include_links = False, deduplicate=True)
+        text = my_sum.summ_url(url, download_only = True)
         if text:
             if no_links:
                 result += f'\n\n{text}\n\n'
@@ -105,12 +100,6 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 15) -> str:
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
 
-    # text = ''
-    # for url in urls:
-    #     # print(url)
-    #     text += download_text_v2(url, 20000)
-    #     if len(text) > my_gemini.MAX_SUM_REQUEST:
-    #         break
     text = download_in_parallel(urls, my_gemini.MAX_SUM_REQUEST)
 
     q = f'''Answer in "{lang}" language to users search query using search results and your own knowledge.
@@ -170,4 +159,10 @@ Search results:
 
 
 if __name__ == "__main__":
-    print(search_v3('курс доллара')[0], '\n\n')
+    lines = [
+        # 'курс доллара',
+        # 'погода во владивостоке',
+        'ссылки на ютуб и другие соц сети певицы валерии',
+        ]
+    for x in lines:
+        print(search_v3(x)[0], '\n\n')

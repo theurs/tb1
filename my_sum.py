@@ -125,7 +125,7 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
                 
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 
-        response = requests.get(url, stream=True, headers=headers, timeout=10)
+        response = requests.get(url, stream=True, headers=headers, timeout=20)
         content = b''
         # Ограничиваем размер
         for chunk in response.iter_content(chunk_size=1024):
@@ -147,12 +147,12 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
             try:
                 content = content.decode(encoding)
             except UnicodeDecodeError as error:
-                print(error)
-                content = response.content.decode('utf-8')
+                content = content.decode('utf-8')
 
-            newconfig = trafilatura.settings.use_config()
-            newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
-            text = trafilatura.extract(content, config=newconfig)
+            # newconfig = trafilatura.settings.use_config()
+            # newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
+            # text = trafilatura.extract(content, config=newconfig)
+            text = trafilatura.extract(content)
    
     if download_only:
         if youtube:
@@ -182,7 +182,7 @@ def is_valid_url(url: str) -> bool:
 
 if __name__ == "__main__":
 
-    print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8'))
+    print(summ_url('https://telegra.ph/Tomm-05-19', download_only=True))
 
     # """Usage ./summarize.py '|URL|filename"""
     # urls = [

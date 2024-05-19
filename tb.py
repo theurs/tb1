@@ -3103,7 +3103,9 @@ def send_welcome_start_thread(message: telebot.types.Message):
     COMMAND_MODE[chat_id_full] = ''
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
-    help = '''Hello, I`m Google Gemini [1.0/1.5/Vision/Flash/llama3-70]! Ask me anything. Send me you text/image/audio/documents with questions.
+    help = '''Hello, I`m AI chat bot powered by Google Gemini [1.0/1.5/Vision/Flash], llama3-70 etc!
+
+Ask me anything. Send me you text/image/audio/documents with questions.
 
 You can change language with /lang command.
 

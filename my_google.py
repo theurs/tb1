@@ -70,8 +70,8 @@ def download_in_parallel(urls, max_sum_request):
                 if len(text) > max_sum_request:
                     break
             except Exception as exc:
-                my_log.log2(f'my_google:download_in_parallel: {exc}')
-                print(f"Exception occurred while processing {future_to_url[future]}: {exc}")
+                if "'NoneType' object has no attribute 'group'" not in str(exc):
+                    my_log.log2(f'my_google:download_in_parallel: {exc}')
     return text
 
 

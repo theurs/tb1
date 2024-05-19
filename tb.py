@@ -3883,7 +3883,7 @@ def do_task(message, custom_prompt: str = ''):
                                 GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
                             answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
-                                                    model = 'gemini-1.5-pro')
+                                                    model = 'gemini-1.5-pro-latest')
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'gemini15'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'

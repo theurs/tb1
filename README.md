@@ -265,6 +265,10 @@ GROQ_API_KEY = [
 # GROQ_PROXIES = ['socks5://172.28.1.8:1080',]
 
 
+# ключ от опенроутера openrouter.ai
+OPEN_ROUTER_KEY = 'xxx'
+
+
 # DEBUG = False
 ```
 

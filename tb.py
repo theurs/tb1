@@ -3849,8 +3849,8 @@ def do_task(message, custom_prompt: str = ''):
                             bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                     reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
                     except Exception as error3:
-                        print(error3)
-                        my_log.log2(str(error3))
+                        error_traceback = traceback.format_exc()
+                        my_log.log2(f'tb:do_task:gemini {error3}\n{error_traceback}')
                     return
 
             # если активирован режим общения с Gemini Pro 1.5
@@ -3899,8 +3899,8 @@ def do_task(message, custom_prompt: str = ''):
                             bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                     reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
                     except Exception as error3:
-                        print(error3)
-                        my_log.log2(str(error3))
+                        error_traceback = traceback.format_exc()
+                        my_log.log2(f'tb:do_task:gemini {error3}\n{error_traceback}')
                     return
 
             # если активирован режим общения с groq llama 3 70b
@@ -3939,8 +3939,8 @@ def do_task(message, custom_prompt: str = ''):
                             bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                     reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
                     except Exception as error3:
-                        print(error3)
-                        my_log.log2(str(error3))
+                        error_traceback = traceback.format_exc()
+                        my_log.log2(f'tb:do_task:llama370-groq {error3}\n{error_traceback}')
                     return
 
 
@@ -3979,8 +3979,8 @@ def do_task(message, custom_prompt: str = ''):
                             bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                     reply_markup=get_keyboard('gemma7_chat', message), not_log=True, allow_voice = True)
                     except Exception as error3:
-                        print(error3)
-                        my_log.log2(str(error3))
+                        error_traceback = traceback.format_exc()
+                        my_log.log2(f'tb:do_task:gemini {error3}\n{error_traceback}')
                     return
 
 

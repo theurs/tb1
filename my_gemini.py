@@ -972,11 +972,24 @@ def test_new_key(key: str) -> bool:
     return False
 
 
-def detect_intent(text: str) -> str:
+def detect_intent(text: str) -> dict:
+    """
+    Анализирует последний запрос пользователя и определяет его намерение:
+        - хочет ли пользователь сгенерировать изображение,
+        - хочет ли пользователь найти ответ в Google,
+        - хочет ли пользователь задать вопрос по содержимому ссылки.
+
+    Args:
+        text (str): Журнал переписки с пользователем.
+
+    Returns:
+        dict: Словарь с ключами 'image', 'google', 'link',
+              значения которых (True/False) указывают на наличие соответствующего намерения.
+    """
     result = {
-        'image':   False, # юзер хочет генерировать изображения
-        'google':     False, # юзер хочет искать ответ в гугле
-        'link':       False, # юзер хочет задать вопрос по содержимому ссылки
+        'image':    False, # юзер хочет генерировать изображения
+        'google':   False, # юзер хочет искать ответ в гугле
+        'link':     False, # юзер хочет задать вопрос по содержимому ссылки
               }
 
     query = f'''
@@ -994,7 +1007,7 @@ def detect_intent(text: str) -> str:
 {text[-10000:]}
 '''
     r = ai(query, temperature=0.1, model='gemini-1.5-flash-latest', tokens_limit=100)
-    if 'imagegen' in r.lower():
+    if 'image' in r.lower():
         result['image'] = True
     if 'google' in r.lower():
         result['google'] = True

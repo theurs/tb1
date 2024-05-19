@@ -1720,11 +1720,13 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
         if keys:
             added_flag = False
             with my_gemini.USER_KEYS_LOCK:
-                my_gemini.USER_KEYS[chat_id_full] = keys
+                # my_gemini.USER_KEYS[chat_id_full] = keys
+                new_keys = []
                 for key in keys:
                     if key not in my_gemini.ALL_KEYS and key not in cfg.gemini_keys:
                         if my_gemini.test_new_key(key):
                             my_gemini.ALL_KEYS.append(key)
+                            new_keys.append(key)
                             added_flag = True
                             my_log.log_keys(f'Added new gemini key: {key}')
                         else:
@@ -1732,6 +1734,7 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
                             msg = tr('Failed to add new gemini key:', lang) + f' {key}'
                             bot_reply(message, msg)
             if added_flag:
+                my_gemini.USER_KEYS[chat_id_full] = new_keys
                 bot_reply_tr(message, 'Added keys successfully!')
                 return
 
@@ -2737,7 +2740,7 @@ def block_user_list(message: telebot.types.Message):
         bot_reply(message, '\n'.join(users))
 
 
-@bot.message_handler(commands=['msg', 'm', 'message'], func=authorized_admin)
+@bot.message_handler(commands=['msg', 'm', 'message', 'mes'], func=authorized_admin)
 def message_to_user(message: telebot.types.Message):
     thread = threading.Thread(target=message_to_user_thread, args=(message,))
     thread.start()
@@ -2748,7 +2751,7 @@ def message_to_user_thread(message: telebot.types.Message):
     try:
         uid = int(args[1])
         text = args[2]
-        bot.send_message(uid, text, disable_notification=True)
+        bot.send_message(uid, text, message_thread_id = 0, disable_notification=True)
         bot_reply_tr(message, 'ok')
         my_log.log_echo(message, f'Admin sent message to user {uid}: {text}')
         return

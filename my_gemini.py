@@ -513,7 +513,11 @@ def chat(query: str, chat_id: str, temperature: float = 0.1, update_memory: bool
         if chat_id not in CHATS:
             CHATS[chat_id] = []
         mem = CHATS[chat_id]
-        r = ai(query, mem, temperature, model = model)
+        r = ''
+        try:
+            r = ai(query, mem, temperature, model = model)
+        except Exception as error:
+            my_log.log_gemini(f'my_gemini:chat:{error}\n\n{query[:500]}')
         if r and update_memory:
             mem = update_mem(query, r, mem)
             CHATS[chat_id] = mem

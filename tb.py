@@ -2353,7 +2353,6 @@ def google_thread(message: telebot.types.Message):
 
     with ShowAction(message, 'typing'):
         with semaphore_talks:
-            # r = my_google.search(q, lang)
             r, text = my_google.search_v3(q, lang)
             USER_FILES[chat_id_full] = ('google: ' + q, text)
         try:

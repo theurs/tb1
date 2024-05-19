@@ -130,10 +130,23 @@ def update_mem(query: str, resp: str, mem):
     while token_count(mem) > MAX_QUERY_LENGTH:
         mem = mem[2:]
     mem = mem[:MAX_LINES*2]
+
+    # непонятный глюк с задвоением памяти, убираем дубли
+    mem__ = []
+    try:
+        i = 0
+        while i < len(mem):
+            if i == 0 or mem[i] != mem[i-1]:
+                mem__.append(mem[i])
+            i += 1
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_groq(f'my_groq:update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
+    
     if chat_id:
-        CHATS[chat_id] = mem
+        CHATS[chat_id] = mem__
     else:
-        return mem
+        return mem__
 
 
 def chat(query: str, chat_id: str,
@@ -244,7 +257,7 @@ def chat_cli():
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        r = chat(q, 'test')
+        r = chat('(отвечай всегда на языке [ru]) ' + q, 'test')
         print(r)
 
 
@@ -333,13 +346,14 @@ if __name__ == '__main__':
     # print(ai('привет как дела'))
     # print(summ_text_file('1.txt'))
 
-    # chat_cli()
+    reset('test')
+    chat_cli()
 
-    for _ in range(100):
-        t1 = time.time()
-        r = ai('напиши рассказ про слона 4000 слов', temperature=1, max_tokens_ = 8000)
-        t2 = time.time()
-        print(len(r), round(t2 - t1, 2), f'{r[:20]}...{r[-20:]}'.replace('\n', ' '))
+    # for _ in range(100):
+    #     t1 = time.time()
+    #     r = ai('напиши рассказ про слона 4000 слов', temperature=1, max_tokens_ = 8000)
+    #     t2 = time.time()
+    #     print(len(r), round(t2 - t1, 2), f'{r[:20]}...{r[-20:]}'.replace('\n', ' '))
 
     # stt()
 

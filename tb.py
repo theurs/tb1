@@ -3917,7 +3917,8 @@ def do_task(message, custom_prompt: str = ''):
                         # answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full],
                         #                         model = '', style = hidden_text)
                         style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
-                        answer = my_groq.chat(message.text, chat_id_full, style=style_)
+                        # answer = my_groq.chat(message.text, chat_id_full, style=style_)
+                        answer = my_groq.chat(f'({style_}) {message.text}', chat_id_full)
 
                         WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 

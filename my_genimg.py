@@ -693,29 +693,9 @@ User's prompt: {prompt}
 Dialog history: {conversation_history}
 """
 
-#     query = f"""
-# User want to create image with text to image generator.
-# Repromt user's prompt for image generation.
-# Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
-# Answer as a professional image prompt engineer, completely grammatically correct and future rich, add details if it was short.
-
-# User's prompt: {prompt}
-
-# Dialog history for help you understand context: {conversation_history}
-# """
-
-    reprompt = my_gemini.ai(query, temperature=1.2)
+    reprompt = my_gemini.ai(query, temperature=1.5)
     my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}')
-
-    query2 = f"""
-Does this text look like a user request to generate an image? Yes or No, answer supershort.
-
-Text: {reprompt}
-"""
-    if 'yes' in my_gemini.ai(query2, temperature=0.1).lower():
-        return reprompt
-    else:
-        return prompt
+    return reprompt if reprompt.strip() else prompt
 
 
 def get_reprompt_nsfw(prompt: str, conversation_history: str) -> str:

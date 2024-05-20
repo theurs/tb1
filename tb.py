@@ -1773,17 +1773,17 @@ def addkeys(message: telebot.types.Message):
 def addkeys_thread(message: telebot.types.Message):
     try:
         args = message.text.split(maxsplit=2)
-        bot_reply(message, f'{uid} {key}')
         uid = args[1].strip()
         key = args[2].strip()
+        bot_reply(message, f'{uid} {key}')
         if key not in my_gemini.ALL_KEYS:
             my_gemini.ALL_KEYS.append(key)
             my_gemini.USER_KEYS[uid] = [key,]
             bot_reply_tr(message, 'Added keys successfully!')
         else:
             bot_reply_tr(message, 'Key already exists!')
-    except:
-        bot_reply_tr(message, 'Usage: /addkeys <uid> <key>')
+    except Exception as error:
+        bot_reply_tr(message, 'Usage: /addkeys <uid> <key>\n\n{error}')
 
 
 # @bot.message_handler(commands=['removemykeys'], func=authorized_owner)

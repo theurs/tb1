@@ -12,6 +12,7 @@ import my_gemini
 import my_ddg
 import my_groq
 import my_sum
+import utils
 
 
 def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) -> str:
@@ -68,11 +69,11 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 15) -> str:
         r = googlesearch.search(query, stop = max_search, lang=lang)
         # raise Exception('not implemented')
     except Exception as error:
-        my_log.log2(f'my_google:search_google_v2: {error}')
+        my_log.log2(f'my_google:search_google_v3: {error}')
         try:
             r = my_ddg.get_links(query, max_search)
         except Exception as error:
-            my_log.log2(f'my_google:search_google_v2: {error}')
+            my_log.log2(f'my_google:search_google_v3: {error}')
             return ''
 
     bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
@@ -93,11 +94,12 @@ Guess what they were looking for and compose a good answer using search results 
 
 The structure of the answer should be similar to the following: 
 
-Show a block with the user's intention briefly.
+Show a block with the user`s intention briefly.
 Show a block with a short and clear answer that satisfies most users.
 Show a block with a full answer and links.
 
 User`s query: "{query}"
+Current date: {utils.get_full_time()}
 
 Search results:
 
@@ -114,11 +116,11 @@ def search_v4(query: str, lang: str = 'ru', max_search: int = 10) -> str:
         r = googlesearch.search(query, stop = max_search, lang=lang)
         # raise Exception('not implemented')
     except Exception as error:
-        my_log.log2(f'my_google:search_google_v2: {error}')
+        my_log.log2(f'my_google:search_google_v4: {error}')
         try:
             r = my_ddg.get_links(query, max_search)
         except Exception as error:
-            my_log.log2(f'my_google:search_google_v2: {error}')
+            my_log.log2(f'my_google:search_google_v4: {error}')
             return ''
 
     bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
@@ -130,7 +132,7 @@ def search_v4(query: str, lang: str = 'ru', max_search: int = 10) -> str:
             urls.append(url)
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
+        my_log.log2(f'my_google:search_v4: {error}\n\n{error_traceback}')
 
     # text = ''
     # for url in urls:
@@ -151,6 +153,7 @@ Show a block with a short and clear answer that satisfies most users.
 Show a block with a full answer and links.
 
 User`s query: "{query}"
+Current date: {utils.get_full_time()}
 
 Search results:
 
@@ -162,9 +165,9 @@ Search results:
 if __name__ == "__main__":
     lines = [
         # 'курс доллара',
-        # 'погода во владивостоке',
-        'можно ли на huggingface делать nsfw',
+        'погода во владивостоке',
+        # 'можно ли на huggingface делать nsfw',
         ]
     for x in lines:
-        print(search_v3(x)[0], '\n\n')
-        # print(search_v4(x)[0], '\n\n')
+        # print(search_v3(x)[0], '\n\n')
+        print(search_v4(x)[0], '\n\n')

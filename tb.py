@@ -2353,7 +2353,7 @@ def google_thread(message: telebot.types.Message):
 {tr('Напишите запрос в гугл', lang)}
 """
         COMMAND_MODE[chat_id_full] = 'google'
-        bot_reply(message, help, parse_mode = 'Markdown', disable_web_page_preview = True, reply_markup=get_keyboard('command_mode', message))
+        bot_reply(message, help, parse_mode = 'Markdown', disable_web_page_preview = False, reply_markup=get_keyboard('command_mode', message))
         return
 
     with ShowAction(message, 'typing'):

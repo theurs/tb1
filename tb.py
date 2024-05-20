@@ -2244,6 +2244,8 @@ def language_thread(message: telebot.types.Message):
         return
 
     new_lang = message.text.split(maxsplit=1)[1].strip().lower()
+    if new_lang == 'ua':
+        new_lang = 'uk'
     if new_lang in supported_langs_trans:
         LANGUAGE_DB[chat_id_full] = new_lang
         HELLO_MSG[chat_id_full] = ''

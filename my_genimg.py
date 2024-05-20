@@ -853,6 +853,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
 
 if __name__ == '__main__':
+    pass
 #     imgs = PixArtSigma('''Generate a detailed and intricate image of a golden katana in the Japanese style. The katana should be elaborately decorated with intricate engravings and a luxurious golden
 # finish. The background should be a minimalist Japanese-style setting, with cherry blossoms and a traditional Japanese house in the distance.''')
     # open('_PixArtSigma.png', 'wb').write(imgs[0])

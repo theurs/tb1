@@ -18,9 +18,6 @@ import my_google
 import my_log
 
 
-STOP_DAEMON = False
-
-
 # каждый юзер дает свои ключи и они используются совместно со всеми
 # каждый ключ дает всего 50 запросов в день так что чем больше тем лучше
 # другие ограничения - 32к токенов в минуту, 2 запроса в минуту
@@ -40,8 +37,10 @@ TIMEOUT = 120
 # {id:lock}
 LOCKS = {}
 
+
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 25000
+
 
 # максимальный размер истории (32к ограничение Google?)
 # MAX_CHAT_SIZE = 25000
@@ -51,13 +50,16 @@ MAX_CHAT_LINES = 40
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
     MAX_CHAT_LINES = cfg.GEMINI_MAX_CHAT_LINES
 
+
 # можно сделать 2 запроса по 15000 в сумме получится запрос размером 30000
 # может быть полезно для сумморизации текстов
 MAX_SUM_REQUEST = 200000
 # MAX_SUM_REQUEST = 31000
 
+
 # хранилище диалогов {id:list(mem)}
 CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
+
 
 # magic string
 CANDIDATES = '78fgh892890df@d7gkln2937DHf98723Dgh'
@@ -365,7 +367,7 @@ def ai(q: str, mem = [],
                         remove_key(key)
                         continue
                     else:
-                        my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text[:1000]}\n\n{q}')
+                        my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {response.text[:500]}\n\n{q}')
             else:
                 n = 6
                 while n > 0:
@@ -382,7 +384,7 @@ def ai(q: str, mem = [],
                         remove_key(key)
                         continue
                     else:
-                        my_log.log_gemini(f'my_gemini:ai:{key} {str(response)} {response.text[:1000]}\n\n{q}')
+                        my_log.log_gemini(f'my_gemini:ai:{key} {response.text[:500]}\n\n{q}')
                         if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):
                             time.sleep(5)
                         else:

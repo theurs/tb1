@@ -1766,9 +1766,9 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
 
 @bot.message_handler(commands=['removekeys'], func=authorized_owner)
 def users_keys_for_gemini(message: telebot.types.Message):
-    thread = threading.Thread(target=users_keys_for_gemini_thread, args=(message,))
+    thread = threading.Thread(target=remove_my_keys_thread, args=(message,))
     thread.start()
-def remove_my_keys(message: telebot.types.Message):
+def remove_my_keys_thread(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     keys = my_gemini.USER_KEYS[chat_id_full]
     del my_gemini.USER_KEYS[chat_id_full]

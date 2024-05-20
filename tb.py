@@ -1783,7 +1783,8 @@ def addkeys_thread(message: telebot.types.Message):
         else:
             bot_reply_tr(message, 'Key already exists!')
     except Exception as error:
-        bot_reply_tr(message, 'Usage: /addkeys <uid> <key>\n\n{error}')
+        error_tr = traceback.format_exc()
+        bot_reply_tr(message, 'Usage: /addkeys <uid> <key>\n\n<code>{error}</code>\n\n<code>{error_tr}</code>', parse_mode='HTML')
 
 
 # @bot.message_handler(commands=['removemykeys'], func=authorized_owner)

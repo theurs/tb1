@@ -102,16 +102,22 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 15) -> str:
 
     text = download_in_parallel(urls, my_gemini.MAX_SUM_REQUEST)
 
-    q = f'''Answer in "{lang}" language to users search query using search results and your own knowledge.
-User query: "{query}"
+    q = f'''Answer in "{lang}" language to the user's search query.
+Guess what they were looking for and compose a good answer using search results and your own knowledge.
+
+The structure of the answer should be similar to the following: 
+
+Show a block with the user's intention briefly.
+Show a block with a short and clear answer that satisfies most users.
+Show a block with a full answer and links.
+
+User`s query: "{query}"
 
 Search results:
 
 {text[:my_gemini.MAX_SUM_REQUEST]}
 '''
-    # print(len(q))
-    # print(f'{q[:1000]}...')
-    return my_gemini.ai(q, model='gemini-1.5-pro-latest'), f'Data extracted from Google with query "{query}":\n\n' + text
+    return my_gemini.ai(q, model='gemini-1.5-flash-latest'), f'Data extracted from Google with query "{query}":\n\n' + text
 
 
 def search_v4(query: str, lang: str = 'ru', max_search: int = 10) -> str:
@@ -160,9 +166,9 @@ Search results:
 
 if __name__ == "__main__":
     lines = [
-        # 'курс доллара',
-        # 'погода во владивостоке',
-        'ссылки на ютуб и другие соц сети певицы валерии',
+        'курс доллара',
+        'погода во владивостоке',
+        'можно ли на huggingface делать nsfw',
         ]
     for x in lines:
         print(search_v3(x)[0], '\n\n')

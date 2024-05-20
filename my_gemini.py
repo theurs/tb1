@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 # https://ai.google.dev/
-# pip install Proxy-List-Scrapper
 # pip install langcodes[data]
 
 
-import concurrent.futures
 import base64
 import random
 import threading
@@ -16,10 +14,8 @@ import langcodes
 from sqlitedict import SqliteDict
 
 import cfg
-import my_dic
 import my_google
 import my_log
-import my_proxy
 
 
 STOP_DAEMON = False
@@ -67,24 +63,6 @@ CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
 CANDIDATES = '78fgh892890df@d7gkln2937DHf98723Dgh'
 
 
-##################################################################################
-# If no proxies are specified in the config, then we first try to work directly
-# and if that doesn't work, we start looking for free proxies using
-# a constantly running daemon
-PROXY_POOL = my_dic.PersistentList('db/gemini_proxy_pool_v2.pkl')
-PROXY_POLL_SPEED = SqliteDict('db/gemini_proxy_pool_speed_v2.pkl')
-# PROXY_POOL_REMOVED = my_dic.PersistentList('db/gemini_proxy_pool_removed_v2.pkl')
-PROXY_POOL_REMOVED = [] # не надо наверное помнить всегда все удаленные прокси
-
-# искать и добавлять прокси пока не найдется хотя бы 10 проксей
-MAX_PROXY_POOL = 10
-# начинать повторный поиск если осталось всего 5 проксей
-MAX_PROXY_POOL_LOW_MARGIN = 5
-
-POOL_MAX_WORKERS = 50
-##################################################################################
-
-
 def img2txt(data_: bytes, prompt: str = "Что на картинке, подробно?") -> str:
     """
     Generates a textual description of an image based on its contents.
@@ -99,7 +77,6 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
     Raises:
         None.
     """
-    global PROXY_POOL
     try:
         img_data = base64.b64encode(data_).decode("utf-8")
         data = {
@@ -123,16 +100,15 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
         random.shuffle(keys)
         keys = keys[:4]
 
-        proxies = PROXY_POOL[:]
-        random.shuffle(proxies)
+        proxies = cfg.gemini_proxies if hasattr(cfg, 'gemini_proxies') else None
+        if proxies:
+            random.shuffle(proxies)
 
         for api_key in keys:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={api_key}"
 
             if proxies:
-                sort_proxies_by_speed(proxies)
                 for proxy in proxies:
-                    start_time = time.time()
                     session = requests.Session()
                     session.proxies = {"http": proxy, "https": proxy}
                     try:
@@ -146,15 +122,10 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                                 my_log.log2(f'my_gemini:img2txt:{error_ca}')
                                 return ''
                         if result:
-                            end_time = time.time()
-                            total_time = end_time - start_time
-                            if total_time > 45:
-                                remove_proxy(proxy)
                             break
                         if result == '':
                             break
                     except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
-                        remove_proxy(proxy)
                         continue
             else:
                 try:
@@ -175,7 +146,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
     except Exception as unknown_error:
         if 'content' not in str(unknown_error):
             my_log.log2(f'my_gemini:img2txt:{unknown_error}')
-        return ''
+    return ''
 
 
 def update_mem(query: str, resp: str, mem):
@@ -305,7 +276,7 @@ def ai(q: str, mem = [],
         # models/gemini-1.5-pro-latest
         # models/gemini-pro
         # models/gemini-pro-vision
-    global PROXY_POOL, PROXY_POLL_SPEED
+
     # bugfix температура на самом деле от 0 до 1 а не от 0 до 2
     temperature = round(temperature / 2, 2)
 
@@ -353,8 +324,9 @@ def ai(q: str, mem = [],
     elif proxy_str:
         proxies = [proxy_str, ]
     else:
-        proxies = PROXY_POOL[:]
-        random.shuffle(proxies)
+        proxies = cfg.gemini_proxies if hasattr(cfg, 'gemini_proxies') else None
+        if proxies:
+            random.shuffle(proxies)
 
     proxy = ''
     try:
@@ -362,9 +334,7 @@ def ai(q: str, mem = [],
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
             if proxies:
-                sort_proxies_by_speed(proxies)
                 for proxy in proxies:
-                    start_time = time.time()
                     session = requests.Session()
                     session.proxies = {"http": proxy, "https": proxy}
 
@@ -375,7 +345,6 @@ def ai(q: str, mem = [],
                         try:
                             response = session.post(url, json=mem_, timeout=TIMEOUT)
                         except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
-                            remove_proxy(proxy)
                             c_s = True
                             break
                         if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):
@@ -391,18 +360,11 @@ def ai(q: str, mem = [],
                         except Exception as error_:
                             if 'candidates' in str(error_):
                                 result = CANDIDATES
-                        end_time = time.time()
-                        total_time = end_time - start_time
-                        if total_time > 50:
-                            remove_proxy(proxy)
-                        else:
-                            PROXY_POLL_SPEED[proxy] = total_time
                         break
                     elif response.status_code == 400 and 'API_KEY_INVALID' in str(response.text):
                         remove_key(key)
                         continue
                     else:
-                        remove_proxy(proxy)
                         my_log.log_gemini(f'my_gemini:ai:{proxy} {key} {str(response)} {response.text[:1000]}\n\n{q}')
             else:
                 n = 6
@@ -431,13 +393,17 @@ def ai(q: str, mem = [],
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'my_gemini:ai:{unknown_error}\n\n{error_traceback}')
 
-    answer = result.strip()
+    try:
+        answer = result.strip()
+    except:
+        return ''
 
     if answer.startswith('[Info to help you answer.'):
         pos = answer.find('"]')
         answer = answer[pos + 2:]
     if answer == CANDIDATES:
         return ''
+
     return answer
 
 
@@ -685,160 +651,6 @@ def check_phone_number(number: str) -> str:
     return response, text
 
 
-def remove_proxy(proxy: str):
-    """
-    Remove a proxy from the proxy pool and add it to the removed proxy pool.
-
-    Args:
-        proxy (str): The proxy to be removed.
-
-    Returns:
-        None
-    """
-    global PROXY_POOL, PROXY_POOL_REMOVED
-    # не удалять прокси из конфига
-    try:
-        if proxy in cfg.gemini_proxies:
-            return
-    except AttributeError:
-        pass
-
-    PROXY_POOL.remove_all(proxy)
-
-    PROXY_POOL_REMOVED.append(proxy)
-    try:
-        PROXY_POOL_REMOVED.deduplicate()
-    except: # это обычный список а не постоянный, у него нет такого метода
-        PROXY_POOL_REMOVED = list(set(PROXY_POOL_REMOVED))
-
-
-def sort_proxies_by_speed(proxies):
-    """
-    Sort proxies by speed.
-
-    Args:
-        proxies (list): The list of proxies to be sorted.
-
-    Returns:
-        list: The sorted list of proxies.
-    """
-    global PROXY_POOL, PROXY_POLL_SPEED
-    # неопробованные прокси считаем что имеют скорость как было при поиске = 5 секунд(или менее)
-    for x in PROXY_POOL:
-        if x not in PROXY_POLL_SPEED:
-            PROXY_POLL_SPEED[x] = 5
-
-    try:
-        proxies.sort(key=lambda x: PROXY_POLL_SPEED[x])
-    except KeyError as key_error:
-        # my_log.log2(f'sort_proxies_by_speed: {key_error}')
-        pass
-
-
-def test_proxy_for_gemini(proxy: str = '') -> bool:
-    """
-    A function that tests a proxy for the Gemini API.
-
-    Parameters:
-        proxy (str): The proxy to be tested (default is an empty string).
-
-    Returns:
-        Если proxy = '', то проверяем работу напрямую и отвечает True/False.
-        Если proxy != '', то заполняем пул новыми проксями.
-
-    Description:
-        This function tests a given proxy for the Gemini API by sending a query to the AI
-        with the specified proxy. The query is set to '1+1= answer very short'. The function
-        measures the time it takes to get an answer from the AI and stores it in the variable
-        'total_time'. If the proxy parameter is not provided, the function checks if the answer
-        from the AI is True. If it is, the function returns True, otherwise it returns False.
-        If the proxy parameter is provided and the answer from the AI is not in the list
-        'PROXY_POOL_REMOVED', and the total time is less than 5 seconds, the proxy is added
-        to the 'PROXY_POOL' list.
-
-    Note:
-        - The 'ai' function is assumed to be defined elsewhere in the code.
-        - The 'PROXY_POOL_REMOVED' and 'PROXY_POOL' variables are assumed to be defined elsewhere in the code.
-        - The 'time' module is assumed to be imported.
-    """
-    global PROXY_POOL, PROXY_POOL_REMOVED, PROXY_POLL_SPEED
-    query = '1+1= answer very short'
-    start_time = time.time()
-    answer = ai(query, proxy_str=proxy or 'probe')
-    total_time = time.time() - start_time
-
-    # если проверяем работу напрямую то нужен ответ - True/False
-    if not proxy:
-        if answer:
-            return True
-        else:
-            return False
-    # если с прокси то ответ не нужен
-    else:
-        if answer and answer not in PROXY_POOL_REMOVED:
-            if total_time < 5:
-                PROXY_POOL.append(proxy)
-                PROXY_POLL_SPEED[proxy] = total_time
-
-
-def get_proxies():
-    """
-        Retrieves a list of proxies and tests them for usability.
-
-        Returns:
-            None
-    """
-    global PROXY_POOL
-    try:
-        proxies = my_proxy.get_proxies()
-
-        n = 0
-        maxn = len(proxies)
-        step = POOL_MAX_WORKERS
-
-        while n < maxn:
-            if len(PROXY_POOL) > MAX_PROXY_POOL:
-                break
-            if len(PROXY_POOL) == 0:
-                step = 500
-            else:
-                step = POOL_MAX_WORKERS
-            chunk = proxies[n:n+step]
-            n += step
-            print(f'Proxies found: {len(PROXY_POOL)} (processing {n} of {maxn})')
-            with concurrent.futures.ThreadPoolExecutor(max_workers=step) as executor:
-                futures = [executor.submit(test_proxy_for_gemini, proxy) for proxy in chunk]
-                for future in futures:
-                    future.result()
-
-    except Exception as error:
-        my_log.log2(f'my_gemini:get_proxies: {error}')
-
-
-def update_proxy_pool_daemon():
-    """
-        Update the proxy pool daemon.
-
-        This function continuously updates the global `PROXY_POOL` list with new proxies.
-        It ensures that the number of proxies in the pool is maintained below the maximum
-        limit specified by the `MAX_PROXY_POOL` constant.
-
-        Parameters:
-        None
-
-        Returns:
-        None
-    """
-    global PROXY_POOL
-    while not STOP_DAEMON:
-        if len(PROXY_POOL) < MAX_PROXY_POOL_LOW_MARGIN:
-                get_proxies()
-                PROXY_POOL.deduplicate()
-                time.sleep(60*60)
-        else:
-            time.sleep(2)
-
-
 def load_users_keys():
     """
     Load users' keys into memory and update the list of all keys available.
@@ -849,59 +661,6 @@ def load_users_keys():
             for key in USER_KEYS[user]:
                 if key not in ALL_KEYS:
                     ALL_KEYS.append(key)
-
-
-def run_proxy_pool_daemon():
-    """
-    Run the proxy pool daemon.
-
-    This function checks if there are any proxies available. If there are no proxies,
-    it checks if direct connection to the server is possible. If direct connection is
-    not available, the function logs a message indicating that direct connection is
-    unavailable.
-
-    If there are proxies available, the proxy pool is recreated with the provided
-    proxies.
-
-    If the proxy pool is empty and direct connection is not available, a new thread is
-    started to update the proxy pool. The function waits until at least 1 proxy is
-    found before returning.
-
-    Parameters:
-    None
-
-    Returns:
-    None
-    """
-
-    # сначала загрузить ключи юзеров
-    load_users_keys()
-
-
-    global PROXY_POOL
-    try:
-        proxies = cfg.gemini_proxies
-    except AttributeError:
-        proxies = []
-
-    # если проксей нет то проверяем возможна ли работа напрямую
-    if not proxies:
-        direct_connect_available = test_proxy_for_gemini()
-        # вторая попытка
-        if not direct_connect_available:
-            time.sleep(2)
-            direct_connect_available = test_proxy_for_gemini()
-            if not direct_connect_available:
-                my_log.log2('proxy:run_proxy_pool_daemon: direct connect unavailable')
-    else:
-        PROXY_POOL.recreate(proxies)
-
-    if not proxies and not direct_connect_available:
-        thread = threading.Thread(target=update_proxy_pool_daemon)
-        thread.start()
-        # # Waiting until at least 1 proxy is found
-        # while len(PROXY_POOL) < 1:
-        #     time.sleep(1)
 
 
 def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
@@ -1013,7 +772,6 @@ def detect_intent(text: str) -> dict:
 
 if __name__ == '__main__':
 
-    run_proxy_pool_daemon()
 
     # print(sum_big_text(open('1.txt', 'r', encoding='utf-8').read(), 'Перескажи кратко о чем этот текст, уложись в 1000 слов'))
 

@@ -4,10 +4,9 @@
 import re
 import subprocess
 
-from duckduckgo_search import DDGS
 import enchant
 from langdetect import detect, detect_langs
-# from py_trans import PyTranslator
+from duckduckgo_search import DDGS
 
 import my_log
 import utils
@@ -87,51 +86,23 @@ def detect_lang(text):
     return language
 
 
-
-def translate_text_ddg(text: str, lang: str = 'ru', _from: str = None) -> str:
+def ddg_translate(text: str, lang = 'ru'):
     """
-    Translates text using the DDG translation service.
+    Translates the given text into the specified language using the DuckDuckGo translation service.
 
     Args:
         text (str): The text to be translated.
         lang (str, optional): The language to translate the text to. Defaults to 'ru'.
-        _from (str, optional): The language to translate the text from.
-                               Defaults to None.
 
     Returns:
-        str: The translated text.
-
-    Raises:
-        AssertionError: If an error occurs during translation.
-
-    Notes:
-        This function makes use of a translation cache to improve performance. If the
-        translation for the given text and language is already in the cache, it is
-        returned directly without making a request to the translation service.
-        If the translation is not in the cache, a request is made to the DDG translation
-        service and the result is stored in the cache for future use.
+        str: The translated text, or the original text if translation fails.
     """
-    key = str((text, lang))
-    if key in TRANSLATE_CACHE:
-        return TRANSLATE_CACHE[key]
-
+    keywords = [text, ]
+    results = DDGS().translate(keywords, to=lang)
     try:
-        with DDGS() as ddgs:
-            result = ddgs.translate(text, _from, lang)['translated']
-            if isinstance(result, dict):
-                result = result['translated']
-            elif not isinstance(result, str):
-                my_log.log2(f'my_trans:translate_text_ddg: {result["status"]}\n\n{text}\n\n{lang}')
-                return None
-    except AssertionError as error:
-        my_log.log2(f'my_trans:translate_text_ddg: {error}\n\ntext:{text}\n\nlang:{lang}\n\nfrom:{_from}')
-        return None
-    except Exception as error2:
-        my_log.log2(f'my_trans:translate_text_ddg: {error2}\n\ntext:{text}\n\nlang:{lang}\n\nfrom:{_from}')
-        return None
-
-    TRANSLATE_CACHE[key] = result
-    return result
+        return results[0]['translated']
+    except:
+        return text
 
 
 def translate_text2(text, lang = 'ru'):
@@ -147,8 +118,7 @@ def translate_text2(text, lang = 'ru'):
         str: The translated text.
     """
     if 'windows' in utils.platform().lower():
-        return translate_text_ddg(text, lang)
-        # return translate_text_ddg(text, lang) or translate_text(text, lang)
+        return ddg_translate(text, lang)
     text = text.strip()
     startswithslash = False
     if text.startswith('/'):
@@ -186,3 +156,4 @@ def translate(text):
 
 if __name__ == "__main__":
     pass
+    print(ddg_translate('курс доллара', 'en'))

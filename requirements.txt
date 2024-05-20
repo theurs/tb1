@@ -20,7 +20,6 @@ opencv-python
 pandas
 Pillow
 prettytable
-Proxy-List-Scrapper
 pylatexenc
 PyMuPDF
 PyPDF2

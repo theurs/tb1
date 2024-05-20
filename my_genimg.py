@@ -638,7 +638,7 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
         return []
 
 
-def cosxl(prompt: str, url: str = "multimodalart/cosxl") -> bytes:
+def cosxl(prompt: str, url: str = "multimodalart/cosxl") -> list:
     """
     url = "multimodalart/cosxl" only?
     """
@@ -676,7 +676,7 @@ def cosxl(prompt: str, url: str = "multimodalart/cosxl") -> bytes:
     return []
 
 
-def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number: int = 4) -> bytes:
+def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number: int = 1) -> list:
     """
     url = "ByteDance/Hyper-SDXL-1Step-T2I" only?
     """

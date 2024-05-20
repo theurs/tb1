@@ -149,6 +149,7 @@ def huggin_face_api(prompt: str) -> bytes:
             # "https://api-inference.huggingface.co/models/KBlueLeaf/Kohaku-XL-Epsilon",
             "multimodalart/cosxl",
             'PixArt-alpha/PixArt-Sigma',
+            'ByteDance/Hyper-SDXL-1Step-T2I',
         ]
 
     prompt_ = prompt
@@ -162,6 +163,11 @@ def huggin_face_api(prompt: str) -> bytes:
         if 'PixArt-Sigma' in url:
             try:
                 return PixArtSigma(prompt, url)
+            except:
+                return []
+        if 'Hyper-SDXL' in url:
+            try:
+                return Hyper_SDXL(prompt, url)
             except:
                 return []
         if 'cosxl' in url:
@@ -670,6 +676,54 @@ def cosxl(prompt: str, url: str = "multimodalart/cosxl") -> bytes:
     return []
 
 
+def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I") -> bytes:
+    """
+    url = "ByteDance/Hyper-SDXL-1Step-T2I" only?
+    """
+    try:
+        client = gradio_client.Client(url)
+    except Exception as error:
+        my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    result = None
+    try:
+        result = result = client.predict(
+            num_images=1,
+            height=1024,
+            width=1024,
+            prompt=prompt,
+            seed=0,
+            api_name="/process_image"
+        )
+    except Exception as error:
+        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
+            my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    try:
+        fname = result[0]['image']
+    except:
+        return []
+    base_path = os.path.dirname(fname)
+    if fname:
+        try:
+            data = None
+            with open(fname, 'rb') as f:
+                data = f.read()
+            try:
+                os.remove(fname)
+                os.rmdir(base_path)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            if data:
+                WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                return [data,]
+        except Exception as error:
+            my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return []
+
+
 def get_reprompt(prompt: str, conversation_history: str) -> str:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
@@ -799,20 +853,24 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
 
 if __name__ == '__main__':
-    imgs = PixArtSigma('''Generate a detailed and intricate image of a golden katana in the Japanese style. The katana should be elaborately decorated with intricate engravings and a luxurious golden
-finish. The background should be a minimalist Japanese-style setting, with cherry blossoms and a traditional Japanese house in the distance.''')
-    open('_PixArtSigma.png', 'wb').write(imgs[0])
+#     imgs = PixArtSigma('''Generate a detailed and intricate image of a golden katana in the Japanese style. The katana should be elaborately decorated with intricate engravings and a luxurious golden
+# finish. The background should be a minimalist Japanese-style setting, with cherry blossoms and a traditional Japanese house in the distance.''')
+    # open('_PixArtSigma.png', 'wb').write(imgs[0])
 
-    imgs = SDXL_Lightning('an apple made of gold')
-    open('_sdxl-lightning.png', 'wb').write(imgs[0])
+    # imgs = SDXL_Lightning('an apple made of gold')
+    # open('_sdxl-lightning.png', 'wb').write(imgs[0])
 
-    imgs = playground25('an apple made of gold')
-    open('_playground25.png', 'wb').write(imgs[0])
+    # imgs = playground25('an apple made of gold')
+    # open('_playground25.png', 'wb').write(imgs[0])
 
-    imgs = stable_cascade('an apple made of gold')
-    open('_stable_cascade.png', 'wb').write(imgs[0])
+    # imgs = stable_cascade('an apple made of gold')
+    # open('_stable_cascade.png', 'wb').write(imgs[0])
 
-    imgs = cosxl('an apple made of gold')
-    open('_cosxl.png', 'wb').write(imgs[0])
+    # imgs = cosxl('an apple made of gold')
+    # open('_cosxl.png', 'wb').write(imgs[0])
+
+    # imgs = Hyper_SDXL('an apple made of gold')
+    # open('_Hyper_SDXL.png', 'wb').write(imgs[0])
+
 
     # huggin_face_api('an apple made of gold')

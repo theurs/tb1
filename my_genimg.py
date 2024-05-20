@@ -27,10 +27,6 @@ import my_trans
 
 DEBUG = cfg.DEBUG if hasattr(cfg, 'DEBUG') else False
 
-
-NFSW_CONTENT = SqliteDict('db/nfsw_content_stable_diffusion.db', autocommit=True)
-
-
 # {hash of image:model name, ...}
 WHO_AUTOR = {}
 

@@ -89,7 +89,7 @@ def log2(text: str, fname: str = '') -> None:
     with lock:
         time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
         if fname:
-            log_file_path = f'logs/debug-{fname}.log'
+            log_file_path = f'logs/debug_{fname}.log'
         else:
             log_file_path = 'logs/debug.log'
         if LOG_MODE in (1,):

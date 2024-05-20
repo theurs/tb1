@@ -676,7 +676,7 @@ def cosxl(prompt: str, url: str = "multimodalart/cosxl") -> bytes:
     return []
 
 
-def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I") -> bytes:
+def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number: int = 4) -> bytes:
     """
     url = "ByteDance/Hyper-SDXL-1Step-T2I" only?
     """
@@ -689,7 +689,7 @@ def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I") -> byte
     result = None
     try:
         result = result = client.predict(
-            num_images=1,
+            num_images=number,
             height=1024,
             width=1024,
             prompt=prompt,
@@ -701,27 +701,29 @@ def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I") -> byte
             my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
         return []
 
-    try:
-        fname = result[0]['image']
-    except:
-        return []
-    base_path = os.path.dirname(fname)
-    if fname:
+    images = []
+    for fname in result:
         try:
-            data = None
-            with open(fname, 'rb') as f:
-                data = f.read()
+            fname = fname['image']
+        except:
+            continue
+        base_path = os.path.dirname(fname)
+        if fname:
             try:
-                os.remove(fname)
-                os.rmdir(base_path)
+                data = None
+                with open(fname, 'rb') as f:
+                    data = f.read()
+                try:
+                    os.remove(fname)
+                    os.rmdir(base_path)
+                except Exception as error:
+                    my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
+                if data:
+                    WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                    images.append(data)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
-            if data:
-                WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                return [data,]
-        except Exception as error:
-            my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return []
+    return images
 
 
 def get_reprompt(prompt: str, conversation_history: str) -> str:
@@ -870,8 +872,10 @@ if __name__ == '__main__':
     # imgs = cosxl('an apple made of gold')
     # open('_cosxl.png', 'wb').write(imgs[0])
 
-    # imgs = Hyper_SDXL('an apple made of gold')
-    # open('_Hyper_SDXL.png', 'wb').write(imgs[0])
+    # n = 1
+    # for x in Hyper_SDXL('an apple made of gold'):
+    #     open(f'_Hyper_SDXL_{n}.png', 'wb').write(x)
+    #     n += 1
 
 
     # huggin_face_api('an apple made of gold')

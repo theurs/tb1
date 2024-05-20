@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
+#pip install lxml[html_clean]
 
-import datetime
 import io
 import os
 import re
@@ -45,20 +45,6 @@ def get_text_from_youtube(url: str) -> str:
 
     text = '\n'.join([x['text'] for x in t])
     
-    # text = f'Subtitles extracted from {url} text:\n\n'
-    # for x in t:
-    #     line = x['text'].strip()
-    #     start_time = x['start']
-    #     start_time_ = str(datetime.timedelta(seconds=int(start_time)))
-    #     if len(start_time_) == 7:
-    #         start_time_ = '0' + start_time_
-    #     duration = x['duration']
-    #     end_time_ = str(datetime.timedelta(seconds=int(start_time + duration)))
-    #     if len(end_time_) == 7:
-    #         end_time_ = '0' + end_time_
-    #     text += f'[{start_time_} - {end_time_}] {line}\n'
-    # return text.strip() if text.count('\n') > 2 else ''
-
     return text.strip() or ''
 
 

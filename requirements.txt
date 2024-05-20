@@ -1,7 +1,7 @@
 # attrs==23.1.0
 bingart
 chardet
-duckduckgo_search
+duckduckgo_search[lxml]
 edge_tts
 fake_useragent
 fuzzywuzzy
@@ -14,6 +14,7 @@ google
 gTTS
 langdetect
 langcodes[data]
+lxml[html_clean]
 natsort
 opencv-python
 pandas

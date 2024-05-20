@@ -4,12 +4,12 @@ import concurrent.futures
 import urllib.parse
 import traceback
 
-from duckduckgo_search import DDGS
 import googlesearch
 
 import cfg
 import my_log
 import my_gemini
+import my_ddg
 import my_groq
 import my_sum
 
@@ -44,21 +44,6 @@ def download_text_v2(url: str, max_req: int = cfg.max_request, no_links = False)
     return download_text([url,], max_req, no_links)
 
 
-def ddg_text(query: str) -> str:
-    """
-    Generate a list of URLs from DuckDuckGo search results based on the given query.
-
-    Parameters:
-        query (str): The search query.
-
-    Returns:
-        str: A URL from each search result.
-    """
-    with DDGS() as ddgs:
-        for result in ddgs.text(query, safesearch='Off', timelimit='y', region = 'ru-ru'):
-            yield result['href']
-
-
 def download_in_parallel(urls, max_sum_request):
     text = ''
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
@@ -81,10 +66,11 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 15) -> str:
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
     try:
         r = googlesearch.search(query, stop = max_search, lang=lang)
+        # raise Exception('not implemented')
     except Exception as error:
         my_log.log2(f'my_google:search_google_v2: {error}')
         try:
-            r = [x for x in ddg_text(query)]
+            r = my_ddg.get_links(query, max_search)
         except Exception as error:
             my_log.log2(f'my_google:search_google_v2: {error}')
             return ''
@@ -126,10 +112,11 @@ def search_v4(query: str, lang: str = 'ru', max_search: int = 10) -> str:
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
     try:
         r = googlesearch.search(query, stop = max_search, lang=lang)
+        # raise Exception('not implemented')
     except Exception as error:
         my_log.log2(f'my_google:search_google_v2: {error}')
         try:
-            r = [x for x in ddg_text(query)]
+            r = my_ddg.get_links(query, max_search)
         except Exception as error:
             my_log.log2(f'my_google:search_google_v2: {error}')
             return ''
@@ -154,8 +141,16 @@ def search_v4(query: str, lang: str = 'ru', max_search: int = 10) -> str:
 
     text = download_in_parallel(urls, my_groq.MAX_SUM_REQUEST)
 
-    q = f'''Answer in "{lang}" language to users search query using search results and your own knowledge.
-User query: "{query}"
+    q = f'''Answer in "{lang}" language to the user's search query.
+Guess what they were looking for and compose a good answer using search results and your own knowledge.
+
+The structure of the answer should be similar to the following: 
+
+Show a block with the user's intention briefly.
+Show a block with a short and clear answer that satisfies most users.
+Show a block with a full answer and links.
+
+User`s query: "{query}"
 
 Search results:
 
@@ -166,9 +161,10 @@ Search results:
 
 if __name__ == "__main__":
     lines = [
-        'курс доллара',
-        'погода во владивостоке',
+        # 'курс доллара',
+        # 'погода во владивостоке',
         'можно ли на huggingface делать nsfw',
         ]
     for x in lines:
         print(search_v3(x)[0], '\n\n')
+        # print(search_v4(x)[0], '\n\n')

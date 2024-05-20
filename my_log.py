@@ -25,169 +25,128 @@ if not os.path.exists('logs2'):
 LOG_MODE = cfg.LOG_MODE if hasattr(cfg, 'LOG_MODE') else 0
 
 
-def log2(text: str) -> None:
-    """для дебага"""
+def trancate_log_file(log_file_path: str):
+    """
+    Truncates the log file at the given file path if it exceeds the maximum file size.
+
+    Parameters:
+        log_file_path (str): The path to the log file.
+
+    Returns:
+        None
+
+    This function checks if the log file exists and if its size exceeds the maximum file size.
+    If it does, it opens the file in read and write mode and truncates it by keeping only the
+    last half of the data. The function uses the os module to check the file path and the cfg
+    module to get the maximum file size if it is defined.
+
+    Note:
+        The function assumes that the log file is in UTF-8 encoding.
+    """
+    try:
+        if not os.path.exists(log_file_path):
+            return
+        fsize = os.path.getsize(log_file_path)
+        max_fsize = cfg.MAX_LOG_FILE_SIZE if hasattr(cfg, 'MAX_LOG_FILE_SIZE') else 20*1024*1024
+        if fsize > max_fsize:
+            with open(log_file_path, 'r+') as f:
+                f.seek(fsize - max_fsize // 2) # Переходим к середине от превышения размера
+                data = f.read() # Читаем оставшиеся данные
+                f.seek(0) # Переходим в начало файла
+                f.write(data) # Записываем последние данные
+                f.truncate(len(data)) # Обрезаем файл        
+    except Exception as unknown:
+        print(f'my_log:trancate_log_file: {unknown}')
+
+
+def log2(text: str, fname: str = '') -> None:
+    """
+    Writes the given text to a log file.
+
+    Args:
+        text (str): The text to be written to the log file.
+        fname (str, optional): The name of the log file. Defaults to an empty string.
+
+    Returns:
+        None: This function does not return anything.
+
+    This function writes the given text to a log file. If the `fname` parameter is provided,
+    the log file will be named `debug-{fname}.log`, otherwise it will be named `debug.log`.
+    The function checks the value of the `LOG_MODE` variable and writes the text to the log
+    file accordingly. If `LOG_MODE` is 1, the text is appended to the log file located at
+    `logs/debug-{fname}.log`. If `LOG_MODE` is 0, the text is appended to both the log
+    files located at `logs/debug-{fname}.log` and `logs2/debug-{fname}.log`. After writing
+    the text, the function calls the `truncate_log_file` function to truncate the log file
+    if it exceeds the maximum size defined in the `cfg` module.
+
+    Note:
+        The function assumes that the log files are in UTF-8 encoding.
+    """
     if LOG_MODE == -1:
         return
 
     global lock
     with lock:
         time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug.log'
+        if fname:
+            log_file_path = f'logs/debug-{fname}.log'
+        else:
+            log_file_path = 'logs/debug.log'
         if LOG_MODE in (1,):
             open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
         if LOG_MODE in (0,1):
             open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+        trancate_log_file(log_file_path)
 
 
 def log_reprompts(text: str) -> None:
     """для логов переводов промптов для рисования"""
-    if LOG_MODE == -1:
-        return
-
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_img_reprompts.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+    log2(text, 'reprompts')
 
 
 def log_gemini(text: str) -> None:
     """для логов gemini"""
-    if LOG_MODE == -1:
-        return
-
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_gemini.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-
-
-def log_openrouter(text: str) -> None:
-    """для логов openrouter"""
-    if LOG_MODE == -1:
-        return
-
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_openrouter.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-
-
-def log_groq(text: str) -> None:
-    """для логов groq"""
-    if LOG_MODE == -1:
-        return
-
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_groq.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-
-
-def log_bing_success(text: str) -> None:
-    """для логов удачных комбинаций бинга, когда ему удалось нарисовать что-нибудь"""
-    if LOG_MODE == -1:
-        return
-
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_bing_success.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+    log2(text, 'gemini')
 
 
 def log_keys(text: str) -> None:
     """для логов новых ключей"""
-    if LOG_MODE == -1:
-        return
-
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_keys.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+    log2(text, 'keys')
 
 
-def log_huggin_face_api(text: str) -> None:
-    """для логов от hugging_face_api"""
-    if LOG_MODE == -1:
-        return
-
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_hugging_face_api.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+def log_openrouter(text: str) -> None:
+    """для логов openrouter"""
+    log2(text, 'openrouter')
 
 
-def log_parser_error(text: str) -> None:
-    """для дебага ошибок md->html конвертера"""
-    if LOG_MODE == -1:
-        return
+def log_groq(text: str) -> None:
+    """для логов groq"""
+    log2(text, 'groq')
 
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_md2html.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+
+def log_bing_success(text: str) -> None:
+    """для логов удачных комбинаций бинга, когда ему удалось нарисовать что-нибудь"""
+    log2(text, 'bing_success')
 
 
 def log_bing_img(text: str) -> None:
     """для дебага ошибок bing_img с помощью ai"""
-    if LOG_MODE == -1:
-        return
+    log2(text, 'bing_img')
 
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_bing_img.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+
+def log_huggin_face_api(text: str) -> None:
+    """для логов от hugging_face_api"""
+    log2(text, 'hugging_face_api')
+
+
+def log_parser_error(text: str) -> None:
+    """для дебага ошибок md->html конвертера"""
+    log2(text, 'parser_error')
 
 
 def log_translate(text: str) -> None:
     """для дебага ошибок автоперевода с помощью ai"""
-    if LOG_MODE == -1:
-        return
-
-    global lock
-    with lock:
-        time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        log_file_path = 'logs/debug_translate.log'
-        if LOG_MODE in (1,):
-            open(log_file_path, 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
-        if LOG_MODE in (1,0):
-            open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8").write(f'{time_now}\n\n{text}\n{"=" * 80}\n')
+    log2(text, 'translate')
 
 
 def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bool = False) -> None:

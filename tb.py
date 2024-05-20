@@ -1765,7 +1765,7 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
         bot_reply(message, msg, parse_mode='HTML')
 
 
-@bot.message_handler(commands=['addkeys'], func=authorized_admin)
+@bot.message_handler(commands=['addkey'], func=authorized_admin)
 def addkeys(message: telebot.types.Message):
     '''добавить ключи другому юзеру'''
     thread = threading.Thread(target=addkeys_thread, args=(message,))
@@ -1773,7 +1773,7 @@ def addkeys(message: telebot.types.Message):
 def addkeys_thread(message: telebot.types.Message):
     try:
         args = message.text.split(maxsplit=2)
-        uid = args[1].strip()
+        uid = f'[{args[1].strip()}] [0]'
         key = args[2].strip()
         bot_reply(message, f'{uid} {key}')
         if key not in my_gemini.ALL_KEYS:

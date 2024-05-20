@@ -3636,14 +3636,13 @@ def do_task(message, custom_prompt: str = ''):
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
     
-    # if datetime.datetime.now() > datetime.datetime(2024, 5, 30):
-    # не давать тем у кого нет ключей доступ к 1.5 pro
-    if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-        if GEMINI15_COUNTER.status(chat_id_full__) > 0 and chat_mode_ == 'gemini15':
-            chat_mode_ = 'gemini'
-    else:
-        if GEMINI15_COUNTER.status(chat_id_full__) > 200 and chat_mode_ == 'gemini15':
-            chat_mode_ = 'gemini'
+    if datetime.datetime.now() > datetime.datetime(2024, 5, 30):
+        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
+            if GEMINI15_COUNTER.status(chat_id_full__) > 50 and chat_mode_ == 'gemini15':
+                chat_mode_ = 'gemini'
+        else:
+            if GEMINI15_COUNTER.status(chat_id_full__) > 300 and chat_mode_ == 'gemini15':
+                chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):
@@ -4029,6 +4028,8 @@ def main():
     """
     Runs the main function, which sets default commands and starts polling the bot.
     """
+
+    my_gemini.load_users_keys()
 
     for x in CHAT_STATS.keys():
         uid = CHAT_STATS[x][0]

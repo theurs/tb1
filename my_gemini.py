@@ -771,7 +771,7 @@ def detect_intent(text: str) -> dict:
 
 
 if __name__ == '__main__':
-
+    load_users_keys()
 
     # print(sum_big_text(open('1.txt', 'r', encoding='utf-8').read(), 'Перескажи кратко о чем этот текст, уложись в 1000 слов'))
 

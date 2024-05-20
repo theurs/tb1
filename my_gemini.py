@@ -142,7 +142,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                             if result == '' or result:
                                 return result.strip()
                         except Exception as error_ca:
-                            if 'candidates' in str(error_ca) or 'content' in str(error_ca):
+                            if 'candidates' not in str(error_ca) and 'content' in str(error_ca):
                                 my_log.log2(f'my_gemini:img2txt:{error_ca}')
                                 return ''
                         if result:
@@ -164,7 +164,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                         if result == '' or result:
                             return result.strip()
                     except Exception as error_ca:
-                        if 'candidates' in str(error_ca) or 'content' in str(error_ca):
+                        if 'candidates' not in str(error_ca) and 'content' in str(error_ca):
                             my_log.log2(f'my_gemini:img2txt:{error_ca}')
                             return ''
                 except Exception as error:
@@ -173,7 +173,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                     my_log.log2(f'img2txt:{error}')
         return result.strip()
     except Exception as unknown_error:
-        if 'content' not in str(error):
+        if 'content' not in str(unknown_error):
             my_log.log2(f'my_gemini:img2txt:{unknown_error}')
         return ''
 

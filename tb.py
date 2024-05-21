@@ -4226,6 +4226,13 @@ def main():
                 CHAT_STATS_TEMP[uid] = 1
 
 
+    for  x in CHAT_STATS.keys():
+        # {time(str(timestamp)): (user_id(str), chat_mode(str))}
+        i = CHAT_STATS[x]
+        if 'groq' in i[1]:
+            i = (i[0], 'llama370')
+            CHAT_STATS[x] = i
+
     # set_default_commands()
 
     bot.polling(timeout=90, long_polling_timeout=90)

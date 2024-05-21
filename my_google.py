@@ -89,7 +89,7 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 15) -> str:
 
     text = download_in_parallel(urls, my_gemini.MAX_SUM_REQUEST)
 
-    q = f'''Answer in "{lang}" language to the user's search query.
+    q = f'''Answer to the user's search query.
 Guess what they were looking for and compose a good answer using search results and your own knowledge.
 
 The structure of the answer should be similar to the following: 
@@ -97,6 +97,7 @@ The structure of the answer should be similar to the following:
 Show a block with the user`s intention briefly.
 Show a block with a short and clear answer that satisfies most users.
 Show a block with a full answer and links, links should be formatted for easy reading.
+Answer in "{lang}" language.
 
 User`s query: "{query}"
 Current date: {utils.get_full_time()}
@@ -105,7 +106,14 @@ Search results:
 
 {text[:my_gemini.MAX_SUM_REQUEST]}
 '''
-    return my_gemini.ai(q, model='gemini-1.5-flash-latest'), f'Data extracted from Google with query "{query}":\n\n' + text
+    r = ''
+    r =  my_gemini.ai(q, model='gemini-1.5-flash-latest')
+    if not r:
+        r = my_gemini.ai(q[:32000], model='gemini-1.5-flash-latest')
+        if not r:
+            r = my_groq.ai(q[:12000], max_tokens_ = 4000)
+
+    return r, f'Data extracted from Google with query "{query}":\n\n' + text
 
 
 def search_v4(query: str, lang: str = 'ru', max_search: int = 10) -> str:

@@ -5,6 +5,7 @@ import datetime
 import io
 import os
 import re
+import shutil
 import tempfile
 import traceback
 import threading
@@ -4209,6 +4210,21 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
 
+def count_stats():
+    shutil.copyfile('db/chat_stats.db', 'db/chat_stats_.db')
+    CHAT_STATS_ = SqliteDict('db/chat_stats_.db')
+    for x in CHAT_STATS_.keys():
+        uid = CHAT_STATS_[x][0]
+        cm = CHAT_STATS_[x][1]
+        if 'gemini' in str(cm) or 'llama' in str(cm):
+            if uid in CHAT_STATS_TEMP:
+                CHAT_STATS_TEMP[uid] += 1
+            else:
+                CHAT_STATS_TEMP[uid] = 1
+    del CHAT_STATS_
+    os.unlink('db/chat_stats_.db')
+
+
 def main():
     """
     Runs the main function, which sets default commands and starts polling the bot.
@@ -4216,26 +4232,8 @@ def main():
 
     my_gemini.load_users_keys()
 
-    # start_time= time.time()
-    for x in CHAT_STATS.keys():
-        uid = CHAT_STATS[x][0]
-        cm = CHAT_STATS[x][1]
-        if 'gemini' in str(cm) or 'llama' in str(cm):
-            if uid in CHAT_STATS_TEMP:
-                CHAT_STATS_TEMP[uid] += 1
-            else:
-                CHAT_STATS_TEMP[uid] = 1
-    # end_time = time.time()
-    # my_log.log2(f'load in : {round(end_time - start_time, 2)} seconds')
-
-    # for  x in CHAT_STATS.keys():
-    #     # {time(str(timestamp)): (user_id(str), chat_mode(str))}
-    #     i = CHAT_STATS[x]
-    #     if 'groq' in i[1]:
-    #         i = (i[0], 'llama370')
-    #         CHAT_STATS[x] = i
-
-    # set_default_commands()
+    thread = threading.Thread(target=count_stats, args=())
+    thread.start()
 
     bot.polling(timeout=90, long_polling_timeout=90)
 

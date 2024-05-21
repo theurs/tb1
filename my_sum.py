@@ -64,9 +64,26 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str
     result = ''
 
     if subj == 'youtube_video':
-        qq = f'Summarize the content of this YouTube video using only the subtitles, what this video about, in 500-4000 words, answer in [{lang}] language.'
+        qq = f'''Summarize the content of this YouTube video.
+
+Answer in [{lang}] language.
+
+The structure of the answer should be similar to the following:
+Show a block with the brief summary of the video in 2 sentences, which satisfies most people.
+Show a block with a detail summary of the content of the video in your own words, 300-2000 words.
+
+Extracted subtitles:
+'''
     else:
-        qq = f'Summarize the content of this text using only provided text, what this text about, in 500-4000 words, answer in [{lang}] language.'
+        qq = f'''Summarize the content of this text.
+
+Answer in [{lang}] language.
+
+The structure of the answer should be similar to the following:
+Show a block with the brief summary of the text in 2 sentences, which satisfies most people.
+Show a block with a detail summary of the content of the text in your own words, 300-2000 words.
+
+Text:'''
 
     if not result:
         try:
@@ -150,9 +167,6 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
                     else:
                         return '', ''
 
-            # newconfig = trafilatura.settings.use_config()
-            # newconfig.set("DEFAULT", "EXTRACTION_TIMEOUT", "0")
-            # text = trafilatura.extract(content, config=newconfig)
             text = trafilatura.extract(content)
    
     if download_only:
@@ -183,32 +197,31 @@ def is_valid_url(url: str) -> bool:
 
 if __name__ == "__main__":
 
-    print(summ_url('https://telegra.ph/Tomm-05-19', download_only=True))
+    # print(summ_url('https://telegra.ph/Tomm-05-19', download_only=True))
 
-    # """Usage ./summarize.py '|URL|filename"""
-    # urls = [
-    #     # 'https://habr.com/ru/articles/780688/',
-    #     # 'https://habr.com/ru/articles/785320/',
-    #     # 'https://habr.com/ru/articles/784858/',
-    #     # 'https://habr.com/ru/articles/785328/',
-    #     # 'https://www.youtube.com/watch?v=grMAWQBwijw',
-    #     # 'https://www.youtube.com/watch?v=x9hfUXAlVd0',
-    #     # 'https://www.youtube.com/watch?v=kW3_syJruKs&t=623s',
-    #     # 'https://www.youtube.com/watch?v=8Aov8WhV4ME',
-    #     # 'https://www.youtube.com/watch?v=WlUT-szZQWg',
-    #     # 'https://www.youtube.com/watch?v=rbL6hJR1k0I',
-    #     'https://www.youtube.com/watch?v=nrFjjsAc_E8',
-    # ]
-    # for url in urls:
-    #     print(summ_url(url))
+    # print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8')[0])
+    # print(summ_url('https://www.youtube.com/watch?v=0uOCF04QcHk')[0])
+    # print(summ_url('https://www.youtube.com/watch?v=IVTzUg50f_4')[0])
+    # print(summ_url('https://www.youtube.com/watch?v=0MehBAmxj-E')[0])
+    # print(summ_url('https://www.youtube.com/watch?v=-fbQK1to7-s')[0])
+    # print(summ_url('https://www.youtube.com/watch?v=5ijY7TjBwVk')[0])
+    # print(summ_url('https://www.youtube.com/watch?v=uNCsO0JytPA')[0])
+    # print(summ_url('https://www.youtube.com/watch?v=DZkEg82Nc_k')[0])
+    
+    # print(summ_url('https://www.linux.org.ru/news/opensource/17620258')[0])
+    # print(summ_url('https://habr.com/ru/companies/productradar/articles/815709/')[0])
+    # print(summ_url('https://habr.com/ru/news/815789/')[0])
+    # print(summ_url('http://lib.ru/RUFANT/ABARINOWA/shwabra.txt')[0])
+    # print(summ_url('http://lib.ru/RUFANT/ABARINOWA/nederzhanie_istiny.txt')[0])
+
 
     # sys.exit(0)
     
-    # t = sys.argv[1]
+    t = sys.argv[1]
     
-    # if is_valid_url(t):
-    #     print(summ_url(t))
-    # elif os.path.exists(t):
-    #     print(summ_text(open(t).read()))
-    # else:
-    #     print("""Usage ./summarize.py '|URL|filename""")
+    if is_valid_url(t):
+        print(summ_url(t))
+    elif os.path.exists(t):
+        print(summ_text(open(t).read()))
+    else:
+        print("""Usage ./summarize.py '|URL|filename""")

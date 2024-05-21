@@ -1742,6 +1742,8 @@ def maxhistlines_thread(message: telebot.types.Message):
     
     try:
         maxhistlines = int(message.text.split(maxsplit=1)[1].strip())
+        if maxhistlines < 2 or maxhistlines > 100:
+            raise Exception('Invalid parameters')
         if chat_id_full not in my_openrouter.PARAMS:
             my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
         model, temperature, max_tokens, _, maxhistchars = my_openrouter.PARAMS[chat_id_full]
@@ -1751,7 +1753,7 @@ def maxhistlines_thread(message: telebot.types.Message):
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:model:{error}\n\n{error_tr}')
-    bot_reply_tr(message, f'Usage: /maxhistlines maxhistlines', disable_web_page_preview=True)
+    bot_reply_tr(message, f'Usage: /maxhistlines maxhistlines 2-100', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['maxhistchars',], func=authorized_owner)
@@ -1766,6 +1768,8 @@ def maxhistchars_thread(message: telebot.types.Message):
     
     try:
         maxhistchars = int(message.text.split(maxsplit=1)[1].strip())
+        if maxhistchars < 2000 or maxhistchars > 1000000:
+            raise Exception('Invalid parameters')
         if chat_id_full not in my_openrouter.PARAMS:
             my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
         model, temperature, max_tokens, maxhistlines, _ = my_openrouter.PARAMS[chat_id_full]
@@ -1775,7 +1779,7 @@ def maxhistchars_thread(message: telebot.types.Message):
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:model:{error}\n\n{error_tr}')
-    bot_reply_tr(message, f'Usage: /maxhistchars maxhistchars', disable_web_page_preview=True)
+    bot_reply_tr(message, f'Usage: /maxhistchars maxhistchars 2000-1000000', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['maxtokens',], func=authorized_owner)
@@ -1790,6 +1794,8 @@ def maxtokens_thread(message: telebot.types.Message):
     
     try:
         maxtokens = int(message.text.split(maxsplit=1)[1].strip())
+        if maxtokens < 10 or maxtokens > 8000:
+            raise Exception('Invalid parameters')
         if chat_id_full not in my_openrouter.PARAMS:
             my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
         model, temperature, _, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
@@ -1799,7 +1805,7 @@ def maxtokens_thread(message: telebot.types.Message):
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:model:{error}\n\n{error_tr}')
-    bot_reply_tr(message, f'Usage: /maxtokens maxtokens', disable_web_page_preview=True)
+    bot_reply_tr(message, f'Usage: /maxtokens maxtokens 10-8000', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['openrouter',], func=authorized_owner)

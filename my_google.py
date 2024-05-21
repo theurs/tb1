@@ -165,9 +165,9 @@ Search results:
 if __name__ == "__main__":
     lines = [
         # 'курс доллара',
-        'погода во владивостоке',
+        'что значит 42',
         # 'можно ли на huggingface делать nsfw',
         ]
     for x in lines:
-        # print(search_v3(x)[0], '\n\n')
-        print(search_v4(x)[0], '\n\n')
+        print(search_v3(x)[0], '\n\n')
+        # print(search_v4(x)[0], '\n\n')

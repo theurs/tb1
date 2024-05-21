@@ -100,6 +100,17 @@ Text:'''
         try:
             if query:
                 qq = query
+            r = my_gemini.sum_big_text(text[:32000], qq).strip()
+            if r != '':
+                result = f'{r}\n\n--\nGemini Pro [{len(text[:32000])}]'
+        except Exception as error:
+            print(f'my_sum:summ_text_worker:gpt: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
+
+    if not result:
+        try:
+            if query:
+                qq = query
             r = my_groq.sum_big_text(text[:my_groq.MAX_QUERY_LENGTH], qq).strip()
             if r != '':
                 result = f'{r}\n\n--\Llama3 70b [Groq] [{len(text[:my_groq.MAX_QUERY_LENGTH])}]'

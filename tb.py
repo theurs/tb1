@@ -4216,7 +4216,7 @@ def main():
 
     my_gemini.load_users_keys()
 
-    start_time= time.time()
+    # start_time= time.time()
     for x in CHAT_STATS.keys():
         uid = CHAT_STATS[x][0]
         cm = CHAT_STATS[x][1]
@@ -4225,8 +4225,8 @@ def main():
                 CHAT_STATS_TEMP[uid] += 1
             else:
                 CHAT_STATS_TEMP[uid] = 1
-    end_time = time.time()
-    my_log.log2(f'load in : {round(end_time - start_time, 2)} seconds')
+    # end_time = time.time()
+    # my_log.log2(f'load in : {round(end_time - start_time, 2)} seconds')
 
     # for  x in CHAT_STATS.keys():
     #     # {time(str(timestamp)): (user_id(str), chat_mode(str))}

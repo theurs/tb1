@@ -1848,7 +1848,7 @@ change maxhistchars - /maxhistchars <maxhistchars>
 
 Usage: /openrouter <api key>
 ''', lang)
-            bot_reply(message, msg, parse_mode='HTML', disable_web_page_preview=True)
+            bot_reply(message, msg, disable_web_page_preview=True)
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:openrouter:{error}\n\n{error_tr}')

@@ -4174,8 +4174,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             status, answer = my_openrouter.chat(message.text, chat_id_full)
 
-                            if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'openrouter'
+                            WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:

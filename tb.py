@@ -1724,6 +1724,8 @@ def model_thread(message: telebot.types.Message):
         my_openrouter.PARAMS[chat_id_full] = [model, temperature, max_tokens, maxhistlines, maxhistchars]
         bot_reply_tr(message, f'Model changed.')
         return
+    except IndexError:
+        pass
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:model:{error}\n\n{error_tr}')
@@ -1750,6 +1752,8 @@ def maxhistlines_thread(message: telebot.types.Message):
         my_openrouter.PARAMS[chat_id_full] = [model, temperature, max_tokens, maxhistlines, maxhistchars]
         bot_reply_tr(message, f'Maxhistlines changed.')
         return
+    except IndexError:
+        pass
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:model:{error}\n\n{error_tr}')
@@ -1776,6 +1780,8 @@ def maxhistchars_thread(message: telebot.types.Message):
         my_openrouter.PARAMS[chat_id_full] = [model, temperature, max_tokens, maxhistlines, maxhistchars]
         bot_reply_tr(message, f'Maxhistchars changed.')
         return
+    except IndexError:
+        pass
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:model:{error}\n\n{error_tr}')
@@ -1802,6 +1808,8 @@ def maxtokens_thread(message: telebot.types.Message):
         my_openrouter.PARAMS[chat_id_full] = [model, temperature, maxtokens, maxhistlines, maxhistchars]
         bot_reply_tr(message, f'Maxtokens changed.')
         return
+    except IndexError:
+        pass
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:model:{error}\n\n{error_tr}')

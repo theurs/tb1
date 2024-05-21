@@ -96,7 +96,7 @@ The structure of the answer should be similar to the following:
 
 Show a block with the user`s intention briefly.
 Show a block with a short and clear answer that satisfies most users.
-Show a block with a full answer and links.
+Show a block with a full answer and links, links should be formatted for easy reading.
 
 User`s query: "{query}"
 Current date: {utils.get_full_time()}

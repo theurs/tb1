@@ -4211,18 +4211,22 @@ def do_task(message, custom_prompt: str = ''):
 
 
 def count_stats():
-    shutil.copyfile('db/chat_stats.db', 'db/chat_stats_.db')
-    CHAT_STATS_ = SqliteDict('db/chat_stats_.db')
-    for x in CHAT_STATS_.keys():
-        uid = CHAT_STATS_[x][0]
-        cm = CHAT_STATS_[x][1]
-        if 'gemini' in str(cm) or 'llama' in str(cm):
-            if uid in CHAT_STATS_TEMP:
-                CHAT_STATS_TEMP[uid] += 1
-            else:
-                CHAT_STATS_TEMP[uid] = 1
-    del CHAT_STATS_
-    os.unlink('db/chat_stats_.db')
+    try:
+        shutil.copyfile('db/chat_stats.db', 'db/chat_stats_.db')
+        CHAT_STATS_ = SqliteDict('db/chat_stats_.db')
+        for x in CHAT_STATS_.keys():
+            uid = CHAT_STATS_[x][0]
+            cm = CHAT_STATS_[x][1]
+            if 'gemini' in str(cm) or 'llama' in str(cm):
+                if uid in CHAT_STATS_TEMP:
+                    CHAT_STATS_TEMP[uid] += 1
+                else:
+                    CHAT_STATS_TEMP[uid] = 1
+        del CHAT_STATS_
+        os.unlink('db/chat_stats_.db')
+    except Exception as error:
+        error_tr = traceback.format_exc()
+        my_log.log2(f'tb:count_stats: {error}\n{error_tr}')
 
 
 def main():

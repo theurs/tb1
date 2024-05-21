@@ -4223,6 +4223,7 @@ def count_stats():
                 else:
                     CHAT_STATS_TEMP[uid] = 1
         del CHAT_STATS_
+        time.sleep(10)
         os.unlink('db/chat_stats_.db')
     except Exception as error:
         error_tr = traceback.format_exc()

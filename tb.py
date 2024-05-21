@@ -1845,6 +1845,7 @@ def openrouter_thread(message: telebot.types.Message):
             if chat_id_full in my_openrouter.KEYS and my_openrouter.KEYS[chat_id_full]:
                 key = my_openrouter.KEYS[chat_id_full]
             if key:
+                CHAT_MODE[chat_id_full] = 'openrouter'
                 msg = f'{tr("Your key:", lang)} [{key[:20]}...]'
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
             msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
@@ -2132,7 +2133,7 @@ def reset_(message: telebot.types.Message):
 
         if 'gemini' in CHAT_MODE[chat_id_full]:
             my_gemini.reset(chat_id_full)
-        elif 'groq' in CHAT_MODE[chat_id_full]:
+        elif 'llama' in CHAT_MODE[chat_id_full]:
             my_groq.reset(chat_id_full)
         elif 'openrouter' in CHAT_MODE[chat_id_full]:
             my_openrouter.reset(chat_id_full)
@@ -2273,7 +2274,7 @@ def send_debug_history(message: telebot.types.Message):
         prompt = 'Gemini Pro\n\n'
         prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'groq' in CHAT_MODE[chat_id_full]:
+    if 'llama' in CHAT_MODE[chat_id_full]:
         prompt = 'Groq llama 3 70b\n\n'
         prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))

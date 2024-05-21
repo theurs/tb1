@@ -3772,7 +3772,8 @@ def do_task(message, custom_prompt: str = ''):
                             USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
                         else:
                             with ShowAction(message, 'typing'):
-                                response, text__ = my_gemini.check_phone_number(number)
+                                # response, text__ = my_gemini.check_phone_number(number)
+                                response, text__ = my_groq.check_phone_number(number)
                         if response:
                             USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
                             CACHE_CHECK_PHONE[number] = (response, text__)

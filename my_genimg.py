@@ -21,6 +21,7 @@ from sqlitedict import SqliteDict
 import bing_img
 import cfg
 import my_gemini
+import my_groq
 import my_log
 import my_trans
 
@@ -52,66 +53,6 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     except Exception as error_bing_img:
         my_log.log_bing_img(f'my_genimg:bing: {error_bing_img}')
     return []
-
-
-def translate_prompt_to_en(prompt: str) -> str:
-    """
-    Translates a given prompt to English if it is not already in English.
-
-    Args:
-        prompt (str): The input prompt to be translated.
-
-    Returns:
-        str: The translated prompt in English.
-    """
-    try:
-        detected_lang = langdetect.detect(prompt)
-    except Exception as error:
-        if 'No features in text' not in str(error):
-            my_log.log2(f'my_genimg:rewrite_prompt_for_open_dalle: error: {error}')
-        detected_lang = 'unknown'
-
-    if detected_lang != 'en':
-        prompt_translated = my_gemini.translate(prompt, to_lang='en', help='This is a prompt for image generation. Users can write it in their own language, but only English is supported.')
-        if not prompt_translated:
-            prompt_translated = my_trans.translate_text2(prompt, 'en')
-        if prompt_translated:
-            prompt = prompt_translated
-    return prompt
-
-
-def rewrite_prompt_for_open_dalle(prompt: str) -> str:
-    """
-    Generate a new prompt for OpenDalle image generation by rewriting the given prompt.
-    
-    Args:
-        prompt (str): The original prompt for image generation.
-        
-    Returns:
-        str: The rewritten prompt in English.
-    """
-    # small text detect fails :(
-
-    force = False
-    if hash(prompt) in huggingface_prompts:
-        force = True
-    else:
-        huggingface_prompts[hash(prompt)] = True
-
-    try:
-        detected_lang = langdetect.detect(prompt)
-    except Exception as error:
-        if 'No features in text' not in str(error):
-            my_log.log2(f'my_genimg:rewrite_prompt_for_open_dalle: error: {error}')
-        detected_lang = 'unknown'
-
-    if detected_lang != 'en' or force:
-        prompt_translated = my_gemini.ai(f'This is a prompt for image generation. Rewrite it in english, in one long sentance, make it better:\n\n{prompt}', temperature=1)
-        if not prompt_translated:
-            return translate_prompt_to_en(prompt)
-        return translate_prompt_to_en(prompt_translated)
-    else:
-        return prompt
 
 
 def huggin_face_api(prompt: str) -> bytes:
@@ -147,11 +88,6 @@ def huggin_face_api(prompt: str) -> bytes:
             'PixArt-alpha/PixArt-Sigma',
             'ByteDance/Hyper-SDXL-1Step-T2I',
         ]
-
-    prompt_ = prompt
-    prompt = rewrite_prompt_for_open_dalle(prompt)
-    if prompt_ != prompt:
-        my_log.log_reprompts(f'{prompt_}\n\n{prompt}')
 
     payload = json.dumps({"inputs": prompt})
 
@@ -722,7 +658,7 @@ def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number:
     return images
 
 
-def get_reprompt(prompt: str, conversation_history: str) -> str:
+def get_reprompt(prompt: str, conversation_history: str = '') -> str:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
     Parameters:
@@ -731,9 +667,10 @@ def get_reprompt(prompt: str, conversation_history: str) -> str:
     Returns:
     - a string representing the reprompt for image generation
     """
-    conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
-    conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
-    query = f"""
+    try:
+        conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
+        conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
+        query = f"""
 User want to create image with text to image generator.
 Repromt user's prompt for image generation.
 Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
@@ -745,9 +682,18 @@ User's prompt: {prompt}
 Dialog history: {conversation_history}
 """
 
-    reprompt = my_gemini.ai(query, temperature=1.5)
+        reprompt = my_gemini.ai(query, temperature=1.5)
+        if not reprompt:
+            reprompt = my_groq.ai(query, temperature=1)
+            if not reprompt:
+                reprompt = get_reprompt_nsfw(prompt)
+                if not reprompt:
+                    reprompt = prompt
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_huggin_face_api(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
     my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}')
-    return reprompt if reprompt.strip() else prompt
+    return reprompt
 
 
 def get_reprompt_nsfw(prompt: str, conversation_history: str) -> str:
@@ -765,7 +711,7 @@ def get_reprompt_nsfw(prompt: str, conversation_history: str) -> str:
         detected_lang = langdetect.detect(prompt)
     except Exception as error:
         if 'No features in text' not in str(error):
-            my_log.log2(f'my_genimg:rewrite_prompt_for_open_dalle: error: {error}')
+            my_log.log2(f'my_genimg:get_reprompt_nsfw: error: {error}')
         detected_lang = 'unknown'
 
     # используем только гугл транслятор потому что на ИИ надежды нет из за самоцензуры

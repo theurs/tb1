@@ -13,6 +13,7 @@ from groq import Groq
 from sqlitedict import SqliteDict
 
 import cfg
+import my_google
 import my_log
 
 
@@ -342,12 +343,40 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
     return ai(query, temperature=temperature)
 
 
+def check_phone_number(number: str) -> str:
+    """проверяет чей номер, откуда звонили"""
+    urls = [
+        f'https://zvonili.com/phone/{number}',
+        # этот сайт похоже тупо врёт обо всех номерах f'https://abonentik.ru/7{number}',
+        f'https://www.list-org.com/search?type=phone&val=%2B7{number}'
+    ]
+    text = my_google.download_text(urls, no_links=True)
+    query = f'''
+Определи по предоставленному тексту какой регион, какой оператор,
+связан ли номер с мошенничеством,
+если связан то напиши почему ты так думаешь,
+ответь на русском языке.
+
+
+Номер +7{number}
+
+Текст:
+
+{text}
+'''
+    response = ai(query)
+    return response, text
+
+
 if __name__ == '__main__':
+    pass
+
+    print(check_phone_number('+7969137-51-85'))
     # print(ai('привет как дела'))
     # print(summ_text_file('1.txt'))
 
-    reset('test')
-    chat_cli()
+    # reset('test')
+    # chat_cli()
 
     # for _ in range(100):
     #     t1 = time.time()

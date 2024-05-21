@@ -97,6 +97,8 @@ def ddg_translate(text: str, lang = 'ru'):
     Returns:
         str: The translated text, or the original text if translation fails.
     """
+    if lang == 'ua':
+        lang = 'uk'
     keywords = [text, ]
     results = DDGS().translate(keywords, to=lang)
     try:
@@ -117,6 +119,8 @@ def translate_text2(text, lang = 'ru'):
     Returns:
         str: The translated text.
     """
+    if lang == 'ua':
+        lang = 'uk'
     if 'windows' in utils.platform().lower():
         return ddg_translate(text, lang)
     text = text.strip()

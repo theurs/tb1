@@ -367,6 +367,8 @@ def tr(text: str, lang: str, help: str = '') -> str:
     # перевод на этот язык не работает?
     if lang == 'fa':
         lang = 'en'
+    if lang == 'ua':
+        lang = 'uk'
 
     key = str((text, lang, help))
     if key in AUTO_TRANSLATIONS:

@@ -1144,7 +1144,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 /llama370 - llama 3 70b (groq)
 /gemini10 - Google Gemini 1.5 flash
 /gemini15 - Google Gemini 1.5 pro
-/openrouter - all other models including new GPT-4o, Claude 3 Opus etc
+/openrouter - {tr('all other models including new GPT-4o, Claude 3 Opus etc', lang)}
 
 """
 
@@ -1677,7 +1677,7 @@ def config_thread(message: telebot.types.Message):
 /llama370 - llama 3 70b (groq)
 /gemini10 - Google Gemini 1.5 flash
 /gemini15 - Google Gemini 1.5 pro
-/openrouter - all other models including new GPT-4o, Claude 3 Opus etc
+/openrouter - {tr('all other models including new GPT-4o, Claude 3 Opus etc', lang)}
 
 """
         bot_reply(message, MSG_CONFIG, parse_mode='HTML', reply_markup=get_keyboard('config', message))

@@ -1848,11 +1848,11 @@ def openrouter_thread(message: telebot.types.Message):
                 msg = f'{tr("Your key:", lang)} [{key[:20]}...]'
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
             msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
-            msg += '\n\n' + tr('''Change model - /model <model>
-change temperature - /temp <temp>
-change max tokens - /maxtokens <max_tokens>
-change maxhistlines - /maxhistlines <maxhistlines>
-change maxhistchars - /maxhistchars <maxhistchars>
+            msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/docs#models
+/temp <temperature> - 0.1 ... 2.0
+/maxtokens <max_tokens> - maximum response size, see model details
+/maxhistlines <maxhistlines> - how many lines in history
+/maxhistchars <maxhistchars> - how many chars in history
 
 Usage: /openrouter <api key>
 ''', lang)

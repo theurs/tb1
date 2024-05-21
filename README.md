@@ -38,7 +38,7 @@
 
 /llama370 - поменять модель groq llama 3 70b
 
-/gemma7 - выбрать модель Google gemma 7
+/openrouter - выбрать openrouter.ai поставщик разнообразных платных ИИ
 
 **Команды для администратора**
 
@@ -139,7 +139,7 @@ bot_name = "Бот"
 default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
-# 'gemini', 'gemini15'
+# 'gemini', 'gemini15', 'llama370', 'openrouter'
 chat_mode_default = 'gemini15'
 
 # default locale, язык на который переводятся все сообщения

@@ -402,7 +402,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_gemini.update_mem(query, resp, chat_id_full)
     elif 'llama3' in CHAT_MODE[chat_id_full]:
         my_groq.update_mem(query, resp, chat_id_full)
-    elif 'gemma' in CHAT_MODE[chat_id_full]:
+    elif 'openrouter' in CHAT_MODE[chat_id_full]:
         my_openrouter.update_mem(query, resp, chat_id_full)
 
 
@@ -987,12 +987,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button4, button5, button6)
         return markup
 
-    elif kbd == 'gemma7_chat':
+    elif kbd == 'openrouter_chat':
         if disabled_kbd(chat_id_full):
             return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gemma7_reset')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='openrouter_reset')
         button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
         button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
         button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
@@ -1144,6 +1144,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 /llama370 - llama 3 70b (groq)
 /gemini10 - Google Gemini 1.5 flash
 /gemini15 - Google Gemini 1.5 pro
+/openrouter - all other models including new GPT-4o, Claude 3 Opus etc
 
 """
 
@@ -1215,9 +1216,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'groq-llama370_reset':
             my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Groq llama 3 70b очищена.')
-        elif call.data == 'gemma7_reset':
+        elif call.data == 'openrouter_reset':
             my_openrouter.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Google gemma 7 очищена.')
+            bot_reply_tr(message, 'История диалога с openrouter очищена.')
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Gemini Pro очищена.')
@@ -1676,6 +1677,7 @@ def config_thread(message: telebot.types.Message):
 /llama370 - llama 3 70b (groq)
 /gemini10 - Google Gemini 1.5 flash
 /gemini15 - Google Gemini 1.5 pro
+/openrouter - all other models including new GPT-4o, Claude 3 Opus etc
 
 """
         bot_reply(message, MSG_CONFIG, parse_mode='HTML', reply_markup=get_keyboard('config', message))
@@ -1702,6 +1704,148 @@ def original_mode(message: telebot.types.Message):
     else:
         ORIGINAL_MODE[chat_id_full] = True
         bot_reply_tr(message, 'Original mode enabled. Bot will not be informed about place, names, roles etc. It will work same as original chatbot.')
+
+
+@bot.message_handler(commands=['model',], func=authorized_owner)
+def model(message: telebot.types.Message):
+    """Юзеры могут менять модель для openrouter.ai"""
+    thread = threading.Thread(target=model_thread, args=(message,))
+    thread.start()
+def model_thread(message: telebot.types.Message):
+    """Юзеры могут менять модель для openrouter.ai"""
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+    
+    try:
+        model = message.text.split(maxsplit=1)[1].strip()
+        if chat_id_full not in my_openrouter.PARAMS:
+            my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
+        _, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
+        my_openrouter.PARAMS[chat_id_full] = [model, temperature, max_tokens, maxhistlines, maxhistchars]
+        bot_reply_tr(message, f'Model changed.')
+        return
+    except Exception as error:
+        error_tr = traceback.format_exc()
+        my_log.log2(f'tb:model:{error}\n\n{error_tr}')
+    bot_reply_tr(message, f'Usage: /model model_name see models at https://openrouter.ai/docs#models', disable_web_page_preview=True)
+
+
+@bot.message_handler(commands=['maxhistlines',], func=authorized_owner)
+def maxhistlines(message: telebot.types.Message):
+    """Юзеры могут менять maxhistlines для openrouter.ai"""
+    thread = threading.Thread(target=maxhistlines_thread, args=(message,))
+    thread.start()
+def maxhistlines_thread(message: telebot.types.Message):
+    """Юзеры могут менять maxhistlines для openrouter.ai"""
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+    
+    try:
+        maxhistlines = int(message.text.split(maxsplit=1)[1].strip())
+        if chat_id_full not in my_openrouter.PARAMS:
+            my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
+        model, temperature, max_tokens, _, maxhistchars = my_openrouter.PARAMS[chat_id_full]
+        my_openrouter.PARAMS[chat_id_full] = [model, temperature, max_tokens, maxhistlines, maxhistchars]
+        bot_reply_tr(message, f'Maxhistlines changed.')
+        return
+    except Exception as error:
+        error_tr = traceback.format_exc()
+        my_log.log2(f'tb:model:{error}\n\n{error_tr}')
+    bot_reply_tr(message, f'Usage: /maxhistlines maxhistlines', disable_web_page_preview=True)
+
+
+@bot.message_handler(commands=['maxhistchars',], func=authorized_owner)
+def maxhistchars(message: telebot.types.Message):
+    """Юзеры могут менять maxhistchars для openrouter.ai"""
+    thread = threading.Thread(target=maxhistchars_thread, args=(message,))
+    thread.start()
+def maxhistchars_thread(message: telebot.types.Message):
+    """Юзеры могут менять maxhistchars для openrouter.ai"""
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+    
+    try:
+        maxhistchars = int(message.text.split(maxsplit=1)[1].strip())
+        if chat_id_full not in my_openrouter.PARAMS:
+            my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
+        model, temperature, max_tokens, maxhistlines, _ = my_openrouter.PARAMS[chat_id_full]
+        my_openrouter.PARAMS[chat_id_full] = [model, temperature, max_tokens, maxhistlines, maxhistchars]
+        bot_reply_tr(message, f'Maxhistchars changed.')
+        return
+    except Exception as error:
+        error_tr = traceback.format_exc()
+        my_log.log2(f'tb:model:{error}\n\n{error_tr}')
+    bot_reply_tr(message, f'Usage: /maxhistchars maxhistchars', disable_web_page_preview=True)
+
+
+@bot.message_handler(commands=['maxtokens',], func=authorized_owner)
+def maxtokens(message: telebot.types.Message):
+    """Юзеры могут менять maxtokens для openrouter.ai"""
+    thread = threading.Thread(target=maxtokens_thread, args=(message,))
+    thread.start()
+def maxtokens_thread(message: telebot.types.Message):
+    """Юзеры могут менять maxtokens для openrouter.ai"""
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+    
+    try:
+        maxtokens = int(message.text.split(maxsplit=1)[1].strip())
+        if chat_id_full not in my_openrouter.PARAMS:
+            my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
+        model, temperature, _, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
+        my_openrouter.PARAMS[chat_id_full] = [model, temperature, maxtokens, maxhistlines, maxhistchars]
+        bot_reply_tr(message, f'Maxtokens changed.')
+        return
+    except Exception as error:
+        error_tr = traceback.format_exc()
+        my_log.log2(f'tb:model:{error}\n\n{error_tr}')
+    bot_reply_tr(message, f'Usage: /maxtokens maxtokens', disable_web_page_preview=True)
+
+
+@bot.message_handler(commands=['openrouter',], func=authorized_owner)
+def openrouter(message: telebot.types.Message):
+    """Юзеры могут добавить свои ключи для openrouter.ai и пользоваться платным сервисом через моего бота"""
+    thread = threading.Thread(target=openrouter_thread, args=(message,))
+    thread.start()
+def openrouter_thread(message: telebot.types.Message):
+    """Юзеры могут добавить свои ключи для openrouter.ai и пользоваться платным сервисом через моего бота"""
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
+
+    try:
+        key = ''
+        args = message.text.split(maxsplit=1)
+        if len(args) > 1:
+            key = args[1].strip()
+        if chat_id_full not in my_openrouter.PARAMS:
+            my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
+        if key:
+            if key.startswith('sk-or-v1-') and len(key) == 73:
+                my_openrouter.KEYS[chat_id_full] = key
+                bot_reply_tr(message, 'Key added successfully!')
+                CHAT_MODE[chat_id_full] = 'openrouter'
+                return
+        else:
+            msg = tr('You can use your own key from https://openrouter.ai/keys to access all AI supported.', lang)
+            if chat_id_full in my_openrouter.KEYS and my_openrouter.KEYS[chat_id_full]:
+                key = my_openrouter.KEYS[chat_id_full]
+            if key:
+                msg = f'{tr("Your key:", lang)} [{key[:20]}...]'
+            model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
+            msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
+            msg += '\n\n' + tr('''Change model - /model <model>
+change temperature - /temp <temp>
+change max tokens - /maxtokens <max_tokens>
+change maxhistlines - /maxhistlines <maxhistlines>
+change maxhistchars - /maxhistchars <maxhistchars>
+
+Usage: /openrouter <api key>
+''', lang)
+            bot_reply(message, msg, parse_mode='HTML', disable_web_page_preview=True)
+    except Exception as error:
+        error_tr = traceback.format_exc()
+        my_log.log2(f'tb:openrouter:{error}\n\n{error_tr}')
 
 
 @bot.message_handler(commands=['keys', 'key'], func=authorized_owner)
@@ -1821,17 +1965,10 @@ def donate(message: telebot.types.Message):
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
 
 
-@bot.message_handler(commands=['gemma7'], func=authorized_owner)
-def llama3_70(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    CHAT_MODE[chat_id_full] = 'gemma7'
-    bot_reply_tr(message, 'Google gemma 7 model selected.')
-
-
 @bot.message_handler(commands=['llama370'], func=authorized_owner)
 def llama3_70(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
-    CHAT_MODE[chat_id_full] = 'groq-llama370'
+    CHAT_MODE[chat_id_full] = 'llama370'
     bot_reply_tr(message, 'Groq llama 3 70b model selected.')
 
 
@@ -1983,7 +2120,7 @@ def reset_(message: telebot.types.Message):
             my_gemini.reset(chat_id_full)
         elif 'groq' in CHAT_MODE[chat_id_full]:
             my_groq.reset(chat_id_full)
-        elif 'gemma' in CHAT_MODE[chat_id_full]:
+        elif 'openrouter' in CHAT_MODE[chat_id_full]:
             my_openrouter.reset(chat_id_full)
         else:
             bot_reply_tr(message, 'History WAS NOT cleared.')
@@ -2126,8 +2263,8 @@ def send_debug_history(message: telebot.types.Message):
         prompt = 'Groq llama 3 70b\n\n'
         prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'gemma' in CHAT_MODE[chat_id_full]:
-        prompt = 'Google gemma 7\n\n'
+    if 'openrouter' in CHAT_MODE[chat_id_full]:
+        prompt = 'Openrouter\n\n'
         prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
@@ -2240,6 +2377,11 @@ def set_new_temperature(message: telebot.types.Message):
         return
 
     GEMIMI_TEMP[chat_id_full] = new_temp
+    if chat_id_full not in my_openrouter.PARAMS:
+        my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
+    model, _, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
+    my_openrouter.PARAMS[chat_id_full] = [model, float(new_temp), max_tokens, maxhistlines, maxhistchars]
+
     msg = f'{tr("New temperature set:", lang)} {new_temp}'
     bot_reply(message, msg, parse_mode='Markdown')
 
@@ -2679,7 +2821,7 @@ def stats_thread(message: telebot.types.Message):
     stats = {
         'gemini15': defaultdict(int),
         'gemini': defaultdict(int),
-        'groq-llama370': defaultdict(int),
+        'llama370': defaultdict(int),
         'new_users': defaultdict(int),
         'active_24h': set(),
         'active_48h': set(),
@@ -2714,7 +2856,7 @@ def stats_thread(message: telebot.types.Message):
                 stats['active_30d'].add(user_id)
 
             # Подсчет сообщений в зависимости от режима
-            if chat_mode in ['gemini15', 'gemini', 'groq-llama370']:
+            if chat_mode in ['gemini15', 'gemini', 'llama370']:
                 if now - time_stamp <= 86400:
                     stats[chat_mode]['24'] += 1
                 if now - time_stamp <= 172800:
@@ -2726,7 +2868,7 @@ def stats_thread(message: telebot.types.Message):
 
     # Строим сообщение для пользователя
     msg = ""
-    for mode in ['gemini15', 'gemini', 'groq-llama370']:
+    for mode in ['gemini15', 'gemini', 'llama370']:
         msg += (f"{mode} за 24ч/48ч/7д/30д: "
                 f"{stats[mode]['24']}/{stats[mode]['48']}/"
                 f"{stats[mode]['7d']}/{stats[mode]['30d']}\n\n")
@@ -3191,6 +3333,7 @@ Change model:
 /gemini10 - Google Gemini 1.5 flash
 /gemini15 - Google Gemini 1.5 pro
 /llama370 - LLaMa 3 70b (Groq)
+/openrouter - all other models including new GPT-4o, Claude 3 Opus etc
 
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support
@@ -3968,7 +4111,7 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
                 # если активирован режим общения с groq llama 3 70b
-                if chat_mode_ == 'groq-llama370':
+                if chat_mode_ == 'llama370':
                     if len(msg) > my_groq.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3 70b:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST}')
                         return
@@ -4011,41 +4154,41 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
 
-                # если активирован режим общения с google gemma 7
-                if chat_mode_ == 'gemma7':
-                    if len(msg) > my_openrouter.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Google gemma 7:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter.MAX_REQUEST}')
-                        return
+                # если активирован режим общения с openrouter
+                if chat_mode_ == 'openrouter':
+                    # не знаем какие там лимиты
+                    # if len(msg) > my_openrouter.MAX_REQUEST:
+                    #     bot_reply(message, f'{tr("Слишком длинное сообщение для openrouter:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter.MAX_REQUEST}')
+                    #     return
 
                     with ShowAction(message, action):
                         try:
                             if chat_id_full not in GEMIMI_TEMP:
                                 GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
-                            # style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
-                            # answer = my_groq.chat(message.text, chat_id_full, style=style_)
                             status, answer = my_openrouter.chat(message.text, chat_id_full)
+
                             if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'gemma7'
+                                WHO_ANSWERED[chat_id_full] = 'openrouter'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:
-                                answer = 'Google gemma 7 ' + tr('did not answered, try to /reset and start again', lang)
+                                answer = 'Openrouter ' + tr('did not answered, try to /reset and start again. Check your balance https://openrouter.ai/credits', lang)
 
                             if not VOICE_ONLY_MODE[chat_id_full]:
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
-                            my_log.log_echo(message, f'[gemma7] {answer}')
+                            my_log.log_echo(message, f'[openrouter] {answer}')
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gemma7_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('openrouter_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gemma7_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('openrouter_chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gemini {error3}\n{error_traceback}')

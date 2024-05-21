@@ -14,7 +14,9 @@ import my_log
 
 # keys {user_id(str):key(str)}
 KEYS = SqliteDict('db/open_router_keys.db', autocommit=True)
-
+# {user_id(str):list(model, temperature, max_tokens, maxhistlines, maxhistchars)}
+PARAMS = SqliteDict('db/open_router_params.db', autocommit=True)
+PARAMS_DEFAULT = ['meta-llama/llama-3-8b-instruct:free', 1, 2000, 5, 6000]
 
 # сколько запросов хранить
 MAX_MEM_LINES = 10
@@ -25,15 +27,30 @@ MAX_MEM_LINES = 10
 LOCKS = {}
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
-MAX_REQUEST = 8000
+MAX_REQUEST = 1000000
 MAX_SUM_REQUEST = 30000
 
 # хранилище диалогов {id:list(mem)}
 CHATS = SqliteDict('db/openrouter_dialogs.db', autocommit=True)
 
 
-def clear_mem(mem):
-    return mem[-MAX_MEM_LINES*2:]
+def clear_mem(mem, user_id: str):
+    if user_id not in PARAMS:
+        PARAMS[user_id] = ['meta-llama/llama-3-8b-instruct:free', 1, 2000, 5, 6000]
+    model, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[user_id]
+
+    while 1:
+        sizeofmem = count_tokens(mem)
+        if sizeofmem <= maxhistchars:
+            break
+        try:
+            mem = mem[2:]
+        except IndexError:
+            mem = []
+            break
+
+    return mem[-maxhistlines*2:]
+    #return mem[-MAX_MEM_LINES*2:]
 
 
 def count_tokens(mem) -> int:
@@ -51,12 +68,16 @@ def ai(prompt: str = '',
 
     if not prompt and not mem:
         return 0, ''
-    if not model:
-        # model = 'gpt-3.5-turbo'
-        model = 'google/gemma-7b-it:free'
-        # model = 'openchat-7b:free'
-        # model = 'mistral-7b-instruct:free'
-        # model = 'llama-3-8b-instruct:free'
+    # if not model:
+    #     # model = 'gpt-3.5-turbo'
+    #     model = 'google/gemma-7b-it:free'
+    #     # model = 'openchat-7b:free'
+    #     # model = 'mistral-7b-instruct:free'
+    #     # model = 'llama-3-8b-instruct:free'
+
+    if user_id not in PARAMS:
+        PARAMS[user_id] = PARAMS_DEFAULT
+    model, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[user_id]
 
     mem_ = mem or []
     if system:
@@ -104,7 +125,7 @@ def update_mem(query: str, resp: str, chat_id: str):
     mem = CHATS[chat_id]
     mem += [{'role': 'user', 'content': query}]
     mem += [{'role': 'assistant', 'content': resp}]
-    mem = clear_mem(mem)
+    mem = clear_mem(mem, chat_id)
 
     mem__ = []
     try:
@@ -131,11 +152,11 @@ def chat(query: str, chat_id: str = '', temperature: float = 0.1, system: str = 
         if chat_id not in CHATS:
             CHATS[chat_id] = []
         mem = CHATS[chat_id]
-        status_code, text = ai(query, mem, user_id='test', temperature = temperature, system=system)
+        status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system)
         if text:
             mem += [{'role': 'user', 'content': query}]
             mem += [{'role': 'assistant', 'content': text}]
-            mem = clear_mem(mem)
+            mem = clear_mem(mem, chat_id)
             CHATS[chat_id] = mem
         return status_code, text
 

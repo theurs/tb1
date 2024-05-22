@@ -11,12 +11,14 @@ import shutil
 import time
 import traceback
 from multiprocessing.pool import ThreadPool
+from io import BytesIO
 
 import gradio_client
 import langdetect
 import PIL
 import requests
 from sqlitedict import SqliteDict
+from PIL import Image
 
 import bing_img
 import cfg
@@ -40,6 +42,44 @@ huggingface_prompts = SqliteDict('db/kandinski_prompts.db', autocommit=True)
 # не давать генерировать картинки больше чем 1 за раз для 1 юзера
 # {userid:lock}
 LOCKS = {}
+
+
+def upscale(image_bytes: bytes) -> bytes:
+    """
+    Увеличивает размер изображения, если его ширина или высота меньше 1024 пикселей,
+    с сохранением хорошего качества.
+
+    Args:
+        image_bytes: Байты изображения.
+
+    Returns:
+        Байты увеличенного изображения или исходные байты, если увеличение не требуется.
+    """
+    try:
+        image = Image.open(BytesIO(image_bytes))
+        width, height = image.size
+
+        if width < 1024 or height < 1024:
+            if width > height:
+                new_width = 1024
+                new_height = int(height * (1024 / width))
+            else:
+                new_height = 1024
+                new_width = int(width * (1024 / height))
+
+            # Используем качественный алгоритм ресайза (Lanczos)
+            resized_image = image.resize((new_width, new_height), Image.LANCZOS)
+
+            # Сохраняем изображение в байты
+            output_buffer = BytesIO()
+            resized_image.save(output_buffer, format=image.format)
+            return output_buffer.getvalue()
+        else:
+            return image_bytes
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_huggin_face_api(f'my_genimg:upscale: {error}\n\n{error_traceback}')
+        return image_bytes
 
 
 def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
@@ -144,13 +184,13 @@ def huggin_face_api(prompt: str) -> bytes:
                 continue
 
             resp_text = str(response.content)[:300]
-            # if isinstance(resp_text, str):
-            #     print(resp_text[:300])
             if 'read timeout=' in resp_text or "SOCKSHTTPSConnectionPool(host='api-inference.huggingface.co', port=443): Max retries exceeded with url" in resp_text: # и так долго ждали
                 return []
             if response.content and '{"error"' not in resp_text and len(response.content) > 10000:
-                result.append(response.content)
-                WHO_AUTOR[hash(response.content)] = url.split('/')[-1]
+                # resize small images, upscale
+                upscaled = upscale(response.content)
+                result.append(upscaled)
+                WHO_AUTOR[hash(upscaled)] = url.split('/')[-1]
                 return result
 
             if 'is currently loading","estimated_time":' in str(resp_text) or \
@@ -798,6 +838,9 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
 if __name__ == '__main__':
     pass
+
+    # open('2.jpg', 'wb').write(upscale(open('1.jpg', 'rb').read()))
+
 #     imgs = PixArtSigma('''Generate a detailed and intricate image of a golden katana in the Japanese style. The katana should be elaborately decorated with intricate engravings and a luxurious golden
 # finish. The background should be a minimalist Japanese-style setting, with cherry blossoms and a traditional Japanese house in the distance.''')
     # open('_PixArtSigma.png', 'wb').write(imgs[0])

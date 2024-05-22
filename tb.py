@@ -3360,7 +3360,7 @@ Change model:
 /gemini10 - Google Gemini 1.5 flash
 /gemini15 - Google Gemini 1.5 pro
 /llama370 - LLaMa 3 70b (Groq)
-/openrouter - all other models including new GPT-4o, Claude 3 Opus etc
+/openrouter - all other models including new GPT-4o, Claude 3 Opus etc, you will need your own account
 
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support

@@ -1972,7 +1972,7 @@ def gemini10_mode(message: telebot.types.Message):
 def gemini15_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full]:
+    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full] or (datetime.datetime.now() < datetime.datetime(2024, 5, 30)):
         CHAT_MODE[chat_id_full] = 'gemini15'
         bot_reply_tr(message, 'Gemini Pro 1.5 model selected.')
     else:
@@ -3824,8 +3824,9 @@ def do_task(message, custom_prompt: str = ''):
         if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
             chat_mode_ = 'gemini'
     else: # в чатах только дешевый флеш
-        if chat_mode_ == 'gemini15':
-            chat_mode_ = 'gemini'
+        if datetime.datetime.now() > datetime.datetime(2024, 5, 30):
+            if chat_mode_ == 'gemini15':
+                chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):

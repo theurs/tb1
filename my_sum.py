@@ -96,13 +96,14 @@ Text:'''
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
 
+
     if not result:
         try:
             if query:
                 qq = query
-            r = my_gemini.sum_big_text(text[:32000], qq).strip()
+            r = my_groq.sum_big_text(text[:32000], qq, model = 'mixtral-8x7b-32768').strip()
             if r != '':
-                result = f'{r}\n\n--\nGemini Pro [{len(text[:32000])}]'
+                result = f'{r}\n\n--\nMixtral-8x7b-32768 [Groq] [{len(text[:32000])}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
@@ -113,7 +114,7 @@ Text:'''
                 qq = query
             r = my_groq.sum_big_text(text[:my_groq.MAX_QUERY_LENGTH], qq).strip()
             if r != '':
-                result = f'{r}\n\n--\Llama3 70b [Groq] [{len(text[:my_groq.MAX_QUERY_LENGTH])}]'
+                result = f'{r}\n\n--\nLlama3 70b [Groq] [{len(text[:my_groq.MAX_QUERY_LENGTH])}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
@@ -210,7 +211,7 @@ if __name__ == "__main__":
 
     # print(summ_url('https://telegra.ph/Tomm-05-19', download_only=True))
 
-    # print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8')[0])
+    print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8')[0])
     # print(summ_url('https://www.youtube.com/watch?v=0uOCF04QcHk')[0])
     # print(summ_url('https://www.youtube.com/watch?v=IVTzUg50f_4')[0])
     # print(summ_url('https://www.youtube.com/watch?v=0MehBAmxj-E')[0])

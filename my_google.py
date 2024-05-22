@@ -142,13 +142,6 @@ def search_v4(query: str, lang: str = 'ru', max_search: int = 10) -> str:
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_google:search_v4: {error}\n\n{error_traceback}')
 
-    # text = ''
-    # for url in urls:
-    #     # print(url)
-    #     text += download_text([url,], 5000)
-    #     if len(text) > 12000:
-    #         break
-
     text = download_in_parallel(urls, my_groq.MAX_SUM_REQUEST)
 
     q = f'''Answer in "{lang}" language to the user's search query.
@@ -170,12 +163,59 @@ Search results:
     return my_groq.ai(q, max_tokens_ = 4000), f'Data extracted from Google with query "{query}":\n\n' + text
 
 
+def search_v5(query: str, lang: str = 'ru', max_search: int = 10) -> str:
+    # добавляем в список выдачу самого гугла, и она же первая и главная
+    urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
+    # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
+    try:
+        r = googlesearch.search(query, stop = max_search, lang=lang)
+        # raise Exception('not implemented')
+    except Exception as error:
+        my_log.log2(f'my_google:search_google_v5: {error}')
+        try:
+            r = my_ddg.get_links(query, max_search)
+        except Exception as error:
+            my_log.log2(f'my_google:search_google_v5: {error}')
+            return ''
+
+    bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
+
+    try:
+        for url in r:
+            if any(s.lower() in url.lower() for s in bad_results):
+                continue
+            urls.append(url)
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_google:search_v5: {error}\n\n{error_traceback}')
+
+    text = download_in_parallel(urls, 32000)
+
+    q = f'''Answer in "{lang}" language to the user's search query.
+Guess what they were looking for and compose a good answer using search results and your own knowledge.
+
+The structure of the answer should be similar to the following: 
+
+Show a block with the user's intention briefly.
+Show a block with a short and clear answer that satisfies most users.
+Show a block with a full answer and links, links should be formatted for easy reading.
+
+User`s query: "{query}"
+Current date: {utils.get_full_time()}
+
+Search results:
+
+{text[:32000]}
+'''
+    return my_groq.ai(q, max_tokens_ = 4000, model_ = 'mixtral-8x7b-32768'), f'Data extracted from Google with query "{query}":\n\n' + text
+
+
 if __name__ == "__main__":
     lines = [
         # 'курс доллара',
-        'что значит 42',
-        # 'можно ли на huggingface делать nsfw',
+        # 'что значит 42',
+        'можно ли на huggingface делать nsfw',
         ]
     for x in lines:
-        print(search_v3(x)[0], '\n\n')
+        print(search_v5(x)[0], '\n\n')
         # print(search_v4(x)[0], '\n\n')

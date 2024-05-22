@@ -326,7 +326,7 @@ def translate_text(text: str, lang: str = 'ru') -> str:
     return ai(query, temperature=0, max_tokens_ = 8000)
 
 
-def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
+def sum_big_text(text:str, query: str, temperature: float = 0.1, model = 'llama3-70b-8192') -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature.
@@ -340,7 +340,7 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    return ai(query, temperature=temperature)
+    return ai(query, temperature=temperature, model_ = model)
 
 
 def check_phone_number(number: str) -> str:

@@ -2563,8 +2563,12 @@ def google_thread(message: telebot.types.Message):
         with semaphore_talks:
             r, text = my_google.search_v3(q, lang)
             if not r.strip():
-                bot_reply_tr(message, 'Search failed.')
-                return
+                r, text = my_google.search_v5(q, lang)
+                if not r.strip():
+                    r, text = my_google.search_v4(q, lang)
+                    if not r.strip():
+                        bot_reply_tr(message, 'Search failed.')
+                        return
             USER_FILES[chat_id_full] = ('google: ' + q, text)
         try:
             rr = utils.bot_markdown_to_html(r)

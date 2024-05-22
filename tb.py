@@ -2507,6 +2507,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
 
     with semaphore_talks:
         with ShowAction(message, 'record_audio'):
+            COMMAND_MODE[chat_id_full] = ''
             if chat_id_full in TTS_GENDER:
                 gender = TTS_GENDER[chat_id_full]
             else:
@@ -2562,6 +2563,7 @@ def google_thread(message: telebot.types.Message):
 
     with ShowAction(message, 'typing'):
         with semaphore_talks:
+            COMMAND_MODE[chat_id_full] = ''
             r, text = my_google.search_v3(q, lang)
             if not r.strip():
                 bot_reply_tr(message, 'Search failed.')

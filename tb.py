@@ -3345,7 +3345,7 @@ The bot doesn't do anything between questions and answers.
 It can't remind you of anything because it doesn't exist until you write to it.
 It only works and exists when it's reading your messages or writing a response.
 
-Please use only /image2 command for bot safe pictures.
+Please only use /image2 command for generating not safe pictures (nsfw).
 
 🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
 After the file or link is downloaded, you can ask questions using the /ask command.

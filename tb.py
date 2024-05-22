@@ -1971,8 +1971,13 @@ def gemini10_mode(message: telebot.types.Message):
 @bot.message_handler(commands=['gemini15'], func=authorized_owner)
 def gemini15_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
-    CHAT_MODE[chat_id_full] = 'gemini15'
-    bot_reply_tr(message, 'Gemini Pro 1.5 model selected.')
+    lang = get_lang(chat_id_full, message)
+    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full]:
+        CHAT_MODE[chat_id_full] = 'gemini15'
+        bot_reply_tr(message, 'Gemini Pro 1.5 model selected.')
+    else:
+        msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+        bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['donate'], func=authorized_owner)
@@ -3798,37 +3803,28 @@ def do_task(message, custom_prompt: str = ''):
         tts(message)
         return
 
+    have_gemini_key = True if ((chat_id_full in my_gemini.USER_KEYS) and my_gemini.USER_KEYS[chat_id_full]) else False
+
+    # если у юзера нет апи ключа для джемини то переключает на дешевый флеш
+    if CHAT_MODE[chat_id_full] == 'gemini15' and not have_gemini_key:
+        CHAT_MODE[chat_id_full] = 'gemini'
+
     chat_mode_ = CHAT_MODE[chat_id_full]
 
-
-
-    # # начиная с 30 мая
-    # # не давать тем у кого нет ключей доступ к 1.5 pro
-    chat_id_full__ = f'[{message.from_user.id}] [0]'
-    # if chat_mode_ == 'gemini15' and is_private:
-    #     if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-    #         total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
-    #         if total_messages__ > 100:
-    #             chat_mode_ = 'gemini'
-    #             # каждые 100 сообщение напоминать о ключах
-    #             if total_messages__ % 100 == 0:
-    #                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-    #                 bot_reply(message, msg, disable_web_page_preview = True)
     if is_private:
-        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-            total_messages__ = CHAT_STATS_TEMP[chat_id_full__] if chat_id_full__ in CHAT_STATS_TEMP else 0
+        total_messages__ = CHAT_STATS_TEMP[chat_id_full] if chat_id_full in CHAT_STATS_TEMP else 0
+        if not have_gemini_key:
             # каждые 50 сообщение напоминать о ключах
             if total_messages__ > 1 and total_messages__ % 50 == 0:
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
-    
-    if datetime.datetime.now() > datetime.datetime(2024, 5, 30):
-        if chat_id_full__ not in my_gemini.USER_KEYS or not my_gemini.USER_KEYS[chat_id_full__]:
-            if GEMINI15_COUNTER.status(chat_id_full__) > 50 and chat_mode_ == 'gemini15':
-                chat_mode_ = 'gemini'
-        else:
-            if GEMINI15_COUNTER.status(chat_id_full__) > 300 and chat_mode_ == 'gemini15':
-                chat_mode_ = 'gemini'
+        # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
+        # на бесплатных ключах лимит - 50, 300 может получится за счет взаимопомощи
+        if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
+            chat_mode_ = 'gemini'
+    else: # в чатах только дешевый флеш
+        if chat_mode_ == 'gemini15':
+            chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (message.text.lower().startswith('\\image ') and is_private):

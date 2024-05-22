@@ -3338,14 +3338,19 @@ def send_welcome_help_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
 
-    help = f"""The chatbot responds to the name bot.
-For example, you can say bot, tell me a joke.
-In private messages, you don't need to mention the bot's name
+    help = f"""The bot can't edit images or draw, and it doesn't search Google itself.
+These are all done by separate commands. 
+
+The bot doesn't do anything between questions and answers.
+It can't remind you of anything because it doesn't exist until you write to it.
+It only works and exists when it's reading your messages or writing a response.
+
+Please use only /image2 command for bot safe pictures.
 
 🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
 After the file or link is downloaded, you can ask questions using the /ask command.
 
-🛸 To get text from an image, send the image with the caption "ocr". Send message with caption starting "?" for image describe.
+🛸 To get text from an image, send the image with the caption "ocr".
 
 🎙️ You can issue commands and make requests using voice messages.
 

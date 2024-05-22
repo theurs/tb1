@@ -1891,6 +1891,7 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
                             new_keys.append(key)
                             added_flag = True
                             my_log.log_keys(f'Added new gemini key: {key}')
+                            CHAT_MODE[chat_id_full] = 'gemini15'
                             msg = tr('Added new gemini key:', lang) + f' {key}'
                             bot_reply(message, msg)
                         else:
@@ -4180,7 +4181,8 @@ def do_task(message, custom_prompt: str = ''):
                             if chat_id_full not in GEMIMI_TEMP:
                                 GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
-                            status, answer = my_openrouter.chat(message.text, chat_id_full)
+                            style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else ''
+                            status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_)
 
                             WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'

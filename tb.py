@@ -3348,7 +3348,7 @@ It only works and exists when it's reading your messages or writing a response.
 Please only use /image2 command for generating not safe pictures (nsfw).
 
 🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
-After the file or link is downloaded, you can ask questions using the /ask command.
+After the file or link is downloaded, you can ask questions about file using the /ask command.
 
 🛸 To get text from an image, send the image with the caption "ocr".
 
@@ -3372,7 +3372,7 @@ https://t.me/kun4_sun_bot_support
             ai_generated_help = HELP_MSG[chat_id_full]
             new_run = False
         else:
-            ai_generated_help = my_gemini.chat(f'Write a help message for Telegram users in language [{lang}] using this text as a source:\n\n' + help, chat_id_full, update_memory=False)
+            ai_generated_help = tr(help, lang, 'This is help information that the bot user calls with the /help command.')
             new_run = True
 
         if ai_generated_help:

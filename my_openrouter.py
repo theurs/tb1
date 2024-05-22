@@ -136,7 +136,7 @@ def update_mem(query: str, resp: str, chat_id: str):
             i += 1
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_groq(f'my_openrouter:update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
+        my_log.log_openrouter(f'my_openrouter:update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
 
     CHATS[chat_id] = mem__
 

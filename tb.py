@@ -3805,9 +3805,10 @@ def do_task(message, custom_prompt: str = ''):
 
     have_gemini_key = True if ((chat_id_full in my_gemini.USER_KEYS) and my_gemini.USER_KEYS[chat_id_full]) else False
 
-    # если у юзера нет апи ключа для джемини то переключает на дешевый флеш
-    if CHAT_MODE[chat_id_full] == 'gemini15' and not have_gemini_key:
-        CHAT_MODE[chat_id_full] = 'gemini'
+    # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
+    if datetime.datetime.now() > datetime.datetime(2024, 5, 30):
+        if CHAT_MODE[chat_id_full] == 'gemini15' and not have_gemini_key:
+            CHAT_MODE[chat_id_full] = 'gemini'
 
     chat_mode_ = CHAT_MODE[chat_id_full]
 

@@ -2904,7 +2904,9 @@ def stats_thread(message: telebot.types.Message):
     msg += f"Активны за 24ч/48ч/7д/30д: {len(stats['active_24h'])}/{len(stats['active_48h'])}/"
     msg += f"{len(stats['active_7d'])}/{len(stats['active_30d'])}\n\n"
 
-    msg += f"Всего пользователей: {len(stats['all_users'])}"
+    msg += f"Всего пользователей: {len(stats['all_users'])}\n\n"
+
+    msg += 'Ключи для джемини: '+ str(len(my_gemini.ALL_KEYS))
 
     # Отправка сообщения
     bot_reply(message, msg)

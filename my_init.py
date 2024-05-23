@@ -76,13 +76,13 @@ def generate_start_msg():
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
         msg = my_trans.translate_text2(start_msg, x)
-        if msg and len(msg) > (len(start_msg)/3):
+        if msg and len(msg) > (len(start_msg)/2):
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
         if not msg or len(msg) < (len(start_msg)/3):
             print(f'google translate failed {x}')
             msg = my_openrouter.translate(start_msg, from_lang='en', to_lang=x, help='This is a /start message for telegram bot.')
-            if msg and len(msg) > (len(start_msg)/3):
+            if msg and len(msg) > (len(start_msg)/2):
                 msgs[x] = msg
                 print('\n\n', x, '\n\n', msg)
             else:

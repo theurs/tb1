@@ -3315,7 +3315,7 @@ def send_welcome_start_thread(message: telebot.types.Message):
         help = my_init.start_msg
         my_log.log2(f'tb:send_welcome_start Unknown language: {lang}')
 
-    bot_reply_tr(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
+    bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 
 
 @bot.message_handler(commands=['help'], func = authorized_log)

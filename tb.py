@@ -3327,6 +3327,8 @@ Ask me anything. Send me you text/image/audio/documents with questions.
 You can change language with /lang command.
 
 You can generate images with /image command. Image editing is not supported yet.
+
+Remove keyboard /remove_keyboard
 '''
     bot_reply_tr(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 

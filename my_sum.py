@@ -129,7 +129,7 @@ def summ_text(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') 
     return summ_text_worker(text, subj, lang, query)
 
 
-def summ_url(url:str, download_only: bool = False, lang: str = 'ru') -> str:
+def summ_url(url:str, download_only: bool = False, lang: str = 'ru'):
     """скачивает веб страницу, просит гптчат или бинг сделать краткое изложение текста, возвращает текст
     если в ссылке ютуб то скачивает субтитры к видео вместо текста
     может просто скачать текст без саммаризации, для другой обработки"""

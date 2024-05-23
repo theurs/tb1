@@ -72,8 +72,8 @@ help_msg_file = 'msg_help.dat'
 
 def generate_start_msg():
     msgs = {}
-    # for x in supported_langs_trans:
-    for x in ['ru', 'uk', 'de']:
+    for x in supported_langs_trans:
+    # for x in ['ru', 'uk', 'de']:
         msg = my_trans.translate_text2(start_msg, x)
         if msg:
             msgs[x] = msg
@@ -87,8 +87,8 @@ def generate_start_msg():
 
 def generate_help_msg():
     msgs = {}
-    # for x in supported_langs_trans:
-    for x in ['ru', 'uk', 'de']:
+    for x in supported_langs_trans:
+    # for x in ['ru', 'uk', 'de']:
         msg = my_trans.translate_text2(help_msg, x)
         if msg:
             msgs[x] = msg

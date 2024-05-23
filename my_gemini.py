@@ -359,6 +359,8 @@ def ai(q: str, mem = [],
                     if response.status_code == 200:
                         try:
                             result = response.json()['candidates'][0]['content']['parts'][0]['text']
+                        except KeyError:
+                            return ''
                         except Exception as error_:
                             if 'candidates' in str(error_):
                                 result = CANDIDATES
@@ -376,6 +378,8 @@ def ai(q: str, mem = [],
                     if response.status_code == 200:
                         try:
                             result = response.json()['candidates'][0]['content']['parts'][0]['text']
+                        except KeyError:
+                            return ''
                         except Exception as error_:
                             if 'candidates' in str(error_):
                                 result = CANDIDATES
@@ -606,9 +610,9 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '')
         my_log.log_translate(f'my_gemini:translate:error2: {error2}\n\n{error_traceback}')
 
     if help:
-        query = f'Translate from language [{from_lang}] to language [{to_lang}], this can help you to translate better [{help}]:\n\n{text}'
+        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text, this can help you to translate better [{help}]:\n\n{text}'
     else:
-        query = f'Translate from language [{from_lang}] to language [{to_lang}]:\n\n{text}'
+        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
     # inject_explicit_content(chat_id)
     translated = ai(query, temperature=0.1)
     return translated

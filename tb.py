@@ -4,6 +4,7 @@ import chardet
 import datetime
 import io
 import os
+import pickle
 import re
 import shutil
 import tempfile
@@ -22,6 +23,7 @@ from datetime import timedelta
 
 import cfg
 import bing_img
+import my_init
 import my_genimg
 import my_dic
 import my_google
@@ -66,9 +68,9 @@ LAST_TIME_ACCESS = SqliteDict('db/last_time_access.db', autocommit=True)
 # сколько картинок нарисовано юзером {id: counter}
 IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=True)
 
-# запоминаем уникальные хелпы и приветствия, сбрасывать при смене языка
-HELLO_MSG = SqliteDict('db/msg_hello.db', autocommit=True)
-HELP_MSG = SqliteDict('db/msg_help.db', autocommit=True)
+# сообщения приветствия и помощи
+HELLO_MSG = {}
+HELP_MSG = {}
 
 # для хранения загруженных юзерами текстов, по этим текстам можно делать запросы командой /file
 # {user_id(str): (filename or link (str), text(str))}
@@ -196,24 +198,8 @@ DEBUG_MD_TO_HTML = {}
 WHO_ANSWERED = {}
 
 
-supported_langs_trans = [
-        "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
-        "el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha",
-        "haw","he","hi","hmn","hr","ht","hu","hy","id","ig","is","it","iw","ja","jw",
-        "ka","kk","km","kn","ko","ku","ky","la","lb","lo","lt","lv","mg","mi","mk",
-        "ml","mn","mr","ms","mt","my","ne","nl","no","ny","or","pa","pl","ps","pt",
-        "ro","ru","rw","sd","si","sk","sl","sm","sn","so","sq","sr","st","su","sv",
-        "sw","ta","te","tg","th","tl","tr","ua","uk","ur","uz","vi","xh","yi","yo","zh",
-        "zh-TW","zu"]
-supported_langs_tts = [
-        'af', 'am', 'ar', 'as', 'az', 'be', 'bg', 'bn', 'bs', 'ca', 'cs', 'cy', 'da',
-        'de', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fil', 'fr', 'ga', 'gl',
-        'gu', 'he', 'hi', 'hr', 'ht', 'hu', 'hy', 'id', 'is', 'it', 'ja', 'jv', 'ka',
-        'kk', 'km', 'kn', 'ko', 'ku', 'ky', 'la', 'lb', 'lo', 'lt', 'lv', 'mg', 'mi',
-        'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'my', 'nb', 'ne', 'nl', 'nn', 'no', 'ny',
-        'or', 'pa', 'pl', 'ps', 'pt', 'ro', 'ru', 'rw', 'sd', 'si', 'sk', 'sl', 'sm',
-        'sn', 'so', 'sq', 'sr', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'tk',
-        'tl', 'tr', 'tt', 'ua', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
+supported_langs_trans = my_init.supported_langs_trans
+supported_langs_tts = my_init.supported_langs_tts
 
 
 class MessageCounter:
@@ -3317,19 +3303,18 @@ def send_welcome_start(message: telebot.types.Message) -> None:
 def send_welcome_start_thread(message: telebot.types.Message):
     # Отправляем приветственное сообщение
     chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
     COMMAND_MODE[chat_id_full] = ''
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
-    help = '''Hello, I`m AI chat bot powered by Google Gemini [1.0/1.5/Vision/Flash], llama3-70, claude 3, gpt-4o etc!
 
-Ask me anything. Send me you text/image/audio/documents with questions.
+    if lang in HELLO_MSG:
+        help = HELLO_MSG[lang]
+    else:
+        help = my_init.start_msg
+        my_log.log2(f'tb:send_welcome_start Unknown language: {lang}')
 
-You can change language with /lang command.
-
-You can generate images with /image command. Image editing is not supported yet.
-
-Remove keyboard /remove_keyboard
-'''
     bot_reply_tr(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 
 
@@ -3344,58 +3329,12 @@ def send_welcome_help_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
 
-    help = f"""The bot can't edit images or draw, and it doesn't search Google itself.
-These are all done by separate commands. 
+    help = HELP_MSG[lang] if lang in HELP_MSG else my_init.help_msg
+    if lang not in HELP_MSG:
+        my_log.log2(f'tb:send_welcome_help Unknown language: {lang}')
 
-The bot doesn't do anything between questions and answers.
-It can't remind you of anything because it doesn't exist until you write to it.
-It only works and exists when it's reading your messages or writing a response.
-
-Please only use /image2 command for generating not safe pictures (nsfw).
-
-🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
-After the file or link is downloaded, you can ask questions about file using the /ask command.
-
-🛸 To get text from an image, send the image with the caption "ocr".
-
-🎙️ You can issue commands and make requests using voice messages.
-
-👻 /purge command to remove all your data
-
-Change model:
-/gemini10 - Google Gemini 1.5 flash
-/gemini15 - Google Gemini 1.5 pro
-/llama370 - LLaMa 3 70b (Groq)
-/openrouter - all other models including new GPT-4o, Claude 3 Opus etc, you will need your own account
-
-Report issues on Telegram:
-https://t.me/kun4_sun_bot_support
-
-"""
-
-    with ShowAction(message, 'typing'):
-        if chat_id_full in HELP_MSG and HELP_MSG[chat_id_full]:
-            ai_generated_help = HELP_MSG[chat_id_full]
-            new_run = False
-        else:
-            ai_generated_help = tr(help, lang, 'This is help information that the bot user calls with the /help command.')
-            new_run = True
-
-        if ai_generated_help:
-            if new_run:
-                help = utils.bot_markdown_to_html(ai_generated_help)
-                HELP_MSG[chat_id_full] = help
-            else:
-                help = ai_generated_help
-        else:
-            help = tr(help, lang)
-
-        try:
-            bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
-        except Exception as error:
-            print(f'tb:send_welcome_help: {error}')
-            my_log.log2(f'tb:send_welcome_help: {error}')
-            bot_reply(message, help, parse_mode='', disable_web_page_preview=True)
+    help = utils.bot_markdown_to_html(help)
+    bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['report'], func = authorized_log) 
@@ -4242,10 +4181,29 @@ def count_stats():
         my_log.log2(f'tb:count_stats: {error}\n{error_tr}')
 
 
+def load_msgs():
+    global HELLO_MSG, HELP_MSG
+    
+    try:
+        with open(my_init.start_msg_file, 'rb') as f:
+            HELLO_MSG = pickle.load(f)
+    except Exception as error:
+        my_log.log2(f'tb:load_msgs:hello {error}')
+        HELLO_MSG = {}
+
+    try:
+        with open(my_init.help_msg_file, 'rb') as f:
+            HELP_MSG = pickle.load(f)
+    except Exception as error:
+        my_log.log2(f'tb:load_msgs:help {error}')
+        HELP_MSG = {}
+
+
 def main():
     """
     Runs the main function, which sets default commands and starts polling the bot.
     """
+    load_msgs()
 
     my_gemini.load_users_keys()
 

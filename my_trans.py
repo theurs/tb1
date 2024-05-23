@@ -100,8 +100,8 @@ def ddg_translate(text: str, lang = 'ru'):
     if lang == 'ua':
         lang = 'uk'
     keywords = [text, ]
-    results = DDGS().translate(keywords, to=lang)
     try:
+        results = DDGS().translate(keywords, to=lang)
         return results[0]['translated']
     except:
         return text

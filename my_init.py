@@ -3,6 +3,7 @@
 import pickle
 
 import my_trans
+import my_groq
 
 
 supported_langs_trans = [
@@ -100,8 +101,64 @@ def generate_help_msg():
         pickle.dump(msgs, f)
 
 
+def check_translations(original: str, translated: str, lang):
+    q = f'''Decide if translation to language "lang" was made correctly.
+Your answer should be "yes" or "no" or "other".
+
+Original text:
+
+{original}
+
+
+Translated text:
+
+{translated}
+'''
+    res = my_groq.ai(q, temperature = 0, max_tokens_ = 10)
+    result = True if 'yes' in res.lower() else False
+    return result
+
+
+def found_bad_translations(fname: str = start_msg_file, original: str = start_msg):
+    with open(fname, 'rb') as f:
+        db = pickle.load(f)
+    bad = []
+    for lang in db:
+        msg = db[lang]
+        translated_good = check_translations(original, msg, lang)
+        if not translated_good:
+            bad.append(lang)
+    print(bad)
+
+
+def fix_translations(fname: str = start_msg_file, original: str = start_msg, langs = []):
+    with open(fname, 'rb') as f:
+        db = pickle.load(f)
+    for lang in langs:
+        print(lang)
+        translated = my_groq.translate(original, to_lang=lang)
+        if translated:
+            if 'no translation needed' in translated.lower():
+                translated = original
+            db[lang] = translated
+            print(translated)
+    with open(fname, 'wb') as f:
+        pickle.dump(db, f)
+
+
 if __name__ == '__main__':
     pass
-    generate_start_msg()
-    generate_help_msg()
+    # generate_start_msg()
+    # generate_help_msg()
 
+    # found_bad_translations(fname = start_msg_file, original = start_msg)
+    # ['ar', 'co', 'en', 'fa', 'he', 'iw', 'la', 'ps', 'sd', 'ur', 'yi']
+    # fix_translations(fname = start_msg_file, original = start_msg, langs = ['ar', 'en', 'fa', 'he', 'iw', 'ps', 'sd', 'ur', 'yi'])
+    # fix_translations(fname = start_msg_file, original = start_msg, langs = ['en', ])
+
+    # found_bad_translations(fname = help_msg_file, original = help_msg)
+    # ['ar', 'en', 'fa', 'he', 'iw', 'ps', 'sd', 'ur', 'yi']
+    # fix_translations(fname = help_msg_file, original = help_msg, langs = ['ar', 'en', 'fa', 'he', 'iw', 'ps', 'sd', 'ur', 'yi'])
+    # fix_translations(fname = help_msg_file, original = help_msg, langs = ['en', ])
+
+    # print(my_groq.translate(start_msg, to_lang='he'))

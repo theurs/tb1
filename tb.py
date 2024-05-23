@@ -3309,6 +3309,11 @@ def send_welcome_start_thread(message: telebot.types.Message):
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
 
+    args = message.text.split(maxsplit = 1)
+    if len(args) == 2:
+        if args[1] in my_init.supported_langs_trans:
+            lang = args[1]
+
     if lang in HELLO_MSG:
         help = HELLO_MSG[lang]
     else:
@@ -3328,6 +3333,11 @@ def send_welcome_help_thread(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
+    
+    args = message.text.split(maxsplit = 1)
+    if len(args) == 2:
+        if args[1] in my_init.supported_langs_trans:
+            lang = args[1]
 
     help = HELP_MSG[lang] if lang in HELP_MSG else my_init.help_msg
     if lang not in HELP_MSG:
@@ -4162,6 +4172,21 @@ def do_task(message, custom_prompt: str = ''):
 
 
 def count_stats():
+    """
+    Counts the statistics for chat messages in the database.
+
+    This function copies the 'db/chat_stats.db' file to 'db/chat_stats_.db',
+    creates a SqliteDict object from the copied file, and iterates over the keys in the dictionary.
+    For each key, it retrieves the user ID (uid) and the chat message (cm) from the corresponding
+    value. If the chat message contains either 'gemini' or 'llama', it checks if the user ID is
+    already in the CHAT_STATS_TEMP dictionary. If it is, it increments the count by 1; otherwise,
+    it initializes the count to 1. Finally, it deletes the SqliteDict object, sleeps for 10
+    seconds, and removes the temporary file.
+
+    If any exception occurs during the process, it logs the error and its traceback using the 'my_log.log2' function.
+
+    This function does not take any parameters and does not return any value.
+    """
     try:
         shutil.copyfile('db/chat_stats.db', 'db/chat_stats_.db')
         CHAT_STATS_ = SqliteDict('db/chat_stats_.db')
@@ -4182,6 +4207,15 @@ def count_stats():
 
 
 def load_msgs():
+    """
+    Load the messages from the start and help message files into the HELLO_MSG and HELP_MSG global variables.
+
+    Parameters:
+        None
+    
+    Returns:
+        None
+    """
     global HELLO_MSG, HELP_MSG
     
     try:

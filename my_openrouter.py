@@ -77,7 +77,8 @@ def ai(prompt: str = '',
 
     if user_id not in PARAMS:
         PARAMS[user_id] = PARAMS_DEFAULT
-    model, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[user_id]
+    if user_id != 'test':
+        model, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[user_id]
 
     mem_ = mem or []
     if system:
@@ -277,10 +278,10 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '')
         my_log.log_translate(f'my_openrouter:translate:error2: {error2}\n\n{error_traceback}')
 
     if help:
-        query = f'Translate from language [{from_lang}] to language [{to_lang}], this can help you to translate better [{help}]:\n\n{text}'
+        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text, this can help you to translate better [{help}]:\n\n{text}'
     else:
-        query = f'Translate from language [{from_lang}] to language [{to_lang}]:\n\n{text}'
-    s, translated = ai(query, user_id='test',temperature=0.1)
+        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
+    s, translated = ai(query, user_id='test',temperature=0, model = 'anthropic/claude-3-haiku')
     return translated
 
 
@@ -307,8 +308,8 @@ if __name__ == '__main__':
     # print(chat('hi'))
     # print(chat('1+1='))
     
-    reset('test')
-    chat_cli()
+    # reset('test')
+    # chat_cli()
     
     # print(chat('1+1', 'test'))
     # print(chat('1+2', 'test'))
@@ -322,6 +323,6 @@ if __name__ == '__main__':
     #     tokens_count = count_tokens(mem)
     #     print(len(r), r[:40].replace('\n', ' '), '...', r[-20:].replace('\n', ' '), len(mem), tokens_count)
 
-    # print(translate('здорово как ты сам', from_lang='ru', to_lang='en'))
+    print(translate('здорово как ты сам', from_lang='ru', to_lang='en'))
 
     # print(sum_big_text(open('1.txt','r', encoding='utf-8').read(), 'кратко перескажи текст, уложись в 1000 слов', temperature=1.5))

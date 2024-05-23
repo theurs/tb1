@@ -3,7 +3,6 @@
 import pickle
 
 import my_trans
-import my_openrouter
 
 
 supported_langs_trans = [
@@ -76,17 +75,11 @@ def generate_start_msg():
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
         msg = my_trans.translate_text2(start_msg, x)
-        if msg and len(msg) > (len(start_msg)/2):
+        if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
-        if not msg or len(msg) < (len(start_msg)/3):
+        if not msg:
             print(f'google translate failed {x}')
-            msg = my_openrouter.translate(start_msg, from_lang='en', to_lang=x, help='This is a /start message for telegram bot.')
-            if msg and len(msg) > (len(start_msg)/2):
-                msgs[x] = msg
-                print('\n\n', x, '\n\n', msg)
-            else:
-                print(f'haiju translate failed {x}')
 
     with open(start_msg_file, 'wb') as f:
         pickle.dump(msgs, f)
@@ -110,5 +103,5 @@ def generate_help_msg():
 if __name__ == '__main__':
     pass
     generate_start_msg()
-    # generate_help_msg()
+    generate_help_msg()
 

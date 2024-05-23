@@ -304,6 +304,7 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
 
 
 if __name__ == '__main__':
+    pass
     # print(ai('hi'))
     # print(chat('hi'))
     # print(chat('1+1='))
@@ -323,6 +324,6 @@ if __name__ == '__main__':
     #     tokens_count = count_tokens(mem)
     #     print(len(r), r[:40].replace('\n', ' '), '...', r[-20:].replace('\n', ' '), len(mem), tokens_count)
 
-    print(translate('здорово как ты сам', from_lang='ru', to_lang='en'))
+    # print(translate('здорово как ты сам', from_lang='ru', to_lang='en'))
 
     # print(sum_big_text(open('1.txt','r', encoding='utf-8').read(), 'кратко перескажи текст, уложись в 1000 слов', temperature=1.5))

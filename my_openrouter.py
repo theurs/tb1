@@ -309,8 +309,8 @@ if __name__ == '__main__':
     # print(chat('hi'))
     # print(chat('1+1='))
     
-    # reset('test')
-    # chat_cli()
+    reset('test')
+    chat_cli()
     
     # print(chat('1+1', 'test'))
     # print(chat('1+2', 'test'))

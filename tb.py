@@ -26,6 +26,7 @@ import bing_img
 import my_init
 import my_genimg
 import my_dic
+import my_ddg
 import my_google
 import my_gemini
 import my_groq
@@ -71,6 +72,10 @@ IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=T
 # сообщения приветствия и помощи
 HELLO_MSG = {}
 HELP_MSG = {}
+
+# хранилище для запросов на поиск картинок
+# {hash: search query}
+SEARCH_PICS = SqliteDict('db/search_pics.db', autocommit=True) 
 
 # для хранения загруженных юзерами текстов, по этим текстам можно делать запросы командой /file
 # {user_id(str): (filename or link (str), text(str))}
@@ -1012,6 +1017,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
         markup.add(button0, button1, button2, button3, button4)
         return markup
+    elif kbd.startswith('search_pics_'):
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=3)
+        button0 = telebot.types.InlineKeyboardButton('📸', callback_data=f'search_pics_{kbd[12:]}')
+        button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        markup.add(button0, button1, button2)
+        return markup
     elif kbd == 'config':
         if chat_id_full in TTS_GENDER:
             voice = f'tts_{TTS_GENDER[chat_id_full]}'
@@ -1196,6 +1208,20 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if message.caption:
                     bot.edit_message_caption(chat_id=message.chat.id, message_id=message.message_id, caption=translated, 
                                       reply_markup=get_keyboard('translate', message), parse_mode='HTML')
+
+
+        elif call.data.startswith('search_pics_'):
+            # Поиск картинок в дак дак гоу
+            with ShowAction(message, 'upload_photo'):
+                hash = call.data[12:]
+                query = SEARCH_PICS[hash]
+                images = my_ddg.get_images(query)
+                medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:1000]) for x in images]
+                msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
+                log_message(msgs_ids)
+
+
+
         elif call.data == 'translate_chat':
             # реакция на клавиатуру для Чата кнопка перевести текст
             with ShowAction(message, 'typing'):
@@ -2568,9 +2594,11 @@ def google_thread(message: telebot.types.Message):
             USER_FILES[chat_id_full] = ('google: ' + q, text)
         try:
             rr = utils.bot_markdown_to_html(r)
+            hash = utils.nice_hash(q, 16)
+            SEARCH_PICS[hash] = q
             bot_reply(message, rr, parse_mode = 'HTML',
                          disable_web_page_preview = True,
-                         reply_markup=get_keyboard('chat', message), allow_voice=True)
+                         reply_markup=get_keyboard(f'search_pics_{hash}', message), allow_voice=True)
         except Exception as error2:
             my_log.log2(f'tb.py:google_thread: {error2}')
 

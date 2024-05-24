@@ -2,10 +2,15 @@
 #pip install -U duckduckgo_search[lxml]
 
 import time
+import io
+import traceback
+from concurrent.futures import ThreadPoolExecutor
+from PIL import Image
 
 from duckduckgo_search import DDGS
 
 import my_log
+import utils
 
 
 def get_links(query: str, max_results: int = 5) -> list:
@@ -31,6 +36,77 @@ def get_links(query: str, max_results: int = 5) -> list:
         return [x['href'] for x in results]
     except Exception as error:
         my_log.log2(f'my_ddg:get_links: {error}')
+        return []
+
+
+def is_valid_image(data: bytes) -> bool:
+    """
+    Checks if the given bytes represent a valid image.
+
+    Args:
+        data: The image data as bytes.
+
+    Returns:
+        True if the data represents a valid image, False otherwise.
+    """
+    try:
+        Image.open(io.BytesIO(data)).verify()
+        return True
+    except Exception:
+        return False
+
+
+def download_image_wrapper(image):
+    data = utils.download_image_as_bytes(image[0])
+    title = image[1]
+    # detect if image is correct else data=None
+    if not is_valid_image(data):
+        data = None
+    return (data, title)
+
+
+def get_images(query: str, max_results: int = 10) -> list:
+    """
+    Retrieves a list of images from the DuckDuckGo search engine based on the given query.
+
+    Args:
+        query (str): The search query.
+        max_results (int, optional): The maximum number of results to return. Defaults to 5.
+
+    Returns:
+        list: A list of image as [(downloaded bytes, title),...]
+
+    Raises:
+        Exception: If an error occurs during the search.
+
+    Note:
+        The `safesearch` parameter is set to 'off' to include potentially unsafe content in the search results.
+
+    """
+    try:
+        results = DDGS().images(
+            keywords=query,
+            region="wt-wt",
+            safesearch="off",
+            size='Large',
+            color=None,
+            type_image=None,
+            layout=None,
+            license_image=None,
+            max_results=max_results,
+        )
+
+        images = [(x['image'], x['title']) for x in results]
+
+        with ThreadPoolExecutor() as executor:
+            result = list(executor.map(download_image_wrapper, images))
+
+        result = [x for x in result if x[0]]
+
+        return result
+    except Exception as error:
+        tr_er = traceback.print_exc()
+        my_log.log2(f'my_ddg:get_images: {error}\n\n{tr_er}')
         return []
 
 
@@ -88,7 +164,10 @@ def chat_cli():
 
 
 if __name__ == '__main__':
-    chat_cli()
+    pass
+    # chat_cli()
+
+    # print(get_images("какая команда для вывода всех настроек в терминал микротик?"))
     
     # print(get_links("курс доллара"))
 

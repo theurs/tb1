@@ -586,6 +586,8 @@ def log_message(message: telebot.types.Message):
     try:
         if isinstance(message, telebot.types.Message) and hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
             return
+        if isinstance(message, list) and hasattr(cfg, 'DO_NOT_LOG') and message[0].chat.id in cfg.DO_NOT_LOG:
+            return
 
         if not hasattr(cfg, 'LOGS_GROUP') or not cfg.LOGS_GROUP:
             return

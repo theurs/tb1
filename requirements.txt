@@ -18,6 +18,8 @@ langcodes[data]
 lxml[html_clean]
 natsort
 opencv-python
+openpyxl
+odfpy
 pandas
 Pillow
 prettytable

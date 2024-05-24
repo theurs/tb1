@@ -1379,7 +1379,7 @@ def handle_document_thread(message: telebot.types.Message):
         # если прислали текстовый файл или pdf
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
         if is_private and \
-            (message.document.mime_type in ('application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') or \
+            (message.document.mime_type in ('application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') or \
                 message.document.mime_type.startswith('text/')):
             with ShowAction(message, 'typing'):
                 # file_info = bot.get_file(message.document.file_id)
@@ -1390,6 +1390,14 @@ def handle_document_thread(message: telebot.types.Message):
                     pdf_reader = PyPDF2.PdfReader(file_bytes)
                     for page in pdf_reader.pages:
                         text += page.extract_text()
+                elif message.document.mime_type == 'application/vnd.ms-excel' or \
+                     message.document.mime_type == 'application/vnd.oasis.opendocument.spreadsheet' or \
+                     message.document.mime_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                    try:
+                        ext = file_info.file_path.split('.')[-1]
+                    except IndexError:
+                        ext = ''
+                    text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
                 elif message.document.mime_type.startswith('text/'):
                     data__ = file_bytes.read()
                     try:

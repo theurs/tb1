@@ -17,13 +17,17 @@ pandoc_cmd = 'pandoc'
 catdoc_cmd = 'catdoc'
 
 
-def fb2_to_text(data: bytes) -> str:
+def fb2_to_text(data: bytes, ext: str = '') -> str:
     """convert from fb2 or epub (bytes) and other types of books file to string"""
     input_file = utils.get_tmp_fname()
 
     open(input_file, 'wb').write(data)
 
     book_type = utils.mime_from_buffer(data)
+    if ext.lower() == 'ods':
+        book_type = 'vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    elif ext.lower() == 'xlsx' or ext.lower() == 'xls':
+        book_type = 'ms-excel'
 
     if 'epub' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'plain', input_file], stdout=subprocess.PIPE)
@@ -48,7 +52,7 @@ def fb2_to_text(data: bytes) -> str:
         os.remove(input_file)
         return text
     elif 'ms-excel' in book_type or 'vnd.openxmlformats-officedocument.spreadsheetml.sheet' in book_type:
-        df = pd.DataFrame(pd.read_excel(data))
+        df = pd.DataFrame(pd.read_excel(io.BytesIO(data)))
         buffer = io.StringIO()
         df.to_csv(buffer)
         os.remove(input_file)

@@ -222,36 +222,37 @@ def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
          # Проверка лимита токенов
         current_date = datetime.now()
         tokens_used_last_30_days = check_deepl_limit(auth_key)
-        if tokens_used_last_30_days >= per_month_tokens_limit:
-            my_log.log_translate(f'translate_deepl: The limit on the number of translated characters has been exceeded. The limit is valid for 30 days.\n\n{text}\n\n{from_lang}\n\n{to_lang}')
-            return ''
+    if tokens_used_last_30_days >= per_month_tokens_limit:
+        my_log.log_translate(f'translate_deepl: The limit on the number of translated characters has been exceeded. The limit is valid for 30 days.\n\n{text}\n\n{from_lang}\n\n{to_lang}')
+        return ''
 
-        translator = deepl.Translator(auth_key)
-        target_lang = None
-        for x in translator.get_target_languages():
-            code = x.code
-            if to_lang.upper() in code:
-                target_lang = x
-                break
+    translator = deepl.Translator(auth_key)
+    target_lang = None
+    for x in translator.get_target_languages():
+        code = x.code
+        if to_lang.upper() in code:
+            target_lang = x
+            break
 
-        if not target_lang:
-            return ''
+    if not target_lang:
+        return ''
 
-        try:
-            unique_id = str(uuid.uuid4())
-            deepl_api_counter[unique_id] = (current_date, len(text), auth_key)
-            result = translator.translate_text(text, target_lang=target_lang)
+    try:
+        unique_id = str(uuid.uuid4())
+        deepl_api_counter[unique_id] = (current_date, len(text), auth_key)
+        result = translator.translate_text(text, target_lang=target_lang)
+        with deepl_lock:
             deepl_cache[cache_key] = result.text
-            # Запись события перевода
-            # my_log.log_translate(f'{unique_id}: {text} -> {result.text}\n\ntokens_used_last_30_days: {tokens_used_last_30_days}\nper_month_tokens_limit: {per_month_tokens_limit}\n\n{from_lang}\n\n{to_lang}')
-            return result.text
-        except Exception as error:
-            traceback_error = traceback.format_exc()
-            my_log.log2(f'my_trans:translate_deepl: {error}\n\n{text}\n\n{to_lang}\n\n{traceback_error}')
-            return ''
+        # Запись события перевода
+        # my_log.log_translate(f'{unique_id}: {text} -> {result.text}\n\ntokens_used_last_30_days: {tokens_used_last_30_days}\nper_month_tokens_limit: {per_month_tokens_limit}\n\n{from_lang}\n\n{to_lang}')
+        return result.text
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'my_trans:translate_deepl: {error}\n\n{text}\n\n{to_lang}\n\n{traceback_error}')
+        return ''
 
 
 if __name__ == "__main__":
     pass
-    # print(translate_deepl('три5', to_lang='de'))
-    print(get_deepl_stats())
+    # print(translate_deepl('три6', to_lang='de'))
+    # print(get_deepl_stats())

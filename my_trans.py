@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
+# pip install --upgrade deepl
 
-
+import random
 import re
 import subprocess
+import threading
+import traceback
+import uuid
+from datetime import datetime, timedelta
 
+import deepl
 import enchant
 from langdetect import detect, detect_langs
 from duckduckgo_search import DDGS
+from sqlitedict import SqliteDict
 
+import cfg
 import my_log
 import utils
+
+
+# {key '(text, from, to)' :value 'translated'}
+deepl_cache = SqliteDict('db/deepl_cache.db', autocommit=True)
+# {unique_id: (current_date, len(text))}
+deepl_api_counter = SqliteDict('db/deepl_api_counter.db', autocommit=True)
+per_month_tokens_limit = 400000
+deepl_lock = threading.Lock()
 
 
 # keep in memory the translation
@@ -158,6 +174,57 @@ def translate(text):
     return None
 
 
+def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
+    auth_key = random.choice(cfg.DEEPL_KEYS) if hasattr(cfg, 'DEEPL_KEYS') and cfg.DEEPL_KEYS else None
+    if not auth_key:
+        return ''
+
+    if to_lang == 'en':
+        to_lang = 'EN-US'
+
+    cache_key = str((text, from_lang, to_lang))
+    if cache_key in deepl_cache:
+        return deepl_cache[cache_key]
+
+    with deepl_lock:
+         # Проверка лимита токенов
+        current_date = datetime.now()
+        thirty_days_ago = current_date - timedelta(days=30)
+        tokens_used_last_30_days = 0
+        for key in list(deepl_api_counter.keys()):
+            date_used, tokens = deepl_api_counter[key]
+            if date_used >= thirty_days_ago:
+                tokens_used_last_30_days += tokens
+            else:
+                del deepl_api_counter[key]
+        if tokens_used_last_30_days >= per_month_tokens_limit:
+            my_log.log_translate(f'translate_deepl: The limit on the number of translated characters has been exceeded. The limit is valid for 30 days.\n\n{text}\n\n{from_lang}\n\n{to_lang}')
+            return ''
+
+        translator = deepl.Translator(auth_key)
+        target_lang = None
+        for x in translator.get_target_languages():
+            code = x.code
+            if to_lang.upper() in code:
+                target_lang = x
+                break
+
+        if not target_lang:
+            return ''
+
+        try:
+            unique_id = str(uuid.uuid4())
+            deepl_api_counter[unique_id] = (current_date, len(text))
+            result = translator.translate_text(text, target_lang=target_lang)
+            deepl_cache[cache_key] = result.text
+            # Запись события перевода
+            return result.text
+        except Exception as error:
+            traceback_error = traceback.format_exc()
+            my_log.log2(f'my_trans:translate_deepl: {error}\n\n{text}\n\n{to_lang}\n\n{traceback_error}')
+            return ''
+
+
 if __name__ == "__main__":
     pass
-    print(ddg_translate('курс доллара', 'en'))
+    print(translate_deepl('три', to_lang='en'))

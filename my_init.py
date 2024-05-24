@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 
+import ast
 import pickle
+
+from sqlitedict import SqliteDict
 
 import my_trans
 import my_groq
+
+
+# хранилище для переводов сообщений сделанных гугл переводчиком
+# key: '(text, lang)' - string!
+# value: translated text
+AUTO_TRANSLATIONS = SqliteDict('db/auto_translations.db', autocommit=True)
 
 
 supported_langs_trans = [
@@ -146,6 +155,59 @@ def fix_translations(fname: str = start_msg_file, original: str = start_msg, lan
         pickle.dump(db, f)
 
 
+def fix_bad_langs(langs: list):
+    '''Ищет плохо сделанные переводы и пытается исправить
+    предполагается что перевод на русский и английский сделаны нормально
+    они используются как эталон в подсказке'''
+
+    for key in AUTO_TRANSLATIONS:
+        translated = AUTO_TRANSLATIONS[key]
+        key = ast.literal_eval(key)
+        original = key[0]
+        language = key[1]
+        if len(key) > 2:
+            help = key[2]
+        else:
+            if str((original, language)) in AUTO_TRANSLATIONS:
+                del AUTO_TRANSLATIONS[str((original, language))]
+            continue
+            
+        if language in langs:
+            eng_translation = AUTO_TRANSLATIONS[str((original, 'en', help))] if str((original, 'en', help)) in AUTO_TRANSLATIONS else ''
+            rus_translation = AUTO_TRANSLATIONS[str((original, 'ru', help))] if str((original, 'ru', help)) in AUTO_TRANSLATIONS else ''
+            q = f'''Decide if translation to language "{language}" was made correctly.
+Your answer should be "yes" or "no" or "other".
+
+Original text:
+
+{original}
+
+Translated text {language}:
+
+{translated}
+
+Translated text to "en" for reference:
+
+{eng_translation}
+
+Translated text to "ru" for reference:
+
+{rus_translation}
+'''
+            res = my_groq.ai(q, temperature = 0, max_tokens_ = 10)
+            result = True if 'yes' in res.lower() else False
+            if not result:
+                print('found bad translation', language, original[:20], translated[:20])
+                help_ = f'Keep format, average length and emoji, do not comment and no any other words in translation, this text may be used in GUI app. Reference translation to english:\n\n{eng_translation}\n\nReference translation to russian:\n\n{rus_translation}'
+                new_translated = my_groq.translate(original, to_lang=language, help = help_)
+                if new_translated:
+                    AUTO_TRANSLATIONS[str((original, language, help))] = new_translated
+                    print('new translation added', new_translated)
+            else:
+                # print(language, original[:20], 'good translation', translated[:20])
+                pass
+
+
 if __name__ == '__main__':
     pass
     # generate_start_msg()
@@ -162,3 +224,6 @@ if __name__ == '__main__':
     # fix_translations(fname = help_msg_file, original = help_msg, langs = ['en', ])
 
     # print(my_groq.translate(start_msg, to_lang='he'))
+
+    # bad_langs = ['ar', 'co', 'fa', 'he', 'iw', 'la', 'ps', 'sd', 'ur', 'yi']
+    # fix_bad_langs(bad_langs)

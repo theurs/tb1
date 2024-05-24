@@ -273,6 +273,10 @@ GROQ_API_KEY = [
 OPEN_ROUTER_KEY = 'xxx'
 
 
+# translate api https://www.deepl.com
+# DEEPL_KEYS = ['xxx', 'yyy']
+
+
 # DEBUG = False
 ```
 

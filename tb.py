@@ -161,9 +161,9 @@ LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
 subscription_cache = {}
 
 # хранилище для переводов сообщений сделанных гугл переводчиком
-# key: (text, lang)
+# key: '(text, lang)' - string!
 # value: translated text
-AUTO_TRANSLATIONS = SqliteDict('db/auto_translations.db', autocommit=True)
+AUTO_TRANSLATIONS = my_init.AUTO_TRANSLATIONS
 
 # запоминаем прилетающие сообщения, если они слишком длинные и
 # были отправлены клиентом по кускам {id:[messages]}
@@ -364,13 +364,16 @@ def tr(text: str, lang: str, help: str = '') -> str:
     translated = ''
 
     if help:
-        translated = my_gemini.translate(text, to_lang=lang, help=help)
+        translated = my_groq.translate(text, to_lang=lang, help=help)
         if not translated:
-            time.sleep(1)
-            # try again
+            # time.sleep(1)
+            # try again and another ai engine
             translated = my_gemini.translate(text, to_lang=lang, help=help)
             if not translated:
                 my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
+
+    if not translated:
+        translated = my_trans.translate_deepl(text, to_lang = lang)
 
     if not translated:
         translated = my_trans.translate_text2(text, lang)
@@ -3205,7 +3208,9 @@ def trans_thread(message: telebot.types.Message):
             llang = 'uk'
 
         with ShowAction(message, 'typing'):
-            translated = my_trans.translate_text2(text, llang)
+            translated = my_trans.translate_deepl(text, to_lang = llang)
+            if not translated:
+                translated = my_trans.translate_text2(text, llang)
             if translated:
                 detected_langs = []
                 try:

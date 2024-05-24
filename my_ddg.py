@@ -104,6 +104,9 @@ def get_images(query: str, max_results: int = 16) -> list:
 
         result = [x for x in result if x[0]]
 
+        # sort by data size
+        result = sorted(result, key=lambda x: len(x[0]), reverse=True)
+
         return result[:10]
     except Exception as error:
         tr_er = traceback.print_exc()

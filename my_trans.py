@@ -22,7 +22,7 @@ import utils
 
 # {key '(text, from, to)' :value 'translated'}
 deepl_cache = SqliteDict('db/deepl_cache.db', autocommit=True)
-# {unique_id: (current_date, len(text))}
+# {unique_id: (current_date, len(text), auth_key)}
 deepl_api_counter = SqliteDict('db/deepl_api_counter.db', autocommit=True)
 per_month_tokens_limit = 400000
 deepl_lock = threading.Lock()
@@ -174,6 +174,38 @@ def translate(text):
     return None
 
 
+def check_deepl_limit(auth_key: str) -> int:
+    # Проверка лимита токенов
+    current_date = datetime.now()
+    thirty_days_ago = current_date - timedelta(days=30)
+    tokens_used_last_30_days = 0
+    for key, value in list(deepl_api_counter.items()):
+        try:
+            date_used, tokens, used_key = value
+        except ValueError:
+            date_used, tokens = value
+            used_key = cfg.DEEPL_KEYS[0]
+            del deepl_api_counter[key]
+            deepl_api_counter[key] = (date_used, tokens, used_key)
+
+        if used_key == auth_key:
+            if date_used >= thirty_days_ago:
+                tokens_used_last_30_days += tokens
+            else:
+                del deepl_api_counter[key]
+
+    return tokens_used_last_30_days
+
+
+def get_deepl_stats() -> str:
+    result = ''
+    with deepl_lock:
+        if hasattr(cfg, 'DEEPL_KEYS') and cfg.DEEPL_KEYS:
+            for key in cfg.DEEPL_KEYS:
+                result += f'Deepl {key[:5]}: {check_deepl_limit(key)} of {per_month_tokens_limit}\n'
+    return result
+
+
 def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
     auth_key = random.choice(cfg.DEEPL_KEYS) if hasattr(cfg, 'DEEPL_KEYS') and cfg.DEEPL_KEYS else None
     if not auth_key:
@@ -189,14 +221,7 @@ def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
     with deepl_lock:
          # Проверка лимита токенов
         current_date = datetime.now()
-        thirty_days_ago = current_date - timedelta(days=30)
-        tokens_used_last_30_days = 0
-        for key in list(deepl_api_counter.keys()):
-            date_used, tokens = deepl_api_counter[key]
-            if date_used >= thirty_days_ago:
-                tokens_used_last_30_days += tokens
-            else:
-                del deepl_api_counter[key]
+        tokens_used_last_30_days = check_deepl_limit(auth_key)
         if tokens_used_last_30_days >= per_month_tokens_limit:
             my_log.log_translate(f'translate_deepl: The limit on the number of translated characters has been exceeded. The limit is valid for 30 days.\n\n{text}\n\n{from_lang}\n\n{to_lang}')
             return ''
@@ -214,10 +239,11 @@ def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
 
         try:
             unique_id = str(uuid.uuid4())
-            deepl_api_counter[unique_id] = (current_date, len(text))
+            deepl_api_counter[unique_id] = (current_date, len(text), auth_key)
             result = translator.translate_text(text, target_lang=target_lang)
             deepl_cache[cache_key] = result.text
             # Запись события перевода
+            # my_log.log_translate(f'{unique_id}: {text} -> {result.text}\n\ntokens_used_last_30_days: {tokens_used_last_30_days}\nper_month_tokens_limit: {per_month_tokens_limit}\n\n{from_lang}\n\n{to_lang}')
             return result.text
         except Exception as error:
             traceback_error = traceback.format_exc()
@@ -227,4 +253,5 @@ def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
 
 if __name__ == "__main__":
     pass
-    print(translate_deepl('три', to_lang='en'))
+    # print(translate_deepl('три5', to_lang='de'))
+    print(get_deepl_stats())

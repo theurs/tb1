@@ -2895,7 +2895,10 @@ def stats_thread(message: telebot.types.Message):
 
     msg += f"Всего пользователей: {len(stats['all_users'])}\n\n"
 
-    msg += 'Ключи для джемини: '+ str(len(my_gemini.ALL_KEYS))
+    msg += 'Ключи для джемини: '+ str(len(my_gemini.ALL_KEYS)) + '\n\n'
+    
+    if hasattr(cfg, 'DEEPL_KEYS') and cfg.DEEPL_KEYS:
+        msg += my_trans.get_deepl_stats()
 
     # Отправка сообщения
     bot_reply(message, msg)

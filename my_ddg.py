@@ -65,7 +65,7 @@ def download_image_wrapper(image):
     return (data, title)
 
 
-def get_images(query: str, max_results: int = 10) -> list:
+def get_images(query: str, max_results: int = 16) -> list:
     """
     Retrieves a list of images from the DuckDuckGo search engine based on the given query.
 
@@ -88,7 +88,8 @@ def get_images(query: str, max_results: int = 10) -> list:
             keywords=query,
             region="wt-wt",
             safesearch="off",
-            size='Large',
+            # size='Large',
+            size='Wallpaper',
             color=None,
             type_image=None,
             layout=None,
@@ -103,7 +104,7 @@ def get_images(query: str, max_results: int = 10) -> list:
 
         result = [x for x in result if x[0]]
 
-        return result
+        return result[:10]
     except Exception as error:
         tr_er = traceback.print_exc()
         my_log.log2(f'my_ddg:get_images: {error}\n\n{tr_er}')

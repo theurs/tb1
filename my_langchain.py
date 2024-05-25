@@ -19,13 +19,21 @@ from langchain_google_genai import (
     ChatGoogleGenerativeAI,
     HarmBlockThreshold,
     HarmCategory,
+    GoogleGenerativeAIEmbeddings
 )
 
-from langchain_community.document_loaders import WebBaseLoader, TextLoader
+from langchain_community.document_loaders import TextLoader
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+from langchain import PromptTemplate
+from langchain import hub
+from langchain.docstore.document import Document
+from langchain.document_loaders import WebBaseLoader
+from langchain.schema import StrOutputParser
+from langchain.schema.prompt_template import format_document
+from langchain.schema.runnable import RunnablePassthrough
+from langchain.vectorstores import Chroma
 
 import cfg
 
@@ -100,12 +108,22 @@ def ask_url(query: str = 'О чем текст, ответь ~100 слов на 
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key = google_api_key)
-    vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
+    gemini_embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key = google_api_key)
+    # Save to disk
+    vectorstore = Chroma.from_documents(
+                     documents=docs,                 # Data
+                     embedding=gemini_embeddings,    # Embedding model
+                     persist_directory="db/chroma_db" # Directory to save data
+                     )
 
-    # Retrieve and generate using the relevant snippets of the blog.
-    retriever = vectorstore.as_retriever()
- 
+    # Load from disk
+    vectorstore_disk = Chroma(
+                        persist_directory="db/chroma_db",       # Directory of db
+                        embedding_function=gemini_embeddings   # Embedding model
+                   )
+    retriever = vectorstore_disk.as_retriever(search_kwargs={"k": 1})
+    print(len(retriever.get_relevant_documents("MMLU")))
+
 
 if __name__ == '__main__':
     # print(gemini('42'))

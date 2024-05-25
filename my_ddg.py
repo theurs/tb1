@@ -82,7 +82,7 @@ Decided if it is relevant to the query.
 Answer supershot, your answer should be "yes" or "no" or "other".
 '''
     result = my_gemini.img2txt(image[0], query)
-    return False if 'no' in result.lower() else True
+    return True if 'yes' in result.lower() else False
 
 
 def get_images(query: str, max_results: int = 16) -> list:
@@ -214,7 +214,8 @@ if __name__ == '__main__':
     pass
     # chat_cli()
 
-    print(get_images("актриса из сериала ход королевы"))
+    # print(get_images("актриса из сериала ход королевы"))
+    print(check_image_against_query((open('2.jpg', 'rb').read(), 'командер талия со звездолета с орвила')))
     
     # print(get_links("курс доллара"))
 

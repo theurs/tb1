@@ -1220,6 +1220,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 images = my_ddg.get_images(query)
                 medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:1000]) for x in images]
                 msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
+                for _ in range(10):
+                    CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                    time.sleep(0.01)
                 log_message(msgs_ids)
 
 

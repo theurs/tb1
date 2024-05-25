@@ -1242,7 +1242,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot_reply_tr(message, 'История диалога с openrouter очищена.')
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Gemini Pro очищена.')
+            bot_reply_tr(message, 'История диалога с Gemini очищена.')
         elif call.data == 'tts_female' and is_admin_member(call):
             TTS_GENDER[chat_id_full] = 'male'
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
@@ -1994,7 +1994,7 @@ def addkeys_thread(message: telebot.types.Message):
 def gemini10_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     CHAT_MODE[chat_id_full] = 'gemini'
-    bot_reply_tr(message, 'Gemini Pro 1.0 model selected.')
+    bot_reply_tr(message, 'Gemini 1.5 flash model selected.')
 
 
 @bot.message_handler(commands=['gemini15'], func=authorized_owner)
@@ -2003,7 +2003,7 @@ def gemini15_mode(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full] or (datetime.datetime.now() < datetime.datetime(2024, 5, 30)):
         CHAT_MODE[chat_id_full] = 'gemini15'
-        bot_reply_tr(message, 'Gemini Pro 1.5 model selected.')
+        bot_reply_tr(message, 'Gemini 1.5 pro model selected.')
     else:
         msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
         bot_reply(message, msg)
@@ -2210,7 +2210,7 @@ def reset_gemini2(message: telebot.types.Message):
     try:
         arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
         my_gemini.reset(arg1)
-        msg = f'{tr("История Gemini Pro в чате очищена", lang)} {arg1}'
+        msg = f'{tr("История Gemini в чате очищена", lang)} {arg1}'
         bot_reply(message, msg)
     except:
         bot_reply_tr(message, 'Usage: /reset_gemini2 <chat_id_full!>')
@@ -2306,7 +2306,7 @@ def send_debug_history(message: telebot.types.Message):
     COMMAND_MODE[chat_id_full] = ''
 
     if 'gemini' in CHAT_MODE[chat_id_full]:
-        prompt = 'Gemini Pro\n\n'
+        prompt = 'Gemini\n\n'
         prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'llama' in CHAT_MODE[chat_id_full]:
@@ -4036,7 +4036,7 @@ def do_task(message, custom_prompt: str = ''):
                         CHAT_STATS_TEMP[chat_id_full] = 1
 
 
-                # если активирован режим общения с Gemini Pro
+                # если активирован режим общения с Gemini flash
                 if chat_mode_ == 'gemini':
                     if len(msg) > my_gemini.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
@@ -4060,7 +4060,7 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
                                 flag_gpt_help = True
                                 if not answer:
-                                    answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
+                                    answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
                                     return
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
 
@@ -4087,7 +4087,7 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task:gemini {error3}\n{error_traceback}')
                         return
 
-                # если активирован режим общения с Gemini Pro 1.5
+                # если активирован режим общения с Gemini 1.5 pro
                 if chat_mode_ == 'gemini15':
                     if len(msg) > my_gemini.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
@@ -4110,7 +4110,7 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
                                 flag_gpt_help = True
                                 if not answer:
-                                    answer = 'Gemini Pro ' + tr('did not answered, try to /reset and start again', lang)
+                                    answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
                                     return
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
                             else:

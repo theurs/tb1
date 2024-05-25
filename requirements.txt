@@ -1,5 +1,6 @@
 # attrs==23.1.0
 bingart
+cairosvg
 chardet
 deepl
 duckduckgo_search[lxml]

@@ -12,6 +12,7 @@ import traceback
 import threading
 import time
 
+import cairosvg
 import langcodes
 import prettytable
 import PyPDF2
@@ -1410,7 +1411,11 @@ def handle_document_thread(message: telebot.types.Message):
         # если прислали текстовый файл или pdf
         # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
         if is_private and \
-            (message.document.mime_type in ('application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') or \
+            (message.document.mime_type in ('application/pdf',
+                                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                            'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
+                                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                            'image/svg+xml') or \
                 message.document.mime_type.startswith('text/')):
             with ShowAction(message, 'typing'):
                 # file_info = bot.get_file(message.document.file_id)
@@ -1429,6 +1434,31 @@ def handle_document_thread(message: telebot.types.Message):
                     except IndexError:
                         ext = ''
                     text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
+                elif message.document.mime_type == 'image/svg+xml':
+                    try:
+                        image = cairosvg.svg2png(file_bytes.read(), output_width=2048)
+                        #send converted image back
+                        bot.send_photo(message.chat.id,
+                                       image,
+                                       reply_to_message_id=message.message_id,
+                                       message_thread_id=message.message_thread_id,
+                                       caption=message.document.file_name + '.png',
+                                       reply_markup=get_keyboard('translate', message),
+                                       disable_notification=True)
+                        text = img2txt(image, lang, chat_id_full, message.caption)
+                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                        if text:
+                            text = utils.bot_markdown_to_html(text)
+                            text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
+                            bot_reply(message, text, parse_mode='HTML',
+                                                reply_markup=get_keyboard('translate', message))
+                        else:
+                            bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                        return
+                    except Exception as error:
+                        my_log.log2(f'tb:handle_document_thread:svg: {error}')
+                        bot_reply_tr(message, 'Не удалось распознать изображение')
+                        return
                 elif message.document.mime_type.startswith('text/'):
                     data__ = file_bytes.read()
                     try:
@@ -1892,7 +1922,7 @@ Usage: /openrouter <api key>
         my_log.log2(f'tb:openrouter:{error}\n\n{error_tr}')
 
 
-@bot.message_handler(commands=['keys', 'key'], func=authorized_owner)
+@bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_owner)
 def users_keys_for_gemini(message: telebot.types.Message):
     """Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл"""
     thread = threading.Thread(target=users_keys_for_gemini_thread, args=(message,))
@@ -2876,6 +2906,7 @@ def stats_thread(message: telebot.types.Message):
         'gemini15': defaultdict(int),
         'gemini': defaultdict(int),
         'llama370': defaultdict(int),
+        'openrouter': defaultdict(int),
         'new_users': defaultdict(int),
         'active_24h': set(),
         'active_48h': set(),
@@ -2910,7 +2941,7 @@ def stats_thread(message: telebot.types.Message):
                 stats['active_30d'].add(user_id)
 
             # Подсчет сообщений в зависимости от режима
-            if chat_mode in ['gemini15', 'gemini', 'llama370']:
+            if chat_mode in ['gemini15', 'gemini', 'llama370', 'openrouter']:
                 if now - time_stamp <= 86400:
                     stats[chat_mode]['24'] += 1
                 if now - time_stamp <= 172800:
@@ -2922,7 +2953,7 @@ def stats_thread(message: telebot.types.Message):
 
     # Строим сообщение для пользователя
     msg = ""
-    for mode in ['gemini15', 'gemini', 'llama370']:
+    for mode in ['gemini15', 'gemini', 'llama370', 'openrouter']:
         msg += (f"{mode} за 24ч/48ч/7д/30д: "
                 f"{stats[mode]['24']}/{stats[mode]['48']}/"
                 f"{stats[mode]['7d']}/{stats[mode]['30d']}\n\n")

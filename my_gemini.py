@@ -94,7 +94,25 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                     }
                 ]
                 }
-            ]
+            ],
+            "safetySettings": [
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_NONE"
+                },
+            ],
             }
 
         result = ''
@@ -115,6 +133,8 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                     session.proxies = {"http": proxy, "https": proxy}
                     try:
                         response = session.post(url, json=data, timeout=TIMEOUT).json()
+                        if 'promptFeedback' in response and response['promptFeedback']['blockReason']:
+                                return ''
                         try:
                             result = response['candidates'][0]['content']['parts'][0]['text']
                             if result == '' or result:
@@ -132,6 +152,8 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
             else:
                 try:
                     response = requests.post(url, json=data, timeout=TIMEOUT).json()
+                    if 'promptFeedback' in response and response['promptFeedback']['blockReason']:
+                        return ''
                     try:
                         result = response['candidates'][0]['content']['parts'][0]['text']
                         if result == '' or result:
@@ -299,7 +321,7 @@ def ai(q: str, mem = [],
                 {
                     "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
                     "threshold": "BLOCK_NONE"
-                }
+                },
             ],
             "generationConfig": {
                 # "stopSequences": [
@@ -351,6 +373,12 @@ def ai(q: str, mem = [],
                             break
                         if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):
                             time.sleep(5)
+                        elif response.status_code == 400 and 'API_KEY_INVALID' in str(response.text):
+                            remove_key(key)
+                            continue
+                        elif response.status_code == 400:
+                            my_log.log2(f'my_gemini:ai:{proxy} {key} {response.text[:500]}\n\n{q}')
+                            return ''
                         else:
                             break
                     if c_s:
@@ -387,6 +415,9 @@ def ai(q: str, mem = [],
                     elif response.status_code == 400 and 'API_KEY_INVALID' in str(response.text):
                         remove_key(key)
                         continue
+                    elif response.status_code == 400:
+                        my_log.log2(f'my_gemini:ai:{proxy} {key} {response.text[:500]}\n\n{q}')
+                        return ''
                     else:
                         my_log.log_gemini(f'my_gemini:ai:{key} {response.text[:500]}\n\n{q}')
                         if response.status_code == 503 and 'The model is overloaded. Please try again later.' in str(response.text):
@@ -778,4 +809,8 @@ def detect_intent(text: str) -> dict:
 
 if __name__ == '__main__':
     load_users_keys()
-    chat_cli()    
+    # chat_cli()
+    # print(ai('1+1= answer very short'))
+
+    # print(img2txt(open('1.jpg', 'rb').read()))
+    print(img2txt(open('2.png', 'rb').read()))

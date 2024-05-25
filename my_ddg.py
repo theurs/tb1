@@ -4,11 +4,12 @@
 import time
 import io
 import traceback
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image
 
 from duckduckgo_search import DDGS
 
+import my_gemini
 import my_log
 import utils
 
@@ -65,6 +66,25 @@ def download_image_wrapper(image):
     return (data, title)
 
 
+def check_image_against_query(image) -> bool:
+    """
+    Check if an image is relevant to a given query by asking a superhot AI assistant.
+    
+    Args:
+        image (tuple): A tuple containing the image data and the search query.
+        
+    Returns:
+        bool: True if the image is relevant to the query, False otherwise.
+    """
+    query = f'''This image was found in google with the following query: {image[1]}
+
+Decided if it is relevant to the query.
+Answer supershot, your answer should be "yes" or "no" or "other".
+'''
+    result = my_gemini.img2txt(image[0], query)
+    return False if 'no' in result.lower() else True
+
+
 def get_images(query: str, max_results: int = 16) -> list:
     """
     Retrieves a list of images from the DuckDuckGo search engine based on the given query.
@@ -83,35 +103,58 @@ def get_images(query: str, max_results: int = 16) -> list:
         The `safesearch` parameter is set to 'off' to include potentially unsafe content in the search results.
 
     """
-    try:
-        results = DDGS().images(
-            keywords=query,
-            region="wt-wt",
-            safesearch="off",
-            # size='Large',
-            size='Wallpaper',
-            color=None,
-            type_image=None,
-            layout=None,
-            license_image=None,
-            max_results=max_results,
-        )
+    results = DDGS().images(
+        keywords=query,
+        region="wt-wt",
+        safesearch="off",
+        # size='Large',
+        size='Wallpaper',
+        color=None,
+        type_image=None,
+        layout=None,
+        license_image=None,
+        max_results=max_results,
+    )
 
-        images = [(x['image'], x['title']) for x in results]
+    images_with_data = [(x['image'], x['title']) for x in results]
 
-        with ThreadPoolExecutor() as executor:
-            result = list(executor.map(download_image_wrapper, images))
+    # Downloading images.
+    with ThreadPoolExecutor() as executor:
+        result = list(executor.map(download_image_wrapper, images_with_data))
+    
+    # Filter only images that were successfully downloaded.
+    images_to_check = [(img_data, query) for img_data, _ in result if img_data]
 
-        result = [x for x in result if x[0]]
+    # Now we use ThreadPoolExecutor to check images against the query in parallel.
+    relevant_images = []
+    with ThreadPoolExecutor() as executor:
+        # Submit all check_image_against_query tasks to the executor.
+        future_to_image = {executor.submit(check_image_against_query, image): image for image in images_to_check}
+        
+        # Iterate over completed tasks.
+        for future in as_completed(future_to_image):
+            image = future_to_image[future]
+            try:
+                is_relevant = future.result()  # Getting the result from check_image_against_query.
+                if is_relevant:
+                    relevant_images.append(image)  # If relevant add to the results list.
+            except Exception as exc:
+                print(f'Image relevance check generated an exception: {exc}')
+    
+    # Sort by data size.
+    sorted_images = sorted(relevant_images, key=lambda x: len(x[0]), reverse=True)
 
-        # sort by data size
-        result = sorted(result, key=lambda x: len(x[0]), reverse=True)
+    # restore lost titles
+    restored_images = []
+    for i in result:
+        data = i[0]
+        title = i[1]
+        for j in sorted_images[:10]:
+            data2 = j[0]
+            if data == data2:
+                restored_images.append((data, title))
 
-        return result[:10]
-    except Exception as error:
-        tr_er = traceback.print_exc()
-        my_log.log2(f'my_ddg:get_images: {error}\n\n{tr_er}')
-        return []
+    return restored_images
 
 
 def ai(query: str, model: str = 'claude-3-haiku') -> str:
@@ -171,7 +214,7 @@ if __name__ == '__main__':
     pass
     # chat_cli()
 
-    # print(get_images("какая команда для вывода всех настроек в терминал микротик?"))
+    print(get_images("актриса из сериала ход королевы"))
     
     # print(get_links("курс доллара"))
 

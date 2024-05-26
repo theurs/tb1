@@ -1948,11 +1948,11 @@ def translation_gui_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
 
+    translated_counter = 0
     # первый аргумент - кривой перевод который надо найти и исправить
     text = message.text.split(maxsplit=1)
     if len(text) > 1:
         with ShowAction(message, 'find_location'):
-            translated_counter = 0
             text = text[1].strip()
             if '|||' in text:
                 text, new_translation = text.split('|||', maxsplit=1)

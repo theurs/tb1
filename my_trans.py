@@ -279,6 +279,6 @@ def detect_lang_v2(text: str) -> str:
 
 if __name__ == "__main__":
     pass
-    print(detect_lang_v2("""Le soleil se couchait à l'horizon, peignant le ciel de couleurs vives"""))
+    print(detect_lang_v2("""привiт"""))
     # print(translate_deepl('три6', to_lang='de'))
     # print(get_deepl_stats())

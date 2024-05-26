@@ -130,6 +130,8 @@ def get_voice(language_code: str, gender: str = 'female'):
  'zh': {'female': 'zh-TW-HsiaoYuNeural', 'male': 'zh-TW-YunJheNeural'},
  'zu': {'female': 'zu-ZA-ThandoNeural', 'male': 'zu-ZA-ThembaNeural'}}
 
+    if language_code == 'ua':
+        language_code = 'uk'
     return voices[language_code][gender]
 
 

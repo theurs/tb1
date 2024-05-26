@@ -2547,7 +2547,13 @@ def tts_thread(message: telebot.types.Message, caption = None):
     rate = rate.strip()
 
     if not llang:
-        llang = my_trans.detect_lang_v2(text) or lang
+        if len(text) < 30:
+            llang = my_gemini.detect_lang(text)
+        if not llang or lang not in supported_langs_tts:
+            llang = my_trans.detect_lang_v2(text) or lang
+
+    if not llang or lang not in supported_langs_tts:
+        llang = lang
 
     if not text or llang not in supported_langs_tts:
         help = f"""{tr('Usage:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('text', lang)}>|<URL>

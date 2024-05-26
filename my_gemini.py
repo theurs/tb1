@@ -807,10 +807,26 @@ def detect_intent(text: str) -> dict:
     return result
 
 
+def detect_lang(text: str) -> str:
+    q = f'''Detect language of the text, anwser supershort in 1 word iso_code_639_1 like
+text = The quick brown fox jumps over the lazy dog.
+answer = (en)
+text = "Я люблю программировать"
+answer = (ru)
+
+Text to be detected: {text[:100]}
+'''
+    result = ai(q, temperature=0, model='gemini-1.5-flash-latest', tokens_limit=10)
+    result = result.replace('"', '').replace(' ', '').replace("'", '').replace('(', '').replace(')', '').strip()
+    return result
+
+
 if __name__ == '__main__':
     load_users_keys()
     # chat_cli()
     # print(ai('1+1= answer very short'))
 
     # print(img2txt(open('1.jpg', 'rb').read()))
-    print(img2txt(open('2.png', 'rb').read()))
+    # print(img2txt(open('2.png', 'rb').read()))
+    
+    print(detect_lang('Чудова днина, правда?') )

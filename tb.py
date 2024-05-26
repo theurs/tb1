@@ -2027,7 +2027,7 @@ def addkeys_thread(message: telebot.types.Message):
 def gemini10_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     CHAT_MODE[chat_id_full] = 'gemini'
-    bot_reply_tr(message, 'Gemini 1.5 flash model selected.')
+    bot_reply_tr(message, 'Gemini 1.5 Flash model selected.')
 
 
 @bot.message_handler(commands=['gemini15'], func=authorized_owner)
@@ -2627,11 +2627,11 @@ def google_thread(message: telebot.types.Message):
             print(error2)
             help = f"""/google {tr('текст запроса', lang)}
 
-        /google {tr('сколько на земле людей, точные цифры и прогноз', lang)}
+/google {tr('сколько на земле людей, точные цифры и прогноз', lang)}
 
-        {tr('гугл, сколько на земле людей, точные цифры и прогноз', lang)}
+{tr('гугл, сколько на земле людей, точные цифры и прогноз', lang)}
 
-        {tr('Напишите запрос в гугл', lang)}
+{tr('Напишите запрос в гугл', lang)}
         """
             COMMAND_MODE[chat_id_full] = 'google'
             bot_reply(message, help, parse_mode = 'Markdown', disable_web_page_preview = False, reply_markup=get_keyboard('command_mode', message))
@@ -4066,10 +4066,12 @@ def do_task(message, custom_prompt: str = ''):
                 else:
                     # hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required, it`s okay to respond with "I don`t know" or "I can`t" if you are unable to provide an answer or complete a request.]'
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
+            hidden_text_for_llama370 = tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required.', lang)
             if chat_id_full not in ORIGINAL_MODE:
                 ORIGINAL_MODE[chat_id_full] = False
             if ORIGINAL_MODE[chat_id_full]:
                 helped_query = message.text
+                hidden_text_for_llama370 = ''
             else:
                 helped_query = f'{hidden_text} {message.text}'
 
@@ -4089,7 +4091,7 @@ def do_task(message, custom_prompt: str = ''):
                         CHAT_STATS_TEMP[chat_id_full] = 1
 
 
-                # если активирован режим общения с Gemini flash
+                # если активирован режим общения с Gemini Flash
                 if chat_mode_ == 'gemini':
                     if len(msg) > my_gemini.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
@@ -4108,9 +4110,10 @@ def do_task(message, custom_prompt: str = ''):
 
                             flag_gpt_help = False
                             if not answer:
-                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
+                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
-                                answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
+                                if style_: answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
+                                else: answer = my_groq.ai(message.text, mem_ = mem__)
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -4158,9 +4161,10 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                             flag_gpt_help = False
                             if not answer:
-                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
+                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
-                                answer = my_groq.ai(message.text, mem_ = mem__, system=style_)
+                                if style_: answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
+                                else: answer = my_groq.ai(message.text, mem_ = mem__)
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -4205,9 +4209,9 @@ def do_task(message, custom_prompt: str = ''):
 
                             # answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full],
                             #                         model = '', style = hidden_text)
-                            style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else tr(f'Отвечай на языке юзера - {lang}', lang)
-                            # answer = my_groq.chat(message.text, chat_id_full, style=style_)
-                            answer = my_groq.chat(f'({style_}) {message.text}', chat_id_full)
+                            style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
+                            if style_: answer = my_groq.chat(f'({style_}) {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])
+                            else: answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
 
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'qroq-llama370'

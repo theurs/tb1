@@ -2535,15 +2535,19 @@ def tts_thread(message: telebot.types.Message, caption = None):
     pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
     match = re.match(pattern, message.text, re.DOTALL)
     if match:
-        llang = match.group("lang") or lang  # If lang is not specified, then by default the user's language
+        llang = match.group("lang") or None
         rate = match.group("rate") or "+0%"  # If rate is not specified, then by default '+0%'
         text = match.group("text") or ''
     else:
         text = llang = rate = ''
-    llang = llang.strip()
+    if llang:
+        llang = llang.strip()
     if llang == 'ua':
         llang = 'uk'
     rate = rate.strip()
+
+    if not llang:
+        llang = my_trans.detect_lang_v2(text) or lang
 
     if not text or llang not in supported_langs_tts:
         help = f"""{tr('Usage:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('text', lang)}>|<URL>

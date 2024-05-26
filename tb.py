@@ -100,6 +100,12 @@ CHAT_STATS_TEMP = {}
 # только для запросов к гпт*. {chat_id_full(str):threading.Lock()}
 CHAT_LOCKS = {}
 
+# блокировка на выполнение одновременных команд sum, google, image
+# {chat_id:threading.Lock()}
+GOOGLE_LOCKS = {}
+SUM_LOCKS = {}
+IMG_GEN_LOCKS = {}
+
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
 BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
 
@@ -178,9 +184,6 @@ MESSAGE_QUEUE = {}
 
 # блокировать процесс отправки картинок что бы не было перемешивания разных запросов
 SEND_IMG_LOCK = threading.Lock()
-
-# {user_id:lock} не давать рисовать больше чем 1 поток на юзера
-IMG_GEN_LOCKS = {}
 
 # настройки температуры для gemini {chat_id:temp}
 GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
@@ -2614,43 +2617,47 @@ def google_thread(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
-    try:
-        q = message.text.split(maxsplit=1)[1]
-    except Exception as error2:
-        print(error2)
-        help = f"""/google {tr('текст запроса', lang)}
+    if chat_id_full not in GOOGLE_LOCKS:
+        GOOGLE_LOCKS[chat_id_full] = threading.Lock()
 
-/google {tr('сколько на земле людей, точные цифры и прогноз', lang)}
-
-{tr('гугл, сколько на земле людей, точные цифры и прогноз', lang)}
-
-{tr('Напишите запрос в гугл', lang)}
-"""
-        COMMAND_MODE[chat_id_full] = 'google'
-        bot_reply(message, help, parse_mode = 'Markdown', disable_web_page_preview = False, reply_markup=get_keyboard('command_mode', message))
-        return
-
-    with ShowAction(message, 'typing'):
-        with semaphore_talks:
-            COMMAND_MODE[chat_id_full] = ''
-            r, text = my_google.search_v3(q, lang)
-            if not r.strip():
-                bot_reply_tr(message, 'Search failed.')
-                return
-            USER_FILES[chat_id_full] = ('google: ' + q, text)
+    with GOOGLE_LOCKS[chat_id_full]:
         try:
-            rr = utils.bot_markdown_to_html(r)
-            hash = utils.nice_hash(q, 16)
-            SEARCH_PICS[hash] = q
-            bot_reply(message, rr, parse_mode = 'HTML',
-                         disable_web_page_preview = True,
-                         reply_markup=get_keyboard(f'search_pics_{hash}', message), allow_voice=True)
+            q = message.text.split(maxsplit=1)[1]
         except Exception as error2:
-            my_log.log2(f'tb.py:google_thread: {error2}')
+            print(error2)
+            help = f"""/google {tr('текст запроса', lang)}
 
-        add_to_bots_mem(f'user {tr("попросил сделать запрос в Google:", lang)} {q}',
-                             f'{tr("поискал в Google и ответил:", lang)} {r}',
-                             chat_id_full)
+        /google {tr('сколько на земле людей, точные цифры и прогноз', lang)}
+
+        {tr('гугл, сколько на земле людей, точные цифры и прогноз', lang)}
+
+        {tr('Напишите запрос в гугл', lang)}
+        """
+            COMMAND_MODE[chat_id_full] = 'google'
+            bot_reply(message, help, parse_mode = 'Markdown', disable_web_page_preview = False, reply_markup=get_keyboard('command_mode', message))
+            return
+
+        with ShowAction(message, 'typing'):
+            with semaphore_talks:
+                COMMAND_MODE[chat_id_full] = ''
+                r, text = my_google.search_v3(q, lang)
+                if not r.strip():
+                    bot_reply_tr(message, 'Search failed.')
+                    return
+                USER_FILES[chat_id_full] = ('google: ' + q, text)
+            try:
+                rr = utils.bot_markdown_to_html(r)
+                hash = utils.nice_hash(q, 16)
+                SEARCH_PICS[hash] = q
+                bot_reply(message, rr, parse_mode = 'HTML',
+                                disable_web_page_preview = True,
+                                reply_markup=get_keyboard(f'search_pics_{hash}', message), allow_voice=True)
+            except Exception as error2:
+                my_log.log2(f'tb.py:google_thread: {error2}')
+
+            add_to_bots_mem(f'user {tr("попросил сделать запрос в Google:", lang)} {q}',
+                                    f'{tr("поискал в Google и ответил:", lang)} {r}',
+                                    chat_id_full)
 
 
 def update_user_image_counter(chat_id_full: str, n: int):
@@ -3171,60 +3178,64 @@ def summ_text_thread(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
-    text = message.text
+    if chat_id_full not in SUM_LOCKS:
+        SUM_LOCKS[chat_id_full] = threading.Lock()
 
-    if len(text.split(' ', 1)) == 2:
-        url = text.split(' ', 1)[1].strip()
-        if my_sum.is_valid_url(url):
-            # убираем из ютуб урла временную метку
-            if '/youtu.be/' in url or 'youtube.com/' in url:
-                url = url.split("&t=")[0]
+    with SUM_LOCKS[chat_id_full]:
+        text = message.text
 
-            url_id = str([url, lang])
-            with semaphore_talks:
+        if len(text.split(' ', 1)) == 2:
+            url = text.split(' ', 1)[1].strip()
+            if my_sum.is_valid_url(url):
+                # убираем из ютуб урла временную метку
+                if '/youtu.be/' in url or 'youtube.com/' in url:
+                    url = url.split("&t=")[0]
 
-                #смотрим нет ли в кеше ответа на этот урл
-                r = ''
-                if url_id in SUM_CACHE:
-                    r = SUM_CACHE[url_id]
-                if r:
-                    USER_FILES[chat_id_full] = (url, r)
-                    rr = utils.bot_markdown_to_html(r)
-                    bot_reply(message, rr, disable_web_page_preview = True,
-                                          parse_mode='HTML',
-                                          reply_markup=get_keyboard('translate', message))
-                    add_to_bots_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                         f'{tr("прочитал и ответил:", lang)} {r}',
-                                         chat_id_full)
-                    return
+                url_id = str([url, lang])
+                with semaphore_talks:
 
-                with ShowAction(message, 'typing'):
-                    res = ''
-                    try:
-                        res, text = my_sum.summ_url(url, lang = lang)
-                        USER_FILES[chat_id_full] = (url, text)
-                    except Exception as error2:
-                        print(error2)
-                        bot_reply_tr(message, 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', parse_mode='Markdown')
-                        return
-                    if res:
-                        rr = utils.bot_markdown_to_html(res)
-                        bot_reply(message, rr, parse_mode='HTML',
-                                              disable_web_page_preview = True,
-                                              reply_markup=get_keyboard('translate', message))
-                        SUM_CACHE[url_id] = res
+                    #смотрим нет ли в кеше ответа на этот урл
+                    r = ''
+                    if url_id in SUM_CACHE:
+                        r = SUM_CACHE[url_id]
+                    if r:
+                        USER_FILES[chat_id_full] = (url, r)
+                        rr = utils.bot_markdown_to_html(r)
+                        bot_reply(message, rr, disable_web_page_preview = True,
+                                            parse_mode='HTML',
+                                            reply_markup=get_keyboard('translate', message))
                         add_to_bots_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                         f'{tr("прочитал и ответил:", lang)} {res}',
-                                         chat_id_full)
+                                            f'{tr("прочитал и ответил:", lang)} {r}',
+                                            chat_id_full)
                         return
-                    else:
-                        bot_reply_tr(message, 'Не смог прочитать текст с этой страницы.')
-                        return
-    help = f"""{tr('Пример:', lang)} /sum https://youtu.be/3i123i6Bf-U
 
-{tr('Давайте вашу ссылку и я перескажу содержание', lang)}"""
-    COMMAND_MODE[chat_id_full] = 'sum'
-    bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
+                    with ShowAction(message, 'typing'):
+                        res = ''
+                        try:
+                            res, text = my_sum.summ_url(url, lang = lang)
+                            USER_FILES[chat_id_full] = (url, text)
+                        except Exception as error2:
+                            print(error2)
+                            bot_reply_tr(message, 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', parse_mode='Markdown')
+                            return
+                        if res:
+                            rr = utils.bot_markdown_to_html(res)
+                            bot_reply(message, rr, parse_mode='HTML',
+                                                disable_web_page_preview = True,
+                                                reply_markup=get_keyboard('translate', message))
+                            SUM_CACHE[url_id] = res
+                            add_to_bots_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
+                                            f'{tr("прочитал и ответил:", lang)} {res}',
+                                            chat_id_full)
+                            return
+                        else:
+                            bot_reply_tr(message, 'Не смог прочитать текст с этой страницы.')
+                            return
+        help = f"""{tr('Пример:', lang)} /sum https://youtu.be/3i123i6Bf-U
+
+    {tr('Давайте вашу ссылку и я перескажу содержание', lang)}"""
+        COMMAND_MODE[chat_id_full] = 'sum'
+        bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
 @bot.message_handler(commands=['sum2'], func=authorized)

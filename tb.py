@@ -1218,16 +1218,19 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data.startswith('search_pics_'):
             # Поиск картинок в дак дак гоу
-            with ShowAction(message, 'upload_photo'):
-                hash = call.data[12:]
-                query = SEARCH_PICS[hash]
-                images = my_ddg.get_images(query)
-                medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:1000]) for x in images]
-                msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
-                for _ in range(10):
-                    CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
-                    time.sleep(0.01)
-                log_message(msgs_ids)
+            if chat_id_full not in GOOGLE_LOCKS:
+                GOOGLE_LOCKS[chat_id_full] = threading.Lock()
+            with GOOGLE_LOCKS[chat_id_full]:
+                with ShowAction(message, 'upload_photo'):
+                    hash = call.data[12:]
+                    query = SEARCH_PICS[hash]
+                    images = my_ddg.get_images(query)
+                    medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:1000]) for x in images]
+                    msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
+                    for _ in range(10):
+                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                        time.sleep(0.01)
+                    log_message(msgs_ids)
 
 
 
@@ -3233,7 +3236,7 @@ def summ_text_thread(message: telebot.types.Message):
                             return
         help = f"""{tr('Пример:', lang)} /sum https://youtu.be/3i123i6Bf-U
 
-    {tr('Давайте вашу ссылку и я перескажу содержание', lang)}"""
+{tr('Давайте вашу ссылку и я перескажу содержание', lang)}"""
         COMMAND_MODE[chat_id_full] = 'sum'
         bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
 

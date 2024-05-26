@@ -2549,6 +2549,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
     if not llang:
         if len(text) < 30:
             llang = my_gemini.detect_lang(text)
+            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
         if not llang or lang not in supported_langs_tts:
             llang = my_trans.detect_lang_v2(text) or lang
 

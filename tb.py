@@ -1928,6 +1928,62 @@ Usage: /openrouter <api key>
         my_log.log2(f'tb:openrouter:{error}\n\n{error_tr}')
 
 
+@bot.message_handler(commands=['tgui'], func=authorized_admin)
+def translation_gui(message: telebot.types.Message):
+    """Исправление перевода сообщений от бота"""
+    thread = threading.Thread(target=translation_gui_thread, args=(message,))
+    thread.start()
+def translation_gui_thread(message: telebot.types.Message):
+    """Исправление перевода сообщений от бота"""
+
+    # Usage: /tgui кусок текста который надо найти, это кривой перевод|||новый перевод, если не задан то будет автоперевод
+
+    # тут перевод указан вручную
+    # /tgui клавиши Близнецы добавлены|||ключи для Gemini добавлены
+
+    # а тут будет автоперевод с помощью ии
+    # /tgui клавиши Близнецы добавлены
+
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
+
+    # первый аргумент - кривой перевод который надо найти и исправить
+    text = message.text.split(maxsplit=1)
+    if len(text) > 1:
+        with ShowAction(message, 'find_location'):
+            translated_counter = 0
+            text = text[1].strip()
+            if '|||' in text:
+                text, new_translation = text.split('|||', maxsplit=1)
+            else:
+                new_translation = ''
+            help = 'its a gui message in telegram bot, keep it same format and average size to fit gui'
+            for key in [x for x in AUTO_TRANSLATIONS.keys()]:
+                value = my_init.ast.literal_eval(key)
+                original = value[0]
+                lang = value[1]
+                # help_ = value[2]
+                if key in AUTO_TRANSLATIONS:
+                    translated = AUTO_TRANSLATIONS[key]
+                else:
+                    continue
+                if text in translated:
+                    if new_translation:
+                        new_translated = new_translation
+                    if not new_translated:
+                        new_translated = my_gemini.translate(original, to_lang = lang, help = help)
+                    if not new_translated:
+                        new_translated = my_groq.translate(original, to_lang = lang, help = help)
+                    if new_translated:
+                        AUTO_TRANSLATIONS[key] = new_translated
+                        translated_counter += 1
+                        bot_reply(message, f'New translation:\n\n{AUTO_TRANSLATIONS[key]}', disable_web_page_preview=True)
+                    else:
+                        bot_reply(message, 'Failed to translate')
+    bot_reply(message, 'Finished, language db size: ' + str(len(AUTO_TRANSLATIONS)) + ', translated: ' + str(translated_counter))
+
+
 @bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_owner)
 def users_keys_for_gemini(message: telebot.types.Message):
     """Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл"""
@@ -1954,13 +2010,13 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
                             my_gemini.ALL_KEYS.append(key)
                             new_keys.append(key)
                             added_flag = True
-                            my_log.log_keys(f'Added new gemini key: {key}')
+                            my_log.log_keys(f'Added new api key for Gemini: {key}')
                             CHAT_MODE[chat_id_full] = 'gemini15'
-                            msg = tr('Added new gemini key:', lang) + f' {key}'
+                            msg = tr('Added new API key for Gemini:', lang) + f' {key}'
                             bot_reply(message, msg)
                         else:
-                            my_log.log_keys(f'Failed to add new gemini key: {key}')
-                            msg = tr('Failed to add new gemini key:', lang) + f' {key}'
+                            my_log.log_keys(f'Failed to add new API key for Gemini: {key}')
+                            msg = tr('Failed to add new API key for Gemini:', lang) + f' {key}'
                             bot_reply(message, msg)
             if added_flag:
                 my_gemini.USER_KEYS[chat_id_full] = new_keys
@@ -2009,9 +2065,8 @@ def addkeys_thread(message: telebot.types.Message):
             bot_reply_tr(message, 'Added keys successfully!')
         else:
             bot_reply_tr(message, 'Key already exists!')
-    except Exception as error:
-        error_tr = traceback.format_exc()
-        bot_reply_tr(message, 'Usage: /addkeys <uid> <key>\n\n<code>{error}</code>\n\n<code>{error_tr}</code>', parse_mode='HTML')
+    except Exception:
+        bot_reply_tr(message, 'Usage: /addkeys <full_id> <key>')
 
 
 # @bot.message_handler(commands=['removemykeys'], func=authorized_owner)

@@ -1971,6 +1971,8 @@ def translation_gui_thread(message: telebot.types.Message):
                 if text in translated:
                     if new_translation:
                         new_translated = new_translation
+                    else:
+                        new_translated = ''
                     if not new_translated:
                         new_translated = my_gemini.translate(original, to_lang = lang, help = help)
                     if not new_translated:

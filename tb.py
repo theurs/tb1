@@ -2614,7 +2614,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
         if not llang or lang not in supported_langs_tts:
             llang = my_trans.detect_lang_v2(text) or lang
 
-    if not llang:
+    if not llang or llang == 'und':
         llang = lang
 
     if not text or llang not in supported_langs_tts:

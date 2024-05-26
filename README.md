@@ -207,13 +207,13 @@ ocr_language = 'rus'
 enable_image_adv = False
 
 # https://ai.google.dev/
-# ключи для Gemini Pro
+# ключи для Gemini
 gemini_keys = ['xxx', 'yyy']
 
 # размер истории gemini. чем больше тем больше токенов и дольше
 # GEMINI_MAX_CHAT_LINES = 40
 
-# прокси для gemini pro, если не указать то сначала попытается работать
+# прокси для gemini, если не указать то сначала попытается работать
 # напрямую а если не получится то будет постоянно искать открытые прокси
 # gemini_proxies = ['http://172.28.1.5:3128', 'socks5h://172.28.1.5:1080']
 

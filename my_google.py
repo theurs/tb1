@@ -109,11 +109,11 @@ Search results:
     r = ''
     r =  my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], model='gemini-1.5-flash-latest')
     if r:
-        r += '\n\n--\n[Gemini Pro Flash]'
+        r += '\n\n--\n[Gemini Flash]'
     if not r:
         r = my_gemini.ai(q[:32000], model='gemini-1.5-flash-latest')
         if r:
-            r += '\n\n--\n[Gemini Pro Flash]'
+            r += '\n\n--\n[Gemini Flash]'
         if not r:
             r = my_groq.ai(q[:32000], max_tokens_ = 4000, model_ = 'mixtral-8x7b-32768')
             if r:

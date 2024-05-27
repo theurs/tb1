@@ -3377,24 +3377,19 @@ def trans_thread(message: telebot.types.Message):
             translated = my_trans.translate_deepl(text, to_lang = llang)
             if not translated:
                 translated = my_trans.translate_text2(text, llang)
+                if not translated:
+                    translated = my_groq.translate(text[:3500], to_lang = llang)
+                    CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
+                    if not translated:
+                        translated = my_gemini.translate(text[:3500], to_lang = llang)
+                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
             if translated:
-                detected_langs = []
-                try:
-                    for x in my_trans.detect_langs(text):
-                        # l = my_trans.lang_name_by_code(x.lang)
-                        l = tr(langcodes.Language.make(language=x.lang).display_name(language='en'), lang, 'это перевод названия языка, одно слово, прилагательное')
-                        p = round(x.prob*100, 2)
-                        detected_langs.append(f'{l} {p}%')
-                except Exception as detect_error:
-                    my_log.log2(f'tb:trans:detect_langs: {detect_error}')
-                if match and match.group(1):
-                    bot_reply(message, translated,
-                                 reply_markup=get_keyboard('translate', message))
-                else:
-                    bot_reply(message,
-                                 translated + '\n\n' + tr('Распознанные языки:', lang) \
-                                 + ' ' + str(', '.join(detected_langs)).strip(', '),
-                                 reply_markup=get_keyboard('translate', message))
+                detected_lang = tr(my_trans.detect_lang_v2(text), lang, 'это перевод названия языка, одно слово, прилагательное')
+
+                bot_reply(message,
+                          translated + '\n\n' + tr('Распознанный язык:', lang) \
+                          + ' ' + detected_lang,
+                          reply_markup=get_keyboard('translate', message))
             else:
                 bot_reply_tr(message, 'Ошибка перевода')
 
@@ -3636,7 +3631,7 @@ def id_cmd_handler(message: telebot.types.Message):
     keys_count_ = '🔑'*keys_count
     
     if openrouter_keys:
-        msg += '\n🔑️ OpenRouter\n'
+        msg += '\n\n🔑️ OpenRouter\n'
     else:
         msg += '🔓 OpenRouter\n'
     if gemini_keys:

@@ -1162,7 +1162,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
-            my_gemini.reset(chat_id_full)
+            reset_(chat_id_full)
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"

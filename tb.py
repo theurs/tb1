@@ -3523,7 +3523,7 @@ def send_welcome_help_1_thread(message: telebot.types.Message):
             lang = args[1]
 
     help = """
-**Google* gives everyone free API keys to its **Gemini** AI, you can insert them into this bot and use them.
+**Google** gives everyone free API keys to its **Gemini** AI, you can insert them into this bot and use them.
 
 **Groq** gives free API keys to its **llama3** and **mistral** AI, and they can be inserted into this bot.
 

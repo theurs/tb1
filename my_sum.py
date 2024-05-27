@@ -82,6 +82,7 @@ Answer in [{lang}] language.
 The structure of the answer should be similar to the following:
 Show a block with the brief summary of the text in 2 sentences, which satisfies most people.
 Show a block with a detail summary of the content of the text in your own words, 300-2000 words.
+Markdown for links is mandatory.
 
 Text:'''
 
@@ -179,8 +180,15 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru'):
                     else:
                         return '', ''
 
-            text = trafilatura.extract(content)
-   
+            text = trafilatura.extract(content,
+                                       deduplicate=True,
+                                       include_comments=True,
+                                       include_links=True,
+                                       include_images=True,
+                                       include_formatting=True,
+                                       include_tables=True,
+                                       )
+
     if download_only:
         if youtube:
             r = f'URL: {url}\nСубтитры из видео на ютубе (полное содержание, отметки времени были удалены):\n\n{text}'
@@ -208,10 +216,11 @@ def is_valid_url(url: str) -> bool:
 
 
 if __name__ == "__main__":
+    pass
 
-    # print(summ_url('https://telegra.ph/Tomm-05-19', download_only=True))
+    print(summ_url(' https://habr.com/ru/news/817099/', download_only=False))
 
-    print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8')[0])
+    # print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8')[0])
     # print(summ_url('https://www.youtube.com/watch?v=0uOCF04QcHk')[0])
     # print(summ_url('https://www.youtube.com/watch?v=IVTzUg50f_4')[0])
     # print(summ_url('https://www.youtube.com/watch?v=0MehBAmxj-E')[0])
@@ -219,7 +228,7 @@ if __name__ == "__main__":
     # print(summ_url('https://www.youtube.com/watch?v=5ijY7TjBwVk')[0])
     # print(summ_url('https://www.youtube.com/watch?v=uNCsO0JytPA')[0])
     # print(summ_url('https://www.youtube.com/watch?v=DZkEg82Nc_k')[0])
-    
+
     # print(summ_url('https://www.linux.org.ru/news/opensource/17620258')[0])
     # print(summ_url('https://habr.com/ru/companies/productradar/articles/815709/')[0])
     # print(summ_url('https://habr.com/ru/news/815789/')[0])
@@ -228,12 +237,12 @@ if __name__ == "__main__":
 
 
     # sys.exit(0)
-    
-    t = sys.argv[1]
-    
-    if is_valid_url(t):
-        print(summ_url(t))
-    elif os.path.exists(t):
-        print(summ_text(open(t).read()))
-    else:
-        print("""Usage ./summarize.py '|URL|filename""")
+
+    # t = sys.argv[1]
+
+    # if is_valid_url(t):
+    #     print(summ_url(t))
+    # elif os.path.exists(t):
+    #     print(summ_text(open(t).read()))
+    # else:
+    #     print("""Usage ./summarize.py '|URL|filename""")

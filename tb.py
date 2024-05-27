@@ -625,8 +625,10 @@ def log_message(message: telebot.types.Message):
                 if 'Bad Request: message thread not found' in str(unknown):
                     LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
                     th = LOGS_GROUPS_DB[chat_full_id]
-                time.sleep(2)
-                bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
+                    try:
+                        bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
+                    except:
+                        pass
         elif isinstance(message, list):
             chat_full_id = get_topic_id(message[0])
             chat_name = utils.get_username_for_log(message[0])
@@ -642,8 +644,10 @@ def log_message(message: telebot.types.Message):
                 if 'Bad Request: message thread not found' in str(unknown):
                     LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
                     th = LOGS_GROUPS_DB[chat_full_id]
-                time.sleep(2)
-                bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
+                    try:
+                        bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
+                    except:
+                        pass
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')

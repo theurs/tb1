@@ -15,52 +15,6 @@ import my_sum
 import utils
 
 
-def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) -> str:
-    """
-    Downloads text from a list of URLs and returns the concatenated result.
-    
-    Args:
-        urls (list): A list of URLs from which to download text.
-        max_req (int, optional): The maximum length of the result string. Defaults to cfg.max_request.
-        no_links(bool, optional): Include links in the result. Defaults to False.
-        
-    Returns:
-        str: The concatenated text downloaded from the URLs.
-    """
-    #max_req += 5000 # 5000 дополнительно под длинные ссылки с запасом
-    result = ''
-    for url in urls:
-        text = my_sum.summ_url(url, download_only = True)
-        if text:
-            if no_links:
-                result += f'\n\n{text}\n\n'
-            else:
-                result += f'\n\n|||{url}|||\n\n{text}\n\n'
-            if len(result) > max_req:
-                break
-    return result
-
-
-def download_text_v2(url: str, max_req: int = cfg.max_request, no_links = False) -> str:
-    return download_text([url,], max_req, no_links)
-
-
-def download_in_parallel(urls, max_sum_request):
-    text = ''
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        future_to_url = {executor.submit(download_text_v2, url, 30000): url for url in urls}
-        for future in concurrent.futures.as_completed(future_to_url):
-            try:
-                result = future.result()
-                text += result
-                if len(text) > max_sum_request:
-                    break
-            except Exception as exc:
-                error_traceback = traceback.format_exc()
-                my_log.log2(f'my_google:download_in_parallel: {exc}\n\n{error_traceback}')
-    return text
-
-
 def search_v3(query: str, lang: str = 'ru', max_search: int = 15):
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
@@ -87,7 +41,7 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 15):
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
 
-    text = download_in_parallel(urls, my_gemini.MAX_SUM_REQUEST)
+    text = my_sum.download_in_parallel(urls, my_gemini.MAX_SUM_REQUEST)
 
     q = f'''Answer to the user's search query.
 Guess what they were looking for and compose a good answer using search results and your own knowledge.
@@ -129,8 +83,7 @@ Search results:
 if __name__ == "__main__":
     lines = [
         # 'курс доллара',
-        # 'что значит 42',
-        'всу поразили корабль циклон?',
+        'что значит 42',
         ]
     for x in lines:
         print(search_v3(x)[0], '\n\n')

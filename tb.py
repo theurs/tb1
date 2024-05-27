@@ -625,7 +625,8 @@ def log_message(message: telebot.types.Message):
                 if 'Bad Request: message thread not found' in str(unknown):
                     LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
                     th = LOGS_GROUPS_DB[chat_full_id]
-                    bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
+                time.sleep(2)
+                bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
         elif isinstance(message, list):
             chat_full_id = get_topic_id(message[0])
             chat_name = utils.get_username_for_log(message[0])
@@ -641,7 +642,8 @@ def log_message(message: telebot.types.Message):
                 if 'Bad Request: message thread not found' in str(unknown):
                     LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
                     th = LOGS_GROUPS_DB[chat_full_id]
-                    bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
+                time.sleep(2)
+                bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
@@ -2011,6 +2013,14 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
         #deepl keys len=39, endwith ":fx"
         deepl_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
         deepl_keys = [x for x in deepl_keys if x not in my_trans.ALL_KEYS and x.endswith(':fx')]
+        # huggingface keys len=37, starts with "hf_"
+        huggingface_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 37]
+        huggingface_keys = [x for x in huggingface_keys if x not in my_genimg.ALL_KEYS and x.startswith('hf_')]
+
+        if huggingface_keys:
+            my_genimg.USER_KEYS[chat_id_full] = huggingface_keys[0]
+            my_log.log_keys(f'Added new API key for Huggingface: {chat_id_full} {huggingface_keys}')
+            bot_reply_tr(message, 'Added API key for Huggingface successfully!')
 
         if keys_groq:
             my_groq.USER_KEYS[chat_id_full] = keys_groq[0]
@@ -2046,7 +2056,7 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
                 bot_reply_tr(message, 'Added keys successfully!')
                 return
 
-    msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://www.deepl.com'
+    msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://www.deepl.com'
     bot_reply(message, msg, disable_web_page_preview = True)
 
     if message.from_user.id in cfg.admins:
@@ -3269,7 +3279,7 @@ def summ_text_thread(message: telebot.types.Message):
                     with ShowAction(message, 'typing'):
                         res = ''
                         try:
-                            res, text = my_sum.summ_url(url, lang = lang)
+                            res, text = my_sum.summ_url(url, lang = lang, deep = True)
                             USER_FILES[chat_id_full] = (url, text)
                         except Exception as error2:
                             print(error2)
@@ -3618,6 +3628,7 @@ def id_cmd_handler(message: telebot.types.Message):
     groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
     openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
     deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
+    huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
     # keys_count = len(gemini_keys) + len(groq_keys) + len(openrouter_keys) + len(deepl_keys)
     keys_count = len(gemini_keys) + len(groq_keys) + len(deepl_keys)
     keys_count_ = '🔑'*keys_count
@@ -3638,6 +3649,10 @@ def id_cmd_handler(message: telebot.types.Message):
         msg += '🔑️ Deepl\n'
     else:
         msg += '🔓 Deepl\n'
+    if huggingface_keys:
+        msg += '🔑️ Huggingface\n'
+    else:
+        msg += '🔓 Huggingface\n'
 
     if chat_id_full in BAD_USERS:
         msg += f'\n{tr("User was banned.", lang)}\n'

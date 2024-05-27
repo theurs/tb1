@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 #pip install lxml[html_clean]
 
+import concurrent.futures
 import io
 import os
 import re
 import sys
+import traceback
 from urllib.parse import urlparse
 from youtube_transcript_api import YouTubeTranscriptApi
 
@@ -14,6 +16,7 @@ import PyPDF2
 import requests
 import trafilatura
 
+import cfg
 import my_log
 import my_gemini
 import my_groq
@@ -130,7 +133,57 @@ def summ_text(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') 
     return summ_text_worker(text, subj, lang, query)
 
 
-def summ_url(url:str, download_only: bool = False, lang: str = 'ru'):
+def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) -> str:
+    """
+    Downloads text from a list of URLs and returns the concatenated result.
+    
+    Args:
+        urls (list): A list of URLs from which to download text.
+        max_req (int, optional): The maximum length of the result string. Defaults to cfg.max_request.
+        no_links(bool, optional): Include links in the result. Defaults to False.
+        
+    Returns:
+        str: The concatenated text downloaded from the URLs.
+    """
+    #max_req += 5000 # 5000 дополнительно под длинные ссылки с запасом
+    result = ''
+    for url in urls:
+        text = summ_url(url, download_only = True)
+        if text:
+            if no_links:
+                result += f'\n\n{text}\n\n'
+            else:
+                result += f'\n\n|||{url}|||\n\n{text}\n\n'
+            if len(result) > max_req:
+                break
+    return result
+
+
+def download_text_v2(url: str, max_req: int = cfg.max_request, no_links = False) -> str:
+    return download_text([url,], max_req, no_links)
+
+
+def download_in_parallel(urls, max_sum_request):
+    text = ''
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        future_to_url = {executor.submit(download_text_v2, url, 30000): url for url in urls}
+        for future in concurrent.futures.as_completed(future_to_url):
+            try:
+                result = future.result()
+                text += result
+                if len(text) > max_sum_request:
+                    break
+            except Exception as exc:
+                error_traceback = traceback.format_exc()
+                my_log.log2(f'my_google:download_in_parallel: {exc}\n\n{error_traceback}')
+    return text
+
+
+def get_urls_from_text(text):
+    return re.findall(r'https?://\S+', text)
+
+
+def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool = False):
     """скачивает веб страницу, просит гптчат или бинг сделать краткое изложение текста, возвращает текст
     если в ссылке ютуб то скачивает субтитры к видео вместо текста
     может просто скачать текст без саммаризации, для другой обработки"""
@@ -201,7 +254,11 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru'):
         elif pdf:
             r = summ_text(text, 'pdf', lang)
         else:
-            r = summ_text(text, 'text', lang)
+            if deep:
+                text += '\n\n==============\nDownloaded links from the text for better analysis\n==============\n\n' + download_in_parallel(get_urls_from_text(text), my_gemini.MAX_SUM_REQUEST)
+                r = summ_text(text, 'text', lang)
+            else:
+                r = summ_text(text, 'text', lang)
         return r, text
 
 
@@ -218,7 +275,7 @@ def is_valid_url(url: str) -> bool:
 if __name__ == "__main__":
     pass
 
-    print(summ_url(' https://habr.com/ru/news/817099/', download_only=False))
+    print(summ_url(' https://habr.com/ru/news/817099/', download_only=False, deep=True)[0])
 
     # print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8')[0])
     # print(summ_url('https://www.youtube.com/watch?v=0uOCF04QcHk')[0])

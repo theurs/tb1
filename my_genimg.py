@@ -9,6 +9,7 @@ import os
 import random
 import shutil
 import time
+import threading
 import traceback
 from multiprocessing.pool import ThreadPool
 from io import BytesIO
@@ -29,6 +30,16 @@ import my_trans
 
 
 DEBUG = cfg.DEBUG if hasattr(cfg, 'DEBUG') else False
+
+
+# каждый юзер дает свои ключи и они используются совместно со всеми
+# {full_chat_id as str: key as str}
+# {'[9123456789] [0]': 'key1', ...}
+USER_KEYS = SqliteDict('db/huggingface_user_keys.db', autocommit=True)
+# list of all users keys
+ALL_KEYS = []
+USER_KEYS_LOCK = threading.Lock()
+
 
 # {hash of image:model name, ...}
 WHO_AUTOR = {}

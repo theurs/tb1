@@ -588,69 +588,72 @@ def is_for_me(message: telebot.types.Message):
         return (True, cmd)
 
 
+LOG_MESSAGE_LOCK = threading.Lock()
 def log_message(message: telebot.types.Message):
-    try:
-        if isinstance(message, telebot.types.Message) and hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
-            return
-        if isinstance(message, list) and hasattr(cfg, 'DO_NOT_LOG') and message[0].chat.id in cfg.DO_NOT_LOG:
-            return
+    with LOG_MESSAGE_LOCK:
+        time.sleep(1.1)
+        try:
+            if isinstance(message, telebot.types.Message) and hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
+                return
+            if isinstance(message, list) and hasattr(cfg, 'DO_NOT_LOG') and message[0].chat.id in cfg.DO_NOT_LOG:
+                return
 
-        if not hasattr(cfg, 'LOGS_GROUP') or not cfg.LOGS_GROUP:
-            return
+            if not hasattr(cfg, 'LOGS_GROUP') or not cfg.LOGS_GROUP:
+                return
 
-        if isinstance(message, telebot.types.Message):
-            chat_full_id = get_topic_id(message)
-            chat_name = utils.get_username_for_log(message)
-            if chat_full_id in LOGS_GROUPS_DB:
-                th = LOGS_GROUPS_DB[chat_full_id]
-            else:
-                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                LOGS_GROUPS_DB[chat_full_id] = th
-            chat_id_full = get_topic_id(message)
-            if chat_id_full in WHO_ANSWERED:
+            if isinstance(message, telebot.types.Message):
+                chat_full_id = get_topic_id(message)
+                chat_name = utils.get_username_for_log(message)
+                if chat_full_id in LOGS_GROUPS_DB:
+                    th = LOGS_GROUPS_DB[chat_full_id]
+                else:
+                    th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
+                    LOGS_GROUPS_DB[chat_full_id] = th
+                chat_id_full = get_topic_id(message)
+                if chat_id_full in WHO_ANSWERED:
+                    try:
+                        bot.send_message(cfg.LOGS_GROUP, f'[{WHO_ANSWERED[chat_id_full]}]', message_thread_id=th)
+                    except Exception as unknown:
+                        if 'Bad Request: message thread not found' in str(unknown):
+                            LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
+                            th = LOGS_GROUPS_DB[chat_full_id]
+                            bot.send_message(cfg.LOGS_GROUP, f'[{WHO_ANSWERED[chat_id_full]}]', message_thread_id=th)
+                    try:
+                        del WHO_ANSWERED[chat_id_full]
+                    except KeyError:
+                        pass
                 try:
-                    bot.send_message(cfg.LOGS_GROUP, f'[{WHO_ANSWERED[chat_id_full]}]', message_thread_id=th)
+                    bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
                 except Exception as unknown:
                     if 'Bad Request: message thread not found' in str(unknown):
                         LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
                         th = LOGS_GROUPS_DB[chat_full_id]
-                        bot.send_message(cfg.LOGS_GROUP, f'[{WHO_ANSWERED[chat_id_full]}]', message_thread_id=th)
+                        try:
+                            bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
+                        except:
+                            pass
+            elif isinstance(message, list):
+                chat_full_id = get_topic_id(message[0])
+                chat_name = utils.get_username_for_log(message[0])
+                if chat_full_id in LOGS_GROUPS_DB:
+                    th = LOGS_GROUPS_DB[chat_full_id]
+                else:
+                    th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
+                    LOGS_GROUPS_DB[chat_full_id] = th
+                m_ids = [x.message_id for x in message]
                 try:
-                    del WHO_ANSWERED[chat_id_full]
-                except KeyError:
-                    pass
-            try:
-                bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
-            except Exception as unknown:
-                if 'Bad Request: message thread not found' in str(unknown):
-                    LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                    th = LOGS_GROUPS_DB[chat_full_id]
-                    try:
-                        bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
-                    except:
-                        pass
-        elif isinstance(message, list):
-            chat_full_id = get_topic_id(message[0])
-            chat_name = utils.get_username_for_log(message[0])
-            if chat_full_id in LOGS_GROUPS_DB:
-                th = LOGS_GROUPS_DB[chat_full_id]
-            else:
-                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                LOGS_GROUPS_DB[chat_full_id] = th
-            m_ids = [x.message_id for x in message]
-            try:
-                bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
-            except Exception as unknown:
-                if 'Bad Request: message thread not found' in str(unknown):
-                    LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                    th = LOGS_GROUPS_DB[chat_full_id]
-                    try:
-                        bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
-                    except:
-                        pass
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
+                    bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
+                except Exception as unknown:
+                    if 'Bad Request: message thread not found' in str(unknown):
+                        LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
+                        th = LOGS_GROUPS_DB[chat_full_id]
+                        try:
+                            bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
+                        except:
+                            pass
+        except Exception as error:
+            error_traceback = traceback.format_exc()
+            my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
 
 
 def authorized_owner(message: telebot.types.Message) -> bool:

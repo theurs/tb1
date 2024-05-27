@@ -3516,7 +3516,7 @@ def send_welcome_help_1_thread(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
-    
+
     args = message.text.split(maxsplit = 1)
     if len(args) == 2:
         if args[1] in my_init.supported_langs_trans:
@@ -3606,13 +3606,38 @@ def id_cmd_handler(message: telebot.types.Message):
     user_id = message.from_user.id
     reported_language = message.from_user.language_code
     msg = f'''{tr("ID пользователя:", lang)} {user_id}
-                 
+
 {tr("ID группы:", lang)} {chat_id_full}
 
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
 
 {tr("Выбранная чат модель:", lang)} {CHAT_MODE[chat_id_full] if chat_id_full in CHAT_MODE else cfg.chat_mode_default}
 '''
+
+    gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
+    groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
+    openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
+    deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
+    # keys_count = len(gemini_keys) + len(groq_keys) + len(openrouter_keys) + len(deepl_keys)
+    keys_count = len(gemini_keys) + len(groq_keys) + len(deepl_keys)
+    keys_count_ = '🔑'*keys_count
+    
+    if openrouter_keys:
+        msg += '\n🔑️ OpenRouter\n'
+    else:
+        msg += '🔓 OpenRouter\n'
+    if gemini_keys:
+        msg += '🔑️ Gemini\n'
+    else:
+        msg += '🔓 Gemini\n'
+    if groq_keys:
+        msg += '🔑️ Groq\n'
+    else:
+        msg += '🔓 Groq\n'
+    if deepl_keys:
+        msg += '🔑️ Deepl\n'
+    else:
+        msg += '🔓 Deepl\n'
 
     if chat_id_full in BAD_USERS:
         msg += f'\n{tr("User was banned.", lang)}\n'

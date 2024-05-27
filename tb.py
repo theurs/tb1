@@ -923,8 +923,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
     lang = get_lang(chat_id_full, message)
 
     if kbd == 'mem':
-        if disabled_kbd(chat_id_full):
-            return None
+        # if disabled_kbd(chat_id_full):
+        #     return None
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Стереть историю", lang), callback_data='clear_history')
         button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
@@ -2267,15 +2267,17 @@ def reset_(message: telebot.types.Message):
     else:
         chat_id_full = get_topic_id(message)
 
-        if 'gemini' in CHAT_MODE[chat_id_full]:
-            my_gemini.reset(chat_id_full)
-        elif 'llama' in CHAT_MODE[chat_id_full]:
-            my_groq.reset(chat_id_full)
-        elif 'openrouter' in CHAT_MODE[chat_id_full]:
-            my_openrouter.reset(chat_id_full)
-        else:
+    if 'gemini' in CHAT_MODE[chat_id_full]:
+        my_gemini.reset(chat_id_full)
+    elif 'llama' in CHAT_MODE[chat_id_full]:
+        my_groq.reset(chat_id_full)
+    elif 'openrouter' in CHAT_MODE[chat_id_full]:
+        my_openrouter.reset(chat_id_full)
+    else:
+        if isinstance(message, telebot.types.Message):
             bot_reply_tr(message, 'History WAS NOT cleared.')
-            return
+        return
+    if isinstance(message, telebot.types.Message):
         bot_reply_tr(message, 'History cleared.')
 
 

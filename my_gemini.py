@@ -22,7 +22,7 @@ import my_log
 # каждый ключ дает всего 50 запросов в день так что чем больше тем лучше
 # другие ограничения - 32к токенов в минуту, 2 запроса в минуту
 # {full_chat_id as str: list of keys as list of str}
-# {'[2654672534] [0]': ['key1','key2','key3'], ...}
+# {'[9123456789] [0]': ['key1','key2','key3'], ...}
 USER_KEYS = SqliteDict('db/gemini_user_keys.db', autocommit=True)
 # list of all users keys
 ALL_KEYS = []

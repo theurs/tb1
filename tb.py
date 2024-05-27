@@ -2005,6 +2005,23 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
     if len(args) > 1:
         keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
         keys = [x for x in keys if x not in my_gemini.ALL_KEYS and x.startswith('AIza')]
+        # groq keys len=56, starts with "gsk_"
+        keys_groq = [x.strip() for x in args[1].split() if len(x.strip()) == 56]
+        keys_groq = [x for x in keys_groq if x not in my_groq.ALL_KEYS and x.startswith('gsk_')]
+        #deepl keys len=39, endwith ":fx"
+        deepl_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
+        deepl_keys = [x for x in deepl_keys if x not in my_trans.ALL_KEYS and x.endswith(':fx')]
+
+        if keys_groq:
+            my_groq.USER_KEYS[chat_id_full] = keys_groq[0]
+            my_log.log_keys(f'Added new API key for Groq: {chat_id_full} {keys_groq}')
+            bot_reply_tr(message, 'Added API key for Groq successfully!')
+
+        if deepl_keys:
+            my_trans.USER_KEYS[chat_id_full] = deepl_keys[0]
+            my_log.log_keys(f'Added new API key for Deepl: {chat_id_full} {deepl_keys}')
+            bot_reply_tr(message, 'Added API key for Deepl successfully!')
+
         if keys:
             added_flag = False
             with my_gemini.USER_KEYS_LOCK:
@@ -2029,7 +2046,7 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
                 bot_reply_tr(message, 'Added keys successfully!')
                 return
 
-    msg = tr('Usage: /keys GEMINI API KEYS space separated\n\nThis bot needs free api keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+    msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://www.deepl.com'
     bot_reply(message, msg, disable_web_page_preview = True)
 
     if message.from_user.id in cfg.admins:
@@ -2047,10 +2064,12 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
 
     # показать юзеру его ключи
     if chat_id_full in my_gemini.USER_KEYS:
-        keys = my_gemini.USER_KEYS[chat_id_full]
+        qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
+        deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
+        keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys
         msg = tr('Your keys:', lang) + '\n\n'
         for key in keys:
-            msg += f'<code>{key}</code>\n'
+            msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
         bot_reply(message, msg, parse_mode='HTML')
 
 
@@ -3485,6 +3504,42 @@ def send_welcome_help_thread(message: telebot.types.Message):
 
     help = utils.bot_markdown_to_html(help)
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
+
+
+@bot.message_handler(commands=['free', 'help_1'], func = authorized_log)
+def send_welcome_help_1(message: telebot.types.Message) -> None:
+    thread = threading.Thread(target=send_welcome_help_1_thread, args=(message,))
+    thread.start()
+def send_welcome_help_1_thread(message: telebot.types.Message):
+    # почему бесплатно и как это работает
+
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
+    
+    args = message.text.split(maxsplit = 1)
+    if len(args) == 2:
+        if args[1] in my_init.supported_langs_trans:
+            lang = args[1]
+
+    help = """
+**Google* gives everyone free API keys to its **Gemini** AI, you can insert them into this bot and use them.
+
+**Groq** gives free API keys to its **llama3** and **mistral** AI, and they can be inserted into this bot.
+
+**Openrouter** provides access to all other paid AIs, you can insert your personal key and use it in this bot.
+
+**DEEPL** will give free API keys to its translator, they can be inserted into this bot.
+
+The keys have usage limits, but if you use them together and there are enough keys, the limits cease to be a problem.
+
+**If you have paid accounts on these services and use them for something else, do not give your keys to this bot, it is meant to work only with free keys.**
+
+Voice recognition, drawing, etc. also all work on free services in one way or another.
+"""
+    help = tr(help, lang)
+    help = utils.bot_markdown_to_html(help)
+    bot_reply(message, help, disable_web_page_preview=True, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['report'], func = authorized_log) 

@@ -27,8 +27,16 @@ import utils
 deepl_cache = SqliteDict('db/deepl_cache.db', autocommit=True)
 # {unique_id: (current_date, len(text), auth_key)}
 deepl_api_counter = SqliteDict('db/deepl_api_counter.db', autocommit=True)
-per_month_tokens_limit = 400000
+per_month_tokens_limit = 400000 # с большим запасом
 deepl_lock = threading.Lock()
+# каждый юзер дает свои ключи от DEEPL и они используются совместно со всеми
+# каждый ключ дает всего 500000 символов для перевода в месяц так что чем больше тем лучше
+# {full_chat_id as str: key}
+# {'[9123456789] [0]': 'key', ...}
+USER_KEYS = SqliteDict('db/deepl_user_keys.db', autocommit=True)
+# list of all users keys
+ALL_KEYS = []
+USER_KEYS_LOCK = threading.Lock()
 
 
 # keep in memory the translation

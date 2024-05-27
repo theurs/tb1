@@ -2,6 +2,7 @@
 
 import ast
 import pickle
+import time
 
 from sqlitedict import SqliteDict
 
@@ -36,7 +37,7 @@ supported_langs_tts = [
         'tl', 'tr', 'tt', 'ua', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
 
 
-start_msg = '''Hello, I`m AI chat bot powered by Google Gemini [1.0/1.5/Vision/Flash], llama3-70, claude 3, gpt-4o etc!
+start_msg = '''Hello, I`m AI chat bot powered by Google Gemini, llama, claude, chatgpt etc.
 
 Ask me anything. Send me you text/image/audio/documents with questions.
 
@@ -45,6 +46,8 @@ You can change language with /lang command.
 You can generate images with /image command. Image editing is not supported yet.
 
 Remove keyboard /remove_keyboard
+
+How and why its free /free
 '''
 
 help_msg = f"""The bot can't edit images or draw, and it doesn't search Google itself.
@@ -84,7 +87,18 @@ def generate_start_msg():
     msgs = {}
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
-        msg = my_trans.translate_text2(start_msg, x)
+        msg = ''
+
+        for _ in range(2):
+            if not msg:
+                msg = my_groq.translate(start_msg, to_lang = x)
+            else:
+                break
+            if not msg:
+                time.sleep(60)
+
+        if not msg:
+            msg = my_trans.translate_text2(start_msg, x)
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)

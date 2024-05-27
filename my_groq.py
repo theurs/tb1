@@ -18,6 +18,16 @@ import my_google
 import my_log
 
 
+# каждый юзер дает свои ключи и они используются совместно со всеми
+# каждый ключ дает всего 6000 токенов в минуту для ллама3 так что чем больше тем лучше
+# {full_chat_id as str: key}
+# {'[9123456789] [0]': 'key', ...}
+USER_KEYS = SqliteDict('db/groq_user_keys.db', autocommit=True)
+# list of all users keys
+ALL_KEYS = []
+USER_KEYS_LOCK = threading.Lock()
+
+
 # блокировка чатов что бы не испортить историю 
 # {id:lock}
 LOCKS = {}

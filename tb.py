@@ -374,6 +374,7 @@ def tr(text: str, lang: str, help: str = '') -> str:
 
     if help:
         translated = my_groq.translate(text, to_lang=lang, help=help)
+        # CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
         if not translated:
             # time.sleep(1)
             # try again and another ai engine
@@ -431,6 +432,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
 
     try:
         text = my_gemini.img2txt(data, query)
+        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
@@ -1975,8 +1977,10 @@ def translation_gui_thread(message: telebot.types.Message):
                         new_translated = ''
                     if not new_translated:
                         new_translated = my_gemini.translate(original, to_lang = lang, help = help)
+                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                     if not new_translated:
                         new_translated = my_groq.translate(original, to_lang = lang, help = help)
+                        CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
                     if new_translated:
                         AUTO_TRANSLATIONS[key] = new_translated
                         translated_counter += 1
@@ -2171,51 +2175,26 @@ def change_mode(message: telebot.types.Message):
 
 `/style <0|1|2|3|4|5|{tr('свой текст', lang)}>`
 
-0 - {tr('сброс, нет никакой роли', lang)} `/style 0`
+`/style 0`
+{tr('сброс, нет никакой роли', lang)}
 
-1 - `/style {DEFAULT_ROLES[0]}`
+`/style 1`
+`/style {DEFAULT_ROLES[0]}`
 
-2 - `/style {DEFAULT_ROLES[1]}`
+`/style 2`
+`/style {DEFAULT_ROLES[1]}`
 
-3 - `/style {DEFAULT_ROLES[2]}`
+`/style 3`
+`/style {DEFAULT_ROLES[2]}`
 
-4 - `/style {DEFAULT_ROLES[3]}`
+`/style 4`
+`/style {DEFAULT_ROLES[3]}`
 
-5 - `/style {DEFAULT_ROLES[4]}`
+`/style 5`
+`/style {DEFAULT_ROLES[4]}`
     """
 
         bot_reply(message, msg, parse_mode='Markdown')
-
-
-@bot.message_handler(commands=['gemini_proxy'], func=authorized_admin)
-def gemini_proxy(message: telebot.types.Message):
-    proxies = my_gemini.PROXY_POOL[:]
-    my_gemini.sort_proxies_by_speed(proxies)
-
-    msg = ''
-
-    pt = prettytable.PrettyTable(
-        align = "l",
-        set_style = prettytable.MSWORD_FRIENDLY,
-        hrules = prettytable.HEADER,
-        junction_char = '|')
-    header = ['N', 'last time', 'address']
-    pt.field_names = header
-
-    n = 0
-    for x in proxies:
-        n += 1
-        p1 = f'{int(my_gemini.PROXY_POLL_SPEED[x]):02}'
-        p2 = f'{round(my_gemini.PROXY_POLL_SPEED[x], 2):.2f}'.split('.')[1]
-        row = [n, f'{p1}.{p2}', x]
-        try:
-            pt.add_row(row)
-        except Exception as unknown:
-            my_log.log2(f'tb:gemini_proxy:add_row {unknown}')
-
-    msg += f'<pre><code>{pt.get_string()}</code></pre>'
-
-    bot_reply(message, msg, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['disable_chat_mode'], func=authorized_admin)
@@ -2419,8 +2398,6 @@ def restart(message: telebot.types.Message):
     my_log.log2(f'tb:restart: !!!RESTART!!!')
 
     bot.stop_polling()
-
-    my_gemini.STOP_DAEMON = True
 
 
 @bot.message_handler(commands=['leave'], func=authorized_admin) 
@@ -2858,7 +2835,6 @@ def image_thread(message: telebot.types.Message):
                     if medias and SUGGEST_ENABLED[chat_id_full]:
                         # 1 запрос на генерацию предложений
                         with CHAT_STATS_LOCK:
-                            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                             if chat_id_full in CHAT_STATS_TEMP:
                                 CHAT_STATS_TEMP[chat_id_full] += 1
                             else:
@@ -2876,6 +2852,7 @@ Create image of ...
 
 the original prompt:""", lang) + '\n\n\n' + prompt
                         suggest = my_gemini.ai(suggest_query, temperature=1.5)
+                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                         suggest = utils.bot_markdown_to_html(suggest).strip()
                     else:
                         suggest = ''
@@ -3214,6 +3191,7 @@ def ask_file_thread(message: telebot.types.Message):
 {tr('Saved text:', lang)} {USER_FILES[chat_id_full][1]}
     '''
             result = my_gemini.ai(q, temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
+            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
             if result:
                 answer = utils.bot_markdown_to_html(result)
                 bot_reply(message, answer, parse_mode='HTML')
@@ -4054,7 +4032,9 @@ def do_task(message, custom_prompt: str = ''):
                         else:
                             with ShowAction(message, 'typing'):
                                 # response, text__ = my_gemini.check_phone_number(number)
+                                # CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                                 response, text__ = my_groq.check_phone_number(number)
+                                CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
                         if response:
                             USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
                             CACHE_CHECK_PHONE[number] = (response, text__)
@@ -4162,8 +4142,11 @@ def do_task(message, custom_prompt: str = ''):
                             if chat_id_full not in GEMIMI_TEMP:
                                 GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
-                            answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
-                                                    model = 'gemini-1.0-pro')
+                            answer = my_gemini.chat(helped_query,
+                                                    chat_id_full,
+                                                    GEMIMI_TEMP[chat_id_full],
+                                                    model = 'gemini-1.5-flash-latest')
+                            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'gemini'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
@@ -4172,8 +4155,11 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
-                                if style_: answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
-                                else: answer = my_groq.ai(message.text, mem_ = mem__)
+                                if style_:
+                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
+                                else:
+                                    answer = my_groq.ai(message.text, mem_ = mem__)
+                                CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -4223,8 +4209,11 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
-                                if style_: answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
-                                else: answer = my_groq.ai(message.text, mem_ = mem__)
+                                if style_:
+                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
+                                else:
+                                    answer = my_groq.ai(message.text, mem_ = mem__)
+                                CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -4270,8 +4259,11 @@ def do_task(message, custom_prompt: str = ''):
                             # answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full],
                             #                         model = '', style = hidden_text)
                             style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
-                            if style_: answer = my_groq.chat(f'({style_}) {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])
-                            else: answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
+                            if style_:
+                                answer = my_groq.chat(f'({style_}) {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])
+                            else:
+                                answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
+                            CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
 
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'qroq-llama370'

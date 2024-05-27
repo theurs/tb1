@@ -208,6 +208,21 @@ Translated text to "ru" for reference:
                 pass
 
 
+def find_translation_dups():
+    dups = {}
+    for key in AUTO_TRANSLATIONS:
+        # original, lang, help = ast.literal_eval(key)
+        translated = AUTO_TRANSLATIONS[key]
+        # find translated dups
+        if translated in dups:
+            dups[translated].append(key)
+        else:
+            dups[translated] = [key,]
+    for key in dups:
+        if len(dups[key]) > 1:
+            print(key, dups[key])
+
+
 if __name__ == '__main__':
     pass
     # generate_start_msg()
@@ -227,3 +242,5 @@ if __name__ == '__main__':
 
     # bad_langs = ['ar', 'co', 'fa', 'he', 'iw', 'la', 'ps', 'sd', 'ur', 'yi']
     # fix_bad_langs(bad_langs)
+    
+    # find_translation_dups()

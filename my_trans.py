@@ -15,6 +15,7 @@ import enchant
 from langdetect import detect, detect_langs
 from duckduckgo_search import DDGS
 from sqlitedict import SqliteDict
+from fuzzywuzzy import fuzz
 from lingua import Language, LanguageDetectorBuilder
 
 import cfg
@@ -239,10 +240,24 @@ def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
     if not target_lang:
         return ''
 
+    # supported_source_langs = ['ar', 'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'et',
+    #                           'fi', 'fr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv',
+    #                           'nb', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sv',
+    #                           'tr', 'uk', 'zh']
+    # supported_target_langs = ['ar', 'bg', 'cs', 'da', 'de', 'el', 'en', 'en-gb',
+    #                           'en-us', 'es', 'et', 'fi', 'fr', 'hu', 'id', 'it',
+    #                           'ja', 'ko', 'lt', 'lv', 'nb', 'nl', 'pl', 'pt',
+    #                           'pt-br', 'pt-pt', 'ro', 'ru', 'sk', 'sl', 'sv',
+    #                           'tr', 'uk', 'zh']
+
     try:
         unique_id = str(uuid.uuid4())
         deepl_api_counter[unique_id] = (current_date, len(text), auth_key)
         result = translator.translate_text(text, target_lang=target_lang)
+        # не удалось перевести?
+        ratio = fuzz.ratio(text, result.text)
+        if ratio > 90:
+            return ''
         with deepl_lock:
             deepl_cache[cache_key] = result.text
         # Запись события перевода
@@ -279,6 +294,7 @@ def detect_lang_v2(text: str) -> str:
 
 if __name__ == "__main__":
     pass
-    print(detect_lang_v2("""привiт"""))
+    # print(detect_lang_v2("""привiт"""))
+    print(translate_deepl('.אבל אשים רבים נהנים לבלו', to_lang='ru'))
     # print(translate_deepl('три6', to_lang='de'))
     # print(get_deepl_stats())

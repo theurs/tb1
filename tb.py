@@ -2060,7 +2060,7 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
                 bot_reply_tr(message, 'Added keys successfully!')
                 return
 
-    msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://www.deepl.com'
+    msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://huggingface.co/settings/tokens\n\nhttps://www.deepl.com'
     bot_reply(message, msg, disable_web_page_preview = True)
 
     if message.from_user.id in cfg.admins:

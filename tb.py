@@ -2080,7 +2080,8 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
     if chat_id_full in my_gemini.USER_KEYS:
         qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
         deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
-        keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys
+        huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
+        keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys
         msg = tr('Your keys:', lang) + '\n\n'
         for key in keys:
             msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'

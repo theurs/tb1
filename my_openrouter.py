@@ -28,7 +28,7 @@ LOCKS = {}
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 1000000
-MAX_SUM_REQUEST = 30000
+MAX_SUM_REQUEST = 1000000
 
 # хранилище диалогов {id:list(mem)}
 CHATS = SqliteDict('db/openrouter_dialogs.db', autocommit=True)
@@ -290,7 +290,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '')
     return translated
 
 
-def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
+def sum_big_text(text:str, query: str, temperature: float = 0.1, model: str = '') -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature.
@@ -304,7 +304,7 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    s, r = ai(query, user_id='test', temperature=temperature)
+    s, r = ai(query, user_id='test', temperature=temperature, model=model)
     return r
 
 

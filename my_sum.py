@@ -20,6 +20,7 @@ import cfg
 import my_log
 import my_gemini
 import my_groq
+import my_openrouter
 import utils
 
 
@@ -101,6 +102,19 @@ Text:'''
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
 
 
+    # if not result:
+    #     try:
+    #         if query:
+    #             qq = query
+    #         r = my_openrouter.sum_big_text(text[:my_openrouter.MAX_SUM_REQUEST], qq, model = 'microsoft/phi-3-mini-128k-instruct:free').strip()
+    #         if r != '':
+    #             result = f'{r}\n\n--\microsoft/phi-3-mini-128k-instruct:free [{len(text[:my_openrouter.MAX_SUM_REQUEST])}]'
+    #     except Exception as error:
+    #         print(f'my_sum:summ_text_worker:gpt: {error}')
+    #         my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
+
+
+
     if not result:
         try:
             if query:
@@ -180,7 +194,11 @@ def download_in_parallel(urls, max_sum_request):
 
 
 def get_urls_from_text(text):
-    return re.findall(r'https?://\S+', text)
+    try:
+        urls = re.findall(r'https?://\S+', text)
+        return urls
+    except:
+        return []
 
 
 def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool = False):
@@ -241,6 +259,8 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool 
                                        include_formatting=True,
                                        include_tables=True,
                                        )
+            if not text:
+                text = content
 
     if download_only:
         if youtube:
@@ -275,7 +295,11 @@ def is_valid_url(url: str) -> bool:
 if __name__ == "__main__":
     pass
 
-    print(summ_url(' https://habr.com/ru/news/817099/', download_only=False, deep=True)[0])
+    # print(summ_url('https://habr.com/ru/news/817099/', download_only=False, deep=True)[0])
+    print(summ_url('http://lib.ru/BAUM/baum04.txt_Ascii.txt', download_only=False, deep=True)[0])
+    # print(summ_url('http://moldovenii.org/resources/files/photo/1/6/16844c00b585525863341db4e63269cb_800.jpg', download_only=False, deep=True)[0])
+    
+    
 
     # print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8')[0])
     # print(summ_url('https://www.youtube.com/watch?v=0uOCF04QcHk')[0])

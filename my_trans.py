@@ -292,7 +292,7 @@ def detect_lang_v2(text: str) -> str:
     """
     try:
         detector = LanguageDetectorBuilder.from_all_languages().build()
-        result = detector.detect_language_of(text)
+        result = detector.detect_language_of(text[:300])
         return result.iso_code_639_1.name.lower() if result != None else ''
     except Exception as error:
         traceback_error = traceback.format_exc()

@@ -1365,7 +1365,7 @@ def handle_voice_thread(message: telebot.types.Message):
         return
 
     with semaphore_talks:
-        # Создание временного файла 
+        # Создание временного файла
         with tempfile.NamedTemporaryFile(delete=True) as temp_file:
             file_path = temp_file.name + '.ogg'
         # Скачиваем аудиофайл во временный файл
@@ -1376,8 +1376,10 @@ def handle_voice_thread(message: telebot.types.Message):
                 file_info = bot.get_file(message.audio.file_id)
             except AttributeError:
                 file_info = bot.get_file(message.document.file_id)
-            
+
         downloaded_file = bot.download_file(file_info.file_path)
+        if message.document and message.document.mime_type == 'audio/amr':
+            downloaded_file = my_stt.amr_to_wav(downloaded_file)
         with open(file_path, 'wb') as new_file:
             new_file.write(downloaded_file)
 
@@ -1458,8 +1460,12 @@ def handle_document_thread(message: telebot.types.Message):
                                             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                             'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
                                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                            'image/svg+xml') or \
+                                            'image/svg+xml',
+                                            'audio/amr') or \
                 message.document.mime_type.startswith('text/')):
+            if message.document and message.document.mime_type == 'audio/amr':
+                handle_voice_thread(message)
+                return
             with ShowAction(message, 'typing'):
                 # file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)

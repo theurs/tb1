@@ -12,10 +12,12 @@ import time
 import threading
 import traceback
 
+import audiofile
 import speech_recognition as sr
 
 import cfg
 import my_log
+import utils
 
 
 # locks for chat_ids
@@ -194,6 +196,51 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
     return ''
 
 
+def amr_to_wav(amr_bytes: bytes) -> bytes:
+    """
+    Конвертирует аудиоданные из формата AMR в WAV.
+
+    Args:
+        amr_bytes: Байты аудиоданных в формате AMR.
+
+    Returns:
+        Байты аудиоданных в формате WAV.
+    """
+
+    temp_input = utils.get_tmp_fname()+'.amr'
+    temp_output = utils.get_tmp_fname()+'.wav'
+
+    with open(temp_input, 'wb') as f:
+        f.write(amr_bytes)
+
+    audiofile.convert_to_wav(temp_input, temp_output)
+
+    with open(temp_output, 'rb') as f:
+        wav_bytes = f.read()
+
+    try:
+        os.remove(temp_input)
+    except Exception as error:
+        my_log.log2(f'my_stt:amr_to_wav:remove input {temp_input} {error}')
+        pass
+    try:
+        os.remove(temp_output)
+    except Exception as error:
+        my_log.log2(f'my_stt:amr_to_wav:remove output {temp_output} {error}')
+
+    return wav_bytes
+
+
 if __name__ == "__main__":
-    text = stt('3.ogg')
-    print(text)
+    pass
+    # text = stt('3.ogg')
+    # print(text)
+
+    # # Читаем байты из .amr файла
+    # with open('1.amr', 'rb') as f:
+    #     amr_data = f.read()
+    # # Конвертируем в WAV
+    # wav_data = amr_to_wav(amr_data)
+    # # Сохраняем WAV данные в файл (опционально)
+    # with open('audio.wav', 'wb') as f:
+    #     f.write(wav_data)

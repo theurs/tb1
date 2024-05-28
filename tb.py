@@ -3994,31 +3994,21 @@ def do_task(message, custom_prompt: str = ''):
     if SUPER_CHAT[chat_id_full] == 1:
         is_private = True
 
-    # detect /tts command
-    if (message.text.lower().startswith('/tts ') and is_private) \
-    or (message.text.lower().startswith('/tts\n') and is_private) \
-    or message.text.lower().startswith(f'/tts@{_bot_name} ') \
-    or message.text.lower().startswith(f'/tts@{_bot_name}\n') \
-    or (message.text.lower().strip() == '/tts' and is_private) \
-    or message.text.lower().strip() == f'/tts@{_bot_name}':
-        tts(message)
-        return
+    # удаляем пробелы в конце каждой строки,
+    # это когда текст скопирован из кривого терминала с кучей лишних пробелов
+    message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
 
-    # detect /trans /t /tr command
-    if (message.text.lower().startswith('/t ') and is_private) \
-    or (message.text.lower().startswith('/t\n') and is_private) \
-    or message.text.lower().startswith(f'/trans@{_bot_name} ') \
-    or message.text.lower().startswith(f'/trans@{_bot_name}\n') \
-    or (message.text.lower().strip() == '/t' and is_private) \
-    or message.text.lower().strip() == f'/trans@{_bot_name}' \
-    or (message.text.lower().startswith('/tr ') and is_private) \
-    or (message.text.lower().startswith('/tr\n') and is_private) \
-    or (message.text.lower().strip() == '/tr' and is_private) \
-    or (message.text.lower().startswith('/trans ') and is_private) \
-    or (message.text.lower().startswith('/trans\n') and is_private) \
-    or (message.text.lower().strip() == '/trans' and is_private):
-        trans(message)
-        return
+    msg = message.text.lower().strip()
+
+    # detect /tts /t /tr /trans command
+    if is_private:
+        if msg in ('/tts', f'/tts@{_bot_name}') or msg.startswith(('/tts ', '/tts\n', f'/tts@{_bot_name} ', f'/tts@{_bot_name}\n')):
+            tts(message)
+            return
+
+        if msg in ('/t', '/tr', '/trans', f'/trans@{_bot_name}') or msg.startswith(('/t ', '/t\n', '/tr ', '/tr\n', '/trans ', '/trans\n', f'/trans@{_bot_name} ', f'/trans@{_bot_name}\n')):
+            trans(message)
+            return
 
 
     have_gemini_key = True if ((chat_id_full in my_gemini.USER_KEYS) and my_gemini.USER_KEYS[chat_id_full]) else False
@@ -4048,7 +4038,7 @@ def do_task(message, custom_prompt: str = ''):
                 chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
-    if (message.text.lower().startswith('\\image ') and is_private):
+    if (msg.startswith('\\image ') and is_private):
         message.text = message.text.replace('/', '\\', 1)
         image(message)
         return
@@ -4077,11 +4067,6 @@ def do_task(message, custom_prompt: str = ''):
                 # если это ответ в обычном чате но ответ не мне то выход
                 if message.reply_to_message and not is_reply:
                     return
-
-        # удаляем пробелы в конце каждой строки
-        message.text = "\n".join([line.rstrip() for line in message.text.split("\n")])
-
-        msg = message.text.lower()
 
         # определяем какое имя у бота в этом чате, на какое слово он отзывается
         if chat_id_full in BOT_NAMES:

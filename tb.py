@@ -2123,7 +2123,7 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
         bot_reply(message, msg, parse_mode='HTML')
 
 
-@bot.message_handler(commands=['addkey'], func=authorized_admin)
+@bot.message_handler(commands=['addkey', 'addkeys'], func=authorized_admin)
 def addkeys(message: telebot.types.Message):
     '''добавить ключи другому юзеру'''
     thread = threading.Thread(target=addkeys_thread, args=(message,))
@@ -2131,7 +2131,8 @@ def addkeys(message: telebot.types.Message):
 def addkeys_thread(message: telebot.types.Message):
     try:
         args = message.text.split(maxsplit=2)
-        uid = f'[{args[1].strip()}] [0]'
+        uid = int(args[1].strip())
+        uid = f'[{uid}] [0]'
         key = args[2].strip()
         bot_reply(message, f'{uid} {key}')
         if key not in my_gemini.ALL_KEYS:
@@ -2139,9 +2140,14 @@ def addkeys_thread(message: telebot.types.Message):
             my_gemini.USER_KEYS[uid] = [key,]
             bot_reply_tr(message, 'Added keys successfully!')
         else:
-            bot_reply_tr(message, 'Key already exists!')
-    except Exception:
-        bot_reply_tr(message, 'Usage: /addkeys <full_id> <key>')
+            for uid_ in [x for x in my_gemini.USER_KEYS.keys()]:
+                if uid_ in my_gemini.USER_KEYS:
+                    if my_gemini.USER_KEYS[uid_] == [key,]:
+                        del my_gemini.USER_KEYS[uid_]
+            my_gemini.USER_KEYS[uid] = [key,]
+            bot_reply_tr(message, 'Added keys successfully!')
+    except Exception as error:
+        bot_reply_tr(message, 'Usage: /addkeys <user_id as int> <key>')
 
 
 # @bot.message_handler(commands=['removemykeys'], func=authorized_owner)

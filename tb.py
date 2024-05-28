@@ -927,13 +927,22 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
     lang = get_lang(chat_id_full, message)
 
     if kbd == 'mem':
-        # if disabled_kbd(chat_id_full):
-        #     return None
+        if disabled_kbd(chat_id_full):
+            return None
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Стереть историю", lang), callback_data='clear_history')
         button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
         markup.add(button1, button2)
         return markup
+    elif kbd == 'download_saved_text':
+        # if disabled_kbd(chat_id_full):
+        #     return None
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(tr("Скачать", lang), callback_data='download_saved_text')
+        button2 = telebot.types.InlineKeyboardButton(tr("Удалить", lang), callback_data='delete_saved_text')
+        markup.add(button1, button2)
+        return markup
+
     elif kbd == 'hide':
         if disabled_kbd(chat_id_full):
             return None
@@ -1240,6 +1249,32 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         time.sleep(0.01)
                     log_message(msgs_ids)
 
+
+        elif call.data == 'download_saved_text':
+            # отдать юзеру его текст
+            if chat_id_full in USER_FILES:
+                with ShowAction(message, 'typing'):
+                    buf = io.BytesIO()
+                    buf.write(USER_FILES[chat_id_full][1].encode())
+                    buf.seek(0)
+                    fname = utils.safe_fname(USER_FILES[chat_id_full][0])
+                    m = bot.send_document(message.chat.id,
+                                          document=buf,
+                                          message_thread_id=message.message_thread_id,
+                                          caption=fname,
+                                          visible_file_name = fname)
+                    log_message(m)
+            else:
+                bot_reply_tr(message, 'No text was saved.')
+
+
+        elif call.data == 'delete_saved_text':
+            # удалить сохраненный текст
+            if chat_id_full in USER_FILES:
+                del USER_FILES[chat_id_full]
+                bot_reply_tr(message, 'Saved text deleted.')
+            else:
+                bot_reply_tr(message, 'No text was saved.')
 
 
         elif call.data == 'translate_chat':
@@ -3209,7 +3244,7 @@ def ask_file_thread(message: telebot.types.Message):
         bot_reply_tr(message, 'Usage: /ask <query saved text>\n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.')
         if chat_id_full in USER_FILES:
             msg = f'{tr("Загружен файл/ссылка:", lang)} {USER_FILES[chat_id_full][0]}\n\n{tr("Размер текста:", lang)} {len(USER_FILES[chat_id_full][1])}'
-            bot_reply(message, msg, disable_web_page_preview = True)
+            bot_reply(message, msg, disable_web_page_preview = True, reply_markup=get_keyboard('download_saved_text', message))
             return
 
     if chat_id_full in USER_FILES:

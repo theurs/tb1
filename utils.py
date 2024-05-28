@@ -506,7 +506,26 @@ def get_username_for_log(message) -> str:
             return message.chat.title or message.chat.username or message.chat.first_name or 'nonamechat'
 
 
+def safe_fname(s: str) -> str:
+    """Return a safe filename for the given string, truncated to 250 bytes in UTF-8 encoding."""
+    
+    # Replace invalid characters
+    s = re.sub(r'[\\/*?:"<>|]', '_', s)
+    
+    # Encode to UTF-8 and check length
+    encoded_s = s.encode('utf-8')
+    if len(encoded_s) <= 250:
+        return s
+    
+    # Shorten filename if longer than 250 bytes
+    while len(encoded_s) > 247:
+        s = s[:len(s)//2-3] + '...' + s[len(s)//2+3:]
+        encoded_s = s.encode('utf-8')
+    return s
+
+
 if __name__ == '__main__':
+    # print(safe_fname('dfgdшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшггггггггггггггггггггггггггггшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшfg\/dfg.tb'))
     t=r"""рш еруку
 
 ## Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.

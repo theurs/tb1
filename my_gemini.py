@@ -53,7 +53,7 @@ if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
 
 # можно сделать 2 запроса по 15000 в сумме получится запрос размером 30000
 # может быть полезно для сумморизации текстов
-MAX_SUM_REQUEST = 200000
+MAX_SUM_REQUEST = 300000
 # MAX_SUM_REQUEST = 31000
 
 
@@ -292,14 +292,15 @@ def ai(q: str, mem = [],
     """
     if model == '':
         model = 'gemini-1.5-flash-latest'
-        # models/gemini-1.0-pro
-        # models/gemini-1.0-pro-001
-        # models/gemini-1.0-pro-latest
-        # models/gemini-1.0-pro-vision-latest
-        # models/gemini-1.5-flash-latest
-        # models/gemini-1.5-pro-latest
-        # models/gemini-pro
-        # models/gemini-pro-vision
+        # gemini-1.0-pro
+        # gemini-1.0-pro-001
+        # gemini-1.0-pro-latest
+        # gemini-1.0-pro-vision-latest
+        # gemini-1.5-flash-latest
+        # gemini-1.5-pro
+        # gemini-1.5-pro-latest
+        # gemini-pro
+        # gemini-pro-vision
 
     # bugfix температура на самом деле от 0 до 1 а не от 0 до 2
     temperature = round(temperature / 2, 2)
@@ -829,4 +830,6 @@ if __name__ == '__main__':
     # print(img2txt(open('1.jpg', 'rb').read()))
     # print(img2txt(open('2.png', 'rb').read()))
     
-    print(detect_lang('Чудова днина, правда?') )
+    # print(detect_lang('Чудова днина, правда?') )
+
+    print(ai('1+1', model='gemini-1.5-pro'))

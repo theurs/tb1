@@ -55,6 +55,18 @@ huggingface_prompts = SqliteDict('db/kandinski_prompts.db', autocommit=True)
 LOCKS = {}
 
 
+def load_users_keys():
+    """
+    Load users' keys into memory and update the list of all keys available.
+    """
+    with USER_KEYS_LOCK:
+        global USER_KEYS, ALL_KEYS
+        for user in USER_KEYS:
+            key = USER_KEYS[user]
+            if key not in ALL_KEYS:
+                ALL_KEYS.append(key)
+
+
 def upscale(image_bytes: bytes) -> bytes:
     """
     Увеличивает размер изображения, если его ширина или высота меньше 1024 пикселей,

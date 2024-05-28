@@ -1165,12 +1165,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
 /original_mode
 
-<b>{tr('Available ai models:', lang)}</b>
-/llama370 - llama 3 70b (groq)
-/gemini10 - Google Gemini 1.5 flash
-/gemini15 - Google Gemini 1.5 pro
-/openrouter - {tr('all other models including new GPT-4o, Claude 3 Opus etc', lang)}
-
 """
 
         if call.data == 'clear_history':
@@ -1781,12 +1775,6 @@ def config_thread(message: telebot.types.Message):
 
 /original_mode
 
-<b>{tr('Available ai models:', lang)}</b>
-/llama370 - llama 3 70b (groq)
-/gemini10 - Google Gemini 1.5 flash
-/gemini15 - Google Gemini 1.5 pro
-/openrouter - {tr('all other models including new GPT-4o, Claude 3 Opus etc', lang)}
-
 """
         bot_reply(message, MSG_CONFIG, parse_mode='HTML', reply_markup=get_keyboard('config', message))
     except Exception as error:
@@ -2054,14 +2042,20 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
 
         # groq keys len=56, starts with "gsk_"
         keys_groq = [x.strip() for x in args[1].split() if len(x.strip()) == 56]
+        if keys_groq[0] in my_groq.ALL_KEYS:
+            bot_reply_tr(message, 'Groq API key already exists!')
         keys_groq = [x for x in keys_groq if x not in my_groq.ALL_KEYS and x.startswith('gsk_')]
 
         #deepl keys len=39, endwith ":fx"
         deepl_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
+        if deepl_keys[0] in my_trans.ALL_KEYS:
+            bot_reply_tr(message, 'Deepl API key already exists!')
         deepl_keys = [x for x in deepl_keys if x not in my_trans.ALL_KEYS and x.endswith(':fx')]
 
         # huggingface keys len=37, starts with "hf_"
         huggingface_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 37]
+        if huggingface_keys[0] in my_genimg.ALL_KEYS:
+            bot_reply_tr(message, 'Huggingface API key already exists!')
         huggingface_keys = [x for x in huggingface_keys if x not in my_genimg.ALL_KEYS and x.startswith('hf_')]
 
         if huggingface_keys:
@@ -4549,6 +4543,9 @@ def main():
     load_msgs()
 
     my_gemini.load_users_keys()
+    my_genimg.load_users_keys()
+    my_groq.load_users_keys()
+    my_trans.load_users_keys()
 
     thread = threading.Thread(target=count_stats, args=())
     thread.start()

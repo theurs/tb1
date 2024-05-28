@@ -45,6 +45,7 @@ MAX_SUM_REQUEST = 12000
 # хранилище диалогов {id:list(mem)}
 CHATS = SqliteDict('db/groq_dialogs.db', autocommit=True)
 
+
 def ai(prompt: str = '',
        system: str = '',
        mem_ = [],
@@ -415,6 +416,18 @@ def check_phone_number(number: str) -> str:
 '''
     response = ai(query)
     return response, text
+
+
+def load_users_keys():
+    """
+    Load users' keys into memory and update the list of all keys available.
+    """
+    with USER_KEYS_LOCK:
+        global USER_KEYS, ALL_KEYS
+        for user in USER_KEYS:
+            key = USER_KEYS[user]
+            if key not in ALL_KEYS:
+                ALL_KEYS.append(key)
 
 
 if __name__ == '__main__':

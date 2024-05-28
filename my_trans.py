@@ -43,6 +43,18 @@ USER_KEYS_LOCK = threading.Lock()
 TRANSLATE_CACHE = {}
 
 
+def load_users_keys():
+    """
+    Load users' keys into memory and update the list of all keys available.
+    """
+    with USER_KEYS_LOCK:
+        global USER_KEYS, ALL_KEYS
+        for user in USER_KEYS:
+            key = USER_KEYS[user]
+            if key not in ALL_KEYS:
+                ALL_KEYS.append(key)
+
+
 def count_russian_words_not_in_ukrainian_dict(text):
     """Считаем количество русских слов в тексте, эти слова не должны быть в украинском и белорусском"""
     platform = utils.platform().lower()

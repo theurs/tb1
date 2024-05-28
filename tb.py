@@ -2044,14 +2044,22 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
 
     args = message.text.split(maxsplit=1)
     if len(args) > 1:
+
         keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
+        already_exists = any(key in my_gemini.ALL_KEYS for key in keys)
+        if already_exists:
+            msg = f'{tr("This key has already been added by someone earlier.", lang)} {keys}'
+            bot_reply(message, msg)
         keys = [x for x in keys if x not in my_gemini.ALL_KEYS and x.startswith('AIza')]
+
         # groq keys len=56, starts with "gsk_"
         keys_groq = [x.strip() for x in args[1].split() if len(x.strip()) == 56]
         keys_groq = [x for x in keys_groq if x not in my_groq.ALL_KEYS and x.startswith('gsk_')]
+
         #deepl keys len=39, endwith ":fx"
         deepl_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
         deepl_keys = [x for x in deepl_keys if x not in my_trans.ALL_KEYS and x.endswith(':fx')]
+
         # huggingface keys len=37, starts with "hf_"
         huggingface_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 37]
         huggingface_keys = [x for x in huggingface_keys if x not in my_genimg.ALL_KEYS and x.startswith('hf_')]

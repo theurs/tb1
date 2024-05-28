@@ -1527,7 +1527,7 @@ def handle_document_thread(message: telebot.types.Message):
                     caption = message.caption or ''
                     caption = caption.strip()
                     summary = my_sum.summ_text(text, 'text', lang, caption)
-                    USER_FILES[chat_id_full] = (message.document.file_name if hasattr(message, 'document') else 'text file', text)
+                    USER_FILES[chat_id_full] = (message.document.file_name if hasattr(message, 'document') else 'noname.txt', text)
                     summary_html = utils.bot_markdown_to_html(summary)
                     bot_reply(message, summary_html, parse_mode='HTML',
                                           disable_web_page_preview = True,
@@ -2752,7 +2752,7 @@ def google_thread(message: telebot.types.Message):
                 if not r.strip():
                     bot_reply_tr(message, 'Search failed.')
                     return
-                USER_FILES[chat_id_full] = ('google: ' + q, text)
+                USER_FILES[chat_id_full] = ('google: ' + q + '.txt', text)
             try:
                 rr = utils.bot_markdown_to_html(r)
                 hash = utils.nice_hash(q, 16)
@@ -3308,7 +3308,7 @@ def summ_text_thread(message: telebot.types.Message):
                     if url_id in SUM_CACHE:
                         r = SUM_CACHE[url_id]
                     if r:
-                        USER_FILES[chat_id_full] = (url, r)
+                        USER_FILES[chat_id_full] = (url + '.txt', r)
                         rr = utils.bot_markdown_to_html(r)
                         bot_reply(message, rr, disable_web_page_preview = True,
                                             parse_mode='HTML',
@@ -3322,7 +3322,7 @@ def summ_text_thread(message: telebot.types.Message):
                         res = ''
                         try:
                             res, text = my_sum.summ_url(url, lang = lang, deep = True)
-                            USER_FILES[chat_id_full] = (url, text)
+                            USER_FILES[chat_id_full] = (url + '.txt', text)
                         except Exception as error2:
                             print(error2)
                             bot_reply_tr(message, 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', parse_mode='Markdown')
@@ -4165,7 +4165,7 @@ def do_task(message, custom_prompt: str = ''):
                         if number in CACHE_CHECK_PHONE:
                             response = CACHE_CHECK_PHONE[number][0]
                             text__ = CACHE_CHECK_PHONE[number][1]
-                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
+                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}.txt', text__)
                         else:
                             with ShowAction(message, 'typing'):
                                 # response, text__ = my_gemini.check_phone_number(number)
@@ -4173,7 +4173,7 @@ def do_task(message, custom_prompt: str = ''):
                                 response, text__ = my_groq.check_phone_number(number)
                                 CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
                         if response:
-                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}', text__)
+                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}.txt', text__)
                             CACHE_CHECK_PHONE[number] = (response, text__)
                             response = utils.bot_markdown_to_html(response)
                             bot_reply(message, response, parse_mode='HTML', not_log=True)

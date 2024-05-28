@@ -3335,7 +3335,7 @@ def summ2_text(message: telebot.types.Message):
     summ_text(message)
 
 
-@bot.message_handler(commands=['trans', 'tr', 't'], func=authorized)
+#@bot.message_handler(commands=['trans', 'tr', 't'], func=authorized)
 def trans(message: telebot.types.Message):
     thread = threading.Thread(target=trans_thread, args=(message,))
     thread.start()
@@ -4003,6 +4003,23 @@ def do_task(message, custom_prompt: str = ''):
     or message.text.lower().strip() == f'/tts@{_bot_name}':
         tts(message)
         return
+
+    # detect /trans /t /tr command
+    if (message.text.lower().startswith('/t ') and is_private) \
+    or (message.text.lower().startswith('/t\n') and is_private) \
+    or message.text.lower().startswith(f'/trans@{_bot_name} ') \
+    or message.text.lower().startswith(f'/trans@{_bot_name}\n') \
+    or (message.text.lower().strip() == '/t' and is_private) \
+    or message.text.lower().strip() == f'/trans@{_bot_name}' \
+    or (message.text.lower().startswith('/tr ') and is_private) \
+    or (message.text.lower().startswith('/tr\n') and is_private) \
+    or (message.text.lower().strip() == '/tr' and is_private) \
+    or (message.text.lower().startswith('/trans ') and is_private) \
+    or (message.text.lower().startswith('/trans\n') and is_private) \
+    or (message.text.lower().strip() == '/trans' and is_private):
+        trans(message)
+        return
+
 
     have_gemini_key = True if ((chat_id_full in my_gemini.USER_KEYS) and my_gemini.USER_KEYS[chat_id_full]) else False
 

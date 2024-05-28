@@ -519,7 +519,7 @@ def safe_fname(s: str) -> str:
     
     # Shorten filename if longer than 250 bytes
     while len(encoded_s) > 247:
-        s = s[:len(s)//2-3] + '...' + s[len(s)//2+3:]
+        s = s[:len(s)//2-3] + '___' + s[len(s)//2+3:]
         encoded_s = s.encode('utf-8')
     return s
 

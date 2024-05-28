@@ -3617,14 +3617,17 @@ def id_cmd_handler(message: telebot.types.Message):
 
     user_id = message.from_user.id
     reported_language = message.from_user.language_code
+    open_router_model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full] if chat_id_full in my_openrouter.PARAMS else my_openrouter.PARAMS_DEFAULT
+ 
     msg = f'''{tr("ID пользователя:", lang)} {user_id}
 
 {tr("ID группы:", lang)} {chat_id_full}
 
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
 
-{tr("Выбранная чат модель:", lang)} {CHAT_MODE[chat_id_full] if chat_id_full in CHAT_MODE else cfg.chat_mode_default}
-'''
+{tr("Выбранная чат модель:", lang)} {CHAT_MODE[chat_id_full] if chat_id_full in CHAT_MODE else cfg.chat_mode_default}'''
+    if CHAT_MODE[chat_id_full] == 'openrouter':
+        msg += ' ' + open_router_model
 
     gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
     groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
@@ -4398,12 +4401,8 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            if chat_id_full not in GEMIMI_TEMP:
-                                GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
-
                             style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else ''
                             status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_)
-
                             WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 

@@ -228,24 +228,29 @@ def get_mem_as_string(chat_id: str) -> str:
     Returns:
         str: The chat history as a string.
     """
-    global CHATS
-    if chat_id not in CHATS:
-        CHATS[chat_id] = []
-    mem = CHATS[chat_id]
-    result = ''
-    for x in mem:
-        role = x['role']
-        if role == 'user': role = '𝐔𝐒𝐄𝐑'
-        if role == 'assistant': role = '𝐁𝐎𝐓'
-        if role == 'system': role = '𝐒𝐘𝐒𝐓𝐄𝐌'
-        text = x['content']
-        if text.startswith('[Info to help you answer'):
-            end = text.find(']') + 1
-            text = text[end:].strip()
-        result += f'{role}: {text}\n'
-        if role == '𝐁𝐎𝐓':
-            result += '\n'
-    return result 
+    try:
+        global CHATS
+        if chat_id not in CHATS:
+            CHATS[chat_id] = []
+        mem = CHATS[chat_id]
+        result = ''
+        for x in mem:
+            role = x['role']
+            if role == 'user': role = '𝐔𝐒𝐄𝐑'
+            if role == 'assistant': role = '𝐁𝐎𝐓'
+            if role == 'system': role = '𝐒𝐘𝐒𝐓𝐄𝐌'
+            text = x['content']
+            if text.startswith('[Info to help you answer'):
+                end = text.find(']') + 1
+                text = text[end:].strip()
+            result += f'{role}: {text}\n'
+            if role == '𝐁𝐎𝐓':
+                result += '\n'
+        return result 
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_openrouter(f'my_openrouter:get_mem_as_string: {error}\n\n{error_traceback}')
+        return ''
 
 
 def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '') -> str:

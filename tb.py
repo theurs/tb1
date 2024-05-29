@@ -623,7 +623,7 @@ def log_group_daemon():
     group = 10
     while LOG_GROUP_DAEMON_ENABLED:
         try:
-            time.sleep(2 + group) # telegram limit 1 message per second for groups
+            time.sleep(4 + group) # telegram limit 1 message per second for groups
             group = 0
             with LOG_GROUP_MESSAGES_LOCK:
                 try:
@@ -673,7 +673,7 @@ def log_group_daemon():
                 elif _type == 'copy':
                     if _m_ids:
                         try:
-                            group = len(_m_ids)*2
+                            group = len(_m_ids)*4
                             bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
                         except Exception as error3_0:
                             try:

@@ -2336,7 +2336,7 @@ def gemini10_mode(message: telebot.types.Message):
 def gemini15_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full] or (datetime.datetime.now() < datetime.datetime(2024, 5, 30)):
+    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full] or (datetime.datetime.now() < datetime.datetime(2024, 5, 31)):
         CHAT_MODE[chat_id_full] = 'gemini15'
         bot_reply_tr(message, 'Gemini 1.5 pro model selected.')
     else:
@@ -4223,7 +4223,7 @@ def do_task(message, custom_prompt: str = ''):
     chat_mode_ = CHAT_MODE[chat_id_full]
 
     # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
-    if datetime.datetime.now() > datetime.datetime(2024, 5, 30):
+    if datetime.datetime.now() > datetime.datetime(2024, 5, 31):
         if CHAT_MODE[chat_id_full] == 'gemini15' and not have_gemini_key:
             # CHAT_MODE[chat_id_full] = 'gemini'
             chat_mode_ = 'gemini'
@@ -4240,7 +4240,7 @@ def do_task(message, custom_prompt: str = ''):
         if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
             chat_mode_ = 'gemini'
     else: # в чатах только дешевый флеш
-        if datetime.datetime.now() > datetime.datetime(2024, 5, 30):
+        if datetime.datetime.now() > datetime.datetime(2024, 5, 31):
             if chat_mode_ == 'gemini15':
                 chat_mode_ = 'gemini'
 

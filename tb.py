@@ -623,7 +623,7 @@ def log_group_daemon():
 
     while LOG_GROUP_DAEMON_ENABLED:
         try:
-            time.sleep(1) # telegram limit 1 message per second for groups
+            time.sleep(2) # telegram limit 1 message per second for groups
             with LOG_GROUP_MESSAGES_LOCK:
                 try:
                     min_key = min(LOG_GROUP_MESSAGES.keys())

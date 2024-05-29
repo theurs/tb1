@@ -777,7 +777,13 @@ def get_reprompt_nsfw(prompt: str, conversation_history: str) -> str:
             my_log.log2(f'my_genimg:get_reprompt_nsfw: error: {error}')
         detected_lang = 'unknown'
 
-    # используем только гугл транслятор потому что на ИИ надежды нет из за самоцензуры
+    # пробуем с помощью ИИ
+    prompt_translated = my_groq.reprompt_image(prompt, censored = False)
+    if prompt != prompt_translated:
+        my_log.log_reprompts(f'get_reprompt_nsfw:\n\n{prompt}\n\n{prompt_translated}')
+        return prompt_translated
+
+    # используем гугл транслятор если ИИ не справился
     if detected_lang != 'en':
         prompt_translated = my_trans.translate_text2(prompt, 'en')
         if prompt_translated:

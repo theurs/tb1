@@ -106,7 +106,7 @@ def log_reprompts(text: str) -> None:
 
 def log_gemini(text: str) -> None:
     """для логов gemini"""
-    log2(text[:1000], 'gemini')
+    log2(text[:2000], 'gemini')
 
 
 def log_keys(text: str) -> None:
@@ -116,12 +116,12 @@ def log_keys(text: str) -> None:
 
 def log_openrouter(text: str) -> None:
     """для логов openrouter"""
-    log2(text, 'openrouter')
+    log2(text[:2000], 'openrouter')
 
 
 def log_groq(text: str) -> None:
     """для логов groq"""
-    log2(text, 'groq')
+    log2(text[:2000], 'groq')
 
 
 def log_bing_success(text: str) -> None:

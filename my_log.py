@@ -106,7 +106,7 @@ def log_reprompts(text: str) -> None:
 
 def log_gemini(text: str) -> None:
     """для логов gemini"""
-    log2(text, 'gemini')
+    log2(text[:1000], 'gemini')
 
 
 def log_keys(text: str) -> None:

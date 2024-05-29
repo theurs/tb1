@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # pip install -U deepl
-# pip install -U lingua-language-detector
 
 import random
 import re
@@ -16,7 +15,6 @@ from langdetect import detect, detect_langs
 from duckduckgo_search import DDGS
 from sqlitedict import SqliteDict
 from fuzzywuzzy import fuzz
-from lingua import Language, LanguageDetectorBuilder
 
 import cfg
 import my_log
@@ -289,32 +287,8 @@ def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
         return ''
 
 
-def detect_lang_v2(text: str) -> str:
-    """
-    Detects the language of the given text and returns the ISO 639-1 language code.
-    
-    Args:
-        text (str): The text to be analyzed.
-        
-    Returns:
-        str: The ISO 639-1 language code of the detected language. Returns an empty string if no language is detected.
-        
-    Raises:
-        Exception: If an error occurs during language detection.
-    """
-    try:
-        detector = LanguageDetectorBuilder.from_all_languages().build()
-        result = detector.detect_language_of(text[:300])
-        return result.iso_code_639_1.name.lower() if result != None else ''
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'my_trans:detect_lang_v2: {error}\n\n{text}\n\n{traceback_error}')
-        return ''
-
-
 if __name__ == "__main__":
     pass
-    # print(detect_lang_v2("""привiт"""))
     print(translate_deepl('.אבל אשים רבים נהנים לבלו', to_lang='ru'))
     # print(translate_deepl('три6', to_lang='de'))
     # print(get_deepl_stats())

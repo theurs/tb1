@@ -17,7 +17,6 @@ google
 gTTS
 langdetect
 langcodes[data]
-lingua-language-detector
 lxml[html_clean]
 natsort
 opencv-python

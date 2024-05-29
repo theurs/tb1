@@ -623,7 +623,7 @@ def log_group_daemon():
     group = 0
     while LOG_GROUP_DAEMON_ENABLED:
         try:
-            time.sleep(1 + group) # telegram limit 1 message per second for groups
+            time.sleep(2 + group) # telegram limit 1 message per second for groups
             group = 0
             with LOG_GROUP_MESSAGES_LOCK:
                 try:
@@ -668,7 +668,7 @@ def log_group_daemon():
                 elif _type == 'copy':
                     if _m_ids:
                         try:
-                            group = len(_m_ids)
+                            group = len(_m_ids)*2
                             bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
                         except Exception as error3_0:
                             try:
@@ -2815,7 +2815,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
             llang = my_gemini.detect_lang(text)
             CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
         if not llang or lang not in supported_langs_tts:
-            llang = my_trans.detect_lang_v2(text) or lang
+            llang = my_trans.detect(text) or lang
 
     if not llang or llang == 'und':
         llang = lang
@@ -3577,7 +3577,7 @@ def trans_thread(message: telebot.types.Message):
                         translated = my_gemini.translate(text[:3500], to_lang = llang)
                         CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
             if translated:
-                detected_lang = tr(my_trans.detect_lang_v2(text), lang, 'это перевод названия языка, одно слово, прилагательное')
+                detected_lang = tr(my_trans.detect_lang(text) or 'unknown', lang, 'это перевод названия языка, одно слово, прилагательное')
 
                 bot_reply(message,
                           translated + '\n\n' + tr('Распознанный язык:', lang) \

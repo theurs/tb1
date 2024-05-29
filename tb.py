@@ -668,8 +668,8 @@ def log_group_daemon():
                 elif _type == 'copy':
                     if _m_ids:
                         try:
-                            bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
                             group = len(_m_ids)
+                            bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
                         except Exception as error3_0:
                             try:
                                 th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id

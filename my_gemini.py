@@ -14,7 +14,7 @@ import langcodes
 from sqlitedict import SqliteDict
 
 import cfg
-import my_google
+import my_sum
 import my_log
 
 
@@ -672,7 +672,7 @@ def check_phone_number(number: str) -> str:
         # этот сайт похоже тупо врёт обо всех номерах f'https://abonentik.ru/7{number}',
         f'https://www.list-org.com/search?type=phone&val=%2B7{number}'
     ]
-    text = my_google.download_text(urls, no_links=True)
+    text = my_sum.download_text(urls, no_links=True)
     query = f'''
 Определи по тексту какой регион, какой оператор, и не связан ли он с мошенничеством,
 ответь в удобной для чтения форме с разделением на абзацы и с использованием

@@ -2650,7 +2650,7 @@ def tts_thread(message: telebot.types.Message, caption = None):
         if '/youtu.be/' in url or 'youtube.com/' in url:
             text = my_sum.get_text_from_youtube(url)
         else:
-            text = my_google.download_text([url, ], 100000, no_links = True)
+            text = my_sum.download_text([url, ], 100000, no_links = True)
         if text:
             bot_reply(message, text, parse_mode='',
                                   reply_markup=get_keyboard('translate', message),

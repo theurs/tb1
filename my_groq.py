@@ -14,7 +14,7 @@ from groq import Groq
 from sqlitedict import SqliteDict
 
 import cfg
-import my_google
+import my_sum
 import my_log
 
 
@@ -400,7 +400,7 @@ def check_phone_number(number: str) -> str:
         # этот сайт похоже тупо врёт обо всех номерах f'https://abonentik.ru/7{number}',
         f'https://www.list-org.com/search?type=phone&val=%2B7{number}'
     ]
-    text = my_google.download_text(urls, no_links=True)
+    text = my_sum.download_text(urls, no_links=True)
     query = f'''
 Определи по предоставленному тексту какой регион, какой оператор,
 связан ли номер с мошенничеством,

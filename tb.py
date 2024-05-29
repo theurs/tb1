@@ -588,6 +588,117 @@ def is_for_me(message: telebot.types.Message):
         return (True, cmd)
 
 
+# key - time.time() float
+# value - list
+#   type as string='new' or 'copy',
+#   text as str,
+#   chat_full_id as str,
+#   chat_name as str,
+#   m_ids as list of int,
+#   message_chat_id as int,
+#   message_message_id as int
+LOG_GROUP_MESSAGES = SqliteDict('db/log_group_messages.db', autocommit=True)
+LOG_GROUP_MESSAGES_LOCK = threading.Lock()
+LOG_GROUP_DAEMON_ENABLED = True
+
+def log_group_daemon():
+    if not hasattr(cfg, 'LOGS_GROUP') or not cfg.LOGS_GROUP:
+        return
+
+    global LOG_GROUP_DAEMON_ENABLED
+
+    while LOG_GROUP_DAEMON_ENABLED:
+        try:
+            time.sleep(1) # telegram limit 1 message per second for groups
+            with LOG_GROUP_MESSAGES_LOCK:
+                try:
+                    min_key = min(LOG_GROUP_MESSAGES.keys())
+                except ValueError:
+                    continue # no messages in queue
+                value = LOG_GROUP_MESSAGES[min_key]
+                _type = value[0]
+                _text = value[1]
+                _chat_full_id = value[2]
+                _chat_name = value[3]
+                _m_ids = value[4]
+                _message_chat_id = value[5]
+                _message_message_id = value[6]
+
+                if _chat_full_id in LOGS_GROUPS_DB:
+                    th = LOGS_GROUPS_DB[_chat_full_id]
+                else:
+                    try:
+                        th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
+                        LOGS_GROUPS_DB[_chat_full_id] = th
+                    except Exception as error:
+                        traceback_error = traceback.format_exc()
+                        my_log.log2(f'tb:log_group_daemon:create group topic: {error}\n{traceback_error}')
+                        del LOG_GROUP_MESSAGES[min_key] # drop message
+                        continue
+
+                if _type == 'new':
+                    try:
+                        bot.send_message(cfg.LOGS_GROUP, _text, message_thread_id=th)
+                    except Exception as error2_0:
+                        try:
+                            th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
+                            LOGS_GROUPS_DB[_chat_full_id] = th
+                            bot.send_message(cfg.LOGS_GROUP, _text, message_thread_id=th)
+                        except Exception as error2:
+                            traceback_error = traceback.format_exc()
+                            my_log.log2(f'tb:log_group_daemon:send message: {error2}\n{traceback_error}\n\n{_text}')
+                            del LOG_GROUP_MESSAGES[min_key] # drop message
+                            continue
+
+                elif _type == 'copy':
+                    if _m_ids:
+                        try:
+                            bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
+                        except Exception as error3_0:
+                            try:
+                                th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
+                                LOGS_GROUPS_DB[_chat_full_id] = th
+                                bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
+                            except Exception as error3:
+                                traceback_error = traceback.format_exc()
+                                my_log.log2(f'tb:log_group_daemon:copy message: {error3}\n{traceback_error}\n\n{_text}')
+                                del LOG_GROUP_MESSAGES[min_key] # drop message
+                                continue
+                    else:
+                        try:
+                            bot.copy_message(cfg.LOGS_GROUP, _message_chat_id, _message_message_id, message_thread_id=th)
+                        except Exception as error4_0:
+                            try:
+                                th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
+                                LOGS_GROUPS_DB[_chat_full_id] = th
+                                bot.copy_message(cfg.LOGS_GROUP, _message_chat_id, _message_message_id, message_thread_id=th)
+                            except Exception as error4:
+                                traceback_error = traceback.format_exc()
+                                my_log.log2(f'tb:log_group_daemon:copy message2: {error4}\n{traceback_error}\n\n{_text}')
+                                del LOG_GROUP_MESSAGES[min_key] # drop message
+                                continue
+
+                del LOG_GROUP_MESSAGES[min_key]
+        except Exception as unknown_error:
+            traceback_error = traceback.format_exc()
+            my_log.log2(f'tb:log_group_daemon: {unknown_error}\n{traceback_error}')
+
+
+def log_message_add(_type: str,
+                    _text: str,
+                    _chat_full_id: str,
+                    _chat_name: str,
+                    _m_ids: list,
+                    _message_chat_id: int,
+                    _message_message_id: int):
+    with LOG_GROUP_MESSAGES_LOCK:
+        current_time = time.time()
+        while current_time in LOG_GROUP_MESSAGES:
+            current_time += 0.001
+        value = (_type, _text, _chat_full_id, _chat_name, _m_ids, _message_chat_id, _message_message_id)
+        LOG_GROUP_MESSAGES[current_time] = value
+
+
 def log_message(message: telebot.types.Message):
     try:
         if isinstance(message, telebot.types.Message) and hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
@@ -601,53 +712,40 @@ def log_message(message: telebot.types.Message):
         if isinstance(message, telebot.types.Message):
             chat_full_id = get_topic_id(message)
             chat_name = utils.get_username_for_log(message)
-            if chat_full_id in LOGS_GROUPS_DB:
-                th = LOGS_GROUPS_DB[chat_full_id]
-            else:
-                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                LOGS_GROUPS_DB[chat_full_id] = th
-            chat_id_full = get_topic_id(message)
-            if chat_id_full in WHO_ANSWERED:
+
+            if chat_full_id in WHO_ANSWERED:
+                log_message_add('new',
+                                f'[{WHO_ANSWERED[chat_full_id]}]',
+                                chat_full_id,
+                                chat_name,
+                                None, # m_ids
+                                message.chat.id,
+                                message.message_id)
                 try:
-                    bot.send_message(cfg.LOGS_GROUP, f'[{WHO_ANSWERED[chat_id_full]}]', message_thread_id=th)
-                except Exception as unknown:
-                    if 'Bad Request: message thread not found' in str(unknown):
-                        LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                        th = LOGS_GROUPS_DB[chat_full_id]
-                        bot.send_message(cfg.LOGS_GROUP, f'[{WHO_ANSWERED[chat_id_full]}]', message_thread_id=th)
-                try:
-                    del WHO_ANSWERED[chat_id_full]
+                    del WHO_ANSWERED[chat_full_id]
                 except KeyError:
                     pass
-            try:
-                bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
-            except Exception as unknown:
-                if 'Bad Request: message thread not found' in str(unknown):
-                    LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                    th = LOGS_GROUPS_DB[chat_full_id]
-                    try:
-                        bot.copy_message(cfg.LOGS_GROUP, message.chat.id, message.message_id, message_thread_id=th)
-                    except:
-                        pass
+
+            log_message_add('copy',
+                            '',
+                            chat_full_id,
+                            chat_name,
+                            None,
+                            message.chat.id,
+                            message.message_id)
+
         elif isinstance(message, list):
             chat_full_id = get_topic_id(message[0])
             chat_name = utils.get_username_for_log(message[0])
-            if chat_full_id in LOGS_GROUPS_DB:
-                th = LOGS_GROUPS_DB[chat_full_id]
-            else:
-                th = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                LOGS_GROUPS_DB[chat_full_id] = th
             m_ids = [x.message_id for x in message]
-            try:
-                bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
-            except Exception as unknown:
-                if 'Bad Request: message thread not found' in str(unknown):
-                    LOGS_GROUPS_DB[chat_full_id] = bot.create_forum_topic(cfg.LOGS_GROUP, chat_full_id + ' ' + chat_name).message_thread_id
-                    th = LOGS_GROUPS_DB[chat_full_id]
-                    try:
-                        bot.copy_messages(cfg.LOGS_GROUP, message[0].chat.id, m_ids, message_thread_id=th)
-                    except:
-                        pass
+
+            log_message_add('copy',
+                            '',
+                            chat_full_id,
+                            chat_name,
+                            m_ids,
+                            message[0].chat.id,
+                            message[0].message_id)
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log2(f'tb:log_message: {error}\n\n{error_traceback}')
@@ -2479,6 +2577,9 @@ def send_debug_history(message: telebot.types.Message):
 @bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin) 
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
+    global LOG_GROUP_DAEMON_ENABLED
+    LOG_GROUP_DAEMON_ENABLED = False
+    
     bot_reply_tr(message, 'Restarting bot, please wait')
     my_log.log2(f'tb:restart: !!!RESTART!!!')
 
@@ -4554,6 +4655,9 @@ def main():
     my_trans.load_users_keys()
 
     thread = threading.Thread(target=count_stats, args=())
+    thread.start()
+
+    thread = threading.Thread(target=log_group_daemon, args=())
     thread.start()
 
     bot.polling(timeout=90, long_polling_timeout=90)

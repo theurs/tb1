@@ -832,4 +832,6 @@ if __name__ == '__main__':
     
     # print(detect_lang('Чудова днина, правда?') )
 
-    print(ai('1+1', model='gemini-1.5-pro'))
+    # print(ai('1+1', model='gemini-1.5-pro'))
+    
+    print(test_new_key('xxx'))

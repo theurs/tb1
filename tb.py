@@ -2187,99 +2187,103 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
 
-    args = message.text.split(maxsplit=1)
-    if len(args) > 1:
+    try:
+        args = message.text.split(maxsplit=1)
+        if len(args) > 1:
 
-        keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
-        already_exists = any(key in my_gemini.ALL_KEYS for key in keys)
-        if already_exists:
-            msg = f'{tr("This key has already been added by someone earlier.", lang)} {keys}'
+            keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
+            already_exists = any(key in my_gemini.ALL_KEYS for key in keys)
+            if already_exists:
+                msg = f'{tr("This key has already been added by someone earlier.", lang)} {keys}'
+                bot_reply(message, msg)
+            keys = [x for x in keys if x not in my_gemini.ALL_KEYS and x.startswith('AIza')]
+
+            # groq keys len=56, starts with "gsk_"
+            keys_groq = [x.strip() for x in args[1].split() if len(x.strip()) == 56]
+            if keys_groq and keys_groq[0] in my_groq.ALL_KEYS:
+                bot_reply_tr(message, 'Groq API key already exists!')
+            keys_groq = [x for x in keys_groq if x not in my_groq.ALL_KEYS and x.startswith('gsk_')]
+
+            #deepl keys len=39, endwith ":fx"
+            deepl_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
+            if deepl_keys and deepl_keys[0] in my_trans.ALL_KEYS:
+                bot_reply_tr(message, 'Deepl API key already exists!')
+            deepl_keys = [x for x in deepl_keys if x not in my_trans.ALL_KEYS and x.endswith(':fx')]
+
+            # huggingface keys len=37, starts with "hf_"
+            huggingface_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 37]
+            if huggingface_keys and huggingface_keys[0] in my_genimg.ALL_KEYS:
+                bot_reply_tr(message, 'Huggingface API key already exists!')
+            huggingface_keys = [x for x in huggingface_keys if x not in my_genimg.ALL_KEYS and x.startswith('hf_')]
+
+            if huggingface_keys:
+                my_genimg.USER_KEYS[chat_id_full] = huggingface_keys[0]
+                my_log.log_keys(f'Added new API key for Huggingface: {chat_id_full} {huggingface_keys}')
+                bot_reply_tr(message, 'Added API key for Huggingface successfully!')
+
+            if keys_groq:
+                my_groq.USER_KEYS[chat_id_full] = keys_groq[0]
+                my_log.log_keys(f'Added new API key for Groq: {chat_id_full} {keys_groq}')
+                bot_reply_tr(message, 'Added API key for Groq successfully!')
+
+            if deepl_keys:
+                my_trans.USER_KEYS[chat_id_full] = deepl_keys[0]
+                my_log.log_keys(f'Added new API key for Deepl: {chat_id_full} {deepl_keys}')
+                bot_reply_tr(message, 'Added API key for Deepl successfully!')
+
+            if keys:
+                added_flag = False
+                with my_gemini.USER_KEYS_LOCK:
+                    # my_gemini.USER_KEYS[chat_id_full] = keys
+                    new_keys = []
+                    for key in keys:
+                        if key not in my_gemini.ALL_KEYS and key not in cfg.gemini_keys:
+                            if my_gemini.test_new_key(key):
+                                my_gemini.ALL_KEYS.append(key)
+                                new_keys.append(key)
+                                added_flag = True
+                                my_log.log_keys(f'Added new api key for Gemini: {key}')
+                                CHAT_MODE[chat_id_full] = 'gemini15'
+                                msg = tr('Added new API key for Gemini:', lang) + f' {key}'
+                                bot_reply(message, msg)
+                            else:
+                                my_log.log_keys(f'Failed to add new API key for Gemini: {key}')
+                                msg = tr('Failed to add new API key for Gemini:', lang) + f' {key}'
+                                bot_reply(message, msg)
+                if added_flag:
+                    my_gemini.USER_KEYS[chat_id_full] = new_keys
+                    bot_reply_tr(message, 'Added keys successfully!')
+                    return
+
+        msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://huggingface.co/settings/tokens\n\nhttps://www.deepl.com'
+        bot_reply(message, msg, disable_web_page_preview = True)
+
+        if message.from_user.id in cfg.admins:
+            msg = tr('Total users keys:', lang)
+            msg = f'{msg} {len(my_gemini.ALL_KEYS)}'
             bot_reply(message, msg)
-        keys = [x for x in keys if x not in my_gemini.ALL_KEYS and x.startswith('AIza')]
+            keys = []
+            for x in my_gemini.USER_KEYS.keys():
+                keys += my_gemini.USER_KEYS[x]
 
-        # groq keys len=56, starts with "gsk_"
-        keys_groq = [x.strip() for x in args[1].split() if len(x.strip()) == 56]
-        if keys_groq[0] in my_groq.ALL_KEYS:
-            bot_reply_tr(message, 'Groq API key already exists!')
-        keys_groq = [x for x in keys_groq if x not in my_groq.ALL_KEYS and x.startswith('gsk_')]
+            msg = tr('All user`s keys:', lang) + '\n\n<code>'
+            for key in keys:
+                msg += f'"{key}",\n'
+            bot_reply(message, msg+'</code>', parse_mode='HTML')
 
-        #deepl keys len=39, endwith ":fx"
-        deepl_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
-        if deepl_keys[0] in my_trans.ALL_KEYS:
-            bot_reply_tr(message, 'Deepl API key already exists!')
-        deepl_keys = [x for x in deepl_keys if x not in my_trans.ALL_KEYS and x.endswith(':fx')]
-
-        # huggingface keys len=37, starts with "hf_"
-        huggingface_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 37]
-        if huggingface_keys[0] in my_genimg.ALL_KEYS:
-            bot_reply_tr(message, 'Huggingface API key already exists!')
-        huggingface_keys = [x for x in huggingface_keys if x not in my_genimg.ALL_KEYS and x.startswith('hf_')]
-
-        if huggingface_keys:
-            my_genimg.USER_KEYS[chat_id_full] = huggingface_keys[0]
-            my_log.log_keys(f'Added new API key for Huggingface: {chat_id_full} {huggingface_keys}')
-            bot_reply_tr(message, 'Added API key for Huggingface successfully!')
-
-        if keys_groq:
-            my_groq.USER_KEYS[chat_id_full] = keys_groq[0]
-            my_log.log_keys(f'Added new API key for Groq: {chat_id_full} {keys_groq}')
-            bot_reply_tr(message, 'Added API key for Groq successfully!')
-
-        if deepl_keys:
-            my_trans.USER_KEYS[chat_id_full] = deepl_keys[0]
-            my_log.log_keys(f'Added new API key for Deepl: {chat_id_full} {deepl_keys}')
-            bot_reply_tr(message, 'Added API key for Deepl successfully!')
-
-        if keys:
-            added_flag = False
-            with my_gemini.USER_KEYS_LOCK:
-                # my_gemini.USER_KEYS[chat_id_full] = keys
-                new_keys = []
-                for key in keys:
-                    if key not in my_gemini.ALL_KEYS and key not in cfg.gemini_keys:
-                        if my_gemini.test_new_key(key):
-                            my_gemini.ALL_KEYS.append(key)
-                            new_keys.append(key)
-                            added_flag = True
-                            my_log.log_keys(f'Added new api key for Gemini: {key}')
-                            CHAT_MODE[chat_id_full] = 'gemini15'
-                            msg = tr('Added new API key for Gemini:', lang) + f' {key}'
-                            bot_reply(message, msg)
-                        else:
-                            my_log.log_keys(f'Failed to add new API key for Gemini: {key}')
-                            msg = tr('Failed to add new API key for Gemini:', lang) + f' {key}'
-                            bot_reply(message, msg)
-            if added_flag:
-                my_gemini.USER_KEYS[chat_id_full] = new_keys
-                bot_reply_tr(message, 'Added keys successfully!')
-                return
-
-    msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://huggingface.co/settings/tokens\n\nhttps://www.deepl.com'
-    bot_reply(message, msg, disable_web_page_preview = True)
-
-    if message.from_user.id in cfg.admins:
-        msg = tr('Total users keys:', lang)
-        msg = f'{msg} {len(my_gemini.ALL_KEYS)}'
-        bot_reply(message, msg)
-        keys = []
-        for x in my_gemini.USER_KEYS.keys():
-            keys += my_gemini.USER_KEYS[x]
-
-        msg = tr('All user`s keys:', lang) + '\n\n<code>'
-        for key in keys:
-            msg += f'"{key}",\n'
-        bot_reply(message, msg+'</code>', parse_mode='HTML')
-
-    # показать юзеру его ключи
-    if chat_id_full in my_gemini.USER_KEYS:
-        qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
-        deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
-        huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
-        keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys
-        msg = tr('Your keys:', lang) + '\n\n'
-        for key in keys:
-            msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
-        bot_reply(message, msg, parse_mode='HTML')
+        # показать юзеру его ключи
+        if chat_id_full in my_gemini.USER_KEYS:
+            qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
+            deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
+            huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
+            keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys
+            msg = tr('Your keys:', lang) + '\n\n'
+            for key in keys:
+                msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
+            bot_reply(message, msg, parse_mode='HTML')
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_error(f'Error in /keys: {error}\n\n{message.text}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['addkey', 'addkeys'], func=authorized_admin)

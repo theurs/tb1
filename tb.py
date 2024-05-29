@@ -207,6 +207,20 @@ DEBUG_MD_TO_HTML = {}
 WHO_ANSWERED = {}
 
 
+# key - time.time() float
+# value - list
+#   type as string='new' or 'copy',
+#   text as str,
+#   chat_full_id as str,
+#   chat_name as str,
+#   m_ids as list of int,
+#   message_chat_id as int,
+#   message_message_id as int
+LOG_GROUP_MESSAGES = SqliteDict('db/log_group_messages.db', autocommit=True)
+LOG_GROUP_MESSAGES_LOCK = threading.Lock()
+LOG_GROUP_DAEMON_ENABLED = True
+
+
 supported_langs_trans = my_init.supported_langs_trans
 supported_langs_tts = my_init.supported_langs_tts
 
@@ -588,20 +602,20 @@ def is_for_me(message: telebot.types.Message):
         return (True, cmd)
 
 
-# key - time.time() float
-# value - list
-#   type as string='new' or 'copy',
-#   text as str,
-#   chat_full_id as str,
-#   chat_name as str,
-#   m_ids as list of int,
-#   message_chat_id as int,
-#   message_message_id as int
-LOG_GROUP_MESSAGES = SqliteDict('db/log_group_messages.db', autocommit=True)
-LOG_GROUP_MESSAGES_LOCK = threading.Lock()
-LOG_GROUP_DAEMON_ENABLED = True
-
 def log_group_daemon():
+    """
+    This daemon function processes messages stored in the LOG_GROUP_MESSAGES queue.
+    It sends new messages or copies existing messages to a designated logging group 
+    based on their type and chat information. 
+
+    The function retrieves the oldest message from the queue, extracts its details, 
+    and then attempts to send or copy it to the appropriate forum topic within the 
+    logging group. It handles potential errors during topic creation and message 
+    sending/copying, logging any exceptions encountered. 
+
+    The daemon continues processing messages until the LOG_GROUP_DAEMON_ENABLED flag 
+    is set to False.
+    """
     if not hasattr(cfg, 'LOGS_GROUP') or not cfg.LOGS_GROUP:
         return
 
@@ -691,6 +705,18 @@ def log_message_add(_type: str,
                     _m_ids: list,
                     _message_chat_id: int,
                     _message_message_id: int):
+    """
+    Adds a message to the LOG_GROUP_MESSAGES queue for logging.
+
+    Args:
+        _type (str): Type of the message ('new' or 'copy').
+        _text (str): Text content of the message.
+        _chat_full_id (str): Unique identifier for the chat.
+        _chat_name (str): Name of the chat.
+        _m_ids (list): List of message IDs (used for copied messages).
+        _message_chat_id (int): ID of the chat the message belongs to.
+        _message_message_id (int): Unique ID of the message.
+    """
     with LOG_GROUP_MESSAGES_LOCK:
         current_time = time.time()
         while current_time in LOG_GROUP_MESSAGES:
@@ -700,6 +726,16 @@ def log_message_add(_type: str,
 
 
 def log_message(message: telebot.types.Message):
+    """
+    Logs a message or a list of messages to the designated logging group.
+
+    This function checks if logging is enabled and if the message should be logged
+    based on configuration. It then extracts relevant information from the message(s)
+    and adds them to the LOG_GROUP_MESSAGES queue for processing by the log_group_daemon.
+
+    Args:
+        message (telebot.types.Message or list): The message or list of messages to log.
+    """
     try:
         if isinstance(message, telebot.types.Message) and hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
             return

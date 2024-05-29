@@ -1378,8 +1378,8 @@ def handle_voice_thread(message: telebot.types.Message):
                 file_info = bot.get_file(message.document.file_id)
 
         downloaded_file = bot.download_file(file_info.file_path)
-        if message.document and message.document.mime_type == 'audio/amr':
-            downloaded_file = my_stt.amr_to_wav(downloaded_file)
+        if message.document and message.document.mime_type.startswith('audio/'):
+            downloaded_file = my_stt.audio_to_wav(downloaded_file, file_info.file_path)
         with open(file_path, 'wb') as new_file:
             new_file.write(downloaded_file)
 
@@ -1460,10 +1460,10 @@ def handle_document_thread(message: telebot.types.Message):
                                             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                             'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
                                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                            'image/svg+xml',
-                                            'audio/amr') or \
-                message.document.mime_type.startswith('text/')):
-            if message.document and message.document.mime_type == 'audio/amr':
+                                            'image/svg+xml') or \
+                                            message.document.mime_type.startswith('text/') or \
+                                            message.document.mime_type.startswith('audio/')):
+            if message.document and message.document.mime_type.startswith('audio/'):
                 handle_voice_thread(message)
                 return
             with ShowAction(message, 'typing'):

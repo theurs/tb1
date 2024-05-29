@@ -7,10 +7,10 @@ import os
 import random
 import requests
 import subprocess
-import tempfile
 import time
 import threading
 import traceback
+from pathlib import Path
 
 import audiofile
 import speech_recognition as sr
@@ -37,8 +37,7 @@ def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
     Returns:
         str: The path to the converted wave file.
     """
-    with tempfile.NamedTemporaryFile() as temp_file:
-        tmp_wav_file = temp_file.name + '.wav'
+    tmp_wav_file = utils.get_tmp_fname() + '.wav'
     subprocess.run(['ffmpeg', '-i', audio_file, tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return tmp_wav_file
 
@@ -196,22 +195,24 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
     return ''
 
 
-def amr_to_wav(amr_bytes: bytes) -> bytes:
+def audio_to_wav(audio_bytes: bytes, file_info: str) -> bytes:
     """
     Конвертирует аудиоданные из формата AMR в WAV.
 
     Args:
-        amr_bytes: Байты аудиоданных в формате AMR.
+        audio_bytes: Байты аудиоданных в формате AMR.
+        file_info: Строка, имя файла из которого можно получить его расширение
 
     Returns:
         Байты аудиоданных в формате WAV.
     """
-
-    temp_input = utils.get_tmp_fname()+'.amr'
+    ext = Path(file_info).suffix
+    
+    temp_input = utils.get_tmp_fname()+ext
     temp_output = utils.get_tmp_fname()+'.wav'
 
     with open(temp_input, 'wb') as f:
-        f.write(amr_bytes)
+        f.write(audio_bytes)
 
     audiofile.convert_to_wav(temp_input, temp_output)
 
@@ -221,12 +222,12 @@ def amr_to_wav(amr_bytes: bytes) -> bytes:
     try:
         os.remove(temp_input)
     except Exception as error:
-        my_log.log2(f'my_stt:amr_to_wav:remove input {temp_input} {error}')
+        my_log.log2(f'my_stt:audio_to_wav:remove input {temp_input} {error}')
         pass
     try:
         os.remove(temp_output)
     except Exception as error:
-        my_log.log2(f'my_stt:amr_to_wav:remove output {temp_output} {error}')
+        my_log.log2(f'my_stt:audio_to_wav:remove output {temp_output} {error}')
 
     return wav_bytes
 

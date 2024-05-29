@@ -2341,7 +2341,7 @@ def gemini15_mode(message: telebot.types.Message):
         bot_reply_tr(message, 'Gemini 1.5 pro model selected.')
     else:
         msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-        bot_reply(message, msg)
+        bot_reply(message, msg, disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['donate'], func=authorized_owner)

@@ -656,8 +656,8 @@ def log_group_daemon():
                         bot.send_message(cfg.LOGS_GROUP, _text, message_thread_id=th)
                     except Exception as error2_0:
                         try:
-                            if 'Too Many Requests: retry after' in str(error2_0) or 'Error code: 400. Description: Bad Request: message to copy not found' in str(error2_0):
-                                my_log.log2(f'tb:log_group_daemon:send message: {error2_0}')
+                            if 'Too Many Requests: retry after' in str(error2_0) or 'Error code: 400. Description: Bad Request:' in str(error2_0):
+                                # my_log.log2(f'tb:log_group_daemon:send message: {error2_0}')
                                 del LOG_GROUP_MESSAGES[min_key] # drop message
                                 continue
                             else:
@@ -677,8 +677,8 @@ def log_group_daemon():
                             bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
                         except Exception as error3_0:
                             try:
-                                if 'Too Many Requests: retry after' in str(error3_0) or 'Error code: 400. Description: Bad Request: message to copy not found' in str(error3_0):
-                                    my_log.log2(f'tb:log_group_daemon:copy message: {error3_0}')
+                                if 'Too Many Requests: retry after' in str(error3_0) or 'Error code: 400. Description: Bad Request:' in str(error3_0):
+                                    # my_log.log2(f'tb:log_group_daemon:copy message: {error3_0}')
                                     del LOG_GROUP_MESSAGES[min_key] # drop message
                                     continue
                                 else:
@@ -695,8 +695,8 @@ def log_group_daemon():
                             bot.copy_message(cfg.LOGS_GROUP, _message_chat_id, _message_message_id, message_thread_id=th)
                         except Exception as error4_0:
                             try:
-                                if 'Too Many Requests: retry after' in str(error4_0) or 'Error code: 400. Description: Bad Request: message to copy not found' in str(error4_0):
-                                    my_log.log2(f'tb:log_group_daemon:copy message2: {error4_0}')
+                                if 'Too Many Requests: retry after' in str(error4_0) or 'Error code: 400. Description: Bad Request:' in str(error4_0):
+                                    # my_log.log2(f'tb:log_group_daemon:copy message2: {error4_0}')
                                     del LOG_GROUP_MESSAGES[min_key] # drop message
                                     continue
                                 else:

@@ -620,7 +620,7 @@ def log_group_daemon():
         return
 
     global LOG_GROUP_DAEMON_ENABLED
-    group = 0
+    group = 10
     while LOG_GROUP_DAEMON_ENABLED:
         try:
             time.sleep(2 + group) # telegram limit 1 message per second for groups
@@ -656,9 +656,14 @@ def log_group_daemon():
                         bot.send_message(cfg.LOGS_GROUP, _text, message_thread_id=th)
                     except Exception as error2_0:
                         try:
-                            th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
-                            LOGS_GROUPS_DB[_chat_full_id] = th
-                            bot.send_message(cfg.LOGS_GROUP, _text, message_thread_id=th)
+                            if 'Too Many Requests: retry after' in error2_0:
+                                my_log.log2(f'tb:log_group_daemon:send message: {error2_0}')
+                                del LOG_GROUP_MESSAGES[min_key] # drop message
+                                continue
+                            else:
+                                th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
+                                LOGS_GROUPS_DB[_chat_full_id] = th
+                                bot.send_message(cfg.LOGS_GROUP, _text, message_thread_id=th)
                         except Exception as error2:
                             traceback_error = traceback.format_exc()
                             my_log.log2(f'tb:log_group_daemon:send message: {error2}\n{traceback_error}\n\n{_text}')
@@ -672,9 +677,14 @@ def log_group_daemon():
                             bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
                         except Exception as error3_0:
                             try:
-                                th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
-                                LOGS_GROUPS_DB[_chat_full_id] = th
-                                bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
+                                if 'Too Many Requests: retry after' in error3_0:
+                                    my_log.log2(f'tb:log_group_daemon:copy message: {error3_0}')
+                                    del LOG_GROUP_MESSAGES[min_key] # drop message
+                                    continue
+                                else:
+                                    th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
+                                    LOGS_GROUPS_DB[_chat_full_id] = th
+                                    bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
                             except Exception as error3:
                                 traceback_error = traceback.format_exc()
                                 my_log.log2(f'tb:log_group_daemon:copy message: {error3}\n{traceback_error}\n\n{_text}')
@@ -685,9 +695,14 @@ def log_group_daemon():
                             bot.copy_message(cfg.LOGS_GROUP, _message_chat_id, _message_message_id, message_thread_id=th)
                         except Exception as error4_0:
                             try:
-                                th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
-                                LOGS_GROUPS_DB[_chat_full_id] = th
-                                bot.copy_message(cfg.LOGS_GROUP, _message_chat_id, _message_message_id, message_thread_id=th)
+                                if 'Too Many Requests: retry after' in error4_0:
+                                    my_log.log2(f'tb:log_group_daemon:copy message2: {error4_0}')
+                                    del LOG_GROUP_MESSAGES[min_key] # drop message
+                                    continue
+                                else:
+                                    th = bot.create_forum_topic(cfg.LOGS_GROUP, _chat_full_id + ' ' + _chat_name).message_thread_id
+                                    LOGS_GROUPS_DB[_chat_full_id] = th
+                                    bot.copy_message(cfg.LOGS_GROUP, _message_chat_id, _message_message_id, message_thread_id=th)
                             except Exception as error4:
                                 traceback_error = traceback.format_exc()
                                 my_log.log2(f'tb:log_group_daemon:copy message2: {error4}\n{traceback_error}\n\n{_text}')

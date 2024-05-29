@@ -3827,7 +3827,7 @@ def id_cmd_handler(message: telebot.types.Message):
     if openrouter_keys:
         msg += '\n\n🔑️ OpenRouter\n'
     else:
-        msg += '🔓 OpenRouter\n'
+        msg += '\n\n🔓 OpenRouter\n'
     if gemini_keys:
         msg += '🔑️ Gemini\n'
     else:

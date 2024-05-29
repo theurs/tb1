@@ -244,12 +244,12 @@ if __name__ == '__main__':
 
     # found_bad_translations(fname = start_msg_file, original = start_msg)
     # ['ar', 'co', 'en', 'fa', 'he', 'iw', 'la', 'ps', 'sd', 'ur', 'yi']
-    # fix_translations(fname = start_msg_file, original = start_msg, langs = ['ar', 'en', 'fa', 'he', 'iw', 'ps', 'sd', 'ur', 'yi'])
+    fix_translations(fname = start_msg_file, original = start_msg, langs = ['ar', 'en', 'fa', 'he', 'iw', 'ps', 'sd', 'ur', 'yi', 'ru'])
     # fix_translations(fname = start_msg_file, original = start_msg, langs = ['en', ])
 
     # found_bad_translations(fname = help_msg_file, original = help_msg)
     # ['ar', 'en', 'fa', 'he', 'iw', 'ps', 'sd', 'ur', 'yi']
-    # fix_translations(fname = help_msg_file, original = help_msg, langs = ['ar', 'en', 'fa', 'he', 'iw', 'ps', 'sd', 'ur', 'yi'])
+    # fix_translations(fname = help_msg_file, original = help_msg, langs = ['ar', 'en', 'fa', 'he', 'iw', 'ps', 'sd', 'ur', 'yi', 'ru'])
     # fix_translations(fname = help_msg_file, original = help_msg, langs = ['en', ])
 
     # print(my_groq.translate(start_msg, to_lang='he'))

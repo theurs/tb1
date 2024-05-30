@@ -24,10 +24,15 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
     open(input_file, 'wb').write(data)
 
     book_type = utils.mime_from_buffer(data)
-    if ext.lower() == 'ods':
+    ext = ext.lower()
+    if ext == 'ods':
         book_type = 'vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    elif ext.lower() == 'xlsx' or ext.lower() == 'xls':
+    elif ext == 'xlsx' or ext.lower() == 'xls':
         book_type = 'ms-excel'
+    elif ext == 'rtf':
+        book_type = 'rtf'
+    elif ext in ('doc', 'docx'):
+        book_type = 'vnd.openxmlformats-officedocument.wordprocessingml.document'
 
     if 'epub' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'plain', input_file], stdout=subprocess.PIPE)

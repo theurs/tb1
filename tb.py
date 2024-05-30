@@ -1596,6 +1596,7 @@ def handle_document(message: telebot.types.Message):
                                             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                             'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
                                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                            'application/rtf',
                                             'image/svg+xml') or \
                                             message.document.mime_type.startswith('text/') or \
                                             message.document.mime_type.startswith('audio/')):
@@ -1656,9 +1657,13 @@ def handle_document(message: telebot.types.Message):
                             text = data__.decode(encoding)
                         except:
                             pass
-                elif message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-                    text = my_pandoc.fb2_to_text(downloaded_file)
-
+                elif message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or \
+                    message.document.mime_type == 'application/rtf':
+                    try:
+                        ext = file_info.file_path.split('.')[-1]
+                    except IndexError:
+                        ext = ''
+                    text = my_pandoc.fb2_to_text(downloaded_file, ext)
                 if text.strip():
                     caption = message.caption or ''
                     caption = caption.strip()
@@ -1668,6 +1673,7 @@ def handle_document(message: telebot.types.Message):
                     bot_reply(message, summary_html, parse_mode='HTML',
                                           disable_web_page_preview = True,
                                           reply_markup=get_keyboard('translate', message))
+                    bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
 
                     caption_ = tr("попросил ответить по содержанию файла", lang)
                     if caption:

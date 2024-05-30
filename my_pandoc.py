@@ -29,10 +29,10 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
         book_type = 'ms-excel'
     elif ext == 'rtf':
         book_type = 'rtf'
-    elif ext in ('docx'):
+    elif ext  == 'docx':
         book_type = 'vnd.openxmlformats-officedocument.wordprocessingml.document'
     elif ext == 'doc':
-        book_type = 'msword'
+        book_type = 'doc'
 
     if 'epub' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'plain', input_file], stdout=subprocess.PIPE)
@@ -47,7 +47,8 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
     elif 'plain' in book_type:
         os.remove(input_file)
         return data.decode('utf-8').replace(u'\xa0', u' ')
-    elif 'msword' in book_type:
+    elif 'doc' in book_type:
+        print('here1')
         proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
     elif 'pdf' in book_type:
         pdf_reader = PyPDF2.PdfReader(input_file)
@@ -65,6 +66,7 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
     else:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
 
+    print('here2')
     output = proc.stdout.decode('utf-8')
 
     os.remove(input_file)

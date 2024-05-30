@@ -65,6 +65,8 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
     else:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
 
+    print(output)
+    print(type(output))
     output = proc.stdout.decode('utf-8')
 
     os.remove(input_file)
@@ -90,7 +92,7 @@ def split_text_of_book(text: str, chunk_size: int) -> list:
 
 
 if __name__ == '__main__':
-    result = fb2_to_text(open('1.docx', 'rb').read())
+    result = fb2_to_text(open('1.doc', 'rb').read(), 'doc')
 
     # for i in split_text_of_book(result, 5000):
     #     print(i)

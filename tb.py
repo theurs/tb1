@@ -1392,7 +1392,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     buf = io.BytesIO()
                     buf.write(USER_FILES[chat_id_full][1].encode())
                     buf.seek(0)
-                    fname = utils.safe_fname(USER_FILES[chat_id_full][0])
+                    fname = utils.safe_fname(USER_FILES[chat_id_full][0])+'.txt'
+                    if fname.endswith('.txt.txt'):
+                        fname = fname[:-4]
                     m = bot.send_document(message.chat.id,
                                           document=buf,
                                           message_thread_id=message.message_thread_id,
@@ -1597,6 +1599,7 @@ def handle_document(message: telebot.types.Message):
                                             'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
                                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                                             'application/rtf',
+                                            'application/msword',
                                             'image/svg+xml') or \
                                             message.document.mime_type.startswith('text/') or \
                                             message.document.mime_type.startswith('audio/')):
@@ -1658,7 +1661,8 @@ def handle_document(message: telebot.types.Message):
                         except:
                             pass
                 elif message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or \
-                    message.document.mime_type == 'application/rtf':
+                    message.document.mime_type == 'application/rtf' or \
+                    message.document.mime_type == 'application/msword':
                     try:
                         ext = file_info.file_path.split('.')[-1]
                     except IndexError:
@@ -1717,7 +1721,7 @@ def handle_document(message: telebot.types.Message):
                                          reply_markup=get_keyboard('translate', message))
                     return
                 if document.mime_type != 'application/pdf':
-                    bot_reply(message, f'{tr("Это не PDF-файл.", lang)} {document.mime_type}')
+                    bot_reply(message, f'{tr("Unsupported file type.", lang)} {document.mime_type}')
                     return
                 # скачиваем документ в байтовый поток
                 file_id = message.document.file_id

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-#pip install pandoc
 
 
 import io
 import os
 import subprocess
 
-# import magic
 import PyPDF2
 import pandas as pd
 
@@ -31,8 +29,10 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
         book_type = 'ms-excel'
     elif ext == 'rtf':
         book_type = 'rtf'
-    elif ext in ('doc', 'docx'):
+    elif ext in ('docx'):
         book_type = 'vnd.openxmlformats-officedocument.wordprocessingml.document'
+    elif ext == 'doc':
+        book_type = 'doc'
 
     if 'epub' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'plain', input_file], stdout=subprocess.PIPE)

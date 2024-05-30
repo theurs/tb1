@@ -48,7 +48,6 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
         os.remove(input_file)
         return data.decode('utf-8').replace(u'\xa0', u' ')
     elif 'doc' in book_type:
-        print('here1')
         proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
     elif 'pdf' in book_type:
         pdf_reader = PyPDF2.PdfReader(input_file)
@@ -66,7 +65,6 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
     else:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
 
-    print('here2')
     output = proc.stdout.decode('utf-8')
 
     os.remove(input_file)

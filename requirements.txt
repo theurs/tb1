@@ -25,6 +25,7 @@ odfpy
 pandas
 Pillow
 prettytable
+pyarrow
 pylatexenc
 PyMuPDF
 PyPDF2

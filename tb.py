@@ -4036,7 +4036,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                           allow_voice: bool = False):
     # отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл
 
-    if not resp:
+    if not resp.stip():
         return
 
     chat_id_full = get_topic_id(message)

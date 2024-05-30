@@ -3,6 +3,7 @@
 import chardet
 import datetime
 import io
+import functools
 import os
 import pickle
 import re
@@ -223,6 +224,15 @@ LOG_GROUP_DAEMON_ENABLED = True
 
 supported_langs_trans = my_init.supported_langs_trans
 supported_langs_tts = my_init.supported_langs_tts
+
+
+def asunc_run(func):
+    '''Декоратор для запуска функции в отдельном потоке, асинхронно'''
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+        thread.start()
+    return wrapper
 
 
 class MessageCounter:
@@ -602,6 +612,7 @@ def is_for_me(message: telebot.types.Message):
         return (True, cmd)
 
 
+@asunc_run
 def log_group_daemon():
     """
     This daemon function processes messages stored in the LOG_GROUP_MESSAGES queue.
@@ -1275,10 +1286,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
 
 @bot.callback_query_handler(func=authorized_callback)
-def callback_inline(call: telebot.types.CallbackQuery):
-    """Обработчик клавиатуры"""
-    thread = threading.Thread(target=callback_inline_thread, args=(call,))
-    thread.start()
+@asunc_run
 def callback_inline_thread(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
 
@@ -1476,11 +1484,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
 
 @bot.message_handler(content_types = ['voice', 'audio'], func=authorized)
-def handle_voice(message: telebot.types.Message): 
-    """Автоматическое распознавание текст из голосовых сообщений"""
-    thread = threading.Thread(target=handle_voice_thread, args=(message,))
-    thread.start()
-def handle_voice_thread(message: telebot.types.Message):
+@asunc_run
+def handle_voice(message: telebot.types.Message):
     """Автоматическое распознавание текст из голосовых сообщений и аудио файлов"""
     is_private = message.chat.type == 'private'
     chat_id_full = get_topic_id(message)
@@ -1526,13 +1531,13 @@ def handle_voice_thread(message: telebot.types.Message):
             try:
                 text = my_stt.stt(file_path, lang, chat_id_full)
             except Exception as error_stt:
-                my_log.log2(f'tb:handle_voice_thread: {error_stt}')
+                my_log.log2(f'tb:handle_voice: {error_stt}')
                 text = ''
 
             try:
                 os.remove(file_path)
             except Exception as remove_file_error:
-                my_log.log2(f'tb:handle_voice_thread:remove_file_error: {remove_file_error}\n\nfile_path')
+                my_log.log2(f'tb:handle_voice:remove_file_error: {remove_file_error}\n\nfile_path')
 
             text = text.strip()
             # Отправляем распознанный текст
@@ -1559,10 +1564,8 @@ def handle_voice_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(content_types = ['document'], func=authorized)
+@asunc_run
 def handle_document(message: telebot.types.Message):
-    thread = threading.Thread(target=handle_document_thread, args=(message,))
-    thread.start()
-def handle_document_thread(message: telebot.types.Message):
     """Обработчик документов"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -1597,7 +1600,7 @@ def handle_document_thread(message: telebot.types.Message):
                                             message.document.mime_type.startswith('text/') or \
                                             message.document.mime_type.startswith('audio/')):
             if message.document and message.document.mime_type.startswith('audio/'):
-                handle_voice_thread(message)
+                handle_voice(message)
                 return
             with ShowAction(message, 'typing'):
                 # file_info = bot.get_file(message.document.file_id)
@@ -1638,7 +1641,7 @@ def handle_document_thread(message: telebot.types.Message):
                             bot_reply_tr(message, 'Sorry, I could not answer your question.')
                         return
                     except Exception as error:
-                        my_log.log2(f'tb:handle_document_thread:svg: {error}')
+                        my_log.log2(f'tb:handle_document:svg: {error}')
                         bot_reply_tr(message, 'Не удалось распознать изображение')
                         return
                 elif message.document.mime_type.startswith('text/'):
@@ -1737,11 +1740,8 @@ def handle_document_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(content_types = ['photo'], func=authorized)
+@asunc_run
 def handle_photo(message: telebot.types.Message):
-    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография + много текста в подписи, и пересланные сообщения в том числе"""
-    thread = threading.Thread(target=handle_photo_thread, args=(message,))
-    thread.start()
-def handle_photo_thread(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография
     + много текста в подписи, и пересланные сообщения в том числе"""
     chat_id_full = get_topic_id(message)
@@ -1834,10 +1834,8 @@ def handle_photo_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(content_types = ['video', 'video_note'], func=authorized)
+@asunc_run
 def handle_video(message: telebot.types.Message):
-    thread = threading.Thread(target=handle_video_thread, args=(message,))
-    thread.start()
-def handle_video_thread(message: telebot.types.Message):
     """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -1879,26 +1877,34 @@ def handle_video_thread(message: telebot.types.Message):
             try:
                 text = my_stt.stt(file_path, lang, chat_id_full)
             except Exception as stt_error:
-                my_log.log2(f'tb:handle_video_thread: {stt_error}')
+                my_log.log2(f'tb:handle_video: {stt_error}')
                 text = ''
 
             try:
                 os.remove(file_path)
             except Exception as hvt_remove_error:
-                my_log.log2(f'tb:handle_video_thread:remove: {hvt_remove_error}')
+                my_log.log2(f'tb:handle_video:remove: {hvt_remove_error}')
 
             # Отправляем распознанный текст
             if text:
-                bot_reply(message, text, reply_markup=get_keyboard('translate', message))
-            else:
-                bot_reply_tr(message, 'Не удалось распознать текст')
+                if VOICE_ONLY_MODE[chat_id_full]:
+                    # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
+                    pass
+                else:
+                    bot_reply(message, text, reply_markup=get_keyboard('translate', message))
+
+            # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
+            if text:
+                if chat_id_full not in TRANSCRIBE_ONLY_CHAT:
+                    TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
+                if not TRANSCRIBE_ONLY_CHAT[chat_id_full]:
+                    message.text = text
+                    echo_all(message)
 
 
 @bot.message_handler(commands=['config', 'settings', 'setting', 'options'], func=authorized_owner)
+@asunc_run
 def config(message: telebot.types.Message):
-    thread = threading.Thread(target=config_thread, args=(message,))
-    thread.start()
-def config_thread(message: telebot.types.Message):
     """Меню настроек"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -1922,6 +1928,7 @@ def config_thread(message: telebot.types.Message):
 
 
 # @bot.message_handler(commands=['censorship'], func=authorized_owner)
+# @run_in_thread
 # def censorship(message: telebot.types.Message):
 #     """
 #     Switch censorship for user
@@ -1946,6 +1953,7 @@ def config_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['original_mode'], func=authorized_owner)
+@asunc_run
 def original_mode(message: telebot.types.Message):
     """
     Handles the 'original_mode' command for authorized owners. 
@@ -1966,11 +1974,8 @@ def original_mode(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['model',], func=authorized_owner)
+@asunc_run
 def model(message: telebot.types.Message):
-    """Юзеры могут менять модель для openrouter.ai"""
-    thread = threading.Thread(target=model_thread, args=(message,))
-    thread.start()
-def model_thread(message: telebot.types.Message):
     """Юзеры могут менять модель для openrouter.ai"""
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
@@ -1992,11 +1997,8 @@ def model_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['maxhistlines',], func=authorized_owner)
+@asunc_run
 def maxhistlines(message: telebot.types.Message):
-    """Юзеры могут менять maxhistlines для openrouter.ai"""
-    thread = threading.Thread(target=maxhistlines_thread, args=(message,))
-    thread.start()
-def maxhistlines_thread(message: telebot.types.Message):
     """Юзеры могут менять maxhistlines для openrouter.ai"""
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
@@ -2020,11 +2022,8 @@ def maxhistlines_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['maxhistchars',], func=authorized_owner)
+@asunc_run
 def maxhistchars(message: telebot.types.Message):
-    """Юзеры могут менять maxhistchars для openrouter.ai"""
-    thread = threading.Thread(target=maxhistchars_thread, args=(message,))
-    thread.start()
-def maxhistchars_thread(message: telebot.types.Message):
     """Юзеры могут менять maxhistchars для openrouter.ai"""
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
@@ -2048,11 +2047,8 @@ def maxhistchars_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['maxtokens',], func=authorized_owner)
+@asunc_run
 def maxtokens(message: telebot.types.Message):
-    """Юзеры могут менять maxtokens для openrouter.ai"""
-    thread = threading.Thread(target=maxtokens_thread, args=(message,))
-    thread.start()
-def maxtokens_thread(message: telebot.types.Message):
     """Юзеры могут менять maxtokens для openrouter.ai"""
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
@@ -2076,11 +2072,8 @@ def maxtokens_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['openrouter',], func=authorized_owner)
+@asunc_run
 def openrouter(message: telebot.types.Message):
-    """Юзеры могут добавить свои ключи для openrouter.ai и пользоваться платным сервисом через моего бота"""
-    thread = threading.Thread(target=openrouter_thread, args=(message,))
-    thread.start()
-def openrouter_thread(message: telebot.types.Message):
     """Юзеры могут добавить свои ключи для openrouter.ai и пользоваться платным сервисом через моего бота"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -2123,11 +2116,8 @@ Usage: /openrouter <api key>
 
 
 @bot.message_handler(commands=['tgui'], func=authorized_admin)
+@asunc_run
 def translation_gui(message: telebot.types.Message):
-    """Исправление перевода сообщений от бота"""
-    thread = threading.Thread(target=translation_gui_thread, args=(message,))
-    thread.start()
-def translation_gui_thread(message: telebot.types.Message):
     """Исправление перевода сообщений от бота"""
 
     # Usage: /tgui кусок текста который надо найти, это кривой перевод|||новый перевод, если не задан то будет автоперевод
@@ -2183,11 +2173,8 @@ def translation_gui_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_owner)
+@asunc_run
 def users_keys_for_gemini(message: telebot.types.Message):
-    """Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл"""
-    thread = threading.Thread(target=users_keys_for_gemini_thread, args=(message,))
-    thread.start()
-def users_keys_for_gemini_thread(message: telebot.types.Message):
     """Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -2289,15 +2276,12 @@ def users_keys_for_gemini_thread(message: telebot.types.Message):
             bot_reply(message, msg, parse_mode='HTML')
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_error(f'Error in /keys: {error}\n\n{message.text}\n\n{traceback_error}')
+        my_log.log2(f'Error in /keys: {error}\n\n{message.text}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['addkey', 'addkeys'], func=authorized_admin)
+@asunc_run
 def addkeys(message: telebot.types.Message):
-    '''добавить ключи другому юзеру'''
-    thread = threading.Thread(target=addkeys_thread, args=(message,))
-    thread.start()
-def addkeys_thread(message: telebot.types.Message):
     try:
         args = message.text.split(maxsplit=2)
         uid = int(args[1].strip())
@@ -2320,10 +2304,8 @@ def addkeys_thread(message: telebot.types.Message):
 
 
 # @bot.message_handler(commands=['removemykeys'], func=authorized_owner)
+# @run_in_thread
 # def remove_my_keys(message: telebot.types.Message):
-#     thread = threading.Thread(target=remove_my_keys_thread, args=(message,))
-#     thread.start()
-# def remove_my_keys_thread(message: telebot.types.Message):
 #     chat_id_full = get_topic_id(message)
 #     keys = my_gemini.USER_KEYS[chat_id_full]
 #     del my_gemini.USER_KEYS[chat_id_full]
@@ -2332,6 +2314,7 @@ def addkeys_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['gemini10'], func=authorized_owner)
+@asunc_run
 def gemini10_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     CHAT_MODE[chat_id_full] = 'gemini'
@@ -2339,6 +2322,7 @@ def gemini10_mode(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['gemini15'], func=authorized_owner)
+@asunc_run
 def gemini15_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -2351,12 +2335,14 @@ def gemini15_mode(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['donate'], func=authorized_owner)
+@asunc_run
 def donate(message: telebot.types.Message):
     help = f'[<a href = "https://www.donationalerts.com/r/theurs">DonationAlerts</a> 💸 <a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> 💸 <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> 💸 <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>]'
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['llama370'], func=authorized_owner)
+@asunc_run
 def llama3_70(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     CHAT_MODE[chat_id_full] = 'llama370'
@@ -2364,6 +2350,7 @@ def llama3_70(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)
+@asunc_run
 def change_mode(message: telebot.types.Message):
     """
     Handles the 'style' command from the bot. Changes the prompt for the GPT model
@@ -2442,6 +2429,7 @@ def change_mode(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['disable_chat_mode'], func=authorized_admin)
+@asunc_run
 def disable_chat_mode(message: telebot.types.Message):
     """mandatory switch all users from one chatbot to another"""
     chat_id_full = get_topic_id(message)
@@ -2466,6 +2454,7 @@ def disable_chat_mode(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['undo', 'u', 'U', 'Undo'], func=authorized_log)
+@asunc_run
 def undo(message: telebot.types.Message):
     """Clear chat history last message (bot's memory)"""
     chat_id_full = get_topic_id(message)
@@ -2497,6 +2486,7 @@ def reset_(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['reset'], func=authorized_log)
+@asunc_run
 def reset(message: telebot.types.Message):
     """Clear chat history (bot's memory)"""
     chat_id_full = get_topic_id(message)
@@ -2505,6 +2495,7 @@ def reset(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['remove_keyboard'], func=authorized_owner)
+@asunc_run
 def remove_keyboard(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
@@ -2521,6 +2512,7 @@ def remove_keyboard(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['reset_gemini2'], func=authorized_admin)
+@asunc_run
 def reset_gemini2(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -2535,12 +2527,14 @@ def reset_gemini2(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['bingcookieclear', 'kc'], func=authorized_admin)
+@asunc_run
 def clear_bing_cookies(message: telebot.types.Message):
     bing_img.COOKIE.clear()
     bot_reply_tr(message, 'Cookies cleared.')
 
 
 @bot.message_handler(commands=['bingcookie', 'cookie', 'k'], func=authorized_admin)
+@asunc_run
 def set_bing_cookies(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -2598,6 +2592,7 @@ def set_bing_cookies(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['style2'], func=authorized_admin)
+@asunc_run
 def change_mode2(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -2615,6 +2610,7 @@ def change_mode2(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['mem'], func=authorized_owner)
+@asunc_run
 def send_debug_history(message: telebot.types.Message):
     """
     Отправляет текущую историю сообщений пользователю.
@@ -2637,7 +2633,7 @@ def send_debug_history(message: telebot.types.Message):
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
-@bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin) 
+@bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin)
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
     global LOG_GROUP_DAEMON_ENABLED
@@ -2649,10 +2645,8 @@ def restart(message: telebot.types.Message):
     bot.stop_polling()
 
 
-@bot.message_handler(commands=['leave'], func=authorized_admin) 
-def leave(message: telebot.types.Message):
-    thread = threading.Thread(target=leave_thread, args=(message,))
-    thread.start()
+@bot.message_handler(commands=['leave'], func=authorized_admin)
+@asunc_run
 def leave_thread(message: telebot.types.Message):
     """выйти из чата"""
     chat_full_id = get_topic_id(message)
@@ -2679,10 +2673,8 @@ def leave_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['revoke'], func=authorized_admin) 
+@asunc_run
 def revoke(message: telebot.types.Message):
-    thread = threading.Thread(target=revoke_thread, args=(message,))
-    thread.start()
-def revoke_thread(message: telebot.types.Message):
     """разбанить чат(ы)"""
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
@@ -2703,6 +2695,7 @@ def revoke_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['temperature', 'temp'], func=authorized_owner)
+@asunc_run
 def set_new_temperature(message: telebot.types.Message):
     """Changes the temperature for Gemini
     /temperature <0...2>
@@ -2756,10 +2749,8 @@ def set_new_temperature(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['lang', 'language'], func=authorized_owner)
+@asunc_run
 def language(message: telebot.types.Message):
-    thread = threading.Thread(target=language_thread, args=(message,))
-    thread.start()
-def language_thread(message: telebot.types.Message):
     """change locale"""
 
     chat_id_full = get_topic_id(message)
@@ -2794,10 +2785,8 @@ def language_thread(message: telebot.types.Message):
 
 
 # @bot.message_handler(commands=['tts'], func=authorized)
+@asunc_run
 def tts(message: telebot.types.Message, caption = None):
-    thread = threading.Thread(target=tts_thread, args=(message,caption))
-    thread.start()
-def tts_thread(message: telebot.types.Message, caption = None):
     """ /tts [ru|en|uk|...] [+-XX%] <текст>
         /tts <URL>
     """
@@ -2894,10 +2883,8 @@ def tts_thread(message: telebot.types.Message, caption = None):
 
 
 @bot.message_handler(commands=['google','Google'], func=authorized)
+@asunc_run
 def google(message: telebot.types.Message):
-    thread = threading.Thread(target=google_thread, args=(message,))
-    thread.start()
-def google_thread(message: telebot.types.Message):
     """ищет в гугле перед ответом"""
 
     chat_id_full = get_topic_id(message)
@@ -2939,7 +2926,7 @@ def google_thread(message: telebot.types.Message):
                                 disable_web_page_preview = True,
                                 reply_markup=get_keyboard(f'search_pics_{hash}', message), allow_voice=True)
             except Exception as error2:
-                my_log.log2(f'tb.py:google_thread: {error2}')
+                my_log.log2(f'tb.py:google: {error2}')
 
             add_to_bots_mem(f'user {tr("попросил сделать запрос в Google:", lang)} {q}',
                                     f'{tr("поискал в Google и ответил:", lang)} {r}',
@@ -2958,21 +2945,19 @@ def get_user_image_counter(chat_id_full: str) -> int:
 
 
 @bot.message_handler(commands=['image2','img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
+@asunc_run
 def image2(message: telebot.types.Message):
     is_private = message.chat.type == 'private'
     if not is_private:
         bot_reply_tr(message, 'This command is only available in private chats.')
         return
     message.text += 'NSFW'
-    thread = threading.Thread(target=image_thread, args=(message,))
-    thread.start()
+    image(message)
 
 
 @bot.message_handler(commands=['image','img', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen'], func=authorized)
+@asunc_run
 def image(message: telebot.types.Message):
-    thread = threading.Thread(target=image_thread, args=(message,))
-    thread.start()
-def image_thread(message: telebot.types.Message):
     """Generates a picture from a description"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -3077,7 +3062,7 @@ def image_thread(message: telebot.types.Message):
                                 medias.append(telebot.types.InputMediaPhoto(d, caption = caption_))
                             except Exception as add_media_error:
                                 error_traceback = traceback.format_exc()
-                                my_log.log2(f'tb:image_thread:add_media_bytes: {add_media_error}\n\n{error_traceback}')
+                                my_log.log2(f'tb:image:add_media_bytes: {add_media_error}\n\n{error_traceback}')
 
                     if chat_id_full not in SUGGEST_ENABLED:
                         SUGGEST_ENABLED[chat_id_full] = False
@@ -3138,7 +3123,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                     for x in chunks:
                                         bot.send_media_group(pics_group, x)
                                 except Exception as error2:
-                                    my_log.log2(f'tb:image_thread:send to pics_group: {error2}')
+                                    my_log.log2(f'tb:image:send to pics_group: {error2}')
 
                             if suggest:
                                 suggest = [f'{x}'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).strip() for x in suggest.split('\n')]
@@ -3197,11 +3182,8 @@ the original prompt:""", lang) + '\n\n\n' + prompt
 
 
 @bot.message_handler(commands=['stats', 'stat'], func=authorized_admin)
-def stats_admin(message: telebot.types.Message):
-    """Показывает статистику использования бота."""
-    thread = threading.Thread(target=stats_thread, args=(message,))
-    thread.start()
-def stats_thread(message: telebot.types.Message):
+@asunc_run
+def stats(message: telebot.types.Message):
     """Обновленная функция, показывающая статистику использования бота."""
     now = time.time()
     
@@ -3281,6 +3263,7 @@ def stats_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['blockadd'], func=authorized_admin)
+@asunc_run
 def block_user_add(message: telebot.types.Message):
     """Добавить юзера в стоп список"""
 
@@ -3296,6 +3279,7 @@ def block_user_add(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['blockdel'], func=authorized_admin)
+@asunc_run
 def block_user_del(message: telebot.types.Message):
     """Убрать юзера из стоп списка"""
 
@@ -3314,6 +3298,7 @@ def block_user_del(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['blocklist'], func=authorized_admin)
+@asunc_run
 def block_user_list(message: telebot.types.Message):
     """Показывает список заблокированных юзеров"""
     users = [x for x in BAD_USERS.keys() if x]
@@ -3322,10 +3307,8 @@ def block_user_list(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['msg', 'm', 'message', 'mes'], func=authorized_admin)
+@asunc_run
 def message_to_user(message: telebot.types.Message):
-    thread = threading.Thread(target=message_to_user_thread, args=(message,))
-    thread.start()
-def message_to_user_thread(message: telebot.types.Message):
     """отправка сообщения от админа юзеру"""
     args = message.text.split(maxsplit=2)
 
@@ -3342,13 +3325,8 @@ def message_to_user_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['alert'], func=authorized_admin)
+@asunc_run
 def alert(message: telebot.types.Message):
-    """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
-       а она появляется в первом же сообщении.
-    """
-    thread = threading.Thread(target=alert_thread, args=(message,))
-    thread.start()
-def alert_thread(message: telebot.types.Message):
     """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
        а она появляется в первом же сообщении.
     """
@@ -3400,18 +3378,16 @@ def alert_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['ask2', 'а2'], func=authorized)
-def ask_file(message: telebot.types.Message):
+@asunc_run
+def ask_file2(message: telebot.types.Message):
     '''ответ по сохраненному файлу, вариант с чистым промптом'''
     message.text += '[123CLEAR321]'
     ask_file(message)
 
 
 @bot.message_handler(commands=['ask', 'а'], func=authorized)
+@asunc_run
 def ask_file(message: telebot.types.Message):
-    '''ответ по сохраненному файлу'''
-    thread = threading.Thread(target=ask_file_thread, args=(message,))
-    thread.start()
-def ask_file_thread(message: telebot.types.Message):
     '''ответ по сохраненному файлу'''
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -3456,11 +3432,8 @@ def ask_file_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['sum'], func=authorized)
+@asunc_run
 def summ_text(message: telebot.types.Message):
-    # автоматически выходить из забаненых чатов
-    thread = threading.Thread(target=summ_text_thread, args=(message,))
-    thread.start()
-def summ_text_thread(message: telebot.types.Message):
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -3526,6 +3499,7 @@ def summ_text_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['sum2'], func=authorized)
+@asunc_run
 def summ2_text(message: telebot.types.Message):
     # убирает запрос из кеша если он там есть и делает запрос снова
 
@@ -3549,10 +3523,8 @@ def summ2_text(message: telebot.types.Message):
 
 
 #@bot.message_handler(commands=['trans', 'tr', 't'], func=authorized)
+@asunc_run
 def trans(message: telebot.types.Message):
-    thread = threading.Thread(target=trans_thread, args=(message,))
-    thread.start()
-def trans_thread(message: telebot.types.Message):
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -3613,6 +3585,7 @@ def trans_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['name'], func=authorized_owner)
+@asunc_run
 def send_name(message: telebot.types.Message):
     """Меняем имя если оно подходящее, содержит только русские и английские буквы и не
     слишком длинное"""
@@ -3644,6 +3617,7 @@ def send_name(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['ocr'], func=authorized)
+@asunc_run
 def ocr_setup(message: telebot.types.Message):
     """меняет настройки ocr"""
 
@@ -3680,11 +3654,8 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
 
 
 @bot.message_handler(commands=['start'], func = authorized_log)
-def send_welcome_start(message: telebot.types.Message) -> None:
-    # автоматически выходить из забаненых чатов
-    thread = threading.Thread(target=send_welcome_start_thread, args=(message,))
-    thread.start()
-def send_welcome_start_thread(message: telebot.types.Message):
+@asunc_run
+def send_welcome_start(message: telebot.types.Message):
     # Отправляем приветственное сообщение
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -3708,10 +3679,8 @@ def send_welcome_start_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['help'], func = authorized_log)
-def send_welcome_help(message: telebot.types.Message) -> None:
-    thread = threading.Thread(target=send_welcome_help_thread, args=(message,))
-    thread.start()
-def send_welcome_help_thread(message: telebot.types.Message):
+@asunc_run
+def send_welcome_help(message: telebot.types.Message):
     # Отправляем приветственное сообщение
 
     chat_id_full = get_topic_id(message)
@@ -3732,10 +3701,8 @@ def send_welcome_help_thread(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['free', 'help_1'], func = authorized_log)
-def send_welcome_help_1(message: telebot.types.Message) -> None:
-    thread = threading.Thread(target=send_welcome_help_1_thread, args=(message,))
-    thread.start()
-def send_welcome_help_1_thread(message: telebot.types.Message):
+@asunc_run
+def send_welcome_help_1(message: telebot.types.Message):
     # почему бесплатно и как это работает
 
     chat_id_full = get_topic_id(message)
@@ -3767,7 +3734,8 @@ Voice recognition, drawing, etc. also all work on free services in one way or an
     bot_reply(message, help, disable_web_page_preview=True, parse_mode='HTML')
 
 
-@bot.message_handler(commands=['report'], func = authorized_log) 
+@bot.message_handler(commands=['report'], func = authorized_log)
+@asunc_run
 def report_cmd_handler(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
@@ -3775,6 +3743,7 @@ def report_cmd_handler(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['purge'], func = authorized_owner)
+@asunc_run
 def purge_cmd_handler(message: telebot.types.Message):
     """удаляет логи юзера"""
     try:
@@ -3817,10 +3786,11 @@ def purge_cmd_handler(message: telebot.types.Message):
         bot_reply(message, msg)
     except Exception as unknown:
         error_traceback = traceback.format_exc()
-        my_log.log(f'tb:purge_cmd_handler: {unknown}\n\n{message.chat.id}\n\n{error_traceback}')
+        my_log.log2(f'tb:purge_cmd_handler: {unknown}\n\n{message.chat.id}\n\n{error_traceback}')
 
 
-@bot.message_handler(commands=['id'], func = authorized_log) 
+@bot.message_handler(commands=['id'], func = authorized_log)
+@asunc_run
 def id_cmd_handler(message: telebot.types.Message):
     """показывает id юзера и группы в которой сообщение отправлено"""
     chat_id_full = get_topic_id(message)
@@ -3880,6 +3850,7 @@ def id_cmd_handler(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['enable'], func=authorized_admin)
+@asunc_run
 def enable_chat(message: telebot.types.Message):
     """что бы бот работал в чате надо его активировать там"""
     chat_full_id = get_topic_id(message)
@@ -3888,6 +3859,7 @@ def enable_chat(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['disable'], func=authorized_admin)
+@asunc_run
 def disable_chat(message: telebot.types.Message):
     """что бы бот не работал в чате надо его деактивировать там"""
     chat_full_id = get_topic_id(message)
@@ -3896,10 +3868,8 @@ def disable_chat(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['init'], func=authorized_admin)
+@asunc_run
 def set_default_commands(message: telebot.types.Message):
-    thread = threading.Thread(target=set_default_commands_thread, args=(message,))
-    thread.start()
-def set_default_commands_thread(message: telebot.types.Message):
     """
     Reads a file containing a list of commands and their descriptions,
     and sets the default commands for the bot.
@@ -4380,7 +4350,7 @@ def do_task(message, custom_prompt: str = ''):
         if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', 'нарисуй ', 'нарисуй,', 'нарисуйте ', 'нарисуйте,', 'draw ', 'draw,')):
             prompt = message.text.split(' ', 1)[1]
             message.text = f'/image {prompt}'
-            image_thread(message)
+            image(message)
             return
 
         # можно перенаправить запрос к гуглу, но он долго отвечает
@@ -4644,6 +4614,7 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
 
+@asunc_run
 def count_stats():
     """
     Counts the statistics for chat messages in the database.
@@ -4679,6 +4650,7 @@ def count_stats():
         my_log.log2(f'tb:count_stats: {error}\n{error_tr}')
 
 
+@asunc_run
 def load_msgs():
     """
     Load the messages from the start and help message files into the HELLO_MSG and HELP_MSG global variables.
@@ -4717,11 +4689,10 @@ def main():
     my_groq.load_users_keys()
     my_trans.load_users_keys()
 
-    thread = threading.Thread(target=count_stats, args=())
-    thread.start()
+    count_stats()
 
-    thread = threading.Thread(target=log_group_daemon, args=())
-    thread.start()
+    log_group_daemon()
+
 
     bot.polling(timeout=90, long_polling_timeout=90)
 

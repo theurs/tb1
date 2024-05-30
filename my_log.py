@@ -287,23 +287,6 @@ def log_media(message: telebot.types.Message) -> None:
                     log_file.write(f"[{time_now}] [{user_name}]: [Отправил фото] [caption]: {caption}\n")
 
 
-def log_google(request: str, respond: str):
-    """записывает в журнал сообщение полученное обработчиком google"""
-    if hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
-        return
-
-    if LOG_MODE == -1:
-        return
-
-    time_now = datetime.datetime.now().strftime('%d-%m-%Y %H.%M.%S')
-    log_file_path = f'logs/askgoogle at {time_now}.log'
-    if LOG_MODE in (1,):
-        with open(log_file_path, 'a', encoding="utf-8") as log_file:
-            log_file.write(f'{respond}\n\n{"="*40}\n\n{request}')
-    if LOG_MODE in (0,1):
-        with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8") as log_file:
-            log_file.write(f'{respond}\n\n{"="*40}\n\n{request}')
-
 
 def purge(chat_id: int) -> bool:
     """

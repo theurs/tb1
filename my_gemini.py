@@ -612,7 +612,7 @@ def get_mem_as_string(chat_id: str) -> str:
     return result    
 
 
-def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = True) -> str:
+def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False) -> str:
     """
     Translates the given text from one language to another.
     

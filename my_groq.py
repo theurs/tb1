@@ -332,29 +332,7 @@ answer with a single long sentence 50-300 words, start with the words Create ima
         return prompt
 
 
-# def translate_text(text: str, lang: str = 'ru') -> str:
-#     """
-#     Translates the given text to the specified language using the Groq API.
-
-#     Args:
-#         text (str): The text to be translated.
-#         lang (str, optional): The target language for translation. Defaults to 'ru'.
-
-#     Returns:
-#         str: The translated text.
-
-#     Raises:
-#         None
-
-#     Examples:
-#         >>> translate_text("Hello, world!", "es")
-#         "¡Hola, mundo!"
-#     """
-#     query = f'Translate the following text to language "{lang}", in your answer should be only the translated text:\n\n{text}'
-#     return ai(query, temperature=0, max_tokens_ = 8000)
-
-
-def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = True) -> str:
+def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False) -> str:
     """
     Translates the given text from one language to another.
     

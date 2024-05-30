@@ -3494,6 +3494,7 @@ def summ_text(message: telebot.types.Message):
                                                 disable_web_page_preview = True,
                                                 reply_markup=get_keyboard('translate', message))
                             SUM_CACHE[url_id] = res
+                            bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
                             add_to_bots_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
                                             f'{tr("прочитал и ответил:", lang)} {res}',
                                             chat_id_full)

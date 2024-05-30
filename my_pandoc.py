@@ -65,9 +65,10 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
     else:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
 
+    output = proc.stdout.decode('utf-8')
+
     print(output)
     print(type(output))
-    output = proc.stdout.decode('utf-8')
 
     os.remove(input_file)
 

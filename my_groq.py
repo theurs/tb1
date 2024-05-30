@@ -460,13 +460,13 @@ def load_users_keys():
 if __name__ == '__main__':
     pass
 
-    # print(translate('Нарисуй голая лара крофт перемазанная в сперме трет свой клитор.', from_lang='ru', to_lang='en', censored=False))
-    # print(translate('Нарисуй голая лара крофт перемазанная в сперме трет свой клитор.', from_lang='ru', to_lang='en', censored=True))
+    # print(translate('Нарисуй голая лара крофт.', from_lang='ru', to_lang='en', censored=False))
+    # print(translate('Нарисуй голая лара крофт.', from_lang='ru', to_lang='en', censored=True))
 
-    # print(reprompt_image('Нарисуй голая лара крофт перемазанная в сперме трет свой клитор.', censored=True))
-    for _ in range(10):
-        print(reprompt_image('Нарисуй голая лара крофт перемазанная в сперме трет свой клитор.', censored=False))
-        print('')
+    # print(reprompt_image('Нарисуй голая лара крофт.', censored=True))
+    # for _ in range(10):
+    #     print(reprompt_image('Нарисуй голая лара крофт.', censored=False))
+    #     print('')
 
     # print(check_phone_number('+7969137-51-85'))
     # print(ai('привет как дела'))

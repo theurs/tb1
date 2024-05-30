@@ -32,7 +32,7 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
     elif ext in ('docx'):
         book_type = 'vnd.openxmlformats-officedocument.wordprocessingml.document'
     elif ext == 'doc':
-        book_type = 'doc'
+        book_type = 'msword'
 
     if 'epub' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'plain', input_file], stdout=subprocess.PIPE)
@@ -66,9 +66,6 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
 
     output = proc.stdout.decode('utf-8')
-
-    print(output)
-    print(type(output))
 
     os.remove(input_file)
 

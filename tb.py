@@ -4342,7 +4342,7 @@ def do_task(message, custom_prompt: str = ''):
                             USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}.txt', text__)
                         else:
                             with ShowAction(message, 'typing'):
-                                response, text__ = my_gemini.check_phone_number(number)
+                                # response, text__ = my_gemini.check_phone_number(number)
                                 # CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                                 response, text__ = my_groq.check_phone_number(number)
                                 CHAT_STATS[time.time()] = (chat_id_full, 'llama370')

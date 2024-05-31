@@ -645,7 +645,7 @@ def log_group_daemon():
     group = 10
     while LOG_GROUP_DAEMON_ENABLED:
         try:
-            time.sleep(4 + group) # telegram limit 1 message per second for groups
+            time.sleep(3 + group) # telegram limit 1 message per second for groups
             group = 0
             with LOG_GROUP_MESSAGES_LOCK:
                 try:
@@ -689,7 +689,7 @@ def log_group_daemon():
                 elif _type == 'copy':
                     if _m_ids:
                         try:
-                            group = len(_m_ids)*4
+                            group = len(_m_ids)*3
                             bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
                         except Exception as error3_0:
                             try:
@@ -2480,8 +2480,16 @@ def undo(message: telebot.types.Message):
     """Clear chat history last message (bot's memory)"""
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
-    my_gemini.undo(chat_id_full)
-    bot_reply_tr(message, 'Ok.')
+    if 'gemini' in CHAT_MODE[chat_id_full]:
+        my_gemini.undo(chat_id_full)
+    elif 'llama' in CHAT_MODE[chat_id_full]:
+        my_groq.undo(chat_id_full)
+    elif 'openrouter' in CHAT_MODE[chat_id_full]:
+        my_openrouter.undo(chat_id_full)
+    else:
+        bot_reply_tr(message, 'History WAS NOT undone.')
+
+    bot_reply_tr(message, 'Last message was cancelled.')
 
 
 def reset_(message: telebot.types.Message):
@@ -4453,6 +4461,10 @@ def do_task(message, custom_prompt: str = ''):
                                                     chat_id_full,
                                                     GEMIMI_TEMP[chat_id_full],
                                                     model = 'gemini-1.5-flash-latest')
+                            if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                                message.text = f'/image {message.text}'
+                                image(message)
+                                return
                             CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'gemini'
@@ -4466,6 +4478,11 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
                                 else:
                                     answer = my_groq.ai(message.text, mem_ = mem__)
+                                if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                                    my_groq.undo(chat_id_full)
+                                    message.text = f'/image {message.text}'
+                                    image(message)
+                                    return
                                 CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
                                 flag_gpt_help = True
                                 if not answer:
@@ -4509,6 +4526,10 @@ def do_task(message, custom_prompt: str = ''):
 
                             answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
                                                     model = 'gemini-1.5-pro-latest')
+                            if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                                message.text = f'/image {message.text}'
+                                image(message)
+                                return
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'gemini15'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
@@ -4520,6 +4541,11 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
                                 else:
                                     answer = my_groq.ai(message.text, mem_ = mem__)
+                                if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                                    my_groq.undo(chat_id_full)
+                                    message.text = f'/image {message.text}'
+                                    image(message)
+                                    return
                                 CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
                                 flag_gpt_help = True
                                 if not answer:
@@ -4570,6 +4596,11 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = my_groq.chat(f'({style_}) {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])
                             else:
                                 answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
+                            if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                                my_groq.undo(chat_id_full)
+                                message.text = f'/image {message.text}'
+                                image(message)
+                                return
                             CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
 
                             if chat_id_full not in WHO_ANSWERED:

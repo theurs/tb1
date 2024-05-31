@@ -20,3 +20,4 @@ _old/*
 *.db-journal
 *.pickle
 *.txt
+chroma_db_llamaparse1

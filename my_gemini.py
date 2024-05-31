@@ -145,7 +145,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
                     try:
                         response = session.post(url, json=data, timeout=TIMEOUT).json()
                         if 'promptFeedback' in response and response['promptFeedback']['blockReason']:
-                                return ''
+                            return ''
                         try:
                             result = response['candidates'][0]['content']['parts'][0]['text']
                             if result == '' or result:
@@ -459,52 +459,6 @@ def ai(q: str, mem = [],
         return ''
 
     return answer
-
-
-def get_models() -> str:
-    """some error, return 404"""
-    global PROXY_POOL
-    keys = cfg.gemini_keys[:]
-    random.shuffle(keys)
-    result = ''
-
-    proxies = PROXY_POOL[:] + ALL_KEYS
-    random.shuffle(proxies)
-
-    proxy = ''
-    try:
-        for key in keys:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro?key={key}"
-
-            if proxies:
-                sort_proxies_by_speed(proxies)
-                for proxy in proxies:
-                    session = requests.Session()
-                    session.proxies = {"http": proxy, "https": proxy}
-                    try:
-                        response = session.post(url, timeout=TIMEOUT)
-                    except (requests.exceptions.ProxyError, requests.exceptions.ConnectionError) as error:
-                        continue
-
-                    if response.status_code == 200:
-                        result = response.json()###################
-                        break
-                    else:
-                        remove_proxy(proxy)
-                        my_log.log2(f'my_gemini:get_models:{proxy} {key} {str(response)} {response.text}')
-            else:
-                response = requests.post(url, timeout=TIMEOUT)
-                if response.status_code == 200:
-                    result = response.json()###############
-                else:
-                    my_log.log2(f'my_gemini:get_models:{key} {str(response)} {response.text}')
-
-            if result:
-                break
-    except Exception as unknown_error:
-        my_log.log2(f'my_gemini:get_models:{unknown_error}')
-
-    return result.strip()
 
 
 def chat(query: str, chat_id: str, temperature: float = 0.1, update_memory: bool = True, model: str = '') -> str:

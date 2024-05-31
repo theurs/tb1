@@ -4,6 +4,7 @@
 
 
 import random
+import re
 import time
 import threading
 import traceback
@@ -395,10 +396,15 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1, model = 'llama3
 
 def check_phone_number(number: str) -> str:
     """проверяет чей номер, откуда звонили"""
+    # remove all symbols except numbers
+    number = re.sub(r'\D', '', number)
+    if len(number) == 11:
+        number = number[1:]
     urls = [
         f'https://zvonili.com/phone/{number}',
         # этот сайт похоже тупо врёт обо всех номерах f'https://abonentik.ru/7{number}',
-        f'https://www.list-org.com/search?type=phone&val=%2B7{number}'
+        f'https://www.list-org.com/search?type=phone&val=%2B7{number}',
+        f'https://codificator.ru/code/mobile/{number[:3]}',
     ]
     text = my_sum.download_text(urls, no_links=True)
     query = f'''
@@ -414,7 +420,7 @@ def check_phone_number(number: str) -> str:
 
 {text}
 '''
-    response = ai(query)
+    response = ai(query[:MAX_SUM_REQUEST])
     return response, text
 
 
@@ -442,7 +448,7 @@ if __name__ == '__main__':
     #     print('')
 
 
-    # print(check_phone_number('+7969137-51-85'))
+    print(check_phone_number('+7969137-51-85'))
     # print(ai('привет как дела'))
     # print(summ_text_file('1.txt'))
 

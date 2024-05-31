@@ -705,17 +705,23 @@ def chat_cli():
 
 def check_phone_number(number: str) -> str:
     """проверяет чей номер, откуда звонили"""
+    # remove all symbols except numbers
+    number = re.sub(r'\D', '', number)
+    if len(number) == 11:
+        number = number[1:]
     urls = [
         f'https://zvonili.com/phone/{number}',
         # этот сайт похоже тупо врёт обо всех номерах f'https://abonentik.ru/7{number}',
-        f'https://www.list-org.com/search?type=phone&val=%2B7{number}'
+        f'https://www.list-org.com/search?type=phone&val=%2B7{number}',
+        f'https://codificator.ru/code/mobile/{number[:3]}',
     ]
     text = my_sum.download_text(urls, no_links=True)
     query = f'''
-Определи по тексту какой регион, какой оператор, и не связан ли он с мошенничеством,
-ответь в удобной для чтения форме с разделением на абзацы и с использованием
-жирного текста для акцентирования внимания,
-ответь кратко, но если связано с мошенничеством то напиши почему ты так решил подробно.
+Определи по предоставленному тексту какой регион, какой оператор,
+связан ли номер с мошенничеством,
+если связан то напиши почему ты так думаешь,
+ответь на русском языке.
+
 
 Номер +7{number}
 
@@ -723,7 +729,7 @@ def check_phone_number(number: str) -> str:
 
 {text}
 '''
-    response = ai(query)
+    response = ai(query[:MAX_SUM_REQUEST])
     return response, text
 
 

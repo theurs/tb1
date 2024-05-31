@@ -420,8 +420,19 @@ def tr(text: str, lang: str, help: str = '') -> str:
 
 
 def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
+    """
+    Updates the memory of the selected bot based on the chat mode.
+
+    Args:
+        query: The user's query text.
+        resp: The bot's response.
+        chat_id_full: The full chat ID.
+    """
+    # Checks if there is a chat mode for the given chat, if not, sets the default value.
     if chat_id_full not in CHAT_MODE:
         CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+
+    # Updates the memory of the selected bot based on the chat mode.
     if 'gemini' in CHAT_MODE[chat_id_full]:
         my_gemini.update_mem(query, resp, chat_id_full)
     elif 'llama3' in CHAT_MODE[chat_id_full]:
@@ -1679,11 +1690,11 @@ def handle_document(message: telebot.types.Message):
                                           reply_markup=get_keyboard('translate', message))
                     bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
 
-                    caption_ = tr("попросил ответить по содержанию файла", lang)
+                    caption_ = tr("юзер попросил ответить по содержанию файла", lang)
                     if caption:
                         caption_ += ', ' + caption
                     add_to_bots_mem(caption_,
-                                        f'{tr("посмотрел файл и ответил:", lang)} {summary}',
+                                        f'{tr("бот посмотрел файл и ответил:", lang)} {summary}',
                                         chat_id_full)
                 else:
                     bot_reply_tr(message, 'Не удалось получить никакого текста из документа.')
@@ -1712,8 +1723,8 @@ def handle_document(message: telebot.types.Message):
                                                   disable_web_page_preview = True)
 
                             text = text[:8000]
-                            add_to_bots_mem(f'user {tr("попросил распознать текст с картинки", lang)}',
-                                                f'{tr("распознал текст и ответил:", lang)} {text}',
+                            add_to_bots_mem(f'user {tr("юзер попросил распознать текст с картинки", lang)}',
+                                                f'{tr("бот распознал текст и ответил:", lang)} {text}',
                                                 chat_id_full)
 
                         else:
@@ -1822,8 +1833,8 @@ def handle_photo(message: telebot.types.Message):
                                         disable_web_page_preview = True)
 
                     text = text[:8000]
-                    add_to_bots_mem(f'user {tr("попросил распознать текст с картинки", lang)}',
-                                        f'{tr("распознал текст и ответил:", lang)} {text}',
+                    add_to_bots_mem(f'user {tr("юзер попросил распознать текст с картинки", lang)}',
+                                        f'{tr("бот распознал текст и ответил:", lang)} {text}',
                                         chat_id_full)
 
                 else:
@@ -2938,8 +2949,8 @@ def google(message: telebot.types.Message):
             except Exception as error2:
                 my_log.log2(f'tb.py:google: {error2}')
 
-            add_to_bots_mem(f'user {tr("попросил сделать запрос в Google:", lang)} {q}',
-                                    f'{tr("поискал в Google и ответил:", lang)} {r}',
+            add_to_bots_mem(f'user {tr("юзер попросил сделать запрос в Google:", lang)} {q}',
+                                    f'{tr("бот поискал в Google и ответил:", lang)} {r}',
                                     chat_id_full)
 
 
@@ -3172,8 +3183,8 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                     n += 1
                                 bot_reply(message, suggest_msg, parse_mode = 'HTML', reply_markup=markup)
 
-                            add_to_bots_mem(f'user {tr("asked to draw", lang)}\n{prompt}',
-                                                f'{tr("has generated images successfully", lang)}',
+                            add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
+                                                f'{tr("images was generated successfully", lang)}',
                                                 chat_id_full)
                     else:
                         bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
@@ -3182,8 +3193,8 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                     "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum or this https://t.me/aibrahma/467",
                                     disable_web_page_preview = True)
                         my_log.log_echo(message, '[image gen error] ')
-                        add_to_bots_mem(f'user {tr("asked to draw", lang)}\n{prompt}',
-                                                f'{tr("did not want or could not draw this using DALL-E", lang)}',
+                        add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
+                                                f'{tr("bot did not want or could not draw this", lang)}',
                                                 chat_id_full)
 
             else:
@@ -3474,8 +3485,8 @@ def summ_text(message: telebot.types.Message):
                         bot_reply(message, rr, disable_web_page_preview = True,
                                             parse_mode='HTML',
                                             reply_markup=get_keyboard('translate', message))
-                        add_to_bots_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                            f'{tr("прочитал и ответил:", lang)} {r}',
+                        add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
+                                            f'{tr("бот прочитал и ответил:", lang)} {r}',
                                             chat_id_full)
                         return
 
@@ -3495,8 +3506,8 @@ def summ_text(message: telebot.types.Message):
                                                 reply_markup=get_keyboard('translate', message))
                             SUM_CACHE[url_id] = res
                             bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
-                            add_to_bots_mem(tr("попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                            f'{tr("прочитал и ответил:", lang)} {res}',
+                            add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
+                                            f'{tr("бот прочитал и ответил:", lang)} {res}',
                                             chat_id_full)
                             return
                         else:
@@ -4394,10 +4405,9 @@ def do_task(message, custom_prompt: str = ''):
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    # hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not address the user by name and no emoji unless it is required, it`s okay to respond with "I don`t know" or "I can`t" if you are unable to provide an answer or complete a request.]'
+                    # hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not address the user by name and no emoji unless it is required.]'
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not address the user by name and no emoji unless it is required.]'
                 else:
-                    # hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required, it`s okay to respond with "I don`t know" or "I can`t" if you are unable to provide an answer or complete a request.]'
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
             else:
                 if chat_id_full in ROLES and ROLES[chat_id_full]:

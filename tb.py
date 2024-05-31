@@ -4462,6 +4462,7 @@ def do_task(message, custom_prompt: str = ''):
                                                     GEMIMI_TEMP[chat_id_full],
                                                     model = 'gemini-1.5-flash-latest')
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                                my_gemini.undo(chat_id_full)
                                 message.text = f'/image {message.text}'
                                 image(message)
                                 return
@@ -4527,6 +4528,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
                                                     model = 'gemini-1.5-pro-latest')
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                                my_gemini.undo(chat_id_full)
                                 message.text = f'/image {message.text}'
                                 image(message)
                                 return

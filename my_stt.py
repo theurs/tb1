@@ -167,12 +167,9 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                 text = x[1]
                 return text
 
-        try: # gemini
-            text = stt_genai(input_file)
-        except Exception as error:
-            my_log.log2(f'my_stt:stt:genai:{error}')
-
         if not text:
+            # быстро и хорошо распознает но до 1 минуты всего
+            # и часто глотает последнее слово
             try: # пробуем через гугл
                 text = stt_google(input_file, lang)
             except AssertionError:
@@ -186,6 +183,12 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
             except Exception as unknown_error:
                 print(unknown_error)
                 my_log.log2(str(unknown_error))
+
+        try: # gemini
+            # может выдать до 8000 токенов (12000 русских букв) более чем достаточно для голосовух
+            text = stt_genai(input_file)
+        except Exception as error:
+            my_log.log2(f'my_stt:stt:genai:{error}')
 
         #затем через локальный (моя реализация) whisper
         if not text:

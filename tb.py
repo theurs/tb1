@@ -3585,7 +3585,11 @@ def trans(message: telebot.types.Message):
                         translated = my_gemini.translate(text[:3500], to_lang = llang)
                         CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
             if translated:
-                detected_lang = tr(my_trans.detect_lang(text) or 'unknown', lang, 'это перевод названия языка, одно слово, прилагательное')
+                try:
+                    detected_lang = my_trans.detect(text) or 'unknown language'
+                    detected_lang = tr(langcodes.Language.make(language=detected_lang).display_name(language="en"), lang).lower()
+                except:
+                    detected_lang = tr('unknown language', lang)
 
                 bot_reply(message,
                           translated + '\n\n' + tr('Распознанный язык:', lang) \

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# pip install -U google-generativeai
 
 import base64
 import hashlib
@@ -13,8 +13,10 @@ import traceback
 from pathlib import Path
 
 import audiofile
+import google.generativeai as genai
 import speech_recognition as sr
 
+import my_gemini
 import cfg
 import my_log
 import utils
@@ -26,6 +28,7 @@ LOCKS = {}
 # [(crc32, text recognized),...]
 STT_CACHE = []
 CACHE_SIZE = 100
+
 
 def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
     """
@@ -155,27 +158,34 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
         LOCKS[chat_id] = threading.Lock()
     with LOCKS[chat_id]:
         text = ''
-
-        data = hashlib.sha256(open(input_file, 'rb').read()).hexdigest()
+        with open(input_file, 'rb') as f:
+            data_from_file = f.read()
+        data = hashlib.sha256(data_from_file).hexdigest()
         global STT_CACHE
         for x in STT_CACHE:
             if x[0] == data:
                 text = x[1]
                 return text
 
-        try: # сначала пробуем через гугл
-            text = stt_google(input_file, lang)
-        except AssertionError:
-            pass
-        except sr.UnknownValueError as unknown_value_error:
-            print(unknown_value_error)
-            my_log.log2(str(unknown_value_error))
-        except sr.RequestError as request_error:
-            print(request_error)
-            my_log.log2(str(request_error))
-        except Exception as unknown_error:
-            print(unknown_error)
-            my_log.log2(str(unknown_error))
+        try: # gemini
+            text = stt_genai(input_file)
+        except Exception as error:
+            my_log.log2(f'my_stt:stt:genai:{error}')
+
+        if not text:
+            try: # пробуем через гугл
+                text = stt_google(input_file, lang)
+            except AssertionError:
+                pass
+            except sr.UnknownValueError as unknown_value_error:
+                print(unknown_value_error)
+                my_log.log2(str(unknown_value_error))
+            except sr.RequestError as request_error:
+                print(request_error)
+                my_log.log2(str(request_error))
+            except Exception as unknown_error:
+                print(unknown_error)
+                my_log.log2(str(unknown_error))
 
         #затем через локальный (моя реализация) whisper
         if not text:
@@ -232,7 +242,86 @@ def audio_to_wav(audio_bytes: bytes, file_info: str) -> bytes:
     return wav_bytes
 
 
+def genai_clear():
+    """Очистка файлов, загруженных через Gemini API.
+    TODO: Проверить возможность удаления чужих файлов.
+    TODO: Обработать потенциальный race condition при настройке API ключа.
+    """
+
+    try:
+        keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
+        random.shuffle(keys)
+
+        for key in keys:
+            print(key)
+            genai.configure(api_key=key) # здесь может быть рейс кондишн?
+            files = genai.list_files()
+            for f in files:
+                print(f.name)
+                try:
+                    # genai.delete_file(f.name)
+                    pass # можно ли удалять чужие файлы?
+                except Exception as error:
+                    my_log.log_gemini(f'stt:genai_clear: delete file {error}\n{key}\n{f.name}')
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
+
+
+def stt_genai(audio_file: str) -> str:
+    """
+    Converts the given audio file to text using the Gemini API.
+
+    Args:
+        audio_file (str): The path to the audio file to be converted.
+
+    Returns:
+        str: The converted text.
+    """
+    try:
+        keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
+        random.shuffle(keys)
+        key = keys[0]
+
+        your_file = None
+        prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text."
+
+        for _ in range(3):
+            try:
+                genai.configure(api_key=key) # здесь может быть рейс кондишн?
+                if your_file == None:
+                    your_file = genai.upload_file(audio_file)
+                    genai.configure(api_key=key) # здесь может быть рейс кондишн?
+                model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+                # tokens_count = model.count_tokens([your_file])
+                # if tokens_count.total_tokens > 7800:
+                #     response = ''
+                #     break
+                response = model.generate_content([prompt, your_file])
+                if response.text.strip():
+                    break
+            except Exception as error:
+                my_log.log_gemini(f'Failed to convert audio data to text: {error}')
+                response = ''
+                time.sleep(2)
+
+        try:
+            genai.configure(api_key=key) # здесь может быть рейс кондишн?
+            genai.delete_file(your_file.name)
+        except Exception as error:
+            my_log.log_gemini(f'Failed to delete audio file: {error}\n{key}\n{your_file.name}\n\n{str(your_file)}')
+
+        return response.text.strip() if response else ''
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
+
+
 if __name__ == "__main__":
+    # print(stt_genai('1.opus'))
+    # genai_clear()
+
     pass
     # text = stt('3.ogg')
     # print(text)

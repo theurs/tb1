@@ -8,12 +8,13 @@ duckduckgo_search[lxml]
 edge_tts
 fake_useragent
 fuzzywuzzy
+google
+google-generativeai
 groq
 
 # свежая версия выжирает цпу на сервере, а с этой не работают новые модные модельки
 gradio_client==0.14.0
 
-google
 gTTS
 langdetect
 langcodes[data]

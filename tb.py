@@ -1496,7 +1496,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
 
 
-@bot.message_handler(content_types = ['voice', 'audio'], func=authorized)
+@bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)
 @asunc_run
 def handle_voice(message: telebot.types.Message):
     """Автоматическое распознавание текст из голосовых сообщений и аудио файлов"""
@@ -1593,11 +1593,6 @@ def handle_document(message: telebot.types.Message):
     chat_id = message.chat.id
 
     if check_blocks(chat_id_full) and not is_private:
-        return
-
-    file_info = bot.get_file(message.document.file_id)
-    if file_info.file_path.lower().endswith('.wav'):
-        handle_voice(message)
         return
 
     with semaphore_talks:
@@ -1847,75 +1842,6 @@ def handle_photo(message: telebot.types.Message):
                 else:
                     my_log.log_echo(message, "Не удалось/понадобилось перевести.")
                 return
-
-
-@bot.message_handler(content_types = ['video', 'video_note'], func=authorized)
-@asunc_run
-def handle_video(message: telebot.types.Message):
-    """Обработчик видеосообщений. Сюда же относятся новости и репосты с видео"""
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-
-    is_private = message.chat.type == 'private'
-    if chat_id_full not in SUPER_CHAT:
-        SUPER_CHAT[chat_id_full] = 0
-    if SUPER_CHAT[chat_id_full] == 1:
-        is_private = True
-
-    if check_blocks(get_topic_id(message)) and not is_private:
-        return
-
-    with semaphore_talks:
-        # пересланные сообщения пытаемся перевести даже если в них видео
-        if message.forward_from_chat:
-            # у видео нет текста но есть заголовок caption. его и будем переводить
-            text = my_trans.translate(message.caption)
-            if text:
-                bot_reply(message, text)
-            else:
-                my_log.log_echo(message, "Не удалось/понадобилось перевести.")
-
-    with semaphore_talks:
-        with ShowAction(message, 'typing'):
-            # Создание временного файла 
-            with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-                file_path = temp_file.name
-            # Скачиваем аудиофайл во временный файл
-            try:
-                file_info = bot.get_file(message.video.file_id)
-            except AttributeError:
-                file_info = bot.get_file(message.video_note.file_id)
-            downloaded_file = bot.download_file(file_info.file_path)
-            with open(file_path, 'wb') as new_file:
-                new_file.write(downloaded_file)
-
-            # Распознаем текст из аудио 
-            try:
-                text = my_stt.stt(file_path, lang, chat_id_full)
-            except Exception as stt_error:
-                my_log.log2(f'tb:handle_video: {stt_error}')
-                text = ''
-
-            try:
-                os.remove(file_path)
-            except Exception as hvt_remove_error:
-                my_log.log2(f'tb:handle_video:remove: {hvt_remove_error}')
-
-            # Отправляем распознанный текст
-            if text:
-                if VOICE_ONLY_MODE[chat_id_full]:
-                    # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
-                    pass
-                else:
-                    bot_reply(message, text, reply_markup=get_keyboard('translate', message))
-
-            # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
-            if text:
-                if chat_id_full not in TRANSCRIBE_ONLY_CHAT:
-                    TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
-                if not TRANSCRIBE_ONLY_CHAT[chat_id_full]:
-                    message.text = text
-                    echo_all(message)
 
 
 @bot.message_handler(commands=['config', 'settings', 'setting', 'options'], func=authorized_owner)

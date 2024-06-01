@@ -1516,9 +1516,6 @@ def handle_voice(message: telebot.types.Message):
         return
 
     with semaphore_talks:
-        # Создание временного файла
-        with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-            file_path = temp_file.name + '.ogg'
         # Скачиваем аудиофайл во временный файл
         try:
             file_info = bot.get_file(message.voice.file_id)
@@ -1527,6 +1524,10 @@ def handle_voice(message: telebot.types.Message):
                 file_info = bot.get_file(message.audio.file_id)
             except AttributeError:
                 file_info = bot.get_file(message.document.file_id)
+
+        # Создание временного файла
+        with tempfile.NamedTemporaryFile(delete=True) as temp_file:
+            file_path = temp_file.name + (utils.get_file_ext(file_info.file_path) or 'unknown')
 
         downloaded_file = bot.download_file(file_info.file_path)
         with open(file_path, 'wb') as new_file:
@@ -1627,10 +1628,7 @@ def handle_document(message: telebot.types.Message):
                 elif message.document.mime_type == 'application/vnd.ms-excel' or \
                      message.document.mime_type == 'application/vnd.oasis.opendocument.spreadsheet' or \
                      message.document.mime_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-                    try:
-                        ext = file_info.file_path.split('.')[-1]
-                    except IndexError:
-                        ext = ''
+                    ext = utils.get_file_ext(file_info.file_path)
                     text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
                 elif message.document.mime_type == 'image/svg+xml':
                     try:
@@ -1672,10 +1670,7 @@ def handle_document(message: telebot.types.Message):
                 elif message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or \
                     message.document.mime_type == 'application/rtf' or \
                     message.document.mime_type == 'application/msword':
-                    try:
-                        ext = file_info.file_path.split('.')[-1]
-                    except IndexError:
-                        ext = ''
+                    ext = utils.get_file_ext(file_info.file_path)
                     text = my_pandoc.fb2_to_text(downloaded_file, ext)
                 if text.strip():
                     caption = message.caption or ''

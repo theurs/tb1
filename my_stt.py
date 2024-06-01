@@ -29,44 +29,6 @@ STT_CACHE = []
 CACHE_SIZE = 100
 
 
-def detect_audio_codec_with_ffprobe(audio_file: str) -> str:
-    """
-    Detect the audio codec of an audio file using FFprobe.
-
-    Args:
-        audio_file (str): The path to the audio file.
-
-    Returns:
-        str: The audio codec of the audio file.
-    """
-    try:
-        result = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        return result.stdout.decode('utf-8').strip()
-    except Exception as error:
-        my_log.log2(f'my_stt:detect_audio_codec_with_ffprobe: {error}')
-        return 'unknown'
-
-
-def extract_audio_with_ffmpeg(audio_file: str) -> str:
-    """
-    Extracts audio from a file and converts it to .ogg if necessary.
-
-    Args:
-        audio_file (str): The path to the audio file.
-
-    Returns:
-        str: The path to the extracted audio file (.ogg).
-    """
-    SUPPORTED_CODECS = ['ogg', 'mp3', 'm4a', 'opus']
-    codec = detect_audio_codec_with_ffprobe(audio_file)
-    tmp_audio_file = utils.get_tmp_fname() + '.ogg'
-    if codec.lower() in SUPPORTED_CODECS:
-        subprocess.run(['ffmpeg', '-i', audio_file,  '-vn', '-acodec', 'copy', tmp_audio_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    else:
-        subprocess.run(['ffmpeg', '-i', audio_file,  '-vn', '-acodec', 'libvorbis', tmp_audio_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return tmp_audio_file
-
-
 def audio_duration(audio_file: str) -> int:
     """
     Get the duration of an audio file.
@@ -100,6 +62,21 @@ def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
     return tmp_wav_file
 
 
+def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
+    """
+    Converts an audio file to a ogg format using FFmpeg.
+
+    Args:
+        audio_file (str): The path to the audio file to be converted.
+
+    Returns:
+        str: The path to the converted wave file.
+    """
+    tmp_wav_file = utils.get_tmp_fname() + '.ogg'
+    subprocess.run(['ffmpeg', '-i', audio_file, '-map', '0:a', '-c:a','libvorbis', tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return tmp_wav_file
+
+
 def stt_google(audio_file: str, language: str = 'ru') -> str:
     """
     Speech-to-text using Google's speech recognition API.
@@ -111,29 +88,15 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     Returns:
         str: The transcribed text from the audio file.
     """
-    audio_file2 = convert_to_wave_with_ffmpeg(audio_file)
-
-    assert audio_duration(audio_file2) < 55, 'Too big for free speech recognition'
+    assert audio_duration(audio_file) < 55, 'Too big for free speech recognition'
 
     google_recognizer = sr.Recognizer()
 
-    with sr.AudioFile(audio_file2) as source:
+    with sr.AudioFile(audio_file) as source:
         audio = google_recognizer.record(source)  # read the entire audio file
-
-    try:
-        os.unlink(audio_file2)
-    except Exception as unknown_error:
-        my_log.log2(f'my_stt:stt_google:{unknown_error}')
 
     text = google_recognizer.recognize_google(audio, language=language)
 
-    # # хак для голосовых команд обращенных к гуглу и бингу
-    # # воск их записывает по-русски а гугл по-английски
-    # lower_text = text.lower()
-    # if lower_text.startswith('google'):
-    #     text = 'гугл ' + text[6:]
-    # if lower_text.startswith('bing'):
-    #     text = 'бинг ' + text[4:]
     return text
 
 
@@ -210,9 +173,14 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                 text = x[1]
                 return text
 
-        input_file2 = extract_audio_with_ffmpeg(input_file)
+        dur = audio_duration(input_file)
+        if dur < 55:
+            input_file2 = convert_to_wave_with_ffmpeg(input_file)
+        else:
+            input_file2 = convert_to_ogg_with_ffmpeg(input_file)
+
         try:
-            if not text:
+            if not text and dur < 55:
                 # быстро и хорошо распознает но до 1 минуты всего
                 # и часто глотает последнее слово
                 try: # пробуем через гугл
@@ -225,6 +193,13 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                     my_log.log2(str(request_error))
                 except Exception as unknown_error:
                     my_log.log2(str(unknown_error))
+
+            if not text and dur < 55: # google failed, delete wav and create ogg
+                try:
+                    os.unlink(input_file2)
+                except Exception as error:
+                    my_log.log2(f'my_stt:stt:os.unlink:{error}')
+                input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
             if not text:
                 try: # gemini
@@ -342,18 +317,25 @@ def stt_genai(audio_file: str) -> str:
 
 if __name__ == "__main__":
 
+    # print(stt('1.mp3'))
+    # print(stt('1.webm'))
+    # print(stt('1.aac'))
+    # print(stt('1.amr'))
+    # print(stt('1.flac'))
+    # print(stt('1.mp4'))
+
     # print(detect_audio_codec_with_ffprobe('1.ogg'))
     # print(detect_audio_codec_with_ffprobe('1.webm'))
     # print(detect_audio_codec_with_ffprobe('1.mp4'))
 
-    print(extract_audio_with_ffmpeg('1.flac'))
+    # print(convert_to_wave_with_ffmpeg('1.ogg'))
 
     # genai.configure(api_key=cfg.gemini_keys[0])
     # for x in genai.list_models():
     #     print(x)
 
     # print(stt_genai('1.pdf'))
-    # print(stt_genai('1.ogg'))
+    # print(stt_genai('1.wav'))
     # genai_clear()
 
     pass

@@ -4,6 +4,7 @@
 import datetime
 import hashlib
 import html
+import pathlib
 import pytz
 import random
 import re
@@ -19,6 +20,16 @@ import telebot
 from pylatexenc.latex2text import LatexNodes2Text
 
 import my_log
+
+
+def get_file_ext(fname: str) -> str:
+    '''return extension of file using pathlib'''
+    try:
+        p = pathlib.Path(fname)
+        return p.suffix
+    except Exception as error:
+        my_log.log2(f'utils:get_file_ext {error}\n{fname}')
+        return ''
 
 
 def split_text(text: str, chunk_limit: int = 1500):
@@ -525,6 +536,7 @@ def safe_fname(s: str) -> str:
 
 
 if __name__ == '__main__':
+    # print(get_file_ext('c:\\123\123123.23'))
     # print(safe_fname('dfgdшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшггггггггггггггггггггггггггггшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшfg\/dfg.tb'))
     t=r"""рш еруку
 

@@ -6,6 +6,7 @@ cookies.json
 *.log
 *.json
 test.py
+test2.py
 .google-cookie
 1.txt
 db/*

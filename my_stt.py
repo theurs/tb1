@@ -10,11 +10,10 @@ import subprocess
 import time
 import threading
 import traceback
-from pathlib import Path
 
-import audiofile
 import google.generativeai as genai
 import speech_recognition as sr
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 import my_gemini
 import cfg
@@ -28,6 +27,62 @@ LOCKS = {}
 # [(crc32, text recognized),...]
 STT_CACHE = []
 CACHE_SIZE = 100
+
+
+def detect_audio_codec_with_ffprobe(audio_file: str) -> str:
+    """
+    Detect the audio codec of an audio file using FFprobe.
+
+    Args:
+        audio_file (str): The path to the audio file.
+
+    Returns:
+        str: The audio codec of the audio file.
+    """
+    try:
+        result = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return result.stdout.decode('utf-8').strip()
+    except Exception as error:
+        my_log.log2(f'my_stt:detect_audio_codec_with_ffprobe: {error}')
+        return 'unknown'
+
+
+def extract_audio_with_ffmpeg(audio_file: str) -> str:
+    """
+    Extracts audio from a file and converts it to .ogg if necessary.
+
+    Args:
+        audio_file (str): The path to the audio file.
+
+    Returns:
+        str: The path to the extracted audio file (.ogg).
+    """
+    SUPPORTED_CODECS = ['ogg', 'mp3', 'm4a', 'opus']
+    codec = detect_audio_codec_with_ffprobe(audio_file)
+    tmp_audio_file = utils.get_tmp_fname() + '.ogg'
+    if codec.lower() in SUPPORTED_CODECS:
+        subprocess.run(['ffmpeg', '-i', audio_file,  '-vn', '-acodec', 'copy', tmp_audio_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        subprocess.run(['ffmpeg', '-i', audio_file,  '-vn', '-acodec', 'libvorbis', tmp_audio_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return tmp_audio_file
+
+
+def audio_duration(audio_file: str) -> int:
+    """
+    Get the duration of an audio file.
+
+    Args:
+        audio_file (str): The path to the audio file.
+
+    Returns:
+        int: The duration of the audio file in seconds.
+    """
+    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    try:
+        r = float(result.stdout)
+    except ValueError:
+        r = 0
+    return r
 
 
 def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
@@ -45,20 +100,6 @@ def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
     return tmp_wav_file
 
 
-def audio_duration(audio_file: str) -> int:
-    """
-    Get the duration of an audio file.
-
-    Args:
-        audio_file (str): The path to the audio file.
-
-    Returns:
-        int: The duration of the audio file in seconds.
-    """
-    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return float(result.stdout)
-
-
 def stt_google(audio_file: str, language: str = 'ru') -> str:
     """
     Speech-to-text using Google's speech recognition API.
@@ -70,8 +111,10 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     Returns:
         str: The transcribed text from the audio file.
     """
-    assert audio_duration(audio_file) < 55, 'Too big for free speech recognition'
     audio_file2 = convert_to_wave_with_ffmpeg(audio_file)
+
+    assert audio_duration(audio_file2) < 55, 'Too big for free speech recognition'
+
     google_recognizer = sr.Recognizer()
 
     with sr.AudioFile(audio_file2) as source:
@@ -84,13 +127,13 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
 
     text = google_recognizer.recognize_google(audio, language=language)
 
-    # хак для голосовых команд обращенных к гуглу и бингу
-    # воск их записывает по-русски а гугл по-английски
-    lower_text = text.lower()
-    if lower_text.startswith('google'):
-        text = 'гугл ' + text[6:]
-    if lower_text.startswith('bing'):
-        text = 'бинг ' + text[4:]
+    # # хак для голосовых команд обращенных к гуглу и бингу
+    # # воск их записывает по-русски а гугл по-английски
+    # lower_text = text.lower()
+    # if lower_text.startswith('google'):
+    #     text = 'гугл ' + text[6:]
+    # if lower_text.startswith('bing'):
+    #     text = 'бинг ' + text[4:]
     return text
 
 
@@ -167,36 +210,42 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                 text = x[1]
                 return text
 
-        if not text:
-            # быстро и хорошо распознает но до 1 минуты всего
-            # и часто глотает последнее слово
-            try: # пробуем через гугл
-                text = stt_google(input_file, lang)
-            except AssertionError:
-                pass
-            except sr.UnknownValueError as unknown_value_error:
-                print(unknown_value_error)
-                my_log.log2(str(unknown_value_error))
-            except sr.RequestError as request_error:
-                print(request_error)
-                my_log.log2(str(request_error))
-            except Exception as unknown_error:
-                print(unknown_error)
-                my_log.log2(str(unknown_error))
+        input_file2 = extract_audio_with_ffmpeg(input_file)
+        try:
+            if not text:
+                # быстро и хорошо распознает но до 1 минуты всего
+                # и часто глотает последнее слово
+                try: # пробуем через гугл
+                    text = stt_google(input_file2, lang)
+                except AssertionError:
+                    pass
+                except sr.UnknownValueError as unknown_value_error:
+                    my_log.log2(str(unknown_value_error))
+                except sr.RequestError as request_error:
+                    my_log.log2(str(request_error))
+                except Exception as unknown_error:
+                    my_log.log2(str(unknown_error))
 
-        try: # gemini
-            # может выдать до 8000 токенов (12000 русских букв) более чем достаточно для голосовух
-            text = stt_genai(input_file)
-        except Exception as error:
-            my_log.log2(f'my_stt:stt:genai:{error}')
+            if not text:
+                try: # gemini
+                    # может выдать до 8000 токенов (12000 русских букв) более чем достаточно для голосовух
+                    text = stt_genai(input_file2)
+                except Exception as error:
+                    my_log.log2(f'my_stt:stt:genai:{error}')
 
-        #затем через локальный (моя реализация) whisper
-        if not text:
+            #затем через локальный (моя реализация) whisper
+            if not text:
+                try:
+                    text = stt_my_whisper_api(input_file2, lang)
+                except Exception as error:
+                    error_traceback = traceback.format_exc()
+                    my_log.log2(f'my_stt:stt:{error}\n\n{error_traceback}')
+
+        finally:
             try:
-                text = stt_my_whisper_api(input_file, lang)
+                os.unlink(input_file2)
             except Exception as error:
-                error_traceback = traceback.format_exc()
-                my_log.log2(f'my_stt:stt:{error}\n\n{error_traceback}')
+                my_log.log2(f'my_stt:stt:os.unlink:{error}')
 
         if text:
             # text_ = my_gemini.repair_text_after_speech_to_text(text)
@@ -206,43 +255,6 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
             return text_
 
     return ''
-
-
-def audio_to_wav(audio_bytes: bytes, file_info: str) -> bytes:
-    """
-    Конвертирует аудиоданные из формата AMR в WAV.
-
-    Args:
-        audio_bytes: Байты аудиоданных в формате AMR.
-        file_info: Строка, имя файла из которого можно получить его расширение
-
-    Returns:
-        Байты аудиоданных в формате WAV.
-    """
-    ext = Path(file_info).suffix
-    
-    temp_input = utils.get_tmp_fname()+ext
-    temp_output = utils.get_tmp_fname()+'.wav'
-
-    with open(temp_input, 'wb') as f:
-        f.write(audio_bytes)
-
-    audiofile.convert_to_wav(temp_input, temp_output)
-
-    with open(temp_output, 'rb') as f:
-        wav_bytes = f.read()
-
-    try:
-        os.remove(temp_input)
-    except Exception as error:
-        my_log.log2(f'my_stt:audio_to_wav:remove input {temp_input} {error}')
-        pass
-    try:
-        os.remove(temp_output)
-    except Exception as error:
-        my_log.log2(f'my_stt:audio_to_wav:remove output {temp_output} {error}')
-
-    return wav_bytes
 
 
 def genai_clear():
@@ -301,7 +313,14 @@ def stt_genai(audio_file: str) -> str:
                 # if tokens_count.total_tokens > 7800:
                 #     response = ''
                 #     break
-                response = model.generate_content([prompt, your_file])
+                response = model.generate_content([prompt, your_file],
+                                                  safety_settings={
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                    }
+                )
                 if response.text.strip():
                     break
             except Exception as error:
@@ -322,7 +341,19 @@ def stt_genai(audio_file: str) -> str:
 
 
 if __name__ == "__main__":
-    # print(stt_genai('1.opus'))
+
+    # print(detect_audio_codec_with_ffprobe('1.ogg'))
+    # print(detect_audio_codec_with_ffprobe('1.webm'))
+    # print(detect_audio_codec_with_ffprobe('1.mp4'))
+
+    print(extract_audio_with_ffmpeg('1.flac'))
+
+    # genai.configure(api_key=cfg.gemini_keys[0])
+    # for x in genai.list_models():
+    #     print(x)
+
+    # print(stt_genai('1.pdf'))
+    # print(stt_genai('1.ogg'))
     # genai_clear()
 
     pass

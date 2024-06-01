@@ -21,6 +21,7 @@ import my_log
 import my_gemini
 import my_groq
 import my_openrouter
+import my_transcribe
 import utils
 
 
@@ -48,8 +49,13 @@ def get_text_from_youtube(url: str) -> str:
         t = ''
 
     text = '\n'.join([x['text'] for x in t])
-    
-    return text.strip() or ''
+
+    text = text.strip()
+
+    if not text: # нет субтитров?
+        text, info = my_transcribe.download_youtube_clip(url)
+
+    return text
 
 
 def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') -> str:

@@ -275,7 +275,7 @@ def stt_genai(audio_file: str) -> str:
         key = keys[0]
 
         your_file = None
-        prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text."
+        prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps."
 
         for _ in range(3):
             try:

@@ -1614,7 +1614,7 @@ def handle_document(message: telebot.types.Message):
                 handle_voice(message)
                 return
             with ShowAction(message, 'typing'):
-                # file_info = bot.get_file(message.document.file_id)
+                file_info = bot.get_file(message.document.file_id)
                 downloaded_file = bot.download_file(file_info.file_path)
                 file_bytes = io.BytesIO(downloaded_file)
                 text = ''

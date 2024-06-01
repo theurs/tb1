@@ -1612,8 +1612,10 @@ def handle_document(message: telebot.types.Message):
                                             'application/msword',
                                             'image/svg+xml') or \
                                             message.document.mime_type.startswith('text/') or \
+                                            message.document.mime_type.startswith('video/') or \
                                             message.document.mime_type.startswith('audio/')):
-            if message.document and message.document.mime_type.startswith('audio/'):
+            if message.document and message.document.mime_type.startswith('audio/') or \
+                message.document and message.document.mime_type.startswith('video/'):
                 handle_voice(message)
                 return
             with ShowAction(message, 'typing'):

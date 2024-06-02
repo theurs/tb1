@@ -206,7 +206,7 @@ if __name__ == '__main__':
     # genai_clear()
 
     start_time = time.time()
-    t = download_youtube_clip('https://youtube.com/watch?v=3YxaaGgTQYM')
+    t = download_youtube_clip('https://www.youtube.com/watch?v=snxjgcMunho')
     with open('test.txt', 'w', encoding='utf-8') as f:
         f.write(t[0])
         f.write('\n\n')

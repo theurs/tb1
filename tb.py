@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import chardet
+import concurrent.futures
 import datetime
 import io
 import functools
@@ -15,6 +16,7 @@ import time
 
 import cairosvg
 import langcodes
+import PIL
 import prettytable
 import PyPDF2
 import telebot
@@ -180,8 +182,10 @@ AUTO_TRANSLATIONS = my_init.AUTO_TRANSLATIONS
 
 # запоминаем прилетающие сообщения, если они слишком длинные и
 # были отправлены клиентом по кускам {id:[messages]}
-# ловим сообщение и ждем полсекунды не прилетит ли еще кусок
+# ловим сообщение и ждем секунду не прилетит ли еще кусок
 MESSAGE_QUEUE = {}
+# так же ловим пачки картинок(медиагруппы), телеграм их отправляет по одной
+MESSAGE_QUEUE_IMG = {}
 
 # блокировать процесс отправки картинок что бы не было перемешивания разных запросов
 SEND_IMG_LOCK = threading.Lock()
@@ -1360,7 +1364,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             hash = call.data[9:]
             prompt = IMAGE_SUGGEST_BUTTONS[hash]
             message.text = f'/image {prompt}'
-            image(message)
+            image_gen(message)
         elif call.data.startswith('select_lang-'):
             l = call.data[12:]
             message.text = f'/lang {l}'
@@ -1731,14 +1735,78 @@ def handle_document(message: telebot.types.Message):
                     my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
 
 
+
+
+def download_image_from_message(message: telebot.types.Message) -> bytes:
+    '''Download image from message'''
+    try:
+        if message.photo:
+            photo = message.photo[-1]
+            file_info = bot.get_file(photo.file_id)
+            image = bot.download_file(file_info.file_path)
+        elif message.document:
+            file_id = message.document.file_id
+            file_info = bot.get_file(file_id)
+            file = bot.download_file(file_info.file_path)
+            fp = io.BytesIO(file)
+            image = fp.read()
+        return image
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:download_image_from_message: {error} {traceback_error}')
+        return b''
+
+
+def download_image_from_messages(MESSAGES: list) -> list:
+    '''Download images from message list'''
+    images = []
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        results = [executor.submit(download_image_from_message, message) for message in MESSAGES]
+        for f in concurrent.futures.as_completed(results):
+            images.append(f.result())
+
+    return images
+
+
+
 @bot.message_handler(content_types = ['photo'], func=authorized)
 @asunc_run
 def handle_photo(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография
     + много текста в подписи, и пересланные сообщения в том числе"""
+
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+
+
+    # catch groups of images up to 10
+    if chat_id_full not in MESSAGE_QUEUE_IMG:
+        MESSAGE_QUEUE_IMG[chat_id_full] = [message,]
+        last_state = MESSAGE_QUEUE_IMG[chat_id_full]
+        n = 10
+        while n > 0:
+            n -= 1
+            time.sleep(0.1)
+            new_state = MESSAGE_QUEUE_IMG[chat_id_full]
+            if last_state != new_state:
+                last_state = new_state
+                n = 10
+    else:
+        MESSAGE_QUEUE_IMG[chat_id_full].append(message)
+        return
+
+
+    if len(MESSAGE_QUEUE_IMG[chat_id_full]) > 1:
+        MESSAGES = MESSAGE_QUEUE_IMG[chat_id_full]
+    else:
+        MESSAGES = [message,]
+    del MESSAGE_QUEUE_IMG[chat_id_full]
+
+
+
     try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
 
         is_private = message.chat.type == 'private'
         if chat_id_full not in SUPER_CHAT:
@@ -1768,23 +1836,47 @@ def handle_photo(message: telebot.types.Message):
                 if state == 'translate':
                     return
 
+
+        # Если прислали медиагруппу то дропаем ее. или делаем коллаж, больше вариантов я пока не придумал
+        if 2 <= len(MESSAGES) <= 5: # если пришли 2-5 скриншотов телефона то склеиваем их и делаем коллаж
+            images = [download_image_from_message(msg) for msg in MESSAGES]
+            widths, heights = zip(*[PIL.Image.open(io.BytesIO(img)).size for img in images])
+
+            # Проверяем, что все изображения имеют одинаковые размеры и ориентацию
+            if all(w < h for w, h in zip(widths, heights)) and len(set(widths)) == 1 and len(set(heights)) == 1:
+                total_width = widths[0] * len(images)
+                new_image = PIL.Image.new('RGB', (total_width, heights[0]))
+
+                # Вставляем изображения в коллаж
+                for i, img in enumerate(images):
+                    new_image.paste(PIL.Image.open(io.BytesIO(img)), (widths[0] * i, 0))
+
+                # Сохраняем результат в буфер
+                result_image_as_bytes = io.BytesIO()
+                new_image.save(result_image_as_bytes, format='PNG')
+                result_image_as_bytes.seek(0)
+                result_image_as_bytes = result_image_as_bytes.read()
+
+                m = bot.send_photo(message.chat.id,
+                            result_image_as_bytes,
+                            disable_notification=True,
+                            reply_to_message_id=message.message_id,
+                            reply_markup=get_keyboard('hide', message))
+                log_message(m)
+                my_log.log_echo(message, f'Made collage of {len(images)} images.')
+            return
+        elif len(MESSAGES) != 1: # если что то другое то просто дропаем
+            my_log.log_echo(message, f'Drop {len(images)} images.')
+            return
+
+
         with semaphore_talks:
             # распознаем что на картинке с помощью гугл барда
             # if state == 'describe' and (is_private or tr('что', lang) in msglower):
             if state == 'describe':
                 with ShowAction(message, 'typing'):
-                    if message.photo:
-                        photo = message.photo[-1]
-                        file_info = bot.get_file(photo.file_id)
-                        image = bot.download_file(file_info.file_path)
-                    elif message.document:
-                        # скачиваем документ в байтовый поток
-                        file_id = message.document.file_id
-                        file_info = bot.get_file(file_id)
-                        file = bot.download_file(file_info.file_path)
-                        fp = io.BytesIO(file)
-                        image = fp.read()
-                    else:
+                    image = download_image_from_message(message)
+                    if not image:
                         my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
                         return
 
@@ -1793,7 +1885,8 @@ def handle_photo(message: telebot.types.Message):
                         text = utils.bot_markdown_to_html(text)
                         text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
                         bot_reply(message, text, parse_mode='HTML',
-                                            reply_markup=get_keyboard('translate', message))
+                                            reply_markup=get_keyboard('translate', message),
+                                            disable_web_page_preview=True)
                     else:
                         bot_reply_tr(message, 'Sorry, I could not answer your question.')
                 return
@@ -2899,18 +2992,18 @@ def get_user_image_counter(chat_id_full: str) -> int:
 
 @bot.message_handler(commands=['image2','img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
 @asunc_run
-def image2(message: telebot.types.Message):
+def image2_gen(message: telebot.types.Message):
     is_private = message.chat.type == 'private'
     if not is_private:
         bot_reply_tr(message, 'This command is only available in private chats.')
         return
     message.text += 'NSFW'
-    image(message)
+    image_gen(message)
 
 
 @bot.message_handler(commands=['image','img', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen'], func=authorized)
 @asunc_run
-def image(message: telebot.types.Message):
+def image_gen(message: telebot.types.Message):
     """Generates a picture from a description"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
@@ -4078,7 +4171,7 @@ def do_task(message, custom_prompt: str = ''):
             new_state = MESSAGE_QUEUE[chat_id_full]
             if last_state != new_state:
                 last_state = new_state
-                n = 5
+                n = 10
         message.text = last_state
         del MESSAGE_QUEUE[chat_id_full]
     else:
@@ -4099,7 +4192,7 @@ def do_task(message, custom_prompt: str = ''):
     if any([x for x in (b_msg_draw, b_msg_search, b_msg_summary, b_msg_tts, b_msg_translate, b_msg_settings) if x == message.text]):
         if any([x for x in (b_msg_draw,) if x == message.text]):
             message.text = '/image'
-            image(message)
+            image_gen(message)
         if any([x for x in (b_msg_search,) if x == message.text]):
             message.text = '/google'
             google(message)
@@ -4184,7 +4277,7 @@ def do_task(message, custom_prompt: str = ''):
     # обработка \image это неправильное /image
     if (msg.startswith('\\image ') and is_private):
         message.text = message.text.replace('/', '\\', 1)
-        image(message)
+        image_gen(message)
         return
 
     # не обрабатывать неизвестные команды, если они не в привате, в привате можно обработать их как простой текст
@@ -4239,7 +4332,7 @@ def do_task(message, custom_prompt: str = ''):
             if COMMAND_MODE[chat_id_full]:
                 if COMMAND_MODE[chat_id_full] == 'image':
                     message.text = f'/image {message.text}'
-                    image(message)
+                    image_gen(message)
                 elif COMMAND_MODE[chat_id_full] == 'tts':
                     message.text = f'/tts {message.text}'
                     tts(message)
@@ -4311,7 +4404,7 @@ def do_task(message, custom_prompt: str = ''):
         if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', 'нарисуй ', 'нарисуй,', 'нарисуйте ', 'нарисуйте,', 'draw ', 'draw,')):
             prompt = message.text.split(' ', 1)[1]
             message.text = f'/image {prompt}'
-            image(message)
+            image_gen(message)
             return
 
         # можно перенаправить запрос к гуглу, но он долго отвечает
@@ -4391,7 +4484,7 @@ def do_task(message, custom_prompt: str = ''):
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_gemini.undo(chat_id_full)
                                 message.text = f'/image {message.text}'
-                                image(message)
+                                image_gen(message)
                                 return
                             CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                             if chat_id_full not in WHO_ANSWERED:
@@ -4409,7 +4502,7 @@ def do_task(message, custom_prompt: str = ''):
                                 if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                     my_groq.undo(chat_id_full)
                                     message.text = f'/image {message.text}'
-                                    image(message)
+                                    image_gen(message)
                                     return
                                 CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
                                 flag_gpt_help = True
@@ -4457,7 +4550,7 @@ def do_task(message, custom_prompt: str = ''):
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_gemini.undo(chat_id_full)
                                 message.text = f'/image {message.text}'
-                                image(message)
+                                image_gen(message)
                                 return
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'gemini15'
@@ -4473,7 +4566,7 @@ def do_task(message, custom_prompt: str = ''):
                                 if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                     my_groq.undo(chat_id_full)
                                     message.text = f'/image {message.text}'
-                                    image(message)
+                                    image_gen(message)
                                     return
                                 CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
                                 flag_gpt_help = True
@@ -4528,7 +4621,7 @@ def do_task(message, custom_prompt: str = ''):
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_groq.undo(chat_id_full)
                                 message.text = f'/image {message.text}'
-                                image(message)
+                                image_gen(message)
                                 return
                             CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
 

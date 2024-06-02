@@ -1523,7 +1523,10 @@ def handle_voice(message: telebot.types.Message):
             try:
                 file_info = bot.get_file(message.audio.file_id)
             except AttributeError:
-                file_info = bot.get_file(message.document.file_id)
+                try:
+                    file_info = bot.get_file(message.video.file_id)
+                except AttributeError:
+                    file_info = bot.get_file(message.video_note.file_id)
 
         # Создание временного файла
         with tempfile.NamedTemporaryFile(delete=True) as temp_file:

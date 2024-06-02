@@ -90,9 +90,10 @@ def transcribe_genai(audio_file: str) -> str:
 
         try:
             genai.configure(api_key=key) # здесь может быть рейс кондишн?
-            genai.delete_file(your_file.name)
+            if your_file:
+                genai.delete_file(your_file.name)
         except Exception as error:
-            my_log.log_gemini(f'Failed to delete audio file: {error}\n{key}\n{your_file.name}\n\n{str(your_file)}')
+            my_log.log_gemini(f'Failed to delete audio file: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
 
         return response.text.strip() if response else ''
     except Exception as error:

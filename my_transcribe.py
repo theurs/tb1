@@ -101,23 +101,27 @@ def transcribe_genai(audio_file: str) -> str:
 
 
 def download_worker(video_url: str, part: tuple, n: int, fname: str):
+    print('1')
     with download_worker_semaphore:
         try:
             os.unlink(f'{fname}_{n}.ogg')
         except:
             pass
-
+        print('2')
         proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
         stream_url = proc.stdout.decode('utf-8').strip()
+        print('3')
         subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
                         str(part[1]), f'{fname}_{n}.ogg'],
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+        print('4', fname, n)
         text = transcribe_genai(f'{fname}_{n}.ogg')
+        print('5')
         if text:
             with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:
                 f.write(text)
-
+        print('6')
         try:
             os.unlink(f'{fname}_{n}.ogg')
         except:

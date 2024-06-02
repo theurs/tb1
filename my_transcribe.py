@@ -116,9 +116,17 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str):
         #                 str(part[1]), f'{fname}_{n}.ogg'],
         #             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
-                        str(part[1]), f'{fname}_{n}.ogg'])
-
+        proc = subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
+                        str(part[1]), f'{fname}_{n}.ogg'],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out_ = proc.stdout.decode('utf-8').strip()
+        err_ = proc.stderr.decode('utf-8').strip()
+        if 'error' in err_:
+            print('Error in FFMPEG:', err_)
+            my_log.log2(f'download_worker: Error in FFMPEG: {err_}')
+        if 'error' in out_:
+            my_log.log2(f'download_worker: Error in FFMPEG: {out_}')
+            print('Error in FFMPEG:', out_)
 
         print('4', fname, n, f'{FFMPEG} -ss {part[0]} -i {stream_url} -t {part[1]} {fname}_{n}.ogg')
         text = transcribe_genai(f'{fname}_{n}.ogg')
@@ -198,7 +206,7 @@ if __name__ == '__main__':
     # genai_clear()
 
     start_time = time.time()
-    t = download_youtube_clip('https://m.youtube.com/watch?v=3YxaaGgTQYM')
+    t = download_youtube_clip('https://youtube.com/watch?v=3YxaaGgTQYM')
     with open('test.txt', 'w', encoding='utf-8') as f:
         f.write(t[0])
         f.write('\n\n')

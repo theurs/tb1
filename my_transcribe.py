@@ -66,7 +66,6 @@ def transcribe_genai(audio_file: str) -> str:
             try:
                 genai.configure(api_key=key) # здесь может быть рейс кондишн?
                 if your_file == None:
-                    print(7, audio_file)
                     your_file = genai.upload_file(audio_file)
                     genai.configure(api_key=key) # здесь может быть рейс кондишн?
                 model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
@@ -102,16 +101,14 @@ def transcribe_genai(audio_file: str) -> str:
 
 
 def download_worker(video_url: str, part: tuple, n: int, fname: str):
-    print('1')
     with download_worker_semaphore:
         try:
             os.unlink(f'{fname}_{n}.ogg')
         except:
             pass
-        print('2')
         proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
         stream_url = proc.stdout.decode('utf-8').strip()
-        print('3', stream_url)
+
         # subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
         #                 str(part[1]), f'{fname}_{n}.ogg'],
         #             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -122,19 +119,16 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str):
         out_ = proc.stdout.decode('utf-8').strip()
         err_ = proc.stderr.decode('utf-8').strip()
         if 'error' in err_:
-            print('Error in FFMPEG:', err_)
             my_log.log2(f'download_worker: Error in FFMPEG: {err_}')
         if 'error' in out_:
             my_log.log2(f'download_worker: Error in FFMPEG: {out_}')
-            print('Error in FFMPEG:', out_)
 
-        print('4', fname, n, f'{FFMPEG} -ss {part[0]} -i {stream_url} -t {part[1]} {fname}_{n}.ogg')
         text = transcribe_genai(f'{fname}_{n}.ogg')
-        print('5')
+
         if text:
             with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:
                 f.write(text)
-        print('6')
+
         try:
             os.unlink(f'{fname}_{n}.ogg')
         except:
@@ -206,7 +200,7 @@ if __name__ == '__main__':
     # genai_clear()
 
     start_time = time.time()
-    t = download_youtube_clip('https://www.youtube.com/watch?v=snxjgcMunho')
+    t = download_youtube_clip('https://www.youtube.com/watch?v=hHiQpGgISj8')
     with open('test.txt', 'w', encoding='utf-8') as f:
         f.write(t[0])
         f.write('\n\n')

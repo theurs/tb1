@@ -120,7 +120,7 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str):
                         str(part[1]), f'{fname}_{n}.ogg'])
 
 
-        print('4', fname, n)
+        print('4', fname, n, cmd = f'{FFMPEG} -ss {part[0]} -i {stream_url} -t {part[1]} {fname}_{n}.ogg')
         text = transcribe_genai(f'{fname}_{n}.ogg')
         print('5')
         if text:

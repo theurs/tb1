@@ -1221,7 +1221,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
         if hasattr(cfg, 'coze_bot') and cfg.coze_bot:
-            button1 = telebot.types.InlineKeyboardButton("🤜 ChatGPT4 Turbo + Dalle3 (coze.com) 🤛",  url = cfg.coze_bot)
+            button1 = telebot.types.InlineKeyboardButton("🤜 GPT-4o + Dalle3 (coze.com) 🤛",  url = cfg.coze_bot)
             markup.row(button1)
 
 

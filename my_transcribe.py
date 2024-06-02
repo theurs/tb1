@@ -53,14 +53,15 @@ def genai_clear():
         my_log.log_gemini(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
 
 
-def transcribe_genai(audio_file: str) -> str:
+def transcribe_genai(audio_file: str, prompt: str = '') -> str:
     try:
         keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
         random.shuffle(keys)
         key = keys[0]
 
         your_file = None
-        prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps. This audio file is a cutted fragment with +5 extra seconds in both directions."
+        if not prompt:
+            prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps. This audio file is a cutted fragment with +5 extra seconds in both directions."
 
         for _ in range(3):
             try:
@@ -84,7 +85,7 @@ def transcribe_genai(audio_file: str) -> str:
                 if response.text.strip():
                     break
             except Exception as error:
-                my_log.log_gemini(f'Failed to convert audio data to text: {error}')
+                my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to convert audio data to text: {error}')
                 response = ''
                 time.sleep(2)
 
@@ -93,12 +94,12 @@ def transcribe_genai(audio_file: str) -> str:
             if your_file:
                 genai.delete_file(your_file.name)
         except Exception as error:
-            my_log.log_gemini(f'Failed to delete audio file: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
+            my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
 
         return response.text.strip() if response else ''
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
+        my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to convert audio data to text: {error}\n\n{traceback_error}')
 
 
 def download_worker(video_url: str, part: tuple, n: int, fname: str):
@@ -110,19 +111,15 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str):
         proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
         stream_url = proc.stdout.decode('utf-8').strip()
 
-        # subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
-        #                 str(part[1]), f'{fname}_{n}.ogg'],
-        #             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
         proc = subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
                         str(part[1]), f'{fname}_{n}.ogg'],
                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out_ = proc.stdout.decode('utf-8').strip()
         err_ = proc.stderr.decode('utf-8').strip()
         if 'error' in err_:
-            my_log.log2(f'download_worker: Error in FFMPEG: {err_}')
+            my_log.log2(f'my_transcribe:download_worker: Error in FFMPEG: {err_}')
         if 'error' in out_:
-            my_log.log2(f'download_worker: Error in FFMPEG: {out_}')
+            my_log.log2(f'my_transcribe:download_worker: Error in FFMPEG: {out_}')
 
         text = transcribe_genai(f'{fname}_{n}.ogg')
 
@@ -185,7 +182,7 @@ def download_youtube_clip(video_url: str):
             try:
                 os.unlink(f'{output_name}_{x}.txt')
             except:
-                my_log.log2(f'download_youtube_clip: Failed to delete {output_name}_{x}.txt')
+                my_log.log2(f'my_transcribe:download_youtube_clip: Failed to delete {output_name}_{x}.txt')
 
     return result, info
 

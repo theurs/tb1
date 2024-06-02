@@ -16,6 +16,7 @@ import speech_recognition as sr
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 import my_gemini
+import my_transcribe
 import cfg
 import my_log
 import utils
@@ -42,6 +43,10 @@ def audio_duration(audio_file: str) -> int:
     result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     try:
         r = float(result.stdout)
+    except ValueError:
+        r = 0
+    try:
+        r = int(r)
     except ValueError:
         r = 0
     return r
@@ -232,31 +237,33 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
     return ''
 
 
-def genai_clear():
-    """Очистка файлов, загруженных через Gemini API.
-    TODO: Проверить возможность удаления чужих файлов.
-    TODO: Обработать потенциальный race condition при настройке API ключа.
-    """
+def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str):
+    with my_transcribe.download_worker_semaphore:
+        try:
+            os.unlink(f'{fname}_{n}.ogg')
+        except:
+            pass
 
-    try:
-        keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
-        random.shuffle(keys)
+        proc = subprocess.run([my_transcribe.FFMPEG, '-ss', str(part[0]), '-i', audio_file, '-t',
+                        str(part[1]), f'{fname}_{n}.ogg'],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out_ = proc.stdout.decode('utf-8').strip()
+        err_ = proc.stderr.decode('utf-8').strip()
+        if 'error' in err_:
+            my_log.log2(f'my_stt:stt_genai_worker: Error in FFMPEG: {err_}')
+        if 'error' in out_:
+            my_log.log2(f'my_stt:stt_genai_worker: Error in FFMPEG: {out_}')
 
-        for key in keys:
-            print(key)
-            genai.configure(api_key=key) # здесь может быть рейс кондишн?
-            files = genai.list_files()
-            for f in files:
-                print(f.name)
-                try:
-                    # genai.delete_file(f.name)
-                    pass # можно ли удалять чужие файлы?
-                except Exception as error:
-                    my_log.log_gemini(f'stt:genai_clear: delete file {error}\n{key}\n{f.name}')
+        text = my_transcribe.transcribe_genai(f'{fname}_{n}.ogg')
 
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
+        if text:
+            with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:
+                f.write(text)
+
+        try:
+            os.unlink(f'{fname}_{n}.ogg')
+        except:
+            my_log.log2(f'my_stt:stt_genai_worker: Failed to delete audio file: {fname}_{n}.ogg')
 
 
 def stt_genai(audio_file: str) -> str:
@@ -269,84 +276,53 @@ def stt_genai(audio_file: str) -> str:
     Returns:
         str: The converted text.
     """
-    try:
-        keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
-        random.shuffle(keys)
-        key = keys[0]
+    prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps."
+    duration = audio_duration(audio_file)
+    if duration <= 10*60:
+        return my_transcribe.transcribe_genai(audio_file, prompt)
+    else:
+        part_size = 10 * 60 # размер куска несколько минут
+        treshold = 5 # захватывать +- несколько секунд в каждом куске
+        output_name = utils.get_tmp_fname()
 
-        your_file = None
-        prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps."
+        parts = []
+        start = 0
+        while start < duration:
+            end = min(start + part_size, duration)
+            if start == 0:
+                parts.append((0, min(duration, end + treshold)))  # Первый фрагмент
+            elif end == duration:
+                parts.append((max(0, start - treshold), duration - start))  # Последний фрагмент
+            else:
+                parts.append((max(0, start - treshold), min(duration - start, part_size) + 2 * treshold))  # Остальные фрагменты
+            start = end
 
-        for _ in range(3):
-            try:
-                genai.configure(api_key=key) # здесь может быть рейс кондишн?
-                if your_file == None:
-                    your_file = genai.upload_file(audio_file)
-                    genai.configure(api_key=key) # здесь может быть рейс кондишн?
-                model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
-                # tokens_count = model.count_tokens([your_file])
-                # if tokens_count.total_tokens > 7800:
-                #     response = ''
-                #     break
-                response = model.generate_content([prompt, your_file],
-                                                  safety_settings={
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                    }
-                )
-                if response.text.strip():
-                    break
-            except Exception as error:
-                my_log.log_gemini(f'Failed to convert audio data to text: {error}')
-                response = ''
-                time.sleep(2)
+        n = 0
+        threads = []
 
-        try:
-            genai.configure(api_key=key) # здесь может быть рейс кондишн?
-            genai.delete_file(your_file.name)
-        except Exception as error:
-            my_log.log_gemini(f'Failed to delete audio file: {error}\n{key}\n{your_file.name}\n\n{str(your_file)}')
+        for part in parts:
+            n += 1
+            t = threading.Thread(target=stt_genai_worker, args=(audio_file, part, n, output_name))
+            threads.append(t)
+            t.start()
 
-        return response.text.strip() if response else ''
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
+        for t in threads:
+            t.join()
+
+        result = ''
+        for x in range(1, n + 1):
+            # check if file exists
+            if os.path.exists(f'{output_name}_{x}.txt'):
+                with open(f'{output_name}_{x}.txt', 'r', encoding='utf-8') as f:
+                    result += f.read() + '\n\n'
+                try:
+                    os.unlink(f'{output_name}_{x}.txt')
+                except:
+                    my_log.log2(f'my_stt:stt_genai: Failed to delete {output_name}_{x}.txt')
+
+        return result
 
 
 if __name__ == "__main__":
-
-    # print(stt('1.mp3'))
-    # print(stt('1.webm'))
-    # print(stt('1.aac'))
-    # print(stt('1.amr'))
-    # print(stt('1.flac'))
-    # print(stt('1.mp4'))
-
-    # print(detect_audio_codec_with_ffprobe('1.ogg'))
-    # print(detect_audio_codec_with_ffprobe('1.webm'))
-    # print(detect_audio_codec_with_ffprobe('1.mp4'))
-
-    # print(convert_to_wave_with_ffmpeg('1.ogg'))
-
-    # genai.configure(api_key=cfg.gemini_keys[0])
-    # for x in genai.list_models():
-    #     print(x)
-
-    # print(stt_genai('1.pdf'))
-    # print(stt_genai('1.wav'))
-    # genai_clear()
-
     pass
-    # text = stt('3.ogg')
-    # print(text)
-
-    # # Читаем байты из .amr файла
-    # with open('1.amr', 'rb') as f:
-    #     amr_data = f.read()
-    # # Конвертируем в WAV
-    # wav_data = amr_to_wav(amr_data)
-    # # Сохраняем WAV данные в файл (опционально)
-    # with open('audio.wav', 'wb') as f:
-    #     f.write(wav_data)
+    print(stt_genai('1.opus'))

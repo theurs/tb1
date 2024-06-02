@@ -25,11 +25,12 @@ import my_transcribe
 import utils
 
 
-def get_text_from_youtube(url: str) -> str:
+def get_text_from_youtube(url: str, transcribe: bool = True) -> str:
     """Вытаскивает текст из субтитров на ютубе
 
     Args:
         url (str): ссылка на ютуб видео
+        transcribe (bool, optional): если True то создаем субтитры с помощью джемини если их нет.
 
     Returns:
         str: первые субтитры из списка какие есть в видео
@@ -52,11 +53,20 @@ def get_text_from_youtube(url: str) -> str:
 
     text = text.strip()
 
-    if not text: # нет субтитров?
+    if not text and transcribe: # нет субтитров?
         text, info = my_transcribe.download_youtube_clip(url)
 
     return text
 
+
+def check_ytb_subs_exists(url: str) -> bool:
+    '''проверяет наличие субтитров на ютубе, если это не ютуб или есть субтитры
+    то возвращает True, иначе False
+    '''
+    if '/youtu.be/' in url or 'youtube.com/' in url:
+        return len(get_text_from_youtube(url, transcribe=False)) > 0
+    return False
+    
 
 def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') -> str:
     """параллельный воркер для summ_text

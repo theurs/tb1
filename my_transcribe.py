@@ -66,6 +66,7 @@ def transcribe_genai(audio_file: str) -> str:
             try:
                 genai.configure(api_key=key) # здесь может быть рейс кондишн?
                 if your_file == None:
+                    print(7, audio_file)
                     your_file = genai.upload_file(audio_file)
                     genai.configure(api_key=key) # здесь может быть рейс кондишн?
                 model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
@@ -111,9 +112,13 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str):
         proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
         stream_url = proc.stdout.decode('utf-8').strip()
         print('3', stream_url)
+        # subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
+        #                 str(part[1]), f'{fname}_{n}.ogg'],
+        #             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
         subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
-                        str(part[1]), f'{fname}_{n}.ogg'],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        str(part[1]), f'{fname}_{n}.ogg'])
+
 
         print('4', fname, n)
         text = transcribe_genai(f'{fname}_{n}.ogg')

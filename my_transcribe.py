@@ -187,6 +187,13 @@ def download_youtube_clip(video_url: str):
     return result, info
 
 
+def gemini_tokens_count(text: str) -> int:
+    genai.configure(api_key=cfg.gemini_keys[0])
+    # print([(x.name, x.input_token_limit, x.output_token_limit, x.supported_generation_methods) for x in genai.list_models()])
+    response = genai.count_message_tokens(prompt=text)
+    return response['token_count']
+
+
 if __name__ == '__main__':
     pass
     # download_youtube_clip('https://www.youtube.com/watch?v=hEBQNq5FiFQ')
@@ -197,10 +204,10 @@ if __name__ == '__main__':
 
     # genai_clear()
 
-    start_time = time.time()
-    t = download_youtube_clip('https://www.youtube.com/watch?v=hHiQpGgISj8')
-    with open('test.txt', 'w', encoding='utf-8') as f:
-        f.write(t[0])
-        f.write('\n\n')
-        f.write(str(t[1]))
-    print(time.time() - start_time)
+    # start_time = time.time()
+    # t = download_youtube_clip('https://www.youtube.com/watch?v=hHiQpGgISj8')
+    # with open('test.txt', 'w', encoding='utf-8') as f:
+    #     f.write(t[0])
+    #     f.write('\n\n')
+    #     f.write(str(t[1]))
+    # print(time.time() - start_time)

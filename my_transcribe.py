@@ -110,7 +110,7 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str):
         print('2')
         proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
         stream_url = proc.stdout.decode('utf-8').strip()
-        print('3')
+        print('3', stream_url)
         subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
                         str(part[1]), f'{fname}_{n}.ogg'],
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

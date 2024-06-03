@@ -3,14 +3,13 @@
 
 import io
 import json
-import math
 import os
 import random
 import subprocess
 import threading
 import time
 import traceback
-from collections import Counter
+import zlib
 
 import speech_recognition as sr
 import google.generativeai as genai
@@ -40,22 +39,14 @@ recognize_chunk_SEMAPHORE = threading.Semaphore(8)
 stt_google_pydub_lock = threading.Lock()
 
 
-def detect_repetitiveness(text):
+def detect_repetitiveness(text: str) -> bool:
     '''True если в тексте много повторений, ответ от джемини содержит большое количество повторений
     такое бывает когда он сфейлился'''
-    # Преобразуем текст в нижний регистр для унификации
-    text = text.lower()
-    # Создаем счетчик символов или слов (можно выбрать между text.split() и list(text))
-    text_counter = Counter(text)
-    text_length = len(text)
-
-    # Рассчитываем энтропию Шеннона
-    entropy = -sum((count / text_length) * math.log2(count / text_length)
-                   for count in text_counter.values())
-
-    #log all for debug
-    my_log.log_entropy_detector(f'{entropy}\n\n{text}')
-    return entropy < 3.7
+    compressed_data = zlib.compress(text.encode())
+    ratio = len(text.encode()) / len(compressed_data)
+    my_log.log_entropy_detector(f'{len(text)} {len(compressed_data)} {ratio}\n\n{text}')
+    # return len(compressed_data), len(text.encode()), len(text.encode()) / len(compressed_data)
+    return ratio > 4
 
 
 def recognize_chunk(audio_chunk: AudioSegment,

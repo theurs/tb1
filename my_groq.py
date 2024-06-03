@@ -141,7 +141,10 @@ def ai(prompt: str = '',
                     remove_key(key)
                     continue
 
-            resp = chat_completion.choices[0].message.content.strip()
+            try:
+                resp = chat_completion.choices[0].message.content.strip()
+            except UnboundLocalError:
+                resp = ''
             if resp:
                 return resp
         return ''

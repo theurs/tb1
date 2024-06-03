@@ -34,7 +34,7 @@ download_worker_semaphore = threading.Semaphore(MAX_THREADS)  # Создаем �
 
 
 # не больше 8 потоков для распознавания речи гуглом
-recognize_chunk_SEMAPHORE = threading.Semaphore(8)
+recognize_chunk_SEMAPHORE = threading.Semaphore(16)
 
 
 def detect_repetitiveness(text):

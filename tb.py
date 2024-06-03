@@ -3491,56 +3491,63 @@ def summ_text(message: telebot.types.Message):
         text = message.text
 
         if len(text.split(' ', 1)) == 2:
-            url = text.split(' ', 1)[1].strip()
-            if my_sum.is_valid_url(url):
-                # убираем из ютуб урла временную метку
-                if '/youtu.be/' in url or 'youtube.com/' in url:
-                    url = url.split("&t=")[0]
 
-                url_id = str([url, lang])
-                with semaphore_talks:
+            # блокируем одновременные запросы на одно и тоже
+            request_hash = utils.nice_hash(text)
+            if request_hash not in SUM_LOCKS:
+                SUM_LOCKS[request_hash] = threading.Lock()
+            with SUM_LOCKS[request_hash]:
 
-                    #смотрим нет ли в кеше ответа на этот урл
-                    r = ''
-                    if url_id in SUM_CACHE:
-                        r = SUM_CACHE[url_id]
-                    if r:
-                        USER_FILES[chat_id_full] = (url + '.txt', r)
-                        rr = utils.bot_markdown_to_html(r)
-                        bot_reply(message, rr, disable_web_page_preview = True,
-                                            parse_mode='HTML',
-                                            reply_markup=get_keyboard('translate', message))
-                        add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                            f'{tr("бот прочитал и ответил:", lang)} {r}',
-                                            chat_id_full)
-                        return
+                url = text.split(' ', 1)[1].strip()
+                if my_sum.is_valid_url(url):
+                    # убираем из ютуб урла временную метку
+                    if '/youtu.be/' in url or 'youtube.com/' in url:
+                        url = url.split("&t=")[0]
 
-                    with ShowAction(message, 'typing'):
-                        res = ''
-                        try:
-                            has_subs = my_sum.check_ytb_subs_exists(url)
-                            if not has_subs and ('/youtu.be/' in url or 'youtube.com/' in url):
-                                bot_reply_tr(message, 'Видео с ютуба не содержит субтитров, обработка может занять некоторое время.')
-                            res, text = my_sum.summ_url(url, lang = lang, deep = True)
-                            USER_FILES[chat_id_full] = (url + '.txt', text)
-                        except Exception as error2:
-                            print(error2)
-                            bot_reply_tr(message, 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', parse_mode='Markdown')
-                            return
-                        if res:
-                            rr = utils.bot_markdown_to_html(res)
-                            bot_reply(message, rr, parse_mode='HTML',
-                                                disable_web_page_preview = True,
+                    url_id = str([url, lang])
+                    with semaphore_talks:
+
+                        #смотрим нет ли в кеше ответа на этот урл
+                        r = ''
+                        if url_id in SUM_CACHE:
+                            r = SUM_CACHE[url_id]
+                        if r:
+                            USER_FILES[chat_id_full] = (url + '.txt', r)
+                            rr = utils.bot_markdown_to_html(r)
+                            bot_reply(message, rr, disable_web_page_preview = True,
+                                                parse_mode='HTML',
                                                 reply_markup=get_keyboard('translate', message))
-                            SUM_CACHE[url_id] = res
-                            bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
                             add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                            f'{tr("бот прочитал и ответил:", lang)} {res}',
-                                            chat_id_full)
+                                                f'{tr("бот прочитал и ответил:", lang)} {r}',
+                                                chat_id_full)
                             return
-                        else:
-                            bot_reply_tr(message, 'Не смог прочитать текст с этой страницы.')
-                            return
+
+                        with ShowAction(message, 'typing'):
+                            res = ''
+                            try:
+                                has_subs = my_sum.check_ytb_subs_exists(url)
+                                if not has_subs and ('/youtu.be/' in url or 'youtube.com/' in url):
+                                    bot_reply_tr(message, 'Видео с ютуба не содержит субтитров, обработка может занять некоторое время.')
+                                res, text = my_sum.summ_url(url, lang = lang, deep = True)
+                                USER_FILES[chat_id_full] = (url + '.txt', text)
+                            except Exception as error2:
+                                print(error2)
+                                bot_reply_tr(message, 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', parse_mode='Markdown')
+                                return
+                            if res:
+                                rr = utils.bot_markdown_to_html(res)
+                                bot_reply(message, rr, parse_mode='HTML',
+                                                    disable_web_page_preview = True,
+                                                    reply_markup=get_keyboard('translate', message))
+                                SUM_CACHE[url_id] = res
+                                bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
+                                add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
+                                                f'{tr("бот прочитал и ответил:", lang)} {res}',
+                                                chat_id_full)
+                                return
+                            else:
+                                bot_reply_tr(message, 'Не смог прочитать текст с этой страницы.')
+                                return
         help = f"""{tr('Пример:', lang)} /sum https://youtu.be/3i123i6Bf-U
 
 {tr('Давайте вашу ссылку и я перескажу содержание', lang)}"""

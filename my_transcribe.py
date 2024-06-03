@@ -44,7 +44,7 @@ def detect_repetitiveness(text: str) -> bool:
     такое бывает когда он сфейлился'''
     compressed_data = zlib.compress(text.encode())
     ratio = len(text.encode()) / len(compressed_data)
-    my_log.log_entropy_detector(f'{len(text)} {len(compressed_data)} {ratio}\n\n{text}')
+    my_log.log_entropy_detector(f'{len(text.encode())} {len(compressed_data)} {ratio}\n\n{text}')
     # return len(compressed_data), len(text.encode()), len(text.encode()) / len(compressed_data)
     return ratio > 4
 

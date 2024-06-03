@@ -109,7 +109,7 @@ def ai(prompt: str = '',
         if key_:
             keys = [key_, ]
         else:
-            keys = cfg.gemini_keys[:] + ALL_KEYS
+            keys = ALL_KEYS
             random.shuffle(keys)
             keys = keys[:4]
 
@@ -138,8 +138,7 @@ def ai(prompt: str = '',
                 continue
             except Exception as error:
                 if 'invalid api key' in str(error).lower():
-                    my_log.log_groq(f'GROQ invalid api key: {key}')
-                    # remove_key(key)
+                    remove_key(key)
                     continue
 
             resp = chat_completion.choices[0].message.content.strip()
@@ -473,6 +472,7 @@ def load_users_keys():
 
 if __name__ == '__main__':
     pass
+    load_users_keys()
 
     for x in range(10):
         print(ai('1+1='))

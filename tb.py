@@ -2364,7 +2364,7 @@ def gemini10_mode(message: telebot.types.Message):
 def gemini15_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full] or (datetime.datetime.now() < datetime.datetime(2024, 5, 31)):
+    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full] or (datetime.datetime.now() < datetime.datetime(2024, 6, 6)):
         CHAT_MODE[chat_id_full] = 'gemini15'
         bot_reply_tr(message, 'Gemini 1.5 pro model selected.')
     else:
@@ -3019,6 +3019,19 @@ def image_gen(message: telebot.types.Message):
     else:
         lock = threading.Lock()
         IMG_GEN_LOCKS[chat_id_full] = lock
+
+
+    # если у юзера нет ключей и он активист то напомнить о ключах
+    is_private = message.chat.type == 'private'
+    total_messages__ = IMAGES_BY_USER_COUNTER[chat_id_full] if chat_id_full in IMAGES_BY_USER_COUNTER else 0
+    if total_messages__ > 10000 and is_private:
+        if chat_id_full not in my_gemini.USER_KEYS and \
+           chat_id_full not in my_groq.USER_KEYS and \
+           chat_id_full not in my_trans.USER_KEYS and \
+           chat_id_full not in my_genimg.USER_KEYS:
+            msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+            bot_reply(message, msg, disable_web_page_preview=True)
+
 
     with lock:
 
@@ -4255,29 +4268,32 @@ def do_task(message, custom_prompt: str = ''):
             return
 
 
-    have_gemini_key = True if ((chat_id_full in my_gemini.USER_KEYS) and my_gemini.USER_KEYS[chat_id_full]) else False
-
     chat_mode_ = CHAT_MODE[chat_id_full]
 
     # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
-    if datetime.datetime.now() > datetime.datetime(2024, 5, 31):
+    if datetime.datetime.now() > datetime.datetime(2024, 6, 6):
         if CHAT_MODE[chat_id_full] == 'gemini15' and not have_gemini_key:
             # CHAT_MODE[chat_id_full] = 'gemini'
             chat_mode_ = 'gemini'
 
     if is_private:
         total_messages__ = CHAT_STATS_TEMP[chat_id_full] if chat_id_full in CHAT_STATS_TEMP else 0
-        if not have_gemini_key:
+        if chat_id_full not in my_gemini.USER_KEYS and \
+           chat_id_full not in my_groq.USER_KEYS and \
+           chat_id_full not in my_trans.USER_KEYS and \
+           chat_id_full not in my_genimg.USER_KEYS:
             # каждые 50 сообщение напоминать о ключах
             if total_messages__ > 1 and total_messages__ % 50 == 0:
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
+                if total_messages__ > 1000:
+                    return
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
         # на бесплатных ключах лимит - 50, 300 может получится за счет взаимопомощи
         if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
             chat_mode_ = 'gemini'
     else: # в чатах только дешевый флеш
-        if datetime.datetime.now() > datetime.datetime(2024, 5, 31):
+        if datetime.datetime.now() > datetime.datetime(2024, 6, 6):
             if chat_mode_ == 'gemini15':
                 chat_mode_ = 'gemini'
 

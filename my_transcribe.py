@@ -148,8 +148,13 @@ def stt_google_pydub(audio_bytes: bytes|str,
 
         # Сортируем результаты по порядку индексов и объединяем их в строку
         ordered_results = [results[i] for i in sorted(results)]
-        return ' '.join(ordered_results)
+        result = ' '.join(ordered_results)
 
+        result2 = my_gemini.retranscribe(result)
+        if not result2 or detect_repetitiveness(result2):
+            return result
+        else:
+            return result2        
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f"my_transcribe:stt_google_pydub: {error}\n{traceback_error}")

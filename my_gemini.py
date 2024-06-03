@@ -821,6 +821,13 @@ Text to be detected: {text[:100]}
     return result
 
 
+def retranscribe(text: str) -> str:
+    '''исправить текст после транскрипции выполненной гуглом'''
+    query = f'Fix errors, make a fine text of the transcription:\n\n{text}'
+    result = ai(query, temperature=0.1, model='gemini-1.5-flash-latest', mem=MEM_UNCENSORED, tokens_limit=8000)
+    return result
+
+
 if __name__ == '__main__':
     load_users_keys()
 

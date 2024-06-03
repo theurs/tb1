@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 
 
+import io
 import json
+import math
 import os
 import random
 import subprocess
 import threading
 import time
 import traceback
+from collections import Counter
 
+import speech_recognition as sr
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from pydub import AudioSegment
+from pydub.silence import split_on_silence
+
 
 import cfg
 import my_gemini
@@ -24,6 +31,129 @@ FFMPEG = 'ffmpeg'
 
 MAX_THREADS = 8  # Максимальное количество одновременных потоков
 download_worker_semaphore = threading.Semaphore(MAX_THREADS)  # Создаем семафор здесь
+
+
+# не больше 8 потоков для распознавания речи гуглом
+recognize_chunk_SEMAPHORE = threading.Semaphore(8)
+
+
+def detect_repetitiveness(text):
+    '''True если в тексте много повторений, ответ от джемини содержит большое количество повторений
+    такое бывает когда он сфейлился'''
+    # Преобразуем текст в нижний регистр для унификации
+    text = text.lower()
+    # Создаем счетчик символов или слов (можно выбрать между text.split() и list(text))
+    text_counter = Counter(text)
+    text_length = len(text)
+
+    # Рассчитываем энтропию Шеннона
+    entropy = -sum((count / text_length) * math.log2(count / text_length)
+                   for count in text_counter.values())
+
+    #log all for debug
+    my_log.log_entropy_detector(f'{entropy}\n\n{text}')
+    return entropy < 3.7
+
+
+def recognize_chunk(audio_chunk: AudioSegment,
+                    return_dict: dict,
+                    index: int,
+                    language: str = "ru"):
+    '''Распознавание речи с использованием Google Web Speech API
+    Args:
+        audio_chunk: pydub.audio_segment.AudioSegment
+        return_dict: dict
+        index: int
+        language: str
+    
+    Returns:
+        dict with index as key and text as value
+    '''
+    with recognize_chunk_SEMAPHORE:
+        try:
+            recognizer = sr.Recognizer()
+            # Конвертируем аудио в WAV формат для совместимости с speech_recognition
+            wav_io = io.BytesIO()
+            audio_chunk.export(wav_io, format="wav")
+            wav_io.seek(0)
+
+            with sr.AudioFile(wav_io) as source:
+                # Читаем аудио
+                audio = recognizer.record(source)
+                try:
+                    # Распознаем речь используя Google Web Speech API
+                    text = recognizer.recognize_google(audio, language=language)
+                    return_dict[index] = text
+                except sr.UnknownValueError as e:
+                    return_dict[index] = ""
+                except sr.RequestError as e:
+                    return_dict[index] = ""
+        except Exception as e:
+            return_dict[index] = ""
+
+
+def stt_google_pydub(audio_bytes: bytes|str,
+                     sample_rate: int = 44100,
+                     chunk_duration: int = 50,
+                     language: str = "ru") -> str:
+    '''Распознавание речи с использованием Google Web Speech API
+
+    Args:
+        audio_bytes (bytes): Сырые данные аудио в байтах или путь к аудиофайлу
+        sample_rate (int, optional): Частота дискретизации аудио. Defaults to 44100.
+        chunk_duration (int, optional): Длительность куска аудио в миллисекундах. Defaults to 50.
+        language (str, optional): Язык распознавания речи. Defaults to "ru".
+
+    Returns:
+        str: Распознанный текст
+    '''
+    try:
+        if isinstance(audio_bytes, str):
+            with open(audio_bytes, "rb") as f:
+                audio_bytes = f.read()
+
+        # Создаем объект AudioSegment, пытаясь автоматически определить формат
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
+        # Устанавливаем частоту дискретизации
+        audio_segment = audio_segment.set_frame_rate(sample_rate)
+        
+        # Разбиваем аудио на части по паузам в речи
+        chunks = split_on_silence(audio_segment, min_silence_len=500, silence_thresh=-40)
+
+        # Объединяем маленькие кусочки, чтобы они были не длиннее chunk_duration
+        combined_chunks = []
+        current_chunk = AudioSegment.empty()
+        for chunk in chunks:
+            if len(current_chunk) + len(chunk) <= chunk_duration * 1000:
+                current_chunk += chunk
+            else:
+                combined_chunks.append(current_chunk)
+                current_chunk = chunk
+
+        if len(current_chunk) > 0:
+            combined_chunks.append(current_chunk)
+
+        threads = []
+        results = {}
+
+        for i, chunk in enumerate(combined_chunks):
+            # Создаем и стартуем поток для распознавания
+            thread = threading.Thread(target=recognize_chunk, args=(chunk, results, i, language))
+            threads.append(thread)
+            thread.start()
+
+        # Ждем завершения всех потоков
+        for thread in threads:
+            thread.join()
+
+        # Сортируем результаты по порядку индексов и объединяем их в строку
+        ordered_results = [results[i] for i in sorted(results)]
+        return ' '.join(ordered_results)
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f"my_transcribe:stt_google_pydub: {error}\n{traceback_error}")
+        return ''
 
 
 def genai_clear():
@@ -53,7 +183,7 @@ def genai_clear():
         my_log.log_gemini(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
 
 
-def transcribe_genai(audio_file: str, prompt: str = '') -> str:
+def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') -> str:
     try:
         keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
         random.shuffle(keys)
@@ -96,13 +226,19 @@ def transcribe_genai(audio_file: str, prompt: str = '') -> str:
         except Exception as error:
             my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
 
-        return response.text.strip() if response else ''
+        if response and response.text.strip():
+            if detect_repetitiveness(response.text.strip()):
+                return stt_google_pydub(audio_file, language = language)
+            return response.text.strip()
+        else:
+            return stt_google_pydub(audio_file, language = language)
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to convert audio data to text: {error}\n\n{traceback_error}')
+        return stt_google_pydub(audio_file, language = language)
 
 
-def download_worker(video_url: str, part: tuple, n: int, fname: str):
+def download_worker(video_url: str, part: tuple, n: int, fname: str, language: str):
     with download_worker_semaphore:
         try:
             os.unlink(f'{fname}_{n}.ogg')
@@ -121,7 +257,7 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str):
         if 'error' in out_:
             my_log.log2(f'my_transcribe:download_worker: Error in FFMPEG: {out_}')
 
-        text = transcribe_genai(f'{fname}_{n}.ogg')
+        text = transcribe_genai(f'{fname}_{n}.ogg', language=language)
 
         if text:
             with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:
@@ -133,10 +269,12 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str):
             my_log.log2(f'download_worker: Failed to delete audio file: {fname}_{n}.ogg')
 
 
-def download_youtube_clip(video_url: str):
+def download_youtube_clip(video_url: str, language: str):
     """
     Скачивает видео с YouTube по частям, транскрибирует.
     Возвращает транскрипцию к видео. text, info(dict с информацией о видео)
+    language - язык для транскрибации, используется только кусков которые джемини сфейлил.
+               у джемини автоопределение языков а у резерва нет
     """
 
     part_size = 10 * 60 # размер куска несколько минут
@@ -166,7 +304,7 @@ def download_youtube_clip(video_url: str):
 
     for part in parts:
         n += 1
-        t = threading.Thread(target=download_worker, args=(video_url, part, n, output_name))
+        t = threading.Thread(target=download_worker, args=(video_url, part, n, output_name, language))
         threads.append(t)
         t.start()
 
@@ -196,6 +334,16 @@ def gemini_tokens_count(text: str) -> int:
 
 if __name__ == '__main__':
     pass
+
+    # t = 'Это пример текста с определенными повторяющимися элементами, элементами элементами'
+    # print(detect_repetitiveness(t))
+    # t = 'Это пример текста с определенными повторяющимися элементами, элементами элементами' + ' элементами'*10
+    # print(detect_repetitiveness(t))
+    # t = 'Это пример текста с определенными повторяющимися элементами, элементами элементами' + ' элементами'*100
+    # print(detect_repetitiveness(t))
+    # t = 'Это пример текста с определенными повторяющимися элементами, элементами элементами' + ' элементами'*1000
+    # print(detect_repetitiveness(t))
+
     # download_youtube_clip('https://www.youtube.com/watch?v=hEBQNq5FiFQ')
     # download_youtube_clip('https://www.youtube.com/shorts/e2OaVTW_tlA')
     # download_youtube_clip('https://www.youtube.com/watch?v=MowRjPRK0I4')

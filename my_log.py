@@ -124,6 +124,11 @@ def log_groq(text: str) -> None:
     log2(text[:2000], 'groq')
 
 
+def log_entropy_detector(text: str) -> None:
+    """для логов entropy_detector"""
+    log2(text, 'entropy_detector')
+
+
 def log_bing_success(text: str) -> None:
     """для логов удачных комбинаций бинга, когда ему удалось нарисовать что-нибудь"""
     log2(text, 'bing_success')

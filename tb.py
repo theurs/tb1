@@ -1578,7 +1578,7 @@ def handle_voice(message: telebot.types.Message):
                 if chat_id_full not in TRANSCRIBE_ONLY_CHAT:
                     TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
                 if not TRANSCRIBE_ONLY_CHAT[chat_id_full]:
-                    message.text = tr('(user send voice or video message)', lang) + ' ' + text
+                    message.text = text
                     echo_all(message)
 
 

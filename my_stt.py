@@ -209,7 +209,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
             if not text:
                 try: # gemini
                     # может выдать до 8000 токенов (12000 русских букв) более чем достаточно для голосовух
-                    text = stt_genai(input_file2)
+                    text = stt_genai(input_file2, lang)
                 except Exception as error:
                     my_log.log2(f'my_stt:stt:genai:{error}')
 
@@ -237,7 +237,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
     return ''
 
 
-def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str):
+def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language: str = 'ru') -> None:
     with my_transcribe.download_worker_semaphore:
         try:
             os.unlink(f'{fname}_{n}.ogg')
@@ -254,7 +254,7 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str):
         if 'error' in out_:
             my_log.log2(f'my_stt:stt_genai_worker: Error in FFMPEG: {out_}')
 
-        text = my_transcribe.transcribe_genai(f'{fname}_{n}.ogg')
+        text = my_transcribe.transcribe_genai(f'{fname}_{n}.ogg', language=language)
 
         if text:
             with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:
@@ -266,7 +266,7 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str):
             my_log.log2(f'my_stt:stt_genai_worker: Failed to delete audio file: {fname}_{n}.ogg')
 
 
-def stt_genai(audio_file: str) -> str:
+def stt_genai(audio_file: str, language: str = 'ru') -> str:
     """
     Converts the given audio file to text using the Gemini API.
 
@@ -279,7 +279,7 @@ def stt_genai(audio_file: str) -> str:
     prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps."
     duration = audio_duration(audio_file)
     if duration <= 10*60:
-        return my_transcribe.transcribe_genai(audio_file, prompt)
+        return my_transcribe.transcribe_genai(audio_file, prompt, language)
     else:
         part_size = 10 * 60 # размер куска несколько минут
         treshold = 5 # захватывать +- несколько секунд в каждом куске

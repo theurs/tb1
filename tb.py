@@ -1866,7 +1866,7 @@ def handle_photo(message: telebot.types.Message):
                 my_log.log_echo(message, f'Made collage of {len(images)} images.')
             return
         elif len(MESSAGES) != 1: # если что то другое то просто дропаем
-            my_log.log_echo(message, f'Drop {len(images)} images.')
+            my_log.log_echo(message, f'Drop {len(MESSAGES)} images.')
             return
 
 

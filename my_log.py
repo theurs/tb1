@@ -176,10 +176,8 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
     private_or_chat = 'private' if message.chat.type == 'private' else 'chat'
     chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
     user_name = message.from_user.first_name or message.from_user.username or ''
-    # chat_name = chat_name.replace('/', '⁄')
-    # user_name = user_name.replace('/', '⁄')
-    chat_name = transliterate(chat_name)
-    user_name = transliterate(user_name)
+    chat_name = transliterate(chat_name)[:100]
+    user_name = transliterate(user_name)[:100]
     if message.chat.type != 'private':
         user_name = f'{user_name} {message.from_user.id}'
 
@@ -228,8 +226,8 @@ def log_media(message: telebot.types.Message) -> None:
     private_or_chat = 'private' if message.chat.type == 'private' else 'chat'
     chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
     user_name = message.from_user.first_name or message.from_user.username or ''
-    chat_name = chat_name.replace('/', '⁄')
-    user_name = user_name.replace('/', '⁄')
+    chat_name = transliterate(chat_name)[:100]
+    user_name = transliterate(user_name)[:100]
     if message.chat.type != 'private':
         user_name = f'{user_name} {message.from_user.id}'
 

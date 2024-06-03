@@ -61,6 +61,8 @@ def load_users_keys():
     """
     with USER_KEYS_LOCK:
         global USER_KEYS, ALL_KEYS
+        if hasattr(cfg, 'huggin_face_api') and cfg.huggin_face_api:
+            ALL_KEYS = cfg.huggin_face_api
         for user in USER_KEYS:
             key = USER_KEYS[user]
             if key not in ALL_KEYS:
@@ -116,6 +118,22 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     except Exception as error_bing_img:
         my_log.log_bing_img(f'my_genimg:bing: {error_bing_img}')
     return []
+
+
+def remove_huggin_face_key(api_key: str):
+    '''Remove an API key from the list of valid API keys'''
+    try:
+        global ALL_KEYS
+        ALL_KEYS.remove(api_key)
+        user = 'unknown'
+        for user in USER_KEYS:
+            if USER_KEYS[user] == api_key:
+                del USER_KEYS[user]
+                break
+        my_log.log_keys(f'Invalid key {api_key} removed, user {user}')
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_huggin_face_api(f'Failed to remove key {api_key}: {error}\n\n{error_traceback}')
 
 
 def huggin_face_api(prompt: str) -> list:
@@ -199,7 +217,7 @@ def huggin_face_api(prompt: str) -> list:
                 proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
             else:
                 proxy = None
-            api_key = random.choice(cfg.huggin_face_api)
+            api_key = random.choice(ALL_KEYS)
             headers = {"Authorization": f"Bearer {api_key}"}
 
             try:
@@ -208,6 +226,10 @@ def huggin_face_api(prompt: str) -> list:
                 my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
                 continue
 
+            if '"error":"Authorization header is correct, but the token seems invalid' in response.text:
+                remove_huggin_face_key(api_key)
+                api_key = random.choice(ALL_KEYS)
+                continue
             resp_text = str(response.content)[:300]
             if 'read timeout=' in resp_text or "SOCKSHTTPSConnectionPool(host='api-inference.huggingface.co', port=443): Max retries exceeded with url" in resp_text: # и так долго ждали
                 return []
@@ -870,7 +892,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
 
 if __name__ == '__main__':
-    pass
+    load_users_keys()
 
     # open('2.jpg', 'wb').write(upscale(open('1.jpg', 'rb').read()))
 
@@ -896,7 +918,7 @@ if __name__ == '__main__':
     #     n += 1
 
 
-    # n = 1
-    # for x in huggin_face_api('an apple made of gold'):
-    #     open(f'_huggin_face_api {n}.png', 'wb').write(x)
-    #     n += 1
+    n = 1
+    for x in huggin_face_api('an apple made of gold'):
+        open(f'_huggin_face_api {n}.png', 'wb').write(x)
+        n += 1

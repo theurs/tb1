@@ -11,7 +11,7 @@ import traceback
 
 import httpx
 import langcodes
-from groq import Groq
+from groq import Groq, PermissionDeniedError
 from sqlitedict import SqliteDict
 
 import cfg
@@ -106,33 +106,67 @@ def ai(prompt: str = '',
         if not mem:
             return ''
 
-        key = key_ if key_ else random.choice(cfg.GROQ_API_KEY)
-        if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
-            client = Groq(
-                api_key=key,
-                http_client = httpx.Client(proxy = random.choice(cfg.GROQ_PROXIES)),
-                timeout = 120,
-            )
+        if key_:
+            keys = [key_, ]
         else:
-            client = Groq(api_key=key, timeout = 120,)
+            keys = cfg.gemini_keys[:] + ALL_KEYS
+            random.shuffle(keys)
+            keys = keys[:4]
 
         # model="llama3-70b-8192", # llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it, whisper-large-v3??
         model = model_ if model_ else 'llama3-70b-8192'
 
-        chat_completion = client.chat.completions.create(
-            messages=mem,
-            model=model,
-            temperature=temperature,
-            max_tokens=max_tokens_,
-        )
+        for key in keys:
+            if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
+                client = Groq(
+                    api_key=key,
+                    http_client = httpx.Client(proxy = random.choice(cfg.GROQ_PROXIES)),
+                    timeout = 120,
+                )
+            else:
+                client = Groq(api_key=key, timeout = 120,)
 
-        resp = chat_completion.choices[0].message.content
-        return resp
-    except Exception as error:
+            try:
+                chat_completion = client.chat.completions.create(
+                    messages=mem,
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens_,
+                )
+            except PermissionDeniedError:
+                my_log.log_groq(f'GROQ PermissionDeniedError: {key}')
+                continue
+            except Exception as error:
+                if 'invalid api key' in str(error).lower():
+                    my_log.log_groq(f'GROQ invalid api key: {key}')
+                    # remove_key(key)
+                    continue
+
+            resp = chat_completion.choices[0].message.content.strip()
+            if resp:
+                return resp
+        return ''
+    except Exception as error2:
         error_traceback = traceback.format_exc()
-        my_log.log_groq(f'my_groq:ai: {error}\n\n{error_traceback}\n\n{prompt}\n\n{system}\n\n{mem_}\n{temperature}\n{model_}\n{max_tokens_}\n{key_}')
+        my_log.log_groq(f'my_groq:ai: {error2}\n\n{error_traceback}\n\n{prompt}\n\n{system}\n\n{mem_}\n{temperature}\n{model_}\n{max_tokens_}\n{key_}')
 
     return ''
+
+
+def remove_key(key: str):
+    '''Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.'''
+    try:
+        if key in ALL_KEYS:
+            del ALL_KEYS[ALL_KEYS.index(key)]
+        with USER_KEYS_LOCK:
+            # remove key from USER_KEYS
+            for user in USER_KEYS:
+                if USER_KEYS[user] == key:
+                    del USER_KEYS[user]
+                    my_log.log_keys(f'Invalid key {key} removed from user {user}')
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
 def token_count(mem, model:str = "meta-llama/Meta-Llama-3-8B") -> int:
@@ -430,6 +464,7 @@ def load_users_keys():
     """
     with USER_KEYS_LOCK:
         global USER_KEYS, ALL_KEYS
+        ALL_KEYS = cfg.GROQ_API_KEY if hasattr(cfg, 'GROQ_API_KEY') and cfg.GROQ_API_KEY else []
         for user in USER_KEYS:
             key = USER_KEYS[user]
             if key not in ALL_KEYS:
@@ -438,6 +473,9 @@ def load_users_keys():
 
 if __name__ == '__main__':
     pass
+
+    for x in range(10):
+        print(ai('1+1='))
 
     # for _ in range(2):
     #     print(translate('Нарисуй голая лара крофт.', to_lang='en', censored=False))
@@ -448,7 +486,7 @@ if __name__ == '__main__':
     #     print('')
 
 
-    print(check_phone_number('+7969137-51-85'))
+    # print(check_phone_number('+7969137-51-85'))
     # print(ai('привет как дела'))
     # print(summ_text_file('1.txt'))
 

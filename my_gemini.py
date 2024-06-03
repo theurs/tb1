@@ -272,7 +272,7 @@ def remove_key(key: str):
             for user in USER_KEYS:
                 if key in USER_KEYS[user]:
                     USER_KEYS[user] = [x for x in USER_KEYS[user] if x != key]
-                    my_log.log_gemini(f'Invalid key {key} removed from user {user}')
+                    my_log.log_keys(f'Invalid key {key} removed from user {user}')
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
@@ -604,7 +604,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
     except Exception as error1:
         error_traceback = traceback.format_exc()
         my_log.log_translate(f'my_gemini:translate:error1: {error1}\n\n{error_traceback}')
-        
+
     try:
         to_lang = langcodes.Language.make(language=to_lang).display_name(language='en')
     except Exception as error2:

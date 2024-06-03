@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-
+# pip install -U unidecode
 
 import glob
 import os
 import datetime
+import re
 import telebot
 import threading
+from unidecode import unidecode
 
 import cfg
 
@@ -23,6 +25,13 @@ if not os.path.exists('logs2'):
 # 0 - log users to log2/ only
 # 1 - log users to log/ and log2/
 LOG_MODE = cfg.LOG_MODE if hasattr(cfg, 'LOG_MODE') else 0
+
+
+def transliterate(text):
+    # Преобразуем текст в его ASCII эквивалент
+    text = unidecode(text)
+    text = re.sub(r'[^a-zA-Z0-9_]+', '_', text.strip())
+    return text
 
 
 def trancate_log_file(log_file_path: str):
@@ -167,8 +176,10 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
     private_or_chat = 'private' if message.chat.type == 'private' else 'chat'
     chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''
     user_name = message.from_user.first_name or message.from_user.username or ''
-    chat_name = chat_name.replace('/', '⁄')
-    user_name = user_name.replace('/', '⁄')
+    # chat_name = chat_name.replace('/', '⁄')
+    # user_name = user_name.replace('/', '⁄')
+    chat_name = transliterate(chat_name)
+    user_name = transliterate(user_name)
     if message.chat.type != 'private':
         user_name = f'{user_name} {message.from_user.id}'
 
@@ -314,3 +325,11 @@ def purge(chat_id: int) -> bool:
 
 if __name__ == '__main__':
     pass
+
+    # Пример использования функции:
+    example_text = "Пример текста на русском, а также китайский: 中文 以及 日本語。"
+    example_text += 'مرحبا بالعالم! 🌍'
+    example_text += 'ሰላም አለም! 🪐🎉🎊✨🎈'
+    transliterated_text = transliterate(example_text)
+    print(transliterated_text)
+ 

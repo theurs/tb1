@@ -29,12 +29,15 @@ YT_DLP = 'yt-dlp'
 FFMPEG = 'ffmpeg'
 
 
-MAX_THREADS = 8  # Максимальное количество одновременных потоков
+MAX_THREADS = 16  # Максимальное количество одновременных потоков
 download_worker_semaphore = threading.Semaphore(MAX_THREADS)  # Создаем семафор здесь
 
 
 # не больше 8 потоков для распознавания речи гуглом
-recognize_chunk_SEMAPHORE = threading.Semaphore(16)
+recognize_chunk_SEMAPHORE = threading.Semaphore(8)
+
+# не выполнять больше чем в 1 поток, слишком сильно давит на память и процессор
+stt_google_pydub_lock = threading.Lock()
 
 
 def detect_repetitiveness(text):
@@ -107,58 +110,59 @@ def stt_google_pydub(audio_bytes: bytes|str,
     Returns:
         str: Распознанный текст
     '''
-    try:
-        if isinstance(audio_bytes, str):
-            with open(audio_bytes, "rb") as f:
-                audio_bytes = f.read()
+    with stt_google_pydub_lock:
+        try:
+            if isinstance(audio_bytes, str):
+                with open(audio_bytes, "rb") as f:
+                    audio_bytes = f.read()
 
-        # Создаем объект AudioSegment, пытаясь автоматически определить формат
-        audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
-        # Устанавливаем частоту дискретизации
-        audio_segment = audio_segment.set_frame_rate(sample_rate)
-        
-        # Разбиваем аудио на части по паузам в речи
-        chunks = split_on_silence(audio_segment, min_silence_len=500, silence_thresh=-40)
+            # Создаем объект AudioSegment, пытаясь автоматически определить формат
+            audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
+            # Устанавливаем частоту дискретизации
+            audio_segment = audio_segment.set_frame_rate(sample_rate)
+            
+            # Разбиваем аудио на части по паузам в речи
+            chunks = split_on_silence(audio_segment, min_silence_len=500, silence_thresh=-40)
 
-        # Объединяем маленькие кусочки, чтобы они были не длиннее chunk_duration
-        combined_chunks = []
-        current_chunk = AudioSegment.empty()
-        for chunk in chunks:
-            if len(current_chunk) + len(chunk) <= chunk_duration * 1000:
-                current_chunk += chunk
-            else:
+            # Объединяем маленькие кусочки, чтобы они были не длиннее chunk_duration
+            combined_chunks = []
+            current_chunk = AudioSegment.empty()
+            for chunk in chunks:
+                if len(current_chunk) + len(chunk) <= chunk_duration * 1000:
+                    current_chunk += chunk
+                else:
+                    combined_chunks.append(current_chunk)
+                    current_chunk = chunk
+
+            if len(current_chunk) > 0:
                 combined_chunks.append(current_chunk)
-                current_chunk = chunk
 
-        if len(current_chunk) > 0:
-            combined_chunks.append(current_chunk)
+            threads = []
+            results = {}
 
-        threads = []
-        results = {}
+            for i, chunk in enumerate(combined_chunks):
+                # Создаем и стартуем поток для распознавания
+                thread = threading.Thread(target=recognize_chunk, args=(chunk, results, i, language))
+                threads.append(thread)
+                thread.start()
 
-        for i, chunk in enumerate(combined_chunks):
-            # Создаем и стартуем поток для распознавания
-            thread = threading.Thread(target=recognize_chunk, args=(chunk, results, i, language))
-            threads.append(thread)
-            thread.start()
+            # Ждем завершения всех потоков
+            for thread in threads:
+                thread.join()
 
-        # Ждем завершения всех потоков
-        for thread in threads:
-            thread.join()
+            # Сортируем результаты по порядку индексов и объединяем их в строку
+            ordered_results = [results[i] for i in sorted(results)]
+            result = ' '.join(ordered_results)
 
-        # Сортируем результаты по порядку индексов и объединяем их в строку
-        ordered_results = [results[i] for i in sorted(results)]
-        result = ' '.join(ordered_results)
-
-        result2 = my_gemini.retranscribe(result)
-        if not result2 or detect_repetitiveness(result2):
-            return result
-        else:
-            return result2        
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f"my_transcribe:stt_google_pydub: {error}\n{traceback_error}")
-        return ''
+            result2 = my_gemini.retranscribe(result)
+            if not result2 or detect_repetitiveness(result2):
+                return result
+            else:
+                return result2        
+        except Exception as error:
+            traceback_error = traceback.format_exc()
+            my_log.log2(f"my_transcribe:stt_google_pydub: {error}\n{traceback_error}")
+            return ''
 
 
 def genai_clear():

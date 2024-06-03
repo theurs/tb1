@@ -118,7 +118,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     return []
 
 
-def huggin_face_api(prompt: str) -> bytes:
+def huggin_face_api(prompt: str) -> list:
     """
     Calls the Hugging Face API to generate text based on a given prompt.
     
@@ -143,6 +143,14 @@ def huggin_face_api(prompt: str) -> bytes:
             "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
             "https://api-inference.huggingface.co/models/UnfilteredAI/NSFW-gen-v2",
+            
+            # new test
+            "https://api-inference.huggingface.co/models/Corcelio/mobius",
+            "https://api-inference.huggingface.co/models/sd-community/sdxl-flash",
+            "https://api-inference.huggingface.co/models/TheMistoAI/MistoLine",
+            "https://api-inference.huggingface.co/models/tianweiy/DMD2",
+            "https://api-inference.huggingface.co/models/fluently/Fluently-XL-v4",
+            
 
             # "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.0",
             # "https://api-inference.huggingface.co/models/Linaqruf/animagine-xl",
@@ -894,4 +902,7 @@ if __name__ == '__main__':
     #     n += 1
 
 
-    # huggin_face_api('an apple made of gold')
+    n = 1
+    for x in huggin_face_api('an apple made of gold'):
+        open(f'_huggin_face_api {n}.png', 'wb').write(x)
+        n += 1

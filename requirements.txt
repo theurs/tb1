@@ -39,4 +39,4 @@ sqlitedict
 #trafilatura==1.6.1
 trafilatura
 youtube_transcript_api
-
+unidecode

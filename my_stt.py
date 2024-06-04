@@ -11,11 +11,8 @@ import time
 import threading
 import traceback
 
-import google.generativeai as genai
 import speech_recognition as sr
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
-import my_gemini
 import my_transcribe
 import cfg
 import my_log
@@ -93,7 +90,8 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     Returns:
         str: The transcribed text from the audio file.
     """
-    assert audio_duration(audio_file) < 55, 'Too big for free speech recognition'
+    if audio_duration(audio_file) > 55:
+        return ''
 
     google_recognizer = sr.Recognizer()
 
@@ -190,12 +188,6 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                 # и часто глотает последнее слово
                 try: # пробуем через гугл
                     text = stt_google(input_file2, lang)
-                except AssertionError:
-                    pass
-                except sr.UnknownValueError as unknown_value_error:
-                    my_log.log2(str(unknown_value_error))
-                except sr.RequestError as request_error:
-                    my_log.log2(str(request_error))
                 except Exception as unknown_error:
                     my_log.log2(str(unknown_error))
 
@@ -208,7 +200,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
 
             if not text:
                 try: # gemini
-                    # может выдать до 8000 токенов (12000 русских букв) более чем достаточно для голосовух
+                    # может выдать до 8000 токенов (30000 русских букв) более чем достаточно для голосовух
                     text = stt_genai(input_file2, lang)
                 except Exception as error:
                     my_log.log2(f'my_stt:stt:genai:{error}')
@@ -228,7 +220,6 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                 my_log.log2(f'my_stt:stt:os.unlink:{error}')
 
         if text:
-            # text_ = my_gemini.repair_text_after_speech_to_text(text)
             text_ = text
             STT_CACHE.append([data, text_])
             STT_CACHE = STT_CACHE[-CACHE_SIZE:]

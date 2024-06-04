@@ -43,7 +43,7 @@ def detect_repetitiveness(text: str) -> bool:
     '''True если в тексте много повторений, ответ от джемини содержит большое количество повторений
     такое бывает когда он сфейлился'''
     # в мелких маловероятно и в любом случае результат хз
-    if len(text) < 100:
+    if len(text) < 500:
         return False
     text_encoded = text.encode()
     compressed_data = zlib.compress(text_encoded)

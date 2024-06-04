@@ -248,13 +248,13 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str, language: s
         except:
             pass
         proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
-        stream_url = proc.stdout.decode('utf-8').strip()
+        stream_url = proc.stdout.decode('utf-8', errors='replace').strip()
 
         proc = subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
                         str(part[1]), f'{fname}_{n}.ogg'],
                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out_ = proc.stdout.decode('utf-8').strip()
-        err_ = proc.stderr.decode('utf-8').strip()
+        out_ = proc.stdout.decode('utf-8', errors='replace').strip()
+        err_ = proc.stderr.decode('utf-8', errors='replace').strip()
         if 'error' in err_:
             my_log.log2(f'my_transcribe:download_worker: Error in FFMPEG: {err_}')
         if 'error' in out_:
@@ -284,7 +284,7 @@ def download_youtube_clip(video_url: str, language: str):
     treshold = 5 # захватывать +- несколько секунд в каждом куске
 
     proc = subprocess.run([YT_DLP, '--skip-download', '-J', video_url], stdout=subprocess.PIPE)
-    output = proc.stdout.decode('utf-8')
+    output = proc.stdout.decode('utf-8', errors='replace')
     info = json.loads(output)
     duration = info['duration']
 

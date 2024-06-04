@@ -247,8 +247,8 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language:
         proc = subprocess.run([my_transcribe.FFMPEG, '-ss', str(part[0]), '-i', audio_file, '-t',
                         str(part[1]), f'{fname}_{n}.ogg'],
                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out_ = proc.stdout.decode('utf-8').strip()
-        err_ = proc.stderr.decode('utf-8').strip()
+        out_ = proc.stdout.decode('utf-8', errors='replace').strip()
+        err_ = proc.stderr.decode('utf-8', errors='replace').strip()
         if 'error' in err_:
             my_log.log2(f'my_stt:stt_genai_worker: Error in FFMPEG: {err_}')
         if 'error' in out_:

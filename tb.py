@@ -2364,7 +2364,7 @@ def gemini10_mode(message: telebot.types.Message):
 def gemini15_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full] or (datetime.datetime.now() < datetime.datetime(2024, 6, 6)):
+    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full]:
         CHAT_MODE[chat_id_full] = 'gemini15'
         bot_reply_tr(message, 'Gemini 1.5 pro model selected.')
     else:
@@ -4272,23 +4272,20 @@ def do_task(message, custom_prompt: str = ''):
 
     chat_mode_ = CHAT_MODE[chat_id_full]
 
+    have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS
+
     # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
-    if datetime.datetime.now() > datetime.datetime(2024, 6, 6):
-        if CHAT_MODE[chat_id_full] == 'gemini15' and not have_gemini_key:
-            # CHAT_MODE[chat_id_full] = 'gemini'
-            chat_mode_ = 'gemini'
+    if CHAT_MODE[chat_id_full] == 'gemini15' and not have_keys:
+        chat_mode_ = 'gemini'
 
     if is_private:
-        total_messages__ = CHAT_STATS_TEMP[chat_id_full] if chat_id_full in CHAT_STATS_TEMP else 0
-        if chat_id_full not in my_gemini.USER_KEYS and \
-           chat_id_full not in my_groq.USER_KEYS and \
-           chat_id_full not in my_trans.USER_KEYS and \
-           chat_id_full not in my_genimg.USER_KEYS:
+        if not have_keys:
+            total_messages__ = CHAT_STATS_TEMP[chat_id_full] if chat_id_full in CHAT_STATS_TEMP else 0
             # каждые 50 сообщение напоминать о ключах
-            # my_log.log2(f'{chat_id_full} {total_messages__}')
             if total_messages__ > 1 and total_messages__ % 50 == 0:
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
+                # если больше 1000 сообщений уже и нет ключей то нафиг
                 if total_messages__ > 1000:
                     return
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
@@ -4296,9 +4293,8 @@ def do_task(message, custom_prompt: str = ''):
         if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
             chat_mode_ = 'gemini'
     else: # в чатах только дешевый флеш
-        if datetime.datetime.now() > datetime.datetime(2024, 6, 6):
-            if chat_mode_ == 'gemini15':
-                chat_mode_ = 'gemini'
+        if chat_mode_ == 'gemini15':
+            chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (msg.startswith('\\image ') and is_private):

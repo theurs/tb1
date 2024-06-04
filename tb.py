@@ -2845,16 +2845,18 @@ def tts(message: telebot.types.Message, caption = None):
     # Process the url, just get the text and show it with a keyboard for voice acting
     args = message.text.split()
     if len(args) == 2 and my_sum.is_valid_url(args[1]):
-        url = args[1]
-        if '/youtu.be/' in url or 'youtube.com/' in url:
-            text = my_sum.get_text_from_youtube(url)
-        else:
-            text = my_sum.download_text([url, ], 100000, no_links = True)
-        if text:
-            bot_reply(message, text, parse_mode='',
-                                  reply_markup=get_keyboard('translate', message),
-                                      disable_web_page_preview=True)
-        return
+        with ShowAction(message, 'typing'):
+            url = args[1]
+            if '/youtu.be/' in url or 'youtube.com/' in url:
+                text = my_sum.get_text_from_youtube(url, lang)
+                text = my_gemini.rebuild_subtitles(text, lang)
+            else:
+                text = my_sum.download_text([url, ], 100000, no_links = True)
+            if text:
+                bot_reply(message, text, parse_mode='',
+                                    reply_markup=get_keyboard('translate', message),
+                                        disable_web_page_preview=True)
+            return
 
     pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
     match = re.match(pattern, message.text, re.DOTALL)

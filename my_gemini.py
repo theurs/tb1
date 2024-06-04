@@ -824,7 +824,67 @@ Text to be detected: {text[:100]}
 def retranscribe(text: str) -> str:
     '''исправить текст после транскрипции выполненной гуглом'''
     query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
-    result = ai(query, temperature=0.1, model='gemini-1.5-flash-latest', mem=MEM_UNCENSORED, tokens_limit=8000)
+    for _ in range(3):
+        result = ai(query, temperature=0.1, model='gemini-1.5-flash-latest', mem=MEM_UNCENSORED, tokens_limit=8000)
+        if result:
+            break
+    return result
+
+
+def split_text(text: str, chunk_size: int) -> list:
+    '''Разбивает текст на чанки.
+
+    Делит текст по строкам. Если строка больше chunk_size, 
+    то делит ее на части по последнему пробелу перед превышением chunk_size.
+    '''
+    chunks = []
+    current_chunk = ""
+    for line in text.splitlines():
+        if len(current_chunk) + len(line) + 1 <= chunk_size:
+            current_chunk += line + "\n"
+        else:
+            chunks.append(current_chunk.strip())
+            current_chunk = line + "\n"
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+
+    result = []
+    for chunk in chunks:
+        if len(chunk) <= chunk_size:
+            result.append(chunk)
+        else:
+            words = chunk.split()
+            current_chunk = ""
+            for word in words:
+                if len(current_chunk) + len(word) + 1 <= chunk_size:
+                    current_chunk += word + " "
+                else:
+                    result.append(current_chunk.strip())
+                    current_chunk = word + " "
+            if current_chunk:
+                result.append(current_chunk.strip())
+    return result
+
+
+def rebuild_subtitles(text: str, lang: str) -> str:
+    '''Переписывает субтитры с помощью ИИ, делает легкочитаемым красивым текстом.
+    Args:
+        text (str): текст субтитров
+        lang (str): язык субтитров (2 буквы)
+    '''
+    if len(text) > 25000:
+        chunks = split_text(text, 24000)
+        result = ''
+        for chunk in chunks:
+            r = rebuild_subtitles(chunk, lang)
+            result += r
+        return result
+
+    query = f'Fix errors, make an easy to read text out of the subtitles, make a fine paragraphs and sentences, output language = [{lang}]:\n\n{text}'
+    for _ in range(3):
+        result = ai(query, temperature=0.1, model='gemini-1.5-flash-latest', mem=MEM_UNCENSORED, tokens_limit=8000)
+        if result:
+            break
     return result
 
 

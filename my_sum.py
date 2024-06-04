@@ -25,7 +25,7 @@ import my_transcribe
 import utils
 
 
-def get_text_from_youtube(url: str, transcribe: bool = True) -> str:
+def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '') -> str:
     """Вытаскивает текст из субтитров на ютубе
 
     Args:
@@ -36,6 +36,9 @@ def get_text_from_youtube(url: str, transcribe: bool = True) -> str:
         str: первые субтитры из списка какие есть в видео
     """
     top_langs = ('ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro')
+    if language:
+        top_langs = [x for x in top_langs if x != language]
+        top_langs.insert(0, language)
 
     try:
         video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
@@ -54,7 +57,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True) -> str:
     text = text.strip()
 
     if not text and transcribe: # нет субтитров?
-        text, info = my_transcribe.download_youtube_clip(url, language='ru')
+        text, info = my_transcribe.download_youtube_clip(url, language=language)
 
     return text
 
@@ -224,7 +227,7 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool 
     youtube = False
     pdf = False
     if '/youtu.be/' in url or 'youtube.com/' in url:
-        text = get_text_from_youtube(url)
+        text = get_text_from_youtube(url, language=lang)
         youtube = True
     else:
         # Получаем содержимое страницы
@@ -312,7 +315,7 @@ if __name__ == "__main__":
     pass
 
     # print(summ_url('https://habr.com/ru/news/817099/', download_only=False, deep=True)[0])
-    print(summ_url('http://lib.ru/BAUM/baum04.txt_Ascii.txt', download_only=False, deep=True)[0])
+    # print(summ_url('http://lib.ru/BAUM/baum04.txt_Ascii.txt', download_only=False, deep=True)[0])
     # print(summ_url('http://moldovenii.org/resources/files/photo/1/6/16844c00b585525863341db4e63269cb_800.jpg', download_only=False, deep=True)[0])
     
     
@@ -343,3 +346,8 @@ if __name__ == "__main__":
     #     print(summ_text(open(t).read()))
     # else:
     #     print("""Usage ./summarize.py '|URL|filename""")
+
+    # s = get_text_from_youtube('https://www.youtube.com/watch?v=U2-eFnq7yyo', language='ru')
+    # t = my_gemini.rebuild_subtitles(s, 'ru')
+    # print(t)
+    

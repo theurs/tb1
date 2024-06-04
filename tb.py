@@ -3023,16 +3023,16 @@ def image_gen(message: telebot.types.Message):
         IMG_GEN_LOCKS[chat_id_full] = lock
 
 
-    # если у юзера нет ключей и он активист то напомнить о ключах
-    is_private = message.chat.type == 'private'
-    total_messages__ = IMAGES_BY_USER_COUNTER[chat_id_full] if chat_id_full in IMAGES_BY_USER_COUNTER else 0
-    if total_messages__ > 10000 and is_private:
-        if chat_id_full not in my_gemini.USER_KEYS and \
-           chat_id_full not in my_groq.USER_KEYS and \
-           chat_id_full not in my_trans.USER_KEYS and \
-           chat_id_full not in my_genimg.USER_KEYS:
-            msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-            bot_reply(message, msg, disable_web_page_preview=True)
+    # # если у юзера нет ключей и он активист то напомнить о ключах
+    # is_private = message.chat.type == 'private'
+    # total_messages__ = IMAGES_BY_USER_COUNTER[chat_id_full] if chat_id_full in IMAGES_BY_USER_COUNTER else 0
+    # if total_messages__ > 10000 and is_private:
+    #     if chat_id_full not in my_gemini.USER_KEYS and \
+    #        chat_id_full not in my_groq.USER_KEYS and \
+    #        chat_id_full not in my_trans.USER_KEYS and \
+    #        chat_id_full not in my_genimg.USER_KEYS:
+    #         msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+    #         bot_reply(message, msg, disable_web_page_preview=True)
 
 
     with lock:

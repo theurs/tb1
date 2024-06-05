@@ -11,6 +11,8 @@ https://api-inference.huggingface.co/models/sd-community/sdxl-flash
 https://api-inference.huggingface.co/models/fluently/Fluently-XL-v4
 https://api-inference.huggingface.co/models/Corcelio/openvision
 https://api-inference.huggingface.co/models/SG161222/RealVisXL_V4.0
+https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE
+https://api-inference.huggingface.co/models/tianweiy/DMD2
 multimodalart/cosxl
 PixArt-alpha/PixArt-Sigma
 ByteDance/Hyper-SDXL-1Step-T2I

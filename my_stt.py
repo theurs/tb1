@@ -10,6 +10,8 @@ import subprocess
 import time
 import threading
 import traceback
+from pydub import AudioSegment
+from io import BytesIO
 
 import speech_recognition as sr
 
@@ -49,21 +51,6 @@ def audio_duration(audio_file: str) -> int:
     return r
 
 
-def convert_to_wave_with_ffmpeg(audio_file: str) -> str:
-    """
-    Converts an audio file to a wave format using FFmpeg.
-
-    Args:
-        audio_file (str): The path to the audio file to be converted.
-
-    Returns:
-        str: The path to the converted wave file.
-    """
-    tmp_wav_file = utils.get_tmp_fname() + '.wav'
-    subprocess.run(['ffmpeg', '-i', audio_file, tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return tmp_wav_file
-
-
 def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
     """
     Converts an audio file to a ogg format using FFmpeg.
@@ -90,12 +77,15 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     Returns:
         str: The transcribed text from the audio file.
     """
-    if audio_duration(audio_file) > 55:
-        return ''
-
     google_recognizer = sr.Recognizer()
 
-    with sr.AudioFile(audio_file) as source:
+    audio = AudioSegment.from_file(audio_file)
+    # Сохраняем сегмент в BytesIO
+    wav_bytes = BytesIO()
+    audio.export(wav_bytes, format="wav")
+    wav_bytes.seek(0)
+
+    with sr.AudioFile(wav_bytes) as source:
         audio = google_recognizer.record(source)  # read the entire audio file
 
     text = google_recognizer.recognize_google(audio, language=language)
@@ -177,10 +167,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                 return text
 
         dur = audio_duration(input_file)
-        if dur < 55:
-            input_file2 = convert_to_wave_with_ffmpeg(input_file)
-        else:
-            input_file2 = convert_to_ogg_with_ffmpeg(input_file)
+        input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
         try:
             if not text and dur < 55:
@@ -190,13 +177,6 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                     text = stt_google(input_file2, lang)
                 except Exception as unknown_error:
                     my_log.log2(str(unknown_error))
-
-            if not text and dur < 55: # google failed, delete wav and create ogg
-                try:
-                    os.unlink(input_file2)
-                except Exception as error:
-                    my_log.log2(f'my_stt:stt:os.unlink:{error}')
-                input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
             if not text:
                 try: # gemini
@@ -318,4 +298,4 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
 
 if __name__ == "__main__":
     pass
-    print(stt_genai('1.opus'))
+    # print(stt_genai('1.opus'))

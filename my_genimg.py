@@ -155,7 +155,7 @@ def huggin_face_api(prompt: str) -> list:
         if os.path.exists('huggin_face_models_urls.list'):
             with open('huggin_face_models_urls.list', 'r') as f:
                 API_URL = f.read().splitlines()
-            API_URL = [x.strip() for x in API_URL if x.strip()]
+            API_URL = [x.strip() for x in API_URL if x.strip() and not x.strip().startswith('#')]
         else:
             API_URL = [
             'playgroundai/playground-v2.5-1024px-aesthetic',

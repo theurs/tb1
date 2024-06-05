@@ -11,6 +11,9 @@ import threading
 import time
 import traceback
 import zlib
+from pydub import AudioSegment
+from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import speech_recognition as sr
 import google.generativeai as genai
@@ -336,115 +339,198 @@ def gemini_tokens_count(text: str) -> int:
     return response['token_count']
 
 
-# def find_cut_positions(pauses, desired_chunk_size, audio_duration):
-#     """
-#     Находит оптимальные позиции для разрезания аудио на основе пауз и желаемой длины фрагмента,
-#     гарантируя, что размер фрагментов не превышает желаемого.
+########################################################################################
+# не используется, альтернативный вариант, возможно что он быстрее
+########################################################################################
 
-#     Args:
-#         pauses (list): Список пауз в формате [(начало, конец, длительность), ...].
-#         desired_chunk_size (float): Желаемая длительность фрагмента в секундах.
-#         audio_duration (float): Общая длительность аудио в секундах.
+def find_cut_positions(pauses, desired_chunk_size, audio_duration):
+    """
+    Находит оптимальные позиции для разрезания аудио на основе пауз и желаемой длины фрагмента,
+    гарантируя, что размер фрагментов не превышает желаемого.
 
-#     Returns:
-#         list: Список кортежей (позиция разреза, длительность фрагмента).
-#     """
-#     segments = []
-#     last_end = 0
-#     for start, end, duration in pauses:
-#         segments.append((last_end, round(start - last_end, 2)))
-#         last_end = end
-#     segments.append((last_end, audio_duration - last_end))  # Добавляем последний сегмент
+    Args:
+        pauses (list): Список пауз в формате [(начало, конец, длительность), ...].
+        desired_chunk_size (float): Желаемая длительность фрагмента в секундах.
+        audio_duration (float): Общая длительность аудио в секундах.
 
-#     def split_segment(segments, index):
-#         start, duration = segments[index]
-#         if duration <= desired_chunk_size:
-#             return
+    Returns:
+        list: Список кортежей (позиция разреза, длительность фрагмента).
+    """
+    segments = []
+    last_end = 0
+    for start, end, duration in pauses:
+        segments.append((last_end, round(start - last_end, 2)))
+        last_end = end
+    segments.append((last_end, audio_duration - last_end))  # Добавляем последний сегмент
 
-#         half_duration = duration / 2
-#         segments[index] = (start, half_duration)
-#         segments.insert(index + 1, (start + half_duration, half_duration))
-#         split_segment(segments, index)
-#         split_segment(segments, index + 1)
+    def split_segment(segments, index):
+        start, duration = segments[index]
+        if duration <= desired_chunk_size:
+            return
 
-#     i = 0
-#     while i < len(segments):
-#         split_segment(segments, i)
-#         i += 1
+        half_duration = duration / 2
+        segments[index] = (start, half_duration)
+        segments.insert(index + 1, (start + half_duration, half_duration))
+        split_segment(segments, index)
+        split_segment(segments, index + 1)
 
-#     merged_segments = []
-#     current_segment_start = 0
-#     current_segment_duration = 0
-#     for start, duration in segments:
-#         if current_segment_duration + duration <= desired_chunk_size:
-#             current_segment_duration += duration
-#         else:
-#             merged_segments.append((current_segment_start, current_segment_duration))
-#             current_segment_start = start
-#             current_segment_duration = duration
-#     merged_segments.append((current_segment_start, current_segment_duration))
+    i = 0
+    while i < len(segments):
+        split_segment(segments, i)
+        i += 1
 
-#     merged_segments = [(round(x[0], 2), round(x[1], 2)) for x in merged_segments]
-#     return merged_segments
+    merged_segments = []
+    current_segment_start = 0
+    current_segment_duration = 0
+    for start, duration in segments:
+        if current_segment_duration + duration <= desired_chunk_size:
+            current_segment_duration += duration
+        else:
+            merged_segments.append((current_segment_start, current_segment_duration))
+            current_segment_start = start
+            current_segment_duration = duration
+    merged_segments.append((current_segment_start, current_segment_duration))
+
+    merged_segments = [(round(x[0], 2), round(x[1], 2)) for x in merged_segments]
+    return merged_segments
 
 
-# def find_split_segments(audio_file: str) -> list:
-#     """
-#     Находит моменты тишины в аудиофайле и возвращает список точек для разрезания на основе этих моментов и желаемой длины фрагмента.
+def find_split_segments(audio_file: str, max_size: int = 50) -> list:
+    """
+    Находит моменты тишины в аудиофайле и возвращает список точек для разрезания на основе этих моментов и желаемой длины фрагмента.
 
-#     Args:
-#         audio_file (str): Путь к аудиофайлу (поддерживаются любые форматы, распознаваемые ffmpeg, и ссылки на YouTube).
+    Args:
+        audio_file (str): Путь к аудиофайлу (поддерживаются любые форматы, распознаваемые ffmpeg, и ссылки на YouTube).
 
-#     Returns:
-#         list: Список кортежей (позиция разреза, длительность фрагмента).
-#     """
-#     if '/youtu.be/' in audio_file or 'youtube.com/' in audio_file:
-#         proc = subprocess.run([YT_DLP, '--skip-download', '-J', audio_file], stdout=subprocess.PIPE)
-#         output = proc.stdout.decode('utf-8', errors='replace')
-#         info = json.loads(output)
-#         duration__ = info['duration']
-#         proc = subprocess.run([YT_DLP, '-x', '-g', audio_file], stdout=subprocess.PIPE)
-#         audio_file = proc.stdout.decode('utf-8', errors='replace').strip()
-#     else:
-#         result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-#         try:
-#             r = float(result.stdout)
-#         except ValueError:
-#             r = 0
-#         duration__ = r
+    Returns:
+        list: Список кортежей (позиция разреза, длительность фрагмента).
+    """
+    if '/youtu.be/' in audio_file or 'youtube.com/' in audio_file:
+        proc = subprocess.run([YT_DLP, '--skip-download', '-J', audio_file], stdout=subprocess.PIPE)
+        output = proc.stdout.decode('utf-8', errors='replace')
+        info = json.loads(output)
+        duration__ = info['duration']
+        proc = subprocess.run([YT_DLP, '-x', '-g', audio_file], stdout=subprocess.PIPE)
+        audio_file = proc.stdout.decode('utf-8', errors='replace').strip()
+    else:
+        result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        try:
+            r = float(result.stdout)
+        except ValueError:
+            r = 0
+        duration__ = r
 
-#     proc = subprocess.run([FFMPEG, '-i', audio_file, '-af', 'silencedetect=noise=-30dB:d=0.5', '-f', 'null', '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#     output = proc.stdout.decode('utf-8', errors='replace').strip()
-#     error = proc.stderr.decode('utf-8', errors='replace').strip()
+    proc = subprocess.run([FFMPEG, '-i', audio_file, '-af', 'silencedetect=noise=-30dB:d=0.5', '-f', 'null', '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output = proc.stdout.decode('utf-8', errors='replace').strip()
+    error = proc.stderr.decode('utf-8', errors='replace').strip()
 
-#     pattern_start = re.compile(r'silence_start:\s+(\d+\.\d+)')
-#     pattern_end_duration = re.compile(r'silence_end:\s+(\d+\.\d+)\s+\|\s+silence_duration:\s+(\d+\.\d+)')
+    pattern_start = re.compile(r'silence_start:\s+(\d+\.\d+)')
+    pattern_end_duration = re.compile(r'silence_end:\s+(\d+\.\d+)\s+\|\s+silence_duration:\s+(\d+\.\d+)')
     
-#     silences = []
-#     current_start = None
+    silences = []
+    current_start = None
 
-#     for line in error.splitlines():
-#         start_match = pattern_start.search(line)
-#         end_duration_match = pattern_end_duration.search(line)
+    for line in error.splitlines():
+        start_match = pattern_start.search(line)
+        end_duration_match = pattern_end_duration.search(line)
 
-#         if start_match:
-#             current_start = float(start_match.group(1))
-#         elif end_duration_match and current_start is not None:
-#             end = float(end_duration_match.group(1))
-#             duration = float(end_duration_match.group(2))
-#             silences.append((current_start, end, duration))
-#             current_start = None
-#     print(silences)
-#     print()
-#     return find_cut_positions(silences, 50, duration__)
+        if start_match:
+            current_start = float(start_match.group(1))
+        elif end_duration_match and current_start is not None:
+            end = float(end_duration_match.group(1))
+            duration = float(end_duration_match.group(2))
+            silences.append((current_start, end, duration))
+            current_start = None
+    # print(silences)
+    # print()
+    return find_cut_positions(silences, max_size, duration__)
 
 
+def stt_google_pydub_v2(audio_file_path: str, lang: str = 'ru') -> str:
+    """
+    Распознает текст из аудио файла.
 
+    Args:
+        audio_file_path (str): Путь к  аудио файлу - 'mp3', 'mp4', 'aac', 'webm', 'ogg' или bytes (ogg)
+
+    Returns:
+        str: Распознанный текст.
+    """
+    # Создаем объект распознавания речи
+    r = sr.Recognizer()
+
+    # Загружаем аудио файл с помощью pydub
+    if isinstance(audio_file_path, bytes):
+        audio = AudioSegment.from_file(io.BytesIO(audio_file_path))
+    else:
+        audio = AudioSegment.from_file(audio_file_path)
+
+    # Находим точки разрезания аудио на сегменты
+    split_segments = find_split_segments(audio_file_path)
+
+    # Распознаем текст для каждого сегмента в параллельных потоках
+    recognized_text = [""] * len(split_segments)
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for i, (start, duration) in enumerate(split_segments):
+            # Извлекаем сегмент
+            start_ = start*1000
+            end = (start + duration)*1000
+            segment = audio[start_:end]
+
+            # Сохраняем сегмент в BytesIO
+            wav_bytes = BytesIO()
+            segment.export(wav_bytes, format="wav")
+            wav_bytes.seek(0)
+
+            # Распознаем текст асинхронно
+            futures.append(executor.submit(recognize_segment, r, wav_bytes, lang, i))
+
+        # Собираем результаты в правильном порядке
+        for future in as_completed(futures):
+            try:
+                index = future.result()[0]
+                text = future.result()[1]
+                recognized_text[index] = text
+            except Exception as e:
+                print(f"Ошибка при распознавании сегмента: {e}")
+
+    return " ".join(recognized_text).strip()
+
+
+def recognize_segment(recognizer, wav_bytes, lang, index):
+    """
+    Распознает текст из сегмента аудио.
+
+    Args:
+        recognizer (speech_recognition.Recognizer): Объект распознавания речи.
+        wav_bytes (io.BytesIO): Байтовое представление сегмента аудио в формате WAV.
+        lang (str): Язык аудио.
+        index (int): Индекс сегмента.
+
+    Returns:
+        tuple: Кортеж (index, text), где index - индекс сегмента, text - распознанный текст.
+    """
+    with sr.AudioFile(wav_bytes) as source:
+        audio_data = recognizer.record(source)
+    try:
+        text = recognizer.recognize_google(audio_data, language=lang)
+        return (index, text)
+    except sr.UnknownValueError:
+        print("Не удалось распознать речь в сегменте.")
+        return (index, "")
+    except sr.RequestError as e:
+        print(f"Ошибка при распознавании речи: {e}")
+        return (index, "")
+
+########################################################################################
+# не используется, альтернативный вариант, возможно что он быстрее
+########################################################################################
 
 
 if __name__ == '__main__':
     pass
-    # print(find_split_segments('1.ogg'))
+    # print(google_stt_v2('1.ogg'))
     # print(find_split_segments('1.opus'))
     # print(find_split_segments('https://www.youtube.com/watch?v=HqQOpmv1How'))
     ### print(find_split_segments('https://www.youtube.com/watch?v=KPps-AT9mBg'))

@@ -41,6 +41,7 @@ import my_pandoc
 import my_stt
 import my_sum
 import my_trans
+import my_transcribe
 import my_tts
 import utils
 
@@ -649,7 +650,7 @@ def log_group_daemon():
     group = 10
     while LOG_GROUP_DAEMON_ENABLED:
         try:
-            time.sleep(2 + group) # telegram limit 1 message per second for groups
+            time.sleep(3 + group) # telegram limit 1 message per second for groups
             group = 0
             with LOG_GROUP_MESSAGES_LOCK:
                 try:
@@ -693,7 +694,7 @@ def log_group_daemon():
                 elif _type == 'copy':
                     if _m_ids:
                         try:
-                            group = len(_m_ids)*2
+                            group = len(_m_ids)*3
                             bot.copy_messages(cfg.LOGS_GROUP, _message_chat_id, _m_ids, message_thread_id=th)
                         except Exception as error3_0:
                             try:
@@ -4511,6 +4512,10 @@ def do_task(message, custom_prompt: str = ''):
                                                     chat_id_full,
                                                     GEMIMI_TEMP[chat_id_full],
                                                     model = 'gemini-1.5-flash-latest')
+                            # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
+                            # передаем эстафету следующему претенденту (ламе)
+                            if len(answer > 2000) and my_transcribe.detect_repetitiveness():
+                                answer = ''
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_gemini.undo(chat_id_full)
                                 message.text = f'/image {message.text}'
@@ -4577,6 +4582,10 @@ def do_task(message, custom_prompt: str = ''):
 
                             answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
                                                     model = 'gemini-1.5-pro-latest')
+                            # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
+                            # передаем эстафету следующему претенденту (ламе)
+                            if len(answer > 2000) and my_transcribe.detect_repetitiveness():
+                                answer = ''
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_gemini.undo(chat_id_full)
                                 message.text = f'/image {message.text}'
@@ -4641,8 +4650,6 @@ def do_task(message, custom_prompt: str = ''):
                             if chat_id_full not in GEMIMI_TEMP:
                                 GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
 
-                            # answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full],
-                            #                         model = '', style = hidden_text)
                             style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
                             if style_:
                                 answer = my_groq.chat(f'({style_}) {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])

@@ -52,7 +52,8 @@ def detect_repetitiveness(text: str) -> bool:
     text_encoded = text.encode()
     compressed_data = zlib.compress(text_encoded)
     ratio = len(text_encoded) / len(compressed_data)
-    my_log.log_entropy_detector(f'{len(text_encoded)} {len(compressed_data)} {ratio}\n\n{text}')
+    if ratio > 5:
+        my_log.log_entropy_detector(f'{len(text_encoded)} {len(compressed_data)} {ratio}\n\n{text}')
     return ratio > 5
 
 

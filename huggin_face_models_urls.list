@@ -13,6 +13,10 @@ https://api-inference.huggingface.co/models/Corcelio/openvision
 https://api-inference.huggingface.co/models/SG161222/RealVisXL_V4.0
 #плохо рисует https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE
 #нет такой модели https://api-inference.huggingface.co/models/tianweiy/DMD2
+https://api-inference.huggingface.co/models/WarriorMama777/OrangeMixs
+https://api-inference.huggingface.co/models/prompthero/openjourney
+https://api-inference.huggingface.co/models/gsdf/Counterfeit-V2.5
+https://api-inference.huggingface.co/models/prompthero/openjourney-v4
 multimodalart/cosxl
 PixArt-alpha/PixArt-Sigma
 ByteDance/Hyper-SDXL-1Step-T2I

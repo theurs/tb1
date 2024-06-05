@@ -4514,8 +4514,8 @@ def do_task(message, custom_prompt: str = ''):
                                                     model = 'gemini-1.5-flash-latest')
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
-                            if len(answer > 2000) and my_transcribe.detect_repetitiveness():
-                                answer = ''
+                            # if len(answer) > 2000 and my_transcribe.detect_repetitiveness():
+                            #     answer = ''
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_gemini.undo(chat_id_full)
                                 message.text = f'/image {message.text}'
@@ -4584,8 +4584,8 @@ def do_task(message, custom_prompt: str = ''):
                                                     model = 'gemini-1.5-pro-latest')
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
-                            if len(answer > 2000) and my_transcribe.detect_repetitiveness():
-                                answer = ''
+                            # if len(answer) > 2000 and my_transcribe.detect_repetitiveness():
+                            #     answer = ''
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_gemini.undo(chat_id_full)
                                 message.text = f'/image {message.text}'

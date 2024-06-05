@@ -166,6 +166,7 @@ def huggin_face_api(prompt: str) -> list:
             "https://api-inference.huggingface.co/models/Corcelio/mobius",
             "https://api-inference.huggingface.co/models/sd-community/sdxl-flash",
             "https://api-inference.huggingface.co/models/fluently/Fluently-XL-v4",
+            "https://api-inference.huggingface.co/models/Corcelio/openvision",
 
             "multimodalart/cosxl",
             'PixArt-alpha/PixArt-Sigma',

@@ -2992,6 +2992,14 @@ def get_user_image_counter(chat_id_full: str) -> int:
     return IMAGES_BY_USER_COUNTER[chat_id_full]
 
 
+@bot.message_handler(commands=['image10','img10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10'], func=authorized)
+@asunc_run
+def image10_gen(message: telebot.types.Message):
+    bot_reply_tr(message, '10 times image generation started.')
+    for _ in range(10):
+        image_gen(message)
+
+
 @bot.message_handler(commands=['image2','img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
 @asunc_run
 def image2_gen(message: telebot.types.Message):

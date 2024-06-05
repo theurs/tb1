@@ -4286,8 +4286,8 @@ def do_task(message, custom_prompt: str = ''):
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
                 # если больше 1000 сообщений уже и нет ключей то нафиг
-                if total_messages__ > 1000:
-                    return
+                # if total_messages__ > 1000:
+                #     return
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
         # на бесплатных ключах лимит - 50, 300 может получится за счет взаимопомощи
         if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:

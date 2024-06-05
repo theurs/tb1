@@ -153,7 +153,7 @@ def huggin_face_api(prompt: str) -> list:
         API_URL = cfg.huggin_face_models_urls
     else:
         if os.path.exists('huggin_face_models_urls.list'):
-            with open('huggin_face_models_urls.txt', 'r') as f:
+            with open('huggin_face_models_urls.list', 'r') as f:
                 API_URL = f.read().splitlines()
             API_URL = [x.strip() for x in API_URL if x.strip()]
         else:

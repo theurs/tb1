@@ -311,6 +311,8 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
                 except:
                     my_log.log2(f'my_stt:stt_genai: Failed to delete {output_name}_{x}.txt')
 
+        if 'please provide the audio file' in result.lower() and len(result) < 150:
+            return ''
         return result
 
 

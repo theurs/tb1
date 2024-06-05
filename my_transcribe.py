@@ -336,130 +336,118 @@ def gemini_tokens_count(text: str) -> int:
     return response['token_count']
 
 
+# def find_cut_positions(pauses, desired_chunk_size, audio_duration):
+#     """
+#     Находит оптимальные позиции для разрезания аудио на основе пауз и желаемой длины фрагмента,
+#     гарантируя, что размер фрагментов не превышает желаемого.
 
-def find_cut_positions__(pauses, desired_chunk_size):
-    """
-    Находит оптимальные позиции для разрезания аудио на основе пауз и желаемой длины фрагмента.
-    Фрагменты не будут превышать desired_chunk_size, но будут стремиться к нему, 
-    используя паузы, где это возможно.
+#     Args:
+#         pauses (list): Список пауз в формате [(начало, конец, длительность), ...].
+#         desired_chunk_size (float): Желаемая длительность фрагмента в секундах.
+#         audio_duration (float): Общая длительность аудио в секундах.
 
-    Args:
-        pauses (list): Список пауз в формате [(начало, конец, длительность), ...].
-        desired_chunk_size (float): Желаемая длительность фрагмента в секундах.
+#     Returns:
+#         list: Список кортежей (позиция разреза, длительность фрагмента).
+#     """
+#     segments = []
+#     last_end = 0
+#     for start, end, duration in pauses:
+#         segments.append((last_end, round(start - last_end, 2)))
+#         last_end = end
+#     segments.append((last_end, audio_duration - last_end))  # Добавляем последний сегмент
 
-    Returns:
-        list: Список позиций для разрезания аудио.
-    """
-    cut_positions = [0]  # Начинаем с нулевой позиции
-    current_position = 0
+#     def split_segment(segments, index):
+#         start, duration = segments[index]
+#         if duration <= desired_chunk_size:
+#             return
 
-    for i, (start, end, _) in enumerate(pauses):
-        # Если отрезок между текущей позицией и началом паузы больше желаемого,
-        # то делим его на несколько частей
-        while start - current_position > desired_chunk_size:
-            current_position += desired_chunk_size
-            cut_positions.append(current_position)
+#         half_duration = duration / 2
+#         segments[index] = (start, half_duration)
+#         segments.insert(index + 1, (start + half_duration, half_duration))
+#         split_segment(segments, index)
+#         split_segment(segments, index + 1)
 
-        # Используем конец текущей паузы как позицию для разреза
-        current_position = end
-        cut_positions.append(current_position)
+#     i = 0
+#     while i < len(segments):
+#         split_segment(segments, i)
+#         i += 1
 
-    # Если последний фрагмент меньше desired_chunk_size, 
-    # добавляем последнюю позицию
-    if pauses[-1][1] - cut_positions[-1] < desired_chunk_size:
-        cut_positions.append(pauses[-1][1])
+#     merged_segments = []
+#     current_segment_start = 0
+#     current_segment_duration = 0
+#     for start, duration in segments:
+#         if current_segment_duration + duration <= desired_chunk_size:
+#             current_segment_duration += duration
+#         else:
+#             merged_segments.append((current_segment_start, current_segment_duration))
+#             current_segment_start = start
+#             current_segment_duration = duration
+#     merged_segments.append((current_segment_start, current_segment_duration))
 
-    return cut_positions
-
-
-def find_cut_positions(pauses, desired_chunk_size):
-    """
-    Находит оптимальные позиции для разрезания аудио на основе пауз и желаемой длины фрагмента,
-    гарантируя, что размер фрагментов не превышает желаемого.
-
-    Args:
-        pauses (list): Список пауз в формате [(начало, конец, длительность), ...].
-        desired_chunk_size (float): Желаемая длительность фрагмента в секундах.
-
-    Returns:
-        list: Список кортежей (позиция разреза, длительность фрагмента).
-    """
-    cut_positions = []
-    current_position = 0
-    total_duration = pauses[-1][1] if pauses else 0
-
-    # Найдём только начало пауз
-    pause_starts = [pause[0] for pause in pauses]
-
-    while current_position < total_duration:
-        # Определим идеальную точку разреза
-        target_cut_position = current_position + desired_chunk_size
-
-        # Поиск ближайшей паузы до идеальной точки разреза, которая находится в пределах допустимого диапазона
-        suitable_cut_positions = [pause for pause in pause_starts if current_position < pause <= target_cut_position]
-
-        if suitable_cut_positions:
-            cut_position = suitable_cut_positions[0]
-        else:
-            # Если подходящая пауза не найдена, сделаем разрез на максимально допустимом размере
-            cut_position = target_cut_position
-
-        cut_positions.append(cut_position)
-
-        # Обновим текущую позицию
-        current_position = cut_position
-
-    # Возвращаем список с позицией разрывов и их длительностью
-    return [(cut_positions[i], cut_positions[i] - cut_positions[i-1]) for i in range(1, len(cut_positions))]
+#     merged_segments = [(round(x[0], 2), round(x[1], 2)) for x in merged_segments]
+#     return merged_segments
 
 
-def find_silence_points(audio_file: str) -> list:
-    """
-    Находит моменты тишины в аудиофайле и возвращает список точек для разрезания на основе этих моментов и желаемой длины фрагмента.
+# def find_split_segments(audio_file: str) -> list:
+#     """
+#     Находит моменты тишины в аудиофайле и возвращает список точек для разрезания на основе этих моментов и желаемой длины фрагмента.
 
-    Args:
-        audio_file (str): Путь к аудиофайлу (поддерживаются любые форматы, распознаваемые ffmpeg, и ссылки на YouTube).
+#     Args:
+#         audio_file (str): Путь к аудиофайлу (поддерживаются любые форматы, распознаваемые ffmpeg, и ссылки на YouTube).
 
-    Returns:
-        list: Список кортежей (позиция разреза, длительность фрагмента).
-    """
-    if '/youtu.be/' in audio_file or 'youtube.com/' in audio_file:
-        proc = subprocess.run([YT_DLP, '-x', '-g', audio_file], stdout=subprocess.PIPE)
-        audio_file = proc.stdout.decode('utf-8', errors='replace').strip()
+#     Returns:
+#         list: Список кортежей (позиция разреза, длительность фрагмента).
+#     """
+#     if '/youtu.be/' in audio_file or 'youtube.com/' in audio_file:
+#         proc = subprocess.run([YT_DLP, '--skip-download', '-J', audio_file], stdout=subprocess.PIPE)
+#         output = proc.stdout.decode('utf-8', errors='replace')
+#         info = json.loads(output)
+#         duration__ = info['duration']
+#         proc = subprocess.run([YT_DLP, '-x', '-g', audio_file], stdout=subprocess.PIPE)
+#         audio_file = proc.stdout.decode('utf-8', errors='replace').strip()
+#     else:
+#         result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+#         try:
+#             r = float(result.stdout)
+#         except ValueError:
+#             r = 0
+#         duration__ = r
 
-    proc = subprocess.run([FFMPEG, '-i', audio_file, '-af', 'silencedetect=noise=-30dB:d=0.5', '-f', 'null', '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output = proc.stdout.decode('utf-8', errors='replace').strip()
-    error = proc.stderr.decode('utf-8', errors='replace').strip()
+#     proc = subprocess.run([FFMPEG, '-i', audio_file, '-af', 'silencedetect=noise=-30dB:d=0.5', '-f', 'null', '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#     output = proc.stdout.decode('utf-8', errors='replace').strip()
+#     error = proc.stderr.decode('utf-8', errors='replace').strip()
 
-
-    pattern_start = re.compile(r'silence_start:\s+(\d+\.\d+)')
-    pattern_end_duration = re.compile(r'silence_end:\s+(\d+\.\d+)\s+\|\s+silence_duration:\s+(\d+\.\d+)')
+#     pattern_start = re.compile(r'silence_start:\s+(\d+\.\d+)')
+#     pattern_end_duration = re.compile(r'silence_end:\s+(\d+\.\d+)\s+\|\s+silence_duration:\s+(\d+\.\d+)')
     
-    silences = []
-    current_start = None
+#     silences = []
+#     current_start = None
 
-    for line in error.splitlines():
-        start_match = pattern_start.search(line)
-        end_duration_match = pattern_end_duration.search(line)
+#     for line in error.splitlines():
+#         start_match = pattern_start.search(line)
+#         end_duration_match = pattern_end_duration.search(line)
 
-        if start_match:
-            current_start = float(start_match.group(1))
-        elif end_duration_match and current_start is not None:
-            end = float(end_duration_match.group(1))
-            duration = float(end_duration_match.group(2))
-            silences.append((current_start, end, duration))
-            current_start = None
-    print(silences)
-    print()
-    return find_cut_positions(silences, 50)
+#         if start_match:
+#             current_start = float(start_match.group(1))
+#         elif end_duration_match and current_start is not None:
+#             end = float(end_duration_match.group(1))
+#             duration = float(end_duration_match.group(2))
+#             silences.append((current_start, end, duration))
+#             current_start = None
+#     print(silences)
+#     print()
+#     return find_cut_positions(silences, 50, duration__)
+
+
+
 
 
 if __name__ == '__main__':
     pass
-    print(find_silence_points('1.ogg'))
-    # print(find_silence_points('1.opus'))
-    # print(find_silence_points('https://www.youtube.com/watch?v=HqQOpmv1How'))
-    ### print(find_silence_points('https://www.youtube.com/watch?v=KPps-AT9mBg'))
+    # print(find_split_segments('1.ogg'))
+    # print(find_split_segments('1.opus'))
+    # print(find_split_segments('https://www.youtube.com/watch?v=HqQOpmv1How'))
+    ### print(find_split_segments('https://www.youtube.com/watch?v=KPps-AT9mBg'))
 
     # t = 'Это пример текста с определенными повторяющимися элементами, элементами элементами'
     # print(detect_repetitiveness(t))

@@ -152,7 +152,12 @@ def huggin_face_api(prompt: str) -> list:
     if hasattr(cfg, 'huggin_face_models_urls') and cfg.huggin_face_models_urls:
         API_URL = cfg.huggin_face_models_urls
     else:
-        API_URL = [
+        if os.path.exists('huggin_face_models_urls.list'):
+            with open('huggin_face_models_urls.txt', 'r') as f:
+                API_URL = f.read().splitlines()
+            API_URL = [x.strip() for x in API_URL if x.strip()]
+        else:
+            API_URL = [
             'playgroundai/playground-v2.5-1024px-aesthetic',
             "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
             'AP123/SDXL-Lightning',

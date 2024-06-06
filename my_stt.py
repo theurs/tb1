@@ -105,8 +105,8 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
 
     text = google_recognizer.recognize_google(audio, language=language)
 
-    # if text:
-    #     debug_log_stt_google_enchance(text)
+    if text:
+        debug_log_stt_google_enchance(text)
     return text
 
 

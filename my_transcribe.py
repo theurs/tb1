@@ -57,6 +57,24 @@ def detect_repetitiveness(text: str) -> bool:
     return ratio > 5
 
 
+def detect_repetitiveness_with_tail(text: str) -> bool:
+    '''True если в тексте много повторений, ответ от джемини содержит большое количество повторений
+    такое бывает когда он сфейлился
+    так же считает отдельно энтропия хвоста, второй половины сообщения, должна быть запредельно высокой
+    '''
+    # в мелких маловероятно и в любом случае результат хз
+    if len(text) < 500:
+        return False
+    text_encoded = text.encode()
+    compressed_data = zlib.compress(text_encoded)
+    compressed_data2 = zlib.compress(text_encoded[-int(len(text_encoded)/2):])
+    ratio = len(text_encoded) / len(compressed_data)
+    ratio2 = len(text_encoded[-int(len(text_encoded)/2):]) / len(compressed_data2)
+    if ratio > 5 and ratio2 > 100:
+        my_log.log_entropy_detector(f'{len(text_encoded)} {len(compressed_data)} {ratio}\n\n{text}')
+    return ratio > 5 and ratio2 > 100
+
+
 def recognize_chunk(audio_chunk: AudioSegment,
                     return_dict: dict,
                     index: int,
@@ -531,6 +549,8 @@ def recognize_segment(recognizer, wav_bytes, lang, index):
 
 if __name__ == '__main__':
     pass
+    t = open('1.txt', encoding='utf8').read()
+    print(detect_repetitiveness_with_tail(t))
     # print(google_stt_v2('1.ogg'))
     # print(find_split_segments('1.opus'))
     # print(find_split_segments('https://www.youtube.com/watch?v=HqQOpmv1How'))

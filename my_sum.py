@@ -278,8 +278,8 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool 
                                        include_formatting=True,
                                        include_tables=True,
                                        )
-            if not text:
-                text = content
+            # if not text:
+            #     text = content
 
     if download_only:
         if youtube:

@@ -1512,15 +1512,22 @@ def handle_voice(message: telebot.types.Message):
     with semaphore_talks:
         # Скачиваем аудиофайл во временный файл
         try:
-            file_info = bot.get_file(message.voice.file_id)
-        except AttributeError:
-            try:
+            if message.voice:
+                file_info = bot.get_file(message.voice.file_id)
+            elif message.audio:
                 file_info = bot.get_file(message.audio.file_id)
-            except AttributeError:
-                try:
-                    file_info = bot.get_file(message.video.file_id)
-                except AttributeError:
-                    file_info = bot.get_file(message.video_note.file_id)
+            elif message.video:
+                file_info = bot.get_file(message.video.file_id)
+            elif message.video_note:
+                file_info = bot.get_file(message.video_note.file_id)
+            else:
+                bot_reply_tr(message, 'Unknown message type')
+        except telebot.apihelper.ApiTelegramException as error:
+            if 'file is too big' in str(error):
+                bot_reply_tr(message, 'Слишком большой файл')
+                return
+            else:
+                raise error
 
         # Создание временного файла
         with tempfile.NamedTemporaryFile(delete=True) as temp_file:
@@ -1611,7 +1618,14 @@ def handle_document(message: telebot.types.Message):
                 handle_voice(message)
                 return
             with ShowAction(message, 'typing'):
-                file_info = bot.get_file(message.document.file_id)
+                try:
+                    file_info = bot.get_file(message.document.file_id)
+                except telebot.apihelper.ApiTelegramException as error:
+                    if 'file is too big' in str(error):
+                        bot_reply_tr(message, 'Слишком большой файл')
+                        return
+                    else:
+                        raise error
                 downloaded_file = bot.download_file(file_info.file_path)
                 file_bytes = io.BytesIO(downloaded_file)
                 text = ''
@@ -1701,7 +1715,14 @@ def handle_document(message: telebot.types.Message):
                     return
                 # скачиваем документ в байтовый поток
                 file_id = message.document.file_id
-                file_info = bot.get_file(file_id)
+                try:
+                    file_info = bot.get_file(file_id)
+                except telebot.apihelper.ApiTelegramException as error:
+                    if 'file is too big' in str(error):
+                        bot_reply_tr(message, 'Слишком большой файл')
+                        return
+                    else:
+                        raise error
                 file_name = message.document.file_name + '.txt'
                 file = bot.download_file(file_info.file_path)
                 fp = io.BytesIO(file)
@@ -1732,11 +1753,25 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
     try:
         if message.photo:
             photo = message.photo[-1]
-            file_info = bot.get_file(photo.file_id)
+            try:
+                file_info = bot.get_file(photo.file_id)
+            except telebot.apihelper.ApiTelegramException as error:
+                if 'file is too big' in str(error):
+                    bot_reply_tr(message, 'Слишком большой файл')
+                    return
+                else:
+                    raise error
             image = bot.download_file(file_info.file_path)
         elif message.document:
             file_id = message.document.file_id
-            file_info = bot.get_file(file_id)
+            try:
+                file_info = bot.get_file(file_id)
+            except telebot.apihelper.ApiTelegramException as error:
+                if 'file is too big' in str(error):
+                    bot_reply_tr(message, 'Слишком большой файл')
+                    return
+                else:
+                    raise error
             file = bot.download_file(file_info.file_path)
             fp = io.BytesIO(file)
             image = fp.read()
@@ -1884,12 +1919,26 @@ def handle_photo(message: telebot.types.Message):
                 with ShowAction(message, 'typing'):
                     if message.photo:
                         photo = message.photo[-1]
-                        file_info = bot.get_file(photo.file_id)
+                        try:
+                            file_info = bot.get_file(photo.file_id)
+                        except telebot.apihelper.ApiTelegramException as error:
+                            if 'file is too big' in str(error):
+                                bot_reply_tr(message, 'Слишком большой файл')
+                                return
+                            else:
+                                raise error
                         image = bot.download_file(file_info.file_path)
                     elif message.document:
                         # скачиваем документ в байтовый поток
                         file_id = message.document.file_id
-                        file_info = bot.get_file(file_id)
+                        try:
+                            file_info = bot.get_file(file_id)
+                        except telebot.apihelper.ApiTelegramException as error:
+                            if 'file is too big' in str(error):
+                                bot_reply_tr(message, 'Слишком большой файл')
+                                return
+                            else:
+                                raise error
                         file = bot.download_file(file_info.file_path)
                         fp = io.BytesIO(file)
                         image = fp.read()

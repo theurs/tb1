@@ -3900,23 +3900,23 @@ def id_cmd_handler(message: telebot.types.Message):
     if openrouter_keys:
         msg += '\n\n🔑️ OpenRouter\n'
     else:
-        msg += '\n\n🔓 OpenRouter\n'
+        msg += '\n\n🔒 OpenRouter\n'
     if gemini_keys:
         msg += '🔑️ Gemini\n'
     else:
-        msg += '🔓 Gemini\n'
+        msg += '🔒 Gemini\n'
     if groq_keys:
         msg += '🔑️ Groq\n'
     else:
-        msg += '🔓 Groq\n'
+        msg += '🔒 Groq\n'
     if deepl_keys:
         msg += '🔑️ Deepl\n'
     else:
-        msg += '🔓 Deepl\n'
+        msg += '🔒 Deepl\n'
     if huggingface_keys:
         msg += '🔑️ Huggingface\n'
     else:
-        msg += '🔓 Huggingface\n'
+        msg += '🔒 Huggingface\n'
 
     if chat_id_full in BAD_USERS:
         msg += f'\n{tr("User was banned.", lang)}\n'

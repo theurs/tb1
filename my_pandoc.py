@@ -23,6 +23,8 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
 
     book_type = utils.mime_from_buffer(data)
     ext = ext.lower()
+    if ext.startswith('.'):
+        ext = ext[1:]
     if ext == 'ods':
         book_type = 'vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     elif ext == 'xlsx' or ext.lower() == 'xls':

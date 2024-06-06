@@ -1324,9 +1324,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             message.dont_check_topic = True
             echo_all(message, tr('Продолжай', lang))
             return
-        elif call.data == 'forget_all':
-            # обработка нажатия кнопки "Забудь всё"
-            reset_(chat_id_full)
         elif call.data == 'cancel_command':
             # обработка нажатия кнопки "Отменить ввод команды"
             COMMAND_MODE[chat_id_full] = ''
@@ -1431,6 +1428,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'groq-llama370_reset':
             my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Groq llama 3 70b очищена.')
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('История диалога с Groq llama 3 70b очищена.', lang))
         elif call.data == 'openrouter_reset':
             my_openrouter.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с openrouter очищена.')

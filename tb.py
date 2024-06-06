@@ -1524,7 +1524,7 @@ def handle_voice(message: telebot.types.Message):
                 bot_reply_tr(message, 'Unknown message type')
         except telebot.apihelper.ApiTelegramException as error:
             if 'file is too big' in str(error):
-                bot_reply_tr(message, 'Слишком большой файл')
+                bot_reply_tr(message, 'Too big file.')
                 return
             else:
                 raise error
@@ -1622,7 +1622,7 @@ def handle_document(message: telebot.types.Message):
                     file_info = bot.get_file(message.document.file_id)
                 except telebot.apihelper.ApiTelegramException as error:
                     if 'file is too big' in str(error):
-                        bot_reply_tr(message, 'Слишком большой файл')
+                        bot_reply_tr(message, 'Too big file')
                         return
                     else:
                         raise error
@@ -1719,7 +1719,7 @@ def handle_document(message: telebot.types.Message):
                     file_info = bot.get_file(file_id)
                 except telebot.apihelper.ApiTelegramException as error:
                     if 'file is too big' in str(error):
-                        bot_reply_tr(message, 'Слишком большой файл')
+                        bot_reply_tr(message, 'Too big file.')
                         return
                     else:
                         raise error
@@ -1757,7 +1757,7 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
                 file_info = bot.get_file(photo.file_id)
             except telebot.apihelper.ApiTelegramException as error:
                 if 'file is too big' in str(error):
-                    bot_reply_tr(message, 'Слишком большой файл')
+                    bot_reply_tr(message, 'Too big file.')
                     return
                 else:
                     raise error
@@ -1768,7 +1768,7 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
                 file_info = bot.get_file(file_id)
             except telebot.apihelper.ApiTelegramException as error:
                 if 'file is too big' in str(error):
-                    bot_reply_tr(message, 'Слишком большой файл')
+                    bot_reply_tr(message, 'Too big file.')
                     return
                 else:
                     raise error
@@ -1923,7 +1923,7 @@ def handle_photo(message: telebot.types.Message):
                             file_info = bot.get_file(photo.file_id)
                         except telebot.apihelper.ApiTelegramException as error:
                             if 'file is too big' in str(error):
-                                bot_reply_tr(message, 'Слишком большой файл')
+                                bot_reply_tr(message, 'Too big file.')
                                 return
                             else:
                                 raise error
@@ -1935,7 +1935,7 @@ def handle_photo(message: telebot.types.Message):
                             file_info = bot.get_file(file_id)
                         except telebot.apihelper.ApiTelegramException as error:
                             if 'file is too big' in str(error):
-                                bot_reply_tr(message, 'Слишком большой файл')
+                                bot_reply_tr(message, 'Too big file.')
                                 return
                             else:
                                 raise error

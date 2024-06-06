@@ -15,7 +15,7 @@ import my_sum
 import utils
 
     
-def search_v3(query: str, lang: str = 'ru', max_search: int = 30):
+def search_v3(query: str, lang: str = 'ru', max_search: int = 20):
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп

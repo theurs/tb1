@@ -73,10 +73,16 @@ def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
 def debug_log_stt_google_enchance(text: str):
     '''Записывает в журнал распознанное текстовое сообщение и его улучшенную с
     помощью ИИ версию для проверки насколько это вообще годное решение'''
-    query = f'''Исправь текст полученный с помощью распознавания голосовых сообщений, сделай его правильным и красивым, сохрани оригинальный язык, покажи только исправленный текст: \n\n{text}'''
-    resp = my_groq.ai(query, temperature=0.1)
+    query = f'''Correct the text received using voice recognition,
+fix speech recognition errors, make the text correct and fine,
+preserve the original language,
+preserve the original form and intent as much as possible,
+your answer should only contain the corrected text,
+do not answer the question - your only work is to correct text,
+no any other words in reply please: \n\n{text}'''
+    resp = my_groq.ai(query, temperature=0, mem_ = my_groq.MEM_UNCENSORED)
     if not resp:
-        resp = my_gemini.ai(query, temperature=0.1)
+        resp = my_gemini.ai(query, temperature=0, mem = my_gemini.MEM_UNCENSORED)
         my_log.log_debug_stt(f'gemini flash\n\n{text}\n\n{resp}')
     else:
         my_log.log_debug_stt(f'llama 3 70b\n\n{text}\n\n{resp}')
@@ -105,8 +111,8 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
 
     text = google_recognizer.recognize_google(audio, language=language)
 
-    if text:
-        debug_log_stt_google_enchance(text)
+    # if text:
+    #     debug_log_stt_google_enchance(text)
     return text
 
 

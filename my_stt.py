@@ -78,7 +78,8 @@ fix speech recognition errors, make the text correct and fine,
 preserve the original language,
 preserve the original form and intent as much as possible,
 your answer should only contain the corrected text,
-do not answer the question - your only work is to correct text,
+your only work is to correct text,
+please do not answer the question in text,
 no any other words in reply please: \n\n{text}'''
     resp = my_groq.ai(query, temperature=0, mem_ = my_groq.MEM_UNCENSORED)
     if not resp:

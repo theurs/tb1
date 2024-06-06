@@ -108,6 +108,11 @@ def log2(text: str, fname: str = '') -> None:
         trancate_log_file(log_file_path)
 
 
+def log_debug_stt(text: str) -> None:
+    """для логов дебага улучшения коротких голосовух"""
+    log2(text, 'voice_restore')
+
+
 def log_reprompts(text: str) -> None:
     """для логов переводов промптов для рисования"""
     log2(text, 'reprompts')

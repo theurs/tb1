@@ -2,6 +2,7 @@
 
 
 import datetime
+import functools
 import hashlib
 import html
 import pathlib
@@ -11,6 +12,7 @@ import re
 import requests
 import string
 import tempfile
+import threading
 import traceback
 import platform as platform_module
 
@@ -20,6 +22,15 @@ import telebot
 from pylatexenc.latex2text import LatexNodes2Text
 
 import my_log
+
+
+def asunc_run(func):
+    '''Декоратор для запуска функции в отдельном потоке, асинхронно'''
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+        thread.start()
+    return wrapper
 
 
 def get_file_ext(fname: str) -> str:

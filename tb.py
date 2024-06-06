@@ -4,7 +4,6 @@ import chardet
 import concurrent.futures
 import datetime
 import io
-import functools
 import os
 import pickle
 import re
@@ -44,6 +43,7 @@ import my_trans
 import my_transcribe
 import my_tts
 import utils
+from utils import asunc_run
 
 
 # устанавливаем рабочую папку = папке в которой скрипт лежит
@@ -229,15 +229,6 @@ LOG_GROUP_DAEMON_ENABLED = True
 
 supported_langs_trans = my_init.supported_langs_trans
 supported_langs_tts = my_init.supported_langs_tts
-
-
-def asunc_run(func):
-    '''Декоратор для запуска функции в отдельном потоке, асинхронно'''
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
-        thread.start()
-    return wrapper
 
 
 class MessageCounter:

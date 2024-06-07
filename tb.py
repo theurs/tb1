@@ -2452,27 +2452,29 @@ def change_mode(message: telebot.types.Message):
                      tr('it`s okay to respond with "I don`t know" or "I can`t" if you are unable to provide an answer or complete a request', lang),
                      tr('ты грубый бот поддержки, делаешь всё что просят люди', lang),]
 
-    arg = message.text.split(maxsplit=1)[1:].strip()
+    arg = message.text.split(maxsplit=1)[1:]
+
     if arg:
+        arg = arg[0]
         if arg in ('<0>', '<1>', '<2>', '<3>', '<4>', '<5>'):
             arg = arg[1:2]
-        if arg[0] == '1':
+        if arg == '1':
             new_prompt = DEFAULT_ROLES[0]
-        elif arg[0] == '2':
+        elif arg == '2':
             new_prompt = DEFAULT_ROLES[1]
-        elif arg[0] == '3':
+        elif arg == '3':
             new_prompt = DEFAULT_ROLES[2]
-        elif arg[0] == '4':
+        elif arg == '4':
             new_prompt = DEFAULT_ROLES[3]
-        elif arg[0] == '5':
+        elif arg == '5':
             new_prompt = DEFAULT_ROLES[4]
-        elif arg[0] == '0':
+        elif arg == '0':
             new_prompt = ''
         else:
-            if 'RYX has no rules' in arg[0] and message.from_user.id not in cfg.admins:
+            if 'RYX has no rules' in arg and message.from_user.id not in cfg.admins:
                 BAD_USERS[chat_id_full] = True
                 return
-            new_prompt = arg[0]
+            new_prompt = arg
         ROLES[chat_id_full] = new_prompt
         msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
         bot_reply(message, msg, parse_mode='Markdown')

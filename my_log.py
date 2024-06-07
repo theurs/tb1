@@ -108,11 +108,6 @@ def log2(text: str, fname: str = '') -> None:
         trancate_log_file(log_file_path)
 
 
-def log_debug_stt(text: str) -> None:
-    """для логов дебага улучшения коротких голосовух"""
-    log2(text, 'voice_restore')
-
-
 def log_reprompts(text: str) -> None:
     """для логов переводов промптов для рисования"""
     log2(text, 'reprompts')
@@ -313,8 +308,8 @@ def purge(chat_id: int) -> bool:
     :param chat_id: An integer representing the chat ID
     :return: A boolean indicating the success of the purge operation
     """
-    f1 = glob.glob(f'logs/*.log')
-    f2 = glob.glob(f'logs2/*.log')
+    f1 = glob.glob('logs/*.log')
+    f2 = glob.glob('logs2/*.log')
     f3 = f1 + f2
     f4 = [x for x in f3 if x.endswith(f'[{chat_id}].log') or x.endswith(f'[{chat_id}].log.debug.log')]
     try:

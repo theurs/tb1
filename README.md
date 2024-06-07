@@ -264,13 +264,6 @@ PHONE_CATCHER = True
 #     ]
 
 
-# whisper api servers for speech to text
-# [(address, port), (adress2, port2),]
-# MY_WHISPER_API = [
-#    ('10.147.17.227','34671'),
-#    ('10.147.17.26', '34671'),
-#    ]
-
 # рисование кандинским, бесплатное
 # https://fusionbrain.ai/docs/ru/doc/api-dokumentaciya/
 KANDINSKI_API = [

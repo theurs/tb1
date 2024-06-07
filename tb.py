@@ -1562,7 +1562,9 @@ def handle_voice(message: telebot.types.Message):
                     # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
                     pass
                 else:
-                    bot_reply(message, text, reply_markup=get_keyboard('translate', message))
+                    bot_reply(message, utils.bot_markdown_to_html(text),
+                              parse_mode='HTML',
+                              reply_markup=get_keyboard('translate', message))
             else:
                 if VOICE_ONLY_MODE[chat_id_full]:
                     message.text = '/tts ' + tr('Не удалось распознать текст', lang)

@@ -5,6 +5,7 @@ chardet
 deepl
 duckduckgo_search[lxml]
 edge_tts
+httpx[socks]
 fake_useragent
 fuzzywuzzy
 google
@@ -32,7 +33,10 @@ pylatexenc
 PyMuPDF
 PyPDF2
 pysocks
-pytelegrambotapi
+
+# 4.19 вызывает ошибку copy_message() got an unexpected keyword argument "show_caption_above_media" при копировании сообщений
+pytelegrambotapi==4.16.1
+
 pytesseract
 python-Levenshtein
 SpeechRecognition

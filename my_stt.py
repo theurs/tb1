@@ -1,27 +1,19 @@
 #!/usr/bin/env python3
 # pip install -U google-generativeai
 
-import base64
 import hashlib
 import os
-import random
-import requests
 import subprocess
-import time
 import threading
-import traceback
 from pydub import AudioSegment
 from io import BytesIO
 
 import speech_recognition as sr
 
 import my_transcribe
-import cfg
-import my_groq
-import my_gemini
 import my_log
 import utils
-from utils import asunc_run
+
 
 
 # locks for chat_ids
@@ -69,25 +61,6 @@ def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
     return tmp_wav_file
 
 
-@asunc_run
-def debug_log_stt_google_enchance(text: str):
-    '''Записывает в журнал распознанное текстовое сообщение и его улучшенную с
-    помощью ИИ версию для проверки насколько это вообще годное решение'''
-    query = f'''Correct the text received using voice recognition,
-fix speech recognition errors, make the text correct and fine,
-preserve the original language,
-preserve the original form and intent as much as possible,
-your answer should only contain the corrected text,
-your only work is to correct text,
-please do not answer the question in text,
-no any other words in reply please: \n\n{text}'''
-    resp = my_groq.ai(query, temperature=0, mem_ = my_groq.MEM_UNCENSORED)
-    if not resp:
-        resp = my_gemini.ai(query, temperature=0, mem = my_gemini.MEM_UNCENSORED)
-        my_log.log_debug_stt(f'gemini flash\n\n{text}\n\n{resp}')
-    else:
-        my_log.log_debug_stt(f'llama 3 70b\n\n{text}\n\n{resp}')
-
 def stt_google(audio_file: str, language: str = 'ru') -> str:
     """
     Speech-to-text using Google's speech recognition API.
@@ -112,57 +85,7 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
 
     text = google_recognizer.recognize_google(audio, language=language)
 
-    # if text:
-    #     debug_log_stt_google_enchance(text)
     return text
-
-
-def stt_my_whisper_api(audio_file: str, language: str = 'ru') -> str:
-    """
-    Speech-to-text using MyWhisper API.
-    
-    Args:
-        audio_file (str): The path to the audio file to be transcribed.
-        language (str, optional): The language of the audio file. Defaults to 'ru'.
-    
-    Returns:
-        str: The transcribed text from the audio file.
-    """
-    if not(hasattr(cfg, 'MY_WHISPER_API') and cfg.MY_WHISPER_API):
-        return ''
-
-    # assert audio_duration(audio_file) < 1200, 'Too big'
-
-    servers = cfg.MY_WHISPER_API[:]
-    random.shuffle(servers)
-
-    for server in servers:
-        addr = server[0]
-        port = server[1]
-        with open(audio_file, 'rb') as af:
-            audio_bytes = af.read()
-
-        audio_bytes_base64 = base64.b64encode(audio_bytes).decode('UTF-8')
-
-        data = {"data": audio_bytes_base64, "lang": language}
-
-        # Проверить доступность сервера
-        response = requests.head(f"http://{addr}:{port}/stt", timeout=3)
-        if response.status_code != 405:
-            continue
-        t1 = time.time()
-        response = requests.post(
-            f"http://{addr}:{port}/stt",
-            json=data,
-            headers={"Content-Type": "application/json"},
-            timeout=600,
-        )
-        print(time.time() - t1)
-        if response.status_code == 200:
-            r = base64.b64decode(response.content.decode("UTF-8")).decode('UTF-8')
-            return r
-
-    return ''
 
 
 def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
@@ -205,17 +128,10 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
             if not text:
                 try: # gemini
                     # может выдать до 8000 токенов (30000 русских букв) более чем достаточно для голосовух
+                    # у него в качестве fallback используется тот же гугл но с разбиением на части
                     text = stt_genai(input_file2, lang)
                 except Exception as error:
                     my_log.log2(f'my_stt:stt:genai:{error}')
-
-            #затем через локальный (моя реализация) whisper
-            if not text:
-                try:
-                    text = stt_my_whisper_api(input_file2, lang)
-                except Exception as error:
-                    error_traceback = traceback.format_exc()
-                    my_log.log2(f'my_stt:stt:{error}\n\n{error_traceback}')
 
         finally:
             try:

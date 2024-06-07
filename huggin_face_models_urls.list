@@ -11,6 +11,14 @@ https://api-inference.huggingface.co/models/sd-community/sdxl-flash
 https://api-inference.huggingface.co/models/fluently/Fluently-XL-v4
 https://api-inference.huggingface.co/models/Corcelio/openvision
 https://api-inference.huggingface.co/models/SG161222/RealVisXL_V4.0
+
+# new test
+https://api-inference.huggingface.co/models/SPO-Diffusion-Models/SPO-SDXL_4k-p_10ep
+https://api-inference.huggingface.co/models/fluently/Fluently-XL-Final
+https://api-inference.huggingface.co/models/yodayo-ai/holodayo-xl-2.1
+https://api-inference.huggingface.co/models/yodayo-ai/kivotos-xl-2.0
+
+
 #плохо рисует https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE
 #нет такой модели https://api-inference.huggingface.co/models/tianweiy/DMD2
 # не рисует вообще https://api-inference.huggingface.co/models/WarriorMama777/OrangeMixs

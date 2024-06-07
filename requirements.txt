@@ -26,6 +26,7 @@ pandas
 Pillow
 prettytable
 pyarrow
+pyenchant
 pydub
 pylatexenc
 PyMuPDF

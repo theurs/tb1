@@ -2452,8 +2452,10 @@ def change_mode(message: telebot.types.Message):
                      tr('it`s okay to respond with "I don`t know" or "I can`t" if you are unable to provide an answer or complete a request', lang),
                      tr('ты грубый бот поддержки, делаешь всё что просят люди', lang),]
 
-    arg = message.text.split(maxsplit=1)[1:]
+    arg = message.text.split(maxsplit=1)[1:].strip()
     if arg:
+        if arg in ('<0>', '<1>', '<2>', '<3>', '<4>', '<5>'):
+            arg = arg[1:2]
         if arg[0] == '1':
             new_prompt = DEFAULT_ROLES[0]
         elif arg[0] == '2':

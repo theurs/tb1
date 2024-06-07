@@ -76,6 +76,7 @@ def ai(prompt: str = '',
         mem_ (list, optional): The list of previous messages. Defaults to [].
         temperature (float, optional): The randomness of the generated response. Defaults to 0.1.
         model_ (str, optional): The name of the GROQ model to use. Defaults to 'llama3-70b-8192'.
+            (llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it)
         max_tokens_ (int, optional): The maximum number of tokens in the generated response. Defaults to 2000.
         key_ (str, optional): The API key for the GROQ model. Defaults to ''.
 

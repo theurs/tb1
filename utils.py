@@ -108,11 +108,13 @@ def bot_markdown_to_tts(text: str) -> str:
     text = re.sub('\*\*?(.*?)\*\*?', '\\1', text)
 
     # tex в unicode
-    matches = re.findall("\$\$?(.*?)\$\$?", text, flags=re.DOTALL)
+    matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
     for match in matches:
         new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
         text = text.replace(f'$${match}$$', new_match)
         text = text.replace(f'${match}$', new_match)
+        text = text.replace(f'\[{match}\]', new_match)
+        text = text.replace(f'\({match}\)', new_match)
 
     return text
 
@@ -177,11 +179,14 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
 
     # tex в unicode
-    matches = re.findall("\$\$?(.*?)\$\$?", text, flags=re.DOTALL)
+    matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
     for match in matches:
         new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
         text = text.replace(f'$${match}$$', new_match)
         text = text.replace(f'${match}$', new_match)
+        text = text.replace(f'\[{match}\]', new_match)
+        text = text.replace(f'\({match}\)', new_match)
+
 
     # меняем маркдаун ссылки на хтмл
     # text = re.sub(r'\[([^\]]*)\]\(([^\)]*)\)', r'<a href="\2">\1</a>', text)

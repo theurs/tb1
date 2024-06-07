@@ -2476,7 +2476,10 @@ def change_mode(message: telebot.types.Message):
                 return
             new_prompt = arg
         ROLES[chat_id_full] = new_prompt
-        msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
+        if new_prompt:
+            msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
+        else:
+            msg =  f'{tr("[Роли отключены]", lang)}'
         bot_reply(message, msg, parse_mode='Markdown')
     else:
         msg = f"""{tr('Текущий стиль', lang)}

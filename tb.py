@@ -195,7 +195,7 @@ SEND_IMG_LOCK = threading.Lock()
 GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
 GEMIMI_TEMP_DEFAULT = 0.2
 
-# Из каких чатов надо выходиьт сразу (забаненые)
+# Из каких чатов надо выходить сразу (забаненые)
 LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
 
 # в каких чатах какое у бота кодовое слово для обращения к боту
@@ -4349,9 +4349,9 @@ def do_task(message, custom_prompt: str = ''):
         # на бесплатных ключах лимит - 50, 300 может получится за счет взаимопомощи
         if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
             chat_mode_ = 'gemini'
-    else: # в чатах только дешевый флеш
-        if chat_mode_ == 'gemini15':
-            chat_mode_ = 'gemini'
+    # else: # в чатах только дешевый флеш
+    #     if chat_mode_ == 'gemini15':
+    #         chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (msg.startswith('\\image ') and is_private):

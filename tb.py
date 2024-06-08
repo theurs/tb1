@@ -1956,7 +1956,7 @@ def handle_photo(message: telebot.types.Message):
                                             disable_web_page_preview = True)
 
                         text = text[:8000]
-                        add_to_bots_mem(f'user {tr("юзер попросил распознать текст с картинки", lang)}',
+                        add_to_bots_mem(f'{tr("юзер попросил распознать текст с картинки", lang)}',
                                             f'{tr("бот распознал текст и ответил:", lang)} {text}',
                                             chat_id_full)
 

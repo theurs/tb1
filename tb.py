@@ -4349,9 +4349,9 @@ def do_task(message, custom_prompt: str = ''):
         # на бесплатных ключах лимит - 50, 300 может получится за счет взаимопомощи
         if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
             chat_mode_ = 'gemini'
-    # else: # в чатах только дешевый флеш
-    #     if chat_mode_ == 'gemini15':
-    #         chat_mode_ = 'gemini'
+    else:
+        if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
+            chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
     if (msg.startswith('\\image ') and is_private):

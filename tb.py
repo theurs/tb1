@@ -1220,7 +1220,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button1 = telebot.types.InlineKeyboardButton("🤜 GPT-4o + Dalle3 (coze.com) 🤛",  url = cfg.coze_bot)
             markup.row(button1)
 
-
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if chat_id_full not in VOICE_ONLY_MODE:
             VOICE_ONLY_MODE[chat_id_full] = False

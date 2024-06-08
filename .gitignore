@@ -14,7 +14,6 @@ db/*
 logs/*
 *.mp3
 *.ogg
-*.opus
 *.fb2
 *.doc
 _old/*
@@ -23,3 +22,6 @@ _old/*
 *.pickle
 *.txt
 chroma_db_llamaparse1
+build/*
+dist/*
+*.exe

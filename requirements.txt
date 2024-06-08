@@ -43,5 +43,9 @@ SpeechRecognition
 sqlitedict
 #trafilatura==1.6.1
 trafilatura
+
+# требует установки vc++ tools
+# TTS
+
 youtube_transcript_api
 unidecode

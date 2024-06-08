@@ -2257,6 +2257,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
+    is_private = message.chat.type == 'private'
 
     try:
         args = message.text.split(maxsplit=1)
@@ -2329,7 +2330,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
         msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://huggingface.co/settings/tokens\n\nhttps://www.deepl.com'
         bot_reply(message, msg, disable_web_page_preview = True)
 
-        if message.from_user.id in cfg.admins:
+        if message.from_user.id in cfg.admins and is_private:
             msg = tr('Total users keys:', lang)
             msg = f'{msg} {len(my_gemini.ALL_KEYS)}'
             bot_reply(message, msg)
@@ -2343,15 +2344,16 @@ def users_keys_for_gemini(message: telebot.types.Message):
             bot_reply(message, msg+'</code>', parse_mode='HTML')
 
         # показать юзеру его ключи
-        if chat_id_full in my_gemini.USER_KEYS:
-            qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
-            deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
-            huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
-            keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys
-            msg = tr('Your keys:', lang) + '\n\n'
-            for key in keys:
-                msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
-            bot_reply(message, msg, parse_mode='HTML')
+        if is_private:
+            if chat_id_full in my_gemini.USER_KEYS:
+                qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
+                deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
+                huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
+                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys
+                msg = tr('Your keys:', lang) + '\n\n'
+                for key in keys:
+                    msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
+                bot_reply(message, msg, parse_mode='HTML')
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'Error in /keys: {error}\n\n{message.text}\n\n{traceback_error}')

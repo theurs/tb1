@@ -2566,6 +2566,9 @@ def reset_(message: telebot.types.Message):
     else:
         chat_id_full = get_topic_id(message)
 
+    if chat_id_full not in CHAT_MODE:
+        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+
     if 'gemini' in CHAT_MODE[chat_id_full]:
         my_gemini.reset(chat_id_full)
     elif 'llama' in CHAT_MODE[chat_id_full]:

@@ -15,7 +15,7 @@ def get_voices() -> dict:
     voices = {}
 
 
-    proc = subprocess.run(['edge-tts', '-l'], stdout=subprocess.PIPE)
+    proc = subprocess.run(['/home/ubuntu/.tb1/bin/edge-tts', '-l'], stdout=subprocess.PIPE)
     out = proc.stdout.decode('utf-8', errors='replace').strip()
 
 

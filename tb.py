@@ -3431,38 +3431,36 @@ def stats(message: telebot.types.Message):
 @asunc_run
 def shell_command(message: telebot.types.Message):
     """Выполняет шел комманды"""
-
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
-
-    if not hasattr(cfg, 'SYSTEM_CMDS'):
-        bot_reply_tr(message, 'Шел команды не настроены.')
-        return
-
-    cmd = message.text.strip().split(maxsplit=1)
-    if len(cmd) == 2:
-        try:
-            n = int(cmd[1])
-        except ValueError:
-            bot_reply_tr(message, 'Usage: /shell <command number>, empty for list available commands')
+    try:
+        if not hasattr(cfg, 'SYSTEM_CMDS'):
+            bot_reply_tr(message, 'Шел команды не настроены.')
             return
-        cmd_ = cfg.SYSTEM_CMDS[n -1]
-        out = subprocess.check_output(cmd_.split(), shell=True)
-        out_ = out.decode(utils.get_codepage(), errors = 'replace')
-        out_ = f'```{out_}```'
-        out_ = utils.bot_markdown_to_html(out_)
-        bot_reply(message, out_, parse_mode='HTML')
-    else:
-        msg = ''
-        n = 1
-        for x in cfg.SYSTEM_CMDS:
-            msg += f'{n} - {x}\n'
-            n += 1
-        msg_ = f'```{msg}```'
-        msg_ = utils.bot_markdown_to_html(msg_)
-        bot_reply(message, msg_, parse_mode='HTML')
 
-
+        cmd = message.text.strip().split(maxsplit=1)
+        if len(cmd) == 2:
+            try:
+                n = int(cmd[1])
+            except ValueError:
+                bot_reply_tr(message, 'Usage: /shell <command number>, empty for list available commands')
+                return
+            cmd_ = cfg.SYSTEM_CMDS[n -1]
+            out = subprocess.check_output(cmd_.split(), shell=True)
+            out_ = out.decode(utils.get_codepage(), errors = 'replace')
+            out_ = f'```{cfg.SYSTEM_CMDS[n -1]}\n{out_}```'
+            out_ = utils.bot_markdown_to_html(out_)
+            bot_reply(message, out_, parse_mode='HTML')
+        else:
+            msg = ''
+            n = 1
+            for x in cfg.SYSTEM_CMDS:
+                msg += f'{n} - {x}\n'
+                n += 1
+            msg_ = f'```Commands:\n{msg}```'
+            msg_ = utils.bot_markdown_to_html(msg_)
+            bot_reply(message, msg_, parse_mode='HTML')
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:shell_command {error}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['blockadd2'], func=authorized_admin)

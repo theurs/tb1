@@ -295,6 +295,14 @@ OPEN_ROUTER_KEY = 'xxx'
 # DEEPL_KEYS = ['xxx', 'yyy']
 
 
+# shell команды которые бот может выполнять /shell
+#SYSTEM_CMDS = [
+#    'sudo systemctl restart wg-quick@wg1.service',
+#    'python /home/ubuntu/bin/d.py',
+#    'dir c:\\'
+#]
+
+
 # DEBUG = False
 ```
 

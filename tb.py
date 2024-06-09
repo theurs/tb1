@@ -63,7 +63,7 @@ pics_group_url = cfg.pics_group_url
 # следим за наличием активности, если в бота никаких событий
 # не прилетало 30 минут то перезапускаем принудительно, возможно телега зависла
 ACTIVITY_MONITOR = {
-    'last_activity': datetime.datetime.now(),
+    'last_activity': time.time(),
     'max_inactivity': datetime.timedelta(minutes=30).seconds,
 }
 
@@ -4819,7 +4819,7 @@ def activity_daemon():
     run = True
     while run:
         time.sleep(3)
-        if ACTIVITY_MONITOR['last_activity'] + ACTIVITY_MONITOR['max_inactivity'] < datetime.datetime.now():
+        if ACTIVITY_MONITOR['last_activity'] + ACTIVITY_MONITOR['max_inactivity'] < time.time():
             run = False
             my_log.log2(f'tb:activity_daemon: reconnect after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
             # restart()

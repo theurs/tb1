@@ -552,7 +552,7 @@ def get_codepage():
 
 if __name__ == '__main__':
     # print(get_codepage())
-    l = 'sudo systemctl show wg-quick@wg1.service'
+    l = 'sudo systemctl status wg-quick@wg1.service'
     with subprocess.Popen(l, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding=get_codepage()) as proc:
         stdout, stderr = proc.communicate()
         print(stdout)

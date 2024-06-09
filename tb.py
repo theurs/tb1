@@ -4824,7 +4824,7 @@ def activity_daemon():
             my_log.log2(f'tb:activity_daemon: reconnect after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
             # restart()
             bot.stop_polling()
-            time.sleep(5)
+            time.sleep(10)
             bot.polling(timeout=90, long_polling_timeout=90)
             time.sleep(10)
             ACTIVITY_MONITOR['last_activity'] = time.time()

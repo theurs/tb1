@@ -993,6 +993,8 @@ def authorized_log(message: telebot.types.Message) -> bool:
     Only log and banned
     """
 
+    ACTIVITY_MONITOR['last_activity'] = time.time()
+
     # do not process commands to another bot /cmd@botname args
     if is_for_me(message)[0]:
         message.text = is_for_me(message)[1]
@@ -4813,6 +4815,7 @@ def do_task(message, custom_prompt: str = ''):
 
 @asunc_run
 def activity_daemon():
+    '''Restarts the bot if it's been inactive for too long, may be telegram collapsed.'''
     run = True
     while run:
         time.sleep(3)

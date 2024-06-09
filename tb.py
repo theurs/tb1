@@ -4070,13 +4070,19 @@ def id_cmd_handler(message: telebot.types.Message):
     bot_reply(message, msg)
 
 
-@bot.message_handler(commands=['enable'], func=authorized_admin)
+@bot.message_handler(commands=['enable'], func=authorized_owner)
 @asunc_run
 def enable_chat(message: telebot.types.Message):
     """что бы бот работал в чате надо его активировать там"""
-    chat_full_id = get_topic_id(message)
-    CHAT_ENABLED[chat_full_id] = True
-    bot_reply_tr(message, 'Chat enabled.')
+    chat_id_full = f'[{message.from_user.id}] [0]'
+    admin_have_keys = chat_id_full in my_gemini.USER_KEYS and chat_id_full in my_groq.USER_KEYS \
+                      and chat_id_full in my_genimg.USER_KEYS
+    if admin_have_keys:
+        chat_full_id = get_topic_id(message)
+        CHAT_ENABLED[chat_full_id] = True
+        bot_reply_tr(message, 'Chat enabled.')
+    else:
+        bot_reply_tr(message, 'Что бы включить бота в публичном чате надо сначала вставить свои ключи. В приватном чате команды /id /keys /openrouter')
 
 
 @bot.message_handler(commands=['disable'], func=authorized_admin)

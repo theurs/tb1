@@ -4085,7 +4085,7 @@ def enable_chat(message: telebot.types.Message):
         bot_reply_tr(message, 'Что бы включить бота в публичном чате надо сначала вставить свои ключи. В приватном чате команды /id /keys /openrouter')
 
 
-@bot.message_handler(commands=['disable'], func=authorized_admin)
+@bot.message_handler(commands=['disable'], func=authorized_owner)
 @asunc_run
 def disable_chat(message: telebot.types.Message):
     """что бы бот не работал в чате надо его деактивировать там"""

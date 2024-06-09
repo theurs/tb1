@@ -522,6 +522,23 @@ def remove_file(fname: str):
         return False
 
 
+def mime_from_buffer(data: bytes) -> str:
+    """
+    Get the MIME type of the given buffer.
+
+    Parameters:
+        data (bytes): The buffer to get the MIME type of.
+
+    Returns:
+        str: The MIME type of the buffer.
+    """
+    pdf_signature = b'%PDF-1.'
+
+    if data.startswith(pdf_signature):
+        return 'application/pdf'
+    return 'plain'
+
+
 if __name__ == '__main__':
     # print(get_file_ext('c:\\123\123123.23'))
     # print(safe_fname('dfgdшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшггггггггггггггггггггггггггггшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшfg\/dfg.tb'))

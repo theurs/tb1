@@ -1536,6 +1536,8 @@ def handle_voice(message: telebot.types.Message):
                 file_info = bot.get_file(message.video.file_id)
             elif message.video_note:
                 file_info = bot.get_file(message.video_note.file_id)
+            elif message.document:
+                file_info = bot.get_file(message.document.file_id)
             else:
                 bot_reply_tr(message, 'Unknown message type')
         except telebot.apihelper.ApiTelegramException as error:
@@ -1566,10 +1568,7 @@ def handle_voice(message: telebot.types.Message):
                 my_log.log2(f'tb:handle_voice: {error_stt}')
                 text = ''
 
-            try:
-                os.remove(file_path)
-            except Exception as remove_file_error:
-                my_log.log2(f'tb:handle_voice:remove_file_error: {remove_file_error}\n\nfile_path')
+            utils.remove_file(file_path)
 
             text = text.strip()
             # Отправляем распознанный текст
@@ -4915,7 +4914,7 @@ def count_stats():
                     CHAT_STATS_TEMP[uid] = 1
         del CHAT_STATS_
         time.sleep(10)
-        os.unlink('db/chat_stats_.db')
+        utils.remove_file('db/chat_stats_.db')
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:count_stats: {error}\n{error_tr}')

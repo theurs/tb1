@@ -5,6 +5,7 @@ import datetime
 import functools
 import hashlib
 import html
+import os
 import pathlib
 import pytz
 import random
@@ -13,7 +14,6 @@ import requests
 import string
 import tempfile
 import threading
-import traceback
 import platform as platform_module
 
 
@@ -454,45 +454,6 @@ def get_full_time() -> str:
     return time_string
 
 
-def mime_from_buffer(data: bytes) -> str:
-    """
-    Get the MIME type of the given buffer.
-
-    Parameters:
-        data (bytes): The buffer to get the MIME type of.
-
-    Returns:
-        str: The MIME type of the buffer.
-    """
-    pdf_signature = b'%PDF-1.'
-    epub_signature = b'%!PS-Adobe-3.0'
-    doc_signature = b'\x00\x00\x00\x0c'
-    docx_signature = b'PK\x03\x04'
-    html_signature = b'<!DOCTYPE html>'
-    odt_signature = b'<!DOCTYPE html>'
-    rtf_signature = b'<!DOCTYPE html>'
-    xlsx_signature = b'\x50\x4b\x03\x04'
-
-    if data.startswith(pdf_signature):
-        return 'application/pdf'
-    elif data.startswith(epub_signature):
-        return 'application/epub+zip'
-    elif data.startswith(docx_signature):
-        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    elif data.startswith(doc_signature):
-        return 'application/msword'
-    elif data.startswith(html_signature):
-        return 'text/html'
-    elif data.startswith(odt_signature):
-        return 'application/vnd.oasis.opendocument.text'
-    elif data.startswith(rtf_signature):
-        return 'text/rtf'
-    elif data.startswith(xlsx_signature):
-        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    else:
-        return 'plain'
-
-
 def seconds_to_str(seconds: float) -> str:
     """
     Convert seconds to a string in the format "HH:MM:SS".
@@ -549,6 +510,16 @@ def safe_fname(s: str) -> str:
         s = s[:len(s)//2-3] + '___' + s[len(s)//2+3:]
         encoded_s = s.encode('utf-8')
     return s
+
+
+def remove_file(fname: str):
+    '''Удаляет файл по имени'''
+    try:
+        os.unlink(fname)
+        return True
+    except Exception as error:
+        my_log.log2(f'utils:remove_file: {fname}\n\n{error}')
+        return False
 
 
 if __name__ == '__main__':

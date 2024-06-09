@@ -10,6 +10,8 @@ import tempfile
 import edge_tts
 import gtts
 
+import utils
+
 
 #cache for TTS
 TTS_CACHE = []
@@ -22,7 +24,7 @@ VOICES = {'af': {'female': 'af-ZA-AdriNeural', 'male': 'af-ZA-WillemNeural'}, 'a
 # cleanup
 for filePath in [x for x in glob.glob('*.wav') + glob.glob('*.ogg') + glob.glob('*.mp4') + glob.glob('*.mp3') if 'temp_tts_file' in x]:
     try:
-        os.remove(filePath)
+        utils.remove_file(filePath)
     except:
         print("Error while deleting file : ", filePath)
 
@@ -107,7 +109,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     with open(filename, "rb") as f: 
         data = io.BytesIO(f.read())
 
-    os.remove(filename)
+    utils.remove_file(filename)
     # Возвращаем байтовый поток с аудио
     data = data.getvalue()
 

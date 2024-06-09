@@ -266,10 +266,7 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
 
 def download_worker(video_url: str, part: tuple, n: int, fname: str, language: str):
     with download_worker_semaphore:
-        try:
-            os.unlink(f'{fname}_{n}.ogg')
-        except:
-            pass
+        utils.remove_file(f'{fname}_{n}.ogg')
         proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
         stream_url = proc.stdout.decode('utf-8', errors='replace').strip()
 
@@ -289,10 +286,7 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str, language: s
             with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:
                 f.write(text)
 
-        try:
-            os.unlink(f'{fname}_{n}.ogg')
-        except:
-            my_log.log2(f'download_worker: Failed to delete audio file: {fname}_{n}.ogg')
+        utils.remove_file(f'{fname}_{n}.ogg')
 
 
 def download_youtube_clip(video_url: str, language: str):
@@ -343,10 +337,7 @@ def download_youtube_clip(video_url: str, language: str):
         if os.path.exists(f'{output_name}_{x}.txt'):
             with open(f'{output_name}_{x}.txt', 'r', encoding='utf-8') as f:
                 result += f.read() + '\n\n'
-            try:
-                os.unlink(f'{output_name}_{x}.txt')
-            except:
-                my_log.log2(f'my_transcribe:download_youtube_clip: Failed to delete {output_name}_{x}.txt')
+            utils.remove_file(f'{output_name}_{x}.txt')
 
     return result, info
 

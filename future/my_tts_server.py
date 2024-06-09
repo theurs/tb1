@@ -35,6 +35,7 @@ from pydub import AudioSegment
 from sqlitedict import SqliteDict
 from TTS.api import TTS
 
+import utils
 
 if not os.path.exists('db'):
     os.mkdir('db')
@@ -111,18 +112,9 @@ def get_voice(text: str, language: str = "ru", speaker_wav: bytes = None) -> byt
 
             return result
         finally:
-            try:
-                os.unlink(speaker_file)
-            except:
-                pass
-            try:
-                os.unlink(output_file)
-            except:
-                pass
-            try:
-                os.unlink(result_file)
-            except:
-                pass
+            utils.remove_file(speaker_file)
+            utils.remove_file(output_file)
+            utils.remove_file(result_file)
 
 
 def convert_to_wav(fname: str, data: str) -> bytes:
@@ -142,14 +134,8 @@ def convert_to_wav(fname: str, data: str) -> bytes:
     with open(tmp_out_wav, 'rb') as f:
         result = f.read()
 
-    try:
-        os.unlink(tmp_out)
-    except:
-        pass
-    try:
-        os.unlink(tmp_out_wav)
-    except:
-        pass
+    utils.remove_file(tmp_out)
+    utils.remove_file(tmp_out_wav)
 
     return result
 

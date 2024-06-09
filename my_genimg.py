@@ -27,6 +27,7 @@ import my_gemini
 import my_groq
 import my_log
 import my_trans
+import utils
 
 
 DEBUG = cfg.DEBUG if hasattr(cfg, 'DEBUG') else False
@@ -315,7 +316,7 @@ def PixArtSigma(prompt: str, url: str = 'PixArt-alpha/PixArt-Sigma') -> bytes:
             with open(fname, 'rb') as f:
                 data = f.read()
             try:
-                os.remove(fname)
+                utils.remove_file(fname)
                 os.rmdir(base_path)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
@@ -370,7 +371,7 @@ def SDXL_Lightning(prompt: str, url: str = 'AP123/SDXL-Lightning') -> bytes:
             with open(fname, 'rb') as f:
                 data = f.read()
             try:
-                os.remove(fname)
+                utils.remove_file(fname)
                 os.rmdir(base_path)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
@@ -418,7 +419,7 @@ def playground25(prompt: str, url: str = "https://playgroundai-playground-v2-5.h
             with open(fname, 'rb') as f:
                 data = f.read()
             try:
-                os.remove(fname)
+                utils.remove_file(fname)
                 os.rmdir(base_path)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
@@ -468,7 +469,7 @@ def stable_cascade(prompt: str, url: str = "multimodalart/stable-cascade") -> by
             with open(fname, 'rb') as f:
                 data = f.read()
             try:
-                os.remove(fname)
+                utils.remove_file(fname)
                 os.rmdir(base_path)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
@@ -689,7 +690,7 @@ def cosxl(prompt: str, url: str = "multimodalart/cosxl") -> list:
             with open(fname, 'rb') as f:
                 data = f.read()
             try:
-                os.remove(fname)
+                utils.remove_file(fname)
                 os.rmdir(base_path)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:cosxl: {error}\n\nPrompt: {prompt}\nURL: {url}')
@@ -739,7 +740,7 @@ def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number:
                 with open(fname, 'rb') as f:
                     data = f.read()
                 try:
-                    os.remove(fname)
+                    utils.remove_file(fname)
                     os.rmdir(base_path)
                 except Exception as error:
                     my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')

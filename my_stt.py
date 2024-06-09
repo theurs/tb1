@@ -134,10 +134,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                     my_log.log2(f'my_stt:stt:genai:{error}')
 
         finally:
-            try:
-                os.unlink(input_file2)
-            except Exception as error:
-                my_log.log2(f'my_stt:stt:os.unlink:{error}')
+            utils.remove_file(input_file2)
 
         if text:
             text_ = text
@@ -150,10 +147,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
 
 def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language: str = 'ru') -> None:
     with my_transcribe.download_worker_semaphore:
-        try:
-            os.unlink(f'{fname}_{n}.ogg')
-        except:
-            pass
+        utils.remove_file(f'{fname}_{n}.ogg')
 
         proc = subprocess.run([my_transcribe.FFMPEG, '-ss', str(part[0]), '-i', audio_file, '-t',
                         str(part[1]), f'{fname}_{n}.ogg'],
@@ -171,10 +165,7 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language:
             with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:
                 f.write(text)
 
-        try:
-            os.unlink(f'{fname}_{n}.ogg')
-        except:
-            my_log.log2(f'my_stt:stt_genai_worker: Failed to delete audio file: {fname}_{n}.ogg')
+        utils.remove_file(f'{fname}_{n}.ogg')
 
 
 def stt_genai(audio_file: str, language: str = 'ru') -> str:
@@ -226,10 +217,7 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
             if os.path.exists(f'{output_name}_{x}.txt'):
                 with open(f'{output_name}_{x}.txt', 'r', encoding='utf-8') as f:
                     result += f.read() + '\n\n'
-                try:
-                    os.unlink(f'{output_name}_{x}.txt')
-                except:
-                    my_log.log2(f'my_stt:stt_genai: Failed to delete {output_name}_{x}.txt')
+                utils.remove_file(f'{output_name}_{x}.txt')
 
         if 'please provide the audio file' in result.lower() and len(result) < 150:
             return ''

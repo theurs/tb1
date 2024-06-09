@@ -94,6 +94,7 @@ USER_FILES = SqliteDict('db/user_files.db', autocommit=True)
 
 # заблокированные юзера {id:True/False}
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
+BAD_USERS_IMG = my_dic.PersistentDict('db/bad_users_img.pkl')
 
 # в каких чатах какой чатбот отвечает {chat_id_full(str):chatbot(str)}
 # 'gemini', 'gemini15'
@@ -3093,6 +3094,10 @@ def image_gen(message: telebot.types.Message):
             NSFW_FLAG = True
             message.text = message.text[:-4]
 
+        # забаненный в бинге юзер
+        if chat_id_full in BAD_USERS_IMG:
+            NSFW_FLAG = True
+
         if chat_id_full in IMG_GEN_LOCKS:
             lock = IMG_GEN_LOCKS[chat_id_full]
         else:
@@ -3417,6 +3422,50 @@ def stats(message: telebot.types.Message):
 
     # Отправка сообщения
     bot_reply(message, msg)
+
+
+@bot.message_handler(commands=['blockadd2'], func=authorized_admin)
+@asunc_run
+def block_user_add2(message: telebot.types.Message):
+    """Добавить юзера в стоп список image nsfw - юзеру можно будет рисовать только без бинга"""
+
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+
+    user_id = message.text[10:].strip()
+    if user_id:
+        BAD_USERS_IMG[user_id] = True
+        bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
+    else:
+        bot_reply_tr(message, 'Usage: /blockadd2 <[user id] [group id]>')
+
+
+@bot.message_handler(commands=['blockdel2'], func=authorized_admin)
+@asunc_run
+def block_user_del2(message: telebot.types.Message):
+    """Убрать юзера из стоп списка image nsfw"""
+
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+
+    user_id = message.text[10:].strip()
+    if user_id:
+        if user_id in BAD_USERS_IMG:
+            del BAD_USERS_IMG[user_id]
+            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
+        else:
+            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
+    else:
+        bot_reply_tr(message, 'Usage: /blockdel2 <[user id] [group id]>')
+
+
+@bot.message_handler(commands=['blocklist2'], func=authorized_admin)
+@asunc_run
+def block_user_list2(message: telebot.types.Message):
+    """Показывает список заблокированных юзеров image nsfw"""
+    users = [x for x in BAD_USERS_IMG.keys() if x]
+    if users:
+        bot_reply(message, '\n'.join(users))
 
 
 @bot.message_handler(commands=['blockadd'], func=authorized_admin)

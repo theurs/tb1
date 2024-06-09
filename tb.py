@@ -66,6 +66,7 @@ ACTIVITY_MONITOR = {
     'last_activity': time.time(),
     'max_inactivity': datetime.timedelta(minutes=30).seconds,
 }
+ACTIVITY_DAEMON_RUN = True
 
 # до 500 одновременных потоков для чата с гпт
 semaphore_talks = threading.Semaphore(500)
@@ -2750,8 +2751,9 @@ def send_debug_history(message: telebot.types.Message):
 @bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin)
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
-    global LOG_GROUP_DAEMON_ENABLED
+    global LOG_GROUP_DAEMON_ENABLED, ACTIVITY_DAEMON_RUN
     LOG_GROUP_DAEMON_ENABLED = False
+    ACTIVITY_DAEMON_RUN = False
     
     bot_reply_tr(message, 'Restarting bot, please wait')
     my_log.log2(f'tb:restart: !!!RESTART!!!')
@@ -4871,13 +4873,12 @@ def do_task(message, custom_prompt: str = ''):
 @asunc_run
 def activity_daemon():
     '''Restarts the bot if it's been inactive for too long, may be telegram collapsed.'''
-    run = True
-    while run:
-        time.sleep(3)
+    global ACTIVITY_DAEMON_RUN
+    while ACTIVITY_DAEMON_RUN:
+        time.sleep(1)
         if ACTIVITY_MONITOR['last_activity'] + ACTIVITY_MONITOR['max_inactivity'] < time.time():
-            run = False
+            ACTIVITY_DAEMON_RUN = False
             my_log.log2(f'tb:activity_daemon: reconnect after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
-            # restart()
             bot.stop_polling()
             time.sleep(10)
             bot.polling(timeout=90, long_polling_timeout=90)

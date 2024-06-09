@@ -60,6 +60,12 @@ BOT_ID = bot.get_me().id
 pics_group = cfg.pics_group
 pics_group_url = cfg.pics_group_url
 
+# следим за наличием активности, если в бота никаких событий
+# не прилетало 30 минут то перезапускаем принудительно, возможно телега зависла
+ACTIVITY_MONITOR = {
+    'last_activity': datetime.datetime.now(),
+    'max_inactivity': datetime.timedelta(minutes=30),
+}
 
 # до 500 одновременных потоков для чата с гпт
 semaphore_talks = threading.Semaphore(500)
@@ -890,6 +896,8 @@ def authorized(message: telebot.types.Message) -> bool:
         bool: True if the user is authorized, False otherwise.
     """
 
+    ACTIVITY_MONITOR['last_activity'] = time.time()
+
     # do not process commands to another bot /cmd@botname args
     if is_for_me(message)[0]:
         message.text = is_for_me(message)[1]
@@ -1353,6 +1361,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             prompt = IMAGE_SUGGEST_BUTTONS[hash]
             message.text = f'/image {prompt}'
             image_gen(message)
+        elif call.data.startswith('imagecmd2_'):
+            hash = call.data[10:]
+            prompt = IMAGE_SUGGEST_BUTTONS[hash]
+            message.text = f'/image2 {prompt}'
+            image2_gen(message)
         elif call.data.startswith('select_lang-'):
             l = call.data[12:]
             message.text = f'/lang {l}'
@@ -3047,9 +3060,10 @@ def get_user_image_counter(chat_id_full: str) -> int:
 @bot.message_handler(commands=['image10','img10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10'], func=authorized)
 @asunc_run
 def image10_gen(message: telebot.types.Message):
-    bot_reply_tr(message, '10 times image generation started.')
-    for _ in range(10):
-        image_gen(message)
+    if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
+        bot_reply_tr(message, '10 times image generation started.')
+        for _ in range(10):
+            image_gen(message)
 
 
 @bot.message_handler(commands=['image2','img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
@@ -3070,38 +3084,39 @@ def image_gen(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
-    # не использовать бинг для рисования запрещенки, он за это банит
-    NSFW_FLAG = False
-    if message.text.endswith('NSFW'):
-        NSFW_FLAG = True
-        message.text = message.text[:-4]
+    try:
+        # не использовать бинг для рисования запрещенки, он за это банит
+        NSFW_FLAG = False
+        if message.text.endswith('NSFW'):
+            NSFW_FLAG = True
+            message.text = message.text[:-4]
 
-    if chat_id_full in IMG_GEN_LOCKS:
-        lock = IMG_GEN_LOCKS[chat_id_full]
-    else:
-        lock = threading.Lock()
-        IMG_GEN_LOCKS[chat_id_full] = lock
-
-
-    # # если у юзера нет ключей и он активист то напомнить о ключах
-    # is_private = message.chat.type == 'private'
-    # total_messages__ = IMAGES_BY_USER_COUNTER[chat_id_full] if chat_id_full in IMAGES_BY_USER_COUNTER else 0
-    # if total_messages__ > 10000 and is_private:
-    #     if chat_id_full not in my_gemini.USER_KEYS and \
-    #        chat_id_full not in my_groq.USER_KEYS and \
-    #        chat_id_full not in my_trans.USER_KEYS and \
-    #        chat_id_full not in my_genimg.USER_KEYS:
-    #         msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-    #         bot_reply(message, msg, disable_web_page_preview=True)
+        if chat_id_full in IMG_GEN_LOCKS:
+            lock = IMG_GEN_LOCKS[chat_id_full]
+        else:
+            lock = threading.Lock()
+            IMG_GEN_LOCKS[chat_id_full] = lock
 
 
-    with lock:
+        # # если у юзера нет ключей и он активист то напомнить о ключах
+        # is_private = message.chat.type == 'private'
+        # total_messages__ = IMAGES_BY_USER_COUNTER[chat_id_full] if chat_id_full in IMAGES_BY_USER_COUNTER else 0
+        # if total_messages__ > 10000 and is_private:
+        #     if chat_id_full not in my_gemini.USER_KEYS and \
+        #        chat_id_full not in my_groq.USER_KEYS and \
+        #        chat_id_full not in my_trans.USER_KEYS and \
+        #        chat_id_full not in my_genimg.USER_KEYS:
+        #         msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+        #         bot_reply(message, msg, disable_web_page_preview=True)
 
-        with semaphore_talks:
-            draw_text = tr('draw', lang)
-            if lang == 'ru': draw_text = 'нарисуй'
-            if lang == 'en': draw_text = 'draw'
-            help = f"""/image {tr('Text description of the picture, what to draw.', lang)}
+
+        with lock:
+
+            with semaphore_talks:
+                draw_text = tr('draw', lang)
+                if lang == 'ru': draw_text = 'нарисуй'
+                if lang == 'en': draw_text = 'draw'
+                help = f"""/image {tr('Text description of the picture, what to draw.', lang)}
 
 /image {tr('an apple', lang)}
 /img {tr('an apple', lang)}
@@ -3111,90 +3126,90 @@ def image_gen(message: telebot.types.Message):
 🚫{tr('NSFW is not allowed here', lang)}🚫
 
 {tr('Write what to draw, what it looks like.', lang)}
-"""
-            prompt = message.text.split(maxsplit = 1)
+    """
+                prompt = message.text.split(maxsplit = 1)
 
-            if len(prompt) > 1:
-                prompt = prompt[1]
-                COMMAND_MODE[chat_id_full] = ''
+                if len(prompt) > 1:
+                    prompt = prompt[1]
+                    COMMAND_MODE[chat_id_full] = ''
 
-                # get chat history for content
-                conversation_history = ''
-                conversation_history = my_gemini.get_mem_as_string(chat_id_full) or ''
+                    # get chat history for content
+                    conversation_history = ''
+                    conversation_history = my_gemini.get_mem_as_string(chat_id_full) or ''
 
-                conversation_history = conversation_history[-8000:]
-                # как то он совсем плохо стал работать с историей, отключил пока что
-                conversation_history = ''
+                    conversation_history = conversation_history[-8000:]
+                    # как то он совсем плохо стал работать с историей, отключил пока что
+                    conversation_history = ''
 
-                with ShowAction(message, 'upload_photo'):
-                    moderation_flag = False
+                    with ShowAction(message, 'upload_photo'):
+                        moderation_flag = False
 
-                    if NSFW_FLAG:
-                        images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
-                    else:
-                        images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
-                    # 1 а может и больше запросы к репромптеру
-                    with CHAT_STATS_LOCK:
-                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
-                        if chat_id_full in CHAT_STATS_TEMP:
-                            CHAT_STATS_TEMP[chat_id_full] += 1
+                        if NSFW_FLAG:
+                            images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
                         else:
-                            CHAT_STATS_TEMP[chat_id_full] = 1
-                    # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
-                    medias = []
-                    has_good_images = False
-                    for x in images:
-                        if isinstance(x, bytes):
-                            has_good_images = True
-                            break
-                    for i in images:
-                        if isinstance(i, str):
-                            if i.startswith('error1_') and has_good_images:
-                                continue
-                            if 'error1_being_reviewed_prompt' in i:
-                                bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
-                                return
-                            elif 'error1_blocked_prompt' in i:
-                                bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                                return
-                            elif 'error1_unsupported_lang' in i:
-                                bot_reply_tr(message, 'Не понятный язык.')
-                                return
-                            elif 'error1_Bad images' in i:
-                                bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                                return
-                            if 'https://r.bing.com' in i:
-                                continue
-
-                        d = None
-                        caption_ = prompt[:1000]
-                        if isinstance(i, str):
-                            d = utils.download_image_as_bytes(i)
-                            caption_ = 'bing.com\n\n' + caption_
-                        elif isinstance(i, bytes):
-                            if hash(i) in my_genimg.WHO_AUTOR:
-                                caption_ = my_genimg.WHO_AUTOR[hash(i)] + '\n\n' + caption_
-                                del my_genimg.WHO_AUTOR[hash(i)]
-                            else:
-                                caption_ = 'error'
-                            d = i
-                        if d:
-                            try:
-                                medias.append(telebot.types.InputMediaPhoto(d, caption = caption_))
-                            except Exception as add_media_error:
-                                error_traceback = traceback.format_exc()
-                                my_log.log2(f'tb:image:add_media_bytes: {add_media_error}\n\n{error_traceback}')
-
-                    if chat_id_full not in SUGGEST_ENABLED:
-                        SUGGEST_ENABLED[chat_id_full] = False
-                    if medias and SUGGEST_ENABLED[chat_id_full]:
-                        # 1 запрос на генерацию предложений
+                            images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
+                        # 1 а может и больше запросы к репромптеру
                         with CHAT_STATS_LOCK:
+                            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                             if chat_id_full in CHAT_STATS_TEMP:
                                 CHAT_STATS_TEMP[chat_id_full] += 1
                             else:
                                 CHAT_STATS_TEMP[chat_id_full] = 1
-                        suggest_query = tr("""Suggest a wide range options for a request to a neural network that
+                        # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
+                        medias = []
+                        has_good_images = False
+                        for x in images:
+                            if isinstance(x, bytes):
+                                has_good_images = True
+                                break
+                        for i in images:
+                            if isinstance(i, str):
+                                if i.startswith('error1_') and has_good_images:
+                                    continue
+                                if 'error1_being_reviewed_prompt' in i:
+                                    bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+                                    return
+                                elif 'error1_blocked_prompt' in i:
+                                    bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
+                                    return
+                                elif 'error1_unsupported_lang' in i:
+                                    bot_reply_tr(message, 'Не понятный язык.')
+                                    return
+                                elif 'error1_Bad images' in i:
+                                    bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
+                                    return
+                                if 'https://r.bing.com' in i:
+                                    continue
+
+                            d = None
+                            caption_ = prompt[:1000]
+                            if isinstance(i, str):
+                                d = utils.download_image_as_bytes(i)
+                                caption_ = 'bing.com\n\n' + caption_
+                            elif isinstance(i, bytes):
+                                if hash(i) in my_genimg.WHO_AUTOR:
+                                    caption_ = my_genimg.WHO_AUTOR[hash(i)] + '\n\n' + caption_
+                                    del my_genimg.WHO_AUTOR[hash(i)]
+                                else:
+                                    caption_ = 'error'
+                                d = i
+                            if d:
+                                try:
+                                    medias.append(telebot.types.InputMediaPhoto(d, caption = caption_))
+                                except Exception as add_media_error:
+                                    error_traceback = traceback.format_exc()
+                                    my_log.log2(f'tb:image:add_media_bytes: {add_media_error}\n\n{error_traceback}')
+
+                        if chat_id_full not in SUGGEST_ENABLED:
+                            SUGGEST_ENABLED[chat_id_full] = False
+                        if medias and SUGGEST_ENABLED[chat_id_full]:
+                            # 1 запрос на генерацию предложений
+                            with CHAT_STATS_LOCK:
+                                if chat_id_full in CHAT_STATS_TEMP:
+                                    CHAT_STATS_TEMP[chat_id_full] += 1
+                                else:
+                                    CHAT_STATS_TEMP[chat_id_full] = 1
+                            suggest_query = tr("""Suggest a wide range options for a request to a neural network that
 generates images according to the description, show 5 options with no numbers and trailing symbols, add many rich details, 1 on 1 line, output example:
 
 Create image of ...
@@ -3206,100 +3221,119 @@ Create image of ...
 5 lines total in answer
 
 the original prompt:""", lang) + '\n\n\n' + prompt
-                        suggest = my_gemini.ai(suggest_query, temperature=1.5)
-                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
-                        suggest = utils.bot_markdown_to_html(suggest).strip()
-                    else:
-                        suggest = ''
+                            if NSFW_FLAG:
+                                suggest = my_gemini.ai(suggest_query, temperature=1.5, mem=my_gemini.MEM_UNCENSORED)
+                            else:
+                                suggest = my_gemini.ai(suggest_query, temperature=1.5)
+                            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                            suggest = utils.bot_markdown_to_html(suggest).strip()
+                        else:
+                            suggest = ''
 
-                    if len(medias) > 0:
-                        with SEND_IMG_LOCK:
+                        if len(medias) > 0:
+                            with SEND_IMG_LOCK:
 
-                            # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
-                            chunk_size = 10
-                            chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
+                                # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
+                                chunk_size = 10
+                                chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
 
-                            for x in chunks:
-                                msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
-                                log_message(msgs_ids)
-                            update_user_image_counter(chat_id_full, len(medias))
+                                for x in chunks:
+                                    msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
+                                    log_message(msgs_ids)
+                                update_user_image_counter(chat_id_full, len(medias))
 
-                            log_msg = '[Send images] '
-                            for x in images:
-                                if isinstance(x, str):
-                                    log_msg += x + ' '
-                                elif isinstance(x, bytes):
-                                    log_msg += f'[binary file {round(len(x)/1024)}kb] '
-                            my_log.log_echo(message, log_msg)
+                                log_msg = '[Send images] '
+                                for x in images:
+                                    if isinstance(x, str):
+                                        log_msg += x + ' '
+                                    elif isinstance(x, bytes):
+                                        log_msg += f'[binary file {round(len(x)/1024)}kb] '
+                                my_log.log_echo(message, log_msg)
 
-                            if pics_group and not NSFW_FLAG:
-                                try:
-                                    translated_prompt = tr(prompt, 'ru')
-                                    bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
-                                                    link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
-                                    ratio = fuzz.ratio(translated_prompt, prompt)
-                                    if ratio < 70:
-                                        bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{utils.nice_hash(chat_id_full)}',
+                                if pics_group and not NSFW_FLAG:
+                                    try:
+                                        translated_prompt = tr(prompt, 'ru')
+                                        bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
                                                         link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
-                                    for x in chunks:
-                                        bot.send_media_group(pics_group, x)
-                                except Exception as error2:
-                                    my_log.log2(f'tb:image:send to pics_group: {error2}')
+                                        ratio = fuzz.ratio(translated_prompt, prompt)
+                                        if ratio < 70:
+                                            bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{utils.nice_hash(chat_id_full)}',
+                                                            link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
+                                        for x in chunks:
+                                            bot.send_media_group(pics_group, x)
+                                    except Exception as error2:
+                                        my_log.log2(f'tb:image:send to pics_group: {error2}')
 
-                            if suggest:
-                                suggest = [f'{x}'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).strip() for x in suggest.split('\n')]
-                                suggest = [x for x in suggest if x]
-                                suggest__ = suggest[:5]
-                                suggest = []
-                                for x__ in suggest__:
-                                    if x__.startswith('– '):
-                                        x__ = x__[2:]
-                                    suggest.append(x__.strip())
+                                if suggest:
+                                    try:
+                                        suggest = [f'{x}'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).strip() for x in suggest.split('\n')]
+                                        suggest = [x for x in suggest if x]
+                                        suggest__ = suggest[:5]
+                                        suggest = []
+                                        for x__ in suggest__:
+                                            if x__.startswith('– '):
+                                                x__ = x__[2:]
+                                            suggest.append(x__.strip())
 
-                                suggest_hashes = [utils.nice_hash(x, 12) for x in suggest]
-                                markup  = telebot.types.InlineKeyboardMarkup()
-                                for s, h in zip(suggest, suggest_hashes):
-                                    IMAGE_SUGGEST_BUTTONS[h] = utils.html.unescape(s)
+                                        suggest_hashes = [utils.nice_hash(x, 12) for x in suggest]
+                                        markup  = telebot.types.InlineKeyboardMarkup()
+                                        for s, h in zip(suggest, suggest_hashes):
+                                            IMAGE_SUGGEST_BUTTONS[h] = utils.html.unescape(s)
 
-                                b1 = telebot.types.InlineKeyboardButton(text = '1️⃣', callback_data = f'imagecmd_{suggest_hashes[0]}')
-                                b2 = telebot.types.InlineKeyboardButton(text = '2️⃣', callback_data = f'imagecmd_{suggest_hashes[1]}')
-                                b3 = telebot.types.InlineKeyboardButton(text = '3️⃣', callback_data = f'imagecmd_{suggest_hashes[2]}')
-                                b4 = telebot.types.InlineKeyboardButton(text = '4️⃣', callback_data = f'imagecmd_{suggest_hashes[3]}')
-                                b5 = telebot.types.InlineKeyboardButton(text = '5️⃣', callback_data = f'imagecmd_{suggest_hashes[4]}')
-                                b6 = telebot.types.InlineKeyboardButton(text = '🙈', callback_data = f'erase_answer')
+                                        if NSFW_FLAG:
+                                            b1 = telebot.types.InlineKeyboardButton(text = '1️⃣', callback_data = f'imagecmd2_{suggest_hashes[0]}')
+                                            b2 = telebot.types.InlineKeyboardButton(text = '2️⃣', callback_data = f'imagecmd2_{suggest_hashes[1]}')
+                                            b3 = telebot.types.InlineKeyboardButton(text = '3️⃣', callback_data = f'imagecmd2_{suggest_hashes[2]}')
+                                            b4 = telebot.types.InlineKeyboardButton(text = '4️⃣', callback_data = f'imagecmd2_{suggest_hashes[3]}')
+                                            b5 = telebot.types.InlineKeyboardButton(text = '5️⃣', callback_data = f'imagecmd2_{suggest_hashes[4]}')
+                                            b6 = telebot.types.InlineKeyboardButton(text = '🙈', callback_data = f'erase_answer')
+                                        else:
+                                            b1 = telebot.types.InlineKeyboardButton(text = '1️⃣', callback_data = f'imagecmd_{suggest_hashes[0]}')
+                                            b2 = telebot.types.InlineKeyboardButton(text = '2️⃣', callback_data = f'imagecmd_{suggest_hashes[1]}')
+                                            b3 = telebot.types.InlineKeyboardButton(text = '3️⃣', callback_data = f'imagecmd_{suggest_hashes[2]}')
+                                            b4 = telebot.types.InlineKeyboardButton(text = '4️⃣', callback_data = f'imagecmd_{suggest_hashes[3]}')
+                                            b5 = telebot.types.InlineKeyboardButton(text = '5️⃣', callback_data = f'imagecmd_{suggest_hashes[4]}')
+                                            b6 = telebot.types.InlineKeyboardButton(text = '🙈', callback_data = f'erase_answer')
 
-                                markup.add(b1, b2, b3, b4, b5, b6)
+                                        markup.add(b1, b2, b3, b4, b5, b6)
 
-                                suggest_msg = tr('Here are some more possible options for your request:', lang)
-                                suggest_msg = f'<b>{suggest_msg}</b>\n\n'
-                                n = 1
-                                for s in suggest:
-                                    if n == 1: nn = '1️⃣'
-                                    if n == 2: nn = '2️⃣'
-                                    if n == 3: nn = '3️⃣'
-                                    if n == 4: nn = '4️⃣'
-                                    if n == 5: nn = '5️⃣'
-                                    suggest_msg += f'{nn} <code>/image {s}</code>\n\n'
-                                    n += 1
-                                bot_reply(message, suggest_msg, parse_mode = 'HTML', reply_markup=markup)
-
+                                        suggest_msg = tr('Here are some more possible options for your request:', lang)
+                                        suggest_msg = f'<b>{suggest_msg}</b>\n\n'
+                                        n = 1
+                                        for s in suggest:
+                                            if n == 1: nn = '1️⃣'
+                                            if n == 2: nn = '2️⃣'
+                                            if n == 3: nn = '3️⃣'
+                                            if n == 4: nn = '4️⃣'
+                                            if n == 5: nn = '5️⃣'
+                                            if NSFW_FLAG:
+                                                suggest_msg += f'{nn} <code>/image2 {s}</code>\n\n'
+                                            else:
+                                                suggest_msg += f'{nn} <code>/image {s}</code>\n\n'
+                                            n += 1
+                                        bot_reply(message, suggest_msg, parse_mode = 'HTML', reply_markup=markup)
+                                    except Exception as error2:
+                                        my_log.log2(f'tb:image:send to suggest: {error2}')
+                                add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
+                                                    f'{tr("images was generated successfully", lang)}',
+                                                    chat_id_full)
+                        else:
+                            bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
+                            if hasattr(cfg, 'enable_image_adv') and cfg.enable_image_adv:
+                                bot_reply_tr(message,
+                                        "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum or this https://t.me/aibrahma/467",
+                                        disable_web_page_preview = True)
+                            my_log.log_echo(message, '[image gen error] ')
                             add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
-                                                f'{tr("images was generated successfully", lang)}',
-                                                chat_id_full)
-                    else:
-                        bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
-                        if hasattr(cfg, 'enable_image_adv') and cfg.enable_image_adv:
-                            bot_reply_tr(message,
-                                    "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum or this https://t.me/aibrahma/467",
-                                    disable_web_page_preview = True)
-                        my_log.log_echo(message, '[image gen error] ')
-                        add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
-                                                f'{tr("bot did not want or could not draw this", lang)}',
-                                                chat_id_full)
+                                                    f'{tr("bot did not want or could not draw this", lang)}',
+                                                    chat_id_full)
 
-            else:
-                COMMAND_MODE[chat_id_full] = 'image'
-                bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
+                else:
+                    COMMAND_MODE[chat_id_full] = 'image'
+                    bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
+    except Exception as error_unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:image:send: {error_unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['stats', 'stat'], func=authorized_admin)
@@ -4778,6 +4812,17 @@ def do_task(message, custom_prompt: str = ''):
 
 
 @asunc_run
+def activity_daemon():
+    run = True
+    while run:
+        time.sleep(3)
+        if ACTIVITY_MONITOR['last_activity'] + ACTIVITY_MONITOR['max_inactivity'] < datetime.datetime.now():
+            run = False
+            my_log.log2(f'tb:activity_daemon: restart after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
+            restart()
+
+
+@asunc_run
 def count_stats():
     """
     Counts the statistics for chat messages in the database.
@@ -4853,6 +4898,7 @@ def main():
     my_trans.load_users_keys()
 
     count_stats()
+    activity_daemon()
 
     log_group_daemon()
 

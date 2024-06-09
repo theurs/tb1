@@ -64,7 +64,7 @@ pics_group_url = cfg.pics_group_url
 # не прилетало 30 минут то перезапускаем принудительно, возможно телега зависла
 ACTIVITY_MONITOR = {
     'last_activity': datetime.datetime.now(),
-    'max_inactivity': datetime.timedelta(minutes=30),
+    'max_inactivity': datetime.timedelta(minutes=30).seconds,
 }
 
 # до 500 одновременных потоков для чата с гпт

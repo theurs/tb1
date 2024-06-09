@@ -16,81 +16,7 @@ TTS_CACHE = []
 CACHE_SIZE = 20
 
 
-VOICES = {
-    'af': {'female': 'af-ZA-AdriNeural', 'male': 'af-ZA-WillemNeural'},
-    'am': {'female': 'am-ET-MekdesNeural', 'male': 'am-ET-AmehaNeural'},
-    'ar': {'female': 'ar-YE-MaryamNeural', 'male': 'ar-YE-SalehNeural'},
-    'az': {'female': 'az-AZ-BanuNeural', 'male': 'az-AZ-BabekNeural'},
-    'bg': {'female': 'bg-BG-KalinaNeural', 'male': 'bg-BG-BorislavNeural'},
-    'bn': {'female': 'bn-IN-TanishaaNeural', 'male': 'bn-IN-BashkarNeural'},
-    'bs': {'female': 'bs-BA-VesnaNeural', 'male': 'bs-BA-GoranNeural'},
-    'ca': {'female': 'ca-ES-JoanaNeural', 'male': 'ca-ES-EnricNeural'},
-    'cs': {'female': 'cs-CZ-VlastaNeural', 'male': 'cs-CZ-AntoninNeural'},
-    'cy': {'female': 'cy-GB-NiaNeural', 'male': 'cy-GB-AledNeural'},
-    'da': {'female': 'da-DK-ChristelNeural', 'male': 'da-DK-JeppeNeural'},
-    'de': {'female': 'de-DE-KatjaNeural', 'male': 'de-DE-KillianNeural'},
-    'el': {'female': 'el-GR-AthinaNeural', 'male': 'el-GR-NestorasNeural'},
-    'en': {'female': 'en-US-AriaNeural', 'male': 'en-US-ChristopherNeural'},
-    'es': {'female': 'es-VE-PaolaNeural', 'male': 'es-VE-SebastianNeural'},
-    'et': {'female': 'et-EE-AnuNeural', 'male': 'et-EE-KertNeural'},
-    'fa': {'female': 'fa-IR-DilaraNeural', 'male': 'fa-IR-FaridNeural'},
-    'fi': {'female': 'fil-PH-BlessicaNeural', 'male': 'fil-PH-AngeloNeural'},
-    'fr': {'female': 'fr-FR-EloiseNeural', 'male': 'fr-FR-HenriNeural'},
-    'ga': {'female': 'ga-IE-OrlaNeural', 'male': 'ga-IE-ColmNeural'},
-    'gl': {'female': 'gl-ES-SabelaNeural', 'male': 'gl-ES-RoiNeural'},
-    'gu': {'female': 'gu-IN-DhwaniNeural', 'male': 'gu-IN-NiranjanNeural'},
-    'he': {'female': 'he-IL-HilaNeural', 'male': 'he-IL-AvriNeural'},
-    'hi': {'female': 'hi-IN-SwaraNeural', 'male': 'hi-IN-MadhurNeural'},
-    'hr': {'female': 'hr-HR-GabrijelaNeural', 'male': 'hr-HR-SreckoNeural'},
-    'hu': {'female': 'hu-HU-NoemiNeural', 'male': 'hu-HU-TamasNeural'},
-    'id': {'female': 'id-ID-GadisNeural', 'male': 'id-ID-ArdiNeural'},
-    'is': {'female': 'is-IS-GudrunNeural', 'male': 'is-IS-GunnarNeural'},
-    'it': {'female': 'it-IT-IsabellaNeural', 'male': 'it-IT-DiegoNeural'},
-    'ja': {'female': 'ja-JP-NanamiNeural', 'male': 'ja-JP-KeitaNeural'},
-    'jv': {'female': 'jv-ID-SitiNeural', 'male': 'jv-ID-DimasNeural'},
-    'ka': {'female': 'ka-GE-EkaNeural', 'male': 'ka-GE-GiorgiNeural'},
-    'kk': {'female': 'kk-KZ-AigulNeural', 'male': 'kk-KZ-DauletNeural'},
-    'km': {'female': 'km-KH-SreymomNeural', 'male': 'km-KH-PisethNeural'},
-    'kn': {'female': 'kn-IN-SapnaNeural', 'male': 'kn-IN-GaganNeural'},
-    'ko': {'female': 'ko-KR-SunHiNeural', 'male': 'ko-KR-InJoonNeural'},
-    'lo': {'female': 'lo-LA-KeomanyNeural', 'male': 'lo-LA-ChanthavongNeural'},
-    'lt': {'female': 'lt-LT-OnaNeural', 'male': 'lt-LT-LeonasNeural'},
-    'lv': {'female': 'lv-LV-EveritaNeural', 'male': 'lv-LV-NilsNeural'},
-    'mk': {'female': 'mk-MK-MarijaNeural', 'male': 'mk-MK-AleksandarNeural'},
-    'ml': {'female': 'ml-IN-SobhanaNeural', 'male': 'ml-IN-MidhunNeural'},
-    'mn': {'female': 'mn-MN-YesuiNeural', 'male': 'mn-MN-BataaNeural'},
-    'mr': {'female': 'mr-IN-AarohiNeural', 'male': 'mr-IN-ManoharNeural'},
-    'ms': {'female': 'ms-MY-YasminNeural', 'male': 'ms-MY-OsmanNeural'},
-    'mt': {'female': 'mt-MT-GraceNeural', 'male': 'mt-MT-JosephNeural'},
-    'my': {'female': 'my-MM-NilarNeural', 'male': 'my-MM-ThihaNeural'},
-    'nb': {'female': 'nb-NO-PernilleNeural', 'male': 'nb-NO-FinnNeural'},
-    'ne': {'female': 'ne-NP-HemkalaNeural', 'male': 'ne-NP-SagarNeural'},
-    'nl': {'female': 'nl-NL-FennaNeural', 'male': 'nl-NL-MaartenNeural'},
-    'pl': {'female': 'pl-PL-ZofiaNeural', 'male': 'pl-PL-MarekNeural'},
-    'ps': {'female': 'ps-AF-LatifaNeural', 'male': 'ps-AF-GulNawazNeural'},
-    'pt': {'female': 'pt-PT-RaquelNeural', 'male': 'pt-PT-DuarteNeural'},
-    'ro': {'female': 'ro-RO-AlinaNeural', 'male': 'ro-RO-EmilNeural'},
-    'ru': {'female': 'ru-RU-SvetlanaNeural', 'male': 'ru-RU-DmitryNeural'},
-    'si': {'female': 'si-LK-ThiliniNeural', 'male': 'si-LK-SameeraNeural'},
-    'sk': {'female': 'sk-SK-ViktoriaNeural', 'male': 'sk-SK-LukasNeural'},
-    'sl': {'female': 'sl-SI-PetraNeural', 'male': 'sl-SI-RokNeural'},
-    'so': {'female': 'so-SO-UbaxNeural', 'male': 'so-SO-MuuseNeural'},
-    'sq': {'female': 'sq-AL-AnilaNeural', 'male': 'sq-AL-IlirNeural'},
-    'sr': {'female': 'sr-RS-SophieNeural', 'male': 'sr-RS-NicholasNeural'},
-    'su': {'female': 'su-ID-TutiNeural', 'male': 'su-ID-JajangNeural'},
-    'sv': {'female': 'sv-SE-SofieNeural', 'male': 'sv-SE-MattiasNeural'},
-    'sw': {'female': 'sw-TZ-RehemaNeural', 'male': 'sw-TZ-DaudiNeural'},
-    'ta': {'female': 'ta-SG-VenbaNeural', 'male': 'ta-SG-AnbuNeural'},
-    'te': {'female': 'te-IN-ShrutiNeural', 'male': 'te-IN-MohanNeural'},
-    'th': {'female': 'th-TH-PremwadeeNeural', 'male': 'th-TH-NiwatNeural'},
-    'tr': {'female': 'tr-TR-EmelNeural', 'male': 'tr-TR-AhmetNeural'},
-    'uk': {'female': 'uk-UA-PolinaNeural', 'male': 'uk-UA-OstapNeural'},
-    'ur': {'female': 'ur-PK-UzmaNeural', 'male': 'ur-PK-AsadNeural'},
-    'uz': {'female': 'uz-UZ-MadinaNeural', 'male': 'uz-UZ-SardorNeural'},
-    'vi': {'female': 'vi-VN-HoaiMyNeural', 'male': 'vi-VN-NamMinhNeural'},
-    'zh': {'female': 'zh-TW-HsiaoYuNeural', 'male': 'zh-TW-YunJheNeural'},
-    'zu': {'female': 'zu-ZA-ThandoNeural', 'male': 'zu-ZA-ThembaNeural'}
-}
+VOICES = {'af': {'female': 'af-ZA-AdriNeural', 'male': 'af-ZA-WillemNeural'}, 'am': {'male': 'am-ET-AmehaNeural', 'female': 'am-ET-MekdesNeural'}, 'ar': {'female': 'ar-YE-MaryamNeural', 'male': 'ar-YE-SalehNeural'}, 'az': {'male': 'az-AZ-BabekNeural', 'female': 'az-AZ-BanuNeural'}, 'bg': {'male': 'bg-BG-BorislavNeural', 'female': 'bg-BG-KalinaNeural'}, 'bn': {'female': 'bn-IN-TanishaaNeural', 'male': 'bn-IN-BashkarNeural'}, 'bs': {'male': 'bs-BA-GoranNeural', 'female': 'bs-BA-VesnaNeural'}, 'ca': {'male': 'ca-ES-EnricNeural', 'female': 'ca-ES-JoanaNeural'}, 'cs': {'male': 'cs-CZ-AntoninNeural', 'female': 'cs-CZ-VlastaNeural'}, 'cy': {'male': 'cy-GB-AledNeural', 'female': 'cy-GB-NiaNeural'}, 'da': {'female': 'da-DK-ChristelNeural', 'male': 'da-DK-JeppeNeural'}, 'de': {'female': 'de-DE-SeraphinaMultilingualNeural', 'male': 'de-DE-KillianNeural'}, 'el': {'female': 'el-GR-AthinaNeural', 'male': 'el-GR-NestorasNeural'}, 'en': {'female': 'en-ZA-LeahNeural', 'male': 'en-ZA-LukeNeural'}, 'es': {'female': 'es-VE-PaolaNeural', 'male': 'es-VE-SebastianNeural'}, 'et': {'female': 'et-EE-AnuNeural', 'male': 'et-EE-KertNeural'}, 'fa': {'female': 'fa-IR-DilaraNeural', 'male': 'fa-IR-FaridNeural'}, 'fi': {'male': 'fil-PH-AngeloNeural', 'female': 'fil-PH-BlessicaNeural'}, 'fr': {'female': 'fr-FR-VivienneMultilingualNeural', 'male': 'fr-FR-RemyMultilingualNeural'}, 'ga': {'male': 'ga-IE-ColmNeural', 'female': 'ga-IE-OrlaNeural'}, 'gl': {'male': 'gl-ES-RoiNeural', 'female': 'gl-ES-SabelaNeural'}, 'gu': {'female': 'gu-IN-DhwaniNeural', 'male': 'gu-IN-NiranjanNeural'}, 'he': {'male': 'he-IL-AvriNeural', 'female': 'he-IL-HilaNeural'}, 'hi': {'male': 'hi-IN-MadhurNeural', 'female': 'hi-IN-SwaraNeural'}, 'hr': {'female': 'hr-HR-GabrijelaNeural', 'male': 'hr-HR-SreckoNeural'}, 'hu': {'female': 'hu-HU-NoemiNeural', 'male': 'hu-HU-TamasNeural'}, 'id': {'male': 'id-ID-ArdiNeural', 'female': 'id-ID-GadisNeural'}, 'is': {'female': 'is-IS-GudrunNeural', 'male': 'is-IS-GunnarNeural'}, 'it': {'male': 'it-IT-GiuseppeNeural', 'female': 'it-IT-IsabellaNeural'}, 'ja': {'male': 'ja-JP-KeitaNeural', 'female': 'ja-JP-NanamiNeural'}, 'jv': {'male': 'jv-ID-DimasNeural', 'female': 'jv-ID-SitiNeural'}, 'ka': {'female': 'ka-GE-EkaNeural', 'male': 'ka-GE-GiorgiNeural'}, 'kk': {'female': 'kk-KZ-AigulNeural', 'male': 'kk-KZ-DauletNeural'}, 'km': {'male': 'km-KH-PisethNeural', 'female': 'km-KH-SreymomNeural'}, 'kn': {'male': 'kn-IN-GaganNeural', 'female': 'kn-IN-SapnaNeural'}, 'ko': {'male': 'ko-KR-InJoonNeural', 'female': 'ko-KR-SunHiNeural'}, 'lo': {'male': 'lo-LA-ChanthavongNeural', 'female': 'lo-LA-KeomanyNeural'}, 'lt': {'male': 'lt-LT-LeonasNeural', 'female': 'lt-LT-OnaNeural'}, 'lv': {'female': 'lv-LV-EveritaNeural', 'male': 'lv-LV-NilsNeural'}, 'mk': {'male': 'mk-MK-AleksandarNeural', 'female': 'mk-MK-MarijaNeural'}, 'ml': {'male': 'ml-IN-MidhunNeural', 'female': 'ml-IN-SobhanaNeural'}, 'mn': {'male': 'mn-MN-BataaNeural', 'female': 'mn-MN-YesuiNeural'}, 'mr': {'female': 'mr-IN-AarohiNeural', 'male': 'mr-IN-ManoharNeural'}, 'ms': {'male': 'ms-MY-OsmanNeural', 'female': 'ms-MY-YasminNeural'}, 'mt': {'female': 'mt-MT-GraceNeural', 'male': 'mt-MT-JosephNeural'}, 'my': {'female': 'my-MM-NilarNeural', 'male': 'my-MM-ThihaNeural'}, 'nb': {'male': 'nb-NO-FinnNeural', 'female': 'nb-NO-PernilleNeural'}, 'ne': {'female': 'ne-NP-HemkalaNeural', 'male': 'ne-NP-SagarNeural'}, 'nl': {'male': 'nl-NL-MaartenNeural', 'female': 'nl-NL-FennaNeural'}, 'pl': {'male': 'pl-PL-MarekNeural', 'female': 'pl-PL-ZofiaNeural'}, 'ps': {'male': 'ps-AF-GulNawazNeural', 'female': 'ps-AF-LatifaNeural'}, 'pt': {'male': 'pt-PT-DuarteNeural', 'female': 'pt-PT-RaquelNeural'}, 'ro': {'female': 'ro-RO-AlinaNeural', 'male': 'ro-RO-EmilNeural'}, 'ru': {'male': 'ru-RU-DmitryNeural', 'female': 'ru-RU-SvetlanaNeural'}, 'si': {'male': 'si-LK-SameeraNeural', 'female': 'si-LK-ThiliniNeural'}, 'sk': {'male': 'sk-SK-LukasNeural', 'female': 'sk-SK-ViktoriaNeural'}, 'sl': {'female': 'sl-SI-PetraNeural', 'male': 'sl-SI-RokNeural'}, 'so': {'male': 'so-SO-MuuseNeural', 'female': 'so-SO-UbaxNeural'}, 'sq': {'female': 'sq-AL-AnilaNeural', 'male': 'sq-AL-IlirNeural'}, 'sr': {'male': 'sr-RS-NicholasNeural', 'female': 'sr-RS-SophieNeural'}, 'su': {'male': 'su-ID-JajangNeural', 'female': 'su-ID-TutiNeural'}, 'sv': {'male': 'sv-SE-MattiasNeural', 'female': 'sv-SE-SofieNeural'}, 'sw': {'male': 'sw-TZ-DaudiNeural', 'female': 'sw-TZ-RehemaNeural'}, 'ta': {'female': 'ta-SG-VenbaNeural', 'male': 'ta-SG-AnbuNeural'}, 'te': {'male': 'te-IN-MohanNeural', 'female': 'te-IN-ShrutiNeural'}, 'th': {'male': 'th-TH-NiwatNeural', 'female': 'th-TH-PremwadeeNeural'}, 'tr': {'male': 'tr-TR-AhmetNeural', 'female': 'tr-TR-EmelNeural'}, 'uk': {'male': 'uk-UA-OstapNeural', 'female': 'uk-UA-PolinaNeural'}, 'ur': {'female': 'ur-PK-UzmaNeural', 'male': 'ur-PK-AsadNeural'}, 'uz': {'female': 'uz-UZ-MadinaNeural', 'male': 'uz-UZ-SardorNeural'}, 'vi': {'female': 'vi-VN-HoaiMyNeural', 'male': 'vi-VN-NamMinhNeural'}, 'zh': {'female': 'zh-TW-HsiaoYuNeural', 'male': 'zh-TW-YunJheNeural'}, 'zu': {'female': 'zu-ZA-ThandoNeural', 'male': 'zu-ZA-ThembaNeural'}}
 
 
 # cleanup
@@ -191,4 +117,4 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
 
 
 if __name__ == "__main__":
-    pass
+    print(VOICES['ru'])

@@ -3444,11 +3444,11 @@ def shell_command(message: telebot.types.Message):
                 bot_reply_tr(message, 'Usage: /shell <command number>, empty for list available commands')
                 return
             cmd_ = cfg.SYSTEM_CMDS[n -1]
-            out = subprocess.check_output(cmd_.split(), shell=True)
-            out_ = out.decode(utils.get_codepage(), errors = 'replace')
-            out_ = f'```{cfg.SYSTEM_CMDS[n -1]}\n{out_}```'
-            out_ = utils.bot_markdown_to_html(out_)
-            bot_reply(message, out_, parse_mode='HTML')
+            with subprocess.Popen(cmd_, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding=utils.get_codepage()) as proc:
+                stdout, stderr = proc.communicate()
+            out_ = stdout + '\n\n' + stderr
+            out_ = f'```cmd\n{out_}```'
+            bot_reply(message, out_, parse_mode='Markdown')
         else:
             msg = ''
             n = 1

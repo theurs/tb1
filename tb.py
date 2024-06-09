@@ -4821,8 +4821,13 @@ def activity_daemon():
         time.sleep(3)
         if ACTIVITY_MONITOR['last_activity'] + ACTIVITY_MONITOR['max_inactivity'] < datetime.datetime.now():
             run = False
-            my_log.log2(f'tb:activity_daemon: restart after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
-            restart()
+            my_log.log2(f'tb:activity_daemon: reconnect after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
+            # restart()
+            bot.stop_polling()
+            time.sleep(5)
+            bot.polling(timeout=90, long_polling_timeout=90)
+            time.sleep(10)
+            ACTIVITY_MONITOR['last_activity'] = time.time()
 
 
 @asunc_run

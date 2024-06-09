@@ -1626,7 +1626,9 @@ def handle_document(message: telebot.types.Message):
                                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                                             'application/rtf',
                                             'application/msword',
-                                            'image/svg+xml') or \
+                                            'image/svg+xml',
+                                            'application/octet-stream',
+                                            'application/epub+zip') or \
                                             message.document.mime_type.startswith('text/') or \
                                             message.document.mime_type.startswith('video/') or \
                                             message.document.mime_type.startswith('audio/')):
@@ -1650,9 +1652,15 @@ def handle_document(message: telebot.types.Message):
                     pdf_reader = PyPDF2.PdfReader(file_bytes)
                     for page in pdf_reader.pages:
                         text += page.extract_text()
-                elif message.document.mime_type == 'application/vnd.ms-excel' or \
-                     message.document.mime_type == 'application/vnd.oasis.opendocument.spreadsheet' or \
-                     message.document.mime_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                elif message.document.mime_type in ('application/vnd.ms-excel',
+                                                    'application/vnd.oasis.opendocument.spreadsheet',
+                                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                                    'application/octet-stream',
+                                                    'application/epub+zip',
+                                                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                                    'application/rtf',
+                                                    'application/msword',
+                                                    ):
                     ext = utils.get_file_ext(file_info.file_path)
                     text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
                 elif message.document.mime_type == 'image/svg+xml':
@@ -1692,11 +1700,6 @@ def handle_document(message: telebot.types.Message):
                             text = data__.decode(encoding)
                         except:
                             pass
-                elif message.document.mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or \
-                    message.document.mime_type == 'application/rtf' or \
-                    message.document.mime_type == 'application/msword':
-                    ext = utils.get_file_ext(file_info.file_path)
-                    text = my_pandoc.fb2_to_text(downloaded_file, ext)
                 if text.strip():
                     caption = message.caption or ''
                     caption = caption.strip()

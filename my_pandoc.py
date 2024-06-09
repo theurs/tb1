@@ -55,7 +55,6 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
         return buffer.getvalue()
     elif 'fb2' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
-        output = proc.stdout.decode('utf-8', errors='replace')
     else:
         utils.remove_file(input_file)
         try:
@@ -65,13 +64,12 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
 
     utils.remove_file(input_file)
 
-    # result = output.replace(u'\xa0', u' ')
-    result = output
+    output = proc.stdout.decode('utf-8', errors='replace')
 
-    return result
+    return output
 
 
 if __name__ == '__main__':
-    result = fb2_to_text(open('1.doc', 'rb').read(), 'doc')
+    result = fb2_to_text(open('1.fb2', 'rb').read(), '.fb2')
 
     print(result)

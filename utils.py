@@ -12,6 +12,8 @@ import random
 import re
 import requests
 import string
+import subprocess
+import sys
 import tempfile
 import threading
 import platform as platform_module
@@ -539,7 +541,17 @@ def mime_from_buffer(data: bytes) -> str:
     return 'plain'
 
 
+def get_codepage():
+    if 'windows' in platform().lower():
+        result = subprocess.getoutput("chcp")
+        return f'cp{result.split()[-1]}'
+    else:
+        result = subprocess.getoutput("locale charmap")
+        return result.lower()
+
+
 if __name__ == '__main__':
+    print(get_codepage())
     # print(get_file_ext('c:\\123\123123.23'))
     # print(safe_fname('dfgdшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшггггггггггггггггггггггггггггшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшfg\/dfg.tb'))
     t=r"""рш еруку
@@ -553,7 +565,7 @@ if __name__ == '__main__':
 **Шаг 3:**
 . ### 135 выберите библиотеку Vosk
     """
-    print(bot_markdown_to_html(t))
+    # print(bot_markdown_to_html(t))
 
 
     # print(get_full_time())

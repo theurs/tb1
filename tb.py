@@ -8,6 +8,7 @@ import os
 import pickle
 import re
 import shutil
+import subprocess
 import tempfile
 import traceback
 import threading
@@ -3426,6 +3427,44 @@ def stats(message: telebot.types.Message):
     bot_reply(message, msg)
 
 
+@bot.message_handler(commands=['shell', 'cmd'], func=authorized_admin)
+@asunc_run
+def shell_command(message: telebot.types.Message):
+    """Выполняет шел комманды"""
+
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+
+    if not hasattr(cfg, 'SYSTEM_CMDS'):
+        bot_reply_tr(message, 'Шел команды не настроены.')
+        return
+
+    cmd = message.text.strip().split(maxsplit=1)
+    if len(cmd) == 2:
+        try:
+            n = int(cmd[1])
+        except ValueError:
+            bot_reply_tr(message, 'Usage: /shell <command number>, empty for list available commands')
+            return
+        cmd_ = cfg.SYSTEM_CMDS[n -1]
+        out = subprocess.check_output(cmd_.split(), shell=True)
+        out_ = out.decode(utils.get_codepage(), errors = 'replace')
+        out_ = f'```{out_}```'
+        out_ = utils.bot_markdown_to_html(out_)
+        bot_reply(message, out_, parse_mode='HTML')
+    else:
+        msg = ''
+        n = 1
+        for x in cfg.SYSTEM_CMDS:
+            msg += f'{n} - {x}\n'
+            n += 1
+        msg_ = f'```{msg}```'
+        msg_ = utils.bot_markdown_to_html(msg_)
+        bot_reply(message, msg_, parse_mode='HTML')
+
+
+
+
 @bot.message_handler(commands=['blockadd2'], func=authorized_admin)
 @asunc_run
 def block_user_add2(message: telebot.types.Message):
@@ -4608,14 +4647,14 @@ def do_task(message, custom_prompt: str = ''):
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not address the user by name and no emoji unless it is required.]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not address the user by name and no emoji unless it is required.]'
                 else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
             else:
                 if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not address the user by name and no emoji unless it is required.]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not address the user by name and no emoji unless it is required.]'
                 else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents), user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
             hidden_text_for_llama370 = tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required.', lang)
             if chat_id_full not in ORIGINAL_MODE:
                 ORIGINAL_MODE[chat_id_full] = False

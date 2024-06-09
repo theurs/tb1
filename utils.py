@@ -551,7 +551,9 @@ def get_codepage():
 
 
 if __name__ == '__main__':
-    print(get_codepage())
+    # print(get_codepage())
+    l = 'sudo systemctl restart wg-quick@wg1.service'.split()
+    out = subprocess.check_output(l, shell=True)
     # print(get_file_ext('c:\\123\123123.23'))
     # print(safe_fname('dfgdшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшггггггггггггггггггггггггггггшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшfg\/dfg.tb'))
     t=r"""рш еруку

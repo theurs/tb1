@@ -4877,7 +4877,6 @@ def activity_daemon():
     while ACTIVITY_DAEMON_RUN:
         time.sleep(1)
         if ACTIVITY_MONITOR['last_activity'] + ACTIVITY_MONITOR['max_inactivity'] < time.time():
-            ACTIVITY_DAEMON_RUN = False
             my_log.log2(f'tb:activity_daemon: reconnect after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
             bot.stop_polling()
             time.sleep(10)

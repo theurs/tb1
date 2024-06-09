@@ -1763,8 +1763,6 @@ def handle_document(message: telebot.types.Message):
                     my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
 
 
-
-
 def download_image_from_message(message: telebot.types.Message) -> bytes:
     '''Download image from message'''
     try:

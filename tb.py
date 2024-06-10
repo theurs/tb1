@@ -4952,20 +4952,43 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            # style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else ''
-                            answer = my_shadowjourney.chat(message.text, chat_id_full, system=hidden_text)
+                            # answer = my_shadowjourney.chat(message.text, chat_id_full, system=hidden_text)
+                            answer = ''
                             WHO_ANSWERED[chat_id_full] = 'gpt-4o '
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
+                            llama_helped = False
                             if not answer:
-                                answer = 'Openrouter ' + tr('did not answered, try to /reset and start again. Check your balance https://openrouter.ai/credits', lang)
+                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
+                                mem__ = my_shadowjourney.CHATS[chat_id_full][-6:]
+                                if style_:
+                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
+                                else:
+                                    answer = my_groq.ai(message.text, mem_ = mem__)
+                                if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                                    my_groq.undo(chat_id_full)
+                                    message.text = f'/image {message.text}'
+                                    image_gen(message)
+                                    return
+                                CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
+                                if not answer:
+                                    answer = 'GPT-4o ' + tr('did not answered, try to /reset and start again', lang)
+                                    return
+                                llama_helped = True
+                                my_shadowjourney.update_mem(message.text, answer, chat_id_full)
+                            else:
+                                CHAT_STATS[time.time()] = (chat_id_full, 'gpt4o')
 
                             if not VOICE_ONLY_MODE[chat_id_full]:
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
-                            my_log.log_echo(message, f'[gpt-4o] {answer}')
+                            if llama_helped:
+                                WHO_ANSWERED[chat_id_full] = f'👇gpt4o + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                my_log.log_echo(message, f'[groq-llama370] {answer}')
+                            else:
+                                my_log.log_echo(message, f'[gpt-4o] {answer}')
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gpt4o_chat', message), not_log=True, allow_voice = True)

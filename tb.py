@@ -7,7 +7,6 @@ import io
 import os
 import pickle
 import re
-import shutil
 import subprocess
 import tempfile
 import traceback
@@ -20,10 +19,8 @@ import PIL
 import prettytable
 import PyPDF2
 import telebot
-from collections import defaultdict
 from fuzzywuzzy import fuzz
 from sqlitedict import SqliteDict
-from datetime import timedelta
 
 import cfg
 import bing_img
@@ -3100,19 +3097,6 @@ def image_gen(message: telebot.types.Message):
             lock = threading.Lock()
             IMG_GEN_LOCKS[chat_id_full] = lock
 
-
-        # # если у юзера нет ключей и он активист то напомнить о ключах
-        # is_private = message.chat.type == 'private'
-        # total_messages__ = IMAGES_BY_USER_COUNTER[chat_id_full] if chat_id_full in IMAGES_BY_USER_COUNTER else 0
-        # if total_messages__ > 10000 and is_private:
-        #     if chat_id_full not in my_gemini.USER_KEYS and \
-        #        chat_id_full not in my_groq.USER_KEYS and \
-        #        chat_id_full not in my_trans.USER_KEYS and \
-        #        chat_id_full not in my_genimg.USER_KEYS:
-        #         msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-        #         bot_reply(message, msg, disable_web_page_preview=True)
-
-
         with lock:
 
             with semaphore_talks:
@@ -3338,7 +3322,8 @@ def stats(message: telebot.types.Message):
     model_usage30 = my_db.get_model_usage(30)
     # {'gpt4o': 17, 'llama3-70b-8192': 1, 'openrouter': 3}
 
-    msg = '1 day\n'
+    msg = f'Total messages in DB: {my_db.count_msgs_all()}'
+    msg += '\n\n1 day\n'
     if model_usage1:
         for model in model_usage1:
             msg += f'{model} - {model_usage1[model]}\n'
@@ -3352,11 +3337,13 @@ def stats(message: telebot.types.Message):
             msg += f'{model} - {model_usage30[model]}\n'
 
     msg += f'\n\nTotal users: {my_db.get_total_msg_users()}'
-    
     msg += f'\nTotal users in 1 day: {my_db.get_total_msg_users_in_days(1)}'
     msg += f'\nTotal users in 7 days: {my_db.get_total_msg_users_in_days(7)}'
     msg += f'\nTotal users in 30 days: {my_db.get_total_msg_users_in_days(30)}'
 
+    msg += f'\n\nNew users in 1 day: {my_db.count_new_user_in_days(1)}'
+    msg += f'\nNew users in 7 day: {my_db.count_new_user_in_days(7)}'
+    msg += f'\nNew users in 30 day: {my_db.count_new_user_in_days(30)}'
 
     bot_reply(message, msg)
 
@@ -4944,7 +4931,6 @@ def main():
     activity_daemon()
 
     log_group_daemon()
-
 
     bot.polling(timeout=90, long_polling_timeout=90)
 

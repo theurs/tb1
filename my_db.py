@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
 
-import random
+import os
 import time
 import threading
 import sqlite3
 
+from sqlitedict import SqliteDict
+
 import my_log
-from utils import asunc_run
+from utils import asunc_run, remove_file
 
 
 
@@ -34,26 +36,43 @@ def sync_daemon():
             my_log.log2(f'my_msg_counter:sync_daemon {error}')
 
 
+@asunc_run
 def init():
     '''init db'''
     global CON, CUR
-    with LOCK:
-        try:
-            CON = sqlite3.connect('db/main.db', check_same_thread=False)
-            CUR = CON.cursor()
+    try:
+        CON = sqlite3.connect('db/main.db', check_same_thread=False)
+        CUR = CON.cursor()
 
-            CUR.execute('''
-                CREATE TABLE IF NOT EXISTS msg_counter (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id TEXT,
-                    access_time REAL,
-                    model_used TEXT
-                )
-            ''')
-            CON.commit()
-            sync_daemon()
-        except Exception as error:
-            my_log.log2(f'my_msg_counter:init {error}')
+        CUR.execute('''
+            CREATE TABLE IF NOT EXISTS msg_counter (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
+                access_time REAL,
+                model_used TEXT
+            )
+        ''')
+        CON.commit()
+        sync_daemon()
+
+        if os.path.exists('db/chat_stats.db'):
+
+            CHAT_STATS = SqliteDict('db/chat_stats.db')
+            for key in CHAT_STATS:
+                timestamp = key
+                user_id, model = CHAT_STATS[key]
+                if model == 'gemini15': model = 'gemini15_pro'
+                elif model == 'gemini10': model = 'gemini15_flash'
+                elif model == 'chatgpt': model = 'gpt4o'
+                elif model == 'gemini': model = 'gemini15_flash'
+                elif model == 'llama370': model = 'llama3-70b-8192'
+                elif model == 'gemma7': model = 'gemma-7b-it'
+                else: print(model)
+                add_msg(user_id, model, timestamp)
+            del CHAT_STATS
+            remove_file('db/chat_stats.db')
+    except Exception as error:
+        my_log.log2(f'my_msg_counter:init {error}')
 
 
 def close():
@@ -68,18 +87,26 @@ def close():
             my_log.log2(f'my_msg_counter:close {error}')
 
 
-def add_msg(user_id: str, model_used: str):
+def add_msg(user_id: str, model_used: str, timestamp: float = None):
     '''add msg counter record to db'''
     global COM_COUNTER
     with LOCK:
         try:
-            access_time = time.time()
+            access_time = timestamp if timestamp else time.time()
+            
+            # Проверка наличия записи
             CUR.execute('''
-                INSERT INTO msg_counter (user_id, access_time, model_used)
-                VALUES (?, ?, ?)
+                SELECT COUNT(*) FROM msg_counter
+                WHERE user_id = ? AND access_time = ? AND model_used = ?
             ''', (user_id, access_time, model_used))
-
-            COM_COUNTER += 1
+            
+            if CUR.fetchone()[0] == 0:
+                # Если записи нет, добавляем новую
+                CUR.execute('''
+                    INSERT INTO msg_counter (user_id, access_time, model_used)
+                    VALUES (?, ?, ?)
+                ''', (user_id, access_time, model_used))
+                COM_COUNTER += 1
 
         except Exception as error:
             my_log.log2(f'my_msg_counter:add {error}')
@@ -171,11 +198,40 @@ def get_total_msg_users_in_days(days: int) -> int:
             return 0
 
 
+def count_new_user_in_days(days: int) -> int:
+    '''Посчитать сколько юзеров не имеют ни одного сообщения раньше чем за days дней'''
+    access_time = time.time() - days * 24 * 60 * 60
+    with LOCK:
+        try:
+            # Получить всех пользователей, которые отправили сообщения за последние days дней
+            CUR.execute('''
+                SELECT DISTINCT user_id FROM msg_counter
+                WHERE access_time > ?
+            ''', (access_time,))
+            recent_users = [row[0] for row in CUR.fetchall()]
+
+            new_users_count = 0
+
+            for user_id in recent_users:
+                # Проверить, есть ли у пользователя сообщения, отправленные раньше чем за days дней
+                CUR.execute('''
+                    SELECT COUNT(*) FROM msg_counter
+                    WHERE user_id = ? AND access_time <= ?
+                ''', (user_id, access_time))
+                if CUR.fetchone()[0] == 0:
+                    new_users_count += 1
+
+            return new_users_count
+        except Exception as error:
+            my_log.log2(f'my_msg_counter:count_new_user_in_days {error}')
+            return 0
+
+
 if __name__ == '__main__':
     pass
     init()
 
-    print(get_total_msg_users())
+    # print(get_total_msg_users())
 
     # for x in range(10000000):
     #     uid = random.choice(('user1','user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8', 'user9', 'user10'))
@@ -189,6 +245,6 @@ if __name__ == '__main__':
     #     c = count_msgs_all()
     #     print(x, end='\r\r\r\r\r')
 
-    print(count_msgs('test', 'gpt4o', 1000000))
+    # print(count_msgs('test', 'gpt4o', 1000000))
 
     close()

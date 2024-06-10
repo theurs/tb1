@@ -74,7 +74,7 @@ Change model:
 /gemini15 - Google Gemini 1.5 pro
 /llama370 - LLaMa 3 70b (Groq)
 /openrouter - all other models including new GPT-4o, Claude 3 Opus etc, you will need your own account
-/gpt-4o - GPT-4o Openai
+/gpt4o - GPT-4o Openai
 
 
 Report issues on Telegram:

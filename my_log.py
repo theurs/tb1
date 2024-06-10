@@ -118,6 +118,11 @@ def log_gemini(text: str) -> None:
     log2(text[:2000], 'gemini')
 
 
+def log_shadowjourney(text: str) -> None:
+    """для логов shadowjourney"""
+    log2(text[:2000], 'shadowjourney')
+
+
 def log_keys(text: str) -> None:
     """для логов новых ключей"""
     log2(text, 'keys')

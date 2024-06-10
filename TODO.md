@@ -11,5 +11,24 @@
 
 utils.replace_tables - есть баги, не всегда может переделать таблицу
 
+
+## Как добавлять новый движок
+
+Добавить и проверить функции в tb.py
+   add_to_bots_mem
+   undo
+   reset
+   mem
+   stats
+   id
+   purge
+
+   do_task
+      hidden_text (стиль)
+   keyboard и callback
+
+Добавить в help и перегенерировать их.
+Добавить в commands.txt и сделать /init
+
 ## Новые фичи
 

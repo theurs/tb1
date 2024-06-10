@@ -8,6 +8,7 @@ from sqlitedict import SqliteDict
 
 import my_trans
 import my_groq
+import my_shadowjourney
 
 
 # хранилище для переводов сообщений сделанных гугл переводчиком
@@ -73,6 +74,8 @@ Change model:
 /gemini15 - Google Gemini 1.5 pro
 /llama370 - LLaMa 3 70b (Groq)
 /openrouter - all other models including new GPT-4o, Claude 3 Opus etc, you will need your own account
+/gpt-4o - GPT-4o Openai
+
 
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support
@@ -113,7 +116,8 @@ def generate_help_msg():
     msgs = {}
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
-        msg = my_trans.translate_text2(help_msg, x)
+        # msg = my_trans.translate_text2(help_msg, x)
+        msg = my_shadowjourney.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot.')
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)

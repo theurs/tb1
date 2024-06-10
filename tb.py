@@ -38,6 +38,7 @@ import my_log
 import my_ocr
 import my_openrouter
 import my_pandoc
+import my_shadowjourney
 import my_stt
 import my_sum
 import my_trans
@@ -444,6 +445,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_groq.update_mem(query, resp, chat_id_full)
     elif 'openrouter' in CHAT_MODE[chat_id_full]:
         my_openrouter.update_mem(query, resp, chat_id_full)
+    elif 'gpt4o' in CHAT_MODE[chat_id_full]:
+        my_shadowjourney.update_mem(query, resp, chat_id_full)
 
 
 def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
@@ -1181,6 +1184,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2, button3, button4)
         return markup
 
+    elif kbd == 'gpt4o_chat':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt4o_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'groq_groq-llama370_chat':
         if disabled_kbd(chat_id_full):
             return None
@@ -1449,6 +1464,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'openrouter_reset':
             my_openrouter.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с openrouter очищена.')
+        elif call.data == 'gpt4o_reset':
+            my_shadowjourney.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с GPT-4o очищена.')
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Gemini очищена.')
@@ -1812,7 +1830,6 @@ def download_image_from_messages(MESSAGES: list) -> list:
             images.append(f.result())
 
     return images
-
 
 
 @bot.message_handler(content_types = ['photo'], func=authorized)
@@ -2412,6 +2429,14 @@ def addkeys(message: telebot.types.Message):
 #     bot_reply_tr(message, 'Removed keys successfully!')
 
 
+@bot.message_handler(commands=['gpt4o', 'gpt40'], func=authorized_owner)
+@asunc_run
+def gpt4o_mode(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    CHAT_MODE[chat_id_full] = 'gpt4o'
+    bot_reply_tr(message, 'GPT-4o model selected.')
+
+
 @bot.message_handler(commands=['gemini10'], func=authorized_owner)
 @asunc_run
 def gemini10_mode(message: telebot.types.Message):
@@ -2571,6 +2596,8 @@ def undo(message: telebot.types.Message):
         my_groq.undo(chat_id_full)
     elif 'openrouter' in CHAT_MODE[chat_id_full]:
         my_openrouter.undo(chat_id_full)
+    elif 'gpt4o' in CHAT_MODE[chat_id_full]:
+        my_shadowjourney.undo(chat_id_full)
     else:
         bot_reply_tr(message, 'History WAS NOT undone.')
 
@@ -2594,6 +2621,8 @@ def reset_(message: telebot.types.Message):
         my_groq.reset(chat_id_full)
     elif 'openrouter' in CHAT_MODE[chat_id_full]:
         my_openrouter.reset(chat_id_full)
+    elif 'gpt4o' in CHAT_MODE[chat_id_full]:
+        my_shadowjourney.reset(chat_id_full)
     else:
         if isinstance(message, telebot.types.Message):
             bot_reply_tr(message, 'History WAS NOT cleared.')
@@ -2747,6 +2776,10 @@ def send_debug_history(message: telebot.types.Message):
     if 'openrouter' in CHAT_MODE[chat_id_full]:
         prompt = 'Openrouter\n\n'
         prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if 'gpt4o' in CHAT_MODE[chat_id_full]:
+        prompt = 'GPT-4o\n\n'
+        prompt += my_shadowjourney.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
@@ -3359,6 +3392,7 @@ def stats(message: telebot.types.Message):
         'gemini': defaultdict(int),
         'llama370': defaultdict(int),
         'openrouter': defaultdict(int),
+        'gpt4o': defaultdict(int),
         'new_users': defaultdict(int),
         'active_24h': set(),
         'active_48h': set(),
@@ -3393,7 +3427,7 @@ def stats(message: telebot.types.Message):
                 stats['active_30d'].add(user_id)
 
             # Подсчет сообщений в зависимости от режима
-            if chat_mode in ['gemini15', 'gemini', 'llama370', 'openrouter']:
+            if chat_mode in ['gemini15', 'gemini', 'llama370', 'openrouter', 'gpt4o']:
                 if now - time_stamp <= 86400:
                     stats[chat_mode]['24'] += 1
                 if now - time_stamp <= 172800:
@@ -3405,7 +3439,7 @@ def stats(message: telebot.types.Message):
 
     # Строим сообщение для пользователя
     msg = ""
-    for mode in ['gemini15', 'gemini', 'llama370', 'openrouter']:
+    for mode in ['gemini15', 'gemini', 'llama370', 'openrouter', 'gpt4o']:
         msg += (f"{mode} за 24ч/48ч/7д/30д: "
                 f"{stats[mode]['24']}/{stats[mode]['48']}/"
                 f"{stats[mode]['7d']}/{stats[mode]['30d']}\n\n")
@@ -4025,6 +4059,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_gemini.reset(chat_id_full)
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
+            my_shadowjourney.reset(chat_id_full)
 
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
@@ -4081,7 +4116,7 @@ def id_cmd_handler(message: telebot.types.Message):
     # keys_count = len(gemini_keys) + len(groq_keys) + len(openrouter_keys) + len(deepl_keys)
     keys_count = len(gemini_keys) + len(groq_keys) + len(deepl_keys)
     keys_count_ = '🔑'*keys_count
-    
+
     if openrouter_keys:
         msg += '\n\n🔑️ OpenRouter\n'
     else:
@@ -4748,7 +4783,7 @@ def do_task(message, custom_prompt: str = ''):
                                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:gemini {error3}\n{error_traceback}')
+                            my_log.log2(f'tb:do_task:gemini10 {error3}\n{error_traceback}')
                         return
 
                 # если активирован режим общения с Gemini 1.5 pro
@@ -4818,7 +4853,7 @@ def do_task(message, custom_prompt: str = ''):
                                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:gemini {error3}\n{error_traceback}')
+                            my_log.log2(f'tb:do_task:gemini15 {error3}\n{error_traceback}')
                         return
 
                 # если активирован режим общения с groq llama 3 70b
@@ -4904,7 +4939,44 @@ def do_task(message, custom_prompt: str = ''):
                                                         reply_markup=get_keyboard('openrouter_chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:gemini {error3}\n{error_traceback}')
+                            my_log.log2(f'tb:do_task:openrouter {error3}\n{error_traceback}')
+                        return
+
+
+                # если активирован режим общения с gpt-4o
+                if chat_mode_ == 'gpt4o':
+                    # не знаем какие там лимиты
+                    if len(msg) > my_shadowjourney.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для openrouter:", lang)} {len(msg)} {tr("из", lang)} {my_shadowjourney.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            # style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else ''
+                            answer = my_shadowjourney.chat(message.text, chat_id_full, system=hidden_text)
+                            WHO_ANSWERED[chat_id_full] = 'gpt-4o '
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not answer:
+                                answer = 'Openrouter ' + tr('did not answered, try to /reset and start again. Check your balance https://openrouter.ai/credits', lang)
+
+                            if not VOICE_ONLY_MODE[chat_id_full]:
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            my_log.log_echo(message, f'[gpt-4o] {answer}')
+                            try:
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('gpt4o_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('gpt4o_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:gpt4o {error3}\n{error_traceback}')
                         return
 
 

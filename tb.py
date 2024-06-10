@@ -1375,7 +1375,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:1000]) for x in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
                     for _ in range(10):
-                        my_db.add_msg(chat_id_full, 'gemini15_flash')
+                        my_db.add_msg(chat_id_full, 'gemini_vision')
                         time.sleep(0.01)
                     log_message(msgs_ids)
 
@@ -1653,7 +1653,7 @@ def handle_document(message: telebot.types.Message):
                                        reply_markup=get_keyboard('translate', message),
                                        disable_notification=True)
                         text = img2txt(image, lang, chat_id_full, message.caption)
-                        my_db.add_msg(chat_id_full, 'gemini15_flash')
+                        my_db.add_msg(chat_id_full, 'gemini_vision')
                         if text:
                             text = utils.bot_markdown_to_html(text)
                             text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)

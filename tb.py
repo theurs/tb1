@@ -4396,7 +4396,7 @@ def do_task(message, custom_prompt: str = ''):
         chat_mode_ = 'gemini'
 
     if is_private:
-        if not have_keys or 1:
+        if not have_keys:
             total_messages__ = my_db.count_msgs(chat_id_full, 'all', 1000000000)
             # каждые 50 сообщение напоминать о ключах
             if total_messages__ > 1 and total_messages__ % 50 == 0:

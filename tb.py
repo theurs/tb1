@@ -3333,24 +3333,32 @@ the original prompt:""", lang) + '\n\n\n' + prompt
 @asunc_run
 def stats(message: telebot.types.Message):
     """Обновленная функция, показывающая статистику использования бота."""
-    now = time.time()
+    model_usage1 = my_db.get_model_usage(1)
+    model_usage7 = my_db.get_model_usage(7)
+    model_usage30 = my_db.get_model_usage(30)
+    # {'gpt4o': 17, 'llama3-70b-8192': 1, 'openrouter': 3}
+
+    msg = '1 day\n'
+    if model_usage1:
+        for model in model_usage1:
+            msg += f'{model} - {model_usage1[model]}\n'
+    msg += '\n\n7 days\n'
+    if model_usage7:
+        for model in model_usage7:
+            msg += f'{model} - {model_usage7[model]}\n'
+    msg += '\n\n30 days\n'
+    if model_usage30:
+        for model in model_usage30:
+            msg += f'{model} - {model_usage30[model]}\n'
+
+    msg += f'\n\nTotal users: {my_db.get_total_msg_users()}'
     
-    # Инициализация счетчиков
-    stats = {
-        'gemini15': defaultdict(int),
-        'gemini': defaultdict(int),
-        'llama370': defaultdict(int),
-        'openrouter': defaultdict(int),
-        'gpt4o': defaultdict(int),
-        'new_users': defaultdict(int),
-        'active_24h': set(),
-        'active_48h': set(),
-        'active_7d': set(),
-        'active_30d': set(),
-        'all_users': set()
-    }
+    msg += f'\nTotal users in 1 day: {my_db.get_total_msg_users_in_days(1)}'
+    msg += f'\nTotal users in 7 days: {my_db.get_total_msg_users_in_days(7)}'
+    msg += f'\nTotal users in 30 days: {my_db.get_total_msg_users_in_days(30)}'
 
 
+    bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['shell', 'cmd'], func=authorized_admin)

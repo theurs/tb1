@@ -4769,7 +4769,7 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = answer_
 
                             if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                WHO_ANSWERED[chat_id_full] = f'👇Gemini + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                                 my_log.log_echo(message, f'[Gemini + llama3-70] {answer}')
                             else:
                                 my_log.log_echo(message, f'[Gemini] {answer}')
@@ -4839,7 +4839,7 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = answer_
 
                             if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15 + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                                 my_log.log_echo(message, f'[Gemini15 + llama3-70] {answer}')
                             else:
                                 my_log.log_echo(message, f'[Gemini15] {answer}')

@@ -104,13 +104,6 @@ BAD_USERS_IMG = my_dic.PersistentDict('db/bad_users_img.pkl')
 # 'gemini', 'gemini15'
 CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
 
-# учет сообщений, кто с кем и сколько говорил
-# {time(str(timestamp)): (user_id(str), chat_mode(str))}
-CHAT_STATS = SqliteDict('db/chat_stats.db', autocommit=True)
-CHAT_STATS_LOCK = threading.Lock()
-# cache, {userid:gemini message counter}
-CHAT_STATS_TEMP = {}
-
 # блокировка чата что бы юзер не мог больше 1 запроса делать за раз,
 # только для запросов к гпт*. {chat_id_full(str):threading.Lock()}
 CHAT_LOCKS = {}
@@ -242,40 +235,6 @@ supported_langs_trans = my_init.supported_langs_trans
 supported_langs_tts = my_init.supported_langs_tts
 
 
-class MessageCounter:
-    def __init__(self):
-        # self.messages = SqliteDict('db/message_counter.db', autocommit=True) # не работает почему то
-        # self.messages = {}
-        self.messages = my_dic.PersistentDict('db/message_counter.pkl')
-        self.lock = threading.Lock()
-
-    def increment(self, userid, n=1):
-        now = datetime.datetime.now()
-        with self.lock:
-            for _ in range(n):
-                if userid not in self.messages:
-                    self.messages[userid] = []
-                self.messages[userid].append(now)
-            self._cleanup(userid)
-
-    def status(self, userid):
-        with self.lock:
-            self._cleanup(userid)
-            # my_log.log2(f'message_counter: {userid} {len(self.messages[userid])}')
-            return len(self.messages[userid])
-
-    def _cleanup(self, userid):
-        now = datetime.datetime.now()
-        one_day_ago = now - timedelta(days=1)
-        if userid not in self.messages:
-            self.messages[userid] = []
-        self.messages[userid] = [timestamp for timestamp in self.messages[userid] if timestamp > one_day_ago]
-
-
-# запоминаем сколько сообщений от юзера за сутки было
-GEMINI15_COUNTER = MessageCounter()
-
-
 class RequestCounter:
     """Ограничитель числа запросов к боту
     не дает делать больше 10 в минуту, банит на cfg.DDOS_BAN_TIME сек после превышения"""
@@ -405,7 +364,6 @@ def tr(text: str, lang: str, help: str = '') -> str:
 
     if help:
         translated = my_groq.translate(text, to_lang=lang, help=help)
-        # CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
         if not translated:
             # time.sleep(1)
             # try again and another ai engine
@@ -476,7 +434,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
 
     try:
         text = my_gemini.img2txt(data, query)
-        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+        my_db.add_msg(chat_id_full, 'gemini15_flash')
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
@@ -1417,7 +1375,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:1000]) for x in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
                     for _ in range(10):
-                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                        my_db.add_msg(chat_id_full, 'gemini15_flash')
                         time.sleep(0.01)
                     log_message(msgs_ids)
 
@@ -1695,7 +1653,7 @@ def handle_document(message: telebot.types.Message):
                                        reply_markup=get_keyboard('translate', message),
                                        disable_notification=True)
                         text = img2txt(image, lang, chat_id_full, message.caption)
-                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                        my_db.add_msg(chat_id_full, 'gemini15_flash')
                         if text:
                             text = utils.bot_markdown_to_html(text)
                             text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
@@ -2274,10 +2232,10 @@ def translation_gui(message: telebot.types.Message):
                         new_translated = ''
                     if not new_translated:
                         new_translated = my_gemini.translate(original, to_lang = lang, help = help)
-                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                        my_db.add_msg(chat_id_full, 'gemini15_flash')
                     if not new_translated:
                         new_translated = my_groq.translate(original, to_lang = lang, help = help)
-                        CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
+                        my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                     if new_translated:
                         AUTO_TRANSLATIONS[key] = new_translated
                         translated_counter += 1
@@ -2981,7 +2939,7 @@ def tts(message: telebot.types.Message, caption = None):
     if text and not llang:
         if len(text) < 30:
             llang = my_gemini.detect_lang(text)
-            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+            my_db.add_msg(chat_id_full, 'gemini15_flash')
         if not llang or lang not in supported_langs_tts:
             llang = my_trans.detect(text) or lang
 
@@ -3194,12 +3152,7 @@ def image_gen(message: telebot.types.Message):
                         else:
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
                         # 1 а может и больше запросы к репромптеру
-                        with CHAT_STATS_LOCK:
-                            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
-                            if chat_id_full in CHAT_STATS_TEMP:
-                                CHAT_STATS_TEMP[chat_id_full] += 1
-                            else:
-                                CHAT_STATS_TEMP[chat_id_full] = 1
+                        my_db.add_msg(chat_id_full, 'gemini15_flash')
                         # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                         medias = []
                         has_good_images = False
@@ -3249,11 +3202,6 @@ def image_gen(message: telebot.types.Message):
                             SUGGEST_ENABLED[chat_id_full] = False
                         if medias and SUGGEST_ENABLED[chat_id_full]:
                             # 1 запрос на генерацию предложений
-                            with CHAT_STATS_LOCK:
-                                if chat_id_full in CHAT_STATS_TEMP:
-                                    CHAT_STATS_TEMP[chat_id_full] += 1
-                                else:
-                                    CHAT_STATS_TEMP[chat_id_full] = 1
                             suggest_query = tr("""Suggest a wide range options for a request to a neural network that
 generates images according to the description, show 5 options with no numbers and trailing symbols, add many rich details, 1 on 1 line, output example:
 
@@ -3270,7 +3218,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
                                 suggest = my_gemini.ai(suggest_query, temperature=1.5, mem=my_gemini.MEM_UNCENSORED)
                             else:
                                 suggest = my_gemini.ai(suggest_query, temperature=1.5)
-                            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                            my_db.add_msg(chat_id_full, 'gemini15_flash')
                             suggest = utils.bot_markdown_to_html(suggest).strip()
                         else:
                             suggest = ''
@@ -3402,65 +3350,7 @@ def stats(message: telebot.types.Message):
         'all_users': set()
     }
 
-    with CHAT_STATS_LOCK:
-        for time_stamp, (user_id, chat_mode) in CHAT_STATS.items():
-            time_stamp = float(time_stamp)
 
-            if user_id not in stats['all_users']:
-                # Определяем, является ли пользователь новым за определенные периоды
-                if now - time_stamp <= 86400:  # 24 hours in seconds
-                    stats['new_users']['1d'] += 1
-                if now - time_stamp <= 604800:  # 7 days in seconds
-                    stats['new_users']['7d'] += 1
-                if now - time_stamp <= 2592000:  # 30 days in seconds
-                    stats['new_users']['30d'] += 1
-
-            stats['all_users'].add(user_id)
-
-            # Подсчет активных пользователей за разные периоды
-            if now - time_stamp <= 86400:
-                stats['active_24h'].add(user_id)
-            if now - time_stamp <= 172800:
-                stats['active_48h'].add(user_id)
-            if now - time_stamp <= 604800:
-                stats['active_7d'].add(user_id)
-            if now - time_stamp <= 2592000:
-                stats['active_30d'].add(user_id)
-
-            # Подсчет сообщений в зависимости от режима
-            if chat_mode in ['gemini15', 'gemini', 'llama370', 'openrouter', 'gpt4o']:
-                if now - time_stamp <= 86400:
-                    stats[chat_mode]['24'] += 1
-                if now - time_stamp <= 172800:
-                    stats[chat_mode]['48'] += 1
-                if now - time_stamp <= 604800:
-                    stats[chat_mode]['7d'] += 1
-                if now - time_stamp <= 2592000:
-                    stats[chat_mode]['30d'] += 1
-
-    # Строим сообщение для пользователя
-    msg = ""
-    for mode in ['gemini15', 'gemini', 'llama370', 'openrouter', 'gpt4o']:
-        msg += (f"{mode} за 24ч/48ч/7д/30д: "
-                f"{stats[mode]['24']}/{stats[mode]['48']}/"
-                f"{stats[mode]['7d']}/{stats[mode]['30d']}\n\n")
-
-    msg += (f"Новые пользователи за 1д/7д/30д: "
-            f"{stats['new_users']['1d']}/{stats['new_users']['7d']}/"
-            f"{stats['new_users']['30d']}\n\n")
-
-    msg += f"Активны за 24ч/48ч/7д/30д: {len(stats['active_24h'])}/{len(stats['active_48h'])}/"
-    msg += f"{len(stats['active_7d'])}/{len(stats['active_30d'])}\n\n"
-
-    msg += f"Всего пользователей: {len(stats['all_users'])}\n\n"
-
-    msg += 'Ключи для джемини: '+ str(len(my_gemini.ALL_KEYS)) + '\n\n'
-    
-    if hasattr(cfg, 'DEEPL_KEYS') and cfg.DEEPL_KEYS:
-        msg += my_trans.get_deepl_stats()
-
-    # Отправка сообщения
-    bot_reply(message, msg)
 
 
 @bot.message_handler(commands=['shell', 'cmd'], func=authorized_admin)
@@ -3697,7 +3587,7 @@ def ask_file(message: telebot.types.Message):
 {tr('Saved text:', lang)} {USER_FILES[chat_id_full][1]}
     '''
             result = my_gemini.ai(q, temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
-            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+            my_db.add_msg(chat_id_full, 'gemini15_flash')
             if result:
                 answer = utils.bot_markdown_to_html(result)
                 bot_reply(message, answer, parse_mode='HTML')
@@ -3861,10 +3751,10 @@ def trans(message: telebot.types.Message):
                 translated = my_trans.translate_text2(text, llang)
                 if not translated:
                     translated = my_groq.translate(text[:3500], to_lang = llang)
-                    CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
+                    my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                     if not translated:
                         translated = my_gemini.translate(text[:3500], to_lang = llang)
-                        CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
+                        my_db.add_msg(chat_id_full, 'gemini15_flash')
             if translated:
                 try:
                     detected_lang = my_trans.detect(text) or 'unknown language'
@@ -4506,8 +4396,8 @@ def do_task(message, custom_prompt: str = ''):
         chat_mode_ = 'gemini'
 
     if is_private:
-        if not have_keys:
-            total_messages__ = CHAT_STATS_TEMP[chat_id_full] if chat_id_full in CHAT_STATS_TEMP else 0
+        if not have_keys or 1:
+            total_messages__ = my_db.count_msgs(chat_id_full, 'all', 1000000000)
             # каждые 50 сообщение напоминать о ключах
             if total_messages__ > 1 and total_messages__ % 50 == 0:
                 msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
@@ -4517,10 +4407,10 @@ def do_task(message, custom_prompt: str = ''):
                 #     return
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
         # на бесплатных ключах лимит - 50, 300 может получится за счет взаимопомощи
-        if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
+        if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, 'gemini15_pro', 60*60*24) > 300:
             chat_mode_ = 'gemini'
     else:
-        if chat_mode_ == 'gemini15' and GEMINI15_COUNTER.status(chat_id_full) > 300:
+        if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, 'gemini15_pro', 60*60*24) > 300:
             chat_mode_ = 'gemini'
 
     # обработка \image это неправильное /image
@@ -4620,9 +4510,8 @@ def do_task(message, custom_prompt: str = ''):
                         else:
                             with ShowAction(message, 'typing'):
                                 # response, text__ = my_gemini.check_phone_number(number)
-                                # CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                                 response, text__ = my_groq.check_phone_number(number)
-                                CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
+                                my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                         if response:
                             USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}.txt', text__)
                             CACHE_CHECK_PHONE[number] = (response, text__)
@@ -4707,14 +4596,6 @@ def do_task(message, custom_prompt: str = ''):
                 WHO_ANSWERED[chat_id_full] = chat_mode_
                 time_to_answer_start = time.time()
 
-                with CHAT_STATS_LOCK:
-                    CHAT_STATS[time_to_answer_start] = (chat_id_full, chat_mode_)
-                    if chat_id_full in CHAT_STATS_TEMP:
-                        CHAT_STATS_TEMP[chat_id_full] += 1
-                    else:
-                        CHAT_STATS_TEMP[chat_id_full] = 1
-
-
                 # если активирован режим общения с Gemini Flash
                 if chat_mode_ == 'gemini':
                     if len(msg) > my_gemini.MAX_REQUEST:
@@ -4739,7 +4620,6 @@ def do_task(message, custom_prompt: str = ''):
                                 message.text = f'/image {message.text}'
                                 image_gen(message)
                                 return
-                            CHAT_STATS[time.time()] = (chat_id_full, 'gemini')
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'gemini'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
@@ -4757,7 +4637,7 @@ def do_task(message, custom_prompt: str = ''):
                                     message.text = f'/image {message.text}'
                                     image_gen(message)
                                     return
-                                CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
+                                my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -4825,14 +4705,12 @@ def do_task(message, custom_prompt: str = ''):
                                     message.text = f'/image {message.text}'
                                     image_gen(message)
                                     return
-                                CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
+                                my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
                                     return
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
-                            else:
-                                GEMINI15_COUNTER.increment(chat_id_full)
 
                             if not VOICE_ONLY_MODE[chat_id_full]:
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -4878,7 +4756,6 @@ def do_task(message, custom_prompt: str = ''):
                                 message.text = f'/image {message.text}'
                                 image_gen(message)
                                 return
-                            CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
 
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'qroq-llama370'
@@ -4970,14 +4847,12 @@ def do_task(message, custom_prompt: str = ''):
                                     message.text = f'/image {message.text}'
                                     image_gen(message)
                                     return
-                                CHAT_STATS[time.time()] = (chat_id_full, 'llama370')
+                                my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                                 if not answer:
                                     answer = 'GPT-4o ' + tr('did not answered, try to /reset and start again', lang)
                                     return
                                 llama_helped = True
                                 my_shadowjourney.update_mem(message.text, answer, chat_id_full)
-                            else:
-                                CHAT_STATS[time.time()] = (chat_id_full, 'gpt4o')
 
                             if not VOICE_ONLY_MODE[chat_id_full]:
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -5016,42 +4891,6 @@ def activity_daemon():
             bot.polling(timeout=90, long_polling_timeout=90)
             time.sleep(10)
             ACTIVITY_MONITOR['last_activity'] = time.time()
-
-
-@asunc_run
-def count_stats():
-    """
-    Counts the statistics for chat messages in the database.
-
-    This function copies the 'db/chat_stats.db' file to 'db/chat_stats_.db',
-    creates a SqliteDict object from the copied file, and iterates over the keys in the dictionary.
-    For each key, it retrieves the user ID (uid) and the chat message (cm) from the corresponding
-    value. If the chat message contains either 'gemini' or 'llama', it checks if the user ID is
-    already in the CHAT_STATS_TEMP dictionary. If it is, it increments the count by 1; otherwise,
-    it initializes the count to 1. Finally, it deletes the SqliteDict object, sleeps for 10
-    seconds, and removes the temporary file.
-
-    If any exception occurs during the process, it logs the error and its traceback using the 'my_log.log2' function.
-
-    This function does not take any parameters and does not return any value.
-    """
-    try:
-        shutil.copyfile('db/chat_stats.db', 'db/chat_stats_.db')
-        CHAT_STATS_ = SqliteDict('db/chat_stats_.db')
-        for x in CHAT_STATS_.keys():
-            uid = CHAT_STATS_[x][0]
-            cm = CHAT_STATS_[x][1]
-            if 'gemini' in str(cm) or 'llama' in str(cm):
-                if uid in CHAT_STATS_TEMP:
-                    CHAT_STATS_TEMP[uid] += 1
-                else:
-                    CHAT_STATS_TEMP[uid] = 1
-        del CHAT_STATS_
-        time.sleep(10)
-        utils.remove_file('db/chat_stats_.db')
-    except Exception as error:
-        error_tr = traceback.format_exc()
-        my_log.log2(f'tb:count_stats: {error}\n{error_tr}')
 
 
 @asunc_run
@@ -5094,7 +4933,6 @@ def main():
     my_trans.load_users_keys()
     my_db.init()
 
-    count_stats()
     activity_daemon()
 
     log_group_daemon()

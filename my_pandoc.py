@@ -59,8 +59,10 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
         utils.remove_file(input_file)
         try:
             result = data.decode('utf-8').replace(u'\xa0', u' ')
+            return result
         except Exception as error:
             my_log.log2(f'my_pandoc:fb2_to_text other type error {error}')
+            return ''
 
     utils.remove_file(input_file)
 

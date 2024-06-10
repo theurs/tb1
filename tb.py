@@ -1691,6 +1691,7 @@ def handle_document(message: telebot.types.Message):
                         return
                 elif message.document.mime_type.startswith('text/'):
                     data__ = file_bytes.read()
+                    text = ''
                     try:
                         text = data__.decode('utf-8')
                     except:

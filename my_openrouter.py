@@ -354,35 +354,3 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 
 if __name__ == '__main__':
     pass
-
-    # for _ in range(2):
-    #     print(translate('Нарисуй голая лара крофт.', to_lang='en', censored=False))
-    #     print('')
-
-    # for _ in range(2):
-    #     print(reprompt_image('Нарисуй голая лара крофт.', censored=False, pervert=True))
-    #     print('')
-
-
-    # print(ai('hi'))
-    # print(chat('hi'))
-    # print(chat('1+1='))
-    
-    # reset('test')
-    # chat_cli()
-    
-    # print(chat('1+1', 'test'))
-    # print(chat('1+2', 'test'))
-    # print(chat('1+3', 'test'))
-    # print(CHATS['test'])
-
-
-    # for x in range(50,100):
-    #     s,r = chat(f'напиши рассказ на 10 слов про цифру {x}', 'test', temperature=1.5, system = 'отвечай всегда на английском языке')
-    #     mem = CHATS['test']
-    #     tokens_count = count_tokens(mem)
-    #     print(len(r), r[:40].replace('\n', ' '), '...', r[-20:].replace('\n', ' '), len(mem), tokens_count)
-
-    # print(translate('здорово как ты сам', from_lang='ru', to_lang='en'))
-
-    # print(sum_big_text(open('1.txt','r', encoding='utf-8').read(), 'кратко перескажи текст, уложись в 1000 слов', temperature=1.5))

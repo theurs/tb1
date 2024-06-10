@@ -213,17 +213,3 @@ def chat_cli():
 if __name__ == '__main__':
     pass
     # chat_cli()
-
-    # print(get_images("актриса из сериала ход королевы"))
-    print(check_image_against_query((open('2.jpg', 'rb').read(), 'командер талия со звездолета с орвила')))
-    
-    # print(get_links("курс доллара"))
-
-    # for x in range(100):
-    #     print(x)
-    #     print(ai("напиши рассказ 500 слов про золото", model='gpt-3.5')[:100].replace('\n', ' '))
-    #     print(ai("напиши рассказ 500 слов про золото")[:100].replace('\n', ' '))
-
-    # t = open('1.txt', 'r', encoding='utf-8').read()
-    # q = f'Кратко перескажи текст:\n\n{t[:4000]}'
-    # print(ai(q, 'gpt-3.5'))

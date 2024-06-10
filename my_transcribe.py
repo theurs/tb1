@@ -25,7 +25,9 @@ from pydub.silence import split_on_silence
 import cfg
 import my_gemini
 import my_log
+import my_ytb
 import utils
+from utils import asunc_run
 
 
 YT_DLP = 'yt-dlp'
@@ -210,6 +212,25 @@ def genai_clear():
 
 
 def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') -> str:
+    '''
+    This function takes an audio file path and an optional prompt as input and returns the transcribed text.
+
+    Parameters
+    audio_file: The path to the audio file. This can be a local file path or a YouTube URL.
+    prompt: An optional prompt to provide to the Gemini API. This can be used to guide the transcription process.
+    language: The language of the audio file. This is used to select the appropriate language model for transcription.
+    Returns
+    The transcribed text.
+
+    Raises
+    Exception: If an error occurs during transcription.
+    '''
+    if my_ytb.valid_youtube_url(audio_file):
+        audio_file_ = my_ytb.download_ogg(audio_file)
+        result = transcribe_genai(audio_file_, prompt, language)
+        utils.remove_file(audio_file_)
+        return result
+
     try:
         keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
         random.shuffle(keys)
@@ -538,36 +559,22 @@ def recognize_segment(recognizer, wav_bytes, lang, index):
 ########################################################################################
 
 
+@asunc_run
+def shazam(url: str):
+    '''не работает, не может джемини шазамить'''
+    r = transcribe_genai('https://www.youtube.com/watch?v=O8u61dQut1E', 'Какая музыка играет, название?')
+    print(my_ytb.get_title(url), url)
+    print(r)
+
+
 if __name__ == '__main__':
     pass
-    t = open('1.txt', encoding='utf8').read()
-    print(detect_repetitiveness_with_tail(t))
-    # print(google_stt_v2('1.ogg'))
-    # print(find_split_segments('1.opus'))
-    # print(find_split_segments('https://www.youtube.com/watch?v=HqQOpmv1How'))
-    ### print(find_split_segments('https://www.youtube.com/watch?v=KPps-AT9mBg'))
-
-    # t = 'Это пример текста с определенными повторяющимися элементами, элементами элементами'
-    # print(detect_repetitiveness(t))
-    # t = 'Это пример текста с определенными повторяющимися элементами, элементами элементами' + ' элементами'*10
-    # print(detect_repetitiveness(t))
-    # t = 'Это пример текста с определенными повторяющимися элементами, элементами элементами' + ' элементами'*100
-    # print(detect_repetitiveness(t))
-    # t = 'Это пример текста с определенными повторяющимися элементами, элементами элементами' + ' элементами'*1000
-    # print(detect_repetitiveness(t))
-
-    # download_youtube_clip('https://www.youtube.com/watch?v=hEBQNq5FiFQ')
-    # download_youtube_clip('https://www.youtube.com/shorts/e2OaVTW_tlA')
-    # download_youtube_clip('https://www.youtube.com/watch?v=MowRjPRK0I4')
-
-    # print(transcribe_genai(files[0]))
-
-    # genai_clear()
-
-    # start_time = time.time()
-    # t = download_youtube_clip('https://www.youtube.com/watch?v=hHiQpGgISj8')
-    # with open('test.txt', 'w', encoding='utf-8') as f:
-    #     f.write(t[0])
-    #     f.write('\n\n')
-    #     f.write(str(t[1]))
-    # print(time.time() - start_time)
+    urls = [
+        'https://www.youtube.com/watch?v=rR19alK6QKM',
+        'https://www.youtube.com/watch?v=MqTFEahfgOk&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
+        'https://www.youtube.com/watch?v=fPO76Jlnz6c&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
+        'https://www.youtube.com/watch?v=5Fix7P6aGXQ&pp=ygU10LAg0YLRiyDRgtCw0LrQvtC5INC60YDQsNGB0LjQstGL0Lkg0YEg0LHQvtGA0L7QtNC-0Lk%3D',
+        'https://www.youtube.com/watch?v=xfT645b6l0s&pp=ygUX0L_QvtC60LjQvdGD0LvQsCDRh9Cw0YI%3D',
+    ]
+    for x in urls:
+        shazam(x)

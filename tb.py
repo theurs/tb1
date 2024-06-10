@@ -4952,8 +4952,7 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            # answer = my_shadowjourney.chat(message.text, chat_id_full, system=hidden_text)
-                            answer = ''
+                            answer = my_shadowjourney.chat(message.text, chat_id_full, system=hidden_text)
                             WHO_ANSWERED[chat_id_full] = 'gpt-4o '
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 

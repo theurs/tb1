@@ -10,6 +10,7 @@ import pathlib
 import pytz
 import random
 import re
+import regex
 import requests
 import string
 import subprocess
@@ -117,6 +118,11 @@ def bot_markdown_to_tts(text: str) -> str:
         text = text.replace(f'${match}$', new_match)
         text = text.replace(f'\[{match}\]', new_match)
         text = text.replace(f'\({match}\)', new_match)
+
+    # Регулярное выражение для поиска всех символов, кроме букв, цифр и знаков препинания
+    pattern = regex.compile(r'[^\p{L}\p{N}\p{P} ]', re.UNICODE)
+    # Замена всех найденных символов на пустую строку
+    text = pattern.sub('', text)
 
     return text
 
@@ -551,6 +557,10 @@ def get_codepage():
 
 
 if __name__ == '__main__':
+    pass
+
+    print(bot_markdown_to_tts("Привет, мир! Hello, world! 123 こんにちは 你好 В этом примере регулярноwor😘😗☺️😚😙🥲😋😛😜🤪😝🤑🤗🤭🫢🫣🤫🤔🫡🤐🤨😐😑😶🫥😶‍🌫️😏😒🙄😬😮‍💨🤥🫨😌😔ldе выражение r'[^\p{L}\p{N}\p{P}]' находит все символы, которые не являются буквами, цифрами или знаками препинания, и заменяет их на пустую строку. Класс символов \p{L} соответствует всем буквам, \p{N} — всем цифрам, а \p{P} — всем знакам препинания."))
+
     # print(get_codepage())
     # print(get_file_ext('c:\\123\123123.23'))
     # print(safe_fname('dfgdшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшггггггггггггггггггггггггггггшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшfg\/dfg.tb'))

@@ -3,6 +3,7 @@
 import json
 import random
 import requests
+import time
 import threading
 import traceback
 
@@ -10,6 +11,7 @@ import langcodes
 from sqlitedict import SqliteDict
 
 import cfg
+import my_db
 import my_log
 
 
@@ -112,9 +114,12 @@ def ai(prompt: str = '',
         status = response.status_code
         if status == 200:
             try:
-                data_dict = json.loads(response.content.decode('utf-8', errors='replace'))
+                resp = response.content.decode('utf-8', errors='replace')
+                data_dict = json.loads(resp)
                 content = data_dict['choices'][0]['message']['content']
                 return content
+            except json.decoder.JSONDecodeError:
+                return resp if resp != 'An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT\n' else ''
             except Exception as error:
                 my_log.log_shadowjourney(f'Failed to parse response: {error}\n\n{str(response)}')
                 return ''
@@ -156,6 +161,7 @@ def chat(query: str, chat_id: str = '', temperature: float = 0.1, system: str = 
         mem = CHATS[chat_id]
         text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system)
         if text:
+            my_db.add_msg(chat_id, 'gpt4o')
             mem += [{'role': 'user', 'content': query}]
             mem += [{'role': 'assistant', 'content': text}]
             mem = clear_mem(mem, chat_id)
@@ -332,6 +338,8 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 
 if __name__ == '__main__':
     pass
+    my_db.init()
     # print(ai('1+1'))
-    # chat_cli()
+    chat_cli()
     # print(sum_big_text(open('1.txt', 'r', encoding='utf-8').read(), 'Напиши подробный пересказ текста.'))
+    my_db.close()

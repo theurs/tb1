@@ -15,8 +15,9 @@ import langcodes
 from sqlitedict import SqliteDict
 
 import cfg
-import my_sum
+import my_db
 import my_log
+import my_sum
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -488,6 +489,11 @@ def chat(query: str, chat_id: str, temperature: float = 0.1, update_memory: bool
         r = ''
         try:
             r = ai(query, mem, temperature, model = model, chat_id=chat_id)
+            if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
+            if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
+            if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
+            if not model: model_ = 'gemini15_flash'
+            my_db.add_msg(chat_id, model_)
         except Exception as error:
             my_log.log_gemini(f'my_gemini:chat:{error}\n\n{query[:500]}')
             time.sleep(5)
@@ -889,9 +895,10 @@ def rebuild_subtitles(text: str, lang: str) -> str:
 
 
 if __name__ == '__main__':
+    my_db.init()
     load_users_keys()
 
-    # chat_cli()
+    chat_cli()
     # print(ai('1+1= answer very short'))
 
     # print(img2txt(open('1.jpg', 'rb').read()))
@@ -910,4 +917,6 @@ if __name__ == '__main__':
     # for _ in range(2):
     #     print(reprompt_image('Нарисуй голая лара крофт.', censored=False, pervert=True))
     #     print('')
+
+    my_db.close()
 

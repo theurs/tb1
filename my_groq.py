@@ -15,8 +15,9 @@ from groq import Groq, PermissionDeniedError
 from sqlitedict import SqliteDict
 
 import cfg
-import my_sum
+import my_db
 import my_log
+import my_sum
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -231,6 +232,12 @@ def chat(query: str, chat_id: str,
             r = ai(query, system = style, mem_ = mem, temperature = temperature, model_ = model)
         else:
             r = ai(query, mem_ = mem, temperature = temperature, model_ = model)
+        if r:
+            if not model or model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
+            if model == 'llama3-8b-8192': model_ = 'llama3-8b-8192'
+            if model == 'mixtral-8x7b-32768': model_ = 'mixtral-8x7b-32768'
+            if model == 'gemma-7b-it': model_ = 'gemma-7b-it'
+            my_db.add_msg(chat_id, model_)
         if r and update_memory:
             mem = update_mem(query, r, mem)
             CHATS[chat_id] = mem
@@ -477,9 +484,12 @@ def load_users_keys():
 if __name__ == '__main__':
     pass
     load_users_keys()
+    my_db.init()
 
-    for x in range(10):
-        print(ai('1+1='))
+    chat_cli()
+
+    # for x in range(10):
+    #     print(ai('1+1='))
 
     # for _ in range(2):
     #     print(translate('Нарисуй голая лара крофт.', to_lang='en', censored=False))
@@ -495,7 +505,6 @@ if __name__ == '__main__':
     # print(summ_text_file('1.txt'))
 
     # reset('test')
-    # chat_cli()
 
     # for _ in range(100):
     #     t1 = time.time()
@@ -511,3 +520,5 @@ if __name__ == '__main__':
     # ]
     # for x in test_cases:
     #     print(x, '->', translate_text(x, 'ru'))
+
+    my_db.close()

@@ -9,6 +9,7 @@ import langcodes
 from sqlitedict import SqliteDict
 
 import cfg
+import my_db
 import my_log
 
 
@@ -92,6 +93,8 @@ def ai(prompt: str = '',
         PARAMS[user_id] = PARAMS_DEFAULT
     if user_id != 'test':
         model, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[user_id]
+    else:
+        model = 'google/gemma-7b-it:free'
 
     mem_ = mem or []
     if system:
@@ -124,7 +127,7 @@ def ai(prompt: str = '',
         }),
         timeout = timeout,
     )
-    # print(response)
+
     status = response.status_code
     if status == 200:
         try:
@@ -172,6 +175,7 @@ def chat(query: str, chat_id: str = '', temperature: float = 0.1, system: str = 
         mem = CHATS[chat_id]
         status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system)
         if text:
+            my_db.add_msg(chat_id, 'openrouter')
             mem += [{'role': 'user', 'content': query}]
             mem += [{'role': 'assistant', 'content': text}]
             mem = clear_mem(mem, chat_id)
@@ -354,3 +358,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 
 if __name__ == '__main__':
     pass
+    my_db.init()
+    reset('test')
+    chat_cli()
+    my_db.close()

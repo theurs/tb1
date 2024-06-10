@@ -29,6 +29,7 @@ import cfg
 import bing_img
 import my_init
 import my_genimg
+import my_db
 import my_dic
 import my_ddg
 import my_google
@@ -2787,13 +2788,13 @@ def send_debug_history(message: telebot.types.Message):
 def restart(message: telebot.types.Message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
     global LOG_GROUP_DAEMON_ENABLED, ACTIVITY_DAEMON_RUN
-    LOG_GROUP_DAEMON_ENABLED = False
-    ACTIVITY_DAEMON_RUN = False
-    
+
     bot_reply_tr(message, 'Restarting bot, please wait')
     my_log.log2(f'tb:restart: !!!RESTART!!!')
-
     bot.stop_polling()
+    LOG_GROUP_DAEMON_ENABLED = False
+    ACTIVITY_DAEMON_RUN = False
+    my_db.close()
 
 
 @bot.message_handler(commands=['leave'], func=authorized_admin)
@@ -5091,6 +5092,7 @@ def main():
     my_genimg.load_users_keys()
     my_groq.load_users_keys()
     my_trans.load_users_keys()
+    my_db.init()
 
     count_stats()
     activity_daemon()

@@ -70,6 +70,7 @@ def close():
             my_log.log2(f'my_msg_counter:close {error}')
 
 
+@async_run
 def add_msg(user_id: str, model_used: str, timestamp: float = None):
     '''add msg counter record to db'''
     global COM_COUNTER
@@ -186,30 +187,19 @@ def count_new_user_in_days(days: int) -> int:
     access_time = time.time() - days * 24 * 60 * 60
     with LOCK:
         try:
-            # Найти всех пользователей, которые имели сообщения позже заданного времени
             CUR.execute('''
-                SELECT user_id
-                FROM msg_counter
-                WHERE access_time > ?
-                GROUP BY user_id
-            ''', (access_time,))
-            recent_users = set(row[0] for row in CUR.fetchall())
-
-            if not recent_users:
-                return 0
-
-            # Найти всех пользователей, которые не имели сообщения раньше заданного времени
-            recent_users_str = ','.join('?' for _ in recent_users)
-            CUR.execute(f'''
                 SELECT COUNT(DISTINCT user_id)
-                FROM msg_counter
-                WHERE user_id IN ({recent_users_str})
-                AND access_time <= ?
-            ''', (*recent_users, access_time))
+                FROM msg_counter 
+                WHERE access_time > ?
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM msg_counter AS mc2
+                    WHERE mc2.user_id = msg_counter.user_id
+                    AND mc2.access_time <= ?
+                )
+            ''', (access_time, access_time))
 
-            found_users = set(row[0] for row in CUR.fetchall())
-            new_users_count = len(recent_users - found_users)
-            return new_users_count
+            return CUR.fetchone()[0]
         except Exception as error:
             my_log.log2(f'my_msg_counter:count_new_user_in_days {error}')
             return 0

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 #pip install -U duckduckgo_search[lxml]
 
-import time
+
 import io
-import traceback
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image
 
@@ -12,6 +12,52 @@ from duckduckgo_search import DDGS
 import my_gemini
 import my_log
 import utils
+
+
+# не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
+MAX_REQUEST = 4000
+
+# хранилище диалогов {id:DDG object}, не сохраняются при перезапуске
+CHATS = {}
+
+# блокировка чатов что бы не испортить историю 
+# {id:lock}
+LOCKS = {}
+
+
+def chat(query: str,
+         chat_id: str,
+         model: str = '',
+         ) -> str:
+    '''model = 'claude-3-haiku' | 'gpt-3.5'''
+
+    if chat_id not in CHATS:
+        CHATS[chat_id] = DDGS(timeout=60)
+
+    if not model:
+        model='claude-3-haiku'
+
+    if chat_id not in LOCKS:
+        LOCKS[chat_id] = threading.Lock()
+
+    with LOCKS[chat_id]:
+        try:
+            resp = CHATS[chat_id].chat(query, model)
+            return resp
+        except Exception as error:
+            my_log.log_ddg(f'my_ddg:chat: {error}')
+            try:
+                CHATS[chat_id] = DDGS(timeout=60)
+                resp = CHATS[chat_id].chat(query, model)
+                return resp
+            except Exception as error:
+                my_log.log_ddg(f'my_ddg:chat: {error}')
+                return ''
+
+
+def reset(chat_id: str):
+    if chat_id in CHATS:
+        del CHATS[chat_id]
 
 
 def get_links(query: str, max_results: int = 5) -> list:
@@ -205,11 +251,12 @@ def chat_cli():
     ddg = DDGS(timeout=120)
     while 1:
         q = input('> ')
-        # r = ddg.chat(q, model='claude-3-haiku')
-        r = ddg.chat(q, model='gpt-3.5')
+        r = ddg.chat(q, model='claude-3-haiku')
+        # r = ddg.chat(q, model='gpt-3.5')
         print(r)
+        print('')
 
 
 if __name__ == '__main__':
     pass
-    # chat_cli()
+    chat_cli()

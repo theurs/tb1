@@ -24,6 +24,7 @@
 /gemini10 - выбрать модель Google Gemini 1.5 flash
 /gemini15 - выбрать модель Google Gemini 1.5 Pro
 /gpt4o - выбрать модель GPT-4o OpenAI
+/haiku - выбрать модель Haiku от DuckDuckGo (Claude 3 Haiku)
 /openrouter - выбрать модель от openrouter.ai
 /model - изменить модель openrouter.ai
 /maxtokens - изменить количество токенов для openrouter.ai

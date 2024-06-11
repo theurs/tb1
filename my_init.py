@@ -75,6 +75,7 @@ Change model:
 /llama370 - LLaMa 3 70b (Groq)
 /openrouter - all other models including new GPT-4o, Claude 3 Opus etc, you will need your own account
 /gpt4o - GPT-4o Openai
+/haiku - Claude 3 Haiku from DuckDuckGo
 
 
 Report issues on Telegram:

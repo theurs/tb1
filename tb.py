@@ -1155,6 +1155,19 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2, button3, button4)
         return markup
 
+    elif kbd == 'haiku_chat':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='haiku_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
+
     elif kbd == 'groq_groq-llama370_chat':
         if disabled_kbd(chat_id_full):
             return None
@@ -1426,6 +1439,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'gpt4o_reset':
             my_shadowjourney.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с GPT-4o очищена.')
+        elif call.data == 'haiku_reset':
+            my_ddg.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с haiku очищена.')
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Gemini очищена.')
@@ -2388,6 +2404,14 @@ def addkeys(message: telebot.types.Message):
 #     bot_reply_tr(message, 'Removed keys successfully!')
 
 
+@bot.message_handler(commands=['haiku'], func=authorized_owner)
+@async_run
+def haiku_mode(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    CHAT_MODE[chat_id_full] = 'haiku'
+    bot_reply_tr(message, 'Claude 3 Haiku model selected.')
+
+
 @bot.message_handler(commands=['gpt4o', 'gpt40'], func=authorized_owner)
 @async_run
 def gpt4o_mode(message: telebot.types.Message):
@@ -2582,6 +2606,8 @@ def reset_(message: telebot.types.Message):
         my_openrouter.reset(chat_id_full)
     elif 'gpt4o' in CHAT_MODE[chat_id_full]:
         my_shadowjourney.reset(chat_id_full)
+    elif 'haiku' in CHAT_MODE[chat_id_full]:
+        my_ddg.reset(chat_id_full)
     else:
         if isinstance(message, telebot.types.Message):
             bot_reply_tr(message, 'History WAS NOT cleared.')
@@ -3964,6 +3990,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
             my_shadowjourney.reset(chat_id_full)
+            my_ddg.reset(chat_id_full)
 
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
@@ -4888,6 +4915,41 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt4o {error3}\n{error_traceback}')
+                        return
+
+
+                # если активирован режим общения с haiku (duckduckgo)
+                if chat_mode_ == 'haiku':
+                    if len(msg) > my_ddg.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для haiku:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            answer = my_ddg.chat(message.text, chat_id_full)
+                            answer = answer.strip()
+                            if not answer:
+                                answer = tr('Haiku did not answered, try to /reset and start again', lang)
+                            WHO_ANSWERED[chat_id_full] = 'haiku-ddg'
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not VOICE_ONLY_MODE[chat_id_full]:
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            my_log.log_echo(message, f'[haiku-ddg] {answer}')
+                            try:
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('haiku_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('haiku_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:haiku {error3}\n{error_traceback}')
                         return
 
 

@@ -56,8 +56,10 @@ def init():
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_access_time ON msg_counter(access_time)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_user_id ON msg_counter(user_id)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_model_used ON msg_counter(model_used)')
+
         # Перестроение индексов для таблицы msg_counter
-        CUR.execute('REINDEX msg_counter')
+        # CUR.execute('REINDEX msg_counter')
+
         CON.commit()
         sync_daemon()
 

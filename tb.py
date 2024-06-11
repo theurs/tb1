@@ -81,6 +81,9 @@ LAST_TIME_ACCESS = SqliteDict('db/last_time_access.db', autocommit=True)
 # сколько картинок нарисовано юзером {id: counter}
 IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=True)
 
+# {user_id:True} была ли команда на остановку генерации image10
+IMAGE10_STOP = {}
+
 # сообщения приветствия и помощи
 HELLO_MSG = {}
 HELP_MSG = {}
@@ -3053,13 +3056,26 @@ def get_user_image_counter(chat_id_full: str) -> int:
     return IMAGES_BY_USER_COUNTER[chat_id_full]
 
 
+@bot.message_handler(commands=['stop','cancel'], func=authorized)
+@async_run
+def image10_stop(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    IMAGE10_STOP[chat_id_full] = True
+    bot_reply_tr(message, 'Image generation stopped.')
+
+
 @bot.message_handler(commands=['image10','img10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10'], func=authorized)
 @async_run
 def image10_gen(message: telebot.types.Message):
     if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
         bot_reply_tr(message, '10 times image generation started.')
+        chat_id_full = get_topic_id(message)
         for _ in range(10):
+            if chat_id_full in IMAGE10_STOP:
+                del IMAGE10_STOP[chat_id_full]
+                return
             image_gen(message)
+            time.sleep(60)
 
 
 @bot.message_handler(commands=['image2','img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
@@ -3135,6 +3151,8 @@ def image_gen(message: telebot.types.Message):
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
                         else:
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
+                        if chat_id_full in IMAGE10_STOP:
+                            return
                         # 1 а может и больше запросы к репромптеру
                         my_db.add_msg(chat_id_full, 'gemini15_flash')
                         # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]

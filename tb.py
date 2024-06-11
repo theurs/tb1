@@ -3334,12 +3334,11 @@ the original prompt:""", lang) + '\n\n\n' + prompt
 @bot.message_handler(commands=['stats', 'stat'], func=authorized_admin)
 @async_run
 def stats(message: telebot.types.Message):
-    """Обновленная функция, показывающая статистику использования бота."""
+    """Функция, показывающая статистику использования бота."""
     with ShowAction(message, 'typing'):
         model_usage1 = my_db.get_model_usage(1)
         model_usage7 = my_db.get_model_usage(7)
         model_usage30 = my_db.get_model_usage(30)
-        # {'gpt4o': 17, 'llama3-70b-8192': 1, 'openrouter': 3}
 
         msg = f'Total messages in DB: {my_db.count_msgs_all()}'
         msg += '\n\n1 day\n'

@@ -27,7 +27,7 @@ import my_gemini
 import my_log
 import my_ytb
 import utils
-from utils import asunc_run
+from utils import async_run
 
 
 YT_DLP = 'yt-dlp'
@@ -559,7 +559,7 @@ def recognize_segment(recognizer, wav_bytes, lang, index):
 ########################################################################################
 
 
-@asunc_run
+@async_run
 def shazam(url: str):
     '''не работает, не может джемини шазамить'''
     r = transcribe_genai('https://www.youtube.com/watch?v=O8u61dQut1E', 'Какая музыка играет, название?')

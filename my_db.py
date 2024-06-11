@@ -6,8 +6,7 @@ import threading
 import sqlite3
 
 import my_log
-from utils import asunc_run
-
+from utils import async_run
 
 
 LOCK = threading.Lock()
@@ -19,7 +18,7 @@ DAEMON_RUN = True
 DAEMON_TIME = 2
 
 
-@asunc_run
+@async_run
 def sync_daemon():
     global COM_COUNTER
     while DAEMON_RUN:
@@ -219,8 +218,9 @@ def count_new_user_in_days(days: int) -> int:
 if __name__ == '__main__':
     pass
     init()
-    print(get_total_msg_users_in_days(30))
-    print(count_new_user_in_days(30))
+
+    # print(get_total_msg_users_in_days(30))
+    # print(count_new_user_in_days(30))
 
     # for x in range(10000000):
     #     uid = random.choice(('user1','user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8', 'user9', 'user10'))

@@ -27,7 +27,7 @@ from pylatexenc.latex2text import LatexNodes2Text
 import my_log
 
 
-def asunc_run(func):
+def async_run(func):
     '''Декоратор для запуска функции в отдельном потоке, асинхронно'''
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

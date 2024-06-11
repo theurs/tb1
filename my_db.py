@@ -33,7 +33,6 @@ def sync_daemon():
             my_log.log2(f'my_msg_counter:sync_daemon {error}')
 
 
-@asunc_run
 def init():
     '''init db'''
     global CON, CUR
@@ -220,8 +219,8 @@ def count_new_user_in_days(days: int) -> int:
 if __name__ == '__main__':
     pass
     init()
-
-    # print(get_total_msg_users())
+    print(get_total_msg_users_in_days(30))
+    print(count_new_user_in_days(30))
 
     # for x in range(10000000):
     #     uid = random.choice(('user1','user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8', 'user9', 'user10'))

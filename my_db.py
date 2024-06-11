@@ -52,6 +52,12 @@ def init():
                 model_used TEXT
             )
         ''')
+        # Создание индексов
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_access_time ON msg_counter(access_time)')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_user_id ON msg_counter(user_id)')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_model_used ON msg_counter(model_used)')
+        # Перестроение индексов для таблицы msg_counter
+        CUR.execute('REINDEX msg_counter')
         CON.commit()
         sync_daemon()
 
@@ -203,24 +209,18 @@ def count_new_user_in_days(days: int) -> int:
     access_time = time.time() - days * 24 * 60 * 60
     with LOCK:
         try:
-            # Получить количество пользователей, которые отправили сообщения за последние days дней
-            # и не имеют сообщений, отправленных раньше чем за days дней
             CUR.execute('''
-                SELECT COUNT(DISTINCT recent_users.user_id) 
-                FROM (
-                    SELECT user_id 
-                    FROM msg_counter 
-                    WHERE access_time > ?
-                ) AS recent_users
-                LEFT JOIN (
-                    SELECT user_id 
-                    FROM msg_counter 
-                    WHERE access_time <= ?
-                ) AS old_users
-                ON recent_users.user_id = old_users.user_id
-                WHERE old_users.user_id IS NULL
+                SELECT COUNT(DISTINCT user_id)
+                FROM msg_counter 
+                WHERE access_time > ?
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM msg_counter AS mc2
+                    WHERE mc2.user_id = msg_counter.user_id
+                    AND mc2.access_time <= ?
+                )
             ''', (access_time, access_time))
-            
+
             return CUR.fetchone()[0]
         except Exception as error:
             my_log.log2(f'my_msg_counter:count_new_user_in_days {error}')

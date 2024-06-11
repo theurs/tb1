@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 
 
-import os
 import time
 import threading
 import sqlite3
 
-from sqlitedict import SqliteDict
-
 import my_log
-from utils import asunc_run, remove_file
+from utils import asunc_run
 
 
 
@@ -52,33 +49,13 @@ def init():
                 model_used TEXT
             )
         ''')
-        # Создание индексов
-        CUR.execute('CREATE INDEX IF NOT EXISTS idx_access_time ON msg_counter(access_time)')
-        CUR.execute('CREATE INDEX IF NOT EXISTS idx_user_id ON msg_counter(user_id)')
-        CUR.execute('CREATE INDEX IF NOT EXISTS idx_model_used ON msg_counter(model_used)')
-
-        # Перестроение индексов для таблицы msg_counter
-        # CUR.execute('REINDEX msg_counter')
+        # Creating indexes separately
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_access_time ON msg_counter (access_time)')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_user_id ON msg_counter (user_id)')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_model_used ON msg_counter (model_used)')
 
         CON.commit()
         sync_daemon()
-
-        if os.path.exists('db/chat_stats.db'):
-
-            CHAT_STATS = SqliteDict('db/chat_stats.db')
-            for key in CHAT_STATS:
-                timestamp = key
-                user_id, model = CHAT_STATS[key]
-                if model == 'gemini15': model = 'gemini15_pro'
-                elif model == 'gemini10': model = 'gemini15_flash'
-                elif model == 'chatgpt': model = 'gpt4o'
-                elif model == 'gemini': model = 'gemini15_flash'
-                elif model == 'llama370': model = 'llama3-70b-8192'
-                elif model == 'gemma7': model = 'gemma-7b-it'
-                else: print(model)
-                add_msg(user_id, model, timestamp)
-            del CHAT_STATS
-            remove_file('db/chat_stats.db')
     except Exception as error:
         my_log.log2(f'my_msg_counter:init {error}')
 
@@ -211,19 +188,30 @@ def count_new_user_in_days(days: int) -> int:
     access_time = time.time() - days * 24 * 60 * 60
     with LOCK:
         try:
+            # Найти всех пользователей, которые имели сообщения позже заданного времени
             CUR.execute('''
-                SELECT COUNT(DISTINCT user_id)
-                FROM msg_counter 
+                SELECT user_id
+                FROM msg_counter
                 WHERE access_time > ?
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM msg_counter AS mc2
-                    WHERE mc2.user_id = msg_counter.user_id
-                    AND mc2.access_time <= ?
-                )
-            ''', (access_time, access_time))
+                GROUP BY user_id
+            ''', (access_time,))
+            recent_users = set(row[0] for row in CUR.fetchall())
 
-            return CUR.fetchone()[0]
+            if not recent_users:
+                return 0
+
+            # Найти всех пользователей, которые не имели сообщения раньше заданного времени
+            recent_users_str = ','.join('?' for _ in recent_users)
+            CUR.execute(f'''
+                SELECT COUNT(DISTINCT user_id)
+                FROM msg_counter
+                WHERE user_id IN ({recent_users_str})
+                AND access_time <= ?
+            ''', (*recent_users, access_time))
+
+            found_users = set(row[0] for row in CUR.fetchall())
+            new_users_count = len(recent_users - found_users)
+            return new_users_count
         except Exception as error:
             my_log.log2(f'my_msg_counter:count_new_user_in_days {error}')
             return 0

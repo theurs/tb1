@@ -132,8 +132,10 @@ def chat(query: str,
             return resp
         except Exception as error:
             my_log.log_ddg(f'my_ddg:chat: {error}')
+            time.time(2)
             try:
                 CHATS_OBJ[chat_id] = DDGS(timeout=60)
+                reset(chat_id)
                 resp = CHATS_OBJ[chat_id].chat(query, model)
                 my_db.add_msg(chat_id, model)
                 update_mem(query, resp, chat_id)

@@ -13,7 +13,7 @@ import langcodes
 from duckduckgo_search import DDGS
 
 import my_db
-import my_ddg
+import my_gemini
 import my_log
 import utils
 
@@ -212,7 +212,7 @@ def check_image_against_query(image) -> bool:
 Decided if it is relevant to the query.
 Answer supershot, your answer should be "yes" or "no" or "other".
 '''
-    result = my_ddg.img2txt(image[0], query)
+    result = my_gemini.img2txt(image[0], query)
     return True if 'yes' in result.lower() else False
 
 

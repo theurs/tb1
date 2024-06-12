@@ -42,18 +42,23 @@ def command_code(message: telebot.types.Message):
 Таким образом, напряженность электрического поля в указанной точке равна примерно \( 1,94 \times 10^5 \, Н/Кл \).
 """
 
-    # t = utils.bot_markdown_to_html(t)
-    # for x in utils.split_html(t, 4000):
-    #     print(x)
-    #     bot.reply_to(message, x, parse_mode = 'HTML')
 
-    # bot.reply_to(message, t, parse_mode = 'HTML')
-    tt = utils.bot_markdown_to_html(t)
-    print(len(tt))
-    print(tt)
-    for ttt in utils.split_html(tt, 3800):
-        print(ttt)
-        bot.reply_to(message, ttt, parse_mode = 'HTML')
+    # tt = utils.bot_markdown_to_html(t)
+    # print(len(tt))
+    # print(tt)
+    # for ttt in utils.split_html(tt, 3800):
+    #     print(ttt)
+    #     bot.reply_to(message, ttt, parse_mode = 'HTML')
+
+    url = 'https://youtu.be/zB7DVYSltGM?si=ldHqem6B4FfW1nEN'
+    kbd  = telebot.types.InlineKeyboardMarkup()
+    button1 = telebot.types.InlineKeyboardButton('ссылка', url=url)
+    kbd.add(button1)
+    video = telebot.types.InputMediaVideo(url)
+    bot.send_video(chat_id=message.chat.id,
+                   caption = 'caption',
+                   video = video,
+                   reply_markup = kbd)
 
 
 if __name__ == '__main__':

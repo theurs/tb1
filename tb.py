@@ -181,7 +181,7 @@ LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
 subscription_cache = {}
 
 # хранилище для переводов сообщений сделанных гугл переводчиком
-# key: '(text, lang)' - string!
+# key: str('text', 'lang', 'help')
 # value: translated text
 AUTO_TRANSLATIONS = my_init.AUTO_TRANSLATIONS
 
@@ -350,9 +350,6 @@ def tr(text: str, lang: str, help: str = '') -> str:
     Returns:
         The translated text.
     """
-    # перевод на этот язык не работает?
-    if lang == 'fa':
-        lang = 'en'
     if lang == 'ua':
         lang = 'uk'
 
@@ -370,6 +367,13 @@ def tr(text: str, lang: str, help: str = '') -> str:
             translated = my_gemini.translate(text, to_lang=lang, help=help)
             if not translated:
                 my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
+
+    if not translated and lang == 'fa':
+        translated = my_groq.translate(text, to_lang = lang)
+    if not translated and lang == 'fa':
+        translated = my_shadowjourney.translate(text, to_lang = lang)
+    if not translated and lang == 'fa':
+        translated = my_gemini.translate(text, to_lang = lang)
 
     if not translated:
         translated = my_trans.translate_deepl(text, to_lang = lang)
@@ -3090,7 +3094,7 @@ def image10_stop(message: telebot.types.Message):
     bot_reply_tr(message, 'Image generation stopped.')
 
 
-@bot.message_handler(commands=['image10','img10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10'], func=authorized)
+@bot.message_handler(commands=['image10','img10', 'IMG10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10'], func=authorized)
 @async_run
 def image10_gen(message: telebot.types.Message):
     if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
@@ -3104,7 +3108,7 @@ def image10_gen(message: telebot.types.Message):
             time.sleep(60)
 
 
-@bot.message_handler(commands=['image2','img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
+@bot.message_handler(commands=['image2','IMG2', 'img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
 @async_run
 def image2_gen(message: telebot.types.Message):
     is_private = message.chat.type == 'private'
@@ -3115,7 +3119,7 @@ def image2_gen(message: telebot.types.Message):
     image_gen(message)
 
 
-@bot.message_handler(commands=['image','img', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen'], func=authorized)
+@bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):
     """Generates a picture from a description"""
@@ -3882,6 +3886,12 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
 @async_run
 def send_welcome_start(message: telebot.types.Message):
     # Отправляем приветственное сообщение
+    try:
+        user_have_lang = message.from_user.language_code
+    except Exception as error:
+        my_log.log2(f'tb:start {error}\n\n{str(message)}')
+        user_have_lang = None
+
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
@@ -3901,6 +3911,10 @@ def send_welcome_start(message: telebot.types.Message):
         my_log.log2(f'tb:send_welcome_start Unknown language: {lang}')
 
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
+
+    # no language in user info, show language selector
+    if not user_have_lang:
+        language(message)
 
 
 @bot.message_handler(commands=['help'], func = authorized_log)
@@ -4996,11 +5010,37 @@ def load_msgs():
         HELP_MSG = {}
 
 
+@async_run
+def one_time_shot():
+    try:
+        if not os.path.exists('one_time_flag.txt'):
+
+            # key: str('text', 'lang', 'help')
+            # value: translated text
+            keys = [x for x in AUTO_TRANSLATIONS.keys()]
+            for key in keys:
+                value = my_init.ast.literal_eval(key)
+                if len(value) != 3:
+                    del AUTO_TRANSLATIONS[key]
+                    my_log.log_translate(f'tb:one_time_shot: removed old translation {key}')
+                    continue
+                if value[1] == 'fa':
+                    del AUTO_TRANSLATIONS[key]
+                    my_log.log_translate(f'tb:one_time_shot: removed old farsi translation {key}')
+
+            with open('one_time_flag.txt', 'w') as f:
+                f.write('done')
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:one_time_shot: {error}\n{traceback_error}')
+
+
 def main():
     """
     Runs the main function, which sets default commands and starts polling the bot.
     """
     load_msgs()
+    one_time_shot()
 
     my_gemini.load_users_keys()
     my_genimg.load_users_keys()

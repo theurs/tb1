@@ -9,6 +9,7 @@ from PIL import Image
 
 from duckduckgo_search import DDGS
 
+import my_db
 import my_gemini
 import my_log
 import utils
@@ -43,12 +44,14 @@ def chat(query: str,
     with LOCKS[chat_id]:
         try:
             resp = CHATS[chat_id].chat(query, model)
+            my_db.add_msg(chat_id, model)
             return resp
         except Exception as error:
             my_log.log_ddg(f'my_ddg:chat: {error}')
             try:
                 CHATS[chat_id] = DDGS(timeout=60)
                 resp = CHATS[chat_id].chat(query, model)
+                my_db.add_msg(chat_id, model)
                 return resp
             except Exception as error:
                 my_log.log_ddg(f'my_ddg:chat: {error}')

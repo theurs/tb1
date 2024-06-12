@@ -412,6 +412,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_openrouter.update_mem(query, resp, chat_id_full)
     elif 'gpt4o' in CHAT_MODE[chat_id_full]:
         my_shadowjourney.update_mem(query, resp, chat_id_full)
+    elif 'haiku' in CHAT_MODE[chat_id_full]:
+        my_ddg.update_mem(query, resp, chat_id_full)
 
 
 def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:

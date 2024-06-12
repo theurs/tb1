@@ -442,7 +442,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
 
     try:
         text = my_gemini.img2txt(data, query)
-        my_db.add_msg(chat_id_full, 'gemini15_flash')
+        my_db.add_msg(chat_id_full, 'gemini_vision')
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
@@ -1926,6 +1926,7 @@ def handle_photo(message: telebot.types.Message):
                         return
 
                     text = img2txt(image, lang, chat_id_full, message.caption)
+                    my_db.add_msg(chat_id_full, 'gemini_vision')
                     if text:
                         text = utils.bot_markdown_to_html(text)
                         text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
@@ -4595,6 +4596,7 @@ def do_task(message, custom_prompt: str = ''):
             if utils.is_image_link(message.text):
                 with ShowAction(message, 'typing'):
                     text = img2txt(message.text, lang, chat_id_full)
+                    my_db.add_msg(chat_id_full, 'gemini_vision')
                     if text:
                         text = utils.bot_markdown_to_html(text)
                         bot_reply(message, text, parse_mode='HTML',

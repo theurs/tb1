@@ -3401,6 +3401,11 @@ def stats(message: telebot.types.Message):
         msg += f'\nNew users in 7 day: {my_db.count_new_user_in_days(7)}'
         msg += f'\nNew users in 30 day: {my_db.count_new_user_in_days(30)}'
 
+        msg += f'\n\nGemini keys: {len(my_gemini.ALL_KEYS)+len(cfg.gemini_keys)}'
+        msg += f'\nGroq keys: {len(my_groq.ALL_KEYS)}'
+        msg += f'\nHuggingface keys: {len(my_genimg.ALL_KEYS)}'
+        msg += f'\nDEEPL keys: {len(my_trans.ALL_KEYS)}'
+
         bot_reply(message, msg)
 
 

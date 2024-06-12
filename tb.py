@@ -2587,6 +2587,8 @@ def undo(message: telebot.types.Message):
         my_openrouter.undo(chat_id_full)
     elif 'gpt4o' in CHAT_MODE[chat_id_full]:
         my_shadowjourney.undo(chat_id_full)
+    elif 'haiku' in CHAT_MODE[chat_id_full]:
+        bot_reply_tr(message, 'DuckDuckGo haiku do not support /undo command')
     else:
         bot_reply_tr(message, 'History WAS NOT undone.')
 
@@ -2771,6 +2773,10 @@ def send_debug_history(message: telebot.types.Message):
     if 'gpt4o' in CHAT_MODE[chat_id_full]:
         prompt = 'GPT-4o\n\n'
         prompt += my_shadowjourney.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if 'haiku' in CHAT_MODE[chat_id_full]:
+        prompt = tr('DuckDuckGo haiku do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
+        prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
@@ -4942,7 +4948,8 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            answer = my_ddg.chat(message.text, chat_id_full)
+                            # answer = my_ddg.chat(message.text, chat_id_full)
+                            answer = my_ddg.chat(helped_query, chat_id_full)
                             answer = answer.strip()
                             if not answer:
                                 answer = tr('Haiku did not answered, try to /reset and start again', lang)

@@ -5,7 +5,6 @@
 
 import random
 import re
-import time
 import threading
 import traceback
 
@@ -401,13 +400,13 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
         from_lang = langcodes.Language.make(language=from_lang).display_name(language='en') if from_lang != 'autodetect' else 'autodetect'
     except Exception as error1:
         error_traceback = traceback.format_exc()
-        my_log.log_translate(f'my_gemini:translate:error1: {error1}\n\n{error_traceback}')
+        my_log.log_translate(f'my_groq:translate:error1: {error1}\n\n{error_traceback}')
         
     try:
         to_lang = langcodes.Language.make(language=to_lang).display_name(language='en')
     except Exception as error2:
         error_traceback = traceback.format_exc()
-        my_log.log_translate(f'my_gemini:translate:error2: {error2}\n\n{error_traceback}')
+        my_log.log_translate(f'my_groq:translate:error2: {error2}\n\n{error_traceback}')
 
     if help:
         query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text, this can help you to translate better [{help}]:\n\n{text}'

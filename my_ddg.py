@@ -3,27 +3,110 @@
 
 
 import io
+import time
 import threading
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image
 
+import langcodes
 from duckduckgo_search import DDGS
 
 import my_db
-import my_gemini
+import my_ddg
 import my_log
 import utils
 
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 4000
+MAX_LINES = 20
 
-# хранилище диалогов {id:DDG object}, не сохраняются при перезапуске
+# Объекты для доступа к чату {id:DDG object}
+CHATS_OBJ = {}
+
+# хранилище диалогов {id:list(mem)}
+# Эти диалоги на самом деле не работают, просто что бы были, нет смысла сохранять их на диск
 CHATS = {}
 
 # блокировка чатов что бы не испортить историю 
 # {id:lock}
 LOCKS = {}
+
+
+
+def undo(chat_id: str):
+    """
+    Undo the last two lines of chat history for a given chat ID.
+
+    Args:
+        chat_id (str): The ID of the chat.
+
+    Raises:
+        Exception: If there is an error while undoing the chat history.
+
+    Returns:
+        None
+    """
+    try:
+        if chat_id in CHATS:
+            mem = CHATS[chat_id]
+            # remove 2 last lines from mem
+            mem = mem[:-2]
+            CHATS[chat_id] = mem
+    except Exception as error:
+        my_log.log_ddg(f'Failed to undo chat {chat_id}: {error}')
+
+
+def get_mem_as_string(chat_id: str) -> str:
+    """
+    Returns the chat history as a string for the given ID.
+
+    Parameters:
+        chat_id (str): The ID of the chat to get the history for.
+
+    Returns:
+        str: The chat history as a string.
+    """
+    if chat_id not in CHATS:
+        CHATS[chat_id] = []
+    mem = CHATS[chat_id]
+    result = ''
+    for x in mem:
+        role = x['role']
+        if role == 'user': role = '𝐔𝐒𝐄𝐑'
+        if role == 'assistant': role = '𝐁𝐎𝐓'
+
+        text = x['content']
+
+        if text.startswith('[Info to help you answer'):
+            end = text.find(']') + 1
+            text = text[end:].strip()
+        result += f'{role}: {text}\n'
+        if role == '𝐁𝐎𝐓':
+            result += '\n'
+    return result
+
+
+def update_mem(query: str, resp: str, chat_id: str):
+    if chat_id not in CHATS:
+        CHATS[chat_id] = []
+
+    mem = CHATS[chat_id]
+
+    mem += [{'role': 'user', 'content': query}]
+    mem += [{'role': 'assistant', 'content': resp}]
+
+    mem = mem[-MAX_LINES*2:]
+
+    CHATS[chat_id] = mem
+
+
+def reset(chat_id: str):
+    if chat_id in CHATS_OBJ:
+        del CHATS_OBJ[chat_id]
+    if chat_id in CHATS:
+        del CHATS[chat_id]
 
 
 def chat(query: str,
@@ -32,8 +115,8 @@ def chat(query: str,
          ) -> str:
     '''model = 'claude-3-haiku' | 'gpt-3.5'''
 
-    if chat_id not in CHATS:
-        CHATS[chat_id] = DDGS(timeout=60)
+    if chat_id not in CHATS_OBJ:
+        CHATS_OBJ[chat_id] = DDGS(timeout=60)
 
     if not model:
         model='claude-3-haiku'
@@ -43,24 +126,21 @@ def chat(query: str,
 
     with LOCKS[chat_id]:
         try:
-            resp = CHATS[chat_id].chat(query, model)
+            resp = CHATS_OBJ[chat_id].chat(query, model)
             my_db.add_msg(chat_id, model)
+            update_mem(query, resp, chat_id)
             return resp
         except Exception as error:
             my_log.log_ddg(f'my_ddg:chat: {error}')
             try:
-                CHATS[chat_id] = DDGS(timeout=60)
-                resp = CHATS[chat_id].chat(query, model)
+                CHATS_OBJ[chat_id] = DDGS(timeout=60)
+                resp = CHATS_OBJ[chat_id].chat(query, model)
                 my_db.add_msg(chat_id, model)
+                update_mem(query, resp, chat_id)
                 return resp
             except Exception as error:
                 my_log.log_ddg(f'my_ddg:chat: {error}')
                 return ''
-
-
-def reset(chat_id: str):
-    if chat_id in CHATS:
-        del CHATS[chat_id]
 
 
 def get_links(query: str, max_results: int = 5) -> list:
@@ -130,7 +210,7 @@ def check_image_against_query(image) -> bool:
 Decided if it is relevant to the query.
 Answer supershot, your answer should be "yes" or "no" or "other".
 '''
-    result = my_gemini.img2txt(image[0], query)
+    result = my_ddg.img2txt(image[0], query)
     return True if 'yes' in result.lower() else False
 
 
@@ -230,7 +310,13 @@ def ai(query: str, model: str = 'claude-3-haiku') -> str:
         results = DDGS(timeout=120).chat(query, model=model)
     except Exception as error:
         my_log.log2(f'my_ddg:ai: {error}')
-        return ''
+        time.sleep(2)
+        try:
+            results = DDGS(timeout=120).chat(query, model=model)
+        except Exception as error:
+            my_log.log2(f'my_ddg:ai: {error}')
+            return ''
+
     # end_time = time.time()
     # print(f'Elapsed time: {end_time - start_time:.2f} seconds, query size: {len(query)}, response size: {len(results)}, total size: {len(query) + len(results)}')
     return results
@@ -251,13 +337,53 @@ def chat_cli():
     Returns:
         None
     """
-    ddg = DDGS(timeout=120)
     while 1:
         q = input('> ')
-        r = ddg.chat(q, model='claude-3-haiku')
-        # r = ddg.chat(q, model='gpt-3.5')
+        if q == 'mem':
+            print(get_mem_as_string('test'))
+            continue
+        r = chat(q, 'test', model='claude-3-haiku')
+        # r = chat(q, 'test', model='gpt-3.5')
         print(r)
         print('')
+
+
+def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False) -> str:
+    """
+    Translates the given text from one language to another.
+    
+    Args:
+        text (str): The text to be translated.
+        from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
+        to_lang (str, optional): The language to translate the text into. If not specified, the text will be translated into Russian.
+        help (str, optional): Help text for tranlator.
+        
+    Returns:
+        str: The translated text.
+    """
+    if from_lang == '':
+        from_lang = 'autodetect'
+    if to_lang == '':
+        to_lang = 'ru'
+    try:
+        from_lang = langcodes.Language.make(language=from_lang).display_name(language='en') if from_lang != 'autodetect' else 'autodetect'
+    except Exception as error1:
+        error_traceback = traceback.format_exc()
+        my_log.log_translate(f'my_ddg:translate:error1: {error1}\n\n{error_traceback}')
+        
+    try:
+        to_lang = langcodes.Language.make(language=to_lang).display_name(language='en')
+    except Exception as error2:
+        error_traceback = traceback.format_exc()
+        my_log.log_translate(f'my_ddg:translate:error2: {error2}\n\n{error_traceback}')
+
+    if help:
+        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text, this can help you to translate better [{help}]:\n\n{text}'
+    else:
+        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
+
+    translated = ai(query)
+    return translated
 
 
 if __name__ == '__main__':

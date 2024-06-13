@@ -51,14 +51,7 @@ Remove keyboard /remove_keyboard
 How and why its free /free
 '''
 
-help_msg = f"""The bot can't edit images or draw, and it doesn't search Google itself.
-These are all done by separate commands. 
-
-The bot doesn't do anything between questions and answers.
-It can't remind you of anything because it doesn't exist until you write to it.
-It only works and exists when it's reading your messages or writing a response.
-
-Please only use /image2 command for generating not safe pictures (nsfw).
+help_msg = f"""Please use /image2 command for generating not safe pictures (nsfw).
 
 🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
 After the file or link is downloaded, you can ask questions about file using the /ask command.
@@ -68,14 +61,6 @@ After the file or link is downloaded, you can ask questions about file using the
 🎙️ You can issue commands and make requests using voice messages.
 
 👻 /purge command to remove all your data
-
-Change model:
-/gemini10 - Google Gemini 1.5 flash
-/gemini15 - Google Gemini 1.5 pro
-/llama370 - LLaMa 3 70b (Groq)
-/openrouter - all other models including new GPT-4o, Claude 3 Opus etc, you will need your own account
-/gpt4o - GPT-4o Openai
-/haiku - Claude 3 Haiku from DuckDuckGo
 
 
 Report issues on Telegram:

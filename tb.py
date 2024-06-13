@@ -1228,6 +1228,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button1 = telebot.types.InlineKeyboardButton("🤜 GPT-4o + Dalle3 (coze.com) 🤛",  url = cfg.coze_bot)
             markup.row(button1)
 
+        button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash', callback_data='select_gemini15_flash')
+        button3 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro', callback_data='select_gemini15_pro')
+        button4 = telebot.types.InlineKeyboardButton('GPT-4o', callback_data='select_gpt4o')
+        button5 = telebot.types.InlineKeyboardButton('Haiku', callback_data='select_haiku')
+        button6 = telebot.types.InlineKeyboardButton('Llama-3 70b', callback_data='select_llama370')
+        markup.row(button2, button3)
+        markup.row(button4, button5, button6)
+
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if chat_id_full not in VOICE_ONLY_MODE:
             VOICE_ONLY_MODE[chat_id_full] = False
@@ -1437,6 +1445,25 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
                                       reply_markup=get_keyboard('chat', message))
+        elif call.data == 'select_gpt4o':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT-4o.', lang))
+            CHAT_MODE[chat_id_full] = 'gpt4o'
+        elif call.data == 'select_llama370':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3 70b from DuckDuckGo.', lang))
+            CHAT_MODE[chat_id_full] = 'llama370'
+        elif call.data == 'select_haiku':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claud 3 Haiku from DuckDuckGo.', lang))
+            CHAT_MODE[chat_id_full] = 'haiku'
+        elif call.data == 'select_gemini15_flash':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash.', lang))
+            CHAT_MODE[chat_id_full] = 'gemini10'
+        elif call.data == 'select_gemini15_pro':
+            have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS
+            if have_keys:
+                bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Pro.', lang))
+                CHAT_MODE[chat_id_full] = 'gemini15'
+            else:
+                bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))
         elif call.data == 'groq-llama370_reset':
             my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Groq llama 3 70b очищена.')
@@ -2413,56 +2440,11 @@ def addkeys(message: telebot.types.Message):
 #     bot_reply_tr(message, 'Removed keys successfully!')
 
 
-@bot.message_handler(commands=['haiku'], func=authorized_owner)
-@async_run
-def haiku_mode(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    CHAT_MODE[chat_id_full] = 'haiku'
-    bot_reply_tr(message, 'Claude 3 Haiku model selected.')
-
-
-@bot.message_handler(commands=['gpt4o', 'gpt40'], func=authorized_owner)
-@async_run
-def gpt4o_mode(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    CHAT_MODE[chat_id_full] = 'gpt4o'
-    bot_reply_tr(message, 'GPT-4o model selected.')
-
-
-@bot.message_handler(commands=['gemini10'], func=authorized_owner)
-@async_run
-def gemini10_mode(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    CHAT_MODE[chat_id_full] = 'gemini'
-    bot_reply_tr(message, 'Gemini 1.5 Flash model selected.')
-
-
-@bot.message_handler(commands=['gemini15'], func=authorized_owner)
-@async_run
-def gemini15_mode(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-    if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full]:
-        CHAT_MODE[chat_id_full] = 'gemini15'
-        bot_reply_tr(message, 'Gemini 1.5 pro model selected.')
-    else:
-        msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-        bot_reply(message, msg, disable_web_page_preview=True)
-
-
 @bot.message_handler(commands=['donate'], func=authorized_owner)
 @async_run
 def donate(message: telebot.types.Message):
     help = f'[<a href = "https://www.donationalerts.com/r/theurs">DonationAlerts</a> 💸 <a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> 💸 <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> 💸 <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>]'
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
-
-
-@bot.message_handler(commands=['llama370'], func=authorized_owner)
-@async_run
-def llama3_70(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    CHAT_MODE[chat_id_full] = 'llama370'
-    bot_reply_tr(message, 'Groq llama 3 70b model selected.')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)
@@ -4101,6 +4083,10 @@ def id_cmd_handler(message: telebot.types.Message):
 
     if chat_id_full in BAD_USERS:
         msg += f'\n{tr("User was banned.", lang)}\n'
+
+    if chat_id_full in BAD_USERS_IMG:
+        msg += f'\n{tr("User was banned in bing.com.", lang)}\n'
+
     if str(message.chat.id) in DDOS_BLOCKED_USERS and chat_id_full not in BAD_USERS:
         msg += f'\n{tr("User was temporarily banned.", lang)}\n'
     bot_reply(message, msg)
@@ -5031,8 +5017,19 @@ def load_msgs():
 def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
-
             pass
+
+            AUTO_TRANSLATIONS = SqliteDict('db/auto_translations.db')
+
+            for key in AUTO_TRANSLATIONS.keys():
+                value = my_init.ast.literal_eval(key)
+                original = value[0]
+                lang = value[1]
+                help = value[2]
+                translation = AUTO_TRANSLATIONS[key]
+                my_db.update_translation(original, lang, help, translation)
+
+            del AUTO_TRANSLATIONS
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

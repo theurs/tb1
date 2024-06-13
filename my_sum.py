@@ -48,10 +48,10 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
     try:
         t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
     except Exception as error:
-        # if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
-            # my_log.log2(f'get_text_from_youtube: {error}')
-        my_log.log2(f'get_text_from_youtube: {error}')
-        print(error)
+        if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
+            my_log.log2(f'get_text_from_youtube: {error}')
+        # my_log.log2(f'get_text_from_youtube: {error}')
+        # print(error)
         t = ''
 
     text = '\n'.join([x['text'] for x in t])

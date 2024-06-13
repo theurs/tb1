@@ -314,6 +314,9 @@ def is_valid_url(url: str) -> bool:
 if __name__ == "__main__":
     pass
 
+    print(get_text_from_youtube('https://youtu.be/Gt_IbDZbNYE',False, 'ru'))
+
+
     # print(summ_url('https://habr.com/ru/news/817099/', download_only=False, deep=True)[0])
     # print(summ_url('http://lib.ru/BAUM/baum04.txt_Ascii.txt', download_only=False, deep=True)[0])
     # print(summ_url('http://moldovenii.org/resources/files/photo/1/6/16844c00b585525863341db4e63269cb_800.jpg', download_only=False, deep=True)[0])

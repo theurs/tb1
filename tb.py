@@ -3134,6 +3134,17 @@ def get_user_image_counter(chat_id_full: str) -> int:
     return IMAGES_BY_USER_COUNTER[chat_id_full]
 
 
+@bot.message_handler(commands=['bing'], func=authorized)
+@async_run
+def image_bing_gen(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    if chat_id_full in BAD_USERS_IMG:
+        bot_reply_tr(message, 'Bing вас забанил.')
+        return
+    message.text += '[{(BING)}]'
+    image_gen(message)
+
+
 @bot.message_handler(commands=['stop','cancel'], func=authorized)
 @async_run
 def image10_stop(message: telebot.types.Message):
@@ -3185,6 +3196,11 @@ def image_gen(message: telebot.types.Message):
         if chat_id_full in BAD_USERS_IMG:
             NSFW_FLAG = True
 
+        # рисовать только бингом, команда /bing
+        BING_FLAG = False
+        if message.text.endswith('[{(BING)}]'):
+            BING_FLAG = True
+
         if chat_id_full in IMG_GEN_LOCKS:
             lock = IMG_GEN_LOCKS[chat_id_full]
         else:
@@ -3228,7 +3244,10 @@ def image_gen(message: telebot.types.Message):
                         if NSFW_FLAG:
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
                         else:
-                            images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
+                            if BING_FLAG:
+                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full)
+                            else:
+                                images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
                         if chat_id_full in IMAGE10_STOP:
                             return
                         # 1 а может и больше запросы к репромптеру

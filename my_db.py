@@ -315,9 +315,22 @@ def drop_all_translations():
             my_log.log2(f'my_db:drop_all_translations {error}')
 
 
+def vacuum():
+    '''Vacuum database'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                VACUUM
+            ''')
+        except Exception as error:
+            my_log.log2(f'my_db:vacuum {error}')
+
+
 if __name__ == '__main__':
     pass
     init()
+
+    vacuum()
 
 
     # print(get_translation(text='test2', lang='ru', help=''))

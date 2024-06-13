@@ -309,6 +309,18 @@ def get_translations_count() -> int:
             return 0
 
 
+@async_run
+def drop_all_translations():
+    '''Drop all translations from cache'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                DELETE FROM translations
+            ''')
+        except Exception as error:
+            my_log.log2(f'my_db:drop_all_translations {error}')
+
+
 if __name__ == '__main__':
     pass
     init()

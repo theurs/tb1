@@ -5046,20 +5046,8 @@ def one_time_shot():
         if not os.path.exists('one_time_flag.txt'):
 
             pass
-            AUTO_TRANSLATIONS = SqliteDict('db/auto_translations.db')
-            new = []
-            for key in AUTO_TRANSLATIONS.keys():
-                value = my_init.ast.literal_eval(key)
-                original = value[0]
-                lang = value[1]
-                help = value[2]
-                translation = AUTO_TRANSLATIONS[key]
-                new.append((original, lang, help, translation))
-                # my_db.update_translation(original, lang, help, translation)
-                # time.sleep(0.01)
-            my_db.update_translations(new)
+            my_db.drop_all_translations()
 
-            del AUTO_TRANSLATIONS
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')
     except Exception as error:

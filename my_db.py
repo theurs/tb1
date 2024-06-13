@@ -29,7 +29,7 @@ def sync_daemon():
                     CON.commit()
                     COM_COUNTER = 0
         except Exception as error:
-            my_log.log2(f'my_msg_counter:sync_daemon {error}')
+            my_log.log2(f'my_db:sync_daemon {error}')
 
 
 def init():
@@ -47,15 +47,27 @@ def init():
                 model_used TEXT
             )
         ''')
-        # Creating indexes separately
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_access_time ON msg_counter (access_time)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_user_id ON msg_counter (user_id)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_model_used ON msg_counter (model_used)')
 
+        CUR.execute('''
+            CREATE TABLE IF NOT EXISTS translations (
+                original TEXT,
+                lang TEXT,
+                help TEXT,
+                translation TEXT
+            )
+        ''')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_original ON translations (original)')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_lang ON translations (lang)')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_help ON translations (help)')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_translation ON translations (translation)')
+
         CON.commit()
         sync_daemon()
     except Exception as error:
-        my_log.log2(f'my_msg_counter:init {error}')
+        my_log.log2(f'my_db:init {error}')
 
 
 def close():
@@ -67,7 +79,7 @@ def close():
             CON.commit()
             CON.close()
         except Exception as error:
-            my_log.log2(f'my_msg_counter:close {error}')
+            my_log.log2(f'my_db:close {error}')
 
 
 @async_run
@@ -93,7 +105,7 @@ def add_msg(user_id: str, model_used: str, timestamp: float = None):
                 COM_COUNTER += 1
 
         except Exception as error:
-            my_log.log2(f'my_msg_counter:add {error}')
+            my_log.log2(f'my_db:add {error}')
 
 
 def count_msgs(user_id: str, model: str, access_time: float):
@@ -118,7 +130,7 @@ def count_msgs(user_id: str, model: str, access_time: float):
                 ''', (user_id, model, access_time))
             return CUR.fetchone()[0]
         except Exception as error:
-            my_log.log2(f'my_msg_counter:count {error}')
+            my_log.log2(f'my_db:count {error}')
             return 0
 
 
@@ -131,7 +143,7 @@ def count_msgs_all():
             ''')
             return CUR.fetchone()[0]
         except Exception as error:
-            my_log.log2(f'my_msg_counter:count_all {error}')
+            my_log.log2(f'my_db:count_all {error}')
             return 0
 
 
@@ -152,7 +164,7 @@ def get_model_usage(days: int):
                 model_usage[model] = usage_count
             return model_usage
         except Exception as error:
-            my_log.log2(f'my_msg_counter:get_model_usage {error}')
+            my_log.log2(f'my_db:get_model_usage {error}')
             return {}
 
 
@@ -164,7 +176,7 @@ def get_total_msg_users() -> int:
             ''')
             return CUR.fetchone()[0]
         except Exception as error:
-            my_log.log2(f'my_msg_counter:get_total_msg_users {error}')
+            my_log.log2(f'my_db:get_total_msg_users {error}')
             return 0
 
 
@@ -178,7 +190,7 @@ def get_total_msg_users_in_days(days: int) -> int:
             ''', (access_time,))
             return CUR.fetchone()[0]
         except Exception as error:
-            my_log.log2(f'my_msg_counter:get_total_msg_users_in_days {error}')
+            my_log.log2(f'my_db:get_total_msg_users_in_days {error}')
             return 0
 
 
@@ -201,13 +213,113 @@ def count_new_user_in_days(days: int) -> int:
 
             return CUR.fetchone()[0]
         except Exception as error:
-            my_log.log2(f'my_msg_counter:count_new_user_in_days {error}')
+            my_log.log2(f'my_db:count_new_user_in_days {error}')
+            return 0
+
+
+@async_run
+def get_translation(text: str, lang: str, help: str) -> str:
+    '''Get translation from cache if any'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT translation FROM translations
+                WHERE original = ? AND lang = ? AND help = ?
+            ''', (text, lang, help))
+            result = CUR.fetchone()
+            return result[0] if result else ''
+        except Exception as error:
+            my_log.log2(f'my_db:get_translation {error}')
+            return ''
+
+
+@async_run
+def update_translation(text: str, lang: str, help: str, translation: str):
+    '''Update or insert translation in cache'''
+    global COM_COUNTER
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT 1 FROM translations
+                WHERE original = ? AND lang = ? AND help = ?
+            ''', (text, lang, help))
+            if CUR.fetchone():
+                CUR.execute('''
+                    UPDATE translations
+                    SET translation = ?
+                    WHERE original = ? AND lang = ? AND help = ?
+                ''', (translation, text, lang, help))
+            else:
+                CUR.execute('''
+                    INSERT INTO translations (original, lang, help, translation)
+                    VALUES (?, ?, ?, ?)
+                ''', (text, lang, help, translation))
+            COM_COUNTER += 1
+        except Exception as error:
+            my_log.log2(f'my_db:update_translation {error}')
+
+
+@async_run
+def update_translations(values: list):
+    '''Update many translations in cache
+    values - list of tuples (text, lang, help, translation)
+    '''
+    global COM_COUNTER
+    with LOCK:
+        try:
+            # Выполняем один запрос для вставки данных
+            CUR.executemany('''
+                INSERT INTO translations (original, lang, help, translation)
+                VALUES (?, ?, ?, ?)
+            ''', values)
+
+            COM_COUNTER += len(values)
+        except Exception as error:
+            my_log.log2(f'my_db:update_translations {error}')
+
+
+@async_run
+def get_translations_like(text: str) -> list:
+    '''Get translations from cache that are similar to the given text'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT original, lang, help, translation FROM translations
+                WHERE translation LIKE ?
+            ''', (f'%{text}%',))
+            results = CUR.fetchall()
+            return results or []
+        except Exception as error:
+            my_log.log2(f'my_db:get_translations_like {error}')
+            return []
+
+
+@async_run
+def get_translations_count() -> int:
+    '''Get count of translations'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT COUNT(*) FROM translations
+            ''')
+            result = CUR.fetchone()
+            return result[0] if result else 0
+        except Exception as error:
+            my_log.log2(f'my_db:get_translations_count {error}')
             return 0
 
 
 if __name__ == '__main__':
     pass
     init()
+
+
+    # print(get_translation(text='test2', lang='ru', help=''))
+    # update_translation(text='test2', lang='ru', help='', translation='тест2')
+    # print(get_translation(text='test2', lang='ru', help=''))
+    # print(get_translations_like(text='ес'))
+    # print(get_translations_count())
+
 
     # print(get_total_msg_users_in_days(30))
     # print(count_new_user_in_days(30))

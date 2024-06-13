@@ -12,7 +12,6 @@ import tempfile
 import traceback
 import threading
 import time
-from collections import OrderedDict
 
 import cairosvg
 import langcodes
@@ -84,6 +83,11 @@ IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=T
 
 # {user_id:True} была ли команда на остановку генерации image10
 IMAGE10_STOP = {}
+
+# хранилище для переводов сообщений сделанных гугл переводчиком
+# key: str('text', 'lang', 'help')
+# value: translated text
+AUTO_TRANSLATIONS = my_init.AUTO_TRANSLATIONS
 
 # сообщения приветствия и помощи
 HELLO_MSG = {}
@@ -213,11 +217,6 @@ DEBUG_MD_TO_HTML = {}
 WHO_ANSWERED = {}
 
 
-# кеш переводов в оперативной памяти что бы меньше напрягать бд на диске
-TRANSLATE_CACHE = OrderedDict()
-TRANSLATE_CACHE_SIZE = 10000
-
-
 # key - time.time() float
 # value - list
 #   type as string='new' or 'copy',
@@ -338,25 +337,6 @@ class ShowAction(threading.Thread):
         self.stop()
 
 
-def get_cached_translation(text: str, lang: str, help: str) -> str:
-    '''Retrieve translation from cache if available.'''
-    key = (text, lang, help)
-    if key in TRANSLATE_CACHE:
-        # Перемещаем ключ в конец, чтобы отметить как недавно использованный
-        TRANSLATE_CACHE.move_to_end(key)
-        return TRANSLATE_CACHE[key]
-    return None
-
-
-def set_cached_translation(text: str, lang: str, help: str, translation: str):
-    '''Store translation in cache with a limit of TRANSLATE_CACHE_SIZE items.'''
-    key = (text, lang, help)
-    TRANSLATE_CACHE[key] = translation
-    if len(TRANSLATE_CACHE) > TRANSLATE_CACHE_SIZE:
-        # Удаляем самый старый элемент
-        TRANSLATE_CACHE.popitem(last=False)
-
-
 def tr(text: str, lang: str, help: str = '') -> str:
     """
     This function translates text to the specified language,
@@ -374,26 +354,28 @@ def tr(text: str, lang: str, help: str = '') -> str:
         lang = 'en'
     if lang == 'ua':
         lang = 'uk'
-    
-    # Check cache first
-    cached_translation = get_cached_translation(text, lang, help)
-    if cached_translation:
-        return cached_translation
 
-    translated = my_db.get_translation(text, lang, help)
-    if translated:
-        # Cache the translation
-        set_cached_translation(text, lang, help, translated)
-        return translated
+    key = str((text, lang, help))
+    if key in AUTO_TRANSLATIONS:
+        return AUTO_TRANSLATIONS[key]
 
     translated = ''
 
     if help:
         translated = my_groq.translate(text, to_lang=lang, help=help)
         if not translated:
+            # time.sleep(1)
+            # try again and another ai engine
             translated = my_gemini.translate(text, to_lang=lang, help=help)
             if not translated:
-                my_log.log_translate(f'gemininn{text}nn{lang}nn{help}')
+                my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
+
+    # if not translated and lang == 'fa':
+    #     translated = my_groq.translate(text, to_lang = lang)
+    # if not translated and lang == 'fa':
+    #     translated = my_shadowjourney.translate(text, to_lang = lang)
+    # if not translated and lang == 'fa':
+    #     translated = my_gemini.translate(text, to_lang = lang)
 
     if not translated:
         translated = my_trans.translate_deepl(text, to_lang = lang)
@@ -401,14 +383,11 @@ def tr(text: str, lang: str, help: str = '') -> str:
     if not translated:
         translated = my_trans.translate_text2(text, lang)
 
-    # Cache the translation
-    set_cached_translation(text, lang, help, translated or text)
-
     if translated:
-        my_db.update_translation(text, lang, help, translated)
+        AUTO_TRANSLATIONS[key] = translated
     else:
-        my_db.update_translation(text, lang, help, text)
-    return translated or text
+        AUTO_TRANSLATIONS[key] = text
+    return AUTO_TRANSLATIONS[key]
 
 
 def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
@@ -2247,44 +2226,48 @@ def translation_gui(message: telebot.types.Message):
     # а тут будет автоперевод с помощью ии
     # /tgui клавиши Близнецы добавлены
 
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-        COMMAND_MODE[chat_id_full] = ''
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
 
-        translated_counter = 0
-        # первый аргумент - кривой перевод который надо найти и исправить
-        text = message.text.split(maxsplit=1)
-        if len(text) > 1:
-            with ShowAction(message, 'find_location'):
-                text = text[1].strip()
-                if '|||' in text:
-                    text, new_translation = text.split('|||', maxsplit=1)
+    translated_counter = 0
+    # первый аргумент - кривой перевод который надо найти и исправить
+    text = message.text.split(maxsplit=1)
+    if len(text) > 1:
+        with ShowAction(message, 'find_location'):
+            text = text[1].strip()
+            if '|||' in text:
+                text, new_translation = text.split('|||', maxsplit=1)
+            else:
+                new_translation = ''
+            help = 'its a gui message in telegram bot, keep it same format and average size to fit gui'
+            for key in [x for x in AUTO_TRANSLATIONS.keys()]:
+                value = my_init.ast.literal_eval(key)
+                original = value[0]
+                lang = value[1]
+                # help_ = value[2]
+                if key in AUTO_TRANSLATIONS:
+                    translated = AUTO_TRANSLATIONS[key]
                 else:
-                    new_translation = ''
-                help = 'its a gui message in telegram bot, keep it same format and average size to fit gui'
-                for key in my_db.get_translations_like(text):
-                    original = key[0]
-                    lang = key[1]
-                    help = key[2]
-                    # translated = key[3]
-
-                    if not new_translation:
-                        new_translation = my_gemini.translate(original, to_lang = lang, help = help)
-                        my_db.add_msg(chat_id_full, 'gemini15_flash')
-                    if not new_translation:
-                        new_translation = my_groq.translate(original, to_lang = lang, help = help)
-                        my_db.add_msg(chat_id_full, 'llama3-70b-8192')
+                    continue
+                if text in translated:
                     if new_translation:
-                        my_db.update_translation(original, lang, help, new_translation)
+                        new_translated = new_translation
+                    else:
+                        new_translated = ''
+                    if not new_translated:
+                        new_translated = my_gemini.translate(original, to_lang = lang, help = help)
+                        my_db.add_msg(chat_id_full, 'gemini15_flash')
+                    if not new_translated:
+                        new_translated = my_groq.translate(original, to_lang = lang, help = help)
+                        my_db.add_msg(chat_id_full, 'llama3-70b-8192')
+                    if new_translated:
+                        AUTO_TRANSLATIONS[key] = new_translated
                         translated_counter += 1
-                        bot_reply(message, f'New translation:\n\n{new_translation}', disable_web_page_preview=True)
+                        bot_reply(message, f'New translation:\n\n{AUTO_TRANSLATIONS[key]}', disable_web_page_preview=True)
                     else:
                         bot_reply(message, 'Failed to translate')
-        bot_reply(message, 'Finished, language db size: ' + str(len(my_db.get_translations_count())) + ', translated: ' + str(translated_counter))
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:tgui:{error}\n\n{traceback_error}')
+    bot_reply(message, 'Finished, language db size: ' + str(len(AUTO_TRANSLATIONS)) + ', translated: ' + str(translated_counter))
 
 
 @bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_owner)
@@ -5050,7 +5033,6 @@ def one_time_shot():
         if not os.path.exists('one_time_flag.txt'):
 
             pass
-            my_db.drop_all_translations()
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

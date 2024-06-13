@@ -11,6 +11,12 @@ import my_groq
 import my_shadowjourney
 
 
+# хранилище для переводов сообщений сделанных гугл переводчиком
+# key: '(text, lang)' - string!
+# value: translated text
+AUTO_TRANSLATIONS = SqliteDict('db/auto_translations.db', autocommit=True)
+
+
 supported_langs_trans = [
         "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
         "el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha",

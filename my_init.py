@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
-import ast
 import pickle
 import time
-
-from sqlitedict import SqliteDict
 
 import my_trans
 import my_groq

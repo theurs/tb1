@@ -305,6 +305,12 @@ OPEN_ROUTER_KEY = 'xxx'
 #]
 
 
+# for youtube subtitles downloads
+#YT_SUBS_PROXY = [
+#    'socks5://user:pass@host:port',
+#]
+
+
 # DEBUG = False
 ```
 

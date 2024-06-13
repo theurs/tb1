@@ -344,7 +344,6 @@ def get_cached_translation(text: str, lang: str, help: str) -> str:
     if key in TRANSLATE_CACHE:
         # Перемещаем ключ в конец, чтобы отметить как недавно использованный
         TRANSLATE_CACHE.move_to_end(key)
-        print('cached translation used')
         return TRANSLATE_CACHE[key]
     return None
 

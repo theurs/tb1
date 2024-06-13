@@ -175,7 +175,7 @@ def get_links(query: str, max_results: int = 5) -> list:
 
     """
     try:
-        results = DDGS().text(query, max_results = max_results, safesearch='off')
+        results = chat_new_connection().text(query, max_results = max_results, safesearch='off')
         return [x['href'] for x in results]
     except Exception as error:
         my_log.log2(f'my_ddg:get_links: {error}')
@@ -245,7 +245,7 @@ def get_images(query: str, max_results: int = 16) -> list:
         The `safesearch` parameter is set to 'off' to include potentially unsafe content in the search results.
 
     """
-    results = DDGS().images(
+    results = chat_new_connection().images(
         keywords=query,
         region="wt-wt",
         safesearch="off",
@@ -320,12 +320,12 @@ def ai(query: str, model: str = 'claude-3-haiku') -> str:
     # model = "gpt-3.5" or "claude-3-haiku"
     # start_time = time.time()
     try:
-        results = DDGS(timeout=120).chat(query, model=model)
+        results = chat_new_connection().chat(query, model=model)
     except Exception as error:
         my_log.log2(f'my_ddg:ai: {error}')
         time.sleep(2)
         try:
-            results = DDGS(timeout=120).chat(query, model=model)
+            results = chat_new_connection().chat(query, model=model)
         except Exception as error:
             my_log.log2(f'my_ddg:ai: {error}')
             return ''

@@ -217,7 +217,6 @@ def count_new_user_in_days(days: int) -> int:
             return 0
 
 
-@async_run
 def get_translation(text: str, lang: str, help: str) -> str:
     '''Get translation from cache if any'''
     with LOCK:
@@ -233,7 +232,6 @@ def get_translation(text: str, lang: str, help: str) -> str:
             return ''
 
 
-@async_run
 def update_translation(text: str, lang: str, help: str, translation: str):
     '''Update or insert translation in cache'''
     global COM_COUNTER
@@ -259,12 +257,12 @@ def update_translation(text: str, lang: str, help: str, translation: str):
             my_log.log2(f'my_db:update_translation {error}')
 
 
-@async_run
 def update_translations(values: list):
     '''Update many translations in cache
     values - list of tuples (text, lang, help, translation)
     '''
     global COM_COUNTER
+    drop_all_translations()
     with LOCK:
         try:
             # Выполняем один запрос для вставки данных
@@ -272,13 +270,11 @@ def update_translations(values: list):
                 INSERT INTO translations (original, lang, help, translation)
                 VALUES (?, ?, ?, ?)
             ''', values)
-
             COM_COUNTER += len(values)
         except Exception as error:
             my_log.log2(f'my_db:update_translations {error}')
 
 
-@async_run
 def get_translations_like(text: str) -> list:
     '''Get translations from cache that are similar to the given text'''
     with LOCK:
@@ -294,7 +290,6 @@ def get_translations_like(text: str) -> list:
             return []
 
 
-@async_run
 def get_translations_count() -> int:
     '''Get count of translations'''
     with LOCK:
@@ -309,7 +304,6 @@ def get_translations_count() -> int:
             return 0
 
 
-@async_run
 def drop_all_translations():
     '''Drop all translations from cache'''
     with LOCK:

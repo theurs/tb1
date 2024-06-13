@@ -2331,6 +2331,9 @@ def translation_gui(message: telebot.types.Message):
                         my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                     if new_translation:
                         my_db.update_translation(original, lang, help, new_translation)
+                        TRANS_CACHE[(original, lang, help)] = new_translation
+                        if len(TRANS_CACHE) > MAX_TRANS_CACHE:
+                            TRANS_CACHE.popitem(last=False)
                         translated_counter += 1
                         bot_reply(message, f'New translation:\n\n{new_translation}', disable_web_page_preview=True)
                     else:

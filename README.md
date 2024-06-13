@@ -311,6 +311,12 @@ OPEN_ROUTER_KEY = 'xxx'
 #]
 
 
+# proxy for DuckDuckGo Chat
+#DDG_PROXY = [
+#    'socks5://user:pass@host:port',
+#]
+
+
 # DEBUG = False
 ```
 

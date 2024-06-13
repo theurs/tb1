@@ -414,6 +414,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_shadowjourney.update_mem(query, resp, chat_id_full)
     elif 'haiku' in CHAT_MODE[chat_id_full]:
         my_ddg.update_mem(query, resp, chat_id_full)
+    elif 'gpt35' in CHAT_MODE[chat_id_full]:
+        my_ddg.update_mem(query, resp, chat_id_full)
 
 
 def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
@@ -1176,6 +1178,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return markup
 
 
+    elif kbd == 'gpt35_chat':
+        if disabled_kbd(chat_id_full):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt35_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'groq_groq-llama370_chat':
         if disabled_kbd(chat_id_full):
             return None
@@ -1228,13 +1242,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button1 = telebot.types.InlineKeyboardButton("🤜 GPT-4o + Dalle3 (coze.com) 🤛",  url = cfg.coze_bot)
             markup.row(button1)
 
-        button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash', callback_data='select_gemini15_flash')
-        button3 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro', callback_data='select_gemini15_pro')
-        button4 = telebot.types.InlineKeyboardButton('GPT-4o', callback_data='select_gpt4o')
-        button5 = telebot.types.InlineKeyboardButton('Haiku', callback_data='select_haiku')
-        button6 = telebot.types.InlineKeyboardButton('Llama-3 70b', callback_data='select_llama370')
-        markup.row(button2, button3)
-        markup.row(button4, button5, button6)
+        button1 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash', callback_data='select_gemini15_flash')
+        button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro', callback_data='select_gemini15_pro')
+        button3 = telebot.types.InlineKeyboardButton('GPT-4o', callback_data='select_gpt4o')
+        button4 = telebot.types.InlineKeyboardButton('Llama-3 70b', callback_data='select_llama370')
+        button5 = telebot.types.InlineKeyboardButton('GPT 3.5', callback_data='select_gpt35')
+        button6 = telebot.types.InlineKeyboardButton('Haiku', callback_data='select_haiku')
+        markup.row(button1, button2)
+        markup.row(button3, button4)
+        markup.row(button5, button6)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if chat_id_full not in VOICE_ONLY_MODE:
@@ -1454,6 +1470,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_haiku':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claud 3 Haiku from DuckDuckGo.', lang))
             CHAT_MODE[chat_id_full] = 'haiku'
+        elif call.data == 'select_gpt35':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 3.5 from DuckDuckGo.', lang))
+            CHAT_MODE[chat_id_full] = 'gpt35'
         elif call.data == 'select_gemini15_flash':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash.', lang))
             CHAT_MODE[chat_id_full] = 'gemini10'
@@ -1474,6 +1493,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'gpt4o_reset':
             my_shadowjourney.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с GPT-4o очищена.')
+        elif call.data == 'gpt35_reset':
+            my_ddg.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с GPT 3.5 очищена.')
         elif call.data == 'haiku_reset':
             my_ddg.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с haiku очищена.')
@@ -2574,6 +2596,8 @@ def undo(message: telebot.types.Message):
         my_shadowjourney.undo(chat_id_full)
     elif 'haiku' in CHAT_MODE[chat_id_full]:
         bot_reply_tr(message, 'DuckDuckGo haiku do not support /undo command')
+    elif 'gpt35' in CHAT_MODE[chat_id_full]:
+        bot_reply_tr(message, 'DuckDuckGo GPT 3.5 do not support /undo command')
     else:
         bot_reply_tr(message, 'History WAS NOT undone.')
 
@@ -2600,6 +2624,8 @@ def reset_(message: telebot.types.Message):
     elif 'gpt4o' in CHAT_MODE[chat_id_full]:
         my_shadowjourney.reset(chat_id_full)
     elif 'haiku' in CHAT_MODE[chat_id_full]:
+        my_ddg.reset(chat_id_full)
+    elif 'gpt35' in CHAT_MODE[chat_id_full]:
         my_ddg.reset(chat_id_full)
     else:
         if isinstance(message, telebot.types.Message):
@@ -2761,6 +2787,10 @@ def send_debug_history(message: telebot.types.Message):
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'haiku' in CHAT_MODE[chat_id_full]:
         prompt = tr('DuckDuckGo haiku do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
+        prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if 'gpt35' in CHAT_MODE[chat_id_full]:
+        prompt = tr('DuckDuckGo GPT 3.5 do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
         prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
@@ -4968,6 +4998,42 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:haiku {error3}\n{error_traceback}')
+                        return
+
+
+                # если активирован режим общения с gpt35 (duckduckgo)
+                if chat_mode_ == 'gpt35':
+                    if len(msg) > my_ddg.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 3.5:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            # answer = my_ddg.chat(message.text, chat_id_full)
+                            answer = my_ddg.chat(helped_query, chat_id_full, model = 'gpt-3.5')
+                            answer = answer.strip()
+                            if not answer:
+                                answer = tr('GPT 3.5 did not answered, try to /reset and start again', lang)
+                            WHO_ANSWERED[chat_id_full] = 'gpt35-ddg'
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not VOICE_ONLY_MODE[chat_id_full]:
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            my_log.log_echo(message, f'[gpt35-ddg] {answer}')
+                            try:
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('gpt35_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('gpt35_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:gpt35 {error3}\n{error_traceback}')
                         return
 
 

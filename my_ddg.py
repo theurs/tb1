@@ -3,6 +3,7 @@
 
 
 import io
+import random
 import time
 import threading
 import traceback
@@ -12,6 +13,7 @@ from PIL import Image
 import langcodes
 from duckduckgo_search import DDGS
 
+import cfg
 import my_db
 import my_gemini
 import my_log
@@ -109,14 +111,23 @@ def reset(chat_id: str):
         del CHATS[chat_id]
 
 
+def chat_new_connection():
+    '''Connect with proxy and return object'''
+    if hasattr(cfg, 'DDG_PROXY'):
+        return DDGS(proxy=random.choice(cfg.DDG_PROXY), timeout=120)
+    else:
+        return DDGS(timeout=120)
+
+
 def chat(query: str,
          chat_id: str,
          model: str = '',
          ) -> str:
-    '''model = 'claude-3-haiku' | 'gpt-3.5'''
+    '''model = 'claude-3-haiku' | 'gpt-3.5' | 'llama-3-70b' | 'mixtral-8x7b'
+    '''
 
     if chat_id not in CHATS_OBJ:
-        CHATS_OBJ[chat_id] = DDGS(timeout=60)
+        CHATS_OBJ[chat_id] = chat_new_connection()
 
     if not model:
         model='claude-3-haiku'
@@ -134,7 +145,7 @@ def chat(query: str,
             my_log.log_ddg(f'my_ddg:chat: {error}')
             time.time(2)
             try:
-                CHATS_OBJ[chat_id] = DDGS(timeout=60)
+                CHATS_OBJ[chat_id] = chat_new_connection()
                 reset(chat_id)
                 resp = CHATS_OBJ[chat_id].chat(query, model)
                 my_db.add_msg(chat_id, model)
@@ -344,8 +355,10 @@ def chat_cli():
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        r = chat(q, 'test', model='claude-3-haiku')
-        # r = chat(q, 'test', model='gpt-3.5')
+        # r = chat(q, 'test', model='mixtral-8x7b')
+        # r = chat(q, 'test', model='llama-3-70b')
+        # r = chat(q, 'test', model='claude-3-haiku')
+        r = chat(q, 'test', model='gpt-3.5')
         print(r)
         print('')
 

@@ -463,7 +463,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
 
     try:
         text = my_gemini.img2txt(data, query)
-        my_db.add_msg(chat_id_full, 'gemini_vision')
+        my_db.add_msg(chat_id_full, 'gemini15_flash')
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
@@ -1417,7 +1417,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:1000]) for x in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
                     for _ in range(10):
-                        my_db.add_msg(chat_id_full, 'gemini_vision')
+                        my_db.add_msg(chat_id_full, 'gemini15_flash')
                         time.sleep(0.01)
                     log_message(msgs_ids)
 
@@ -1698,7 +1698,7 @@ def handle_document(message: telebot.types.Message):
                                        reply_markup=get_keyboard('translate', message),
                                        disable_notification=True)
                         text = img2txt(image, lang, chat_id_full, message.caption)
-                        my_db.add_msg(chat_id_full, 'gemini_vision')
+                        my_db.add_msg(chat_id_full, 'gemini15_flash')
                         if text:
                             text = utils.bot_markdown_to_html(text)
                             text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
@@ -1947,7 +1947,7 @@ def handle_photo(message: telebot.types.Message):
                         return
 
                     text = img2txt(image, lang, chat_id_full, message.caption)
-                    my_db.add_msg(chat_id_full, 'gemini_vision')
+                    my_db.add_msg(chat_id_full, 'gemini15_flash')
                     if text:
                         text = utils.bot_markdown_to_html(text)
                         text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
@@ -2247,40 +2247,44 @@ def translation_gui(message: telebot.types.Message):
     # а тут будет автоперевод с помощью ии
     # /tgui клавиши Близнецы добавлены
 
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
-    COMMAND_MODE[chat_id_full] = ''
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+        COMMAND_MODE[chat_id_full] = ''
 
-    translated_counter = 0
-    # первый аргумент - кривой перевод который надо найти и исправить
-    text = message.text.split(maxsplit=1)
-    if len(text) > 1:
-        with ShowAction(message, 'find_location'):
-            text = text[1].strip()
-            if '|||' in text:
-                text, new_translation = text.split('|||', maxsplit=1)
-            else:
-                new_translation = ''
-            help = 'its a gui message in telegram bot, keep it same format and average size to fit gui'
-            for key in my_db.get_translations_like(text):
-                original = key[0]
-                lang = key[1]
-                help = key[2]
-                # translated = key[3]
-
-                if not new_translation:
-                    new_translation = my_gemini.translate(original, to_lang = lang, help = help)
-                    my_db.add_msg(chat_id_full, 'gemini15_flash')
-                if not new_translation:
-                    new_translation = my_groq.translate(original, to_lang = lang, help = help)
-                    my_db.add_msg(chat_id_full, 'llama3-70b-8192')
-                if new_translation:
-                    my_db.update_translation(original, lang, help, new_translation)
-                    translated_counter += 1
-                    bot_reply(message, f'New translation:\n\n{new_translation}', disable_web_page_preview=True)
+        translated_counter = 0
+        # первый аргумент - кривой перевод который надо найти и исправить
+        text = message.text.split(maxsplit=1)
+        if len(text) > 1:
+            with ShowAction(message, 'find_location'):
+                text = text[1].strip()
+                if '|||' in text:
+                    text, new_translation = text.split('|||', maxsplit=1)
                 else:
-                    bot_reply(message, 'Failed to translate')
-    bot_reply(message, 'Finished, language db size: ' + str(len(my_db.get_translations_count())) + ', translated: ' + str(translated_counter))
+                    new_translation = ''
+                help = 'its a gui message in telegram bot, keep it same format and average size to fit gui'
+                for key in my_db.get_translations_like(text):
+                    original = key[0]
+                    lang = key[1]
+                    help = key[2]
+                    # translated = key[3]
+
+                    if not new_translation:
+                        new_translation = my_gemini.translate(original, to_lang = lang, help = help)
+                        my_db.add_msg(chat_id_full, 'gemini15_flash')
+                    if not new_translation:
+                        new_translation = my_groq.translate(original, to_lang = lang, help = help)
+                        my_db.add_msg(chat_id_full, 'llama3-70b-8192')
+                    if new_translation:
+                        my_db.update_translation(original, lang, help, new_translation)
+                        translated_counter += 1
+                        bot_reply(message, f'New translation:\n\n{new_translation}', disable_web_page_preview=True)
+                    else:
+                        bot_reply(message, 'Failed to translate')
+        bot_reply(message, 'Finished, language db size: ' + str(len(my_db.get_translations_count())) + ', translated: ' + str(translated_counter))
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:tgui:{error}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_owner)
@@ -4609,7 +4613,7 @@ def do_task(message, custom_prompt: str = ''):
             if utils.is_image_link(message.text):
                 with ShowAction(message, 'typing'):
                     text = img2txt(message.text, lang, chat_id_full)
-                    my_db.add_msg(chat_id_full, 'gemini_vision')
+                    my_db.add_msg(chat_id_full, 'gemini15_flash')
                     if text:
                         text = utils.bot_markdown_to_html(text)
                         bot_reply(message, text, parse_mode='HTML',

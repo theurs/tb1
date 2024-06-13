@@ -137,7 +137,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
             random.shuffle(proxies)
 
         for api_key in keys:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
 
             if proxies:
                 for proxy in proxies:
@@ -309,12 +309,10 @@ def ai(q: str, mem = [],
         # gemini-1.0-pro
         # gemini-1.0-pro-001
         # gemini-1.0-pro-latest
-        # gemini-1.0-pro-vision-latest
         # gemini-1.5-flash-latest
         # gemini-1.5-pro
         # gemini-1.5-pro-latest
         # gemini-pro
-        # gemini-pro-vision
 
     # bugfix температура на самом деле от 0 до 1 а не от 0 до 2
     temperature = round(temperature / 2, 2)

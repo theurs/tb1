@@ -383,7 +383,7 @@ def get_user_lang(user_id: str) -> str:
             CUR.execute('''
                 SELECT lang FROM users
                 WHERE id = ?
-            ''', (user_id)
+            ''', (user_id,)
             )
             result = CUR.fetchone()
             if result:

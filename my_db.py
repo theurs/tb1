@@ -382,7 +382,7 @@ def get_user_lang(user_id: str) -> str:
         try:
             CUR.execute('''
                 SELECT lang FROM users
-                WHERE user_id = ?
+                WHERE id = ?
             ''', (user_id)
             )
             result = CUR.fetchone()

@@ -29,6 +29,8 @@ multimodalart/cosxl
 PixArt-alpha/PixArt-Sigma
 ByteDance/Hyper-SDXL-1Step-T2I
 
-https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium
+# не работает? https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium
 # не работает https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium-diffusers
 https://api-inference.huggingface.co/models/alvdansen/BandW-Manga
+
+stabilityai/stable-diffusion-3-medium

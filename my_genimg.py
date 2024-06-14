@@ -214,6 +214,12 @@ def huggin_face_api(prompt: str) -> list:
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
+        if 'stable_diffusion_3_medium' in url:
+            try:
+                return stable_diffusion_3_medium(prompt, url)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\nPrompt: {prompt}\nURL: {url}')
+                return []
 
         n = 1
         result = []
@@ -752,6 +758,59 @@ def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number:
     return images
 
 
+def stable_diffusion_3_medium(prompt: str, url: str = "stabilityai/stable-diffusion-3-medium", number: int = 1) -> list:
+    """
+    url = "stabilityai/stable-diffusion-3-medium" only?
+    """
+    try:
+        client = gradio_client.Client(url)
+    except Exception as error:
+        my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    result = None
+    try:
+        result = result = client.predict(
+            prompt=prompt,
+            negative_prompt="",
+            seed=0,
+            randomize_seed=True,
+            width=1024,
+            height=1024,
+            guidance_scale=5,
+            num_inference_steps=28,
+            api_name="/infer"
+        )
+    except Exception as error:
+        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
+            my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    images = []
+    for fname in result:
+        try:
+            fname = fname['image']
+        except:
+            continue
+        base_path = os.path.dirname(fname)
+        if fname:
+            try:
+                data = None
+                with open(fname, 'rb') as f:
+                    data = f.read()
+                try:
+                    utils.remove_file(fname)
+                    os.rmdir(base_path)
+                except Exception as error:
+                    my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\n\nPrompt: {prompt}\nURL: {url}')
+                if data:
+                    WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                    images.append(data)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return images
+
+
 def get_reprompt(prompt: str, conversation_history: str = '') -> str:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
@@ -930,13 +989,16 @@ if __name__ == '__main__':
     # imgs = cosxl('an apple made of gold')
     # open('_cosxl.png', 'wb').write(imgs[0])
 
+    # imgs = stable_diffusion_3_medium('an big apple made of gold and pepper')
+    # open('_stable_diffusion_3_medium.png', 'wb').write(imgs[0])
+
     # n = 1
     # for x in Hyper_SDXL('an apple made of gold'):
     #     open(f'_Hyper_SDXL_{n}.png', 'wb').write(x)
     #     n += 1
 
 
-    n = 1
-    for x in huggin_face_api('an apple made of gold'):
-        open(f'_huggin_face_api {n}.png', 'wb').write(x)
-        n += 1
+    # n = 1
+    # for x in huggin_face_api('an apple made of gold'):
+    #     open(f'_huggin_face_api {n}.png', 'wb').write(x)
+    #     n += 1

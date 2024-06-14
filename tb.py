@@ -1518,7 +1518,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             CHAT_MODE[chat_id_full] = 'gpt35'
         elif call.data == 'select_gemini15_flash':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash.', lang))
-            CHAT_MODE[chat_id_full] = 'gemini10'
+            CHAT_MODE[chat_id_full] = 'gemini'
         elif call.data == 'select_gemini15_pro':
             have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS
             if have_keys:
@@ -5091,13 +5091,6 @@ def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
             pass
-
-            # {user_id:lang(2 symbol codes)}
-            LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
-            for key in LANGUAGE_DB:
-                my_db.set_user_lang(key, LANGUAGE_DB[key])
-
-            del LANGUAGE_DB
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

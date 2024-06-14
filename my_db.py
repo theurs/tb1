@@ -232,22 +232,16 @@ def get_total_msg_users_in_days(days: int) -> int:
 
 
 def count_new_user_in_days(days: int) -> int:
-    '''Посчитать сколько юзеров не имеют ни одного сообщения раньше чем за days дней'''
+    '''Посчитать сколько юзеров впервые написали боту раньше чем за days дней'''
     access_time = time.time() - days * 24 * 60 * 60
     with LOCK:
         try:
             CUR.execute('''
-                SELECT COUNT(DISTINCT user_id)
-                FROM msg_counter 
-                WHERE access_time > ?
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM msg_counter AS mc2
-                    WHERE mc2.user_id = msg_counter.user_id
-                    AND mc2.access_time <= ?
-                )
-            ''', (access_time, access_time))
-
+                SELECT COUNT(DISTINCT T1.user_id)
+                FROM msg_counter AS T1
+                INNER JOIN users AS T2 ON T1.user_id = T2.id
+                WHERE T2.first_meet > ?
+            ''', (access_time,))
             return CUR.fetchone()[0]
         except Exception as error:
             my_log.log2(f'my_db:count_new_user_in_days {error}')

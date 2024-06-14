@@ -827,11 +827,13 @@ def get_reprompt_nsfw(prompt: str, conversation_history: str) -> str:
     return reprompt
 
 
-def gen_images_bing_only(prompt: str, user_id: str = '') -> list:
+def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: str ='') -> list:
     if prompt.strip() == '':
         return []
 
-    result = bing(prompt, user_id=user_id)
+    reprompt = get_reprompt(prompt, conversation_history)
+
+    result = bing(reprompt, user_id=user_id)
 
     return result
 

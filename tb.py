@@ -3199,6 +3199,7 @@ def image_gen(message: telebot.types.Message):
         # рисовать только бингом, команда /bing
         BING_FLAG = False
         if message.text.endswith('[{(BING)}]'):
+            message.text = message.text[:-10]
             BING_FLAG = True
 
         if chat_id_full in IMG_GEN_LOCKS:
@@ -3245,7 +3246,7 @@ def image_gen(message: telebot.types.Message):
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
                         else:
                             if BING_FLAG:
-                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full)
+                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history)
                             else:
                                 images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
                         if chat_id_full in IMAGE10_STOP:

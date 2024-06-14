@@ -807,6 +807,11 @@ def authorized_owner(message: telebot.types.Message) -> bool:
     """if chanel owner or private"""
     is_private = message.chat.type == 'private'
 
+    # banned users do nothing
+    chat_id_full = get_topic_id(message)
+    if chat_id_full in BAD_USERS:
+        return False
+
     if not (is_private or is_admin_member(message)):
         bot_reply_tr(message, "This command is only available to administrators")
         return False
@@ -827,6 +832,9 @@ def authorized_callback(call: telebot.types.CallbackQuery) -> bool:
         return True
 
     chat_id_full = f'[{call.from_user.id}] [0]'
+    # banned users do nothing
+    if chat_id_full in BAD_USERS:
+        return False
 
     # check for blocking and throttling
     try:
@@ -908,6 +916,11 @@ def authorized(message: telebot.types.Message) -> bool:
     if message.from_user.id in cfg.admins:
         return True
 
+    # banned users do nothing
+    chat_id_full = get_topic_id(message)
+    if chat_id_full in BAD_USERS:
+        return False
+
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
     # I don't know how to do that, so I have to leave only when receiving any event
     if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
@@ -917,8 +930,6 @@ def authorized(message: telebot.types.Message) -> bool:
         except Exception as leave_chat_error:
             my_log.log2(f'tb:auth:live_chat_error: {leave_chat_error}')
         return False
-
-    chat_id_full = get_topic_id(message)
 
     LAST_TIME_ACCESS[chat_id_full] = time.time()
 
@@ -1011,6 +1022,11 @@ def authorized_log(message: telebot.types.Message) -> bool:
         my_log.log_media(message)
 
     log_message(message)
+
+    # banned users do nothing
+    chat_id_full = get_topic_id(message)
+    if chat_id_full in BAD_USERS:
+        return False
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
     # I don't know how to do that, so I have to leave only when receiving any event

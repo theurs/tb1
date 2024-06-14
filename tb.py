@@ -3134,12 +3134,27 @@ def get_user_image_counter(chat_id_full: str) -> int:
     return IMAGES_BY_USER_COUNTER[chat_id_full]
 
 
+@bot.message_handler(commands=['bing10'], func=authorized)
+@async_run
+def image10_bing_gen(message: telebot.types.Message):
+    if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
+        bot_reply_tr(message, '10 times bing`s image generation started.')
+        chat_id_full = get_topic_id(message)
+        for _ in range(10):
+            if chat_id_full in IMAGE10_STOP:
+                del IMAGE10_STOP[chat_id_full]
+                return
+            image_bing_gen(message)
+            time.sleep(15)
+
+
 @bot.message_handler(commands=['bing'], func=authorized)
 @async_run
 def image_bing_gen(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     if chat_id_full in BAD_USERS_IMG:
         bot_reply_tr(message, 'Bing вас забанил.')
+        time.sleep(2)
         return
     message.text += '[{(BING)}]'
     image_gen(message)

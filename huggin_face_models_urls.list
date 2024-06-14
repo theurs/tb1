@@ -28,3 +28,7 @@ https://api-inference.huggingface.co/models/yodayo-ai/kivotos-xl-2.0
 multimodalart/cosxl
 PixArt-alpha/PixArt-Sigma
 ByteDance/Hyper-SDXL-1Step-T2I
+
+https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium
+https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium-diffusers
+https://api-inference.huggingface.co/models/alvdansen/BandW-Manga

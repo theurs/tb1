@@ -3,6 +3,7 @@
 
 import time
 import threading
+import traceback
 import sqlite3
 
 import my_log
@@ -64,10 +65,46 @@ def init():
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_help ON translations (help)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_translation ON translations (translation)')
 
+        CUR.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id_num INTEGER PRIMARY KEY AUTOINCREMENT,
+                id TEXT,
+                lang TEXT,
+                first_meet REAL,
+
+                image_generated_counter INTEGER,
+
+                saved_file TEXT,
+
+                blocked INTEGER,
+                blocked_bing INTEGER,
+                auto_leave_chat INTEGER,
+
+                tts_gender TEXT,
+                suggest_enabled INTEGER,
+                chat_enabled INTEGER,
+                original_mode INTEGER,
+                ocr_lang TEXT,
+                superchat INTEGER,
+                transcribe_only INTEGER,
+                command_mode TEXT,
+                voice_only_mode INTEGER,
+                disabled_kbd INTEGER,
+
+                chat_mode TEXT,
+                role TEXT,
+                temperature REAL,
+                bot_name TEXT
+            )
+        ''')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_id ON users (id)')
+        CUR.execute('CREATE INDEX IF NOT EXISTS idx_first_meet ON users (first_meet)')
+
         CON.commit()
         sync_daemon()
     except Exception as error:
-        my_log.log2(f'my_db:init {error}')
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'my_db:init {error}\n\n{traceback_error}')
 
 
 def close():
@@ -322,7 +359,7 @@ def vacuum():
             CUR.execute('''
                 VACUUM
             ''')
-            CUR.commit()
+            CON.commit()
         except Exception as error:
             my_log.log2(f'my_db:vacuum {error}')
 
@@ -337,6 +374,71 @@ def drop_long_translations():
             ''')
         except Exception as error:
             my_log.log2(f'my_db:drop_long_translations {error}')
+
+
+def get_user_lang(user_id: str) -> str:
+    '''Get user language'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT lang FROM users
+                WHERE user_id = ?
+            ''', (user_id)
+            )
+            result = CUR.fetchone()
+            if result:
+                return result[0]
+            else:
+                return None
+        except Exception as error:
+            my_log.log2(f'my_db:get_user_lang {error}')
+            return None
+
+
+def get_first_meet(user_id):
+    '''Get first meet time of user'''
+    try:
+        pass
+        # надо найти самое первое сообщение от юзера в таблице msg_counter
+        CUR.execute('''
+            SELECT MIN(access_time) FROM msg_counter
+            WHERE user_id = ?
+        ''', (user_id,))
+        result = CUR.fetchone()
+        if result and result[0]:
+            return result[0]
+        else:
+            return None
+    except Exception as error:
+        my_log.log2(f'my_db:get_first_meet {error}')
+        return None
+
+
+def set_user_lang(user_id: str, lang: str):
+    '''Set user language'''
+    global COM_COUNTER
+    with LOCK:
+        try:
+            # надо проверить есть ли в базе юзер, и если есть то обновить его язык а если нет то добавить нового
+            CUR.execute('''
+                SELECT 1 FROM users
+                WHERE id = ?
+            ''', (user_id,))
+            if CUR.fetchone():
+                CUR.execute('''
+                    UPDATE users
+                    SET lang = ?
+                    WHERE id = ?
+                ''', (lang, user_id))
+            else:
+                first_meet = get_first_meet(user_id) or time.time()
+                CUR.execute('''
+                    INSERT INTO users (id, lang, first_meet)
+                    VALUES (?, ?, ?)
+                ''', (user_id, lang, first_meet))
+            COM_COUNTER += 1
+        except Exception as error:
+            my_log.log2(f'my_db:set_user_lang {error}')
 
 
 if __name__ == '__main__':

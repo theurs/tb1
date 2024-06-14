@@ -118,7 +118,7 @@ IMG_GEN_LOCKS = {}
 # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
 BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
 
-# каким голосом озвучивать, мужским или женским
+# каким голосом озвучивать, мужским или женским или еще каким
 TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
 
 # хранилище номеров тем в группе для логов {full_user_id as str: theme_id as int}
@@ -175,8 +175,7 @@ DDOS_BLOCKED_USERS = my_dic.PersistentDict('db/ddos_blocked_users.pkl')
 # кешировать запросы типа кто звонил {number:(result, full text searched)}
 CACHE_CHECK_PHONE = {}
 
-# {user_id:lang(2 symbol codes)}
-LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
+
 
 # Глобальный массив для хранения состояния подписки (user_id: timestamp)
 subscription_cache = {}
@@ -481,18 +480,15 @@ def get_lang(id: str, message: telebot.types.Message = None) -> str:
         message (telebot.types.Message, optional): The message object. Defaults to None.
     
     Returns:
-        str: The language corresponding to the given ID. If the ID is not found in the LANGUAGE_DB, 
-             the language corresponding to the user in the message object will be stored in the LANGUAGE_DB
-             and returned. If the message object is not provided or the user does not have a language code,
-             the default language (cfg.DEFAULT_LANGUAGE) will be returned.
+        str: The language corresponding to the given ID.
     """
-    if id in LANGUAGE_DB:
-        return LANGUAGE_DB[id]
-    else:
+    lang = my_db.get_user_lang(id)
+    if not lang:
+        lang = cfg.DEFAULT_LANGUAGE
         if message:
-            LANGUAGE_DB[id] = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
-            return LANGUAGE_DB[id]
-        return cfg.DEFAULT_LANGUAGE
+            lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
+        my_db.set_user_lang(id, lang)
+    return lang
 
 
 def get_ocr_language(message) -> str:
@@ -2121,31 +2117,6 @@ def config(message: telebot.types.Message):
         print(error)
 
 
-# @bot.message_handler(commands=['censorship'], func=authorized_owner)
-# @run_in_thread
-# def censorship(message: telebot.types.Message):
-#     """
-#     Switch censorship for user
-#     """
-#     chat_id_full = get_topic_id(message)
-#     COMMAND_MODE[chat_id_full] = ''
-
-#     if chat_id_full in my_gemini.CRACK_DB:
-#         my_gemini.CRACK_DB[chat_id_full] = not my_gemini.CRACK_DB[chat_id_full]
-#     else:
-#         my_gemini.CRACK_DB[chat_id_full] = True
-
-#     if chat_id_full in my_groq.CRACK_DB:
-#         my_groq.CRACK_DB[chat_id_full] = not my_groq.CRACK_DB[chat_id_full]
-#     else:
-#         my_groq.CRACK_DB[chat_id_full] = True
-
-#     if not my_gemini.CRACK_DB[chat_id_full]:
-#         bot_reply_tr(message, 'Censorship enabled')
-#     else:
-#         bot_reply_tr(message, 'Censorship disabled')
-
-
 @bot.message_handler(commands=['original_mode'], func=authorized_owner)
 @async_run
 def original_mode(message: telebot.types.Message):
@@ -2966,11 +2937,7 @@ def language(message: telebot.types.Message):
 
     COMMAND_MODE[chat_id_full] = ''
 
-    if chat_id_full in LANGUAGE_DB:
-        lang = LANGUAGE_DB[chat_id_full]
-    else:
-        lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
-        LANGUAGE_DB[chat_id_full] = lang
+    lang = get_lang(chat_id_full, message)
 
     supported_langs_trans2 = ', '.join([x for x in supported_langs_trans])
 
@@ -2983,9 +2950,7 @@ def language(message: telebot.types.Message):
     if new_lang == 'ua':
         new_lang = 'uk'
     if new_lang in supported_langs_trans:
-        LANGUAGE_DB[chat_id_full] = new_lang
-        HELLO_MSG[chat_id_full] = ''
-        HELP_MSG[chat_id_full] = ''
+        my_db.set_user_lang(chat_id_full, new_lang)
         msg = f'{tr("Язык бота изменен на:", new_lang)} <b>{new_lang}</b> ({tr(langcodes.Language.make(language=new_lang).display_name(language="en"), new_lang).lower()})'
         bot_reply(message, msg, parse_mode='HTML', reply_markup=get_keyboard('start', message))
     else:
@@ -5126,8 +5091,13 @@ def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
             pass
-            my_db.drop_long_translations()
-            my_db.vacuum()
+
+            # {user_id:lang(2 symbol codes)}
+            LANGUAGE_DB = my_dic.PersistentDict('db/language_db.pkl')
+            for key in LANGUAGE_DB:
+                my_db.set_user_lang(key, LANGUAGE_DB[key])
+
+            del LANGUAGE_DB
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

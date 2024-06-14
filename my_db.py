@@ -322,8 +322,21 @@ def vacuum():
             CUR.execute('''
                 VACUUM
             ''')
+            CUR.commit()
         except Exception as error:
             my_log.log2(f'my_db:vacuum {error}')
+
+
+def drop_long_translations():
+    '''Drop long translations from cache'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                DELETE FROM translations
+                WHERE LENGTH(translation) > 200
+            ''')
+        except Exception as error:
+            my_log.log2(f'my_db:drop_long_translations {error}')
 
 
 if __name__ == '__main__':

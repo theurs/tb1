@@ -339,7 +339,7 @@ class ShowAction(threading.Thread):
         self.stop()
 
 
-def tr(text: str, lang: str, help: str = '') -> str:
+def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
     """
     This function translates text to the specified language,
     using either the AI translation engine or the standard translation engine.
@@ -348,6 +348,7 @@ def tr(text: str, lang: str, help: str = '') -> str:
         text: The text to translate.
         lang: The language to translate to.
         help: The help text for ai translator.
+        save_cache: Whether to save the translated text in the DB on disk.
 
     Returns:
         The translated text.
@@ -393,11 +394,13 @@ def tr(text: str, lang: str, help: str = '') -> str:
     if not translated:
         translated = my_trans.translate_text2(text, lang)
 
-    if translated:
+    if translated and save_cache:
         my_db.update_translation(text, lang, help, translated)
-    else:
+    elif save_cache:
         translated = text
         my_db.update_translation(text, lang, help, text)
+    elif not translated:
+        translated = text
 
     TRANS_CACHE[cache_key] = translated
     if len(TRANS_CACHE) > MAX_TRANS_CACHE:
@@ -1043,10 +1046,12 @@ def bot_reply_tr(message: telebot.types.Message,
               reply_markup: telebot.types.InlineKeyboardMarkup = None,
               send_message: bool = False,
               not_log: bool = False,
-              allow_voice: bool = False):
+              allow_voice: bool = False,
+              save_cache: bool = True,
+              help: str = ''):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-    msg = tr(msg, lang)
+    msg = tr(msg, lang, help, save_cache)
     bot_reply(message, msg, parse_mode, disable_web_page_preview, reply_markup, send_message, not_log, allow_voice)
 
 
@@ -3328,7 +3333,7 @@ Create image of ...
 
 5 lines total in answer
 
-the original prompt:""", lang) + '\n\n\n' + prompt
+the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt
                             if NSFW_FLAG:
                                 suggest = my_gemini.ai(suggest_query, temperature=1.5, mem=my_gemini.MEM_UNCENSORED)
                             else:
@@ -3360,7 +3365,7 @@ the original prompt:""", lang) + '\n\n\n' + prompt
 
                                 if pics_group and not NSFW_FLAG:
                                     try:
-                                        translated_prompt = tr(prompt, 'ru')
+                                        translated_prompt = tr(prompt, 'ru', save_cache=False)
                                         bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
                                                         link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
                                         ratio = fuzz.ratio(translated_prompt, prompt)
@@ -3877,16 +3882,8 @@ def trans(message: telebot.types.Message):
             llang = 'uk'
 
         with ShowAction(message, 'typing'):
-            translated = my_trans.translate_deepl(text, to_lang = llang)
-            if not translated:
-                translated = my_trans.translate_text2(text, llang)
-                if not translated:
-                    translated = my_groq.translate(text[:3500], to_lang = llang)
-                    my_db.add_msg(chat_id_full, 'llama3-70b-8192')
-                    if not translated:
-                        translated = my_gemini.translate(text[:3500], to_lang = llang)
-                        my_db.add_msg(chat_id_full, 'gemini15_flash')
-            if translated:
+            translated = tr(text, llang, save_cache=False)
+            if translated and translated != text:
                 try:
                     detected_lang = my_trans.detect(text) or 'unknown language'
                     detected_lang = tr(langcodes.Language.make(language=detected_lang).display_name(language="en"), lang).lower()
@@ -5113,6 +5110,8 @@ def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
             pass
+            my_db.drop_long_translations()
+            my_db.vacuum()
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

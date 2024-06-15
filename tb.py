@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import collections
 import chardet
 import concurrent.futures
 import datetime
 import io
+import hashlib
 import os
 import pickle
 import re
@@ -207,8 +207,8 @@ DEBUG_MD_TO_HTML = {}
 WHO_ANSWERED = {}
 
 # кеш для переводов в оперативной памяти
-TRANS_CACHE = collections.OrderedDict()
-MAX_TRANS_CACHE = 10000
+TRANS_CACHE = my_db.SmartCache(1000)
+
 
 # key - time.time() float
 # value - list
@@ -353,15 +353,14 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
         lang = 'uk'
 
     cache_key = (text, lang, help)
-    if cache_key in TRANS_CACHE:
-        TRANS_CACHE.move_to_end(cache_key)
-        return TRANS_CACHE[cache_key]
+    cache_key_hash = hashlib.md5(str(cache_key).encode()).hexdigest()
+    translated = TRANS_CACHE.get(cache_key_hash)
+    if translated:
+        return translated
 
     translated = my_db.get_translation(text, lang, help)
     if translated:
-        TRANS_CACHE[cache_key] = translated
-        if len(TRANS_CACHE) > MAX_TRANS_CACHE:
-            TRANS_CACHE.popitem(last=False)
+        TRANS_CACHE.set(cache_key_hash, translated)
         return translated
 
     translated = ''
@@ -388,17 +387,13 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
     if not translated:
         translated = my_trans.translate_text2(text, lang)
 
-    if translated and save_cache:
-        my_db.update_translation(text, lang, help, translated)
-    elif save_cache:
-        translated = text
-        my_db.update_translation(text, lang, help, text)
-    elif not translated:
+    if not translated:
         translated = text
 
-    TRANS_CACHE[cache_key] = translated
-    if len(TRANS_CACHE) > MAX_TRANS_CACHE:
-        TRANS_CACHE.popitem(last=False)
+    TRANS_CACHE.set(cache_key_hash, translated)
+    if save_cache:
+        my_db.update_translation(text, lang, help, translated)
+
     return translated
 
 
@@ -2324,9 +2319,11 @@ def translation_gui(message: telebot.types.Message):
                         my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                     if new_translation:
                         my_db.update_translation(original, lang, help, new_translation)
-                        TRANS_CACHE[(original, lang, help)] = new_translation
-                        if len(TRANS_CACHE) > MAX_TRANS_CACHE:
-                            TRANS_CACHE.popitem(last=False)
+
+                        cache_key = (original, lang, help)
+                        cache_key_hash = hashlib.md5(str(cache_key).encode()).hexdigest()
+                        TRANS_CACHE.set(cache_key_hash, new_translation)
+
                         translated_counter += 1
                         bot_reply(message, f'New translation:\n\n{new_translation}', disable_web_page_preview=True)
                     else:

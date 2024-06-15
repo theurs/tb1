@@ -32,9 +32,9 @@ class SmartCache:
         max_value_size (int): The maximum size (in bytes) of a value that can be stored in 
                               the cache. Defaults to 10240.
         max_value_count (int): The maximum number of times a value can be accessed before
-                               it is considered "too used" and its count is reset. Defaults to 99.
+                               it is considered "too used" and its count is reset. Defaults to 5.
     """
-    def __init__(self, max_size=1000, max_value_size=1024*10, max_value_count=99):
+    def __init__(self, max_size=1000, max_value_size=1024*10, max_value_count=5):
         """
         Initializes a new SmartCache instance.
 

@@ -79,9 +79,6 @@ if not os.path.exists('db'):
 # запоминаем время последнего обращения к боту
 LAST_TIME_ACCESS = SqliteDict('db/last_time_access.db', autocommit=True)
 
-# сколько картинок нарисовано юзером {id: counter}
-IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=True)
-
 # {user_id:True} была ли команда на остановку генерации image10
 IMAGE10_STOP = {}
 
@@ -102,9 +99,6 @@ CHAT_LOCKS = {}
 GOOGLE_LOCKS = {}
 SUM_LOCKS = {}
 IMG_GEN_LOCKS = {}
-
-# каким голосом озвучивать, мужским или женским или еще каким
-TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
 
 # хранилище номеров тем в группе для логов {full_user_id as str: theme_id as int}
 # full_user_id - полный адрес места которое логируется, либо это юзер ип и 0 либо группа и номер в группе
@@ -152,7 +146,7 @@ DISABLED_KBD = my_dic.PersistentDict('db/disabled_kbd.pkl')
 
 # автоматически заблокированные за слишком частые обращения к боту 
 # {user_id:Time to release in seconds - дата когда можно выпускать из бана} 
-DDOS_BLOCKED_USERS = my_dic.PersistentDict('db/ddos_blocked_users.pkl')
+DDOS_BLOCKED_USERS = {}
 
 # кешировать запросы типа кто звонил {number:(result, full text searched)}
 CACHE_CHECK_PHONE = {}
@@ -171,12 +165,7 @@ MESSAGE_QUEUE_IMG = {}
 # блокировать процесс отправки картинок что бы не было перемешивания разных запросов
 SEND_IMG_LOCK = threading.Lock()
 
-# настройки температуры для gemini {chat_id:temp}
-GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
 GEMIMI_TEMP_DEFAULT = 0.2
-
-# Из каких чатов надо выходить сразу (забаненые)
-LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
 
 # в каких чатах какое у бота кодовое слово для обращения к боту
 BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
@@ -900,7 +889,7 @@ def authorized(message: telebot.types.Message) -> bool:
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
     # I don't know how to do that, so I have to leave only when receiving any event
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+    if my_db.check_user_property(str(message.chat.id), 'auto_leave_chat'):
         try:
             bot.leave_chat(message.chat.id)
             my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
@@ -1007,7 +996,7 @@ def authorized_log(message: telebot.types.Message) -> bool:
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
     # I don't know how to do that, so I have to leave only when receiving any event
-    if message.chat.id in LEAVED_CHATS and LEAVED_CHATS[message.chat.id]:
+    if my_db.check_user_property(str(message.chat.id), 'auto_leave_chat'):
         try:
             bot.leave_chat(message.chat.id)
             my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
@@ -1245,8 +1234,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2)
         return markup
     elif kbd == 'config':
-        if chat_id_full in TTS_GENDER:
-            voice = f'tts_{TTS_GENDER[chat_id_full]}'
+        if my_db.check_user_property(chat_id_full, 'tts_gender'):
+            voice = f'tts_{my_db.get_user_property(chat_id_full, "tts_gender")}'
         else:
             voice = 'tts_female'
 
@@ -1528,16 +1517,15 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_gemini.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Gemini очищена.')
         elif call.data == 'tts_female' and is_admin_member(call):
-            TTS_GENDER[chat_id_full] = 'male'
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'male')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'tts_male' and is_admin_member(call):
-            TTS_GENDER[chat_id_full] = 'google_female'
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'google_female')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'tts_google_female' and is_admin_member(call):
-            # TTS_GENDER[chat_id_full] = 'male_ynd'
-            TTS_GENDER[chat_id_full] = 'female'
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
@@ -2822,8 +2810,8 @@ def leave_thread(message: telebot.types.Message):
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{9,14}", args)]
     for chat_id in chat_ids:
-        if chat_id not in LEAVED_CHATS or LEAVED_CHATS[chat_id] == False:
-            LEAVED_CHATS[chat_id] = True
+        if not my_db.check_user_property(str(chat_id), 'auto_leave_chat') or my_db.get_user_property(str(chat_id), 'auto_leave_chat') == False:
+            my_db.set_user_property(str(chat_id), 'auto_leave_chat', True)
             try:
                 bot.leave_chat(chat_id)
                 bot_reply(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
@@ -2849,8 +2837,8 @@ def revoke(message: telebot.types.Message):
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
     for chat_id in chat_ids:
-        if chat_id in LEAVED_CHATS and LEAVED_CHATS[chat_id]:
-            LEAVED_CHATS[chat_id] = False
+        if my_db.check_user_property(str(chat_id), 'auto_leave_chat'):
+            my_db.set_user_property(str(chat_id), 'auto_leave_chat', False)
             bot_reply(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}')
         else:
             bot_reply(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}')
@@ -2900,7 +2888,7 @@ def set_new_temperature(message: telebot.types.Message):
         bot_reply(message, help, parse_mode='Markdown')
         return
 
-    GEMIMI_TEMP[chat_id_full] = new_temp
+    my_db.set_user_property(chat_id_full, 'temperature', new_temp)
     if chat_id_full not in my_openrouter.PARAMS:
         my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
     model, _, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
@@ -3013,8 +3001,8 @@ def tts(message: telebot.types.Message, caption = None):
     with semaphore_talks:
         with ShowAction(message, 'record_audio'):
             COMMAND_MODE[chat_id_full] = ''
-            if chat_id_full in TTS_GENDER:
-                gender = TTS_GENDER[chat_id_full]
+            if my_db.check_user_property(chat_id_full, 'tts_gender'):
+                gender = my_db.get_user_property(chat_id_full, 'tts_gender')
             else:
                 gender = 'female'
 
@@ -3093,14 +3081,14 @@ def google(message: telebot.types.Message):
 
 
 def update_user_image_counter(chat_id_full: str, n: int):
-    if chat_id_full not in IMAGES_BY_USER_COUNTER:
-        IMAGES_BY_USER_COUNTER[chat_id_full] = 0
-    IMAGES_BY_USER_COUNTER[chat_id_full] += n
+    if not my_db.check_user_property(chat_id_full, 'image_generated_counter'):
+        my_db.set_user_property(chat_id_full, 'image_generated_counter', 0)
+    my_db.set_user_property(chat_id_full, 'image_generated_counter', my_db.get_user_property(chat_id_full, 'image_generated_counter') + n)
 
 def get_user_image_counter(chat_id_full: str) -> int:
-    if chat_id_full not in IMAGES_BY_USER_COUNTER:
-        IMAGES_BY_USER_COUNTER[chat_id_full] = 0
-    return IMAGES_BY_USER_COUNTER[chat_id_full]
+    if not my_db.check_user_property(chat_id_full, 'image_generated_counter'):
+        my_db.set_user_property(chat_id_full, 'image_generated_counter', 0)
+    return my_db.get_user_property(chat_id_full, 'image_generated_counter')
 
 
 @bot.message_handler(commands=['bing10'], func=authorized)
@@ -4700,12 +4688,12 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            if chat_id_full not in GEMIMI_TEMP:
-                                GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+                            if not my_db.check_user_property(chat_id_full, 'temperature'):
+                                my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
                             answer = my_gemini.chat(helped_query,
                                                     chat_id_full,
-                                                    GEMIMI_TEMP[chat_id_full],
+                                                    my_db.get_user_property(chat_id_full, 'temperature'),
                                                     model = 'gemini-1.5-flash-latest')
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
@@ -4771,10 +4759,12 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            if chat_id_full not in GEMIMI_TEMP:
-                                GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+                            if not my_db.check_user_property(chat_id_full, 'temperature'):
+                                my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
-                            answer = my_gemini.chat(helped_query, chat_id_full, GEMIMI_TEMP[chat_id_full],
+                            answer = my_gemini.chat(helped_query,
+                                                    chat_id_full,
+                                                    my_db.get_user_property(chat_id_full, 'temperature'),
                                                     model = 'gemini-1.5-pro-latest')
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
@@ -4839,14 +4829,20 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            if chat_id_full not in GEMIMI_TEMP:
-                                GEMIMI_TEMP[chat_id_full] = GEMIMI_TEMP_DEFAULT
+                            if not my_db.check_user_property(chat_id_full, 'temperature'):
+                                my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
                             style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
                             if style_:
-                                answer = my_groq.chat(f'({style_}) {message.text}', chat_id_full, GEMIMI_TEMP[chat_id_full])
+                                answer = my_groq.chat(f'({style_}) {message.text}',
+                                                      chat_id_full,
+                                                      my_db.get_user_property(chat_id_full, 'temperature')
+                                                      )
                             else:
-                                answer = my_groq.chat(message.text, chat_id_full, GEMIMI_TEMP[chat_id_full])
+                                answer = my_groq.chat(message.text,
+                                                      chat_id_full,
+                                                      my_db.get_user_property(chat_id_full, 'temperature')
+                                                      )
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_groq.undo(chat_id_full)
                                 message.text = f'/image {message.text}'
@@ -5096,20 +5092,27 @@ def one_time_shot():
 
 
             # добавить в таблицу 
-            try:
-                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN auto_translations INTEGER;""")
-                my_db.CON.commit()
-            except Exception as error:
-                my_log.log2(f'tb:one_time_shot: {error}')
+            # try:
+            #     my_db.CUR.execute("""ALTER TABLE users ADD COLUMN auto_translations INTEGER;""")
+            #     my_db.CON.commit()
+            # except Exception as error:
+            #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
-            BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
-            for key in BLOCKS:
-                value = BLOCKS[key]
+            # сколько картинок нарисовано юзером {id: counter}
+            IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=True)
+            for key in IMAGES_BY_USER_COUNTER:
+                value = IMAGES_BY_USER_COUNTER[key]
                 my_db.set_user_property(key, 'auto_translations', value)
-            del BLOCKS
+            del IMAGES_BY_USER_COUNTER
 
+
+            # каким голосом озвучивать, мужским или женским или еще каким
+            # TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
+            # настройки температуры для gemini {chat_id:temp}
+            # GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
+            # Из каких чатов надо выходить сразу (забаненые)
+            # LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
 
 
             with open('one_time_flag.txt', 'w') as f:

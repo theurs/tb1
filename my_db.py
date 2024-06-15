@@ -23,94 +23,34 @@ DAEMON_TIME = 2
 
 
 class SmartCache:
-    """
-    A smart cache implementation that stores key-value pairs and evicts the least used entry when
-    the cache is full.
-
-    Attributes:
-        max_size (int): The maximum number of entries the cache can hold. Defaults to 1000.
-        max_value_size (int): The maximum size (in bytes) of a value that can be stored in 
-                              the cache. Defaults to 10240.
-        max_value_count (int): The maximum number of times a value can be accessed before
-                               it is considered "too used" and its count is reset. Defaults to 5.
-    """
-    def __init__(self, max_size=1000, max_value_size=1024*10, max_value_count=5):
-        """
-        Initializes a new SmartCache instance.
-
-        Args:
-            max_size (int): The maximum number of entries the cache can hold. Defaults to 1000.
-            max_value_size (int): The maximum size (in bytes) of a value that can be stored in the
-                                  cache. Defaults to 10240.
-            max_value_count (int): The maximum number of times a value can be accessed before it is
-                                   considered "too used" and its count is reset. Defaults to 99.
-        """
+    def __init__(self, max_size=1000, max_value_size=1024*10):
         self.cache = OrderedDict()
         self.max_size = max_size
         self.max_value_size = max_value_size
-        self.max_value_count = max_value_count
 
     def get(self, key):
-        """
-        Retrieves the value associated with the given key from the cache.
-
-        Args:
-            key: The key to retrieve the value for.
-
-        Returns:
-            The value associated with the key, or None if the key is not found in the cache.
-        """
         if key in self.cache:
-            value, count = self.cache[key]
-            if count > self.max_value_count:
-                count = self.max_value_count
-            self.cache[key] = (value, count + 1)
-            return value
+            return self.cache[key]
         else:
             return None
 
     def set(self, key, value):
-        """
-        Stores the given value in the cache under the specified key.
-
-        Args:
-            key: The key to store the value under.
-            value: The value to store in the cache.
-        """
         value_size = sys.getsizeof(value)
         if value_size <= self.max_value_size:
-            self.cache[key] = (value, 1)
+            self.cache[key] = value
             if len(self.cache) > self.max_size:
-                self._remove_least_used()
+                self.cache.popitem(last=False)
         else:
             if key in self.cache:
                 del self.cache[key]
 
     def delete(self, key):
-        """
-        Removes the entry associated with the given key from the cache.
-
-        Args:
-            key: The key to remove from the cache.
-        """
         if key in self.cache:
             del self.cache[key]
 
-    def _remove_least_used(self):
-        """
-        Removes the least used entry from the cache.
-
-        This method prioritizes removing the oldest entry among those with the least usage count.
-        """
-        # Find entries with the least usage count
-        least_used_keys = [k for k, v in self.cache.items() if v[1] == min(self.cache.values(), key=lambda x: x[1])[1]]
-        # Choose the oldest entry among those with the least usage count
-        least_used_key = min(least_used_keys, key=lambda k: next(iter(self.cache.keys())).index(k))
-        del self.cache[least_used_key]
-
 
 # cache for users table
-USERS_CACHE = SmartCache()
+USERS_CACHE = SmartCache(1000)
 
 
 @async_run
@@ -520,7 +460,6 @@ def check_user_property(user_id: str, property: str) -> bool:
                     WHERE id = ? AND {property} IS NOT NULL
                 ''', (user_id,))
                 result = CUR.fetchone()
-                USERS_CACHE.set(cache_key, result[0])
                 return bool(result)
             except Exception as error:
                 my_log.log2(f'my_db:check_user_file {error}')
@@ -593,9 +532,26 @@ def set_user_property(user_id: str, property: str, value):
             my_log.log2(f'my_db:set_user_saved_file {error}')
 
 
+def get_all_users_ids():
+    '''Get all users ids'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT id FROM users
+            ''')
+            results = CUR.fetchall()
+            return [result[0] for result in results]
+        except Exception as error:
+            my_log.log2(f'my_db:get_all_users_ids {error}')
+            return []
+
+
+
 if __name__ == '__main__':
     pass
     init()
+
+    # print(get_all_users_ids())
 
     vacuum()
 
@@ -610,18 +566,18 @@ if __name__ == '__main__':
     # print(count_new_user_in_days(30))
 
 
-    USERS_CACHE.set('key1', 'value10'*100)
-    # USERS_CACHE = {'key1': 'value10'*100, 'key2': 'value10'*200}
-    # USERS_CACHE = OrderedDict({'key1': 'value10'*100, 'key2': 'value10'*200})
-    time_start = time.time()
-    counter_last = 0
-    for x in range(10000000000):
-        a = USERS_CACHE.get('key1')
-        # a = USERS_CACHE['key1']
-        if time.time() - time_start > 1:
-            print(x - counter_last, end='\r')
-            counter_last = x
-            time_start = time.time()
+    # USERS_CACHE.set('key1', 'value10'*100)
+    # # USERS_CACHE = {'key1': 'value10'*100, 'key2': 'value10'*200}
+    # # USERS_CACHE = OrderedDict({'key1': 'value10'*100, 'key2': 'value10'*200})
+    # time_start = time.time()
+    # counter_last = 0
+    # for x in range(10000000000):
+    #     a = USERS_CACHE.get('key1')
+    #     # a = USERS_CACHE['key1']
+    #     if time.time() - time_start > 1:
+    #         print(x - counter_last, end='\r')
+    #         counter_last = x
+    #         time_start = time.time()
 
 
 

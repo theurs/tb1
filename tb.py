@@ -97,10 +97,6 @@ SEARCH_PICS = SqliteDict('db/search_pics.db', autocommit=True)
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
 BAD_USERS_IMG = my_dic.PersistentDict('db/bad_users_img.pkl')
 
-# в каких чатах какой чатбот отвечает {chat_id_full(str):chatbot(str)}
-# 'gemini', 'gemini15'
-CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
-
 # блокировка чата что бы юзер не мог больше 1 запроса делать за раз,
 # только для запросов к гпт*. {chat_id_full(str):threading.Lock()}
 CHAT_LOCKS = {}
@@ -407,21 +403,21 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         chat_id_full: The full chat ID.
     """
     # Checks if there is a chat mode for the given chat, if not, sets the default value.
-    if chat_id_full not in CHAT_MODE:
-        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+        my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     # Updates the memory of the selected bot based on the chat mode.
-    if 'gemini' in CHAT_MODE[chat_id_full]:
+    if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_gemini.update_mem(query, resp, chat_id_full)
-    elif 'llama3' in CHAT_MODE[chat_id_full]:
+    elif 'llama3' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.update_mem(query, resp, chat_id_full)
-    elif 'openrouter' in CHAT_MODE[chat_id_full]:
+    elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.update_mem(query, resp, chat_id_full)
-    elif 'gpt4o' in CHAT_MODE[chat_id_full]:
+    elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.update_mem(query, resp, chat_id_full)
-    elif 'haiku' in CHAT_MODE[chat_id_full]:
+    elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_ddg.update_mem(query, resp, chat_id_full)
-    elif 'gpt35' in CHAT_MODE[chat_id_full]:
+    elif 'gpt35' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_ddg.update_mem(query, resp, chat_id_full)
 
 
@@ -444,8 +440,8 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     if not query:
         query = tr('Что изображено на картинке? Напиши подробное описание, и объясни подробно что это может означать. Затем напиши длинный подробный промпт одним предложением для рисования этой картинки с помощью нейросетей, начни промпт со слов /image Create image of...', lang)
 
-    if chat_id_full not in CHAT_MODE:
-        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+        my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     text = ''
 
@@ -1270,8 +1266,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         voice_title = voices[voice]
 
         # кто по умолчанию
-        if chat_id_full not in CHAT_MODE:
-            CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+        if my_db.check_user_property(chat_id_full, 'chat_mode'):
+            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
@@ -1501,24 +1497,24 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                       reply_markup=get_keyboard('chat', message))
         elif call.data == 'select_gpt4o':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT-4o.', lang))
-            CHAT_MODE[chat_id_full] = 'gpt4o'
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt4o')
         elif call.data == 'select_llama370':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3 70b from DuckDuckGo.', lang))
-            CHAT_MODE[chat_id_full] = 'llama370'
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
         elif call.data == 'select_haiku':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claud 3 Haiku from DuckDuckGo.', lang))
-            CHAT_MODE[chat_id_full] = 'haiku'
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'haiku')
         elif call.data == 'select_gpt35':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 3.5 from DuckDuckGo.', lang))
-            CHAT_MODE[chat_id_full] = 'gpt35'
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt35')
         elif call.data == 'select_gemini15_flash':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash.', lang))
-            CHAT_MODE[chat_id_full] = 'gemini'
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
         elif call.data == 'select_gemini15_pro':
             have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS
             if have_keys:
                 bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Pro.', lang))
-                CHAT_MODE[chat_id_full] = 'gemini15'
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
             else:
                 bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))
         elif call.data == 'groq-llama370_reset':
@@ -2251,14 +2247,14 @@ def openrouter(message: telebot.types.Message):
             if key.startswith('sk-or-v1-') and len(key) == 73:
                 my_openrouter.KEYS[chat_id_full] = key
                 bot_reply_tr(message, 'Key added successfully!')
-                CHAT_MODE[chat_id_full] = 'openrouter'
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
                 return
         else:
             msg = tr('You can use your own key from https://openrouter.ai/keys to access all AI supported.', lang)
             if chat_id_full in my_openrouter.KEYS and my_openrouter.KEYS[chat_id_full]:
                 key = my_openrouter.KEYS[chat_id_full]
             if key:
-                CHAT_MODE[chat_id_full] = 'openrouter'
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
                 msg = f'{tr("Your key:", lang)} [{key[:12]}...]'
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
             msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
@@ -2399,7 +2395,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
                                 new_keys.append(key)
                                 added_flag = True
                                 my_log.log_keys(f'Added new api key for Gemini: {key}')
-                                CHAT_MODE[chat_id_full] = 'gemini15'
+                                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
                                 msg = tr('Added new API key for Gemini:', lang) + f' {key}'
                                 bot_reply(message, msg)
                             else:
@@ -2582,9 +2578,9 @@ def disable_chat_mode(message: telebot.types.Message):
         _to = message.text.split(maxsplit=3)[2].strip()
         
         n = 0
-        for x in CHAT_MODE.keys():
-            if CHAT_MODE[x] == _from:
-                CHAT_MODE[x] = _to
+        for x in my_db.get_all_users_ids():
+            if my_db.get_user_property(x, 'chat_mode') == _from:
+                my_db.set_user_property(x, 'chat_mode', _to)
                 n += 1
 
         msg = f'{tr("Changed: ", lang)} {n}.'
@@ -2601,17 +2597,17 @@ def undo(message: telebot.types.Message):
     """Clear chat history last message (bot's memory)"""
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
-    if 'gemini' in CHAT_MODE[chat_id_full]:
+    if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_gemini.undo(chat_id_full)
-    elif 'llama' in CHAT_MODE[chat_id_full]:
+    elif 'llama' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.undo(chat_id_full)
-    elif 'openrouter' in CHAT_MODE[chat_id_full]:
+    elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.undo(chat_id_full)
-    elif 'gpt4o' in CHAT_MODE[chat_id_full]:
+    elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.undo(chat_id_full)
-    elif 'haiku' in CHAT_MODE[chat_id_full]:
+    elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         bot_reply_tr(message, 'DuckDuckGo haiku do not support /undo command')
-    elif 'gpt35' in CHAT_MODE[chat_id_full]:
+    elif 'gpt35' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         bot_reply_tr(message, 'DuckDuckGo GPT 3.5 do not support /undo command')
     else:
         bot_reply_tr(message, 'History WAS NOT undone.')
@@ -2627,20 +2623,20 @@ def reset_(message: telebot.types.Message):
     else:
         chat_id_full = get_topic_id(message)
 
-    if chat_id_full not in CHAT_MODE:
-        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+        my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
-    if 'gemini' in CHAT_MODE[chat_id_full]:
+    if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_gemini.reset(chat_id_full)
-    elif 'llama' in CHAT_MODE[chat_id_full]:
+    elif 'llama' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.reset(chat_id_full)
-    elif 'openrouter' in CHAT_MODE[chat_id_full]:
+    elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.reset(chat_id_full)
-    elif 'gpt4o' in CHAT_MODE[chat_id_full]:
+    elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.reset(chat_id_full)
-    elif 'haiku' in CHAT_MODE[chat_id_full]:
+    elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_ddg.reset(chat_id_full)
-    elif 'gpt35' in CHAT_MODE[chat_id_full]:
+    elif 'gpt35' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_ddg.reset(chat_id_full)
     else:
         if isinstance(message, telebot.types.Message):
@@ -2784,27 +2780,27 @@ def send_debug_history(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
 
-    if 'gemini' in CHAT_MODE[chat_id_full]:
+    if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Gemini\n\n'
         prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'llama' in CHAT_MODE[chat_id_full]:
+    if 'llama' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Groq llama 3 70b\n\n'
         prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'openrouter' in CHAT_MODE[chat_id_full]:
+    if 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Openrouter\n\n'
         prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'gpt4o' in CHAT_MODE[chat_id_full]:
+    if 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'GPT-4o\n\n'
         prompt += my_shadowjourney.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'haiku' in CHAT_MODE[chat_id_full]:
+    if 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = tr('DuckDuckGo haiku do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
         prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'gpt35' in CHAT_MODE[chat_id_full]:
+    if 'gpt35' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = tr('DuckDuckGo GPT 3.5 do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
         prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
@@ -3615,9 +3611,7 @@ def message_to_user(message: telebot.types.Message):
 @bot.message_handler(commands=['alert'], func=authorized_admin)
 @async_run
 def alert(message: telebot.types.Message):
-    """Сообщение всем кого бот знает. CHAT_MODE обновляется при каждом создании клавиатуры, 
-       а она появляется в первом же сообщении.
-    """
+    """Сообщение всем кого бот знает."""
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
@@ -3628,8 +3622,7 @@ def alert(message: telebot.types.Message):
             text = f'<b>{tr("Широковещательное сообщение от Верховного Адмнистратора, не обращайте внимания", lang)}</b>' + '\n\n\n' + text
 
             ids = []
-            all_users = [x[0] for x in my_gemini.CHATS.items()] + [x[0] for x in CHAT_MODE.items()]
-            all_users = list(set(CHAT_MODE.items()))
+            all_users = list(set(my_db.get_all_users_ids()))
             for x in all_users:
                 x = x[0]
                 x = x.replace('[','').replace(']','')
@@ -3964,8 +3957,8 @@ def send_welcome_start(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     COMMAND_MODE[chat_id_full] = ''
-    if chat_id_full not in CHAT_MODE:
-        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+        my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     args = message.text.split(maxsplit = 1)
     if len(args) == 2:
@@ -4118,8 +4111,8 @@ def id_cmd_handler(message: telebot.types.Message):
 
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
 
-{tr("Выбранная чат модель:", lang)} {CHAT_MODE[chat_id_full] if chat_id_full in CHAT_MODE else cfg.chat_mode_default}'''
-    if CHAT_MODE[chat_id_full] == 'openrouter':
+{tr("Выбранная чат модель:", lang)} {my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.check_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default}'''
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         msg += ' ' + open_router_model
 
     gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
@@ -4453,8 +4446,8 @@ def do_task(message, custom_prompt: str = ''):
         message.text = custom_prompt
 
     # кто по умолчанию отвечает
-    if chat_id_full not in CHAT_MODE:
-        CHAT_MODE[chat_id_full] = cfg.chat_mode_default
+    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+        my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     # определяем откуда пришло сообщение  
     is_private = message.chat.type == 'private'
@@ -4483,12 +4476,12 @@ def do_task(message, custom_prompt: str = ''):
             return
 
 
-    chat_mode_ = CHAT_MODE[chat_id_full]
+    chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')
 
     have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS
 
     # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
-    if CHAT_MODE[chat_id_full] == 'gemini15' and not have_keys:
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15' and not have_keys:
         chat_mode_ = 'gemini'
 
     if is_private:
@@ -5096,6 +5089,18 @@ def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
             pass
+        
+            # в каких чатах какой чатбот отвечает {chat_id_full(str):chatbot(str)}
+            # 'gemini', 'gemini15'
+            CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
+            n = len(CHAT_MODE.keys())
+            for key in CHAT_MODE:
+                value = CHAT_MODE[key]
+                my_db.set_user_property(key, 'chat_mode', value)
+                print(str(n)+'         ', '\r', end='')
+                n -= 1
+
+            del CHAT_MODE
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

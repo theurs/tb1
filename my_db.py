@@ -113,6 +113,7 @@ def init():
                 blocked_bing INTEGER,
                 auto_leave_chat INTEGER,
 
+                auto_translations INTEGER,
                 tts_gender TEXT,
                 suggest_enabled INTEGER,
                 chat_enabled INTEGER,

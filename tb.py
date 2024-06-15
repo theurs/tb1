@@ -103,9 +103,6 @@ GOOGLE_LOCKS = {}
 SUM_LOCKS = {}
 IMG_GEN_LOCKS = {}
 
-# в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
-BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
-
 # каким голосом озвучивать, мужским или женским или еще каким
 TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
 
@@ -1021,11 +1018,11 @@ def authorized_log(message: telebot.types.Message) -> bool:
     return True
 
 
-def check_blocks(chat_id: str) -> bool:
+def check_blocks(chat_id_full: str) -> bool:
     """в каких чатах выключены автопереводы"""
-    if chat_id not in BLOCKS:
-        BLOCKS[chat_id] = 0
-    return False if BLOCKS[chat_id] == 1 else True
+    if not my_db.check_user_property(chat_id_full, 'auto_translations'):
+        my_db.set_user_property(chat_id_full, 'auto_translations', 0)
+    return False if my_db.get_user_property(chat_id_full, 'auto_translations') == 1 else True
 
 
 def disabled_kbd(chat_id_full):
@@ -1288,10 +1285,10 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton(tr('☑️Только голос', lang), callback_data='voice_only_mode_enable')
         markup.row(button1, button2)
 
-        if chat_id_full not in BLOCKS:
-            BLOCKS[chat_id_full] = 0
+        if not my_db.check_user_property(chat_id_full, 'auto_translations'):
+            my_db.set_user_property(chat_id_full, 'auto_translations', 0)
 
-        if BLOCKS[chat_id_full] == 1:
+        if my_db.get_user_property(chat_id_full, 'auto_translations') == 1:
             button1 = telebot.types.InlineKeyboardButton(tr(f'✅Авто переводы', lang), callback_data='autotranslate_disable')
         else:
             button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Авто переводы', lang), callback_data='autotranslate_enable')
@@ -1568,11 +1565,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'autotranslate_disable' and is_admin_member(call):
-            BLOCKS[chat_id_full] = 0
+            my_db.set_user_property(chat_id_full, 'auto_translations', 0)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'autotranslate_enable' and is_admin_member(call):
-            BLOCKS[chat_id_full] = 1
+            my_db.set_user_property(chat_id_full, 'auto_translations', 1)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'disable_chat_kbd' and is_admin_member(call):
@@ -5098,11 +5095,20 @@ def one_time_shot():
             pass
 
 
-            BAD_USERS_IMG = my_dic.PersistentDict('db/bad_users_img.pkl')
-            for key in BAD_USERS_IMG:
-                value = BAD_USERS_IMG[key]
-                my_db.set_user_property(key, 'blocked_bing', value)
-            del BAD_USERS_IMG
+            # добавить в таблицу 
+            try:
+                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN auto_translations INTEGER;""")
+                my_db.CON.commit()
+            except Exception as error:
+                my_log.log2(f'tb:one_time_shot: {error}')
+
+
+            # в каких чатах выключены автопереводы. 0 - выключено, 1 - включено
+            BLOCKS = my_dic.PersistentDict('db/blocks.pkl')
+            for key in BLOCKS:
+                value = BLOCKS[key]
+                my_db.set_user_property(key, 'auto_translations', value)
+            del BLOCKS
 
 
 

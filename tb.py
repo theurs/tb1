@@ -403,7 +403,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         chat_id_full: The full chat ID.
     """
     # Checks if there is a chat mode for the given chat, if not, sets the default value.
-    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     # Updates the memory of the selected bot based on the chat mode.
@@ -440,7 +440,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     if not query:
         query = tr('Что изображено на картинке? Напиши подробное описание, и объясни подробно что это может означать. Затем напиши длинный подробный промпт одним предложением для рисования этой картинки с помощью нейросетей, начни промпт со слов /image Create image of...', lang)
 
-    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     text = ''
@@ -1266,7 +1266,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         voice_title = voices[voice]
 
         # кто по умолчанию
-        if my_db.check_user_property(chat_id_full, 'chat_mode'):
+        if not my_db.check_user_property(chat_id_full, 'chat_mode'):
             my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
@@ -2623,7 +2623,7 @@ def reset_(message: telebot.types.Message):
     else:
         chat_id_full = get_topic_id(message)
 
-    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3957,7 +3957,7 @@ def send_welcome_start(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     COMMAND_MODE[chat_id_full] = ''
-    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     args = message.text.split(maxsplit = 1)
@@ -4446,7 +4446,7 @@ def do_task(message, custom_prompt: str = ''):
         message.text = custom_prompt
 
     # кто по умолчанию отвечает
-    if my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     # определяем откуда пришло сообщение  

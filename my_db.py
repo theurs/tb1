@@ -7,7 +7,7 @@ import threading
 import traceback
 import sqlite3
 import sys
-from collections import OrderedDict
+from cachetools import LRUCache
 
 import my_log
 from utils import async_run
@@ -24,29 +24,22 @@ DAEMON_TIME = 2
 
 class SmartCache:
     def __init__(self, max_size=1000, max_value_size=1024*10):
-        self.cache = OrderedDict()
-        self.max_size = max_size
+        self.cache = LRUCache(maxsize=max_size)
         self.max_value_size = max_value_size
 
     def get(self, key):
-        if key in self.cache:
-            return self.cache[key]
-        else:
-            return None
+        return self.cache.get(key)
 
     def set(self, key, value):
         value_size = sys.getsizeof(value)
         if value_size <= self.max_value_size:
             self.cache[key] = value
-            if len(self.cache) > self.max_size:
-                self.cache.popitem(last=False)
-        else:
-            if key in self.cache:
-                del self.cache[key]
 
     def delete(self, key):
-        if key in self.cache:
+        try:
             del self.cache[key]
+        except KeyError:
+            pass
 
 
 # cache for users table
@@ -551,9 +544,26 @@ if __name__ == '__main__':
     pass
     init()
 
+
+    # import random
+    # USERS_CACHE = SmartCache(10000)
+    # time_start = time.time()
+    # counter_last = 0
+    # for x in range(10000000000000):
+    #     USERS_CACHE.set(x, str(x) + 'value10'*100)
+
+    #     for y in range(1, random.randint(1, 5)):
+    #         a = USERS_CACHE.get(x)
+
+    #     if time.time() - time_start > 1:
+    #         print(x - counter_last, end='\r')
+    #         counter_last = x
+    #         time_start = time.time()
+
+
     # print(get_all_users_ids())
 
-    vacuum()
+    # vacuum()
 
     # print(get_translation(text='test2', lang='ru', help=''))
     # update_translation(text='test2', lang='ru', help='', translation='тест2')

@@ -2,6 +2,7 @@
 bingart
 cairosvg
 chardet
+cachetools
 deepl
 duckduckgo_search[lxml]
 edge_tts

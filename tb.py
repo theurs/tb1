@@ -466,18 +466,18 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     return text
 
 
-def get_lang(id: str, message: telebot.types.Message = None) -> str:
+def get_lang(user_id: str, message: telebot.types.Message = None) -> str:
     """
     Returns the language corresponding to the given ID.
     
     Args:
-        id (str): The ID of the language.
+        user_id (str): The ID of the user.
         message (telebot.types.Message, optional): The message object. Defaults to None.
     
     Returns:
-        str: The language corresponding to the given ID.
+        str: The language corresponding to the given user ID.
     """
-    lang = my_db.get_user_lang(id)
+    lang = my_db.get_user_property(user_id, 'lang')
 
     if lang == 'pt-br':
         lang = 'pt'
@@ -486,7 +486,7 @@ def get_lang(id: str, message: telebot.types.Message = None) -> str:
         lang = cfg.DEFAULT_LANGUAGE
         if message:
             lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
-        my_db.set_user_lang(id, lang)
+        my_db.set_user_property(user_id, 'lang', lang)
     return lang
 
 
@@ -2951,9 +2951,9 @@ def language(message: telebot.types.Message):
     if new_lang == 'ua':
         new_lang = 'uk'
     if new_lang in supported_langs_trans:
-        my_db.set_user_lang(chat_id_full, new_lang)
+        my_db.set_user_property(chat_id_full, 'lang', new_lang)
         msg = f'{tr("Язык бота изменен на:", new_lang)} <b>{new_lang}</b> ({tr(langcodes.Language.make(language=new_lang).display_name(language="en"), new_lang).lower()})'
-        bot_reply(message, msg, parse_mode='HTML', reply_markup=get_keyboard('start', message))
+        bot_reply(message, msg, parse_mode='HTML')
     else:
         msg = f'{tr("Такой язык не поддерживается:", lang)} <b>{new_lang}</b>\n\n{tr("Возможные варианты:", lang)}\n{supported_langs_trans2}'
         bot_reply(message, msg, parse_mode='HTML')
@@ -5099,18 +5099,7 @@ def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
             pass
-            my_db.CUR.execute('''
-                ALTER TABLE users
-                    ADD COLUMN saved_file_name TEXT;
-            ''')
-            # для хранения загруженных юзерами текстов, по этим текстам можно делать запросы командой /file
-            # {user_id(str): (filename or link (str), text(str))}
-            USER_FILES = SqliteDict('db/user_files.db', autocommit=True)
-            for key in USER_FILES:
-                my_db.set_user_property(key, 'saved_file_name', USER_FILES[key][0])
-                my_db.set_user_property(key, 'saved_file', USER_FILES[key][1])
 
-            del USER_FILES
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')
     except Exception as error:

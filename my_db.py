@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 
+import hashlib
 import time
 import threading
 import traceback
 import sqlite3
+import sys
+from collections import OrderedDict
 
 import my_log
 from utils import async_run
@@ -17,6 +20,97 @@ CUR = None
 COM_COUNTER = 0
 DAEMON_RUN = True
 DAEMON_TIME = 2
+
+
+class SmartCache:
+    """
+    A smart cache implementation that stores key-value pairs and evicts the least used entry when
+    the cache is full.
+
+    Attributes:
+        max_size (int): The maximum number of entries the cache can hold. Defaults to 1000.
+        max_value_size (int): The maximum size (in bytes) of a value that can be stored in 
+                              the cache. Defaults to 10240.
+        max_value_count (int): The maximum number of times a value can be accessed before
+                               it is considered "too used" and its count is reset. Defaults to 99.
+    """
+    def __init__(self, max_size=1000, max_value_size=1024*10, max_value_count=99):
+        """
+        Initializes a new SmartCache instance.
+
+        Args:
+            max_size (int): The maximum number of entries the cache can hold. Defaults to 1000.
+            max_value_size (int): The maximum size (in bytes) of a value that can be stored in the
+                                  cache. Defaults to 10240.
+            max_value_count (int): The maximum number of times a value can be accessed before it is
+                                   considered "too used" and its count is reset. Defaults to 99.
+        """
+        self.cache = OrderedDict()
+        self.max_size = max_size
+        self.max_value_size = max_value_size
+        self.max_value_count = max_value_count
+
+    def get(self, key):
+        """
+        Retrieves the value associated with the given key from the cache.
+
+        Args:
+            key: The key to retrieve the value for.
+
+        Returns:
+            The value associated with the key, or None if the key is not found in the cache.
+        """
+        if key in self.cache:
+            value, count = self.cache[key]
+            if count > self.max_value_count:
+                count = self.max_value_count
+            self.cache[key] = (value, count + 1)
+            return value
+        else:
+            return None
+
+    def set(self, key, value):
+        """
+        Stores the given value in the cache under the specified key.
+
+        Args:
+            key: The key to store the value under.
+            value: The value to store in the cache.
+        """
+        value_size = sys.getsizeof(value)
+        if value_size <= self.max_value_size:
+            self.cache[key] = (value, 1)
+            if len(self.cache) > self.max_size:
+                self._remove_least_used()
+        else:
+            if key in self.cache:
+                del self.cache[key]
+
+    def delete(self, key):
+        """
+        Removes the entry associated with the given key from the cache.
+
+        Args:
+            key: The key to remove from the cache.
+        """
+        if key in self.cache:
+            del self.cache[key]
+
+    def _remove_least_used(self):
+        """
+        Removes the least used entry from the cache.
+
+        This method prioritizes removing the oldest entry among those with the least usage count.
+        """
+        # Find entries with the least usage count
+        least_used_keys = [k for k, v in self.cache.items() if v[1] == min(self.cache.values(), key=lambda x: x[1])[1]]
+        # Choose the oldest entry among those with the least usage count
+        least_used_key = min(least_used_keys, key=lambda k: next(iter(self.cache.keys())).index(k))
+        del self.cache[least_used_key]
+
+
+# cache for users table
+USERS_CACHE = SmartCache()
 
 
 @async_run
@@ -390,88 +484,55 @@ def get_first_meet(user_id):
         return None
 
 
-def get_user_lang(user_id: str) -> str:
-    '''Get user language'''
-    with LOCK:
-        try:
-            CUR.execute('''
-                SELECT lang FROM users
-                WHERE id = ?
-            ''', (user_id,)
-            )
-            result = CUR.fetchone()
-            if result:
-                return result[0]
-            else:
-                return None
-        except Exception as error:
-            my_log.log2(f'my_db:get_user_lang {error}')
-            return None
-
-
-def set_user_lang(user_id: str, lang: str):
-    '''Set user language'''
-    global COM_COUNTER
-    with LOCK:
-        try:
-            # надо проверить есть ли в базе юзер, и если есть то обновить его язык а если нет то добавить нового
-            CUR.execute('''
-                SELECT 1 FROM users
-                WHERE id = ?
-            ''', (user_id,))
-            if CUR.fetchone():
-                CUR.execute('''
-                    UPDATE users
-                    SET lang = ?
-                    WHERE id = ?
-                ''', (lang, user_id))
-            else:
-                first_meet = get_first_meet(user_id) or time.time()
-                CUR.execute('''
-                    INSERT INTO users (id, lang, first_meet)
-                    VALUES (?, ?, ?)
-                ''', (user_id, lang, first_meet))
-            COM_COUNTER += 1
-        except Exception as error:
-            my_log.log2(f'my_db:set_user_lang {error}')
-
-
 def get_user_property(user_id: str, property: str):
     '''Get a value of property in user table'''
-    with LOCK:
-        try:
-            CUR.execute(f'''
-                SELECT {property} FROM users
-                WHERE id = ?
-            ''', (user_id,))
-            result = CUR.fetchone()
-            if result:
-                return result[0]
-            else:
+    cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
+    if cache_key in USERS_CACHE.cache:
+        return USERS_CACHE.get(cache_key)
+    else:
+        with LOCK:
+            try:
+                CUR.execute(f'''
+                    SELECT {property} FROM users
+                    WHERE id = ?
+                ''', (user_id,))
+                result = CUR.fetchone()
+                if result:
+                    USERS_CACHE.set(cache_key, result[0])
+                    return result[0]
+                else:
+                    return None
+            except Exception as error:
+                my_log.log2(f'my_db:get_user_saved_file {error}')
                 return None
-        except Exception as error:
-            my_log.log2(f'my_db:get_user_saved_file {error}')
-            return None
 
 
 def check_user_property(user_id: str, property: str) -> bool:
     '''Return True if user have this property not None'''
-    with LOCK:
-        try:
-            CUR.execute(f'''
-                SELECT 1 FROM users
-                WHERE id = ? AND {property} IS NOT NULL
-            ''', (user_id,))
-            result = CUR.fetchone()
-            return bool(result)
-        except Exception as error:
-            my_log.log2(f'my_db:check_user_file {error}')
-            return False
+    cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
+    if cache_key in USERS_CACHE.cache:
+        return bool(USERS_CACHE.get(cache_key))
+    else:
+        with LOCK:
+            try:
+                CUR.execute(f'''
+                    SELECT 1 FROM users
+                    WHERE id = ? AND {property} IS NOT NULL
+                ''', (user_id,))
+                result = CUR.fetchone()
+                USERS_CACHE.set(cache_key, result[0])
+                return bool(result)
+            except Exception as error:
+                my_log.log2(f'my_db:check_user_file {error}')
+                return False
 
 
 def delete_user_property(user_id: str, property: str):
     '''Delete user`s property value'''
     global COM_COUNTER
+    cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
+    if cache_key in USERS_CACHE.cache:
+        USERS_CACHE.delete(cache_key)
     with LOCK:
         try:
             # Проверяем, существует ли пользователь
@@ -504,6 +565,8 @@ def delete_user_property(user_id: str, property: str):
 def set_user_property(user_id: str, property: str, value):
     '''Set user`s property'''
     global COM_COUNTER
+    cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
+    USERS_CACHE.set(cache_key, value)
     with LOCK:
         try:
             # Проверяем, есть ли пользователь в базе
@@ -536,7 +599,6 @@ if __name__ == '__main__':
 
     vacuum()
 
-
     # print(get_translation(text='test2', lang='ru', help=''))
     # update_translation(text='test2', lang='ru', help='', translation='тест2')
     # print(get_translation(text='test2', lang='ru', help=''))
@@ -547,17 +609,21 @@ if __name__ == '__main__':
     # print(get_total_msg_users_in_days(30))
     # print(count_new_user_in_days(30))
 
-    # for x in range(10000000):
-    #     uid = random.choice(('user1','user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8', 'user9', 'user10'))
-    #     model = random.choice(('model1','model2', 'model3', 'model4', 'model5', 'model6', 'model7', 'model8', 'model9', 'model10'))
-    #     add_msg(uid, model)
-    #     print(x, end='\r\r\r\r\r')
 
-    # for x in range(10000000):
-    #     a = count_msgs('user1', 'all', 10000)
-    #     b = count_msgs('user1', 'model5', 10000)
-    #     c = count_msgs_all()
-    #     print(x, end='\r\r\r\r\r')
+    USERS_CACHE.set('key1', 'value10'*100)
+    # USERS_CACHE = {'key1': 'value10'*100, 'key2': 'value10'*200}
+    # USERS_CACHE = OrderedDict({'key1': 'value10'*100, 'key2': 'value10'*200})
+    time_start = time.time()
+    counter_last = 0
+    for x in range(10000000000):
+        a = USERS_CACHE.get('key1')
+        # a = USERS_CACHE['key1']
+        if time.time() - time_start > 1:
+            print(x - counter_last, end='\r')
+            counter_last = x
+            time_start = time.time()
+
+
 
     # print(count_msgs('test', 'gpt4o', 1000000))
 

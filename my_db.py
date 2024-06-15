@@ -26,18 +26,23 @@ class SmartCache:
     def __init__(self, max_size=1000, max_value_size=1024*10):
         self.cache = LRUCache(maxsize=max_size)
         self.max_value_size = max_value_size
+        self.lock = threading.Lock()
 
     def get(self, key):
-        return self.cache.get(key)
+        with self.lock:
+            value = self.cache.get(key)
+        return value
 
     def set(self, key, value):
         value_size = sys.getsizeof(value)
         if value_size <= self.max_value_size:
-            self.cache[key] = value
+            with self.lock:
+                self.cache[key] = value
 
     def delete(self, key):
         try:
-            del self.cache[key]
+            with self.lock:
+                del self.cache[key]
         except KeyError:
             pass
 

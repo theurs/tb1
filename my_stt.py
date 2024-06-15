@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 # pip install -U google-generativeai
+# pip install assemblyai
 
 import hashlib
 import os
+import random
 import subprocess
 import threading
-from pydub import AudioSegment
+import traceback
 from io import BytesIO
 
 import speech_recognition as sr
+import assemblyai as aai
+from pydub import AudioSegment
 
+import cfg
 import my_transcribe
 import my_log
 import utils
-
 
 
 # locks for chat_ids
@@ -117,6 +121,9 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
         input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
         try:
+            if not text:
+                text = assemblyai(input_file2, lang)
+
             if not text and dur < 55:
                 # быстро и хорошо распознает но до 1 минуты всего
                 # и часто глотает последнее слово
@@ -224,6 +231,22 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
         return result
 
 
+def assemblyai(audio_file: str, language: str = 'ru'):
+    '''Converts the given audio file to text using the AssemblyAI API.'''
+    try:
+        aai.settings.api_key = random.choice(cfg.ASSEMBLYAI_KEYS)
+        transcriber = aai.Transcriber()
+        audio_url = (audio_file)
+        config = aai.TranscriptionConfig(speaker_labels=True, language_code = language)
+        transcript = transcriber.transcribe(audio_url, config)
+        my_log.log2(f'my_stt:assemblyai:DEBUG: {transcript.text}')
+        return transcript.text or ''
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'my_stt:assemblyai: {error}\n\n{traceback_error}')
+        return ''
+
+
 if __name__ == "__main__":
     pass
-    # print(stt_genai('1.opus'))
+    print(assemblyai('1.opus'))

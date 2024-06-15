@@ -121,9 +121,6 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
         input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
         try:
-            if not text:
-                text = assemblyai(input_file2, lang)
-
             if not text and dur < 55:
                 # быстро и хорошо распознает но до 1 минуты всего
                 # и часто глотает последнее слово
@@ -139,6 +136,9 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
                     text = stt_genai(input_file2, lang)
                 except Exception as error:
                     my_log.log2(f'my_stt:stt:genai:{error}')
+
+            if not text:
+                text = assemblyai(input_file2, lang)
 
         finally:
             utils.remove_file(input_file2)
@@ -239,7 +239,7 @@ def assemblyai(audio_file: str, language: str = 'ru'):
         audio_url = (audio_file)
         config = aai.TranscriptionConfig(speaker_labels=True, language_code = language)
         transcript = transcriber.transcribe(audio_url, config)
-        my_log.log2(f'my_stt:assemblyai:DEBUG: {transcript.text}')
+        # my_log.log2(f'my_stt:assemblyai:DEBUG: {transcript.text}')
         return transcript.text or ''
     except Exception as error:
         traceback_error = traceback.format_exc()

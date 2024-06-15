@@ -93,10 +93,6 @@ HELP_MSG = {}
 # {hash: search query}
 SEARCH_PICS = SqliteDict('db/search_pics.db', autocommit=True) 
 
-# заблокированные юзера {id:True/False}
-
-BAD_USERS_IMG = my_dic.PersistentDict('db/bad_users_img.pkl')
-
 # блокировка чата что бы юзер не мог больше 1 запроса делать за раз,
 # только для запросов к гпт*. {chat_id_full(str):threading.Lock()}
 CHAT_LOCKS = {}
@@ -3128,7 +3124,7 @@ def image10_bing_gen(message: telebot.types.Message):
 @async_run
 def image_bing_gen(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
-    if chat_id_full in BAD_USERS_IMG:
+    if my_db.check_user_property(chat_id_full, 'blocked_bing'):
         bot_reply_tr(message, 'Bing вас забанил.')
         time.sleep(2)
         return
@@ -3184,7 +3180,7 @@ def image_gen(message: telebot.types.Message):
             message.text = message.text[:-4]
 
         # забаненный в бинге юзер
-        if chat_id_full in BAD_USERS_IMG:
+        if my_db.check_user_property(chat_id_full, 'blocked_bing'):
             NSFW_FLAG = True
 
         # рисовать только бингом, команда /bing
@@ -3507,7 +3503,7 @@ def block_user_add2(message: telebot.types.Message):
 
     user_id = message.text[10:].strip()
     if user_id:
-        BAD_USERS_IMG[user_id] = True
+        my_db.set_user_property(user_id, 'blocked_bing', True)
         bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockadd2 <[user id] [group id]>')
@@ -3523,8 +3519,8 @@ def block_user_del2(message: telebot.types.Message):
 
     user_id = message.text[10:].strip()
     if user_id:
-        if user_id in BAD_USERS_IMG:
-            del BAD_USERS_IMG[user_id]
+        if my_db.check_user_property(user_id, 'blocked_bing'):
+            my_db.delete_user_property(user_id, 'blocked_bing')
             bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
         else:
             bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
@@ -3536,9 +3532,8 @@ def block_user_del2(message: telebot.types.Message):
 @async_run
 def block_user_list2(message: telebot.types.Message):
     """Показывает список заблокированных юзеров image nsfw"""
-    users = [x for x in BAD_USERS_IMG.keys() if x]
-    if users:
-        bot_reply(message, '\n'.join(users))
+    if my_db.get_user_all_bad_bing_ids():
+        bot_reply(message, '\n'.join(my_db.get_user_all_bad_bing_ids()))
 
 
 @bot.message_handler(commands=['blockadd'], func=authorized_admin)
@@ -4160,7 +4155,7 @@ def id_cmd_handler(message: telebot.types.Message):
     if my_db.check_user_property(chat_id_full, 'blocked'):
         msg += f'\n{tr("User was banned.", lang)}\n'
 
-    if chat_id_full in BAD_USERS_IMG:
+    if my_db.check_user_property(chat_id_full, 'blocked_bing'):
         msg += f'\n{tr("User was banned in bing.com.", lang)}\n'
 
     if str(message.chat.id) in DDOS_BLOCKED_USERS and not my_db.check_user_property(chat_id_full, 'blocked'):
@@ -5101,13 +5096,13 @@ def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
             pass
-        
-            
-            BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
-            for key in BAD_USERS:
-                value = BAD_USERS[key]
-                my_db.set_user_property(key, 'blocked', value)
-            del BAD_USERS
+
+
+            BAD_USERS_IMG = my_dic.PersistentDict('db/bad_users_img.pkl')
+            for key in BAD_USERS_IMG:
+                value = BAD_USERS_IMG[key]
+                my_db.set_user_property(key, 'blocked_bing', value)
+            del BAD_USERS_IMG
 
 
 

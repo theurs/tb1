@@ -478,6 +478,10 @@ def get_lang(id: str, message: telebot.types.Message = None) -> str:
         str: The language corresponding to the given ID.
     """
     lang = my_db.get_user_lang(id)
+
+    if lang == 'pt-br':
+        lang = 'pt'
+
     if not lang:
         lang = cfg.DEFAULT_LANGUAGE
         if message:

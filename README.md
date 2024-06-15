@@ -317,7 +317,7 @@ OPEN_ROUTER_KEY = 'xxx'
 #]
 
 
-# https://www.assemblyai.com/ speech-to-text free 100hours
+# https://www.assemblyai.com/ speech-to-text free 100hours. slow in free account?
 ASSEMBLYAI_KEYS = [
     'key1',
     'key2',

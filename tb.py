@@ -133,9 +133,6 @@ CHAT_ENABLED = SqliteDict('db/chat_enabled.db', autocommit=True)
 # он будет работать как в оригинале {id:True/False}
 ORIGINAL_MODE = SqliteDict('db/original_mode.db', autocommit=True)
 
-# запоминаем у какого юзера какой язык OCR выбран
-OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
-
 # для запоминания ответов на команду /sum
 SUM_CACHE = SqliteDict('db/sum_cache.db', autocommit=True)
 
@@ -483,17 +480,21 @@ def get_lang(user_id: str, message: telebot.types.Message = None) -> str:
 
 def get_ocr_language(message) -> str:
     """Возвращает настройки языка OCR для этого чата"""
-    chat_id_full = get_topic_id(message)
+    try:
+        chat_id_full = get_topic_id(message)
 
-    if chat_id_full in OCR_DB:
-        lang = OCR_DB[chat_id_full]
-    else:
-        try:
-            OCR_DB[chat_id_full] = cfg.ocr_language
-        except:
-            OCR_DB[chat_id_full] = 'rus+eng'
-        lang = OCR_DB[chat_id_full]
-    return lang
+        lang = my_db.get_user_property(chat_id_full, 'ocr_lang')
+        if not lang:
+            if hasattr(cfg, 'ocr_language'):
+                my_db.set_user_property(chat_id_full, 'ocr_lang', cfg.ocr_language)
+            else:
+                my_db.set_user_property(chat_id_full, 'ocr_lang', 'rus+eng')
+            lang = my_db.get_user_property(chat_id_full, 'ocr_lang')
+        return lang
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:get_ocr_language: {error}\n\n{traceback_error}')
+        return 'rus+eng'
 
 
 def get_topic_id(message: telebot.types.Message) -> str:
@@ -3906,6 +3907,22 @@ def send_name(message: telebot.types.Message):
         bot_reply(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
 
 
+def is_language_code_valid_for_ocr(code: str) -> bool:
+  """
+  Проверяет, является ли строка с языками корректной.
+
+  Args:
+    code: Строка с языками, разделенными плюсами (например, "rus+eng+jpn").
+
+  Returns:
+    True, если строка корректна, False в противном случае.
+  """
+  for lang in code.split('+'):
+    if lang not in my_init.languages_ocr:
+      return False
+  return True
+
+
 @bot.message_handler(commands=['ocr'], func=authorized)
 @async_run
 def ocr_setup(message: telebot.types.Message):
@@ -3938,9 +3955,11 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
     llang = get_ocr_language(message)
 
     msg = f'{tr("Старые настройки:", lang)} {llang}\n\n{tr("Новые настройки:", lang)} {arg}'
-    OCR_DB[chat_id_full] = arg
-    
+    my_db.set_user_property(chat_id_full, 'ocr_lang', arg)
+
     bot_reply(message, msg, parse_mode='HTML')
+    if not is_language_code_valid_for_ocr(arg):
+        bot_reply_tr(message, 'Проверьте правильность введенных данных, похоже что в них ошибка.', lang)
 
 
 @bot.message_handler(commands=['start'], func = authorized_log)
@@ -5090,17 +5109,14 @@ def one_time_shot():
         if not os.path.exists('one_time_flag.txt'):
             pass
         
-            # в каких чатах какой чатбот отвечает {chat_id_full(str):chatbot(str)}
-            # 'gemini', 'gemini15'
-            CHAT_MODE = my_dic.PersistentDict('db/chat_mode.pkl')
-            n = len(CHAT_MODE.keys())
-            for key in CHAT_MODE:
-                value = CHAT_MODE[key]
-                my_db.set_user_property(key, 'chat_mode', value)
-                print(str(n)+'         ', '\r', end='')
-                n -= 1
+            # запоминаем у какого юзера какой язык OCR выбран
+            OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
 
-            del CHAT_MODE
+            for key in OCR_DB:
+                value = OCR_DB[key]
+                my_db.set_user_property(key, 'ocr_lang', value)
+
+            del OCR_DB
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

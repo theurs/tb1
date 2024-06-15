@@ -8,6 +8,26 @@ import my_groq
 import my_shadowjourney
 
 
+languages_ocr = ["afr", "amh", "ara", "asm", "aze", "aze_cyrl", "bel", "ben", "bod",
+                 "bos", "bre", "bul", "cat", "ceb", "ces", "chi_sim", "chi_tra", "chr",
+                 "cos", "cym", "dan", "dan_frak", "deu", "deu_frak", "deu_latf", "dzo",
+                 "ell", "eng", "enm", "epo", "equ", "est", "eus", "fao", "fas", "fil",
+                 "fin", "fra", "frk", "frm", "fry", "gla", "gle", "glg", "grc", "guj",
+                 "hat", "heb", "hin", "hrv", "hun", "hye", "iku", "ind", "isl", "ita",
+                 "ita_old", "jav", "jpn", "kan", "kat", "kat_old", "kaz", "khm", "kir",
+                 "kmr", "kor", "kor_vert", "kur", "lao", "lat", "lav", "lit", "ltz",
+                 "mal", "mar", "mkd", "mlt", "mon", "mri", "msa", "mya", "nep", "nld",
+                 "nor", "oci", "ori", "osd", "pan", "pol", "por", "pus", "que", "ron",
+                 "rus", "san", "sin", "slk", "slk_frak", "slv", "snd", "spa", "spa_old",
+                 "sqi", "srp", "srp_latn", "sun", "swa", "swe", "syr", "tam", "tat", "tel",
+                 "tgk", "tgl", "tha", "tir", "ton", "tur", "uig", "ukr", "urd", "uzb", "uzb_cyrl",
+                 "vie", "yid", "yor",
+                 "arab", "armn", "beng", "cans", "cher", "cyrl", "deva", "ethi", "frak", 
+                 "geor", "grek", "gujr", "guru", "hans", "hans-vert", "hant", "hant-vert", "hang",
+                 "hang-vert", "hebr", "jpan", "jpan-vert", "knda", "khmr", "laoo", "latn", "mlym",
+                 "mymr", "orya", "sinh", "syrc", "taml", "telu", "thaa", "thai", "tibt", "viet"]
+
+
 supported_langs_trans = [
         "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
         "el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha",

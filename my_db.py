@@ -75,6 +75,7 @@ def init():
                 image_generated_counter INTEGER,
 
                 saved_file TEXT,
+                saved_file_name TEXT,
 
                 blocked INTEGER,
                 blocked_bing INTEGER,
@@ -370,25 +371,6 @@ def drop_long_translations():
             my_log.log2(f'my_db:drop_long_translations {error}')
 
 
-def get_user_lang(user_id: str) -> str:
-    '''Get user language'''
-    with LOCK:
-        try:
-            CUR.execute('''
-                SELECT lang FROM users
-                WHERE id = ?
-            ''', (user_id,)
-            )
-            result = CUR.fetchone()
-            if result:
-                return result[0]
-            else:
-                return None
-        except Exception as error:
-            my_log.log2(f'my_db:get_user_lang {error}')
-            return None
-
-
 def get_first_meet(user_id):
     '''Get first meet time of user'''
     try:
@@ -406,6 +388,25 @@ def get_first_meet(user_id):
     except Exception as error:
         my_log.log2(f'my_db:get_first_meet {error}')
         return None
+
+
+def get_user_lang(user_id: str) -> str:
+    '''Get user language'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT lang FROM users
+                WHERE id = ?
+            ''', (user_id,)
+            )
+            result = CUR.fetchone()
+            if result:
+                return result[0]
+            else:
+                return None
+        except Exception as error:
+            my_log.log2(f'my_db:get_user_lang {error}')
+            return None
 
 
 def set_user_lang(user_id: str, lang: str):
@@ -433,6 +434,100 @@ def set_user_lang(user_id: str, lang: str):
             COM_COUNTER += 1
         except Exception as error:
             my_log.log2(f'my_db:set_user_lang {error}')
+
+
+def get_user_property(user_id: str, property: str):
+    '''Get a value of property in user table'''
+    with LOCK:
+        try:
+            CUR.execute(f'''
+                SELECT {property} FROM users
+                WHERE id = ?
+            ''', (user_id,))
+            result = CUR.fetchone()
+            if result:
+                return result[0]
+            else:
+                return None
+        except Exception as error:
+            my_log.log2(f'my_db:get_user_saved_file {error}')
+            return None
+
+
+def check_user_property(user_id: str, property: str) -> bool:
+    '''Return True if user have this property not None'''
+    with LOCK:
+        try:
+            CUR.execute(f'''
+                SELECT 1 FROM users
+                WHERE id = ? AND {property} IS NOT NULL
+            ''', (user_id,))
+            result = CUR.fetchone()
+            return bool(result)
+        except Exception as error:
+            my_log.log2(f'my_db:check_user_file {error}')
+            return False
+
+
+def delete_user_property(user_id: str, property: str):
+    '''Delete user`s property value'''
+    global COM_COUNTER
+    with LOCK:
+        try:
+            # Проверяем, существует ли пользователь
+            CUR.execute('''
+                SELECT 1 FROM users
+                WHERE id = ?
+            ''', (user_id,))
+            if CUR.fetchone():
+                # Проверяем, есть ли у property
+                CUR.execute(f'''
+                    SELECT 1 FROM users
+                    WHERE id = ? AND {property} IS NOT NULL
+                ''', (user_id,))
+                if CUR.fetchone():
+                    # Удаляем
+                    CUR.execute(f'''
+                        UPDATE users
+                        SET {property} = NULL
+                        WHERE id = ?
+                    ''', (user_id,))
+                    COM_COUNTER += 1
+                else:
+                    my_log.log2(f'my_db:delete_user_file - User {user_id} has no {property}')
+            else:
+                my_log.log2(f'my_db:delete_user_file - User {user_id} not found')
+        except Exception as error:
+            my_log.log2(f'my_db:delete_user_file {error}')
+
+
+def set_user_property(user_id: str, property: str, value):
+    '''Set user`s property'''
+    global COM_COUNTER
+    with LOCK:
+        try:
+            # Проверяем, есть ли пользователь в базе
+            CUR.execute('''
+                SELECT 1 FROM users
+                WHERE id = ?
+            ''', (user_id,))
+            if CUR.fetchone():
+                # Обновляем если пользователь уже существует
+                CUR.execute(f'''
+                    UPDATE users
+                    SET {property} = ?
+                    WHERE id = ?
+                ''', (value, user_id))
+            else:
+                # Добавляем нового пользователя, если его нет
+                first_meet = get_first_meet(user_id) or time.time()
+                CUR.execute(f'''
+                    INSERT INTO users (id, {property}, first_meet)
+                    VALUES (?, ?, ?)
+                ''', (user_id, value, first_meet))
+            COM_COUNTER += 1
+        except Exception as error:
+            my_log.log2(f'my_db:set_user_saved_file {error}')
 
 
 if __name__ == '__main__':

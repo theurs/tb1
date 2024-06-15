@@ -93,10 +93,6 @@ HELP_MSG = {}
 # {hash: search query}
 SEARCH_PICS = SqliteDict('db/search_pics.db', autocommit=True) 
 
-# для хранения загруженных юзерами текстов, по этим текстам можно делать запросы командой /file
-# {user_id(str): (filename or link (str), text(str))}
-USER_FILES = SqliteDict('db/user_files.db', autocommit=True)
-
 # заблокированные юзера {id:True/False}
 BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
 BAD_USERS_IMG = my_dic.PersistentDict('db/bad_users_img.pkl')
@@ -174,7 +170,6 @@ DDOS_BLOCKED_USERS = my_dic.PersistentDict('db/ddos_blocked_users.pkl')
 
 # кешировать запросы типа кто звонил {number:(result, full text searched)}
 CACHE_CHECK_PHONE = {}
-
 
 
 # Глобальный массив для хранения состояния подписки (user_id: timestamp)
@@ -1470,12 +1465,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data == 'download_saved_text':
             # отдать юзеру его текст
-            if chat_id_full in USER_FILES:
+            if my_db.check_user_property(chat_id_full, 'saved_file_name'):
                 with ShowAction(message, 'typing'):
                     buf = io.BytesIO()
-                    buf.write(USER_FILES[chat_id_full][1].encode())
+                    buf.write(my_db.get_user_property(chat_id_full, 'saved_file').encode())
                     buf.seek(0)
-                    fname = utils.safe_fname(USER_FILES[chat_id_full][0])+'.txt'
+                    fname = utils.safe_fname(my_db.get_user_property(chat_id_full, 'saved_file_name')) + '.txt'
                     if fname.endswith('.txt.txt'):
                         fname = fname[:-4]
                     m = bot.send_document(message.chat.id,
@@ -1490,8 +1485,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data == 'delete_saved_text':
             # удалить сохраненный текст
-            if chat_id_full in USER_FILES:
-                del USER_FILES[chat_id_full]
+            if my_db.check_user_property(chat_id_full, 'saved_file_name'):
+                my_db.delete_user_property(chat_id_full, 'saved_file_name')
+                my_db.delete_user_property(chat_id_full, 'saved_file')
                 bot_reply_tr(message, 'Saved text deleted.')
             else:
                 bot_reply_tr(message, 'No text was saved.')
@@ -1799,7 +1795,8 @@ def handle_document(message: telebot.types.Message):
                     caption = message.caption or ''
                     caption = caption.strip()
                     summary = my_sum.summ_text(text, 'text', lang, caption)
-                    USER_FILES[chat_id_full] = (message.document.file_name if hasattr(message, 'document') else 'noname.txt', text)
+                    my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')
+                    my_db.set_user_property(chat_id_full, 'saved_file', text)
                     summary_html = utils.bot_markdown_to_html(summary)
                     bot_reply(message, summary_html, parse_mode='HTML',
                                           disable_web_page_preview = True,
@@ -3093,7 +3090,8 @@ def google(message: telebot.types.Message):
                 if not r.strip():
                     bot_reply_tr(message, 'Search failed.')
                     return
-                USER_FILES[chat_id_full] = ('google: ' + q + '.txt', text)
+                my_db.set_user_property(chat_id_full, 'saved_file_name', 'google: ' + q + '.txt')
+                my_db.set_user_property(chat_id_full, 'saved_file', text)
             try:
                 rr = utils.bot_markdown_to_html(r)
                 hash = utils.nice_hash(q, 16)
@@ -3685,31 +3683,31 @@ def ask_file(message: telebot.types.Message):
         query = message.text.split(maxsplit=1)[1]
     except IndexError:
         bot_reply_tr(message, 'Usage: /ask <query saved text>\n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.')
-        if chat_id_full in USER_FILES:
-            msg = f'{tr("Загружен файл/ссылка:", lang)} {USER_FILES[chat_id_full][0]}\n\n{tr("Размер текста:", lang)} {len(USER_FILES[chat_id_full][1])}'
+        if my_db.check_user_property(chat_id_full, 'saved_file_name'):
+            msg = f'{tr("Загружен файл/ссылка:", lang)} {my_db.get_user_property(chat_id_full, "saved_file_name")}\n\n{tr("Размер текста:", lang)} {len(my_db.get_user_property(chat_id_full, "saved_file"))}'
             bot_reply(message, msg, disable_web_page_preview = True, reply_markup=get_keyboard('download_saved_text', message))
             return
 
-    if chat_id_full in USER_FILES:
+    if my_db.check_user_property(chat_id_full, 'saved_file_name'):
         with ShowAction(message, 'typing'):
             if message.text.endswith('[123CLEAR321]'):
                 message.text = message.text[:-13]
-                q = f"{message.text}\n\n{tr('URL/file:', lang)} {USER_FILES[chat_id_full][0]}\n\n{tr('Saved text:', lang)} {USER_FILES[chat_id_full][1]}"
+                q = f"{message.text}\n\n{tr('URL/file:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file_name')}\n\n{tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}"
             else:
                 q = f'''{tr('Answer the user`s query using saved text and your own mind.', lang)}
 
 {tr('User query:', lang)} {query}
 
-{tr('URL/file:', lang)} {USER_FILES[chat_id_full][0]}
+{tr('URL/file:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file_name')}
 
-{tr('Saved text:', lang)} {USER_FILES[chat_id_full][1]}
+{tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
     '''
             result = my_gemini.ai(q, temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
             my_db.add_msg(chat_id_full, 'gemini15_flash')
             if result:
                 answer = utils.bot_markdown_to_html(result)
                 bot_reply(message, answer, parse_mode='HTML')
-                add_to_bots_mem(tr("The user asked to answer the question based on the saved text:", lang) + ' ' + USER_FILES[chat_id_full][0],
+                add_to_bots_mem(tr("The user asked to answer the question based on the saved text:", lang) + ' ' + my_db.get_user_property(chat_id_full, 'saved_file_name'),
                                 result, chat_id_full)
             else:
                 bot_reply_tr(message, 'No reply from AI')
@@ -3755,7 +3753,8 @@ def summ_text(message: telebot.types.Message):
                         if url_id in SUM_CACHE:
                             r = SUM_CACHE[url_id]
                         if r:
-                            USER_FILES[chat_id_full] = (url + '.txt', r)
+                            my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
+                            my_db.set_user_property(chat_id_full, 'saved_file', r)
                             rr = utils.bot_markdown_to_html(r)
                             bot_reply(message, rr, disable_web_page_preview = True,
                                                 parse_mode='HTML',
@@ -3772,7 +3771,8 @@ def summ_text(message: telebot.types.Message):
                                 if not has_subs and ('/youtu.be/' in url or 'youtube.com/' in url):
                                     bot_reply_tr(message, 'Видео с ютуба не содержит субтитров, обработка может занять некоторое время.')
                                 res, text = my_sum.summ_url(url, lang = lang, deep = False)
-                                USER_FILES[chat_id_full] = (url + '.txt', text)
+                                my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
+                                my_db.set_user_property(chat_id_full, 'saved_file', text)
                             except Exception as error2:
                                 print(error2)
                                 bot_reply_tr(message, 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', parse_mode='Markdown')
@@ -4075,8 +4075,9 @@ def purge_cmd_handler(message: telebot.types.Message):
 
             ROLES[chat_id_full] = ''
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
-            if chat_id_full in USER_FILES:
-                del USER_FILES[chat_id_full]
+            if my_db.check_user_property(chat_id_full, 'saved_file_name'):
+                my_db.delete_user_property(chat_id_full, 'saved_file_name')
+                my_db.delete_user_property(chat_id_full, 'saved_file')
 
             if chat_id_full in LOGS_GROUPS_DB:
                 try:
@@ -4600,14 +4601,16 @@ def do_task(message, custom_prompt: str = ''):
                         if number in CACHE_CHECK_PHONE:
                             response = CACHE_CHECK_PHONE[number][0]
                             text__ = CACHE_CHECK_PHONE[number][1]
-                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}.txt', text__)
+                            my_db.set_user_property(chat_id_full, 'saved_file_name', f'User googled phone number: {message.text}.txt')
+                            my_db.set_user_property(chat_id_full, 'saved_file', text__)
                         else:
                             with ShowAction(message, 'typing'):
                                 # response, text__ = my_gemini.check_phone_number(number)
                                 response, text__ = my_groq.check_phone_number(number)
                                 my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                         if response:
-                            USER_FILES[chat_id_full] = (f'User googled phone number: {message.text}.txt', text__)
+                            my_db.set_user_property(chat_id_full, 'saved_file_name', f'User googled phone number: {message.text}.txt')
+                            my_db.set_user_property(chat_id_full, 'saved_file', text__)
                             CACHE_CHECK_PHONE[number] = (response, text__)
                             response = utils.bot_markdown_to_html(response)
                             bot_reply(message, response, parse_mode='HTML', not_log=True)
@@ -5092,7 +5095,18 @@ def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
             pass
+            my_db.CUR.execute('''
+                ALTER TABLE users
+                    ADD COLUMN saved_file_name TEXT;
+            ''')
+            # для хранения загруженных юзерами текстов, по этим текстам можно делать запросы командой /file
+            # {user_id(str): (filename or link (str), text(str))}
+            USER_FILES = SqliteDict('db/user_files.db', autocommit=True)
+            for key in USER_FILES:
+                my_db.set_user_property(key, 'saved_file_name', USER_FILES[key][0])
+                my_db.set_user_property(key, 'saved_file', USER_FILES[key][1])
 
+            del USER_FILES
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')
     except Exception as error:

@@ -94,7 +94,7 @@ HELP_MSG = {}
 SEARCH_PICS = SqliteDict('db/search_pics.db', autocommit=True) 
 
 # заблокированные юзера {id:True/False}
-BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
+
 BAD_USERS_IMG = my_dic.PersistentDict('db/bad_users_img.pkl')
 
 # блокировка чата что бы юзер не мог больше 1 запроса делать за раз,
@@ -519,28 +519,25 @@ def get_topic_id(message: telebot.types.Message) -> str:
     return f'[{chat_id}] [{topic_id}]'
 
 
-def check_blocked_user(id: str, from_user_id: int, check_trottle = True):
+def check_blocked_user(id_: str, from_user_id: int, check_trottle = True):
     """Raises an exception if the user is blocked and should not be replied to"""
     for x in cfg.admins:
-        if id == f'[{x}] [0]':
+        if id_ == f'[{x}] [0]':
             return
-    user_id = id.replace('[','').replace(']','').split()[0]
+    user_id = id_.replace('[','').replace(']','').split()[0]
     if check_trottle:
         if not request_counter.check_limit(user_id):
-            my_log.log2(f'tb:check_blocked_user: User {id} is blocked for DDoS')
+            my_log.log2(f'tb:check_blocked_user: User {id_} is blocked for DDoS')
             raise Exception(f'user {user_id} in ddos stop list, ignoring')
 
     from_user_id = f'[{from_user_id}] [0]'
-    if from_user_id in BAD_USERS and BAD_USERS[from_user_id]:
+    if my_db.check_user_property(from_user_id, 'blocked'):
         my_log.log2(f'tb:check_blocked_user: User {from_user_id} is blocked')
         raise Exception(f'user {from_user_id} in stop list, ignoring')
 
-    for i in BAD_USERS:
-        u_id = i.replace('[','').replace(']','').split()[0]
-        if u_id == user_id:
-            if BAD_USERS[id]:
-                my_log.log2(f'tb:check_blocked_user: User {id} is blocked')
-                raise Exception(f'user {user_id} in stop list, ignoring')
+    if my_db.check_user_property(id_, 'blocked'):
+        my_log.log2(f'tb:check_blocked_user: User {id_} is blocked')
+        raise Exception(f'user {user_id} in stop list, ignoring')
 
 
 def is_admin_member(message: telebot.types.Message):
@@ -796,7 +793,7 @@ def authorized_owner(message: telebot.types.Message) -> bool:
 
     # banned users do nothing
     chat_id_full = get_topic_id(message)
-    if chat_id_full in BAD_USERS:
+    if my_db.check_user_property(chat_id_full, 'blocked'):
         return False
 
     if not (is_private or is_admin_member(message)):
@@ -820,7 +817,7 @@ def authorized_callback(call: telebot.types.CallbackQuery) -> bool:
 
     chat_id_full = f'[{call.from_user.id}] [0]'
     # banned users do nothing
-    if chat_id_full in BAD_USERS:
+    if my_db.check_user_property(chat_id_full, 'blocked'):
         return False
 
     # check for blocking and throttling
@@ -905,7 +902,7 @@ def authorized(message: telebot.types.Message) -> bool:
 
     # banned users do nothing
     chat_id_full = get_topic_id(message)
-    if chat_id_full in BAD_USERS:
+    if my_db.check_user_property(chat_id_full, 'blocked'):
         return False
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
@@ -983,7 +980,7 @@ def authorized(message: telebot.types.Message) -> bool:
         return False
 
     # этого тут быть не должно но яхз что пошло не так, дополнительная проверка
-    if chat_id_full in BAD_USERS and BAD_USERS[chat_id_full]:
+    if my_db.check_user_property(chat_id_full, 'blocked'):
         my_log.log2(f'tb:authorized: User {chat_id_full} is blocked')
         return False
 
@@ -1012,7 +1009,7 @@ def authorized_log(message: telebot.types.Message) -> bool:
 
     # banned users do nothing
     chat_id_full = get_topic_id(message)
-    if chat_id_full in BAD_USERS:
+    if my_db.check_user_property(chat_id_full, 'blocked'):
         return False
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
@@ -2526,9 +2523,6 @@ def change_mode(message: telebot.types.Message):
         elif arg == '0':
             new_prompt = ''
         else:
-            if 'RYX has no rules' in arg and message.from_user.id not in cfg.admins:
-                BAD_USERS[chat_id_full] = True
-                return
             new_prompt = arg
         ROLES[chat_id_full] = new_prompt
         if new_prompt:
@@ -3557,7 +3551,7 @@ def block_user_add(message: telebot.types.Message):
 
     user_id = message.text[10:].strip()
     if user_id:
-        BAD_USERS[user_id] = True
+        my_db.set_user_property(user_id, 'blocked', True)
         bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockadd <[user id] [group id]>')
@@ -3573,8 +3567,8 @@ def block_user_del(message: telebot.types.Message):
 
     user_id = message.text[10:].strip()
     if user_id:
-        if user_id in BAD_USERS:
-            del BAD_USERS[user_id]
+        if my_db.check_user_property(user_id, 'blocked'):
+            my_db.delete_user_property(user_id, 'blocked')
             bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
         else:
             bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
@@ -3586,9 +3580,8 @@ def block_user_del(message: telebot.types.Message):
 @async_run
 def block_user_list(message: telebot.types.Message):
     """Показывает список заблокированных юзеров"""
-    users = [x for x in BAD_USERS.keys() if x]
-    if users:
-        bot_reply(message, '\n'.join(users))
+    if my_db.get_user_all_bad_ids():
+        bot_reply(message, '\n'.join(my_db.get_user_all_bad_ids()))
 
 
 @bot.message_handler(commands=['msg', 'm', 'message', 'mes'], func=authorized_admin)
@@ -3639,7 +3632,7 @@ def alert(message: telebot.types.Message):
                 # заблокированым не посылать
                 if chat_id in DDOS_BLOCKED_USERS:
                     continue
-                if chat_id in BAD_USERS:
+                if my_db.check_user_property(chat_id, 'blocked'):
                     continue
                 # только тех кто был активен в течение 7 дней
                 if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*7*24) < time.time():
@@ -4164,13 +4157,13 @@ def id_cmd_handler(message: telebot.types.Message):
     else:
         msg += '🔒 Huggingface\n'
 
-    if chat_id_full in BAD_USERS:
+    if my_db.check_user_property(chat_id_full, 'blocked'):
         msg += f'\n{tr("User was banned.", lang)}\n'
 
     if chat_id_full in BAD_USERS_IMG:
         msg += f'\n{tr("User was banned in bing.com.", lang)}\n'
 
-    if str(message.chat.id) in DDOS_BLOCKED_USERS and chat_id_full not in BAD_USERS:
+    if str(message.chat.id) in DDOS_BLOCKED_USERS and not my_db.check_user_property(chat_id_full, 'blocked'):
         msg += f'\n{tr("User was temporarily banned.", lang)}\n'
     bot_reply(message, msg)
 
@@ -4432,7 +4425,7 @@ def do_task(message, custom_prompt: str = ''):
     """default handler"""
 
     from_user_id = f'[{message.from_user.id}] [0]'
-    if from_user_id in BAD_USERS and BAD_USERS[from_user_id]:
+    if my_db.check_user_property(from_user_id, 'blocked'):
         return
 
     chat_id_full = get_topic_id(message)
@@ -5109,14 +5102,14 @@ def one_time_shot():
         if not os.path.exists('one_time_flag.txt'):
             pass
         
-            # запоминаем у какого юзера какой язык OCR выбран
-            OCR_DB = my_dic.PersistentDict('db/ocr_db.pkl')
+            
+            BAD_USERS = my_dic.PersistentDict('db/bad_users.pkl')
+            for key in BAD_USERS:
+                value = BAD_USERS[key]
+                my_db.set_user_property(key, 'blocked', value)
+            del BAD_USERS
 
-            for key in OCR_DB:
-                value = OCR_DB[key]
-                my_db.set_user_property(key, 'ocr_lang', value)
 
-            del OCR_DB
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

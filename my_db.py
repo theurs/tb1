@@ -445,6 +445,20 @@ def get_user_property(user_id: str, property: str):
                 return None
 
 
+def get_user_all_bad_ids():
+    '''get users ids if blocked = True'''
+    try:
+        CUR.execute('''
+            SELECT id FROM users
+            WHERE blocked = 1
+        ''')
+        result = CUR.fetchall()
+        return [x[0] for x in result]
+    except Exception as error:
+        my_log.log2(f'my_db:get_user_all_bad_ids {error}')
+        return []
+
+
 def check_user_property(user_id: str, property: str) -> bool:
     '''Return True if user have this property not None'''
     cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
@@ -549,6 +563,8 @@ if __name__ == '__main__':
     pass
     init()
 
+
+    print(get_user_all_bad_ids())
 
     # import random
     # USERS_CACHE = SmartCache(10000)

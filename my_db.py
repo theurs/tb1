@@ -158,7 +158,7 @@ def init():
                 bot_name TEXT,
 
                 dialog_gemini BLOB,
-                dialog_qroq BLOB,
+                dialog_groq BLOB,
                 dialog_openrouter BLOB,
                 dialog_shadow BLOB
             )

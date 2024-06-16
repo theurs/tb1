@@ -5085,7 +5085,7 @@ def one_time_shot():
 
             # добавить в таблицу 
             try:
-                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_qroq BLOB;""")
+                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_groq BLOB;""")
                 # my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_openrouter BLOB;""")
                 # my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_shadow BLOB;""")
                 my_db.CON.commit()

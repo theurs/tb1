@@ -5093,11 +5093,12 @@ def one_time_shot():
             except Exception as error:
                 my_log.log2(f'tb:one_time_shot: {error}')
 
-            for key in my_gemini.CHATS:
+            CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
+            for key in CHATS:
                 value = my_gemini.CHATS[key]
                 blob = my_db.obj_to_blob(value)
                 my_db.set_user_property(key, 'dialog_gemini', blob)
-
+            del CHATS
 
             # {chat_id:role} какие роли - дополнительные инструкции в чате
             # ROLES = my_dic.PersistentDict('db/roles.pkl')

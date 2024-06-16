@@ -120,9 +120,6 @@ CHAT_ENABLED = SqliteDict('db/chat_enabled.db', autocommit=True)
 # он будет работать как в оригинале {id:True/False}
 ORIGINAL_MODE = SqliteDict('db/original_mode.db', autocommit=True)
 
-# {chat_id:role} какие роли - дополнительные инструкции в чате
-ROLES = my_dic.PersistentDict('db/roles.pkl')
-
 # в каких чатах активирован режим суперчата, когда бот отвечает на все реплики всех участников
 # {chat_id:0|1}
 SUPER_CHAT = my_dic.PersistentDict('db/super_chat.pkl')
@@ -133,7 +130,7 @@ TRANSCRIBE_ONLY_CHAT = my_dic.PersistentDict('db/transcribe_only_chat.pkl')
 # в каких чатах какая команда дана, как обрабатывать последующий текст
 # например после команды /image ожидаем описание картинки
 # COMMAND_MODE[chat_id] = 'google'|'image'|...
-    COMMAND_MODE = {}
+COMMAND_MODE = {}
 
 # в каких чатах включен режим только голосовые сообщения {'chat_id_full':True/False}
 VOICE_ONLY_MODE = my_dic.PersistentDict('db/voice_only_mode.pkl')
@@ -1346,7 +1343,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT} /name
 
-<b>{tr('Bot style(role):', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)} /style
+<b>{tr('Bot style(role):', lang)}</b> {my_db.get_user_property(chat_id_full, 'role') if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)} /style
 
 <b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
 
@@ -2070,7 +2067,7 @@ def config(message: telebot.types.Message):
     try:
         MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT} /name
 
-<b>{tr('Bot style(role):', lang)}</b> {ROLES[chat_id_full] if (chat_id_full in ROLES and ROLES[chat_id_full]) else tr('No role was set.', lang)} /style
+<b>{tr('Bot style(role):', lang)}</b> {my_db.get_user_property(chat_id_full, 'role') if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)} /style
 
 <b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
 
@@ -2473,9 +2470,6 @@ def change_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
-    if chat_id_full not in ROLES:
-        ROLES[chat_id_full] = ''
-
     DEFAULT_ROLES = [tr('отвечай суперкоротко', lang),
                      tr('отвечай максимально развернуто', lang),
                      tr('отвечай всегда на английском языке', lang),
@@ -2502,7 +2496,7 @@ def change_mode(message: telebot.types.Message):
             new_prompt = ''
         else:
             new_prompt = arg
-        ROLES[chat_id_full] = new_prompt
+        my_db.set_user_property(chat_id_full, 'role', new_prompt)
         if new_prompt:
             msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
         else:
@@ -2511,7 +2505,7 @@ def change_mode(message: telebot.types.Message):
     else:
         msg = f"""{tr('Текущий стиль', lang)}
 
-`/style {ROLES[chat_id_full] or tr('нет никакой роли', lang)}`
+`/style {my_db.get_user_property(chat_id_full, 'role') or tr('нет никакой роли', lang)}`
 
 {tr('Меняет роль бота, строку с указаниями что и как говорить.', lang)}
 
@@ -2738,7 +2732,7 @@ def change_mode2(message: telebot.types.Message):
         bot_reply_tr(message, 'Usage: /style2 <chat_id_full!> <new_style>')
         return
 
-    ROLES[arg1] = arg2
+    my_db.set_user_property(arg1, 'role', arg2)
     msg = tr('[Новая роль установлена]', lang) + ' `' + arg2 + '` ' + tr('для чата', lang) + ' `' + arg1 + '`'
     bot_reply(message, msg, parse_mode='Markdown')
 
@@ -4054,7 +4048,8 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_shadowjourney.reset(chat_id_full)
             my_ddg.reset(chat_id_full)
 
-            ROLES[chat_id_full] = ''
+            my_db.delete_user_property(chat_id_full, 'role')
+            
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
             if my_db.check_user_property(chat_id_full, 'saved_file_name'):
                 my_db.delete_user_property(chat_id_full, 'saved_file_name')
@@ -4649,13 +4644,13 @@ def do_task(message, custom_prompt: str = ''):
             formatted_date = utils.get_full_time()
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not address the user by name and no emoji unless it is required.]'
+                if my_db.get_user_property(chat_id_full, 'role'):
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", your special role here is "{my_db.get_user_property(chat_id_full, "role")}", do not address the user by name and no emoji unless it is required.]'
                 else:
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
             else:
-                if chat_id_full in ROLES and ROLES[chat_id_full]:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", your special role here is "{ROLES[chat_id_full]}", do not address the user by name and no emoji unless it is required.]'
+                if my_db.get_user_property(chat_id_full, 'role'):
+                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", your special role here is "{my_db.get_user_property(chat_id_full, "role")}", do not address the user by name and no emoji unless it is required.]'
                 else:
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
             hidden_text_for_llama370 = tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required.', lang)
@@ -4705,7 +4700,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             flag_gpt_help = False
                             if not answer:
-                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
+                                style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
                                 if style_:
                                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
@@ -4775,7 +4770,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                             flag_gpt_help = False
                             if not answer:
-                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
+                                style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
                                 if style_:
                                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
@@ -4827,7 +4822,7 @@ def do_task(message, custom_prompt: str = ''):
                             if not my_db.check_user_property(chat_id_full, 'temperature'):
                                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
-                            style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
+                            style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                             if style_:
                                 answer = my_groq.chat(f'({style_}) {message.text}',
                                                       chat_id_full,
@@ -4880,7 +4875,7 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else ''
+                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_)
                             WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
@@ -4923,7 +4918,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             llama_helped = False
                             if not answer:
-                                style_ = ROLES[chat_id_full] if chat_id_full in ROLES and ROLES[chat_id_full] else hidden_text_for_llama370
+                                style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_shadowjourney.CHATS[chat_id_full][-6:]
                                 if style_:
                                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
@@ -5096,11 +5091,12 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            SUM_CACHE = SqliteDict('db/sum_cache.db', autocommit=True)
-            for key in SUM_CACHE:
-                value = SUM_CACHE[key]
-                my_db.set_sum_cache(key, value)
-            del SUM_CACHE
+            # {chat_id:role} какие роли - дополнительные инструкции в чате
+            ROLES = my_dic.PersistentDict('db/roles.pkl')
+            for key in ROLES:
+                value = ROLES[key]
+                my_db.set_user_property(key, 'role', value)
+            del ROLES
 
 
 

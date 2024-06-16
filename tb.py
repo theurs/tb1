@@ -5095,7 +5095,7 @@ def one_time_shot():
 
             CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
             for key in CHATS:
-                value = my_gemini.CHATS[key]
+                value = CHATS[key]
                 blob = my_db.obj_to_blob(value)
                 my_db.set_user_property(key, 'dialog_gemini', blob)
             del CHATS

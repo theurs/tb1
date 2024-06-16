@@ -30,13 +30,21 @@ def obj_to_blob(obj):
     if obj is None:
         return None
     else:
-        return lzma.compress(pickle.dumps(obj))
+        try:
+            return lzma.compress(pickle.dumps(obj))
+        except Exception as error:
+            my_log.log2(f'my_db:obj_to_blob {error}')
+            return None
 
 
 # De-serialize and decompress an object
 def blob_to_obj(blob):
     if blob:
-        return pickle.loads(lzma.decompress(blob))
+        try:
+            return pickle.loads(lzma.decompress(blob))
+        except Exception as error:
+            my_log.log2(f'my_db:blob_to_obj {error}')
+            return None
     else:
         return None
 
@@ -591,7 +599,7 @@ def set_user_property(user_id: str, property: str, value):
                 ''', (user_id, value, first_meet))
             COM_COUNTER += 1
         except Exception as error:
-            my_log.log2(f'my_db:set_user_saved_file {error}')
+            my_log.log2(f'my_db:set_user_property {error}')
 
 
 def get_all_users_ids():

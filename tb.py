@@ -5086,8 +5086,8 @@ def one_time_shot():
             # добавить в таблицу 
             try:
                 my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_qroq BLOB;""")
-                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_openrouter BLOB;""")
-                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_shadow BLOB;""")
+                # my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_openrouter BLOB;""")
+                # my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_shadow BLOB;""")
                 my_db.CON.commit()
             except Exception as error:
                 my_log.log2(f'tb:one_time_shot: {error}')

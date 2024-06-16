@@ -8,6 +8,7 @@ from PIL import Image
 
 import enchant
 import fitz
+import pymupdf
 import pytesseract
 
 
@@ -67,7 +68,7 @@ def get_text_from_image(data: bytes, language: str = 'rus+eng') -> str:
 
     with lock:
         r1 = pytesseract.image_to_string(Image.open(f), lang=language)
-    
+
     # склеиваем разорванные предложения
     lines = r1.split('\n')
     result = lines[0] + ' '
@@ -84,6 +85,47 @@ def get_text_from_image(data: bytes, language: str = 'rus+eng') -> str:
     #     if find_words(result) < 4: return ''
 
     return result
+
+
+def get_text_from_pdf(data: bytes, lang: str = 'rus+eng') -> str:
+    """
+    Extracts text from a PDF file.
+
+    Args:
+        data (bytes): The PDF file data as bytes.
+
+    Returns:
+        str: The extracted text from the PDF file.
+    """
+    images = []
+
+    doc = pymupdf.open(stream=data, filetype="pdf")
+    for page_index in range(len(doc)): # iterate over pdf pages
+        page = doc[page_index] # get the page
+        image_list = page.get_images()
+        for im in image_list:
+            xref = im[0]
+            base = doc.extract_image(xref)
+            image_bytes = base["image"]
+            image_ext = base["ext"]
+            image = Image.open(io.BytesIO(image_bytes))
+
+            # Append image to images list for OCR processing
+            image_bytes = io.BytesIO()
+            image.save(image_bytes, format=image_ext.upper())
+            images.append(image_bytes.getvalue())
+
+
+    if images:
+        text = 'Text from PDF document was extracted with OCR, errors may occur.\n\n'
+    else:
+        return ''
+
+    # limit 20 pages
+    for im in images[:20]:
+        text += get_text_from_image(im, lang)
+
+    return text
 
 
 # Определяем функцию для извлечения текста из PDF-файла
@@ -119,4 +161,5 @@ def ocr(input_file):
 if __name__ == '__main__':
     pass
 
-    print(ocr('1.jpg'))
+    data = open('1.pdf', 'rb').read()
+    print(get_text_from_pdf(data))

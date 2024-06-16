@@ -1710,6 +1710,8 @@ def handle_document(message: telebot.types.Message):
                     pdf_reader = PyPDF2.PdfReader(file_bytes)
                     for page in pdf_reader.pages:
                         text += page.extract_text()
+                    if not text.strip() or len(text) < 100:
+                        text = my_ocr.get_text_from_pdf(file_bytes, my_db.get_user_property(chat_id_full, 'ocr_lang') or 'rus+eng')
                 elif message.document.mime_type in ('application/vnd.ms-excel',
                                                     'application/vnd.oasis.opendocument.spreadsheet',
                                                     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

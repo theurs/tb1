@@ -134,6 +134,15 @@ def init():
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_id ON users (id)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_first_meet ON users (first_meet)')
 
+        CUR.execute('''
+            CREATE TABLE IF NOT EXISTS sum (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date REAL,
+                url TEXT,
+                text TEXT
+            )
+        ''')
+
         CON.commit()
         sync_daemon()
     except Exception as error:
@@ -573,10 +582,79 @@ def get_all_users_ids():
             return []
 
 
+def set_sum_cache(url, text):
+    '''Set sum cache'''
+    global COM_COUNTER
+    with LOCK:
+        try:
+            # проверяем есть ли в таблице sum такая запись
+            CUR.execute('''
+                SELECT 1 FROM sum
+                WHERE url = ?
+            ''', (url,))
+            if CUR.fetchone():
+                # если есть, то обновляем
+                CUR.execute('''
+                    UPDATE sum
+                    SET text = ?,
+                    date = ?
+                    WHERE url = ?
+                ''', (text, time.time(), url))
+            else:
+                # если нет, то добавляем
+                CUR.execute('''
+                    INSERT INTO sum (url, date, text)
+                    VALUES (?, ?, ?)
+                ''', (url, time.time(), text))
+            # remove old records
+            CUR.execute('''
+                DELETE FROM sum
+                WHERE date < ?
+            ''', (time.time() - 60*60*24*30,))
+            COM_COUNTER += 1
+        except Exception as error:
+            my_log.log2(f'my_db:set_sum_cache {error}')
+
+
+def get_from_sum(url: str) -> str:
+    '''Get from sum'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT text FROM sum
+                WHERE url = ?
+            ''', (url,))
+            result = CUR.fetchone()
+            if result is None:
+                return ''
+            return result[0]
+        except Exception as error:
+            my_log.log2(f'my_db:get_from_sum {error}')
+            return ''
+
+
+def delete_from_sum(url_id: str):
+    '''Remove from sum'''
+    with LOCK:
+        try:
+            CUR.execute('''
+                DELETE FROM sum
+                WHERE url = ?
+            ''', (url_id,))
+        except Exception as error:
+            my_log.log2(f'my_db:remove_from_sum {error}')
+
 
 if __name__ == '__main__':
     pass
     init()
+
+    # set_sum_cache('test', 'test123')
+    # print(get_from_sum('test'))
+    # delete_from_sum('test')
+    # delete_from_sum('test1')
+    # print(get_from_sum('test'))
+
 
 
     # print(get_user_all_bad_ids())

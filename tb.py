@@ -120,9 +120,6 @@ CHAT_ENABLED = SqliteDict('db/chat_enabled.db', autocommit=True)
 # он будет работать как в оригинале {id:True/False}
 ORIGINAL_MODE = SqliteDict('db/original_mode.db', autocommit=True)
 
-# для запоминания ответов на команду /sum
-SUM_CACHE = SqliteDict('db/sum_cache.db', autocommit=True)
-
 # {chat_id:role} какие роли - дополнительные инструкции в чате
 ROLES = my_dic.PersistentDict('db/roles.pkl')
 
@@ -3717,9 +3714,8 @@ def summ_text(message: telebot.types.Message):
                     with semaphore_talks:
 
                         #смотрим нет ли в кеше ответа на этот урл
-                        r = ''
-                        if url_id in SUM_CACHE:
-                            r = SUM_CACHE[url_id]
+                        r = my_db.get_from_sum(url_id)
+
                         if r:
                             my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
                             my_db.set_user_property(chat_id_full, 'saved_file', r)
@@ -3750,7 +3746,7 @@ def summ_text(message: telebot.types.Message):
                                 bot_reply(message, rr, parse_mode='HTML',
                                                     disable_web_page_preview = True,
                                                     reply_markup=get_keyboard('translate', message))
-                                SUM_CACHE[url_id] = res
+                                my_db.set_sum_cache(url_id, res)
                                 bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
                                 add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
                                                 f'{tr("бот прочитал и ответил:", lang)} {res}',
@@ -3783,9 +3779,7 @@ def summ2_text(message: telebot.types.Message):
             if '/youtu.be/' in url or 'youtube.com/' in url:
                 url = url.split("&t=")[0]
             url_id = str([url, lang])
-            #смотрим нет ли в кеше ответа на этот урл
-            if url_id in SUM_CACHE:
-                SUM_CACHE.pop(url_id)
+            my_db.delete_from_sum(url_id)
 
     summ_text(message)
 
@@ -5091,6 +5085,13 @@ def one_time_shot():
             pass
 
 
+            # # удалить таблицу
+            # try:
+            #     my_db.CUR.execute("""DROP TABLE sum;""")
+            #     my_db.CON.commit()
+            # except Exception as error:
+            #     my_log.log2(f'tb:one_time_shot: {error}')
+
             # добавить в таблицу 
             # try:
             #     my_db.CUR.execute("""ALTER TABLE users ADD COLUMN auto_translations INTEGER;""")
@@ -5099,19 +5100,14 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # сколько картинок нарисовано юзером {id: counter}
-            IMAGES_BY_USER_COUNTER = SqliteDict('db/images_by_user_counter.db', autocommit=True)
-            for key in IMAGES_BY_USER_COUNTER:
-                value = IMAGES_BY_USER_COUNTER[key]
-                my_db.set_user_property(key, 'auto_translations', value)
-            del IMAGES_BY_USER_COUNTER
+            SUM_CACHE = SqliteDict('db/sum_cache.db', autocommit=True)
+            for key in SUM_CACHE:
+                value = SUM_CACHE[key]
+                my_db.set_sum_cache(key, value)
+            del SUM_CACHE
 
 
-            # каким голосом озвучивать, мужским или женским или еще каким
-            # TTS_GENDER = my_dic.PersistentDict('db/tts_gender.pkl')
-            # настройки температуры для gemini {chat_id:temp}
-            # GEMIMI_TEMP = my_dic.PersistentDict('db/gemini_temperature.pkl')
-            # Из каких чатов надо выходить сразу (забаненые)
+            #??? проверить как работает, проверка булевых значений, заменить их на строки!!! Из каких чатов надо выходить сразу (забаненые)
             # LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
 
 

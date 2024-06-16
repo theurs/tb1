@@ -38,6 +38,8 @@ class SmartCache:
         if value_size <= self.max_value_size:
             with self.lock:
                 self.cache[key] = value
+        else:
+            self.delete(key)
 
     def delete(self, key):
         try:

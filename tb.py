@@ -2789,6 +2789,7 @@ def restart(message: telebot.types.Message):
     bot.stop_polling()
     LOG_GROUP_DAEMON_ENABLED = False
     ACTIVITY_DAEMON_RUN = False
+    time.sleep(2)
     my_db.close()
 
 
@@ -5044,11 +5045,7 @@ def activity_daemon():
         time.sleep(1)
         if ACTIVITY_MONITOR['last_activity'] + ACTIVITY_MONITOR['max_inactivity'] < time.time():
             my_log.log2(f'tb:activity_daemon: reconnect after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
-            bot.stop_polling()
-            time.sleep(10)
-            bot.polling(timeout=90, long_polling_timeout=90)
-            time.sleep(10)
-            ACTIVITY_MONITOR['last_activity'] = time.time()
+            restart()
 
 
 @async_run

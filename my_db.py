@@ -27,12 +27,18 @@ DAEMON_TIME = 2
 
 # Serialize and compress an object
 def obj_to_blob(obj):
-    return lzma.compress(pickle.dumps(obj))
+    if obj is None:
+        return None
+    else:
+        return lzma.compress(pickle.dumps(obj))
 
 
 # De-serialize and decompress an object
 def blob_to_obj(blob):
-    return pickle.loads(lzma.decompress(blob))
+    if blob:
+        return pickle.loads(lzma.decompress(blob))
+    else:
+        return None
 
 
 class SmartCache:

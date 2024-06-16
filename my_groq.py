@@ -43,9 +43,6 @@ MAX_LINES = 20
 # limit for summarize
 MAX_SUM_REQUEST = 12000
 
-# хранилище диалогов {id:list(mem)}
-CHATS = SqliteDict('db/groq_dialogs.db', autocommit=True)
-
 # {user_id:bool} в каких чатах добавлять разблокировку цензуры
 # CRACK_DB = SqliteDict('db/groq_crack.db', autocommit=True)
 MEM_UNCENSORED = [
@@ -185,9 +182,7 @@ def update_mem(query: str, resp: str, mem):
     chat_id = None
     if isinstance(mem, str): # if mem - chat_id
         chat_id = mem
-        if mem not in CHATS:
-            CHATS[mem] = []
-        mem = CHATS[mem]
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
     mem += [{'role': 'user', 'content': query}]
     mem += [{'role': 'assistant', 'content': resp}]
     while token_count(mem) > MAX_QUERY_LENGTH:
@@ -207,7 +202,7 @@ def update_mem(query: str, resp: str, mem):
         my_log.log_groq(f'my_groq:update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
     
     if chat_id:
-        CHATS[chat_id] = mem__
+        my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob(mem__))
     else:
         return mem__
 
@@ -217,16 +212,14 @@ def chat(query: str, chat_id: str,
          update_memory: bool = True,
          model: str = '',
          style: str = '') -> str:
-    global LOCKS, CHATS
+    global LOCKS
     if chat_id in LOCKS:
         lock = LOCKS[chat_id]
     else:
         lock = threading.Lock()
         LOCKS[chat_id] = lock
     with lock:
-        if chat_id not in CHATS:
-            CHATS[chat_id] = []
-        mem = CHATS[chat_id]
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
         if style:
             r = ai(query, system = style, mem_ = mem, temperature = temperature, model_ = model)
         else:
@@ -239,7 +232,7 @@ def chat(query: str, chat_id: str,
             my_db.add_msg(chat_id, model_)
         if r and update_memory:
             mem = update_mem(query, r, mem)
-            CHATS[chat_id] = mem
+            my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob(mem))
         return r
 
 
@@ -253,8 +246,8 @@ def reset(chat_id: str):
     Returns:
         None
     """
-    global CHATS
-    CHATS[chat_id] = []
+    mem = []
+    my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob(mem))
 
 
 def undo(chat_id: str):
@@ -271,7 +264,7 @@ def undo(chat_id: str):
         None
     """
     try:
-        global LOCKS, CHATS
+        global LOCKS
 
         if chat_id in LOCKS:
             lock = LOCKS[chat_id]
@@ -279,11 +272,10 @@ def undo(chat_id: str):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            if chat_id in CHATS:
-                mem = CHATS[chat_id]
-                # remove 2 last lines from mem
-                mem = mem[:-2]
-                CHATS[chat_id] = mem
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
+            # remove 2 last lines from mem
+            mem = mem[:-2]
+            my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_groq(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
@@ -299,10 +291,7 @@ def get_mem_as_string(chat_id: str) -> str:
     Returns:
         str: The chat history as a string.
     """
-    global CHATS
-    if chat_id not in CHATS:
-        CHATS[chat_id] = []
-    mem = CHATS[chat_id]
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
     result = ''
     for x in mem:
         role = x['role']

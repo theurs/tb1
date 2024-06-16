@@ -5085,7 +5085,6 @@ def one_time_shot():
 
             # добавить в таблицу 
             try:
-                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_gemini BLOB;""")
                 my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_qroq BLOB;""")
                 my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_openrouter BLOB;""")
                 my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_shadow BLOB;""")
@@ -5093,11 +5092,12 @@ def one_time_shot():
             except Exception as error:
                 my_log.log2(f'tb:one_time_shot: {error}')
 
-            CHATS = SqliteDict('db/gemini_dialogs.db', autocommit=True)
+            # хранилище диалогов {id:list(mem)}
+            CHATS = SqliteDict('db/groq_dialogs.db', autocommit=True)
             for key in CHATS:
                 value = CHATS[key]
                 blob = my_db.obj_to_blob(value)
-                my_db.set_user_property(key, 'dialog_gemini', blob)
+                my_db.set_user_property(key, 'dialog_groq', blob)
             del CHATS
 
             # {chat_id:role} какие роли - дополнительные инструкции в чате

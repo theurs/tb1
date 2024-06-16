@@ -2,11 +2,14 @@
 
 
 import hashlib
+import lzma
+import pickle
 import time
 import threading
 import traceback
 import sqlite3
 import sys
+
 from cachetools import LRUCache
 
 import my_log
@@ -20,6 +23,16 @@ CUR = None
 COM_COUNTER = 0
 DAEMON_RUN = True
 DAEMON_TIME = 2
+
+
+# Serialize and compress an object
+def obj_to_blob(obj):
+    return lzma.compress(pickle.dumps(obj))
+
+
+# De-serialize and decompress an object
+def blob_to_obj(blob):
+    return pickle.loads(lzma.decompress(blob))
 
 
 class SmartCache:
@@ -128,7 +141,12 @@ def init():
                 chat_mode TEXT,
                 role TEXT,
                 temperature REAL,
-                bot_name TEXT
+                bot_name TEXT,
+
+                dialog_gemini BLOB,
+                dialog_qroq BLOB,
+                dialog_openrouter BLOB,
+                dialog_shadow BLOB
             )
         ''')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_id ON users (id)')
@@ -650,6 +668,12 @@ def delete_from_sum(url_id: str):
 if __name__ == '__main__':
     pass
     init()
+
+    # a='xg'*100000
+    # b = obj_to_blob(a)
+    # print(len(b))
+    # print(blob_to_obj(b))
+    
 
     # set_sum_cache('test', 'test123')
     # print(get_from_sum('test'))

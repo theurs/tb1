@@ -5084,19 +5084,27 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
             # добавить в таблицу 
-            # try:
-            #     my_db.CUR.execute("""ALTER TABLE users ADD COLUMN auto_translations INTEGER;""")
-            #     my_db.CON.commit()
-            # except Exception as error:
-            #     my_log.log2(f'tb:one_time_shot: {error}')
+            try:
+                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_gemini BLOB;""")
+                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_qroq BLOB;""")
+                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_openrouter BLOB;""")
+                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_shadow BLOB;""")
+                my_db.CON.commit()
+            except Exception as error:
+                my_log.log2(f'tb:one_time_shot: {error}')
+
+            for key in my_gemini.CHATS:
+                value = my_gemini.CHATS[key]
+                blob = my_db.obj_to_blob(value)
+                my_db.set_user_property(key, 'dialog_gemini', blob)
 
 
             # {chat_id:role} какие роли - дополнительные инструкции в чате
-            ROLES = my_dic.PersistentDict('db/roles.pkl')
-            for key in ROLES:
-                value = ROLES[key]
-                my_db.set_user_property(key, 'role', value)
-            del ROLES
+            # ROLES = my_dic.PersistentDict('db/roles.pkl')
+            # for key in ROLES:
+            #     value = ROLES[key]
+            #     my_db.set_user_property(key, 'role', value)
+            # del ROLES
 
 
 

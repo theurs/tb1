@@ -133,7 +133,7 @@ TRANSCRIBE_ONLY_CHAT = my_dic.PersistentDict('db/transcribe_only_chat.pkl')
 # в каких чатах какая команда дана, как обрабатывать последующий текст
 # например после команды /image ожидаем описание картинки
 # COMMAND_MODE[chat_id] = 'google'|'image'|...
-COMMAND_MODE = {}
+    COMMAND_MODE = {}
 
 # в каких чатах включен режим только голосовые сообщения {'chat_id_full':True/False}
 VOICE_ONLY_MODE = my_dic.PersistentDict('db/voice_only_mode.pkl')
@@ -886,7 +886,7 @@ def authorized(message: telebot.types.Message) -> bool:
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
     # I don't know how to do that, so I have to leave only when receiving any event
-    if my_db.check_user_property(str(message.chat.id), 'auto_leave_chat'):
+    if my_db.get_user_property(str(message.chat.id), 'auto_leave_chat') == True:
         try:
             bot.leave_chat(message.chat.id)
             my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
@@ -993,7 +993,7 @@ def authorized_log(message: telebot.types.Message) -> bool:
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
     # I don't know how to do that, so I have to leave only when receiving any event
-    if my_db.check_user_property(str(message.chat.id), 'auto_leave_chat'):
+    if my_db.get_user_property(str(message.chat.id), 'auto_leave_chat') == True:
         try:
             bot.leave_chat(message.chat.id)
             my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
@@ -2808,16 +2808,16 @@ def leave_thread(message: telebot.types.Message):
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{9,14}", args)]
     for chat_id in chat_ids:
-        if not my_db.check_user_property(str(chat_id), 'auto_leave_chat') or my_db.get_user_property(str(chat_id), 'auto_leave_chat') == False:
-            my_db.set_user_property(str(chat_id), 'auto_leave_chat', True)
-            try:
-                bot.leave_chat(chat_id)
-                bot_reply(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
-            except Exception as error:
-                my_log.log2(f'tb:leave: {chat_id} {str(error)}')
-                bot_reply(message, tr('Не удалось выйти из чата', lang) + f' {chat_id} {str(error)}')
-        else:
+        if my_db.get_user_property(str(chat_id), 'auto_leave_chat') == True:
             bot_reply(message, tr('Вы уже раньше вышли из чата', lang) + f' {chat_id}')
+            continue
+        my_db.set_user_property(str(chat_id), 'auto_leave_chat', True)
+        try:
+            bot.leave_chat(chat_id)
+            bot_reply(message, tr('Вы вышли из чата', lang) + f' {chat_id}')
+        except Exception as error:
+            my_log.log2(f'tb:leave: {chat_id} {str(error)}')
+            bot_reply(message, tr('Не удалось выйти из чата', lang) + f' {chat_id} {str(error)}')
 
 
 @bot.message_handler(commands=['revoke'], func=authorized_admin) 
@@ -2835,11 +2835,11 @@ def revoke(message: telebot.types.Message):
 
     chat_ids = [int(x) for x in re.findall(r"-?\d{10,14}", args)]
     for chat_id in chat_ids:
-        if my_db.check_user_property(str(chat_id), 'auto_leave_chat'):
-            my_db.set_user_property(str(chat_id), 'auto_leave_chat', False)
-            bot_reply(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}')
-        else:
+        if my_db.get_user_property(str(chat_id), 'auto_leave_chat') != True:
             bot_reply(message, tr('Этот чат не был в списке забаненных чатов', lang) + f' {chat_id}')
+            continue
+        my_db.delete_user_property(str(chat_id), 'auto_leave_chat')
+        bot_reply(message, tr('Чат удален из списка забаненных чатов', lang) + f' {chat_id}')
 
 
 @bot.message_handler(commands=['temperature', 'temp'], func=authorized_owner)
@@ -5081,7 +5081,6 @@ def one_time_shot():
         if not os.path.exists('one_time_flag.txt'):
             pass
 
-
             # # удалить таблицу
             # try:
             #     my_db.CUR.execute("""DROP TABLE sum;""")
@@ -5103,9 +5102,6 @@ def one_time_shot():
                 my_db.set_sum_cache(key, value)
             del SUM_CACHE
 
-
-            #??? проверить как работает, проверка булевых значений, заменить их на строки!!! Из каких чатов надо выходить сразу (забаненые)
-            # LEAVED_CHATS = my_dic.PersistentDict('db/leaved_chats.pkl')
 
 
             with open('one_time_flag.txt', 'w') as f:

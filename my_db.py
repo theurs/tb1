@@ -23,7 +23,7 @@ DAEMON_TIME = 2
 
 
 class SmartCache:
-    def __init__(self, max_size=1000, max_value_size=1024*10):
+    def __init__(self, max_size = 1000, max_value_size = 1024*10): # 1000*10kb=10mb!
         self.cache = LRUCache(maxsize=max_size)
         self.max_value_size = max_value_size
         self.lock = threading.Lock()
@@ -42,11 +42,9 @@ class SmartCache:
             self.delete(key)
 
     def delete(self, key):
-        try:
-            with self.lock:
+        with self.lock:
+            if key in self.cache:
                 del self.cache[key]
-        except KeyError:
-            pass
 
 
 # cache for users table
@@ -435,7 +433,9 @@ def get_first_meet(user_id):
 
 
 def get_user_property(user_id: str, property: str):
-    '''Get a value of property in user table'''
+    '''Get a value of property in user table
+    Return None if user not found
+    '''
     cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
     if cache_key in USERS_CACHE.cache:
         return USERS_CACHE.get(cache_key)

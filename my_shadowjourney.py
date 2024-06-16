@@ -27,9 +27,6 @@ LOCKS = {}
 MAX_REQUEST = 10000
 MAX_SUM_REQUEST = 12000
 
-# хранилище диалогов {id:list(mem)}
-CHATS = SqliteDict('db/shadow_dialogs.db', autocommit=True)
-
 
 # {user_id:bool} в каких чатах добавлять разблокировку цензуры
 MEM_UNCENSORED = [
@@ -151,9 +148,7 @@ def ai(prompt: str = '',
 
 
 def update_mem(query: str, resp: str, chat_id: str):
-    if chat_id not in CHATS:
-        CHATS[chat_id] = []
-    mem = CHATS[chat_id]
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_shadow')) or []
     mem += [{'role': 'user', 'content': query}]
     mem += [{'role': 'assistant', 'content': resp}]
     mem = clear_mem(mem, chat_id)
@@ -169,27 +164,25 @@ def update_mem(query: str, resp: str, chat_id: str):
         error_traceback = traceback.format_exc()
         my_log.log_shadowjourney(f'my_shadowjourney:update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
 
-    CHATS[chat_id] = mem__
+    my_db.set_user_property(chat_id, 'dialog_shadow', my_db.obj_to_blob(mem__))
 
 
 def chat(query: str, chat_id: str = '', temperature: float = 0.1, system: str = '') -> str:
-    global LOCKS, CHATS
+    global LOCKS
     if chat_id in LOCKS:
         lock = LOCKS[chat_id]
     else:
         lock = threading.Lock()
         LOCKS[chat_id] = lock
     with lock:
-        if chat_id not in CHATS:
-            CHATS[chat_id] = []
-        mem = CHATS[chat_id]
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_shadow')) or []
         text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system)
         if text:
             my_db.add_msg(chat_id, 'gpt4o')
             mem += [{'role': 'user', 'content': query}]
             mem += [{'role': 'assistant', 'content': text}]
             mem = clear_mem(mem, chat_id)
-            CHATS[chat_id] = mem
+            my_db.set_user_property(chat_id, 'dialog_shadow', my_db.obj_to_blob(mem))
         return text
 
 
@@ -217,7 +210,7 @@ def undo(chat_id: str):
         None
     """
     try:
-        global LOCKS, CHATS
+        global LOCKS
 
         if chat_id in LOCKS:
             lock = LOCKS[chat_id]
@@ -225,11 +218,10 @@ def undo(chat_id: str):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            if chat_id in CHATS:
-                mem = CHATS[chat_id]
-                # remove 2 last lines from mem
-                mem = mem[:-2]
-                CHATS[chat_id] = mem
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_shadow')) or []
+            # remove 2 last lines from mem
+            mem = mem[:-2]
+            my_db.set_user_property(chat_id, 'dialog_shadow', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_shadowjourney(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
@@ -245,8 +237,8 @@ def reset(chat_id: str):
     Returns:
         None
     """
-    global CHATS
-    CHATS[chat_id] = []
+    mem = []
+    my_db.set_user_property(chat_id, 'dialog_shadow', my_db.obj_to_blob(mem))
 
 
 def get_mem_as_string(chat_id: str) -> str:
@@ -260,10 +252,7 @@ def get_mem_as_string(chat_id: str) -> str:
         str: The chat history as a string.
     """
     try:
-        global CHATS
-        if chat_id not in CHATS:
-            CHATS[chat_id] = []
-        mem = CHATS[chat_id]
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_shadow')) or []
         result = ''
         for x in mem:
             role = x['role']

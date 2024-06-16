@@ -4919,7 +4919,8 @@ def do_task(message, custom_prompt: str = ''):
                             llama_helped = False
                             if not answer:
                                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                                mem__ = my_shadowjourney.CHATS[chat_id_full][-6:]
+                                mem__ = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'dialog_shadow')) or []
+                                mem__ = mem__[-6:]
                                 if style_:
                                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
                                 else:
@@ -5084,21 +5085,32 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
             # добавить в таблицу 
-            try:
-                my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_groq BLOB;""")
-                # my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_openrouter BLOB;""")
-                # my_db.CUR.execute("""ALTER TABLE users ADD COLUMN dialog_shadow BLOB;""")
-                my_db.CON.commit()
-            except Exception as error:
-                my_log.log2(f'tb:one_time_shot: {error}')
+            queries = ["""ALTER TABLE users DROP COLUMN qroq;""",
+                       """ALTER TABLE users ADD COLUMN dialog_openrouter BLOB;""",
+                       """ALTER TABLE users ADD COLUMN dialog_shadow BLOB;"""]
+            for q in queries:
+                try:
+                    my_db.CUR.execute(q)
+                    my_db.CON.commit()
+                except Exception as error:
+                    my_log.log2(f'tb:one_time_shot: {error}')
 
             # хранилище диалогов {id:list(mem)}
-            CHATS = SqliteDict('db/groq_dialogs.db', autocommit=True)
+            CHATS = SqliteDict('db/shadow_dialogs.db', autocommit=True)
             for key in CHATS:
                 value = CHATS[key]
                 blob = my_db.obj_to_blob(value)
-                my_db.set_user_property(key, 'dialog_groq', blob)
+                my_db.set_user_property(key, 'dialog_shadow', blob)
             del CHATS
+
+            # хранилище диалогов {id:list(mem)}
+            CHATS = SqliteDict('db/openrouter_dialogs.db', autocommit=True)
+            for key in CHATS:
+                value = CHATS[key]
+                blob = my_db.obj_to_blob(value)
+                my_db.set_user_property(key, 'dialog_openrouter', blob)
+            del CHATS
+
 
             # {chat_id:role} какие роли - дополнительные инструкции в чате
             # ROLES = my_dic.PersistentDict('db/roles.pkl')

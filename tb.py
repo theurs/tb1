@@ -1711,7 +1711,7 @@ def handle_document(message: telebot.types.Message):
                     for page in pdf_reader.pages:
                         text += page.extract_text()
                     if not text.strip() or len(text) < 100:
-                        text = my_ocr.get_text_from_pdf(file_bytes, my_db.get_user_property(chat_id_full, 'ocr_lang') or 'rus+eng')
+                        text = my_ocr.get_text_from_pdf(file_bytes, get_ocr_language(message))
                 elif message.document.mime_type in ('application/vnd.ms-excel',
                                                     'application/vnd.oasis.opendocument.spreadsheet',
                                                     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -1807,10 +1807,8 @@ def handle_document(message: telebot.types.Message):
                         raise error
                 file_name = message.document.file_name + '.txt'
                 file = bot.download_file(file_info.file_path)
-                fp = io.BytesIO(file)
-
                 # распознаем текст в документе с помощью функции get_text
-                text = my_ocr.get_text(fp, get_ocr_language(message))
+                text = my_ocr.get_text_from_pdf(file, get_ocr_language(message))
                 # отправляем распознанный текст пользователю
                 if text.strip() != '':
                     # если текст слишком длинный, отправляем его в виде текстового файла

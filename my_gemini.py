@@ -876,9 +876,28 @@ def rebuild_subtitles(text: str, lang: str) -> str:
     return result
 
 
+def ocr(data, lang: str = 'ru') -> str:
+    '''Распознает текст на картинке, использует функцию img2txt
+    data - имя файла или байты из файла
+    '''
+    try:
+        if isinstance(data, str):
+            with open(data, 'rb') as f:
+                data = f.read()
+        query = 'Достань весь текст с картинки, исправь ошибки. В твоем ответе должен быть только распознанный и исправленный текст. Язык текста должен остаться таким же какой он на картинке.'
+        text = img2txt(data, query)
+        return text
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_gemini:ocr: {error}\n\n{error_traceback}')
+        return ''
+
+
 if __name__ == '__main__':
     my_db.init()
     load_users_keys()
+
+    # print(ocr('1.png'))
 
     chat_cli()
 

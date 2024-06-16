@@ -485,7 +485,7 @@ def get_user_property(user_id: str, property: str):
                 else:
                     return None
             except Exception as error:
-                my_log.log2(f'my_db:get_user_saved_file {error}')
+                my_log.log2(f'my_db:get_user_property {error}')
                 return None
 
 
@@ -532,7 +532,7 @@ def check_user_property(user_id: str, property: str) -> bool:
                 result = CUR.fetchone()
                 return bool(result)
             except Exception as error:
-                my_log.log2(f'my_db:check_user_file {error}')
+                my_log.log2(f'my_db:check_user_property {error}')
                 return False
 
 

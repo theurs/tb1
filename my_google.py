@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
-import concurrent.futures
 import urllib.parse
 import traceback
 
 import googlesearch
 
-import cfg
 import my_log
 import my_gemini
 import my_ddg
@@ -15,7 +13,7 @@ import my_sum
 import utils
 
     
-def search_v3(query: str, lang: str = 'ru', max_search: int = 20):
+def search_v3(query: str, lang: str = 'ru', max_search: int = 20, download_only = False):
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
@@ -42,6 +40,9 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 20):
         my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
 
     text = my_sum.download_in_parallel(urls, my_gemini.MAX_SUM_REQUEST)
+
+    if download_only:
+        return text
 
     q = f'''Answer to the user's search query.
 Guess what they were looking for and compose a good answer using search results and your own knowledge.

@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 
 
+import concurrent.futures
 import io
 import re
 import threading
 from PIL import Image
 
+
 import enchant
-import fitz
 import pymupdf
 import pytesseract
+
+import my_gemini
 
 
 # запрещаем запускать больше чем 1 процесс распознавания
@@ -87,12 +90,26 @@ def get_text_from_image(data: bytes, language: str = 'rus+eng') -> str:
     return result
 
 
+def ocr_image(index: int, image_bytes: bytes, lang: str) -> tuple[int, str]:
+    """ 
+    Perform OCR on an image and return the text.
+    """
+    t = my_gemini.ocr(image_bytes, lang)
+    if not t:
+        t = get_text_from_image(image_bytes, lang)
+    if t:
+        return index, t
+    else:
+        return index, ''
+
+
 def get_text_from_pdf(data: bytes, lang: str = 'rus+eng') -> str:
     """
     Extracts text from a PDF file.
 
     Args:
         data (bytes): The PDF file data as bytes.
+        lang (str): The language to use for OCR. Default is 'rus+eng'.
 
     Returns:
         str: The extracted text from the PDF file.
@@ -100,7 +117,8 @@ def get_text_from_pdf(data: bytes, lang: str = 'rus+eng') -> str:
     images = []
 
     doc = pymupdf.open(stream=data, filetype="pdf")
-    for page_index in range(len(doc)): # iterate over pdf pages
+    n = 1
+    for page_index, page in enumerate(doc): # iterate over pdf pages
         page = doc[page_index] # get the page
         image_list = page.get_images()
         for im in image_list:
@@ -113,49 +131,31 @@ def get_text_from_pdf(data: bytes, lang: str = 'rus+eng') -> str:
             # Append image to images list for OCR processing
             image_bytes = io.BytesIO()
             image.save(image_bytes, format=image_ext.upper())
-            images.append(image_bytes.getvalue())
-
+            images.append((n, image_bytes.getvalue()))
+            n += 1
 
     if images:
-        text = 'Text from PDF document was extracted with OCR, errors may occur.\n\n'
+        text = ''
     else:
         return ''
 
-    # limit 20 pages
-    for im in images[:20]:
-        text += get_text_from_image(im, lang)
+    # Use concurrent futures for parallel OCR processing
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Limit to 50 images for OCR processing, if longer, process only the first 50
+        future_to_image = {executor.submit(ocr_image, idx, im, lang): idx for idx, im in images[:50]}
+        results = []
+        for future in concurrent.futures.as_completed(future_to_image):
+            try:
+                results.append(future.result())
+            except Exception as exc:
+                results.append((future_to_image[future], f"Exception occurred during OCR processing: {exc}n"))
+
+        # Sort results by index to ensure the correct order
+        results.sort(key=lambda x: x[0])
+        for _, value in results:
+            text += value
 
     return text
-
-
-# Определяем функцию для извлечения текста из PDF-файла
-def get_text(fileobj, language: str = 'rus+eng') -> str:
-    """
-    Extracts text from a PDF file.
-
-    Parameters:
-        fileobj (file-like object): The PDF file object to extract text from.
-
-    Returns:
-        str: The extracted text from the PDF file.
-    """
-    text = ''
-    max = 5 # распознаем не больше 5 страниц
-    with fitz.open(stream=fileobj) as doc:
-        for i, page in enumerate(doc):
-
-            max -= 1
-            if max == 0: break
-
-            p = page.get_pixmap()
-            b = p.tobytes()
-            text += get_text_from_image(b, language)
-    return text
-
-
-def ocr(input_file):
-    """распознает текст из файла"""
-    return get_text_from_image(open(input_file, 'rb').read())
 
 
 if __name__ == '__main__':

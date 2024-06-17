@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import cachetools.func
 import concurrent.futures
 import io
 import re
@@ -56,6 +57,7 @@ def find_words(text):
 
 
 #распознаем  текст с картинки из байтовой строки
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_text_from_image(data: bytes, language: str = 'rus+eng') -> str:
     """
     Extracts text from an image.
@@ -90,6 +92,7 @@ def get_text_from_image(data: bytes, language: str = 'rus+eng') -> str:
     return result
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def ocr_image(index: int, image_bytes: bytes, lang: str) -> tuple[int, str]:
     """ 
     Perform OCR on an image and return the text.

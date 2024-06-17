@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import cachetools.func
 import urllib.parse
 import traceback
 
@@ -12,7 +13,8 @@ import my_groq
 import my_sum
 import utils
 
-    
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def search_v3(query: str, lang: str = 'ru', max_search: int = 20, download_only = False):
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
@@ -82,10 +84,13 @@ Search results:
 
 
 if __name__ == "__main__":
+
     lines = [
         # 'курс доллара',
+        'что значит 42',
         'что значит 42',
         ]
     for x in lines:
         print(search_v3(x)[0], '\n\n')
-        # print(search_v3(x)[0], '\n\n')
+
+

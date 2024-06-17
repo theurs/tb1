@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #pip install lxml[html_clean]
 
+import cachetools.func
 import concurrent.futures
 import io
 import random
@@ -23,6 +24,7 @@ import my_transcribe
 import utils
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '') -> str:
     """Вытаскивает текст из субтитров на ютубе
 
@@ -224,6 +226,7 @@ def get_urls_from_text(text):
         return []
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool = False):
     """скачивает веб страницу, просит гптчат или бинг сделать краткое изложение текста, возвращает текст
     если в ссылке ютуб то скачивает субтитры к видео вместо текста
@@ -318,7 +321,10 @@ def is_valid_url(url: str) -> bool:
 if __name__ == "__main__":
     pass
 
-    print(get_text_from_youtube('https://youtu.be/Gt_IbDZbNYE',False, 'ru'))
+    # print(get_text_from_youtube('https://youtu.be/Gt_IbDZbNYE',False, 'ru'))
+    
+    # print(download_text(['http://lib.ru/DETEKTIWY/BONANSINGA/blkmaria.txt_Ascii.txt',]))
+    # print(download_text(['http://lib.ru/DETEKTIWY/BONANSINGA/blkmaria.txt_Ascii.txt',]))
 
 
     # print(summ_url('https://habr.com/ru/news/817099/', download_only=False, deep=True)[0])

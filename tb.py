@@ -50,8 +50,8 @@ from utils import async_run
 # устанавливаем рабочую папку = папке в которой скрипт лежит
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
-bot = telebot.TeleBot(cfg.token)
-# bot = telebot.TeleBot(cfg.token, skip_pending=True)
+# bot = telebot.TeleBot(cfg.token)
+bot = telebot.TeleBot(cfg.token, skip_pending=True)
 
 _bot_name = bot.get_me().username
 BOT_ID = bot.get_me().id

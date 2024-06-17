@@ -19,6 +19,10 @@ maxhistlines = 20
 maxhistchars = 11000
 
 
+# похоже что тут больше чем 1 запрос нельзя делать одновременно
+BIG_LOCK = threading.Lock()
+
+
 # блокировка чатов что бы не испортить историю 
 # {id:lock}
 LOCKS = {}
@@ -105,7 +109,8 @@ def ai(prompt: str = '',
             "temperature": temperature,
         }
 
-        response = requests.post(url, headers=headers, json=data, timeout=timeout)
+        with BIG_LOCK:
+            response = requests.post(url, headers=headers, json=data, timeout=timeout)
 
         status = response.status_code
         if status == 200:
@@ -122,7 +127,8 @@ def ai(prompt: str = '',
                         "messages": mem_[-2:],
                         "temperature": temperature,
                     }
-                    response = requests.post(url, headers=headers, json=data, timeout=timeout)
+                    with BIG_LOCK:
+                        response = requests.post(url, headers=headers, json=data, timeout=timeout)
 
                     status = response.status_code
                     if status == 200:

@@ -4471,7 +4471,7 @@ def do_task(message, custom_prompt: str = ''):
             total_messages__ = my_db.count_msgs(chat_id_full, 'all', 1000000000)
             # каждые 50 сообщение напоминать о ключах
             if total_messages__ > 1 and total_messages__ % 50 == 0:
-                msg = tr('This bot needs free API keys to function. Obtain keys at https://ai.google.dev/ and provide them to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+                msg = tr('This bot uses API keys to unlock more powerful AI features. You can obtain a free key at https://ai.google.dev/ and provide it to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                 bot_reply(message, msg, disable_web_page_preview = True)
                 # если больше 1000 сообщений уже и нет ключей то нафиг
                 # if total_messages__ > 1000:

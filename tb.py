@@ -3024,7 +3024,6 @@ def tts(message: telebot.types.Message, caption = None):
 @async_run
 def google(message: telebot.types.Message):
     """ищет в гугле перед ответом"""
-    return
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 

@@ -15,7 +15,7 @@ import utils
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def search_v3(query: str, lang: str = 'ru', max_search: int = 20, download_only = False):
+def search_v3(query: str, lang: str = 'ru', max_search: int = 6, download_only = False):
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
@@ -41,7 +41,8 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 20, download_only 
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
 
-    text = my_sum.download_in_parallel(urls, my_gemini.MAX_SUM_REQUEST)
+    # text = my_sum.download_in_parallel(urls, my_gemini.MAX_SUM_REQUEST)
+    text = my_sum.download_text(urls, my_gemini.MAX_SUM_REQUEST)
 
     if download_only:
         return text

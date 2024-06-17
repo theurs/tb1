@@ -3148,7 +3148,7 @@ def image_gen(message: telebot.types.Message):
     """Generates a picture from a description"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-
+    return
     try:
         # не использовать бинг для рисования запрещенки, он за это банит
         NSFW_FLAG = False

@@ -197,7 +197,7 @@ def update_mem(query: str, resp: str, mem):
     chat_id = ''
     if isinstance(mem, str): # if mem - chat_id
         chat_id = mem
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+        mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
 
     mem.append({"role": "user", "parts": [{"text": query}]})
     mem.append({"role": "model", "parts": [{"text": resp}]})
@@ -239,7 +239,7 @@ def undo(chat_id: str):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+            mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
             # remove 2 last lines from mem
             mem = mem[:-2]
             my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -474,7 +474,7 @@ def chat(query: str, chat_id: str, temperature: float = 0.1, update_memory: bool
         lock = threading.Lock()
         LOCKS[chat_id] = lock
     with lock:
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+        mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
         r = ''
         try:
             r = ai(query, mem, temperature, model = model, chat_id=chat_id)
@@ -524,7 +524,7 @@ def get_mem_for_llama(chat_id: str, l: int = 3):
     res_mem = []
     l = l*2
 
-    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
     mem = mem[-l:]
 
     for x in mem:
@@ -541,6 +541,68 @@ def get_mem_for_llama(chat_id: str, l: int = 3):
     return res_mem
 
 
+def transform_mem(data):
+    """
+    Преобразует данные в формат, подходящий для моей функции джемини.
+
+    Args:
+        data: Данные в одном из возможных форматов:
+        - Список словарей в формате тип1 (см. описание выше).
+        - Список словарей в формате тип2 (см. описание выше).
+        - Объект 'Content' (предполагается, что он может быть преобразован в словарь).
+
+    Returns:
+        Список словарей в формате, подходящем для моей функции:
+        тип1
+        <class 'list'> [
+            parts {text: "1+1"}
+            role: "user",
+
+            parts {text: "2"}
+            role: "model",
+        ]
+
+        тип 2 для genai
+        <class 'list'> [
+            {'role': 'user', 'parts': [{'text': '1+1'}]},
+            {'role': 'model', 'parts': [{'text': '2'}]},
+
+            {'role': 'user', 'parts': [{'text': '2+2'}]},
+            {'role': 'model', 'parts': [{'text': '4'}]},
+        ]
+
+    """
+    try:
+        if not data:
+            return []
+
+        # Проверяем, в каком формате данные
+        if isinstance(data[0], dict):
+            return data  # Данные уже в формате тип2
+
+        transformed_data = []
+        role1 = ''
+        role2 = ''
+        text1 = ''
+        text2 = ''
+        
+        for x in data:
+            if x.role == 'user':
+                role1 = x.role
+                text1 = x.parts[0].text
+            else:
+                role2 = x.role
+                text2 = x.parts[0].text
+                transformed_data.append({'role': role1, 'parts': [{'text': text1}]})
+                transformed_data.append({'role': role2, 'parts': [{'text': text2}]})
+
+        return transformed_data
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini(f'my_gemini:transform_mem: {error}\n\n{traceback_error}')
+        return []
+
+
 def get_mem_as_string(chat_id: str) -> str:
     """
     Returns the chat history as a string for the given ID.
@@ -551,7 +613,8 @@ def get_mem_as_string(chat_id: str) -> str:
     Returns:
         str: The chat history as a string.
     """
-    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
+    # print(type(mem), mem)
     result = ''
     for x in mem:
         role = x['role']
@@ -631,18 +694,14 @@ answer with a single long sentence 50-300 words, start with the words Create ima
         return prompt
 
 
-def chat_cli():
-    # inject_explicit_content('test')
-    # style = '[пиши грубо с матами как троль в интернете]'
-    # style = '[ты работаешь в сексе по телефону и твоя задача доставить клиенту сексуальное удовольствие]'
-    # style = '[пиши так будто ты немец который плохо знает русский язык, вставляй иногда оригинальные немецкие слова, пиши по-русски с ошибками характерными для немцев]'
+def chat_cli(user_id = 'test'):
     style = ''
     while 1:
         q = input('>')
         if q == 'mem':
-            print(get_mem_as_string('test'))
+            print(get_mem_as_string(user_id))
             continue
-        r = chat(f'{style} {q}', 'test')
+        r = chat(f'{style} {q}', user_id)
         print(r)
 
 
@@ -692,7 +751,6 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature. Split big text into chunks of 15000 characters.
-    Up to 30000 characters.
 
     Args:
         text (str): The complete text to be used as input.
@@ -899,7 +957,7 @@ if __name__ == '__main__':
 
     # print(ocr('1.png'))
 
-    chat_cli()
+    chat_cli('[1651196] [0]')
 
     my_db.close()
 

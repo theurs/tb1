@@ -4659,9 +4659,9 @@ def do_task(message, custom_prompt: str = ''):
             if ORIGINAL_MODE[chat_id_full]:
                 helped_query = message.text
                 hidden_text_for_llama370 = ''
+                hidden_text = ''
             else:
                 helped_query = f'{hidden_text} {message.text}'
-
 
             if chat_id_full not in CHAT_LOCKS:
                 CHAT_LOCKS[chat_id_full] = threading.Lock()
@@ -4685,6 +4685,12 @@ def do_task(message, custom_prompt: str = ''):
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
                                                     model = 'gemini-1.5-flash-latest')
+                            # answer = my_gemini.chat(message.text,
+                            #                         chat_id_full,
+                            #                         my_db.get_user_property(chat_id_full, 'temperature'),
+                            #                         model = 'gemini-1.5-flash',
+                            #                         system = hidden_text
+                            #                         )
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
                             if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):
@@ -4756,6 +4762,13 @@ def do_task(message, custom_prompt: str = ''):
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
                                                     model = 'gemini-1.5-pro-latest')
+                            # answer = my_gemini.chat(message.text,
+                            #                         chat_id_full,
+                            #                         my_db.get_user_property(chat_id_full, 'temperature'),
+                            #                         model = 'gemini-1.5-pro',
+                            #                         system = hidden_text
+                            #                         )
+
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
                             if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):

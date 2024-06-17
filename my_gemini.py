@@ -32,7 +32,7 @@ USER_KEYS_LOCK = threading.Lock()
 
 
 # максимальное время для запросов к gemini
-TIMEOUT = 120
+TIMEOUT = 300
 
 
 # блокировка чатов что бы не испортить историю 

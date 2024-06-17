@@ -5036,12 +5036,13 @@ def do_task(message, custom_prompt: str = ''):
 @async_run
 def activity_daemon():
     '''Restarts the bot if it's been inactive for too long, may be telegram collapsed.'''
+    return # не работает
     global ACTIVITY_DAEMON_RUN
     while ACTIVITY_DAEMON_RUN:
         time.sleep(1)
         if ACTIVITY_MONITOR['last_activity'] + ACTIVITY_MONITOR['max_inactivity'] < time.time():
             my_log.log2(f'tb:activity_daemon: reconnect after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
-            restart()
+            # restart(message?)
 
 
 @async_run

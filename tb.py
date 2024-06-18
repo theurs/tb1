@@ -235,6 +235,8 @@ class RequestCounter:
 
 request_counter = RequestCounter()
 
+# {chat_id:lock}
+SHOW_ACTION_LOCKS = {}
 
 class ShowAction(threading.Thread):
     """A thread that can be stopped. Continuously sends a notification of activity to the chat.
@@ -257,6 +259,7 @@ class ShowAction(threading.Thread):
                          "upload_audio", "upload_document", "find_location", "record_video_note", "upload_video_note"]
         assert action in self.actions, f'Допустимые actions = {self.actions}'
         self.chat_id = message.chat.id
+        self.full_chat_id = get_topic_id(message)
         self.thread_id = message.message_thread_id
         self.is_topic = True if message.is_topic_message else False
         self.action = action
@@ -265,26 +268,29 @@ class ShowAction(threading.Thread):
         self.started_time = time.time()
 
     def run(self):
-        while self.is_running:
-            if time.time() - self.started_time > 60*5:
-                self.stop()
-                my_log.log2(f'tb:show_action:stoped after 5min [{self.chat_id}] [{self.thread_id}] is topic: {self.is_topic} action: {self.action}')
-                return
-            try:
-                if self.is_topic:
-                    bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)
-                else:
-                    bot.send_chat_action(self.chat_id, self.action)
-            except Exception as error:
-                if 'A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests' not in str(error):
-                    if 'Forbidden: bot was blocked by the user' in str(error):
-                        self.stop()
-                        return
-                    my_log.log2(f'tb:show_action:run: {error}')
-            n = 50
-            while n > 0:
-                time.sleep(0.1)
-                n = n - self.timerseconds
+        if self.full_chat_id not in SHOW_ACTION_LOCKS:
+            SHOW_ACTION_LOCKS[self.full_chat_id] = threading.Lock()
+        with SHOW_ACTION_LOCKS[self.full_chat_id]:
+            while self.is_running:
+                if time.time() - self.started_time > 60*5:
+                    self.stop()
+                    my_log.log2(f'tb:show_action:stoped after 5min [{self.chat_id}] [{self.thread_id}] is topic: {self.is_topic} action: {self.action}')
+                    return
+                try:
+                    if self.is_topic:
+                        bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)
+                    else:
+                        bot.send_chat_action(self.chat_id, self.action)
+                except Exception as error:
+                    if 'A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests' not in str(error):
+                        if 'Forbidden: bot was blocked by the user' in str(error):
+                            self.stop()
+                            return
+                        my_log.log2(f'tb:show_action:run: {error}')
+                n = 50
+                while n > 0:
+                    time.sleep(0.1)
+                    n = n - self.timerseconds
 
     def stop(self):
         self.timerseconds = 50

@@ -572,12 +572,10 @@ def delete_user_property(user_id: str, property: str):
                         WHERE id = ?
                     ''', (user_id,))
                     COM_COUNTER += 1
-                else:
-                    my_log.log2(f'my_db:delete_user_file - User {user_id} has no {property}')
             else:
-                my_log.log2(f'my_db:delete_user_file - User {user_id} not found')
+                my_log.log2(f'my_db:delete_property - User {user_id} not found')
         except Exception as error:
-            my_log.log2(f'my_db:delete_user_file {error}')
+            my_log.log2(f'my_db:delete_property {error}')
 
 
 def set_user_property(user_id: str, property: str, value):

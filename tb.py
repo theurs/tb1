@@ -105,10 +105,6 @@ IMG_GEN_LOCKS = {}
 # theme_id - номер темы в группе для логов
 LOGS_GROUPS_DB = SqliteDict('db/logs_groups.db', autocommit=True)
 
-# запоминаем пары хеш-промтп для работы клавиатуры которая рисует по сгенерированным с помощью ИИ подсказкам
-# {hash:prompt, ...}
-IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=True)
-
 # включены ли подсказки для рисования в этом чате
 # {chat_id: True/False}
 SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
@@ -1395,12 +1391,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             tts(message)
         elif call.data.startswith('imagecmd_'):
             hash = call.data[9:]
-            prompt = IMAGE_SUGGEST_BUTTONS[hash]
+            prompt = my_db.get_from_im_suggests(hash)
             message.text = f'/image {prompt}'
             image_gen(message)
         elif call.data.startswith('imagecmd2_'):
             hash = call.data[10:]
-            prompt = IMAGE_SUGGEST_BUTTONS[hash]
+            prompt = my_db.get_from_im_suggests(hash)
             message.text = f'/image2 {prompt}'
             image2_gen(message)
         elif call.data.startswith('select_lang-'):
@@ -3340,7 +3336,7 @@ the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt
                                         suggest_hashes = [utils.nice_hash(x, 12) for x in suggest]
                                         markup  = telebot.types.InlineKeyboardMarkup()
                                         for s, h in zip(suggest, suggest_hashes):
-                                            IMAGE_SUGGEST_BUTTONS[h] = utils.html.unescape(s)
+                                            my_db.set_im_suggests(h, utils.html.unescape(s))
 
                                         if NSFW_FLAG:
                                             b1 = telebot.types.InlineKeyboardButton(text = '1️⃣', callback_data = f'imagecmd2_{suggest_hashes[0]}')
@@ -5111,10 +5107,16 @@ def one_time_shot():
             # except Exception as error:
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
-            # добавить в таблицу 
-            queries = ["""ALTER TABLE users DROP COLUMN qroq;""",
-                       """ALTER TABLE users ADD COLUMN dialog_openrouter BLOB;""",
-                       """ALTER TABLE users ADD COLUMN dialog_shadow BLOB;"""]
+
+            queries = ['''
+            CREATE TABLE IF NOT EXISTS im_suggests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date REAL,
+                hash TEXT,
+                prompt TEXT
+            )
+        ''',
+                       ]
             for q in queries:
                 try:
                     my_db.CUR.execute(q)
@@ -5122,30 +5124,13 @@ def one_time_shot():
                 except Exception as error:
                     my_log.log2(f'tb:one_time_shot: {error}')
 
-            # хранилище диалогов {id:list(mem)}
-            CHATS = SqliteDict('db/shadow_dialogs.db', autocommit=True)
-            for key in CHATS:
-                value = CHATS[key]
-                blob = my_db.obj_to_blob(value)
-                my_db.set_user_property(key, 'dialog_shadow', blob)
-            del CHATS
-
-            # хранилище диалогов {id:list(mem)}
-            CHATS = SqliteDict('db/openrouter_dialogs.db', autocommit=True)
-            for key in CHATS:
-                value = CHATS[key]
-                blob = my_db.obj_to_blob(value)
-                my_db.set_user_property(key, 'dialog_openrouter', blob)
-            del CHATS
-
-
-            # {chat_id:role} какие роли - дополнительные инструкции в чате
-            # ROLES = my_dic.PersistentDict('db/roles.pkl')
-            # for key in ROLES:
-            #     value = ROLES[key]
-            #     my_db.set_user_property(key, 'role', value)
-            # del ROLES
-
+            # запоминаем пары хеш-промтп для работы клавиатуры которая рисует по сгенерированным с помощью ИИ подсказкам
+            # {hash:prompt, ...}
+            IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=True)
+            for key in IMAGE_SUGGEST_BUTTONS:
+                value = IMAGE_SUGGEST_BUTTONS[key]
+                my_db.set_im_suggests(key, value)
+            del IMAGE_SUGGEST_BUTTONS
 
 
             with open('one_time_flag.txt', 'w') as f:

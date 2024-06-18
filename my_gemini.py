@@ -43,7 +43,7 @@ SAFETY_SETTINGS = {
     # это не работает HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.BLOCK_NONE,
 }
 
-LOCKS = []
+LOCKS = {}
 CHATS = {}
 MAX_CHAT_LINES = 40
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):

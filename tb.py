@@ -2774,11 +2774,11 @@ def send_debug_history(message: telebot.types.Message):
 
 
 @bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin)
-def restart(message: telebot.types.Message):
+def restart(message):
     """остановка бота. после остановки его должен будет перезапустить скрипт systemd"""
     global LOG_GROUP_DAEMON_ENABLED, ACTIVITY_DAEMON_RUN
-
-    bot_reply_tr(message, 'Restarting bot, please wait')
+    if isinstance(message, telebot.types.Message):
+        bot_reply_tr(message, 'Restarting bot, please wait')
     my_log.log2(f'tb:restart: !!!RESTART!!!')
     bot.stop_polling()
     LOG_GROUP_DAEMON_ENABLED = False
@@ -5047,13 +5047,12 @@ def do_task(message, custom_prompt: str = ''):
 @async_run
 def activity_daemon():
     '''Restarts the bot if it's been inactive for too long, may be telegram collapsed.'''
-    return # не работает
     global ACTIVITY_DAEMON_RUN
     while ACTIVITY_DAEMON_RUN:
         time.sleep(1)
         if ACTIVITY_MONITOR['last_activity'] + ACTIVITY_MONITOR['max_inactivity'] < time.time():
             my_log.log2(f'tb:activity_daemon: reconnect after {ACTIVITY_MONITOR["max_inactivity"]} inactivity')
-            # restart(message?)
+            restart(True)
 
 
 @async_run

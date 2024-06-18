@@ -4047,7 +4047,9 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_ddg.reset(chat_id_full)
 
             my_db.delete_user_property(chat_id_full, 'role')
-            
+            if chat_id_full in my_gemini.BIO:
+                del my_gemini.BIO[chat_id_full]
+
             BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
             if my_db.check_user_property(chat_id_full, 'saved_file_name'):
                 my_db.delete_user_property(chat_id_full, 'saved_file_name')
@@ -4133,6 +4135,11 @@ def id_cmd_handler(message: telebot.types.Message):
 
     if str(message.chat.id) in DDOS_BLOCKED_USERS and not my_db.check_user_property(chat_id_full, 'blocked'):
         msg += f'\n{tr("User was temporarily banned.", lang)}\n'
+
+    if chat_id_full in my_gemini.BIO and my_gemini.BIO[chat_id_full]:
+        msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_gemini.BIO[chat_id_full]}'
+
+    
     bot_reply(message, msg)
 
 
@@ -4679,16 +4686,18 @@ def do_task(message, custom_prompt: str = ''):
                             if not my_db.check_user_property(chat_id_full, 'temperature'):
                                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
-                            answer = my_gemini.chat(helped_query,
-                                                    chat_id_full,
-                                                    my_db.get_user_property(chat_id_full, 'temperature'),
-                                                    model = 'gemini-1.5-flash-latest')
-                            # answer = my_gemini.chat(message.text,
+                            # answer = my_gemini.chat(helped_query,
                             #                         chat_id_full,
                             #                         my_db.get_user_property(chat_id_full, 'temperature'),
-                            #                         model = 'gemini-1.5-flash',
-                            #                         system = hidden_text
-                            #                         )
+                            #                         model = 'gemini-1.5-flash-latest')
+
+                            answer = my_gemini.chat(message.text,
+                                                    chat_id_full,
+                                                    my_db.get_user_property(chat_id_full, 'temperature'),
+                                                    model = 'gemini-1.5-flash',
+                                                    system = hidden_text
+                                                    )
+
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
                             if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):
@@ -4756,16 +4765,17 @@ def do_task(message, custom_prompt: str = ''):
                             if not my_db.check_user_property(chat_id_full, 'temperature'):
                                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
-                            answer = my_gemini.chat(helped_query,
-                                                    chat_id_full,
-                                                    my_db.get_user_property(chat_id_full, 'temperature'),
-                                                    model = 'gemini-1.5-pro-latest')
-                            # answer = my_gemini.chat(message.text,
+                            # answer = my_gemini.chat(helped_query,
                             #                         chat_id_full,
                             #                         my_db.get_user_property(chat_id_full, 'temperature'),
-                            #                         model = 'gemini-1.5-pro',
-                            #                         system = hidden_text
-                            #                         )
+                            #                         model = 'gemini-1.5-pro-latest')
+
+                            answer = my_gemini.chat(message.text,
+                                                    chat_id_full,
+                                                    my_db.get_user_property(chat_id_full, 'temperature'),
+                                                    model = 'gemini-1.5-pro',
+                                                    system = hidden_text
+                                                    )
 
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)

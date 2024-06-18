@@ -18,13 +18,14 @@ catdoc_cmd = 'catdoc'
 
 def fb2_to_text(data: bytes, ext: str = '') -> str:
     """convert from fb2 or epub (bytes) and other types of books file to string"""
-    input_file = utils.get_tmp_fname()
-
-    open(input_file, 'wb').write(data)
-
     ext = ext.lower()
     if ext.startswith('.'):
         ext = ext[1:]
+
+    input_file = utils.get_tmp_fname() + '.' + ext
+
+    with open(input_file, 'wb') as f:
+        f.write(data)
 
     book_type = ext
 
@@ -72,6 +73,6 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
 
 
 if __name__ == '__main__':
-    result = fb2_to_text(open('1.fb2', 'rb').read(), '.fb2')
+    result = fb2_to_text(open('1.pdf', 'rb').read(), '.pdf')
 
     print(result)

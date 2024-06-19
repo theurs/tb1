@@ -112,14 +112,6 @@ SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
 # что бы бот работал в публичном чате администратор должен его активировать {id:True/False}
 CHAT_ENABLED = SqliteDict('db/chat_enabled.db', autocommit=True)
 
-# в каком чате включен режим без подсказок, боту не будет сообщаться время место и роль,
-# он будет работать как в оригинале {id:True/False}
-ORIGINAL_MODE = SqliteDict('db/original_mode.db', autocommit=True)
-
-# в каких чатах активирован режим суперчата, когда бот отвечает на все реплики всех участников
-# {chat_id:0|1}
-SUPER_CHAT = my_dic.PersistentDict('db/super_chat.pkl')
-
 # в каких чатах надо просто транскрибировать голосовые сообщения, не отвечая на них
 TRANSCRIBE_ONLY_CHAT = my_dic.PersistentDict('db/transcribe_only_chat.pkl')
 
@@ -157,8 +149,6 @@ SEND_IMG_LOCK = threading.Lock()
 
 GEMIMI_TEMP_DEFAULT = 0.2
 
-# в каких чатах какое у бота кодовое слово для обращения к боту
-BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 BOT_NAME_DEFAULT = cfg.default_bot_name
 
@@ -897,9 +887,8 @@ def authorized(message: telebot.types.Message) -> bool:
 
     # trottle only messages addressed to me
     is_private = message.chat.type == 'private'
-    if chat_id_full not in SUPER_CHAT:
-        SUPER_CHAT[chat_id_full] = 0
-    if SUPER_CHAT[chat_id_full] == 1:
+    supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+    if supch == 1:
         is_private = True
 
 
@@ -921,11 +910,7 @@ def authorized(message: telebot.types.Message) -> bool:
         if msg.startswith('.'):
             msg = msg[1:]
 
-        if chat_id_full in BOT_NAMES:
-            bot_name = BOT_NAMES[chat_id_full]
-        else:
-            bot_name = BOT_NAME_DEFAULT
-            BOT_NAMES[chat_id_full] = bot_name
+        bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
 
         bot_name_used = False
         if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
@@ -1315,9 +1300,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             is_admin_of_group = is_admin_member(message)
 
         if flag == 'admin' or is_admin_of_group or from_user in cfg.admins:
-            if chat_id_full not in SUPER_CHAT:
-                SUPER_CHAT[chat_id_full] = 0
-            if SUPER_CHAT[chat_id_full] == 1:
+            supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+            if supch == 1:
                 button = telebot.types.InlineKeyboardButton(tr('✅Автоответы в чате', lang), callback_data='admin_chat')
             else:
                 button = telebot.types.InlineKeyboardButton(tr('☑️Автоответы в чате', lang), callback_data='admin_chat')
@@ -1342,8 +1326,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         chat_id = message.chat.id
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
-
-        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT} /name
+        bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {bot_name} /name
 
 <b>{tr('Bot style(role):', lang)}</b> {my_db.get_user_property(chat_id_full, 'role') if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)} /style
 
@@ -1376,10 +1360,13 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         # режим автоответов в чате, бот отвечает на все реплики всех участников
         # комната для разговоров с ботом Ж)
         elif call.data == 'admin_chat' and is_admin_member(call):
-            if chat_id_full in SUPER_CHAT:
-                SUPER_CHAT[chat_id_full] = 1 if SUPER_CHAT[chat_id_full] == 0 else 0
+            supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+            if supch == 1:
+                supch = 0
+                my_db.set_user_property(chat_id_full, 'superchat', 0)
             else:
-                SUPER_CHAT[chat_id_full] = 1
+                supch = 1
+                my_db.set_user_property(chat_id_full, 'superchat', 1)
             bot.edit_message_text(chat_id=chat_id, parse_mode='HTML', message_id=message.message_id,
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message, 'admin'))
         elif call.data == 'erase_answer':
@@ -1577,9 +1564,8 @@ def handle_voice(message: telebot.types.Message):
     if chat_id_full not in VOICE_ONLY_MODE:
         VOICE_ONLY_MODE[chat_id_full] = False
 
-    if chat_id_full not in SUPER_CHAT:
-        SUPER_CHAT[chat_id_full] = 0
-    if SUPER_CHAT[chat_id_full] == 1:
+    supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+    if supch == 1:
         is_private = True
 
     if check_blocks(get_topic_id(message)) and not is_private:
@@ -1666,9 +1652,8 @@ def handle_document(message: telebot.types.Message):
     COMMAND_MODE[chat_id_full] = ''
 
     is_private = message.chat.type == 'private'
-    if chat_id_full not in SUPER_CHAT:
-        SUPER_CHAT[chat_id_full] = 0
-    if SUPER_CHAT[chat_id_full] == 1:
+    supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+    if supch == 1:
         is_private = True
 
     chat_id = message.chat.id
@@ -1913,9 +1898,8 @@ def handle_photo(message: telebot.types.Message):
     try:
 
         is_private = message.chat.type == 'private'
-        if chat_id_full not in SUPER_CHAT:
-            SUPER_CHAT[chat_id_full] = 0
-        if SUPER_CHAT[chat_id_full] == 1:
+        supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+        if supch == 1:
             is_private = True
 
         msglower = message.caption.lower() if message.caption else ''
@@ -2067,7 +2051,8 @@ def config(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
     try:
-        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {BOT_NAMES[chat_id_full] if chat_id_full in BOT_NAMES else BOT_NAME_DEFAULT} /name
+        bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {bot_name} /name
 
 <b>{tr('Bot style(role):', lang)}</b> {my_db.get_user_property(chat_id_full, 'role') if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)} /style
 
@@ -2093,15 +2078,13 @@ def original_mode(message: telebot.types.Message):
     """
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
+    omode = my_db.get_user_property(chat_id_full, 'original_mode') or False
 
-    if chat_id_full not in ORIGINAL_MODE:
-        ORIGINAL_MODE[chat_id_full] = False
-
-    if ORIGINAL_MODE[chat_id_full]:
-        ORIGINAL_MODE[chat_id_full] = False
+    if omode:
+        my_db.set_user_property(chat_id_full, 'original_mode', False)
         bot_reply_tr(message, 'Original mode disabled. Bot will be informed about place, names, roles etc.')
     else:
-        ORIGINAL_MODE[chat_id_full] = True
+        my_db.set_user_property(chat_id_full, 'original_mode', True)
         bot_reply_tr(message, 'Original mode enabled. Bot will not be informed about place, names, roles etc. It will work same as original chatbot.')
 
 
@@ -3857,7 +3840,7 @@ def send_name(message: telebot.types.Message):
         # if re.match(regex, new_name) and len(new_name) <= 10 \
                     # and new_name.lower() not in BAD_NAMES:
         if len(new_name) <= 10 and new_name.lower() not in BAD_NAMES:
-            BOT_NAMES[chat_id_full] = new_name.lower()
+            my_db.set_user_property(chat_id_full, 'bot_name', new_name.lower())
             msg = f'{tr("Кодовое слово для обращения к боту изменено на", lang)} ({args[1]}) {tr("для этого чата.", lang)}'
             bot_reply(message, msg)
         else:
@@ -4052,7 +4035,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             if chat_id_full in my_gemini.BIO:
                 del my_gemini.BIO[chat_id_full]
 
-            BOT_NAMES[chat_id_full] = BOT_NAME_DEFAULT
+            my_db.set_user_property(chat_id_full, 'bot_name', BOT_NAME_DEFAULT)
             if my_db.check_user_property(chat_id_full, 'saved_file_name'):
                 my_db.delete_user_property(chat_id_full, 'saved_file_name')
                 my_db.delete_user_property(chat_id_full, 'saved_file')
@@ -4439,12 +4422,10 @@ def do_task(message, custom_prompt: str = ''):
 
     # определяем откуда пришло сообщение  
     is_private = message.chat.type == 'private'
-    if chat_id_full not in SUPER_CHAT:
-        SUPER_CHAT[chat_id_full] = 0
+    supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
     # если бот должен отвечать всем в этом чате то пусть ведет себя как в привате
     # но если это ответ на чье-то сообщение то игнорируем
-    # if SUPER_CHAT[chat_id_full] == 1 and not is_reply_to_other:
-    if SUPER_CHAT[chat_id_full] == 1:
+    if supch == 1:
         is_private = True
 
     # удаляем пробелы в конце каждой строки,
@@ -4522,11 +4503,7 @@ def do_task(message, custom_prompt: str = ''):
                     return
 
         # определяем какое имя у бота в этом чате, на какое слово он отзывается
-        if chat_id_full in BOT_NAMES:
-            bot_name = BOT_NAMES[chat_id_full]
-        else:
-            bot_name = BOT_NAME_DEFAULT
-            BOT_NAMES[chat_id_full] = bot_name
+        bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
 
         bot_name_used = False
         # убираем из запроса кодовое слово
@@ -4660,9 +4637,8 @@ def do_task(message, custom_prompt: str = ''):
                 else:
                     hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 40 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
             hidden_text_for_llama370 = tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required.', lang)
-            if chat_id_full not in ORIGINAL_MODE:
-                ORIGINAL_MODE[chat_id_full] = False
-            if ORIGINAL_MODE[chat_id_full]:
+            omode = my_db.get_user_property(chat_id_full, 'original_mode') or False
+            if omode:
                 helped_query = message.text
                 hidden_text_for_llama370 = ''
                 hidden_text = ''
@@ -5107,29 +5083,47 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            queries = ['''
-            CREATE TABLE IF NOT EXISTS im_suggests (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date REAL,
-                hash TEXT,
-                prompt TEXT
-            )
-        ''',
-                       ]
-            for q in queries:
-                try:
-                    my_db.CUR.execute(q)
-                    my_db.CON.commit()
-                except Exception as error:
-                    my_log.log2(f'tb:one_time_shot: {error}')
+            # queries = ['''
+            # CREATE TABLE IF NOT EXISTS im_suggests (
+            #     id INTEGER PRIMARY KEY AUTOINCREMENT,
+            #     date REAL,
+            #     hash TEXT,
+            #     prompt TEXT
+            #   )
+            #  ''',
+            #            ]
+            # for q in queries:
+            #     try:
+            #         my_db.CUR.execute(q)
+            #         my_db.CON.commit()
+            #     except Exception as error:
+            #         my_log.log2(f'tb:one_time_shot: {error}')
 
-            # запоминаем пары хеш-промтп для работы клавиатуры которая рисует по сгенерированным с помощью ИИ подсказкам
-            # {hash:prompt, ...}
-            IMAGE_SUGGEST_BUTTONS = SqliteDict('db/image_suggest_buttons.db', autocommit=True)
-            for key in IMAGE_SUGGEST_BUTTONS:
-                value = IMAGE_SUGGEST_BUTTONS[key]
-                my_db.set_im_suggests(key, value)
-            del IMAGE_SUGGEST_BUTTONS
+
+            # в каких чатах активирован режим суперчата, когда бот отвечает на все реплики всех участников
+            # {chat_id:0|1}
+            SUPER_CHAT = my_dic.PersistentDict('db/super_chat.pkl')
+            for key in SUPER_CHAT:
+                value = SUPER_CHAT[key]
+                my_db.set_user_property(key, 'superchat', value)
+            del SUPER_CHAT
+
+
+            # в каком чате включен режим без подсказок, боту не будет сообщаться время место и роль,
+            # он будет работать как в оригинале {id:True/False}
+            ORIGINAL_MODE = SqliteDict('db/original_mode.db', autocommit=True)
+            for key in ORIGINAL_MODE:
+                value = ORIGINAL_MODE[key]
+                my_db.set_user_property(key, 'original_mode', value)
+            del ORIGINAL_MODE
+
+
+            # в каких чатах какое у бота кодовое слово для обращения к боту
+            BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
+            for key in BOT_NAMES:
+                value = BOT_NAMES[key]
+                my_db.set_user_property(key, 'bot_name', value)
+            del BOT_NAMES
 
 
             with open('one_time_flag.txt', 'w') as f:

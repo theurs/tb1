@@ -131,19 +131,26 @@ def search_google(query: str) -> str:
     '''
     query = decode_string(query)
     my_log.log_gemini_skills(f'Google: {query}')
-    r = my_google.search_v3(query, max_search=10, download_only=True)
-    return r[:MAX_REQUEST]
+    try:
+        r = my_google.search_v3(query, max_search=10, download_only=True)
+        return r[:MAX_REQUEST]
+    except Exception as error:
+        my_log.log_gemini_skills(f'search_google:Error: {error}')
+        return f'ERROR {error}'
 
 
 def download_text_from_url(url: str, language: str = 'ru') -> str:
-    '''Download text from url for summization or other purpose.
-    Do not use it for translation.
+    '''Download text from url if user asked to.
     Accept web pages and youtube urls (it can read subtitles)
     language code is 2 letters code, it is used for youtube subtitle download
     '''
     my_log.log_gemini_skills(f'Download URL: {url} {language}')
-    result = my_sum.summ_url(url, download_only = True, lang = language)
-    return result[:MAX_REQUEST]
+    try:
+        result = my_sum.summ_url(url, download_only = True, lang = language)
+        return result[:MAX_REQUEST]
+    except Exception as error:
+        my_log.log_gemini_skills(f'download_text_from_url:Error: {error}')
+        return f'ERROR {error}'
 
 
 def decode_string(s: str) -> str:

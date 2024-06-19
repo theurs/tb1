@@ -323,6 +323,12 @@ ASSEMBLYAI_KEYS = [
     'key2',
 ]
 
+
+# курсы валют
+# https://openexchangerates.org/api
+OPENEXCHANGER_KEY = 'xxx'
+
+
 # DEBUG = False
 ```
 

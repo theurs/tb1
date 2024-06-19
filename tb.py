@@ -1373,8 +1373,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть ответ"
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'tts':
-            llang = my_trans.detect_lang(message.text or message.caption or '') or lang
-            message.text = f'/tts {llang} {message.text or message.caption or ""}'
+            message.text = f'/tts de {message.text or message.caption or ""}'
             tts(message)
         elif call.data.startswith('imagecmd_'):
             hash = call.data[9:]
@@ -2936,8 +2935,8 @@ def tts(message: telebot.types.Message, caption = None):
     pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
     match = re.match(pattern, message.text, re.DOTALL)
     if match:
-        llang = match.group("lang") or None
-        rate = match.group("rate") or "+0%"  # If rate is not specified, then by default '+0%'
+        llang = match.group("lang") or 'de' # 'de' - universal multilang voice
+        rate = match.group("rate") or '+0%'  # If rate is not specified, then by default '+0%'
         text = match.group("text") or ''
     else:
         text = llang = rate = ''
@@ -2947,24 +2946,14 @@ def tts(message: telebot.types.Message, caption = None):
         llang = 'uk'
     rate = rate.strip()
 
-    if text and not llang:
-        if len(text) < 30:
-            llang = my_gemini.detect_lang(text)
-            my_db.add_msg(chat_id_full, 'gemini15_flash')
-        if not llang or lang not in supported_langs_tts:
-            llang = my_trans.detect(text) or lang
-
-    if not llang or llang == 'und':
-        llang = lang
-
     if not text or llang not in supported_langs_tts:
-        help = f"""{tr('Usage:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('text', lang)}>|<URL>
+        help = f"""{tr('Usage:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('text to speech', lang)}>|<URL>
 
 +-XX% - {tr('acceleration with mandatory indication of direction + or -', lang)}
 
-/tts hello all
-/tts en hello, let me speak
-/tts en +50% Hello at a speed of 1.5x
+/tts hello all - all languages autodetect
+/tts en hello, let me speak - force english
+/tts en +50% Hello at a speed of 1.5x - force english and speed
 
 {tr('Supported languages:', lang)} {', '.join(supported_langs_tts)}
 

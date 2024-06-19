@@ -75,7 +75,7 @@ class SmartCache:
 
 
 # cache for users table
-USERS_CACHE = SmartCache(1000)
+USERS_CACHE = SmartCache(5000)
 
 
 @async_run

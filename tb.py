@@ -105,26 +105,13 @@ IMG_GEN_LOCKS = {}
 # theme_id - номер темы в группе для логов
 LOGS_GROUPS_DB = SqliteDict('db/logs_groups.db', autocommit=True)
 
-# включены ли подсказки для рисования в этом чате
-# {chat_id: True/False}
-SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
-
 # что бы бот работал в публичном чате администратор должен его активировать {id:True/False}
 CHAT_ENABLED = SqliteDict('db/chat_enabled.db', autocommit=True)
-
-# в каких чатах надо просто транскрибировать голосовые сообщения, не отвечая на них
-TRANSCRIBE_ONLY_CHAT = my_dic.PersistentDict('db/transcribe_only_chat.pkl')
 
 # в каких чатах какая команда дана, как обрабатывать последующий текст
 # например после команды /image ожидаем описание картинки
 # COMMAND_MODE[chat_id] = 'google'|'image'|...
 COMMAND_MODE = {}
-
-# в каких чатах включен режим только голосовые сообщения {'chat_id_full':True/False}
-VOICE_ONLY_MODE = my_dic.PersistentDict('db/voice_only_mode.pkl')
-
-# в каких чатах отключена клавиатура {'chat_id_full':True/False}
-DISABLED_KBD = my_dic.PersistentDict('db/disabled_kbd.pkl')
 
 # автоматически заблокированные за слишком частые обращения к боту 
 # {user_id:Time to release in seconds - дата когда можно выпускать из бана} 
@@ -162,7 +149,7 @@ DEBUG_MD_TO_HTML = {}
 WHO_ANSWERED = {}
 
 # кеш для переводов в оперативной памяти
-TRANS_CACHE = my_db.SmartCache(1000)
+TRANS_CACHE = my_db.SmartCache(5000)
 
 
 # key - time.time() float
@@ -995,13 +982,6 @@ def check_blocks(chat_id_full: str) -> bool:
     return False if my_db.get_user_property(chat_id_full, 'auto_translations') == 1 else True
 
 
-def disabled_kbd(chat_id_full):
-    """проверяет не отключена ли тут клавиатура"""
-    if chat_id_full not in DISABLED_KBD:
-        DISABLED_KBD[chat_id_full] = True
-    return DISABLED_KBD[chat_id_full]
-
-
 def bot_reply_tr(message: telebot.types.Message,
               msg: str,
               parse_mode: str = None,
@@ -1057,7 +1037,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
     lang = get_lang(chat_id_full, message)
 
     if kbd == 'mem':
-        if disabled_kbd(chat_id_full):
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Стереть историю", lang), callback_data='clear_history')
@@ -1065,8 +1045,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button1, button2)
         return markup
     elif kbd == 'download_saved_text':
-        # if disabled_kbd(chat_id_full):
-        #     return None
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Скачать", lang), callback_data='download_saved_text')
         button2 = telebot.types.InlineKeyboardButton(tr("Удалить", lang), callback_data='delete_saved_text')
@@ -1074,7 +1052,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return markup
 
     elif kbd == 'hide':
-        if disabled_kbd(chat_id_full):
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
@@ -1108,7 +1086,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1)
         return markup
     elif kbd == 'translate':
-        if disabled_kbd(chat_id_full):
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
@@ -1136,7 +1114,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return markup
 
     elif kbd == 'openrouter_chat':
-        if disabled_kbd(chat_id_full):
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
@@ -1148,7 +1126,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return markup
 
     elif kbd == 'gpt4o_chat':
-        if disabled_kbd(chat_id_full):
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
@@ -1160,7 +1138,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return markup
 
     elif kbd == 'haiku_chat':
-        if disabled_kbd(chat_id_full):
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
@@ -1173,7 +1151,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
 
     elif kbd == 'gpt35_chat':
-        if disabled_kbd(chat_id_full):
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
@@ -1185,7 +1163,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return markup
 
     elif kbd == 'groq_groq-llama370_chat':
-        if disabled_kbd(chat_id_full):
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
@@ -1197,7 +1175,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return markup
 
     elif kbd == 'gemini_chat' or kbd == 'chat':
-        if disabled_kbd(chat_id_full):
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
         markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
         button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
@@ -1247,9 +1225,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button5, button6)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
-        if chat_id_full not in VOICE_ONLY_MODE:
-            VOICE_ONLY_MODE[chat_id_full] = False
-        if VOICE_ONLY_MODE[chat_id_full]:
+        if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
             button2 = telebot.types.InlineKeyboardButton(tr('✅Только голос', lang), callback_data='voice_only_mode_disable')
         else:
             button2 = telebot.types.InlineKeyboardButton(tr('☑️Только голос', lang), callback_data='voice_only_mode_enable')
@@ -1262,25 +1238,19 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button1 = telebot.types.InlineKeyboardButton(tr(f'✅Авто переводы', lang), callback_data='autotranslate_disable')
         else:
             button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Авто переводы', lang), callback_data='autotranslate_enable')
-        if chat_id_full not in DISABLED_KBD:
-            DISABLED_KBD[chat_id_full] = False
-        if DISABLED_KBD[chat_id_full]:
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
         else:
             button2 = telebot.types.InlineKeyboardButton(tr(f'✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
         markup.row(button1, button2)
 
-        if chat_id_full not in SUGGEST_ENABLED:
-            SUGGEST_ENABLED[chat_id_full] = False
-        if SUGGEST_ENABLED[chat_id_full]:
+        if my_db.get_user_property(chat_id_full, 'suggest_enabled'):
             button1 = telebot.types.InlineKeyboardButton(tr(f'✅Show image suggestions', lang), callback_data='suggest_image_prompts_disable')
         else:
             button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Show image suggestions', lang), callback_data='suggest_image_prompts_enable')
         markup.row(button1)
 
-        if chat_id_full not in TRANSCRIBE_ONLY_CHAT:
-            TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
-        if TRANSCRIBE_ONLY_CHAT[chat_id_full]:
+        if my_db.get_user_property(chat_id_full, 'transcribe_only'):
             button2 = telebot.types.InlineKeyboardButton(tr(f'✅Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
         else:
             button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
@@ -1511,27 +1481,27 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
-            VOICE_ONLY_MODE[chat_id_full] = False
+            my_db.set_user_property(chat_id_full, 'voice_only_mode', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'suggest_image_prompts_enable'  and is_admin_member(call):
-            SUGGEST_ENABLED[chat_id_full] = True
+            my_db.set_user_property(chat_id_full, 'suggest_enabled', True)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'suggest_image_prompts_disable' and is_admin_member(call):
-            SUGGEST_ENABLED[chat_id_full] = False
+            my_db.set_user_property(chat_id_full, 'suggest_enabled', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'voice_only_mode_enable'  and is_admin_member(call):
-            VOICE_ONLY_MODE[chat_id_full] = True
+            my_db.set_user_property(chat_id_full, 'voice_only_mode', True)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'transcribe_only_chat_disable' and is_admin_member(call):
-            TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
+            my_db.set_user_property(chat_id_full, 'transcribe_only', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'transcribe_only_chat_enable'  and is_admin_member(call):
-            TRANSCRIBE_ONLY_CHAT[chat_id_full] = True
+            my_db.set_user_property(chat_id_full, 'transcribe_only', True)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'autotranslate_disable' and is_admin_member(call):
@@ -1543,11 +1513,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'disable_chat_kbd' and is_admin_member(call):
-            DISABLED_KBD[chat_id_full] = False
+            my_db.set_user_property(chat_id_full, 'disabled_kbd', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'enable_chat_kbd' and is_admin_member(call):
-            DISABLED_KBD[chat_id_full] = True
+            my_db.set_user_property(chat_id_full, 'disabled_kbd', True)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
 
@@ -1559,9 +1529,6 @@ def handle_voice(message: telebot.types.Message):
     is_private = message.chat.type == 'private'
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
-
-    if chat_id_full not in VOICE_ONLY_MODE:
-        VOICE_ONLY_MODE[chat_id_full] = False
 
     supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
     if supch == 1:
@@ -1601,7 +1568,7 @@ def handle_voice(message: telebot.types.Message):
             new_file.write(downloaded_file)
 
         # Распознаем текст из аудио
-        if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
+        if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
             action = 'record_audio'
         else:
             action = 'typing'
@@ -1618,7 +1585,7 @@ def handle_voice(message: telebot.types.Message):
             text = text.strip()
             # Отправляем распознанный текст
             if text:
-                if VOICE_ONLY_MODE[chat_id_full]:
+                if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                     # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
                     pass
                 else:
@@ -1626,7 +1593,7 @@ def handle_voice(message: telebot.types.Message):
                               parse_mode='HTML',
                               reply_markup=get_keyboard('translate', message))
             else:
-                if VOICE_ONLY_MODE[chat_id_full]:
+                if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                     message.text = '/tts ' + tr('Не удалось распознать текст', lang)
                     tts(message)
                 else:
@@ -1634,9 +1601,7 @@ def handle_voice(message: telebot.types.Message):
 
             # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
             if text:
-                if chat_id_full not in TRANSCRIBE_ONLY_CHAT:
-                    TRANSCRIBE_ONLY_CHAT[chat_id_full] = False
-                if not TRANSCRIBE_ONLY_CHAT[chat_id_full]:
+                if not my_db.get_user_property(chat_id_full, 'transcribe_only'):
                     message.text = text
                     echo_all(message)
 
@@ -2935,7 +2900,7 @@ def tts(message: telebot.types.Message, caption = None):
     pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
     match = re.match(pattern, message.text, re.DOTALL)
     if match:
-        llang = match.group("lang") or 'de' # 'de' - universal multilang voice
+        llang = match.group("lang") or ''
         rate = match.group("rate") or '+0%'  # If rate is not specified, then by default '+0%'
         text = match.group("text") or ''
     else:
@@ -2945,6 +2910,14 @@ def tts(message: telebot.types.Message, caption = None):
     if llang == 'ua':
         llang = 'uk'
     rate = rate.strip()
+
+    if not llang:
+        # check if message have any letters
+        if sum(1 for char in text if char.isalpha()) > 1:
+            # 'de' - universal multilang voice
+            llang = 'de'
+        else: # no any letters in string, use default user language if any
+            llang = lang or 'de'
 
     if not text or llang not in supported_langs_tts:
         help = f"""{tr('Usage:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('text to speech', lang)}>|<URL>
@@ -2977,7 +2950,7 @@ def tts(message: telebot.types.Message, caption = None):
                 gender = 'google_female'
                 bot_reply_tr(message, "Microsoft TTS cannot pronounce text in Latin language, switching to Google TTS.")
 
-            if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full]:
+            if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                 text = utils.bot_markdown_to_tts(text)
             audio = my_tts.tts(text, llang, rate, gender=gender)
             if audio:
@@ -3235,9 +3208,7 @@ def image_gen(message: telebot.types.Message):
                                     error_traceback = traceback.format_exc()
                                     my_log.log2(f'tb:image:add_media_bytes: {add_media_error}\n\n{error_traceback}')
 
-                        if chat_id_full not in SUGGEST_ENABLED:
-                            SUGGEST_ENABLED[chat_id_full] = False
-                        if medias and SUGGEST_ENABLED[chat_id_full]:
+                        if medias and my_db.get_user_property(chat_id_full, 'suggest_enabled'):
                             # 1 запрос на генерацию предложений
                             suggest_query = tr("""Suggest a wide range options for a request to a neural network that
 generates images according to the description, show 5 options with no numbers and trailing symbols, add many rich details, 1 on 1 line, output example:
@@ -4325,7 +4296,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         for chunk in chunks:
             # в режиме только голоса ответы идут голосом без текста
             # скорее всего будет всего 1 чанк, не слишком длинный текст
-            if chat_id_full in VOICE_ONLY_MODE and VOICE_ONLY_MODE[chat_id_full] and allow_voice:
+            if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:
                 message.text = '/tts ' + chunk
                 tts(message)
             else:
@@ -4604,9 +4575,7 @@ def do_task(message, custom_prompt: str = ''):
                 bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
                 return
 
-            if chat_id_full not in VOICE_ONLY_MODE:
-                VOICE_ONLY_MODE[chat_id_full] = False
-            if VOICE_ONLY_MODE[chat_id_full]:
+            if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                 action = 'record_audio'
                 message.text = f'[{tr("голосовое сообщение, возможны ошибки распознавания речи, отвечай просто без форматирования текста - ответ будет зачитан вслух", lang)}]: ' + message.text
             else:
@@ -4697,7 +4666,7 @@ def do_task(message, custom_prompt: str = ''):
                                     return
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
 
-                            if not VOICE_ONLY_MODE[chat_id_full]:
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
@@ -4775,7 +4744,7 @@ def do_task(message, custom_prompt: str = ''):
                                     return
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
 
-                            if not VOICE_ONLY_MODE[chat_id_full]:
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
@@ -4833,7 +4802,7 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = 'Groq llama 3 70b ' + tr('did not answered, try to /reset and start again', lang)
 
-                            if not VOICE_ONLY_MODE[chat_id_full]:
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
@@ -4870,7 +4839,7 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = 'Openrouter ' + tr('did not answered, try to /reset and start again. Check your balance https://openrouter.ai/credits', lang)
 
-                            if not VOICE_ONLY_MODE[chat_id_full]:
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
@@ -4924,7 +4893,7 @@ def do_task(message, custom_prompt: str = ''):
                                 llama_helped = True
                                 my_shadowjourney.update_mem(message.text, answer, chat_id_full)
 
-                            if not VOICE_ONLY_MODE[chat_id_full]:
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
@@ -4964,7 +4933,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = 'haiku-ddg'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-                            if not VOICE_ONLY_MODE[chat_id_full]:
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
@@ -5000,7 +4969,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = 'gpt35-ddg'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-                            if not VOICE_ONLY_MODE[chat_id_full]:
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
@@ -5089,31 +5058,35 @@ def one_time_shot():
             #         my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # в каких чатах активирован режим суперчата, когда бот отвечает на все реплики всех участников
-            # {chat_id:0|1}
-            SUPER_CHAT = my_dic.PersistentDict('db/super_chat.pkl')
-            for key in SUPER_CHAT:
-                value = SUPER_CHAT[key]
-                my_db.set_user_property(key, 'superchat', value)
-            del SUPER_CHAT
+            # в каких чатах отключена клавиатура {'chat_id_full':True/False}
+            DISABLED_KBD = my_dic.PersistentDict('db/disabled_kbd.pkl')
+            for key in DISABLED_KBD:
+                value = DISABLED_KBD[key]
+                my_db.set_user_property(key, 'disabled_kbd', value)
+            del DISABLED_KBD
+
+            # в каких чатах надо просто транскрибировать голосовые сообщения, не отвечая на них
+            TRANSCRIBE_ONLY_CHAT = my_dic.PersistentDict('db/transcribe_only_chat.pkl')
+            for key in TRANSCRIBE_ONLY_CHAT:
+                value = TRANSCRIBE_ONLY_CHAT[key]
+                my_db.set_user_property(key, 'transcribe_only', value)
+            del TRANSCRIBE_ONLY_CHAT
+
+            # включены ли подсказки для рисования в этом чате
+            # {chat_id: True/False}
+            SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
+            for key in SUGGEST_ENABLED:
+                value = SUGGEST_ENABLED[key]
+                my_db.set_user_property(key, 'suggest_enabled', value)
+            del SUGGEST_ENABLED
 
 
-            # в каком чате включен режим без подсказок, боту не будет сообщаться время место и роль,
-            # он будет работать как в оригинале {id:True/False}
-            ORIGINAL_MODE = SqliteDict('db/original_mode.db', autocommit=True)
-            for key in ORIGINAL_MODE:
-                value = ORIGINAL_MODE[key]
-                my_db.set_user_property(key, 'original_mode', value)
-            del ORIGINAL_MODE
-
-
-            # в каких чатах какое у бота кодовое слово для обращения к боту
-            BOT_NAMES = my_dic.PersistentDict('db/names.pkl')
-            for key in BOT_NAMES:
-                value = BOT_NAMES[key]
-                my_db.set_user_property(key, 'bot_name', value)
-            del BOT_NAMES
-
+            # в каких чатах включен режим только голосовые сообщения {'chat_id_full':True/False}
+            VOICE_ONLY_MODE = my_dic.PersistentDict('db/voice_only_mode.pkl')
+            for key in VOICE_ONLY_MODE:
+                value = VOICE_ONLY_MODE[key]
+                my_db.set_user_property(key, 'voice_only_mode', value)
+            del VOICE_ONLY_MODE
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

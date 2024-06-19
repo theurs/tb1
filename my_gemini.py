@@ -2,6 +2,8 @@
 
 
 import io
+import math
+import decimal
 import PIL
 import random
 import re
@@ -139,6 +141,21 @@ def update_user_profile(name: str,
     BIO[user_id] = bio
 
 
+def calc(expression: str) -> str:
+    '''Calculate expression with pythons eval(). Use it for calculate big numbers. Modules math and decimal available.
+    return str(eval(expression))
+    Examples: calc("56487*8731") -> '493187997'
+              calc("pow(10, 2)") -> '100'
+              calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
+              calc("decimal.Decimal('0.234234')*2") -> '0.468468'
+    '''
+    my_log.log_gemini_skills(f'Calc: {expression}')
+    try:
+        return str(eval(expression))
+    except Exception as error:
+        return f'Error: {error}'
+
+
 # def get_book_text_from_lib(title, autor) -> str:
 #     '''Get book text from library.
 #     '''
@@ -232,7 +249,7 @@ def chat(query: str,
             # response_mime_type: typing.Optional[str] = None
         )
 
-        SKILLS = [search_google, download_text_from_url, update_user_profile]
+        SKILLS = [search_google, download_text_from_url, update_user_profile, calc]
 
         model_ = genai.GenerativeModel(model,
                                     tools=SKILLS,
@@ -766,6 +783,7 @@ if __name__ == '__main__':
     pass
     my_db.init()
     load_users_keys()
+    print(calc("decimal.Decimal('0.234234')*2"))
 
     # как юзать прокси
     # как отправить в чат аудиофайл

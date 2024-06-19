@@ -209,6 +209,13 @@ def calc(expression: str) -> str:
               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
     '''
     my_log.log_gemini_skills(f'Calc: {expression}')
+    allowed_words = [x for x in dir(math)+dir(decimal) if '_' not in x]
+    # get all words from expression
+    # words = re.findall(r'\w+', expression)
+    words = re.findall(r'[^\d\W]+', expression)
+    for word in words:
+        if word not in allowed_words:
+            return f'Error: Invalid expression. Allowed words: {allowed_words}'
     try:
         return str(eval(expression))
     except Exception as error:
@@ -847,7 +854,7 @@ if __name__ == '__main__':
     my_db.init()
     load_users_keys()
 
-    print(get_currency_rates('2024-06-17'))
+    print(calc('__built_in__.init() sqrt(2)+15'))
 
     # как юзать прокси
     # как отправить в чат аудиофайл

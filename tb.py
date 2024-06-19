@@ -4140,7 +4140,6 @@ def id_cmd_handler(message: telebot.types.Message):
 
     if chat_id_full in my_gemini.BIO and my_gemini.BIO[chat_id_full]:
         msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_gemini.BIO[chat_id_full]}'
-
     
     bot_reply(message, msg)
 

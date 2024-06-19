@@ -276,7 +276,6 @@ def chat(query: str,
         if model == '':
             model = 'gemini-1.5-flash'
 
-
         # if system == '':
         #     system = None
 
@@ -327,6 +326,11 @@ def chat(query: str,
         result = resp.text
 
         if result:
+            if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
+            if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
+            if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
+            if not model: model_ = 'gemini15_flash'
+            my_db.add_msg(chat_id, model_)
             if chat_id:
                 mem = chat.history[-MAX_CHAT_LINES*2:]
                 while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:

@@ -137,6 +137,7 @@ def search_google(query: str) -> str:
 
 def download_text_from_url(url: str, language: str = 'ru') -> str:
     '''Download text from url for summization or other purpose.
+    Do not use it for translation.
     Accept web pages and youtube urls (it can read subtitles)
     language code is 2 letters code, it is used for youtube subtitle download
     '''
@@ -201,7 +202,7 @@ def update_user_profile(name: str,
 
 
 def calc(expression: str) -> str:
-    '''Calculate expression with pythons eval(). Use it for calculate big numbers. Modules math and decimal available.
+    '''Calculate expression with pythons eval(). Use it for all calculations. Modules math and decimal available.
     return str(eval(expression))
     Examples: calc("56487*8731") -> '493187997'
               calc("pow(10, 2)") -> '100'

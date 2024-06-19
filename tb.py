@@ -412,7 +412,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
 
     try:
         text = my_gemini.img2txt(data, query)
-        my_db.add_msg(chat_id_full, 'gemini15_flash')
+        # my_db.add_msg(chat_id_full, 'gemini15_flash')
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
@@ -1414,9 +1414,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     images = my_ddg.get_images(query)
                     medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:1000]) for x in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
-                    for _ in range(10):
-                        my_db.add_msg(chat_id_full, 'gemini15_flash')
-                        time.sleep(0.01)
+                    # for _ in range(10):
+                    #     my_db.add_msg(chat_id_full, 'gemini15_flash')
+                    #     time.sleep(0.01)
                     log_message(msgs_ids)
 
 
@@ -1721,7 +1721,7 @@ def handle_document(message: telebot.types.Message):
                                        reply_markup=get_keyboard('translate', message),
                                        disable_notification=True)
                         text = img2txt(image, lang, chat_id_full, message.caption)
-                        my_db.add_msg(chat_id_full, 'gemini15_flash')
+                        # my_db.add_msg(chat_id_full, 'gemini15_flash')
                         if text:
                             text = utils.bot_markdown_to_html(text)
                             text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
@@ -1968,7 +1968,7 @@ def handle_photo(message: telebot.types.Message):
                         return
 
                     text = img2txt(image, lang, chat_id_full, message.caption)
-                    my_db.add_msg(chat_id_full, 'gemini15_flash')
+                    # my_db.add_msg(chat_id_full, 'gemini15_flash')
                     if text:
                         text = utils.bot_markdown_to_html(text)
                         text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
@@ -2266,7 +2266,7 @@ def translation_gui(message: telebot.types.Message):
 
                     if not new_translation:
                         new_translation = my_gemini.translate(original, to_lang = lang, help = help)
-                        my_db.add_msg(chat_id_full, 'gemini15_flash')
+                        # my_db.add_msg(chat_id_full, 'gemini15_flash')
                     if not new_translation:
                         new_translation = my_groq.translate(original, to_lang = lang, help = help)
                         my_db.add_msg(chat_id_full, 'llama3-70b-8192')
@@ -3189,7 +3189,7 @@ def image_gen(message: telebot.types.Message):
                             del IMAGE10_STOP[chat_id_full]
                             return
                         # 1 а может и больше запросы к репромптеру
-                        my_db.add_msg(chat_id_full, 'gemini15_flash')
+                        # my_db.add_msg(chat_id_full, 'gemini15_flash')
                         # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
                         medias = []
                         has_good_images = False
@@ -3255,7 +3255,7 @@ the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt
                                 suggest = my_gemini.ai(suggest_query, temperature=1.5, mem=my_gemini.MEM_UNCENSORED)
                             else:
                                 suggest = my_gemini.ai(suggest_query, temperature=1.5)
-                            my_db.add_msg(chat_id_full, 'gemini15_flash')
+                            # my_db.add_msg(chat_id_full, 'gemini15_flash')
                             suggest = utils.bot_markdown_to_html(suggest).strip()
                         else:
                             suggest = ''
@@ -3635,7 +3635,7 @@ def ask_file(message: telebot.types.Message):
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
     '''
             result = my_gemini.ai(q, temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
-            my_db.add_msg(chat_id_full, 'gemini15_flash')
+            # my_db.add_msg(chat_id_full, 'gemini15_flash')
             if result:
                 answer = utils.bot_markdown_to_html(result)
                 bot_reply(message, answer, parse_mode='HTML')
@@ -4571,7 +4571,7 @@ def do_task(message, custom_prompt: str = ''):
             if utils.is_image_link(message.text):
                 with ShowAction(message, 'typing'):
                     text = img2txt(message.text, lang, chat_id_full)
-                    my_db.add_msg(chat_id_full, 'gemini15_flash')
+                    # my_db.add_msg(chat_id_full, 'gemini15_flash')
                     if text:
                         text = utils.bot_markdown_to_html(text)
                         bot_reply(message, text, parse_mode='HTML',

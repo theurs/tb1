@@ -87,7 +87,7 @@ HELP_MSG = {}
 
 # хранилище для запросов на поиск картинок
 # {hash: search query}
-SEARCH_PICS = SqliteDict('db/search_pics.db', autocommit=True) 
+SEARCH_PICS = {}
 
 # блокировка чата что бы юзер не мог больше 1 запроса делать за раз,
 # только для запросов к гпт*. {chat_id_full(str):threading.Lock()}

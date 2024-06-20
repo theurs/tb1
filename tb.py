@@ -947,10 +947,10 @@ def authorized_log(message: telebot.types.Message) -> bool:
 
     log_message(message)
 
-    # banned users do nothing
-    chat_id_full = get_topic_id(message)
-    if my_db.get_user_property(chat_id_full, 'blocked'):
-        return False
+    # # banned users do nothing
+    # chat_id_full = get_topic_id(message)
+    # if my_db.get_user_property(chat_id_full, 'blocked'):
+    #     return False
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
     # I don't know how to do that, so I have to leave only when receiving any event

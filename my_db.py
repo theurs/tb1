@@ -532,25 +532,6 @@ def get_user_all_bad_bing_ids():
         return []
 
 
-def check_user_property(user_id: str, property: str) -> bool:
-    '''Return True if user have this property not None'''
-    cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
-    if cache_key in USERS_CACHE.cache:
-        return bool(USERS_CACHE.get(cache_key))
-    else:
-        with LOCK:
-            try:
-                CUR.execute(f'''
-                    SELECT 1 FROM users
-                    WHERE id = ? AND {property} IS NOT NULL
-                ''', (user_id,))
-                result = CUR.fetchone()
-                return bool(result)
-            except Exception as error:
-                my_log.log2(f'my_db:check_user_property {error}')
-                return False
-
-
 def delete_user_property(user_id: str, property: str):
     '''Delete user`s property value'''
     global COM_COUNTER

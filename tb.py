@@ -350,7 +350,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         chat_id_full: The full chat ID.
     """
     # Checks if there is a chat mode for the given chat, if not, sets the default value.
-    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     # Updates the memory of the selected bot based on the chat mode.
@@ -387,7 +387,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     if not query:
         query = tr('Что изображено на картинке? Напиши подробное описание, и объясни подробно что это может означать. Затем напиши длинный подробный промпт одним предложением для рисования этой картинки с помощью нейросетей, начни промпт со слов /image Create image of...', lang)
 
-    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     text = ''
@@ -481,11 +481,11 @@ def check_blocked_user(id_: str, from_user_id: int, check_trottle = True):
             raise Exception(f'user {user_id} in ddos stop list, ignoring')
 
     from_user_id = f'[{from_user_id}] [0]'
-    if my_db.check_user_property(from_user_id, 'blocked'):
+    if my_db.get_user_property(from_user_id, 'blocked'):
         my_log.log2(f'tb:check_blocked_user: User {from_user_id} is blocked')
         raise Exception(f'user {from_user_id} in stop list, ignoring')
 
-    if my_db.check_user_property(id_, 'blocked'):
+    if my_db.get_user_property(id_, 'blocked'):
         my_log.log2(f'tb:check_blocked_user: User {id_} is blocked')
         raise Exception(f'user {user_id} in stop list, ignoring')
 
@@ -743,7 +743,7 @@ def authorized_owner(message: telebot.types.Message) -> bool:
 
     # banned users do nothing
     chat_id_full = get_topic_id(message)
-    if my_db.check_user_property(chat_id_full, 'blocked'):
+    if my_db.get_user_property(chat_id_full, 'blocked'):
         return False
 
     if not (is_private or is_admin_member(message)):
@@ -767,7 +767,7 @@ def authorized_callback(call: telebot.types.CallbackQuery) -> bool:
 
     chat_id_full = f'[{call.from_user.id}] [0]'
     # banned users do nothing
-    if my_db.check_user_property(chat_id_full, 'blocked'):
+    if my_db.get_user_property(chat_id_full, 'blocked'):
         return False
 
     # check for blocking and throttling
@@ -850,7 +850,7 @@ def authorized(message: telebot.types.Message) -> bool:
 
     # banned users do nothing
     chat_id_full = get_topic_id(message)
-    if my_db.check_user_property(chat_id_full, 'blocked'):
+    if my_db.get_user_property(chat_id_full, 'blocked'):
         return False
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
@@ -923,7 +923,7 @@ def authorized(message: telebot.types.Message) -> bool:
         return False
 
     # этого тут быть не должно но яхз что пошло не так, дополнительная проверка
-    if my_db.check_user_property(chat_id_full, 'blocked'):
+    if my_db.get_user_property(chat_id_full, 'blocked'):
         my_log.log2(f'tb:authorized: User {chat_id_full} is blocked')
         return False
 
@@ -952,7 +952,7 @@ def authorized_log(message: telebot.types.Message) -> bool:
 
     # banned users do nothing
     chat_id_full = get_topic_id(message)
-    if my_db.check_user_property(chat_id_full, 'blocked'):
+    if my_db.get_user_property(chat_id_full, 'blocked'):
         return False
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
@@ -970,7 +970,7 @@ def authorized_log(message: telebot.types.Message) -> bool:
 
 def check_blocks(chat_id_full: str) -> bool:
     """в каких чатах выключены автопереводы"""
-    if not my_db.check_user_property(chat_id_full, 'auto_translations'):
+    if not my_db.get_user_property(chat_id_full, 'auto_translations'):
         my_db.set_user_property(chat_id_full, 'auto_translations', 0)
     return False if my_db.get_user_property(chat_id_full, 'auto_translations') == 1 else True
 
@@ -1186,7 +1186,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2)
         return markup
     elif kbd == 'config':
-        if my_db.check_user_property(chat_id_full, 'tts_gender'):
+        if my_db.get_user_property(chat_id_full, 'tts_gender'):
             voice = f'tts_{my_db.get_user_property(chat_id_full, "tts_gender")}'
         else:
             voice = 'tts_female'
@@ -1198,7 +1198,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         voice_title = voices[voice]
 
         # кто по умолчанию
-        if not my_db.check_user_property(chat_id_full, 'chat_mode'):
+        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
@@ -1224,7 +1224,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton(tr('☑️Только голос', lang), callback_data='voice_only_mode_enable')
         markup.row(button1, button2)
 
-        if not my_db.check_user_property(chat_id_full, 'auto_translations'):
+        if not my_db.get_user_property(chat_id_full, 'auto_translations'):
             my_db.set_user_property(chat_id_full, 'auto_translations', 0)
 
         if my_db.get_user_property(chat_id_full, 'auto_translations') == 1:
@@ -1385,7 +1385,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data == 'download_saved_text':
             # отдать юзеру его текст
-            if my_db.check_user_property(chat_id_full, 'saved_file_name'):
+            if my_db.get_user_property(chat_id_full, 'saved_file_name'):
                 with ShowAction(message, 'typing'):
                     buf = io.BytesIO()
                     buf.write(my_db.get_user_property(chat_id_full, 'saved_file').encode())
@@ -1405,7 +1405,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data == 'delete_saved_text':
             # удалить сохраненный текст
-            if my_db.check_user_property(chat_id_full, 'saved_file_name'):
+            if my_db.get_user_property(chat_id_full, 'saved_file_name'):
                 my_db.delete_user_property(chat_id_full, 'saved_file_name')
                 my_db.delete_user_property(chat_id_full, 'saved_file')
                 bot_reply_tr(message, 'Saved text deleted.')
@@ -2532,7 +2532,7 @@ def reset_(message: telebot.types.Message):
     else:
         chat_id_full = get_topic_id(message)
 
-    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -2936,7 +2936,7 @@ def tts(message: telebot.types.Message, caption = None):
     with semaphore_talks:
         with ShowAction(message, 'record_audio'):
             COMMAND_MODE[chat_id_full] = ''
-            if my_db.check_user_property(chat_id_full, 'tts_gender'):
+            if my_db.get_user_property(chat_id_full, 'tts_gender'):
                 gender = my_db.get_user_property(chat_id_full, 'tts_gender')
             else:
                 gender = 'female'
@@ -3015,12 +3015,12 @@ def google(message: telebot.types.Message):
 
 
 def update_user_image_counter(chat_id_full: str, n: int):
-    if not my_db.check_user_property(chat_id_full, 'image_generated_counter'):
+    if not my_db.get_user_property(chat_id_full, 'image_generated_counter'):
         my_db.set_user_property(chat_id_full, 'image_generated_counter', 0)
     my_db.set_user_property(chat_id_full, 'image_generated_counter', my_db.get_user_property(chat_id_full, 'image_generated_counter') + n)
 
 def get_user_image_counter(chat_id_full: str) -> int:
-    if not my_db.check_user_property(chat_id_full, 'image_generated_counter'):
+    if not my_db.get_user_property(chat_id_full, 'image_generated_counter'):
         my_db.set_user_property(chat_id_full, 'image_generated_counter', 0)
     return my_db.get_user_property(chat_id_full, 'image_generated_counter')
 
@@ -3043,7 +3043,7 @@ def image10_bing_gen(message: telebot.types.Message):
 @async_run
 def image_bing_gen(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
-    if my_db.check_user_property(chat_id_full, 'blocked_bing'):
+    if my_db.get_user_property(chat_id_full, 'blocked_bing'):
         bot_reply_tr(message, 'Bing вас забанил.')
         time.sleep(2)
         return
@@ -3098,7 +3098,7 @@ def image_gen(message: telebot.types.Message):
             message.text = message.text[:-4]
 
         # забаненный в бинге юзер
-        if my_db.check_user_property(chat_id_full, 'blocked_bing'):
+        if my_db.get_user_property(chat_id_full, 'blocked_bing'):
             NSFW_FLAG = True
 
         # рисовать только бингом, команда /bing
@@ -3435,7 +3435,7 @@ def block_user_del2(message: telebot.types.Message):
 
     user_id = message.text[10:].strip()
     if user_id:
-        if my_db.check_user_property(user_id, 'blocked_bing'):
+        if my_db.get_user_property(user_id, 'blocked_bing'):
             my_db.delete_user_property(user_id, 'blocked_bing')
             bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
         else:
@@ -3478,7 +3478,7 @@ def block_user_del(message: telebot.types.Message):
 
     user_id = message.text[10:].strip()
     if user_id:
-        if my_db.check_user_property(user_id, 'blocked'):
+        if my_db.get_user_property(user_id, 'blocked'):
             my_db.delete_user_property(user_id, 'blocked')
             bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
         else:
@@ -3543,7 +3543,7 @@ def alert(message: telebot.types.Message):
                 # заблокированым не посылать
                 if chat_id in DDOS_BLOCKED_USERS:
                     continue
-                if my_db.check_user_property(chat_id, 'blocked'):
+                if my_db.get_user_property(chat_id, 'blocked'):
                     continue
                 # только тех кто был активен в течение 7 дней
                 if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*7*24) < time.time():
@@ -3582,12 +3582,12 @@ def ask_file(message: telebot.types.Message):
         query = message.text.split(maxsplit=1)[1]
     except IndexError:
         bot_reply_tr(message, 'Usage: /ask <query saved text>\n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.')
-        if my_db.check_user_property(chat_id_full, 'saved_file_name'):
+        if my_db.get_user_property(chat_id_full, 'saved_file_name'):
             msg = f'{tr("Загружен файл/ссылка:", lang)} {my_db.get_user_property(chat_id_full, "saved_file_name")}\n\n{tr("Размер текста:", lang)} {len(my_db.get_user_property(chat_id_full, "saved_file"))}'
             bot_reply(message, msg, disable_web_page_preview = True, reply_markup=get_keyboard('download_saved_text', message))
             return
 
-    if my_db.check_user_property(chat_id_full, 'saved_file_name'):
+    if my_db.get_user_property(chat_id_full, 'saved_file_name'):
         with ShowAction(message, 'typing'):
             if message.text.endswith('[123CLEAR321]'):
                 message.text = message.text[:-13]
@@ -3877,7 +3877,7 @@ def send_welcome_start(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     COMMAND_MODE[chat_id_full] = ''
-    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     args = message.text.split(maxsplit = 1)
@@ -3991,7 +3991,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_db.delete_user_property(chat_id_full, 'persistant_memory')
 
             my_db.set_user_property(chat_id_full, 'bot_name', BOT_NAME_DEFAULT)
-            if my_db.check_user_property(chat_id_full, 'saved_file_name'):
+            if my_db.get_user_property(chat_id_full, 'saved_file_name'):
                 my_db.delete_user_property(chat_id_full, 'saved_file_name')
                 my_db.delete_user_property(chat_id_full, 'saved_file')
 
@@ -4033,7 +4033,7 @@ def id_cmd_handler(message: telebot.types.Message):
 
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
 
-{tr("Выбранная чат модель:", lang)} {my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.check_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default}'''
+{tr("Выбранная чат модель:", lang)} {my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.get_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default}'''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         msg += ' ' + open_router_model
 
@@ -4067,13 +4067,13 @@ def id_cmd_handler(message: telebot.types.Message):
     else:
         msg += '🔒 Huggingface\n'
 
-    if my_db.check_user_property(chat_id_full, 'blocked'):
+    if my_db.get_user_property(chat_id_full, 'blocked'):
         msg += f'\n{tr("User was banned.", lang)}\n'
 
-    if my_db.check_user_property(chat_id_full, 'blocked_bing'):
+    if my_db.get_user_property(chat_id_full, 'blocked_bing'):
         msg += f'\n{tr("User was banned in bing.com.", lang)}\n'
 
-    if str(message.chat.id) in DDOS_BLOCKED_USERS and not my_db.check_user_property(chat_id_full, 'blocked'):
+    if str(message.chat.id) in DDOS_BLOCKED_USERS and not my_db.get_user_property(chat_id_full, 'blocked'):
         msg += f'\n{tr("User was temporarily banned.", lang)}\n'
 
     if my_db.get_user_property(chat_id_full, 'persistant_memory'):
@@ -4339,7 +4339,7 @@ def do_task(message, custom_prompt: str = ''):
     """default handler"""
 
     from_user_id = f'[{message.from_user.id}] [0]'
-    if my_db.check_user_property(from_user_id, 'blocked'):
+    if my_db.get_user_property(from_user_id, 'blocked'):
         return
 
     chat_id_full = get_topic_id(message)
@@ -4372,7 +4372,7 @@ def do_task(message, custom_prompt: str = ''):
         message.text = custom_prompt
 
     # кто по умолчанию отвечает
-    if not my_db.check_user_property(chat_id_full, 'chat_mode'):
+    if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     # определяем откуда пришло сообщение  
@@ -4613,7 +4613,7 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            if not my_db.check_user_property(chat_id_full, 'temperature'):
+                            if not my_db.get_user_property(chat_id_full, 'temperature'):
                                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
                             # answer = my_gemini.chat(helped_query,
@@ -4692,7 +4692,7 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            if not my_db.check_user_property(chat_id_full, 'temperature'):
+                            if not my_db.get_user_property(chat_id_full, 'temperature'):
                                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
                             # answer = my_gemini.chat(helped_query,
@@ -4770,7 +4770,7 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            if not my_db.check_user_property(chat_id_full, 'temperature'):
+                            if not my_db.get_user_property(chat_id_full, 'temperature'):
                                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
                             style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370

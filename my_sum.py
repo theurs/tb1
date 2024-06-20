@@ -47,11 +47,15 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
 
     for _ in range(4):
         try:
-            if hasattr(cfg, 'YT_SUBS_PROXY'):
-                proxy = random.choice(cfg.YT_SUBS_PROXY)
-                t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = {'https': proxy})
-            else:
-                t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+            try:
+                proxy = ''
+                if hasattr(cfg, 'YT_SUBS_PROXY'):
+                    proxy = random.choice(cfg.YT_SUBS_PROXY)
+                    t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = {'https': proxy})
+                else:
+                    t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+            except Exception as download_error:
+                my_log.log2(f'get_text_from_youtube: {download_error}\n\nProxy: {proxy}')
             if t:
                 break
         except Exception as error:

@@ -75,9 +75,6 @@ semaphore_talks = threading.Semaphore(500)
 if not os.path.exists('db'):
     os.mkdir('db')
 
-# запоминаем время последнего обращения к боту
-LAST_TIME_ACCESS = SqliteDict('db/last_time_access.db', autocommit=True)
-
 # {user_id:True} была ли команда на остановку генерации image10
 IMAGE10_STOP = {}
 
@@ -863,7 +860,7 @@ def authorized(message: telebot.types.Message) -> bool:
             my_log.log2(f'tb:auth:live_chat_error: {leave_chat_error}')
         return False
 
-    LAST_TIME_ACCESS[chat_id_full] = time.time()
+    my_db.set_user_property(chat_id_full, 'last_time_access', time.time())
 
     # trottle only messages addressed to me
     is_private = message.chat.type == 'private'
@@ -3517,8 +3514,8 @@ def message_to_user(message: telebot.types.Message):
 @async_run
 def alert(message: telebot.types.Message):
     """Сообщение всем кого бот знает."""
-    chat_full_id = get_topic_id(message)
-    lang = get_lang(chat_full_id, message)
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
 
     if message.chat.id in cfg.admins:
         text = message.text[7:]
@@ -3546,7 +3543,7 @@ def alert(message: telebot.types.Message):
                 if my_db.get_user_property(chat_id, 'blocked'):
                     continue
                 # только тех кто был активен в течение 7 дней
-                if chat_id in LAST_TIME_ACCESS and LAST_TIME_ACCESS[chat_id] + (3600*7*24) < time.time():
+                if my_db.get_user_property(chat_id_full, 'last_time_access') and my_db.get_user_property(chat_id_full, 'last_time_access') + (3600*7*24) < time.time():
                     continue
 
                 ids.append(chat_id)
@@ -5036,27 +5033,27 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # queries = ['''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
-            #            '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
-            #            '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
-            #            '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
-            #            '''ALTER TABLE users ADD COLUMN api_key_huggingface TEXT;''',
-            #            ]
-            # for q in queries:
-            #     try:
-            #         my_db.CUR.execute(q)
-            #         my_db.CON.commit()
-            #     except Exception as error:
-            #         my_log.log2(f'tb:one_time_shot: {error}')
+            queries = [
+                # '''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
+                # '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
+                # '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
+                # '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
+                '''ALTER TABLE users ADD COLUMN last_time_access REAL;''',
+                       ]
+            for q in queries:
+                try:
+                    my_db.CUR.execute(q)
+                    my_db.CON.commit()
+                except Exception as error:
+                    my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # что бы бот работал в публичном чате администратор должен его активировать {id:True/False}
-            CHAT_ENABLED = SqliteDict('db/chat_enabled.db', autocommit=True)
-            for key in CHAT_ENABLED:
-                value = CHAT_ENABLED[key]
-                my_db.set_user_property(key, 'chat_enabled', value)
-            del CHAT_ENABLED
-
+            # запоминаем время последнего обращения к боту
+            LAST_TIME_ACCESS = SqliteDict('db/last_time_access.db', autocommit=True)
+            for key in LAST_TIME_ACCESS:
+                value = LAST_TIME_ACCESS[key]
+                my_db.set_user_property(key, 'last_time_access', value)
+            del LAST_TIME_ACCESS
 
 
 

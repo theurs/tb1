@@ -130,6 +130,7 @@ def init():
                 id TEXT,
                 lang TEXT,
                 first_meet REAL,
+                last_time_access REAL,
 
                 image_generated_counter INTEGER,
 

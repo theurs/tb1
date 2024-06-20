@@ -28,7 +28,6 @@ import bing_img
 import my_init
 import my_genimg
 import my_db
-import my_dic
 import my_ddg
 import my_google
 import my_gemini

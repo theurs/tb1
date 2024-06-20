@@ -5085,8 +5085,6 @@ def main():
     bot.polling(timeout=90, long_polling_timeout=90)
 
 
-
-
 if __name__ == '__main__':
     main()
     my_db.CON.commit()

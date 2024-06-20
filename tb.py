@@ -104,9 +104,6 @@ IMG_GEN_LOCKS = {}
 # theme_id - номер темы в группе для логов
 LOGS_GROUPS_DB = SqliteDict('db/logs_groups.db', autocommit=True)
 
-# что бы бот работал в публичном чате администратор должен его активировать {id:True/False}
-CHAT_ENABLED = SqliteDict('db/chat_enabled.db', autocommit=True)
-
 # в каких чатах какая команда дана, как обрабатывать последующий текст
 # например после команды /image ожидаем описание картинки
 # COMMAND_MODE[chat_id] = 'google'|'image'|...
@@ -819,9 +816,7 @@ def chat_enabled(message: telebot.types.Message) -> bool:
     chat_id_full = get_topic_id(message)
     if message.chat.type == 'private':
         return True
-    if chat_id_full in CHAT_ENABLED and CHAT_ENABLED[chat_id_full]:
-        return True
-    return False
+    return bool(my_db.get_user_property(chat_id_full, 'chat_enabled'))
 
 
 def authorized(message: telebot.types.Message) -> bool:
@@ -4094,7 +4089,7 @@ def enable_chat(message: telebot.types.Message):
                       and chat_id_full in my_genimg.USER_KEYS
     if admin_have_keys:
         chat_full_id = get_topic_id(message)
-        CHAT_ENABLED[chat_full_id] = True
+        my_db.set_user_property(chat_full_id, 'chat_enabled', True)
         bot_reply_tr(message, 'Chat enabled.')
     else:
         bot_reply_tr(message, 'Что бы включить бота в публичном чате надо сначала вставить свои ключи. В приватном чате команды /id /keys /openrouter')
@@ -4104,8 +4099,8 @@ def enable_chat(message: telebot.types.Message):
 @async_run
 def disable_chat(message: telebot.types.Message):
     """что бы бот не работал в чате надо его деактивировать там"""
-    chat_full_id = get_topic_id(message)
-    del CHAT_ENABLED[chat_full_id]
+    chat_id_full = get_topic_id(message)
+    my_db.delete_user_property(chat_id_full, 'chat_enabled')
     bot_reply_tr(message, 'Chat disabled.')
 
 
@@ -5039,26 +5034,26 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            queries = ['''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
-                       '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
-                       '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
-                       '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
-                       '''ALTER TABLE users ADD COLUMN api_key_huggingface TEXT;''',
-                       ]
-            for q in queries:
-                try:
-                    my_db.CUR.execute(q)
-                    my_db.CON.commit()
-                except Exception as error:
-                    my_log.log2(f'tb:one_time_shot: {error}')
+            # queries = ['''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
+            #            '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
+            #            '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
+            #            '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
+            #            '''ALTER TABLE users ADD COLUMN api_key_huggingface TEXT;''',
+            #            ]
+            # for q in queries:
+            #     try:
+            #         my_db.CUR.execute(q)
+            #         my_db.CON.commit()
+            #     except Exception as error:
+            #         my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # {user_id:str with user profile}
-            BIO = SqliteDict('db/user_bio.db', autocommit=True)
-            for key in BIO:
-                value = BIO[key]
-                my_db.set_user_property(key, 'persistant_memory', value)
-            del BIO
+            # что бы бот работал в публичном чате администратор должен его активировать {id:True/False}
+            CHAT_ENABLED = SqliteDict('db/chat_enabled.db', autocommit=True)
+            for key in CHAT_ENABLED:
+                value = CHAT_ENABLED[key]
+                my_db.set_user_property(key, 'chat_enabled', value)
+            del CHAT_ENABLED
 
 
 

@@ -7,6 +7,7 @@ import subprocess
 
 import PyPDF2
 import pandas as pd
+from pptx import Presentation
 
 import my_log
 import utils
@@ -31,6 +32,10 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
 
     if 'epub' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+    elif 'pptx' in book_type:
+        text = read_pptx(input_file)
+        utils.remove_file(input_file)
+        return text
     elif 'docx' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'docx', '-t', 'plain', input_file], stdout=subprocess.PIPE)
     elif 'html' in book_type:
@@ -72,7 +77,18 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
     return output
 
 
-if __name__ == '__main__':
-    result = fb2_to_text(open('1.pdf', 'rb').read(), '.pdf')
+def read_pptx(input_file: str) -> str:
+    """read pptx file"""
+    prs = Presentation(input_file)
+    text = ''
+    for _, slide in enumerate(prs.slides):
+        for shape in slide.shapes: 
+            if hasattr(shape, "text"): 
+                text += shape.text + '\n'
+    return text
 
-    print(result)
+
+if __name__ == '__main__':
+    # result = fb2_to_text(open('1.pdf', 'rb').read(), '.pdf')
+    # print(result)
+    print(read_pptx('D:/Downloads/1.pptx'))

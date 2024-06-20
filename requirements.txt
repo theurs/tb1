@@ -43,6 +43,7 @@ pytelegrambotapi==4.16.1
 
 pytesseract
 python-Levenshtein
+python-pptx
 SpeechRecognition
 sqlitedict
 #trafilatura==1.6.1

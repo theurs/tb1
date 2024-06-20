@@ -1623,6 +1623,7 @@ def handle_document(message: telebot.types.Message):
                                             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                             'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
                                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                                             'application/rtf',
                                             'application/msword',
                                             'image/svg+xml',
@@ -1659,6 +1660,7 @@ def handle_document(message: telebot.types.Message):
                                                     'application/octet-stream',
                                                     'application/epub+zip',
                                                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                                                     'application/rtf',
                                                     'application/msword',
                                                     ):

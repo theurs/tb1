@@ -149,7 +149,7 @@ DEBUG_MD_TO_HTML = {}
 WHO_ANSWERED = {}
 
 # кеш для переводов в оперативной памяти
-TRANS_CACHE = my_db.SmartCache(5000)
+TRANS_CACHE = my_db.SmartCache()
 
 
 # key - time.time() float

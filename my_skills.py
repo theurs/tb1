@@ -100,7 +100,8 @@ def download_text_from_url(url: str, language: str = 'ru') -> str:
         result = my_sum.summ_url(url, download_only = True, lang = language)
         return result[:MAX_REQUEST]
     except Exception as error:
-        my_log.log_gemini_skills(f'download_text_from_url:Error: {error}')
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'download_text_from_url:Error: {error}\n\n{traceback_error}')
         return f'ERROR {error}'
 
 

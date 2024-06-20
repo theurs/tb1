@@ -1595,7 +1595,7 @@ def handle_voice(message: telebot.types.Message):
             # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
             if text:
                 if not my_db.get_user_property(chat_id_full, 'transcribe_only'):
-                    message.text = text
+                    message.text = f'voice message: {text}'
                     echo_all(message)
 
 

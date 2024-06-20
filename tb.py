@@ -2722,7 +2722,7 @@ def restart(message):
     bot.stop_polling()
     LOG_GROUP_DAEMON_ENABLED = False
     ACTIVITY_DAEMON_RUN = False
-    time.sleep(5)
+    time.sleep(10)
     my_db.close()
 
 

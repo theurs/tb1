@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pip install cryptocompare
 
 import cachetools.func
 import math
@@ -7,6 +8,7 @@ import re
 import requests
 import traceback
 
+import cryptocompare
 from geopy.geocoders import Nominatim
 
 import cfg
@@ -19,7 +21,7 @@ import my_sum
 MAX_REQUEST = 25000
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_coords(loc: str):
     '''Get coordinates from Nominatim API
     Example: get_coords("Vladivostok")
@@ -30,7 +32,7 @@ def get_coords(loc: str):
     return location.latitude, location.longitude
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_weather(location: str) -> str:
     '''Get weather data from OpenMeteo API
     Example: get_weather("Vladivostok")
@@ -52,7 +54,7 @@ def get_weather(location: str) -> str:
         return f'ERROR {error}'
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_currency_rates(date: str = '') -> str:
     '''Return json all currencies rates from https://openexchangerates.org
     date in YYYY-MM-DD format, if absent than latest'''
@@ -182,11 +184,36 @@ def calc(expression: str) -> str:
         return f'Error: {error}'
 
 
+@cachetools.func.ttl_cache(maxsize=1, ttl = 60*60)
+def get_cryptocurrency_rates():
+    '''Get cryptocurrency rates.
+    Return json top 20 coins rates from https://www.cryptocompare.com/
+    '''
+    try:
+        my_log.log_gemini_skills('Cryptocurrency: get')
+        if hasattr(cfg, 'CRYPTOCOMPARE_KEY') and cfg.CRYPTOCOMPARE_KEY:
+            cryptocompare.cryptocompare._set_api_key_parameter(cfg.CRYPTOCOMPARE_KEY)
+            r = cryptocompare.get_coin_list()
+            coins = []
+            for key in r.keys():
+                if int(r[key]['SortOrder']) <= 20:
+                    coins.append(r[key]['Name'])
+
+            r = cryptocompare.get_price(coins, 'USD')
+            my_log.log_gemini_skills(f'Cryptocurrency: {r}')
+            return str(r)
+        else:
+            return ''
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'get_cryptocurrency_rates:Error: {error}\n\n{traceback_error}')
+        return f'Error: {error}'
+
+
 if __name__ == '__main__':
     pass
     my_db.init()
 
-    print(calc('__built_in__.init() sqrt(2)+15'))
-
+    print(get_cryptocurrency_rates())    
 
     my_db.close()

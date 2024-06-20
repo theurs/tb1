@@ -19,7 +19,7 @@ import cfg
 import my_db
 import my_log
 import my_sum
-from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc
+from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, get_cryptocurrency_rates
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -145,7 +145,7 @@ def chat(query: str,
             # response_mime_type: typing.Optional[str] = None
         )
 
-        SKILLS = [search_google, download_text_from_url, update_user_profile, calc, get_weather, get_currency_rates]
+        SKILLS = [search_google, download_text_from_url, update_user_profile, calc, get_weather, get_currency_rates, get_cryptocurrency_rates]
 
         model_ = genai.GenerativeModel(model,
                                     tools=SKILLS,

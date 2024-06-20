@@ -2921,6 +2921,9 @@ def tts(message: telebot.types.Message, caption = None):
 /tts en hello, let me speak - force english
 /tts en +50% Hello at a speed of 1.5x - force english and speed
 
+en, de and fr voices are multilingual, you can use them to change voice for any language
+(/tts ru привет) and (/tts fr привет) wil say hello in russian with 2 different voices
+
 {tr('Supported languages:', lang)} {', '.join(supported_langs_tts)}
 
 {tr('Write what to say to get a voice message.', lang)}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # pip install -U deepl
 
+import cachetools.func
 import random
 import re
 import subprocess
@@ -21,8 +22,6 @@ import my_log
 import utils
 
 
-# {key '(text, from, to)' :value 'translated'}
-deepl_cache = SqliteDict('db/deepl_cache.db', autocommit=True)
 # {unique_id: (current_date, len(text), auth_key)}
 deepl_api_counter = SqliteDict('db/deepl_api_counter.db', autocommit=True)
 per_month_tokens_limit = 400000 # с большим запасом
@@ -227,6 +226,7 @@ def get_deepl_stats() -> str:
     return result
 
 
+@cachetools.func.ttl_cache(maxsize=1000, ttl=1000 * 60)
 def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
     auth_key = random.choice(cfg.DEEPL_KEYS) if hasattr(cfg, 'DEEPL_KEYS') and cfg.DEEPL_KEYS else None
     if not auth_key:
@@ -234,10 +234,6 @@ def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
 
     if to_lang == 'en':
         to_lang = 'EN-US'
-
-    cache_key = str((text, from_lang, to_lang))
-    if cache_key in deepl_cache:
-        return deepl_cache[cache_key]
 
     with deepl_lock:
          # Проверка лимита токенов
@@ -276,8 +272,6 @@ def translate_deepl(text: str, from_lang: str = None, to_lang: str = '') -> str:
         ratio = fuzz.ratio(text, result.text)
         if ratio > 90:
             return ''
-        with deepl_lock:
-            deepl_cache[cache_key] = result.text
         # Запись события перевода
         # my_log.log_translate(f'{unique_id}: {text} -> {result.text}\n\ntokens_used_last_30_days: {tokens_used_last_30_days}\nper_month_tokens_limit: {per_month_tokens_limit}\n\n{from_lang}\n\n{to_lang}')
         return result.text

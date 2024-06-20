@@ -204,7 +204,7 @@ def close():
     with LOCK:
         try:
             CON.commit()
-            CON.close()
+            # CON.close()
         except Exception as error:
             my_log.log2(f'my_db:close {error}')
 

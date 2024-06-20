@@ -2726,7 +2726,7 @@ def restart(message):
     bot.stop_polling()
     LOG_GROUP_DAEMON_ENABLED = False
     ACTIVITY_DAEMON_RUN = False
-    time.sleep(2)
+    time.sleep(5)
     my_db.close()
 
 
@@ -4403,7 +4403,7 @@ def do_task(message, custom_prompt: str = ''):
     have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS
 
     # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15' and not have_keys:
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15' and not have_keys and is_private:
         chat_mode_ = 'gemini'
 
     if is_private:

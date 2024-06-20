@@ -45,12 +45,6 @@ USER_KEYS_LOCK = threading.Lock()
 # {hash of image:model name, ...}
 WHO_AUTOR = {}
 
-
-# запоминаем промпты для хаггинг фейса, они не должны повторятся
-# {prompt:True/False, ...}
-huggingface_prompts = SqliteDict('db/kandinski_prompts.db', autocommit=True)
-
-
 # не давать генерировать картинки больше чем 1 за раз для 1 юзера
 # {userid:lock}
 LOCKS = {}

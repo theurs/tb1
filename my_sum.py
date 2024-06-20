@@ -45,18 +45,21 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
     except:
         return ''
 
-    try:
-        if hasattr(cfg, 'YT_SUBS_PROXY'):
-            proxy = random.choice(cfg.YT_SUBS_PROXY)
-            t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = {'https': proxy})
-        else:
-            t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
-    except Exception as error:
-        if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
-            my_log.log2(f'get_text_from_youtube: {error}')
-        # my_log.log2(f'get_text_from_youtube: {error}')
-        # print(error)
-        t = ''
+    for _ in range(4):
+        try:
+            if hasattr(cfg, 'YT_SUBS_PROXY'):
+                proxy = random.choice(cfg.YT_SUBS_PROXY)
+                t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = {'https': proxy})
+            else:
+                t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+            if t:
+                break
+        except Exception as error:
+            if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
+                my_log.log2(f'get_text_from_youtube: {error}')
+            # my_log.log2(f'get_text_from_youtube: {error}')
+            # print(error)
+            t = ''
 
     text = '\n'.join([x['text'] for x in t])
 

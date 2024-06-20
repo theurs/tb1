@@ -2917,12 +2917,12 @@ def tts(message: telebot.types.Message, caption = None):
 
 +-XX% - {tr('acceleration with mandatory indication of direction + or -', lang)}
 
-/tts hello all - all languages autodetect
-/tts en hello, let me speak - force english
-/tts en +50% Hello at a speed of 1.5x - force english and speed
+/tts hello all - {tr('all languages autodetect', lang)}
+/tts en hello, let me speak -  {tr('force english', lang)}
+/tts en +50% Hello at a speed of 1.5x - {tr('force english and speed', lang)}
 
-en, de and fr voices are multilingual, you can use them to change voice for any language
-(/tts ru привет) and (/tts fr привет) wil say hello in russian with 2 different voices
+{tr('''en, en2, de and fr voices are multilingual, you can use them to change voice for any language
+(/tts ru привет) and (/tts fr привет) will say hello in russian with 2 different voices''', lang)}
 
 {tr('Supported languages:', lang)} {', '.join(supported_langs_tts)}
 

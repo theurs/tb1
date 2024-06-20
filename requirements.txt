@@ -4,6 +4,7 @@ bingart
 cairosvg
 chardet
 cachetools
+cryptocompare
 deepl
 duckduckgo_search[lxml]
 edge_tts

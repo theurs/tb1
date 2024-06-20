@@ -177,18 +177,13 @@ def init():
         month_seconds = 60 * 60 * 24 * 30
         CUR.execute("""UPDATE users SET saved_file = NULL,
                     saved_file_name = NULL WHERE last_time_access < ?
-                    AND (saved_file IS NOT NULL
-                    OR saved_file_name IS NOT NULL)""", (time.time() - week_seconds,))
+                    """, (time.time() - week_seconds,))
         CUR.execute("""UPDATE users SET dialog_gemini = NULL,
                     dialog_groq = NULL,
                     dialog_openrouter = NULL,
                     dialog_shadow = NULL,
                     persistant_memory = NULL
                     WHERE last_time_access < ?
-                    AND dialog_gemini IS NOT NULL
-                    OR dialog_groq IS NOT NULL
-                    OR dialog_openrouter IS NOT NULL
-                    OR dialog_shadow IS NOT NULL
                     """, (time.time() - month_seconds,))
 
         CUR.execute('''

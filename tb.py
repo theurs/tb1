@@ -318,18 +318,17 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
             if not translated:
                 my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
 
-    # if not translated and lang == 'fa':
-    #     translated = my_groq.translate(text, to_lang = lang)
-    # if not translated and lang == 'fa':
-    #     translated = my_shadowjourney.translate(text, to_lang = lang)
-    # if not translated and lang == 'fa':
-    #     translated = my_gemini.translate(text, to_lang = lang)
+    if not translated:
+        translated = my_trans.translate_text2(text, lang)
 
     if not translated:
         translated = my_trans.translate_deepl(text, to_lang = lang)
 
-    if not translated:
-        translated = my_trans.translate_text2(text, lang)
+    if not translated and not help:
+        translated = my_groq.translate(text, to_lang=lang, help=help)
+
+    if not translated and not help:
+        translated = my_gemini.translate(text, to_lang=lang, help=help)
 
     if not translated:
         translated = text

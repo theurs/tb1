@@ -326,8 +326,11 @@ ASSEMBLYAI_KEYS = [
 
 # курсы валют
 # https://openexchangerates.org/api
-OPENEXCHANGER_KEY = 'xxx'
+# OPENEXCHANGER_KEY = 'xxx'
 
+
+# https://www.cryptocompare.com/
+# CRYPTOCOMPARE_KEY = 'xxx'
 
 # DEBUG = False
 ```

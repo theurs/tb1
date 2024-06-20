@@ -33,9 +33,8 @@ import my_sum
 # {full_chat_id as str: list of keys as list of str}
 # {'[9123456789] [0]': ['key1','key2','key3'], ...}
 USER_KEYS = SqliteDict('db/gemini_user_keys.db', autocommit=True)
-# {user_id:str with user profile}
-BIO = SqliteDict('db/user_bio.db', autocommit=True)
 # list of all users keys
+
 ALL_KEYS = []
 USER_KEYS_LOCK = threading.Lock()
 
@@ -205,7 +204,7 @@ def update_user_profile(name: str,
     remember = decode_string(remember)
     bio = f'name: {name}, location: {location}, gender: {gender}, age: {age}, language: {language}, interests: {interests}, remember: {remember}'
     my_log.log_gemini_skills(bio)
-    BIO[user_id] = bio
+    my_db.set_user_property(user_id, 'persistant_memory', bio)
 
 
 def calc(expression: str) -> str:
@@ -295,10 +294,7 @@ def chat(query: str,
         #     system = None
 
         if chat_id:
-            if chat_id in BIO and BIO[chat_id]:
-                bio = BIO[chat_id]
-            else:
-                bio = 'Empty'
+            bio = my_db.get_user_property(chat_id, 'persistant_memory') or 'Empty'
             system = f'user_id: {chat_id}\n\nUser profile: {bio}\n\n{str(system)}'
         else:
             system = f'user_id: None User profile: none, do not try to update it'

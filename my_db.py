@@ -156,6 +156,12 @@ def init():
                 role TEXT,
                 temperature REAL,
                 bot_name TEXT,
+                persistant_memory TEXT,
+
+                api_key_gemini TEXT,
+                api_key_groq TEXT,
+                api_key_deepl TEXT,
+                api_key_huggingface TEXT,
 
                 dialog_gemini BLOB,
                 dialog_groq BLOB,

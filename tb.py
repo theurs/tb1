@@ -3992,8 +3992,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_ddg.reset(chat_id_full)
 
             my_db.delete_user_property(chat_id_full, 'role')
-            if chat_id_full in my_gemini.BIO:
-                del my_gemini.BIO[chat_id_full]
+            my_db.delete_user_property(chat_id_full, 'persistant_memory')
 
             my_db.set_user_property(chat_id_full, 'bot_name', BOT_NAME_DEFAULT)
             if my_db.check_user_property(chat_id_full, 'saved_file_name'):
@@ -4081,8 +4080,8 @@ def id_cmd_handler(message: telebot.types.Message):
     if str(message.chat.id) in DDOS_BLOCKED_USERS and not my_db.check_user_property(chat_id_full, 'blocked'):
         msg += f'\n{tr("User was temporarily banned.", lang)}\n'
 
-    if chat_id_full in my_gemini.BIO and my_gemini.BIO[chat_id_full]:
-        msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_gemini.BIO[chat_id_full]}'
+    if my_db.get_user_property(chat_id_full, 'persistant_memory'):
+        msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_db.get_user_property(chat_id_full, "persistant_memory")}'
     
     bot_reply(message, msg)
 
@@ -5041,52 +5040,29 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # queries = ['''
-            # CREATE TABLE IF NOT EXISTS im_suggests (
-            #     id INTEGER PRIMARY KEY AUTOINCREMENT,
-            #     date REAL,
-            #     hash TEXT,
-            #     prompt TEXT
-            #   )
-            #  ''',
-            #            ]
-            # for q in queries:
-            #     try:
-            #         my_db.CUR.execute(q)
-            #         my_db.CON.commit()
-            #     except Exception as error:
-            #         my_log.log2(f'tb:one_time_shot: {error}')
+            queries = ['''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
+                       '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
+                       '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
+                       '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
+                       '''ALTER TABLE users ADD COLUMN api_key_huggingface TEXT;''',
+                       ]
+            for q in queries:
+                try:
+                    my_db.CUR.execute(q)
+                    my_db.CON.commit()
+                except Exception as error:
+                    my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # в каких чатах отключена клавиатура {'chat_id_full':True/False}
-            DISABLED_KBD = my_dic.PersistentDict('db/disabled_kbd.pkl')
-            for key in DISABLED_KBD:
-                value = DISABLED_KBD[key]
-                my_db.set_user_property(key, 'disabled_kbd', value)
-            del DISABLED_KBD
-
-            # в каких чатах надо просто транскрибировать голосовые сообщения, не отвечая на них
-            TRANSCRIBE_ONLY_CHAT = my_dic.PersistentDict('db/transcribe_only_chat.pkl')
-            for key in TRANSCRIBE_ONLY_CHAT:
-                value = TRANSCRIBE_ONLY_CHAT[key]
-                my_db.set_user_property(key, 'transcribe_only', value)
-            del TRANSCRIBE_ONLY_CHAT
-
-            # включены ли подсказки для рисования в этом чате
-            # {chat_id: True/False}
-            SUGGEST_ENABLED = SqliteDict('db/image_suggest_enabled.db', autocommit=True)
-            for key in SUGGEST_ENABLED:
-                value = SUGGEST_ENABLED[key]
-                my_db.set_user_property(key, 'suggest_enabled', value)
-            del SUGGEST_ENABLED
+            # {user_id:str with user profile}
+            BIO = SqliteDict('db/user_bio.db', autocommit=True)
+            for key in BIO:
+                value = BIO[key]
+                my_db.set_user_property(key, 'persistant_memory', value)
+            del BIO
 
 
-            # в каких чатах включен режим только голосовые сообщения {'chat_id_full':True/False}
-            VOICE_ONLY_MODE = my_dic.PersistentDict('db/voice_only_mode.pkl')
-            for key in VOICE_ONLY_MODE:
-                value = VOICE_ONLY_MODE[key]
-                my_db.set_user_property(key, 'voice_only_mode', value)
-            del VOICE_ONLY_MODE
+
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

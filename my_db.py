@@ -107,22 +107,26 @@ def init():
                 model_used TEXT
             )
         ''')
+        CUR.execute('''DELETE FROM msg_counter WHERE access_time < ?''', (time.time() - 60*60*24*30*12,))
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_access_time ON msg_counter (access_time)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_user_id ON msg_counter (user_id)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_model_used ON msg_counter (model_used)')
 
         CUR.execute('''
             CREATE TABLE IF NOT EXISTS translations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 original TEXT,
                 lang TEXT,
                 help TEXT,
-                translation TEXT
+                translation TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_original ON translations (original)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_lang ON translations (lang)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_help ON translations (help)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_translation ON translations (translation)')
+        # CUR.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON translations (timestamp)')
 
         CUR.execute('''
             CREATE TABLE IF NOT EXISTS users (

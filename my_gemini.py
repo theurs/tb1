@@ -117,7 +117,7 @@ def chat(query: str,
         if not mem and insert_mem:
             mem = insert_mem
 
-        if model == '':
+        if not model:
             model = 'gemini-1.5-flash'
 
         # if system == '':
@@ -426,7 +426,12 @@ def get_mem_as_string(chat_id: str) -> str:
     return result    
 
 
-def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False) -> str:
+def translate(text: str,
+              from_lang: str = '',
+              to_lang: str = '',
+              help: str = '',
+              censored: bool = False,
+              model = '') -> str:
     """
     Translates the given text from one language to another.
     
@@ -461,9 +466,9 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
         query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
 
     if censored:
-        translated = ai(query, temperature=0.1)
+        translated = ai(query, temperature=0.1, model=model)
     else:
-        translated = ai(query, temperature=0.1, mem=MEM_UNCENSORED)
+        translated = ai(query, temperature=0.1, mem=MEM_UNCENSORED, model=model)
     return translated
 
 

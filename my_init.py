@@ -3,9 +3,11 @@
 import pickle
 import time
 
-import my_trans
+import my_gemini
 import my_groq
+import my_db
 import my_shadowjourney
+import my_trans
 
 
 languages_ocr = ["afr", "amh", "ara", "asm", "aze", "aze_cyrl", "bel", "ben", "bod",
@@ -80,22 +82,25 @@ help_msg_file = 'msg_help.dat'
 
 
 def generate_start_msg():
-    # my_groq.load_users_keys()
     msgs = {}
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
         msg = ''
 
-        for _ in range(2):
-            if not msg:
-                msg = my_shadowjourney.translate(start_msg, to_lang = x)
-            else:
-                break
-            if not msg:
-                time.sleep(60)
+        # for _ in range(2):
+        #     if not msg:
+        #         msg = my_shadowjourney.translate(start_msg, to_lang = x)
+        #     else:
+        #         break
+        #     if not msg:
+        #         time.sleep(60)
 
         if not msg:
-            msg = my_trans.translate_text2(start_msg, x)
+            msg = my_trans.translate_deepl(start_msg, to_lang=x)
+        if not msg:
+            msg = my_groq.translate(start_msg, to_lang = x)
+        if not msg:
+            msg = start_msg
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
@@ -157,7 +162,7 @@ def fix_translations(fname: str = start_msg_file, original: str = start_msg, lan
         db = pickle.load(f)
     for lang in langs:
         print(lang)
-        translated = my_groq.translate(original, to_lang=lang)
+        translated = my_gemini.translate(original, to_lang=lang, model = 'gemini-1.5-pro')
         if translated:
             if 'no translation needed' in translated.lower():
                 translated = original
@@ -167,10 +172,35 @@ def fix_translations(fname: str = start_msg_file, original: str = start_msg, lan
         pickle.dump(db, f)
 
 
+def fix_translations_start(langs = []):
+    with open(start_msg_file, 'rb') as f:
+        db = pickle.load(f)
+    for lang in langs:
+        print(lang)
+        translated = my_gemini.translate(db['en'], to_lang=lang, model = 'gemini-1.5-pro')
+        if not translated:
+            translated = my_shadowjourney.translate(db['en'], to_lang=lang)
+        if translated:
+            if 'no translation needed' in translated.lower():
+                translated = db['en']
+            db[lang] = translated
+            print(translated)
+        else:
+            del db[lang]
+    with open(start_msg_file, 'wb') as f:
+        pickle.dump(db, f)
+
 
 if __name__ == '__main__':
     pass
-    generate_start_msg()
+    my_db.init()
+    my_groq.load_users_keys()
+    my_gemini.load_users_keys()
+    my_trans.load_users_keys()
+
+
+    # generate_start_msg()
     # generate_help_msg()
 
-
+    # fix_translations_start(['am', ])
+    my_db.close()

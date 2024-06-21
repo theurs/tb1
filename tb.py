@@ -845,7 +845,10 @@ def authorized(message: telebot.types.Message) -> bool:
     if message.from_user.id in cfg.admins:
         return True
 
-    msg = message.text.lower()
+    if message.text:
+        msg = message.text.lower() 
+    else:
+        msg = ''
     # разрешить удаление своей истории всем
     if msg == '/purge':
         return True

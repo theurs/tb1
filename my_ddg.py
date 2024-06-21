@@ -143,7 +143,7 @@ def chat(query: str,
             return resp
         except Exception as error:
             my_log.log_ddg(f'my_ddg:chat: {error}')
-            time.time(2)
+            time.sleep(2)
             try:
                 CHATS_OBJ[chat_id] = chat_new_connection()
                 reset(chat_id)

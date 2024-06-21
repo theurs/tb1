@@ -738,10 +738,10 @@ def authorized_owner(message: telebot.types.Message) -> bool:
     """if chanel owner or private"""
     is_private = message.chat.type == 'private'
 
-    # banned users do nothing
-    chat_id_full = get_topic_id(message)
-    if my_db.get_user_property(chat_id_full, 'blocked'):
-        return False
+    # # banned users do nothing
+    # chat_id_full = get_topic_id(message)
+    # if my_db.get_user_property(chat_id_full, 'blocked'):
+    #     return False
 
     if not (is_private or is_admin_member(message)):
         bot_reply_tr(message, "This command is only available to administrators")
@@ -845,6 +845,11 @@ def authorized(message: telebot.types.Message) -> bool:
     if message.from_user.id in cfg.admins:
         return True
 
+    msg = message.text.lower()
+    # разрешить удаление своей истории всем
+    if msg == '/purge':
+        return True
+
     # banned users do nothing
     chat_id_full = get_topic_id(message)
     if my_db.get_user_property(chat_id_full, 'blocked'):
@@ -882,8 +887,6 @@ def authorized(message: telebot.types.Message) -> bool:
     is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
 
     if message.text:
-        msg = message.text.lower()
-
         if msg.startswith('.'):
             msg = msg[1:]
 
@@ -896,10 +899,6 @@ def authorized(message: telebot.types.Message) -> bool:
         bot_name2 = f'@{_bot_name}'
         if msg.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
             bot_name_used = True
-
-        # разрешить удаление своей истории всем
-        if msg == '/purge':
-            return True
 
         if is_reply or is_private or bot_name_used:
             # check for blocking and throttling

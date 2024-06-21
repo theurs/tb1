@@ -39,6 +39,7 @@ def get_weather(location: str) -> str:
     Return json string
     '''
     try:
+        location = decode_string(location)
         my_log.log_gemini_skills(f'Weather: {location}')
         lat, lon = get_coords(location)
         my_log.log_gemini_skills(f'Weather: {lat} {lon}')

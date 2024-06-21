@@ -275,14 +275,14 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
 
         if response and response.text.strip():
             if detect_repetitiveness(response.text.strip()):
-                return stt_google_pydub(audio_file, language = language)
+                return stt_google_pydub_v2(audio_file, language = language)
             return response.text.strip()
         else:
-            return stt_google_pydub(audio_file, language = language)
+            return stt_google_pydub_v2(audio_file, language = language)
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to convert audio data to text: {error}\n\n{traceback_error}')
-        return stt_google_pydub(audio_file, language = language)
+        return stt_google_pydub_v2(audio_file, language = language)
 
 
 def download_worker(video_url: str, part: tuple, n: int, fname: str, language: str):

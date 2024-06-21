@@ -41,6 +41,9 @@ SAFETY_SETTINGS = {
     # это не работает HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.BLOCK_NONE,
 }
 
+# таймаут в запросе к джемини
+TIMEOUT = 180
+
 LOCKS = {}
 CHATS = {}
 MAX_CHAT_LINES = 20
@@ -154,7 +157,7 @@ def chat(query: str,
                                     system_instruction = system
                                     )
 
-        request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=300))
+        request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
 
         chat = model_.start_chat(history=mem, enable_automatic_function_calling=True)
         resp = chat.send_message(query,

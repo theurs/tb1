@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 
+import gzip
 import hashlib
 import lzma
 import pickle
 import time
 import threading
 import traceback
+import shutil
 import sqlite3
 import sys
 
@@ -78,6 +80,14 @@ class SmartCache:
 USERS_CACHE = SmartCache()
 
 
+def backup_db():
+    try:
+        with open('db/main.db', 'rb') as f_in, gzip.open('db/main.db.gz', 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    except Exception as error:
+        my_log.log2(f'my_db:compress_backup_db {error}')
+
+
 @async_run
 def sync_daemon():
     global COM_COUNTER
@@ -96,6 +106,7 @@ def init():
     '''init db'''
     global CON, CUR
     try:
+        backup_db()
         CON = sqlite3.connect('db/main.db', check_same_thread=False)
         CUR = CON.cursor()
 

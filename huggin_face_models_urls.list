@@ -15,8 +15,8 @@ https://api-inference.huggingface.co/models/SG161222/RealVisXL_V4.0
 # new test
 https://api-inference.huggingface.co/models/SPO-Diffusion-Models/SPO-SDXL_4k-p_10ep
 https://api-inference.huggingface.co/models/fluently/Fluently-XL-Final
-https://api-inference.huggingface.co/models/yodayo-ai/holodayo-xl-2.1
-https://api-inference.huggingface.co/models/yodayo-ai/kivotos-xl-2.0
+# ок но много https://api-inference.huggingface.co/models/yodayo-ai/holodayo-xl-2.1
+# ок но много https://api-inference.huggingface.co/models/yodayo-ai/kivotos-xl-2.0
 
 
 #плохо рисует https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE
@@ -25,13 +25,17 @@ https://api-inference.huggingface.co/models/yodayo-ai/kivotos-xl-2.0
 #плохо рисует https://api-inference.huggingface.co/models/prompthero/openjourney
 #плохо рисует https://api-inference.huggingface.co/models/gsdf/Counterfeit-V2.5
 #плохо рисует https://api-inference.huggingface.co/models/prompthero/openjourney-v4
+
 multimodalart/cosxl
 PixArt-alpha/PixArt-Sigma
 ByteDance/Hyper-SDXL-1Step-T2I
 
 # не работает? https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium
 # не работает https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium-diffusers
-https://api-inference.huggingface.co/models/alvdansen/BandW-Manga
+
+# ок но много https://api-inference.huggingface.co/models/alvdansen/BandW-Manga
 
 ### хз stabilityai/stable-diffusion-3-medium
+
+markmagic/Stable-Diffusion-3-FREE
 markmagic/Stable-Diffusion-3-FREE

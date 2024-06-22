@@ -90,11 +90,12 @@ SEARCH_PICS = {}
 # только для запросов к гпт*. {chat_id_full(str):threading.Lock()}
 CHAT_LOCKS = {}
 
-# блокировка на выполнение одновременных команд sum, google, image
+# блокировка на выполнение одновременных команд sum, google, image, document handler
 # {chat_id:threading.Lock()}
 GOOGLE_LOCKS = {}
 SUM_LOCKS = {}
 IMG_GEN_LOCKS = {}
+DOCUMENT_LOCKS = {}
 
 # хранилище номеров тем в группе для логов {full_user_id as str: theme_id as int}
 # full_user_id - полный адрес места которое логируется, либо это юзер ип и 0 либо группа и номер в группе
@@ -1617,160 +1618,167 @@ def handle_document(message: telebot.types.Message):
     if check_blocks(chat_id_full) and not is_private:
         return
 
-    with semaphore_talks:
-        # если прислали текстовый файл или pdf
-        # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
-        if is_private and \
-            (message.document.mime_type in ('application/pdf',
-                                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                            'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
-                                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                                            'application/rtf',
-                                            'application/x-bat',
-                                            'application/msword',
-                                            'image/svg+xml',
-                                            'application/octet-stream',
-                                            'application/epub+zip') or \
-                                            message.document.mime_type.startswith('text/') or \
-                                            message.document.mime_type.startswith('video/') or \
-                                            message.document.mime_type.startswith('audio/')):
-            if message.document and message.document.mime_type.startswith('audio/') or \
-                message.document and message.document.mime_type.startswith('video/'):
-                handle_voice(message)
-                return
-            with ShowAction(message, 'typing'):
-                try:
-                    file_info = bot.get_file(message.document.file_id)
-                except telebot.apihelper.ApiTelegramException as error:
-                    if 'file is too big' in str(error):
-                        bot_reply_tr(message, 'Too big file')
-                        return
-                    else:
-                        raise error
-                downloaded_file = bot.download_file(file_info.file_path)
-                file_bytes = io.BytesIO(downloaded_file)
-                text = ''
-                if message.document.mime_type == 'application/pdf':
-                    pdf_reader = PyPDF2.PdfReader(file_bytes)
-                    for page in pdf_reader.pages:
-                        text += page.extract_text()
-                    if not text.strip() or len(text) < 100:
-                        text = my_ocr.get_text_from_pdf(file_bytes, get_ocr_language(message))
-                elif message.document.mime_type in ('application/vnd.ms-excel',
-                                                    'application/vnd.oasis.opendocument.spreadsheet',
-                                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                                    'application/octet-stream',
-                                                    'application/epub+zip',
-                                                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                                                    'application/rtf',
-                                                    'application/msword',
-                                                    ):
-                    ext = utils.get_file_ext(file_info.file_path)
-                    text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
-                elif message.document.mime_type == 'image/svg+xml':
+    if chat_id_full in DOCUMENT_LOCKS:
+        lock = DOCUMENT_LOCKS[chat_id_full]
+    else:
+        lock = threading.Lock()
+        DOCUMENT_LOCKS[chat_id_full] = lock
+
+    with lock:
+        with semaphore_talks:
+            # если прислали текстовый файл или pdf
+            # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
+            if is_private and \
+                (message.document.mime_type in ('application/pdf',
+                                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                                'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
+                                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                                'application/rtf',
+                                                'application/x-bat',
+                                                'application/msword',
+                                                'image/svg+xml',
+                                                'application/octet-stream',
+                                                'application/epub+zip') or \
+                                                message.document.mime_type.startswith('text/') or \
+                                                message.document.mime_type.startswith('video/') or \
+                                                message.document.mime_type.startswith('audio/')):
+                if message.document and message.document.mime_type.startswith('audio/') or \
+                    message.document and message.document.mime_type.startswith('video/'):
+                    handle_voice(message)
+                    return
+                with ShowAction(message, 'typing'):
                     try:
-                        image = cairosvg.svg2png(file_bytes.read(), output_width=2048)
-                        #send converted image back
-                        bot.send_photo(message.chat.id,
-                                       image,
-                                       reply_to_message_id=message.message_id,
-                                       message_thread_id=message.message_thread_id,
-                                       caption=message.document.file_name + '.png',
-                                       reply_markup=get_keyboard('translate', message),
-                                       disable_notification=True)
-                        text = img2txt(image, lang, chat_id_full, message.caption)
-                        # my_db.add_msg(chat_id_full, 'gemini15_flash')
-                        if text:
-                            text = utils.bot_markdown_to_html(text)
-                            text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                            bot_reply(message, text, parse_mode='HTML',
-                                                reply_markup=get_keyboard('translate', message))
+                        file_info = bot.get_file(message.document.file_id)
+                    except telebot.apihelper.ApiTelegramException as error:
+                        if 'file is too big' in str(error):
+                            bot_reply_tr(message, 'Too big file')
+                            return
                         else:
-                            bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                        return
-                    except Exception as error:
-                        my_log.log2(f'tb:handle_document:svg: {error}')
-                        bot_reply_tr(message, 'Не удалось распознать изображение')
-                        return
-                elif message.document.mime_type.startswith('text/') or \
-                    message.document.mime_type in ('application/x-bat',):
-                    data__ = file_bytes.read()
+                            raise error
+                    downloaded_file = bot.download_file(file_info.file_path)
+                    file_bytes = io.BytesIO(downloaded_file)
                     text = ''
-                    try:
-                        text = data__.decode('utf-8')
-                    except:
+                    if message.document.mime_type == 'application/pdf':
+                        pdf_reader = PyPDF2.PdfReader(file_bytes)
+                        for page in pdf_reader.pages:
+                            text += page.extract_text()
+                        if not text.strip() or len(text) < 100:
+                            text = my_ocr.get_text_from_pdf(file_bytes, get_ocr_language(message))
+                    elif message.document.mime_type in ('application/vnd.ms-excel',
+                                                        'application/vnd.oasis.opendocument.spreadsheet',
+                                                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                                        'application/octet-stream',
+                                                        'application/epub+zip',
+                                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                                        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                                        'application/rtf',
+                                                        'application/msword',
+                                                        ):
+                        ext = utils.get_file_ext(file_info.file_path)
+                        text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
+                    elif message.document.mime_type == 'image/svg+xml':
                         try:
-                            # Определение кодировки
-                            result = chardet.detect(data__)
-                            encoding = result['encoding']
-                            text = data__.decode(encoding)
-                        except:
-                            pass
-                if text.strip():
-                    caption = message.caption or ''
-                    caption = caption.strip()
-                    summary = my_sum.summ_text(text, 'text', lang, caption)
-                    my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')
-                    my_db.set_user_property(chat_id_full, 'saved_file', text)
-                    summary_html = utils.bot_markdown_to_html(summary)
-                    bot_reply(message, summary_html, parse_mode='HTML',
-                                          disable_web_page_preview = True,
-                                          reply_markup=get_keyboard('translate', message))
-                    bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
-
-                    caption_ = tr("юзер попросил ответить по содержанию файла", lang)
-                    if caption:
-                        caption_ += ', ' + caption
-                    add_to_bots_mem(caption_,
-                                        f'{tr("бот посмотрел файл и ответил:", lang)} {summary}',
-                                        chat_id_full)
-                else:
-                    bot_reply_tr(message, 'Не удалось получить никакого текста из документа.')
-                return
-
-        # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
-        if is_private or caption.lower() == 'ocr':
-            with ShowAction(message, 'upload_document'):
-                # получаем самый большой документ из списка
-                document = message.document
-                # если документ не является PDF-файлом или изображением jpg png, отправляем сообщение об ошибке
-                if document.mime_type.startswith('image/'):
-                    handle_photo(message)
-                    return
-                if document.mime_type != 'application/pdf':
-                    bot_reply(message, f'{tr("Unsupported file type.", lang)} {document.mime_type}')
-                    return
-                # скачиваем документ в байтовый поток
-                file_id = message.document.file_id
-                try:
-                    file_info = bot.get_file(file_id)
-                except telebot.apihelper.ApiTelegramException as error:
-                    if 'file is too big' in str(error):
-                        bot_reply_tr(message, 'Too big file.')
-                        return
-                    else:
-                        raise error
-                file_name = message.document.file_name + '.txt'
-                file = bot.download_file(file_info.file_path)
-                # распознаем текст в документе с помощью функции get_text
-                text = my_ocr.get_text_from_pdf(file, get_ocr_language(message))
-                # отправляем распознанный текст пользователю
-                if text.strip() != '':
-                    # если текст слишком длинный, отправляем его в виде текстового файла
-                    if len(text) > 4096:
-                        with io.StringIO(text) as f:
-                            if not is_private:
-                                m = bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
-                                                  reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide', message))
+                            image = cairosvg.svg2png(file_bytes.read(), output_width=2048)
+                            #send converted image back
+                            bot.send_photo(message.chat.id,
+                                        image,
+                                        reply_to_message_id=message.message_id,
+                                        message_thread_id=message.message_thread_id,
+                                        caption=message.document.file_name + '.png',
+                                        reply_markup=get_keyboard('translate', message),
+                                        disable_notification=True)
+                            text = img2txt(image, lang, chat_id_full, message.caption)
+                            # my_db.add_msg(chat_id_full, 'gemini15_flash')
+                            if text:
+                                text = utils.bot_markdown_to_html(text)
+                                text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
+                                bot_reply(message, text, parse_mode='HTML',
+                                                    reply_markup=get_keyboard('translate', message))
                             else:
-                                m = bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
-                                                  reply_markup=get_keyboard('hide', message))
-                            log_message(m)
+                                bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                            return
+                        except Exception as error:
+                            my_log.log2(f'tb:handle_document:svg: {error}')
+                            bot_reply_tr(message, 'Не удалось распознать изображение')
+                            return
+                    elif message.document.mime_type.startswith('text/') or \
+                        message.document.mime_type in ('application/x-bat',):
+                        data__ = file_bytes.read()
+                        text = ''
+                        try:
+                            text = data__.decode('utf-8')
+                        except:
+                            try:
+                                # Определение кодировки
+                                result = chardet.detect(data__)
+                                encoding = result['encoding']
+                                text = data__.decode(encoding)
+                            except:
+                                pass
+                    if text.strip():
+                        caption = message.caption or ''
+                        caption = caption.strip()
+                        summary = my_sum.summ_text(text, 'text', lang, caption)
+                        my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')
+                        my_db.set_user_property(chat_id_full, 'saved_file', text)
+                        summary_html = utils.bot_markdown_to_html(summary)
+                        bot_reply(message, summary_html, parse_mode='HTML',
+                                            disable_web_page_preview = True,
+                                            reply_markup=get_keyboard('translate', message))
+                        bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
+
+                        caption_ = tr("юзер попросил ответить по содержанию файла", lang)
+                        if caption:
+                            caption_ += ', ' + caption
+                        add_to_bots_mem(caption_,
+                                            f'{tr("бот посмотрел файл и ответил:", lang)} {summary}',
+                                            chat_id_full)
                     else:
-                        bot_reply(message, text, reply_markup=get_keyboard('translate', message))
-                    my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
+                        bot_reply_tr(message, 'Не удалось получить никакого текста из документа.')
+                    return
+
+            # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
+            if is_private or caption.lower() == 'ocr':
+                with ShowAction(message, 'upload_document'):
+                    # получаем самый большой документ из списка
+                    document = message.document
+                    # если документ не является PDF-файлом или изображением jpg png, отправляем сообщение об ошибке
+                    if document.mime_type.startswith('image/'):
+                        handle_photo(message)
+                        return
+                    if document.mime_type != 'application/pdf':
+                        bot_reply(message, f'{tr("Unsupported file type.", lang)} {document.mime_type}')
+                        return
+                    # скачиваем документ в байтовый поток
+                    file_id = message.document.file_id
+                    try:
+                        file_info = bot.get_file(file_id)
+                    except telebot.apihelper.ApiTelegramException as error:
+                        if 'file is too big' in str(error):
+                            bot_reply_tr(message, 'Too big file.')
+                            return
+                        else:
+                            raise error
+                    file_name = message.document.file_name + '.txt'
+                    file = bot.download_file(file_info.file_path)
+                    # распознаем текст в документе с помощью функции get_text
+                    text = my_ocr.get_text_from_pdf(file, get_ocr_language(message))
+                    # отправляем распознанный текст пользователю
+                    if text.strip() != '':
+                        # если текст слишком длинный, отправляем его в виде текстового файла
+                        if len(text) > 4096:
+                            with io.StringIO(text) as f:
+                                if not is_private:
+                                    m = bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
+                                                    reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide', message))
+                                else:
+                                    m = bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
+                                                    reply_markup=get_keyboard('hide', message))
+                                log_message(m)
+                        else:
+                            bot_reply(message, text, reply_markup=get_keyboard('translate', message))
+                        my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
 
 
 def download_image_from_message(message: telebot.types.Message) -> bytes:

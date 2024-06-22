@@ -173,7 +173,7 @@ def chat(query: str,
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error):
                     remove_key(key)
                 if 'finish_reason: ' in str(error):
-                    return resp.text or ''
+                    return ''
                 continue
 
             result = resp.text

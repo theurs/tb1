@@ -106,7 +106,7 @@ def init():
     '''init db'''
     global CON, CUR
     try:
-        # backup_db()
+        backup_db()
         CON = sqlite3.connect('db/main.db', check_same_thread=False)
         CUR = CON.cursor()
 
@@ -219,8 +219,8 @@ def init():
             )
         ''')
 
-        # CON.commit()
-        # CUR.execute("VACUUM")
+        CON.commit()
+        CUR.execute("VACUUM")
         CON.commit()
         sync_daemon()
     except Exception as error:

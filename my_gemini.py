@@ -134,51 +134,63 @@ def chat(query: str,
         else:
             keys = [key__,]
 
-        genai.configure(api_key = random.choice(keys))
+        keys = keys[:4]
 
-        GENERATION_CONFIG = GenerationConfig(
-            temperature = temperature,
-            # top_p: typing.Optional[float] = None,
-            # top_k: typing.Optional[int] = None,
-            # candidate_count: typing.Optional[int] = None,
-            max_output_tokens = max_tokens,
-            # stop_sequences: typing.Optional[typing.List[str]] = None,
-            # presence_penalty: typing.Optional[float] = None,
-            # frequency_penalty: typing.Optional[float] = None,
-            # response_mime_type: typing.Optional[str] = None
-        )
+        for key in keys:
+            genai.configure(api_key = key)
 
-        SKILLS = [search_google, download_text_from_url, update_user_profile, calc, get_weather, get_currency_rates, get_cryptocurrency_rates]
+            GENERATION_CONFIG = GenerationConfig(
+                temperature = temperature,
+                # top_p: typing.Optional[float] = None,
+                # top_k: typing.Optional[int] = None,
+                # candidate_count: typing.Optional[int] = None,
+                max_output_tokens = max_tokens,
+                # stop_sequences: typing.Optional[typing.List[str]] = None,
+                # presence_penalty: typing.Optional[float] = None,
+                # frequency_penalty: typing.Optional[float] = None,
+                # response_mime_type: typing.Optional[str] = None
+            )
 
-        model_ = genai.GenerativeModel(model,
-                                    tools=SKILLS,
-                                    generation_config = GENERATION_CONFIG,
+            SKILLS = [search_google, download_text_from_url, update_user_profile, calc, get_weather, get_currency_rates, get_cryptocurrency_rates]
+
+            model_ = genai.GenerativeModel(model,
+                                        tools=SKILLS,
+                                        generation_config = GENERATION_CONFIG,
+                                        safety_settings=SAFETY_SETTINGS,
+                                        system_instruction = system
+                                        )
+
+            request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
+
+            chat = model_.start_chat(history=mem, enable_automatic_function_calling=True)
+            try:
+                resp = chat.send_message(query,
                                     safety_settings=SAFETY_SETTINGS,
-                                    system_instruction = system
-                                    )
+                                    # tools=SKILLS,
+                                    request_options=request_options)
+            except Exception as error:
+                my_log.log_gemini(f'my_gemini:chat: {error}')
+                if 'reason: "CONSUMER_SUSPENDED"' in str(error):
+                    remove_key(key)
+                continue
 
-        request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
+            result = resp.text
 
-        chat = model_.start_chat(history=mem, enable_automatic_function_calling=True)
-        resp = chat.send_message(query,
-                                safety_settings=SAFETY_SETTINGS,
-                                # tools=SKILLS,
-                                request_options=request_options)
-        result = resp.text
+            if result:
+                if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
+                if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
+                if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
+                if not model: model_ = 'gemini15_flash'
+                my_db.add_msg(chat_id, model_)
+                if chat_id:
+                    mem = chat.history[-MAX_CHAT_LINES*2:]
+                    while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
+                        mem = mem[2:]
+                    my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+                return result
 
-        if result:
-            if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
-            if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
-            if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
-            if not model: model_ = 'gemini15_flash'
-            my_db.add_msg(chat_id, model_)
-            if chat_id:
-                mem = chat.history[-MAX_CHAT_LINES*2:]
-                while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
-                    mem = mem[2:]
-                my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
-
-        return result
+        my_log.log_gemini(f'my_gemini:chat:no results after 4 tries, query: {query}')
+        return ''
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}')
@@ -693,7 +705,6 @@ if __name__ == '__main__':
     my_db.init()
     load_users_keys()
 
-    print(calc('__built_in__.init() sqrt(2)+15'))
 
     # как юзать прокси
     # как отправить в чат аудиофайл

@@ -90,12 +90,13 @@ SEARCH_PICS = {}
 # только для запросов к гпт*. {chat_id_full(str):threading.Lock()}
 CHAT_LOCKS = {}
 
-# блокировка на выполнение одновременных команд sum, google, image, document handler
+# блокировка на выполнение одновременных команд sum, google, image, document handler, voice handler
 # {chat_id:threading.Lock()}
 GOOGLE_LOCKS = {}
 SUM_LOCKS = {}
 IMG_GEN_LOCKS = {}
 DOCUMENT_LOCKS = {}
+VOICE_LOCKS = {}
 
 # хранилище номеров тем в группе для логов {full_user_id as str: theme_id as int}
 # full_user_id - полный адрес места которое логируется, либо это юзер ип и 0 либо группа и номер в группе
@@ -1530,73 +1531,80 @@ def handle_voice(message: telebot.types.Message):
     if check_blocks(get_topic_id(message)) and not is_private:
         return
 
-    with semaphore_talks:
-        # Скачиваем аудиофайл во временный файл
-        try:
-            if message.voice:
-                file_info = bot.get_file(message.voice.file_id)
-            elif message.audio:
-                file_info = bot.get_file(message.audio.file_id)
-            elif message.video:
-                file_info = bot.get_file(message.video.file_id)
-            elif message.video_note:
-                file_info = bot.get_file(message.video_note.file_id)
-            elif message.document:
-                file_info = bot.get_file(message.document.file_id)
-            else:
-                bot_reply_tr(message, 'Unknown message type')
-        except telebot.apihelper.ApiTelegramException as error:
-            if 'file is too big' in str(error):
-                bot_reply_tr(message, 'Too big file.')
-                return
-            else:
-                raise error
+    if chat_id_full in VOICE_LOCKS:
+        lock = VOICE_LOCKS[chat_id_full]
+    else:
+        lock = threading.Lock()
+        VOICE_LOCKS[chat_id_full] = lock
 
-        # Создание временного файла
-        with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-            file_path = temp_file.name + (utils.get_file_ext(file_info.file_path) or 'unknown')
-
-        downloaded_file = bot.download_file(file_info.file_path)
-        with open(file_path, 'wb') as new_file:
-            new_file.write(downloaded_file)
-
-        # Распознаем текст из аудио
-        if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-            action = 'record_audio'
-        else:
-            action = 'typing'
-        with ShowAction(message, action):
-
+    with lock:
+        with semaphore_talks:
+            # Скачиваем аудиофайл во временный файл
             try:
-                text = my_stt.stt(file_path, lang, chat_id_full)
-            except Exception as error_stt:
-                my_log.log2(f'tb:handle_voice: {error_stt}')
-                text = ''
-
-            utils.remove_file(file_path)
-
-            text = text.strip()
-            # Отправляем распознанный текст
-            if text:
-                if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                    # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
-                    pass
+                if message.voice:
+                    file_info = bot.get_file(message.voice.file_id)
+                elif message.audio:
+                    file_info = bot.get_file(message.audio.file_id)
+                elif message.video:
+                    file_info = bot.get_file(message.video.file_id)
+                elif message.video_note:
+                    file_info = bot.get_file(message.video_note.file_id)
+                elif message.document:
+                    file_info = bot.get_file(message.document.file_id)
                 else:
-                    bot_reply(message, utils.bot_markdown_to_html(text),
-                              parse_mode='HTML',
-                              reply_markup=get_keyboard('translate', message))
+                    bot_reply_tr(message, 'Unknown message type')
+            except telebot.apihelper.ApiTelegramException as error:
+                if 'file is too big' in str(error):
+                    bot_reply_tr(message, 'Too big file.')
+                    return
+                else:
+                    raise error
+
+            # Создание временного файла
+            with tempfile.NamedTemporaryFile(delete=True) as temp_file:
+                file_path = temp_file.name + (utils.get_file_ext(file_info.file_path) or 'unknown')
+
+            downloaded_file = bot.download_file(file_info.file_path)
+            with open(file_path, 'wb') as new_file:
+                new_file.write(downloaded_file)
+
+            # Распознаем текст из аудио
+            if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                action = 'record_audio'
             else:
-                if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                    message.text = '/tts ' + tr('Не удалось распознать текст', lang)
-                    tts(message)
-                else:
-                    bot_reply_tr(message, 'Не удалось распознать текст')
+                action = 'typing'
+            with ShowAction(message, action):
 
-            # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
-            if text:
-                if not my_db.get_user_property(chat_id_full, 'transcribe_only'):
-                    message.text = f'voice message: {text}'
-                    echo_all(message)
+                try:
+                    text = my_stt.stt(file_path, lang, chat_id_full)
+                except Exception as error_stt:
+                    my_log.log2(f'tb:handle_voice: {error_stt}')
+                    text = ''
+
+                utils.remove_file(file_path)
+
+                text = text.strip()
+                # Отправляем распознанный текст
+                if text:
+                    if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                        # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
+                        pass
+                    else:
+                        bot_reply(message, utils.bot_markdown_to_html(text),
+                                parse_mode='HTML',
+                                reply_markup=get_keyboard('translate', message))
+                else:
+                    if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                        message.text = '/tts ' + tr('Не удалось распознать текст', lang)
+                        tts(message)
+                    else:
+                        bot_reply_tr(message, 'Не удалось распознать текст')
+
+                # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
+                if text:
+                    if not my_db.get_user_property(chat_id_full, 'transcribe_only'):
+                        message.text = f'voice message: {text}'
+                        echo_all(message)
 
 
 @bot.message_handler(content_types = ['document'], func=authorized)

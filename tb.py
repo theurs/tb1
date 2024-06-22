@@ -1627,6 +1627,7 @@ def handle_document(message: telebot.types.Message):
                                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                                             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                                             'application/rtf',
+                                            'application/x-bat',
                                             'application/msword',
                                             'image/svg+xml',
                                             'application/octet-stream',
@@ -1693,7 +1694,8 @@ def handle_document(message: telebot.types.Message):
                         my_log.log2(f'tb:handle_document:svg: {error}')
                         bot_reply_tr(message, 'Не удалось распознать изображение')
                         return
-                elif message.document.mime_type.startswith('text/'):
+                elif message.document.mime_type.startswith('text/') or \
+                    message.document.mime_type in ('application/x-bat',):
                     data__ = file_bytes.read()
                     text = ''
                     try:

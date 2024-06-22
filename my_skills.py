@@ -34,7 +34,7 @@ def get_coords(loc: str):
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_weather(location: str) -> str:
-    '''Get weather data from OpenMeteo API
+    '''Get weather data from OpenMeteo API 7 days forth and back
     Example: get_weather("Vladivostok")
     Return json string
     '''

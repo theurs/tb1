@@ -357,8 +357,8 @@ def chat_cli():
             continue
         # r = chat(q, 'test', model='mixtral-8x7b')
         # r = chat(q, 'test', model='llama-3-70b')
-        # r = chat(q, 'test', model='claude-3-haiku')
-        r = chat(q, 'test', model='gpt-3.5')
+        r = chat(q, 'test', model='claude-3-haiku')
+        # r = chat(q, 'test', model='gpt-3.5')
         print(r)
         print('')
 
@@ -402,5 +402,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 
 
 if __name__ == '__main__':
+    my_db.init()
     pass
     chat_cli()
+    my_db.close()

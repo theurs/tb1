@@ -208,7 +208,7 @@ def huggin_face_api(prompt: str) -> list:
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
-        if 'stable_diffusion_3_medium' in url:
+        if 'Stable-Diffusion-3' in url:
             try:
                 return stable_diffusion_3_medium(prompt, url)
             except Exception as error:
@@ -752,9 +752,9 @@ def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number:
     return images
 
 
-def stable_diffusion_3_medium(prompt: str, url: str = "stabilityai/stable-diffusion-3-medium", number: int = 1) -> list:
+def stable_diffusion_3_medium(prompt: str, url: str = "markmagic/Stable-Diffusion-3-FREE", number: int = 1) -> list:
     """
-    url = "stabilityai/stable-diffusion-3-medium" only?
+    url = "markmagic/Stable-Diffusion-3-FREE" only?
     """
     try:
         client = gradio_client.Client(url)
@@ -767,13 +767,15 @@ def stable_diffusion_3_medium(prompt: str, url: str = "stabilityai/stable-diffus
         result = result = client.predict(
             prompt=prompt,
             negative_prompt="",
+            use_negative_prompt=False,
             seed=0,
-            randomize_seed=True,
             width=1024,
             height=1024,
-            guidance_scale=5,
-            num_inference_steps=28,
-            api_name="/infer"
+            guidance_scale=7,
+            randomize_seed=True,
+            num_inference_steps=30,
+            NUM_IMAGES_PER_PROMPT=number,
+            api_name="/run"
         )
     except Exception as error:
         if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
@@ -983,8 +985,8 @@ if __name__ == '__main__':
     # imgs = cosxl('an apple made of gold')
     # open('_cosxl.png', 'wb').write(imgs[0])
 
-    # imgs = stable_diffusion_3_medium('an big apple made of gold and pepper')
-    # open('_stable_diffusion_3_medium.png', 'wb').write(imgs[0])
+    imgs = stable_diffusion_3_medium('an big apple made of gold and pepper')
+    open('_stable_diffusion_3_medium.png', 'wb').write(imgs[0])
 
     # n = 1
     # for x in Hyper_SDXL('an apple made of gold'):

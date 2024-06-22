@@ -33,4 +33,5 @@ ByteDance/Hyper-SDXL-1Step-T2I
 # не работает https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium-diffusers
 https://api-inference.huggingface.co/models/alvdansen/BandW-Manga
 
-# хз stabilityai/stable-diffusion-3-medium
+### хз stabilityai/stable-diffusion-3-medium
+markmagic/Stable-Diffusion-3-FREE

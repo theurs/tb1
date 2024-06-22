@@ -176,7 +176,7 @@ def calc(expression: str) -> str:
     my_log.log_gemini_skills(f'Calc: {expression}')
     allowed_words = ['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 'cbrt', 'ceil', 'comb', 'copysign',
                      'cos', 'cosh', 'degrees', 'dist', 'e', 'erf', 'erfc', 'exp', 'exp2', 'expm1', 'fabs',
-                    #  'factorial',
+                     'factorial',
                      'floor', 'fmod', 'frexp', 'fsum', 'gamma', 'gcd', 'hypot', 'inf', 'isclose', 'isfinite',
                      'isinf', 'isnan', 'isqrt', 'lcm', 'ldexp', 'lgamma', 'log', 'log10', 'log1p', 'log2',
                      'modf', 'nan', 'nextafter', 'perm', 'pi', 'pow', 'prod', 'radians', 'remainder',
@@ -196,10 +196,20 @@ def calc(expression: str) -> str:
         if word not in allowed_words:
             return f'Error: Invalid expression. Allowed words: {allowed_words}'
     try:
-        r = str(eval(expression))
+        expression_ = expression.replace('math.factorial', 'my_factorial')
+        r = str(eval(expression_))
         return r
     except Exception as error:
         return f'Error: {error}'
+
+
+def my_factorial(n: int) -> int:
+    '''Calculate factorial of n.
+    return int(math.factorial(n))
+    '''
+    if n > 1500:
+        raise ValueError('factorial > 1500, too big number')
+    return math.factorial(n)
 
 
 @cachetools.func.ttl_cache(maxsize=1, ttl = 60*60)
@@ -230,8 +240,8 @@ def get_cryptocurrency_rates():
 
 if __name__ == '__main__':
     pass
-    my_db.init()
+    # my_db.init()
 
-    print(calc("math.log2(1+decimal.Decimal(1))"))
+    print(calc("(1/5461512)**3 * (math.factorial(185)/(math.factorial(3)*math.factorial(128)))"))
 
     my_db.close()

@@ -191,6 +191,8 @@ def chat(query: str,
                         mem = mem[2:]
                     my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
                 return result
+            else:
+                return '' # не надо, пускай лучше другой ответит чем тянуть время
 
         my_log.log_gemini(f'my_gemini:chat:no results after 4 tries, query: {query}')
         return ''

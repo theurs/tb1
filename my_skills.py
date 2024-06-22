@@ -164,6 +164,7 @@ def update_user_profile(name: str,
     my_db.set_user_property(user_id, 'persistant_memory', bio)
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def calc(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations. Modules math and decimal available.
     return str(eval(expression))
@@ -173,15 +174,30 @@ def calc(expression: str) -> str:
               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
     '''
     my_log.log_gemini_skills(f'Calc: {expression}')
-    allowed_words = [x for x in dir(math)+dir(decimal) if '_' not in x]
+    allowed_words = ['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 'cbrt', 'ceil', 'comb', 'copysign',
+                     'cos', 'cosh', 'degrees', 'dist', 'e', 'erf', 'erfc', 'exp', 'exp2', 'expm1', 'fabs',
+                    #  'factorial',
+                     'floor', 'fmod', 'frexp', 'fsum', 'gamma', 'gcd', 'hypot', 'inf', 'isclose', 'isfinite',
+                     'isinf', 'isnan', 'isqrt', 'lcm', 'ldexp', 'lgamma', 'log', 'log10', 'log1p', 'log2',
+                     'modf', 'nan', 'nextafter', 'perm', 'pi', 'pow', 'prod', 'radians', 'remainder',
+                     'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'tau', 'trunc', 'ulp',
+                     'BasicContext', 'Clamped', 'Context', 'ConversionSyntax', 'Decimal', 'DecimalException',
+                     'DecimalTuple', 'DefaultContext', 'DivisionByZero', 'DivisionImpossible',
+                     'DivisionUndefined', 'ExtendedContext', 'FloatOperation', 'HAVE_CONTEXTVAR', 'HAVE_THREADS',
+                     'Inexact', 'InvalidContext', 'InvalidOperation', 'MAX_EMAX', 'MAX_PREC', 'MIN_EMIN',
+                     'MIN_ETINY', 'Overflow', 'ROUND_05UP', 'ROUND_CEILING', 'ROUND_DOWN', 'ROUND_FLOOR',
+                     'ROUND_HALF_DOWN', 'ROUND_HALF_EVEN', 'ROUND_HALF_UP', 'ROUND_UP', 'Rounded',
+                     'Subnormal', 'Underflow',
+                     'math', 'decimal'
+                     ]
     # get all words from expression
-    # words = re.findall(r'\w+', expression)
     words = re.findall(r'[^\d\W]+', expression)
     for word in words:
         if word not in allowed_words:
             return f'Error: Invalid expression. Allowed words: {allowed_words}'
     try:
-        return str(eval(expression))
+        r = str(eval(expression))
+        return r
     except Exception as error:
         return f'Error: {error}'
 
@@ -216,6 +232,6 @@ if __name__ == '__main__':
     pass
     my_db.init()
 
-    print(get_cryptocurrency_rates())    
+    print(calc("math.log2(1+decimal.Decimal(1))"))
 
     my_db.close()

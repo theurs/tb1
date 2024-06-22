@@ -7,6 +7,8 @@ import decimal
 import re
 import requests
 import traceback
+from math import *
+from decimal import *
 
 import cryptocompare
 from geopy.geocoders import Nominatim
@@ -242,6 +244,7 @@ if __name__ == '__main__':
     pass
     # my_db.init()
 
-    print(calc("(1/5461512)**3 * (math.factorial(185)/(math.factorial(3)*math.factorial(128)))"))
+    # print(calc("(1/5461512)**3 * (math.factorial(185)/(math.factorial(3)*math.factorial(128)))"))
+    print(calc("sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
 
     my_db.close()

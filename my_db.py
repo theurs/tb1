@@ -105,6 +105,10 @@ def sync_daemon():
 def init():
     '''init db'''
     global CON, CUR
+    day_seconds = 60 * 60 * 24
+    week_seconds = day_seconds * 7
+    month_seconds = day_seconds * 30
+    year_seconds = day_seconds * 365
     try:
         backup_db()
         CON = sqlite3.connect('db/main.db', check_same_thread=False)
@@ -118,7 +122,7 @@ def init():
                 model_used TEXT
             )
         ''')
-        CUR.execute('''DELETE FROM msg_counter WHERE access_time < ?''', (time.time() - 60*60*24*30*12,))
+        CUR.execute('''DELETE FROM msg_counter WHERE access_time < ?''', (time.time() - year_seconds,))
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_access_time ON msg_counter (access_time)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_user_id ON msg_counter (user_id)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_model_used ON msg_counter (model_used)')
@@ -187,19 +191,17 @@ def init():
         ''')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_id ON users (id)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_first_meet ON users (first_meet)')
-        # удалить файлы старше недели и диалоги старше месяца
-        week_seconds = 60 * 60 * 24 * 7
-        month_seconds = 60 * 60 * 24 * 30
+        # удалить файлы старше 1 дня и диалоги старше недели
         CUR.execute("""UPDATE users SET saved_file = NULL,
                     saved_file_name = NULL WHERE last_time_access < ?
-                    """, (time.time() - week_seconds,))
+                    """, (time.time() - day_seconds,))
         CUR.execute("""UPDATE users SET dialog_gemini = NULL,
                     dialog_groq = NULL,
                     dialog_openrouter = NULL,
                     dialog_shadow = NULL,
                     persistant_memory = NULL
                     WHERE last_time_access < ?
-                    """, (time.time() - month_seconds,))
+                    """, (time.time() - week_seconds,))
 
         CUR.execute('''
             CREATE TABLE IF NOT EXISTS sum (

@@ -231,6 +231,7 @@ def chat(query: str,
         return ''
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def img2txt(data_: bytes, prompt: str = "Что на картинке, подробно?") -> str:
     '''Convert image to text.
     '''

@@ -152,7 +152,13 @@ def chat(query: str,
                 # response_mime_type: typing.Optional[str] = None
             )
 
-            SKILLS = [search_google, download_text_from_url, update_user_profile, calc, get_weather, get_currency_rates, get_cryptocurrency_rates]
+            SKILLS = [search_google,
+                      download_text_from_url,
+                      update_user_profile,
+                      calc,
+                      get_weather,
+                      get_currency_rates,
+                      get_cryptocurrency_rates]
 
             model_ = genai.GenerativeModel(model,
                                         tools=SKILLS,
@@ -180,6 +186,8 @@ def chat(query: str,
             result = resp.text
 
             if result:
+                if 'print(default_api.' in result[:100]:
+                    return ''
                 if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
                 if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
                 if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'

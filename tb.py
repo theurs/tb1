@@ -4099,7 +4099,7 @@ def id_cmd_handler(message: telebot.types.Message):
 
     if my_db.get_user_property(chat_id_full, 'persistant_memory'):
         msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_db.get_user_property(chat_id_full, "persistant_memory")}'
-    
+
     bot_reply(message, msg)
 
 

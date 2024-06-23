@@ -1437,7 +1437,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
         elif call.data == 'select_gemini15_pro':
-            have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS
+            have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or\
+                chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS\
+                    or message.from_user.id in cfg.admins
             if have_keys:
                 bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Pro.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
@@ -4421,7 +4423,9 @@ def do_task(message, custom_prompt: str = ''):
 
     chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')
 
-    have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS
+    have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
+        chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or\
+            message.from_user.id in cfg.admins
 
     # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15' and not have_keys and is_private:

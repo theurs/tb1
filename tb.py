@@ -97,6 +97,7 @@ SUM_LOCKS = {}
 IMG_GEN_LOCKS = {}
 DOCUMENT_LOCKS = {}
 VOICE_LOCKS = {}
+IMG_LOCKS = {}
 
 # хранилище номеров тем в группе для логов {full_user_id as str: theme_id as int}
 # full_user_id - полный адрес места которое логируется, либо это юзер ип и 0 либо группа и номер в группе
@@ -1936,86 +1937,94 @@ def handle_photo(message: telebot.types.Message):
             return
 
 
-        with semaphore_talks:
-            # распознаем что на картинке с помощью гугл барда
-            # if state == 'describe' and (is_private or tr('что', lang) in msglower):
-            if state == 'describe':
-                with ShowAction(message, 'typing'):
-                    image = download_image_from_message(message)
-                    if not image:
-                        my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
-                        return
+        if chat_id_full in IMG_LOCKS:
+            lock = IMG_LOCKS[chat_id_full]
+        else:
+            lock = threading.Lock()
+            IMG_LOCKS[chat_id_full] = lock
 
-                    text = img2txt(image, lang, chat_id_full, message.caption)
-                    # my_db.add_msg(chat_id_full, 'gemini15_flash')
-                    if text:
-                        text = utils.bot_markdown_to_html(text)
-                        text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                        bot_reply(message, text, parse_mode='HTML',
-                                            reply_markup=get_keyboard('translate', message),
-                                            disable_web_page_preview=True)
-                    else:
-                        bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                return
-            elif state == 'ocr':
-                with ShowAction(message, 'typing'):
-                    if message.photo:
-                        photo = message.photo[-1]
-                        try:
-                            file_info = bot.get_file(photo.file_id)
-                        except telebot.apihelper.ApiTelegramException as error:
-                            if 'file is too big' in str(error):
-                                bot_reply_tr(message, 'Too big file.')
-                                return
-                            else:
-                                raise error
-                        image = bot.download_file(file_info.file_path)
-                    elif message.document:
-                        # скачиваем документ в байтовый поток
-                        file_id = message.document.file_id
-                        try:
-                            file_info = bot.get_file(file_id)
-                        except telebot.apihelper.ApiTelegramException as error:
-                            if 'file is too big' in str(error):
-                                bot_reply_tr(message, 'Too big file.')
-                                return
-                            else:
-                                raise error
-                        file = bot.download_file(file_info.file_path)
-                        fp = io.BytesIO(file)
-                        image = fp.read()
-                    else:
-                        my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
-                        return
 
-                    # распознаем текст на фотографии с помощью pytesseract
-                    text = my_ocr.get_text_from_image(image, get_ocr_language(message))
-                    # отправляем распознанный текст пользователю
-                    if text.strip() != '':
-                        bot_reply(message, text, parse_mode='',
-                                            reply_markup=get_keyboard('translate', message),
-                                            disable_web_page_preview = True)
-
-                        text = text[:8000]
-                        add_to_bots_mem(f'{tr("юзер попросил распознать текст с картинки", lang)}',
-                                            f'{tr("бот распознал текст и ответил:", lang)} {text}',
-                                            chat_id_full)
-
-                    else:
-                        bot_reply_tr(message, '[OCR] no results')
-                return
-            elif state == 'translate':
-                # пересланные сообщения пытаемся перевести даже если в них картинка
-                # новости в телеграме часто делают как картинка + длинная подпись к ней
-                if message.forward_from_chat and message.caption:
-                    # у фотографий нет текста но есть заголовок caption. его и будем переводить
+        with lock:
+            with semaphore_talks:
+                # распознаем что на картинке с помощью гугл джемини
+                # if state == 'describe' and (is_private or tr('что', lang) in msglower):
+                if state == 'describe':
                     with ShowAction(message, 'typing'):
-                        text = my_trans.translate(message.caption)
-                    if text:
-                        bot_reply(message, text)
-                    else:
-                        my_log.log_echo(message, "Не удалось/понадобилось перевести.")
+                        image = download_image_from_message(message)
+                        if not image:
+                            my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
+                            return
+
+                        text = img2txt(image, lang, chat_id_full, message.caption)
+                        # my_db.add_msg(chat_id_full, 'gemini15_flash')
+                        if text:
+                            text = utils.bot_markdown_to_html(text)
+                            text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
+                            bot_reply(message, text, parse_mode='HTML',
+                                                reply_markup=get_keyboard('translate', message),
+                                                disable_web_page_preview=True)
+                        else:
+                            bot_reply_tr(message, 'Sorry, I could not answer your question.')
                     return
+                elif state == 'ocr':
+                    with ShowAction(message, 'typing'):
+                        if message.photo:
+                            photo = message.photo[-1]
+                            try:
+                                file_info = bot.get_file(photo.file_id)
+                            except telebot.apihelper.ApiTelegramException as error:
+                                if 'file is too big' in str(error):
+                                    bot_reply_tr(message, 'Too big file.')
+                                    return
+                                else:
+                                    raise error
+                            image = bot.download_file(file_info.file_path)
+                        elif message.document:
+                            # скачиваем документ в байтовый поток
+                            file_id = message.document.file_id
+                            try:
+                                file_info = bot.get_file(file_id)
+                            except telebot.apihelper.ApiTelegramException as error:
+                                if 'file is too big' in str(error):
+                                    bot_reply_tr(message, 'Too big file.')
+                                    return
+                                else:
+                                    raise error
+                            file = bot.download_file(file_info.file_path)
+                            fp = io.BytesIO(file)
+                            image = fp.read()
+                        else:
+                            my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
+                            return
+
+                        # распознаем текст на фотографии с помощью pytesseract
+                        text = my_ocr.get_text_from_image(image, get_ocr_language(message))
+                        # отправляем распознанный текст пользователю
+                        if text.strip() != '':
+                            bot_reply(message, text, parse_mode='',
+                                                reply_markup=get_keyboard('translate', message),
+                                                disable_web_page_preview = True)
+
+                            text = text[:8000]
+                            add_to_bots_mem(f'{tr("юзер попросил распознать текст с картинки", lang)}',
+                                                f'{tr("бот распознал текст и ответил:", lang)} {text}',
+                                                chat_id_full)
+
+                        else:
+                            bot_reply_tr(message, '[OCR] no results')
+                    return
+                elif state == 'translate':
+                    # пересланные сообщения пытаемся перевести даже если в них картинка
+                    # новости в телеграме часто делают как картинка + длинная подпись к ней
+                    if message.forward_from_chat and message.caption:
+                        # у фотографий нет текста но есть заголовок caption. его и будем переводить
+                        with ShowAction(message, 'typing'):
+                            text = my_trans.translate(message.caption)
+                        if text:
+                            bot_reply(message, text)
+                        else:
+                            my_log.log_echo(message, "Не удалось/понадобилось перевести.")
+                        return
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:handle_photo: {error}\n{traceback_error}')

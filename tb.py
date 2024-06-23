@@ -2926,12 +2926,13 @@ def tts(message: telebot.types.Message, caption = None):
     rate = rate.strip()
 
     if not llang:
-        # check if message have any letters
-        if sum(1 for char in text if char.isalpha()) > 1:
-            # 'de' - universal multilang voice
-            llang = 'de'
-        else: # no any letters in string, use default user language if any
-            llang = lang or 'de'
+        llang = lang or 'de'
+        # # check if message have any letters
+        # if sum(1 for char in text if char.isalpha()) > 1:
+        #     # 'de' - universal multilang voice
+        #     llang = 'de'
+        # else: # no any letters in string, use default user language if any
+        #     llang = lang or 'de'
 
     if not text or llang not in supported_langs_tts:
         help = f"""{tr('Usage:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('text to speech', lang)}>|<URL>

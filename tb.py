@@ -4887,24 +4887,24 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             llama_helped = False
+                            # if not answer:
+                            #     style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
+                            #     mem__ = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'dialog_shadow')) or []
+                            #     mem__ = mem__[-6:]
+                            #     if style_:
+                            #         answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
+                            #     else:
+                            #         answer = my_groq.ai(message.text, mem_ = mem__)
+                            #     if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                            #         my_groq.undo(chat_id_full)
+                            #         message.text = f'/image {message.text}'
+                            #         image_gen(message)
+                            #         return
+                            #     my_db.add_msg(chat_id_full, 'llama3-70b-8192')
                             if not answer:
-                                style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                                mem__ = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'dialog_shadow')) or []
-                                mem__ = mem__[-6:]
-                                if style_:
-                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__)
-                                else:
-                                    answer = my_groq.ai(message.text, mem_ = mem__)
-                                if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
-                                    my_groq.undo(chat_id_full)
-                                    message.text = f'/image {message.text}'
-                                    image_gen(message)
-                                    return
-                                my_db.add_msg(chat_id_full, 'llama3-70b-8192')
-                                if not answer:
-                                    answer = 'GPT-4o ' + tr('did not answered, try to /reset and start again', lang)
-                                    return
-                                llama_helped = True
+                                answer = 'GPT-4o ' + tr('did not answered, try to /reset and start again', lang)
+                            # llama_helped = True
+                            else:
                                 my_shadowjourney.update_mem(message.text, answer, chat_id_full)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):

@@ -82,6 +82,7 @@ def get_currency_rates(date: str = '') -> str:
         return f'ERROR {error}'
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
 def search_google(query: str) -> str:
     '''Search Google for query, return texts of found web pages.
     It works slow, do not call it often.

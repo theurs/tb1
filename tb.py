@@ -4646,13 +4646,14 @@ def do_task(message, custom_prompt: str = ''):
                             # answer = my_gemini.chat(helped_query,
                             #                         chat_id_full,
                             #                         my_db.get_user_property(chat_id_full, 'temperature'),
-                            #                         model = 'gemini-1.5-flash-latest')
+                            #                         model = 'gemini-1.5-flash')
 
                             answer = my_gemini.chat(message.text,
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
                                                     model = 'gemini-1.5-flash',
-                                                    system = hidden_text
+                                                    system = hidden_text,
+                                                    use_skills=True
                                                     )
 
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
@@ -4725,13 +4726,14 @@ def do_task(message, custom_prompt: str = ''):
                             # answer = my_gemini.chat(helped_query,
                             #                         chat_id_full,
                             #                         my_db.get_user_property(chat_id_full, 'temperature'),
-                            #                         model = 'gemini-1.5-pro-latest')
+                            #                         model = 'gemini-1.5-pro')
 
                             answer = my_gemini.chat(message.text,
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
                                                     model = 'gemini-1.5-pro',
-                                                    system = hidden_text
+                                                    system = hidden_text,
+                                                    use_skills=True
                                                     )
 
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ

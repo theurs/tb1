@@ -97,6 +97,7 @@ def search_google(query: str) -> str:
         return f'ERROR {error}'
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
 def download_text_from_url(url: str, language: str = 'ru') -> str:
     '''Download text from url if user asked to.
     Accept web pages and youtube urls (it can read subtitles)

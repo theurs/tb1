@@ -73,7 +73,8 @@ def chat(query: str,
          system: str = '',
          max_tokens: int = 8000,
          insert_mem = None,
-         key__: str = '') -> str:
+         key__: str = '',
+         use_skills: bool = False) -> str:
     '''Chat with AI model.
     Args:
         query (str): The query to be used for generating the response.
@@ -152,15 +153,35 @@ def chat(query: str,
                 # response_mime_type: typing.Optional[str] = None
             )
 
-            SKILLS = [search_google,
-                      download_text_from_url,
-                      update_user_profile,
-                      calc,
-                      get_weather,
-                      get_currency_rates,
-                      get_cryptocurrency_rates]
-
-            model_ = genai.GenerativeModel(model,
+            if use_skills:
+                SKILLS = [search_google,
+                          download_text_from_url,
+                          update_user_profile,
+                          calc,
+                          get_weather,
+                          get_currency_rates,
+                          get_cryptocurrency_rates]
+                model_ = genai.GenerativeModel(model,
+                                        tools=SKILLS,
+                                        generation_config = GENERATION_CONFIG,
+                                        safety_settings=SAFETY_SETTINGS,
+                                        system_instruction = system
+                                        )
+            else:
+                model_ = genai.GenerativeModel(model,
+                        # tools=SKILLS,
+                        generation_config = GENERATION_CONFIG,
+                        safety_settings=SAFETY_SETTINGS,
+                        system_instruction = system
+                        )
+                SKILLS = [search_google,
+                          download_text_from_url,
+                          update_user_profile,
+                          calc,
+                          get_weather,
+                          get_currency_rates,
+                          get_cryptocurrency_rates]
+                model_ = genai.GenerativeModel(model,
                                         tools=SKILLS,
                                         generation_config = GENERATION_CONFIG,
                                         safety_settings=SAFETY_SETTINGS,

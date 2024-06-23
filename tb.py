@@ -2971,6 +2971,8 @@ def tts(message: telebot.types.Message, caption = None):
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                 text = utils.bot_markdown_to_tts(text)
             audio = my_tts.tts(text, llang, rate, gender=gender)
+            if not audio and llang != 'de':
+                audio = my_tts.tts(text, 'de', rate, gender=gender)
             if audio:
                 if message.chat.type != 'private':
                     m = bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id,

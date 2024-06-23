@@ -2939,7 +2939,7 @@ def tts(message: telebot.types.Message, caption = None):
 
 +-XX% - {tr('acceleration with mandatory indication of direction + or -', lang)}
 
-/tts hello all - {tr('all languages autodetect', lang)}
+/tts hello all
 /tts en hello, let me speak -  {tr('force english', lang)}
 /tts en +50% Hello at a speed of 1.5x - {tr('force english and speed', lang)}
 

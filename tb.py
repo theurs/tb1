@@ -1337,7 +1337,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть ответ"
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'tts':
-            message.text = f'/tts de {message.text or message.caption or ""}'
+            message.text = f'/tts {lang or "de"} {message.text or message.caption or ""}'
             tts(message)
         elif call.data.startswith('imagecmd_'):
             hash = call.data[9:]
@@ -1597,7 +1597,7 @@ def handle_voice(message: telebot.types.Message):
                                 reply_markup=get_keyboard('translate', message))
                 else:
                     if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                        message.text = '/tts ' + tr('Не удалось распознать текст', lang)
+                        message.text = f'/tts {lang or "de"} ' + tr('Не удалось распознать текст', lang)
                         tts(message)
                     else:
                         bot_reply_tr(message, 'Не удалось распознать текст')

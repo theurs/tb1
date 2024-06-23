@@ -4109,7 +4109,8 @@ def enable_chat(message: telebot.types.Message):
     """что бы бот работал в чате надо его активировать там"""
     chat_id_full = f'[{message.from_user.id}] [0]'
     admin_have_keys = chat_id_full in my_gemini.USER_KEYS and chat_id_full in my_groq.USER_KEYS \
-                      and chat_id_full in my_genimg.USER_KEYS
+                      and chat_id_full in my_genimg.USER_KEYS or message.from_user.id in cfg.admins
+
     if admin_have_keys:
         chat_full_id = get_topic_id(message)
         my_db.set_user_property(chat_full_id, 'chat_enabled', True)

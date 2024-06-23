@@ -526,7 +526,7 @@ def remove_file(fname: str):
         os.unlink(fname)
         return True
     except Exception as error:
-        my_log.log2(f'utils:remove_file: {fname}\n\n{error}')
+        # my_log.log2(f'utils:remove_file: {fname}\n\n{error}')
         return False
 
 

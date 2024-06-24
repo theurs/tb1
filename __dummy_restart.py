@@ -12,7 +12,7 @@ import cfg
 
 def main(page: ft.Page):
     def check_password(e):
-        time.speep(5)
+        time.sleep(5)
         if not hasattr(cfg, 'RESTART_PASSWORD'):
             return
         if password_field.value == cfg.RESTART_PASSWORD:

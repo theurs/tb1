@@ -136,6 +136,7 @@ def chat(query: str,
         else:
             keys = [key__,]
 
+        random.shuffle(keys)
         keys = keys[:4]
 
         for key in keys:
@@ -153,7 +154,7 @@ def chat(query: str,
                 # response_mime_type: typing.Optional[str] = None
             )
 
-            use_skills = False
+            # use_skills = False
             if use_skills:
                 SKILLS = [search_google,
                           download_text_from_url,

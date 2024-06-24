@@ -4,8 +4,10 @@
 import cachetools.func
 import concurrent.futures
 import io
+import os
 import random
 import re
+import subprocess
 import traceback
 from urllib.parse import urlparse
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -25,6 +27,53 @@ import utils
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+def get_subs_from_dzen_video(url: str) -> str:
+    '''Downloads subtitles from dzen video url, converts them to text and returns the text. 
+    Returns None if no subtitles found.'''
+    list_of_subs = []
+    cmd = f'yt-dlp -q --skip-download --list-subs "{url}"'
+    try:
+        output = subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError as error:
+        if not error.output:
+            return None
+        else:
+            output = error.output
+
+    output = output.decode('utf-8')
+
+    for line in output.splitlines():
+        line = line.strip()
+        if line and not line.startswith('Language'):
+            list_of_subs.append((line.split(' ', 1)[0], line.split(' ', 1)[1]))
+
+    if list_of_subs:
+        tmpname = utils.get_tmp_fname()
+        cmd = f'yt-dlp -q --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}" "{url}" -o "{tmpname}"'
+        subprocess.call(cmd, shell=True)
+        ext = f'.{list_of_subs[0][0]}.{list_of_subs[0][1].split(",")[0]}'
+        # check if file exists
+        if not os.path.isfile(tmpname + ext):
+            return None
+        with open(tmpname + ext, 'r', encoding='utf-8') as f:
+            text = f.read()
+        utils.remove_file(tmpname + ext)
+        return clear_text_subs_from_dzen_video(text)
+    else:
+        return None
+
+
+def clear_text_subs_from_dzen_video(text: str) -> str:
+    """Removes time codes and empty lines from subtitles text, returns clear text."""
+    lines = text.splitlines()[1:]
+    result = []
+    for i in range(len(lines)):
+        if "-->" not in lines[i] and lines[i] != '':
+            result.append(lines[i])
+    return '\n'.join(result).strip()
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '') -> str:
     """Вытаскивает текст из субтитров на ютубе
 
@@ -39,6 +88,9 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
     if language:
         top_langs = [x for x in top_langs if x != language]
         top_langs.insert(0, language)
+
+    if '//dzen.ru/video/watch/' in url:
+        return get_subs_from_dzen_video(url)
 
     try:
         video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
@@ -79,7 +131,7 @@ def check_ytb_subs_exists(url: str) -> bool:
     '''проверяет наличие субтитров на ютубе, если это не ютуб или есть субтитры
     то возвращает True, иначе False
     '''
-    if '/youtu.be/' in url or 'youtube.com/' in url:
+    if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url:
         return len(get_text_from_youtube(url, transcribe=False)) > 0
     return False
     
@@ -240,7 +292,7 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool 
     может просто скачать текст без саммаризации, для другой обработки"""
     youtube = False
     pdf = False
-    if '/youtu.be/' in url or 'youtube.com/' in url:
+    if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url:
         text = get_text_from_youtube(url, language=lang)
         youtube = True
     else:

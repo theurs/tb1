@@ -197,7 +197,7 @@ def chat(query: str,
                                     # tools=SKILLS,
                                     request_options=request_options)
             except Exception as error:
-                my_log.log_gemini(f'my_gemini:chat: {error}')
+                my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)}\n{query}\n{mem}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error):
                     remove_key(key)
                 if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error):

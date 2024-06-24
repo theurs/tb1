@@ -153,6 +153,7 @@ def chat(query: str,
                 # response_mime_type: typing.Optional[str] = None
             )
 
+            use_skills = False
             if use_skills:
                 SKILLS = [search_google,
                           download_text_from_url,

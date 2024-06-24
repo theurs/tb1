@@ -138,6 +138,9 @@ def chat(query: str,
 
         random.shuffle(keys)
         keys = keys[:4]
+        for key in keys[:]:
+            if key.startswith('AIzaSyAp7-L') and key.endswith('0e7w'): # bad key dirty hack
+                keys.remove(key)
 
         for key in keys:
             genai.configure(api_key = key)

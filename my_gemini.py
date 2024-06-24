@@ -138,8 +138,9 @@ def chat(query: str,
 
         random.shuffle(keys)
         keys = keys[:4]
+        badkeys = ['3166979107466835308',]
         for key in keys[:]:
-            if key.startswith('AIzaSyAp7-L') and key.endswith('0e7w'): # bad key dirty hack
+            if hash(key) in badkeys:
                 keys.remove(key)
 
         for key in keys:

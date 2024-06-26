@@ -4,6 +4,7 @@
 import cachetools.func
 import math
 import decimal
+import random
 import re
 import requests
 import traceback
@@ -178,22 +179,10 @@ def calc(expression: str) -> str:
               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
     '''
     my_log.log_gemini_skills(f'Calc: {expression}')
-    allowed_words = ['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 'cbrt', 'ceil', 'comb', 'copysign',
-                     'cos', 'cosh', 'degrees', 'dist', 'e', 'erf', 'erfc', 'exp', 'exp2', 'expm1', 'fabs',
-                     'factorial',
-                     'floor', 'fmod', 'frexp', 'fsum', 'gamma', 'gcd', 'hypot', 'inf', 'isclose', 'isfinite',
-                     'isinf', 'isnan', 'isqrt', 'lcm', 'ldexp', 'lgamma', 'log', 'log10', 'log1p', 'log2',
-                     'modf', 'nan', 'nextafter', 'perm', 'pi', 'pow', 'prod', 'radians', 'remainder',
-                     'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'tau', 'trunc', 'ulp',
-                     'BasicContext', 'Clamped', 'Context', 'ConversionSyntax', 'Decimal', 'DecimalException',
-                     'DecimalTuple', 'DefaultContext', 'DivisionByZero', 'DivisionImpossible',
-                     'DivisionUndefined', 'ExtendedContext', 'FloatOperation', 'HAVE_CONTEXTVAR', 'HAVE_THREADS',
-                     'Inexact', 'InvalidContext', 'InvalidOperation', 'MAX_EMAX', 'MAX_PREC', 'MIN_EMIN',
-                     'MIN_ETINY', 'Overflow', 'ROUND_05UP', 'ROUND_CEILING', 'ROUND_DOWN', 'ROUND_FLOOR',
-                     'ROUND_HALF_DOWN', 'ROUND_HALF_EVEN', 'ROUND_HALF_UP', 'ROUND_UP', 'Rounded',
-                     'Subnormal', 'Underflow',
-                     'math', 'decimal'
-                     ]
+    allowed_words = [
+        'math', 'decimal', 'random',
+        ]
+    allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) if not x.startswith('_')]
     # get all words from expression
     words = re.findall(r'[^\d\W]+', expression)
     for word in words:

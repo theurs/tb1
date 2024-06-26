@@ -193,12 +193,15 @@ def calc(expression: str) -> str:
         'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
         'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
         'round', 'pow', 'sum', 'min', 'max', 'divmod',
+        'for', 'in', 'and', 'if',
         ]
     allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(numpy) if not x.startswith('_')]
     allowed_words = sorted(list(set(allowed_words)))
     # get all words from expression
     words = re.findall(r'[^\d\W]+', expression)
     for word in words:
+        if len(word) == 1:
+            continue
         if word not in allowed_words:
             return f'Error: Invalid expression. Allowed words: {allowed_words}'
     try:
@@ -250,6 +253,6 @@ if __name__ == '__main__':
 
     # print(calc("(1/5461512)**3 * (math.factorial(185)/(math.factorial(3)*math.factorial(128)))"))
     # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
-    print(calc("str(random.randint(5000, 100000)) + str(random.randint(2, 9)) + str(random.randint(2, 9))"))
+    print(calc('[str(i) for i in range(5000, 100000) if "2" in str(i) and "9" in str(i)][0:5]'))
     
     # my_db.close()

@@ -160,14 +160,15 @@ def chat(query: str,
 
             # use_skills = False
             if use_skills:
-                SKILLS = [search_google,
-                          download_text_from_url,
-                          update_user_profile,
-                          calc,
-                          get_weather,
-                          get_currency_rates,
-                          get_cryptocurrency_rates,
-                          ]
+                SKILLS = [
+                    search_google,
+                    download_text_from_url,
+                    update_user_profile,
+                    calc,
+                    get_weather,
+                    get_currency_rates,
+                    # get_cryptocurrency_rates,
+                    ]
                 model_ = genai.GenerativeModel(model,
                                         tools=SKILLS,
                                         generation_config = GENERATION_CONFIG,

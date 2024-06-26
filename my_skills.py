@@ -181,6 +181,9 @@ def update_user_profile(name: str,
 def calc(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
     Available modules: decimal, math, numbers, numpy, random.
+    Available variable names - only 1 letter allowed. x is ok, digit is not ok.
+    Avoid text in math expressions.
+
     return str(eval(expression))
     Examples: calc("56487*8731") -> '493187997'
               calc("pow(10, 2)") -> '100'
@@ -193,7 +196,7 @@ def calc(expression: str) -> str:
         'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
         'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
         'round', 'pow', 'sum', 'min', 'max', 'divmod',
-        'for', 'in', 'and', 'if',
+        'for', 'in', 'and', 'if', 'next',
         ]
     allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(numpy) if not x.startswith('_')]
     allowed_words = sorted(list(set(allowed_words)))
@@ -203,7 +206,7 @@ def calc(expression: str) -> str:
         if len(word) == 1:
             continue
         if word not in allowed_words:
-            return f'Error: Invalid expression. Allowed words: {allowed_words}'
+            return f'Error: Invalid expression. Forbidden word: {word}'
     try:
         expression_ = expression.replace('math.factorial', 'my_factorial')
         r = str(eval(expression_))

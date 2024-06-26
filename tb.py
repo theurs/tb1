@@ -1887,7 +1887,7 @@ def handle_photo(message: telebot.types.Message):
         if msglower.startswith('?'):
             state = 'describe'
             message.caption = message.caption[1:]
-        # elif 'ocr' in msglower or tr('прочитай', lang) in msglower or tr('читай', lang) in msglower:
+
         elif 'ocr' in msglower:
             state = 'ocr'
         elif is_private:

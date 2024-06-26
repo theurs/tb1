@@ -258,6 +258,7 @@ if __name__ == '__main__':
     # print(calc("(1/5461512)**3 * (math.factorial(185)/(math.factorial(3)*math.factorial(128)))"))
     # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
     # print(calc('[str(i) for i in range(5000, 100000) if "2" in str(i) and "9" in str(i)][0:5]'))
-    print(calc("sum(int(digit) for digit in str(1420000000))"))
+    # print(calc("sum(int(digit) for digit in str(1420000000))"))
+    print(calc("dir(cfg)"))
     
     # my_db.close()

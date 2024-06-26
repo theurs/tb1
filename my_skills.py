@@ -4,12 +4,17 @@
 import cachetools.func
 import math
 import decimal
+import numbers
+import numpy
+import numpy as np
 import random
 import re
 import requests
 import traceback
 from math import *
 from decimal import *
+from numbers import *
+from random import *
 
 import cryptocompare
 from geopy.geocoders import Nominatim
@@ -171,18 +176,20 @@ def update_user_profile(name: str,
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def calc(expression: str) -> str:
-    '''Calculate expression with pythons eval(). Use it for all calculations. Modules math and decimal available.
+    '''Calculate expression with pythons eval(). Use it for all calculations. Modules decimal, math, numbers, numpy, random are available.
     return str(eval(expression))
     Examples: calc("56487*8731") -> '493187997'
               calc("pow(10, 2)") -> '100'
               calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
+              calc("numpy.sin(0.4) ** 2")
     '''
     my_log.log_gemini_skills(f'Calc: {expression}')
     allowed_words = [
-        'math', 'decimal', 'random',
+        'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
+        'print',
         ]
-    allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) if not x.startswith('_')]
+    allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(numpy) if not x.startswith('_')]
     # get all words from expression
     words = re.findall(r'[^\d\W]+', expression)
     for word in words:
@@ -236,6 +243,7 @@ if __name__ == '__main__':
     # my_db.init()
 
     # print(calc("(1/5461512)**3 * (math.factorial(185)/(math.factorial(3)*math.factorial(128)))"))
-    # print(calc("sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
+    # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
+    print(calc("numpy.sin(0.4) ** 2"))
     
     # my_db.close()

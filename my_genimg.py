@@ -131,7 +131,7 @@ def remove_huggin_face_key(api_key: str):
         my_log.log_huggin_face_api(f'Failed to remove key {api_key}: {error}\n\n{error_traceback}')
 
 
-def huggin_face_api(prompt: str) -> list:
+def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
     """
     Calls the Hugging Face API to generate text based on a given prompt.
     
@@ -173,44 +173,44 @@ def huggin_face_api(prompt: str) -> list:
             'ByteDance/Hyper-SDXL-1Step-T2I',
         ]
 
-    payload = json.dumps({"inputs": prompt})
+    payload = json.dumps({"inputs": prompt, negative_prompt: negative_prompt,})
 
     def request_img(prompt, url, p):
         if 'PixArt-Sigma' in url:
             try:
-                return PixArtSigma(prompt, url)
+                return PixArtSigma(prompt, url, negative_prompt=negative_prompt)
             except:
                 return []
         if 'Hyper-SDXL' in url:
             try:
-                return Hyper_SDXL(prompt, url)
+                return Hyper_SDXL(prompt, url, negative_prompt=negative_prompt)
             except:
                 return []
         if 'cosxl' in url:
             try:
-                return cosxl(prompt, url)
+                return cosxl(prompt, url, negative_prompt=negative_prompt)
             except:
                 return []
         if 'stable-cascade' in url:
             try:
-                return stable_cascade(prompt, url)
+                return stable_cascade(prompt, url, negative_prompt=negative_prompt)
             except:
                 return []
         if 'playgroundai/playground-v2.5-1024px-aesthetic' in url:
             try:
-                return playground25(prompt, url)
+                return playground25(prompt, url, negative_prompt=negative_prompt)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:playgroundai/playground-v2.5-1024px-aesthetic: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
         if 'AP123/SDXL-Lightning' in url:
             try:
-                return SDXL_Lightning(prompt, url)
+                return SDXL_Lightning(prompt, url, negative_prompt=negative_prompt)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
         if 'Stable-Diffusion-3' in url:
             try:
-                return stable_diffusion_3_medium(prompt, url)
+                return stable_diffusion_3_medium(prompt, url, negative_prompt=negative_prompt)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
@@ -273,7 +273,7 @@ def huggin_face_api(prompt: str) -> list:
     return result
 
 
-def PixArtSigma(prompt: str, url: str = 'PixArt-alpha/PixArt-Sigma') -> bytes:
+def PixArtSigma(prompt: str, url: str = 'PixArt-alpha/PixArt-Sigma', negative_prompt: str = "") -> bytes:
     """
     url = "PixArt-alpha/PixArt-Sigma" only?
     """
@@ -286,9 +286,9 @@ def PixArtSigma(prompt: str, url: str = 'PixArt-alpha/PixArt-Sigma') -> bytes:
     try:
         result = client.predict(
                 prompt=prompt,
-                negative_prompt="",
+                negative_prompt=negative_prompt,
                 style="(No style)",
-                use_negative_prompt=False,
+                use_negative_prompt=bool(negative_prompt),
                 num_imgs=1,
                 seed=0,
                 width=1024,
@@ -342,7 +342,7 @@ def size_of_image(data: bytes):
     return img.size
 
 
-def SDXL_Lightning(prompt: str, url: str = 'AP123/SDXL-Lightning') -> bytes:
+def SDXL_Lightning(prompt: str, url: str = 'AP123/SDXL-Lightning', negative_prompt: str = "") -> bytes:
     """
     url = "AP123/SDXL-Lightning" only?
     """
@@ -384,7 +384,7 @@ def SDXL_Lightning(prompt: str, url: str = 'AP123/SDXL-Lightning') -> bytes:
     return []
 
 
-def playground25(prompt: str, url: str = "https://playgroundai-playground-v2-5.hf.space/") -> bytes:
+def playground25(prompt: str, url: str = "https://playgroundai-playground-v2-5.hf.space/", negative_prompt: str = "") -> bytes:
     """
     url = "playgroundai/playground-v2.5-1024px-aesthetic" only?
     """
@@ -397,8 +397,8 @@ def playground25(prompt: str, url: str = "https://playgroundai-playground-v2-5.h
     try:
         result = client.predict(
             prompt,	# str  in 'Prompt' Textbox component
-            "",	# str  in 'Negative prompt' Textbox component
-            False,	# bool  in 'Use negative prompt' Checkbox component
+            negative_prompt,	# str  in 'Negative prompt' Textbox component
+            bool(negative_prompt),	# bool  in 'Use negative prompt' Checkbox component
             random.randint(0, 2147483647),	    # float (numeric value between 0 and 2147483647) in 'Seed' Slider component
             1024,	# float (numeric value between 256 and 1536) in 'Width' Slider component
             1024,	# float (numeric value between 256 and 1536) in 'Height' Slider component
@@ -431,7 +431,7 @@ def playground25(prompt: str, url: str = "https://playgroundai-playground-v2-5.h
     return []
 
 
-def stable_cascade(prompt: str, url: str = "multimodalart/stable-cascade") -> bytes:
+def stable_cascade(prompt: str, url: str = "multimodalart/stable-cascade", negative_prompt: str = "") -> bytes:
     """
     url = "multimodalart/stable-cascade" only?
     """
@@ -445,7 +445,7 @@ def stable_cascade(prompt: str, url: str = "multimodalart/stable-cascade") -> by
     try:
         result = client.predict(
             prompt,	# str  in 'Prompt' Textbox component
-            "",	# str  in 'Negative prompt' Textbox component
+            negative_prompt,	# str  in 'Negative prompt' Textbox component
             0,	# float (numeric value between 0 and 2147483647) in 'Seed' Slider component
             1024,	# float (numeric value between 1024 and 1536) in 'Width' Slider component
             1024,	# float (numeric value between 1024 and 1536) in 'Height' Slider component
@@ -481,7 +481,7 @@ def stable_cascade(prompt: str, url: str = "multimodalart/stable-cascade") -> by
     return []
 
 
-def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1):
+def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
     """
     Generates images based on a prompt using the KANDINSKI_API.
 
@@ -664,7 +664,7 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
         return []
 
 
-def cosxl(prompt: str, url: str = "multimodalart/cosxl") -> list:
+def cosxl(prompt: str, url: str = "multimodalart/cosxl", negative_prompt: str = "") -> list:
     """
     url = "multimodalart/cosxl" only?
     """
@@ -702,7 +702,7 @@ def cosxl(prompt: str, url: str = "multimodalart/cosxl") -> list:
     return []
 
 
-def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number: int = 1) -> list:
+def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number: int = 1, negative_prompt: str = "") -> list:
     """
     url = "ByteDance/Hyper-SDXL-1Step-T2I" only?
     """
@@ -752,7 +752,7 @@ def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number:
     return images
 
 
-def stable_diffusion_3_medium(prompt: str, url: str = "markmagic/Stable-Diffusion-3-FREE", number: int = 1) -> list:
+def stable_diffusion_3_medium(prompt: str, url: str = "markmagic/Stable-Diffusion-3-FREE", number: int = 1, negative_prompt: str = "") -> list:
     """
     url = "markmagic/Stable-Diffusion-3-FREE" only?
     """
@@ -766,8 +766,8 @@ def stable_diffusion_3_medium(prompt: str, url: str = "markmagic/Stable-Diffusio
     try:
         result = result = client.predict(
             prompt=prompt,
-            negative_prompt="",
-            use_negative_prompt=False,
+            negative_prompt=negative_prompt,
+            use_negative_prompt=bool(negative_prompt),
             seed=0,
             width=1024,
             height=1024,
@@ -985,16 +985,15 @@ if __name__ == '__main__':
     # imgs = cosxl('an apple made of gold')
     # open('_cosxl.png', 'wb').write(imgs[0])
 
-    imgs = stable_diffusion_3_medium('an big apple made of gold and pepper')
-    open('_stable_diffusion_3_medium.png', 'wb').write(imgs[0])
+    # imgs = stable_diffusion_3_medium('an big apple made of gold and pepper')
+    # open('_stable_diffusion_3_medium.png', 'wb').write(imgs[0])
 
     # n = 1
     # for x in Hyper_SDXL('an apple made of gold'):
     #     open(f'_Hyper_SDXL_{n}.png', 'wb').write(x)
     #     n += 1
 
-
     # n = 1
-    # for x in huggin_face_api('an apple made of gold'):
+    # for x in huggin_face_api('mans with big hands', 'ugly, blurry, bad anatomy, poorly drawn, out of frame, disfigured, deformed'):
     #     open(f'_huggin_face_api {n}.png', 'wb').write(x)
     #     n += 1

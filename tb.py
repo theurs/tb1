@@ -1750,7 +1750,7 @@ def handle_document(message: telebot.types.Message):
                     return
 
             # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
-            if is_private or caption.lower() == 'ocr':
+            if is_private or caption.lower().startswith('ocr'):
                 with ShowAction(message, 'upload_document'):
                     # получаем самый большой документ из списка
                     document = message.document
@@ -1947,7 +1947,6 @@ def handle_photo(message: telebot.types.Message):
         with lock:
             with semaphore_talks:
                 # распознаем что на картинке с помощью гугл джемини
-                # if state == 'describe' and (is_private or tr('что', lang) in msglower):
                 if state == 'describe':
                     with ShowAction(message, 'typing'):
                         image = download_image_from_message(message)
@@ -1998,7 +1997,10 @@ def handle_photo(message: telebot.types.Message):
                             return
 
                         # распознаем текст на фотографии с помощью pytesseract
-                        text = my_ocr.get_text_from_image(image, get_ocr_language(message))
+                        llang = get_ocr_language(message)
+                        if message.caption.strip()[3:]:
+                            llang = message.caption.strip()[3:].strip()
+                        text = my_ocr.get_text_from_image(image, llang)
                         # отправляем распознанный текст пользователю
                         if text.strip() != '':
                             bot_reply(message, text, parse_mode='',

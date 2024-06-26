@@ -181,7 +181,7 @@ def update_user_profile(name: str,
 def calc(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
     Available modules: decimal, math, numbers, numpy, random.
-    Available variable names - only 1 letter allowed. x is ok, digit is not ok.
+    Use only one letter variables.
     Avoid text in math expressions.
 
     return str(eval(expression))
@@ -197,6 +197,7 @@ def calc(expression: str) -> str:
         'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
         'round', 'pow', 'sum', 'min', 'max', 'divmod',
         'for', 'in', 'and', 'if', 'next',
+        'digit',
         ]
     allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(numpy) if not x.startswith('_')]
     allowed_words = sorted(list(set(allowed_words)))

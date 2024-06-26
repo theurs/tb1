@@ -228,7 +228,7 @@ def my_factorial(n: int) -> int:
 @cachetools.func.ttl_cache(maxsize=1, ttl = 60*60)
 def get_cryptocurrency_rates():
     '''Get cryptocurrency rates.
-    Return json top 20 coins rates from https://www.cryptocompare.com/
+    Return top 20 coins rates.
     '''
     try:
         my_log.log_gemini_skills('Cryptocurrency: get')
@@ -259,6 +259,8 @@ if __name__ == '__main__':
     # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
     # print(calc('[str(i) for i in range(5000, 100000) if "2" in str(i) and "9" in str(i)][0:5]'))
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
-    print(calc("dir(cfg)"))
-    
+    # print(calc("dir(cfg)"))
+
+    print(get_cryptocurrency_rates())
+
     # my_db.close()

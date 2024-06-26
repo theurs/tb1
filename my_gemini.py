@@ -167,7 +167,7 @@ def chat(query: str,
                     calc,
                     get_weather,
                     get_currency_rates,
-                    # get_cryptocurrency_rates,
+                    # get_cryptocurrency_rates, # broken, why?
                     ]
                 model_ = genai.GenerativeModel(model,
                                         tools=SKILLS,

@@ -14,7 +14,10 @@ import traceback
 from math import *
 from decimal import *
 from numbers import *
-from random import *
+
+# it will import word random and broke code
+# from random import *
+from random import betavariate, choice, choices, expovariate, gammavariate, gauss, getrandbits, getstate, lognormvariate, normalvariate, paretovariate, randbytes, randint, randrange, sample, seed, setstate, shuffle, triangular, uniform, vonmisesvariate, weibullvariate
 
 import cryptocompare
 from geopy.geocoders import Nominatim
@@ -176,13 +179,14 @@ def update_user_profile(name: str,
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def calc(expression: str) -> str:
-    '''Calculate expression with pythons eval(). Use it for all calculations. Modules decimal, math, numbers, numpy, random are available.
+    '''Calculate expression with pythons eval(). Use it for all calculations.
+    Available modules: decimal, math, numbers, numpy, random.
     return str(eval(expression))
     Examples: calc("56487*8731") -> '493187997'
               calc("pow(10, 2)") -> '100'
               calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
-              calc("numpy.sin(0.4) ** 2")
+              calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
     '''
     my_log.log_gemini_skills(f'Calc: {expression}')
     allowed_words = [
@@ -190,6 +194,7 @@ def calc(expression: str) -> str:
         'print',
         ]
     allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(numpy) if not x.startswith('_')]
+    allowed_words = sorted(list(set(allowed_words)))
     # get all words from expression
     words = re.findall(r'[^\d\W]+', expression)
     for word in words:
@@ -244,6 +249,6 @@ if __name__ == '__main__':
 
     # print(calc("(1/5461512)**3 * (math.factorial(185)/(math.factorial(3)*math.factorial(128)))"))
     # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
-    print(calc("numpy.sin(0.4) ** 2"))
+    print(calc("numpy.sin(0.4) ** 2 + randint(12, 21)"))
     
     # my_db.close()

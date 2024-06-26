@@ -166,7 +166,8 @@ def chat(query: str,
                           calc,
                           get_weather,
                           get_currency_rates,
-                          get_cryptocurrency_rates]
+                          get_cryptocurrency_rates,
+                          ]
                 model_ = genai.GenerativeModel(model,
                                         tools=SKILLS,
                                         generation_config = GENERATION_CONFIG,

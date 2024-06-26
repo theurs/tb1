@@ -4895,7 +4895,7 @@ def do_task(message, custom_prompt: str = ''):
                 if chat_mode_ == 'gpt4o':
                     # не знаем какие там лимиты
                     if len(msg) > my_shadowjourney.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для openrouter:", lang)} {len(msg)} {tr("из", lang)} {my_shadowjourney.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для gpt-4o:", lang)} {len(msg)} {tr("из", lang)} {my_shadowjourney.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
@@ -5074,27 +5074,27 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            queries = [
-                # '''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
-                # '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
-                # '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
-                # '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
-                '''ALTER TABLE users ADD COLUMN last_time_access REAL;''',
-                       ]
-            for q in queries:
-                try:
-                    my_db.CUR.execute(q)
-                    my_db.CON.commit()
-                except Exception as error:
-                    my_log.log2(f'tb:one_time_shot: {error}')
+            # queries = [
+            #     # '''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
+            #     # '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
+            #     # '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
+            #     # '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
+            #     '''ALTER TABLE users ADD COLUMN last_time_access REAL;''',
+            #            ]
+            # for q in queries:
+            #     try:
+            #         my_db.CUR.execute(q)
+            #         my_db.CON.commit()
+            #     except Exception as error:
+            #         my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # запоминаем время последнего обращения к боту
-            LAST_TIME_ACCESS = SqliteDict('db/last_time_access.db', autocommit=True)
-            for key in LAST_TIME_ACCESS:
-                value = LAST_TIME_ACCESS[key]
-                my_db.set_user_property(key, 'last_time_access', value)
-            del LAST_TIME_ACCESS
+            # # запоминаем время последнего обращения к боту
+            # LAST_TIME_ACCESS = SqliteDict('db/last_time_access.db', autocommit=True)
+            # for key in LAST_TIME_ACCESS:
+            #     value = LAST_TIME_ACCESS[key]
+            #     my_db.set_user_property(key, 'last_time_access', value)
+            # del LAST_TIME_ACCESS
 
 
 

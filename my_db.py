@@ -102,7 +102,7 @@ def sync_daemon():
             my_log.log2(f'my_db:sync_daemon {error}')
 
 
-def init():
+def init(backup: bool = True):
     '''init db'''
     global CON, CUR
     day_seconds = 60 * 60 * 24
@@ -110,7 +110,8 @@ def init():
     month_seconds = day_seconds * 30
     year_seconds = day_seconds * 365
     try:
-        backup_db()
+        if backup:
+            backup_db()
         CON = sqlite3.connect('db/main.db', check_same_thread=False)
         CUR = CON.cursor()
 
@@ -221,8 +222,9 @@ def init():
             )
         ''')
 
-        CON.commit()
-        CUR.execute("VACUUM")
+        if backup:
+            CON.commit()
+            CUR.execute("VACUUM")
         CON.commit()
         sync_daemon()
     except Exception as error:

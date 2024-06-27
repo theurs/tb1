@@ -3286,8 +3286,12 @@ the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt
                                 if pics_group and not NSFW_FLAG:
                                     try:
                                         translated_prompt = tr(prompt, 'ru', save_cache=False)
-                                        bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
+                                        # bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
+                                        #                 link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
+
+                                        bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{chat_id_full}',
                                                         link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
+
                                         ratio = fuzz.ratio(translated_prompt, prompt)
                                         if ratio < 70:
                                             bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{utils.nice_hash(chat_id_full)}',

@@ -3191,7 +3191,7 @@ def image_gen(message: telebot.types.Message):
                             else:
                                 images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
                         if chat_id_full in IMAGE10_STOP:
-                            del IMAGE10_STOP[chat_id_full]
+                            # del IMAGE10_STOP[chat_id_full]
                             return
                         # 1 а может и больше запросы к репромптеру
                         # my_db.add_msg(chat_id_full, 'gemini15_flash')

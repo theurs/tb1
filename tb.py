@@ -386,6 +386,8 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
         data = utils.download_image_as_bytes(text)
     if not query:
         query = tr('Что изображено на картинке? Напиши подробное описание, и объясни подробно что это может означать. Затем напиши длинный подробный промпт одним предложением для рисования этой картинки с помощью нейросетей, начни промпт со слов /image Create image of...', lang)
+    else:
+        query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
 
     if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
@@ -1211,13 +1213,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
         button1 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash', callback_data='select_gemini15_flash')
         button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro', callback_data='select_gemini15_pro')
-        button3 = telebot.types.InlineKeyboardButton('GPT-4o', callback_data='select_gpt4o')
+        # button3 = telebot.types.InlineKeyboardButton('GPT-4o', callback_data='select_gpt4o')
         button4 = telebot.types.InlineKeyboardButton('Llama-3 70b', callback_data='select_llama370')
         button5 = telebot.types.InlineKeyboardButton('GPT 3.5', callback_data='select_gpt35')
         button6 = telebot.types.InlineKeyboardButton('Haiku', callback_data='select_haiku')
         markup.row(button1, button2)
-        markup.row(button3, button4)
-        markup.row(button5, button6)
+        markup.row(button4, button5, button6)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -1251,9 +1252,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
         markup.row(button2)
 
-        if cfg.pics_group_url:
-            button_pics = telebot.types.InlineKeyboardButton(tr("🖼️Галерея", lang),  url = cfg.pics_group_url)
-            markup.add(button_pics)
+        # if cfg.pics_group_url:
+        #     button_pics = telebot.types.InlineKeyboardButton(tr("🖼️Галерея", lang),  url = cfg.pics_group_url)
+        #     markup.add(button_pics)
 
         is_private = message.chat.type == 'private'
         is_admin_of_group = False
@@ -3351,10 +3352,10 @@ the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt
                                                     chat_id_full)
                         else:
                             bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
-                            if hasattr(cfg, 'enable_image_adv') and cfg.enable_image_adv:
-                                bot_reply_tr(message,
-                                        "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum or this https://t.me/aibrahma/467",
-                                        disable_web_page_preview = True)
+                            # if hasattr(cfg, 'enable_image_adv') and cfg.enable_image_adv:
+                            #     bot_reply_tr(message,
+                            #             "Try original site https://www.bing.com/ or Try this free group, it has a lot of mediabots: https://t.me/neuralforum",
+                            #             disable_web_page_preview = True)
                             my_log.log_echo(message, '[image gen error] ')
                             add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
                                                     f'{tr("bot did not want or could not draw this", lang)}',
@@ -4640,6 +4641,10 @@ def do_task(message, custom_prompt: str = ''):
             with CHAT_LOCKS[chat_id_full]:
 
                 WHO_ANSWERED[chat_id_full] = chat_mode_
+                if chat_mode_ == 'gemini':
+                    WHO_ANSWERED[chat_id_full] = 'gemini15flash'
+                elif chat_mode_ == 'gemini15':
+                    WHO_ANSWERED[chat_id_full] = 'gemini15pro'
                 time_to_answer_start = time.time()
 
                 # если активирован режим общения с Gemini Flash
@@ -4676,7 +4681,7 @@ def do_task(message, custom_prompt: str = ''):
                                 image_gen(message)
                                 return
                             if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'gemini'
+                                WHO_ANSWERED[chat_id_full] = 'gemini15flash'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             flag_gpt_help = False
@@ -4705,10 +4710,10 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = answer_
 
                             if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇Gemini + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[Gemini + llama3-70] {answer}')
+                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15flash + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                my_log.log_echo(message, f'[Gemini15flash + llama3-70] {answer}')
                             else:
-                                my_log.log_echo(message, f'[Gemini] {answer}')
+                                my_log.log_echo(message, f'[Gemini15flash] {answer}')
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
@@ -4756,7 +4761,7 @@ def do_task(message, custom_prompt: str = ''):
                                 image_gen(message)
                                 return
                             if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'gemini15'
+                                WHO_ANSWERED[chat_id_full] = 'gemini15pro'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                             flag_gpt_help = False
                             if not answer:
@@ -4784,10 +4789,10 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = answer_
 
                             if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15 + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[Gemini15 + llama3-70] {answer}')
+                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15pro + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                my_log.log_echo(message, f'[Gemini15pro + llama3-70] {answer}')
                             else:
-                                my_log.log_echo(message, f'[Gemini15] {answer}')
+                                my_log.log_echo(message, f'[Gemini15pro] {answer}')
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)

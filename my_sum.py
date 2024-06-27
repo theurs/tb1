@@ -147,7 +147,8 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str
     if isinstance(text, tuple):
         text, subj, _ = text[0], text[1], text[2]
 
-    if type(text) != str or len(text) < 1: return ''
+    if type(text) != str or len(text) < 100:
+        return ''
 
     result = ''
 

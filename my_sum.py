@@ -84,47 +84,53 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
     Returns:
         str: первые субтитры из списка какие есть в видео
     """
-    top_langs = ('ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro')
-    if language:
-        top_langs = [x for x in top_langs if x != language]
-        top_langs.insert(0, language)
-
-    if '//dzen.ru/video/watch/' in url:
-        return get_subs_from_dzen_video(url)
-
     try:
-        video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
-    except:
-        return ''
+        top_langs = ('ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro')
+        if language:
+            top_langs = [x for x in top_langs if x != language]
+            top_langs.insert(0, language)
 
-    for _ in range(4):
+        if '//dzen.ru/video/watch/' in url:
+            return get_subs_from_dzen_video(url)
+
         try:
+            video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
+        except:
+            return ''
+
+        for _ in range(4):
             try:
-                proxy = ''
-                if hasattr(cfg, 'YT_SUBS_PROXY'):
-                    proxy = random.choice(cfg.YT_SUBS_PROXY)
-                    t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = {'https': proxy})
-                else:
-                    t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
-            except Exception as download_error:
-                my_log.log2(f'get_text_from_youtube: {download_error}\n\nProxy: {proxy}')
-            if t:
-                break
-        except Exception as error:
-            if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
-                my_log.log2(f'get_text_from_youtube: {error}')
-            # my_log.log2(f'get_text_from_youtube: {error}')
-            # print(error)
-            t = ''
+                t = ''
+                try:
+                    proxy = ''
+                    if hasattr(cfg, 'YT_SUBS_PROXY'):
+                        proxy = random.choice(cfg.YT_SUBS_PROXY)
+                        t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = {'https': proxy})
+                    else:
+                        t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+                except Exception as download_error:
+                    my_log.log2(f'get_text_from_youtube: {download_error}\n\nProxy: {proxy}')
+                if t:
+                    break
+            except Exception as error:
+                if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
+                    my_log.log2(f'get_text_from_youtube: {error}')
+                # my_log.log2(f'get_text_from_youtube: {error}')
+                # print(error)
+                t = ''
 
-    text = '\n'.join([x['text'] for x in t])
+        text = '\n'.join([x['text'] for x in t])
 
-    text = text.strip()
+        text = text.strip()
 
-    if not text and transcribe: # нет субтитров?
-        text, info = my_transcribe.download_youtube_clip(url, language=language)
+        if not text and transcribe: # нет субтитров?
+            text, info = my_transcribe.download_youtube_clip(url, language=language)
 
-    return text
+        return text
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'get_text_from_youtube: {url} {transcribe} {language}\n\n{error}\n\n{traceback_error}')
+        return ''
 
 
 def check_ytb_subs_exists(url: str) -> bool:

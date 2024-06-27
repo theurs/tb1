@@ -3,6 +3,7 @@
 import cachetools.func
 import io
 import PIL
+import pprint
 import random
 import re
 import sys
@@ -94,6 +95,7 @@ def chat(query: str,
                                gemini-1.5-pro,
                                gemini-1.5-pro-latest,
                                gemini-pro
+                               gemma-2-27b-it
         system (str, optional): The system instruction to use for generating the response. Defaults to ''.
         max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 8000. Range: [10,8000]
         insert_mem: (list, optional): The history of the chat. Defaults to None.
@@ -265,7 +267,7 @@ def ai(q: str,
                 insert_mem=mem)
 
 
-def chat_cli(user_id='test'):
+def chat_cli(user_id: str = 'test', model: str = ''):
     while 1:
         q = input('>')
         if q == 'mem':
@@ -274,7 +276,7 @@ def chat_cli(user_id='test'):
         if '.jpg' in q or '.png' in q or '.webp' in q:
             img = PIL.Image.open(open(q, 'rb'))
             q = ['опиши картинку', img]
-        r = chat(q, user_id)
+        r = chat(q, user_id, model=model)
         print(r)
 
 
@@ -738,9 +740,15 @@ def test_new_key(key: str) -> bool:
     return False
 
 
+def list_models():
+    genai.configure(api_key = cfg.gemini_keys[0])
+    for model in genai.list_models():
+        pprint.pprint(model)
+
+
 if __name__ == '__main__':
     pass
-    my_db.init()
+    my_db.init(backup=False)
     load_users_keys()
 
 
@@ -748,6 +756,7 @@ if __name__ == '__main__':
     # как отправить в чат аудиофайл
     # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
 
+    # list_models()
     chat_cli()
 
     my_db.close()

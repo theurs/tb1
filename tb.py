@@ -2935,6 +2935,8 @@ def tts(message: telebot.types.Message, caption = None):
         llang = llang.strip()
     if llang == 'ua':
         llang = 'uk'
+    if llang == 'eo':
+        lang = 'de'
     rate = rate.strip()
 
     if not llang:

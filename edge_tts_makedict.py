@@ -55,5 +55,9 @@ def get_voices() -> dict:
 
 if __name__ == '__main__':
     d = get_voices()
+    l = []
     for k in d:
-        print(k, d[k])
+        print(f"'{k}' : ", f"{d[k]},")
+        if k not in l:
+            l.append(k)
+    print(l)

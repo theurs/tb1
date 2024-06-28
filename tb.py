@@ -1905,37 +1905,38 @@ def handle_photo(message: telebot.types.Message):
                     return
 
 
-        # Если прислали медиагруппу то дропаем ее. или делаем коллаж, больше вариантов я пока не придумал
-        if 2 <= len(MESSAGES) <= 5: # если пришли 2-5 скриншотов телефона то склеиваем их и делаем коллаж
-            images = [download_image_from_message(msg) for msg in MESSAGES]
-            widths, heights = zip(*[PIL.Image.open(io.BytesIO(img)).size for img in images])
+        if is_private:
+            # Если прислали медиагруппу то дропаем ее. или делаем коллаж, больше вариантов я пока не придумал
+            if 2 <= len(MESSAGES) <= 5: # если пришли 2-5 скриншотов телефона то склеиваем их и делаем коллаж
+                images = [download_image_from_message(msg) for msg in MESSAGES]
+                widths, heights = zip(*[PIL.Image.open(io.BytesIO(img)).size for img in images])
 
-            # Проверяем, что все изображения имеют одинаковые размеры и ориентацию
-            if all(w < h for w, h in zip(widths, heights)) and len(set(widths)) == 1 and len(set(heights)) == 1:
-                total_width = widths[0] * len(images)
-                new_image = PIL.Image.new('RGB', (total_width, heights[0]))
+                # Проверяем, что все изображения имеют одинаковые размеры и ориентацию
+                if all(w < h for w, h in zip(widths, heights)) and len(set(widths)) == 1 and len(set(heights)) == 1:
+                    total_width = widths[0] * len(images)
+                    new_image = PIL.Image.new('RGB', (total_width, heights[0]))
 
-                # Вставляем изображения в коллаж
-                for i, img in enumerate(images):
-                    new_image.paste(PIL.Image.open(io.BytesIO(img)), (widths[0] * i, 0))
+                    # Вставляем изображения в коллаж
+                    for i, img in enumerate(images):
+                        new_image.paste(PIL.Image.open(io.BytesIO(img)), (widths[0] * i, 0))
 
-                # Сохраняем результат в буфер
-                result_image_as_bytes = io.BytesIO()
-                new_image.save(result_image_as_bytes, format='PNG')
-                result_image_as_bytes.seek(0)
-                result_image_as_bytes = result_image_as_bytes.read()
+                    # Сохраняем результат в буфер
+                    result_image_as_bytes = io.BytesIO()
+                    new_image.save(result_image_as_bytes, format='PNG')
+                    result_image_as_bytes.seek(0)
+                    result_image_as_bytes = result_image_as_bytes.read()
 
-                m = bot.send_photo(message.chat.id,
-                            result_image_as_bytes,
-                            disable_notification=True,
-                            reply_to_message_id=message.message_id,
-                            reply_markup=get_keyboard('hide', message))
-                log_message(m)
-                my_log.log_echo(message, f'Made collage of {len(images)} images.')
-            return
-        elif len(MESSAGES) != 1: # если что то другое то просто дропаем
-            my_log.log_echo(message, f'Drop {len(MESSAGES)} images.')
-            return
+                    m = bot.send_photo(message.chat.id,
+                                result_image_as_bytes,
+                                disable_notification=True,
+                                reply_to_message_id=message.message_id,
+                                reply_markup=get_keyboard('hide', message))
+                    log_message(m)
+                    my_log.log_echo(message, f'Made collage of {len(images)} images.')
+                return
+            elif len(MESSAGES) != 1: # если что то другое то просто дропаем
+                my_log.log_echo(message, f'Drop {len(MESSAGES)} images.')
+                return
 
 
         if chat_id_full in IMG_LOCKS:

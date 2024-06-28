@@ -2985,6 +2985,9 @@ def tts(message: telebot.types.Message, caption = None):
 
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                 text = utils.bot_markdown_to_tts(text)
+            if gender == 'google_female':
+                #remove numbers from llang
+                llang = re.sub(r'\d+', '', llang)
             audio = my_tts.tts(text, llang, rate, gender=gender)
             if not audio and llang != 'de':
                 audio = my_tts.tts(text, 'de', rate, gender=gender)

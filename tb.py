@@ -2990,6 +2990,7 @@ def tts(message: telebot.types.Message, caption = None):
                 llang = re.sub(r'\d+', '', llang)
             audio = my_tts.tts(text, llang, rate, gender=gender)
             if not audio and llang != 'de':
+                my_log.log2(f'tb:tts:error: trying universal voice for {llang} {rate} {gender} {text}')
                 audio = my_tts.tts(text, 'de', rate, gender=gender)
             if audio:
                 if message.chat.type != 'private':

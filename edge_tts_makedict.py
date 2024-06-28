@@ -18,7 +18,8 @@ def get_voices() -> dict:
     proc = subprocess.run(['edge-tts', '-l'], stdout=subprocess.PIPE)
     out = proc.stdout.decode('utf-8', errors='replace').strip()
 
-
+    block = {'male': '', 'female': ''}
+    n = 0
     for i in [x for x in out.split('\n') if x]:
         i = i.strip()
         if i:
@@ -33,14 +34,26 @@ def get_voices() -> dict:
                     gender = 'male'
                 elif b == 'Female':
                     gender = 'female'
-                if lang in voices:
-                    voices[lang][gender] = voice
-                else:
-                    voices[lang] = {gender:voice}
+                block[gender] = voice
+                n += 1
+                if n == 2:
 
+                    if lang not in voices:
+                        voices[lang] = block
+                    else:
+                        for x in range(2, 1000):
+                            if lang+str(x) not in voices:
+                                voices[lang+str(x)] = block
+                                break
+
+                    block = {'male': '', 'female': ''}
+                    n = 0
+                continue
 
     return voices
 
 
 if __name__ == '__main__':
-    print(get_voices())
+    d = get_voices()
+    for k in d:
+        print(k, d[k])

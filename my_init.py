@@ -40,15 +40,19 @@ supported_langs_trans = [
         "sw","ta","te","tg","th","tl","tr","ua","uk","ur","uz","vi","xh","yi","yo","zh",
         "zh-TW","zu"]
 
-supported_langs_tts = [
-        'af', 'am', 'ar', 'as', 'az', 'be', 'bg', 'bn', 'bs', 'ca', 'cs', 'cy', 'da',
-        'de', 'el', 'en', 'en2', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fil', 'fr', 'ga', 'gl',
-        'gu', 'he', 'hi', 'hr', 'ht', 'hu', 'hy', 'id', 'is', 'it', 'ja', 'jv', 'ka',
-        'kk', 'km', 'kn', 'ko', 'ku', 'ky', 'la', 'lb', 'lo', 'lt', 'lv', 'mg', 'mi',
-        'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'my', 'nb', 'ne', 'nl', 'nn', 'no', 'ny',
-        'or', 'pa', 'pl', 'ps', 'pt', 'ro', 'ru', 'rw', 'sd', 'si', 'sk', 'sl', 'sm',
-        'sn', 'so', 'sq', 'sr', 'st', 'su', 'sv', 'sw', 'ta', 'te', 'tg', 'th', 'tk',
-        'tl', 'tr', 'tt', 'ua', 'ug', 'uk', 'ur', 'uz', 'vi', 'xh', 'yi', 'yo', 'zh', 'zu']
+supported_langs_tts = ['af', 'am', 'ar', 'ar2', 'ar3', 'ar4', 'ar5', 'ar6', 'ar7', 'ar8', 'ar9', 'ar10', 'ar11',
+                       'ar12', 'ar13', 'ar14', 'ar15', 'ar16', 'az', 'bg', 'bn', 'bn2', 'bs', 'ca', 'cs', 'cy',
+                       'da', 'de', 'de2', 'de3', 'de4', 'de5', 'el', 'en', 'en2', 'en3', 'en4', 'en5', 'en6', 
+                       'en7', 'en8', 'en9', 'en10', 'en11', 'en12', 'en13', 'en14', 'en15', 'en16', 'en17', 
+                       'en18', 'en19', 'en20', 'en21', 'en22', 'en23', 'en24', 'es', 'es2', 'es3', 'es4', 'es5',
+                       'es6', 'es7', 'es8', 'es9', 'es10', 'es11', 'es12', 'es13', 'es14', 'es15', 'es16',
+                       'es17', 'es18', 'et', 'fa', 'fi', 'fi2', 'fr', 'fr2', 'fr3', 'fr4', 'fr5', 'ga', 'gl', 
+                       'gu', 'he', 'hi', 'hr', 'hu', 'id', 'is', 'it', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 
+                       'lo', 'lt', 'lv', 'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'my', 'nb', 'ne', 'nl', 'pl', 'ps', 
+                       'pt', 'ro', 'ru', 'si', 'sk', 'sl', 'so', 'sq', 'sr', 'su', 'sv', 'sw', 'ta', 'ta2', 
+                       'ta3', 'ta4', 'te', 'th', 'tr', 'uk', 'ur', 'ur2', 'uz', 'vi', 'zh', 'zh2', 'zh3', 
+                       'zh4', 'zh5', 'zu']
+
 
 
 start_msg = '''Hello, I`m AI chat bot powered by Google, Microsoft, Openai etc.

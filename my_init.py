@@ -40,16 +40,18 @@ supported_langs_trans = [
         "sw","ta","te","tg","th","tl","tr","ua","uk","ur","uz","vi","xh","yi","yo","zh",
         "zh-TW","zu"]
 
-supported_langs_tts = ['af', 'am', 'ar', 'ar2', 'ar3', 'ar4', 'ar5', 'ar6', 'ar7', 'ar8', 'ar9', 'ar10', 'ar11', 'ar12', 'ar13',
-                       'ar14', 'ar15', 'ar16', 'az', 'bg', 'bn', 'bn2', 'bs', 'ca', 'cs', 'cy', 'da', 'de', 'de2', 'de3', 'de4',
-                       'de5', 'el', 'en', 'en2', 'en3', 'en4', 'en5', 'en6', 'en8', 'en9', 'en10', 'en11', 'en12', 'en13', 'en14',
-                       'en15', 'en16', 'en17', 'en18', 'en19', 'en20', 'en21', 'en22', 'es', 'es2', 'es3', 'es4', 'es5', 'es6',
-                       'es7', 'es8', 'es9', 'es10', 'es11', 'es12', 'es13', 'es14', 'es15', 'es16', 'es17', 'es18', 'es19', 'et',
-                       'fa', 'fi', 'fi2', 'fr', 'fr2', 'fr3', 'fr4', 'fr5', 'ga', 'gl', 'gu', 'he', 'hi', 'hr', 'hu', 'id', 'is',
-                       'it', 'it2', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 'ko2', 'lo', 'lt', 'lv', 'mk', 'ml', 'mn', 'mr',
-                       'ms', 'mt', 'my', 'nb', 'ne', 'nl', 'nl2', 'nl3', 'pl', 'ps', 'pt', 'pt2', 'pt3', 'ro', 'ru', 'si', 'sk',
-                       'sl', 'so', 'sq', 'sr', 'su', 'sv', 'sw', 'sw2', 'ta', 'ta2', 'ta3', 'ta4', 'te', 'th', 'tr', 'uk', 'ur',
-                       'ur2', 'uz', 'vi', 'zh', 'zh2', 'zh3', 'zh4', 'zh5', 'zh6', 'zh7', 'zh8', 'zu']
+supported_langs_tts = ['af', 'am', 'ar', 'ar2', 'ar3', 'ar4', 'ar5', 'ar6', 'ar7', 'ar8', 'ar9', 'ar10', 'ar11', 'ar12', 
+                       'ar13', 'ar14', 'ar15', 'ar16', 'az', 'bg', 'bn', 'bn2', 'bs', 'ca', 'cs', 'cy', 'da', 'de', 
+                       'de2', 'de3', 'de4', 'de5', 'el', 'en', 'en2', 'en3', 'en4', 'en5', 'en6', 'en7', 'en8', 'en9', 
+                       'en10', 'en11', 'en12', 'en13', 'en14', 'en15', 'en16', 'en17', 'en18', 'en19', 'en20', 'en21',
+                       'en22', 'en23', 'en24', 'en25', 'es', 'es2', 'es3', 'es4', 'es5', 'es6', 'es7', 'es8', 'es9',
+                       'es10', 'es11', 'es12', 'es13', 'es14', 'es15', 'es16', 'es17', 'es18', 'es19', 'es20', 'es21',
+                       'es22', 'es23', 'et', 'fa', 'fi', 'fil', 'fr', 'fr2', 'fr3', 'fr4', 'fr5', 'fr6', 'fr7', 'fr8',
+                       'ga', 'gl', 'gu', 'he', 'hi', 'hr', 'hu', 'id', 'is', 'it', 'it2', 'ja', 'jv', 'ka', 'kk', 
+                       'km', 'kn', 'ko', 'ko2', 'lo', 'lt', 'lv', 'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'my', 'nb',
+                       'ne', 'nl', 'nl2', 'nl3', 'pl', 'ps', 'pt', 'pt2', 'pt3', 'ro', 'ru', 'si', 'sk', 'sl', 
+                       'so', 'sq', 'sr', 'su', 'sv', 'sw', 'sw2', 'ta', 'ta2', 'ta3', 'ta4', 'te', 'th', 'tr', 
+                       'uk', 'ur', 'ur2', 'uz', 'vi', 'zh', 'zh2', 'zh3', 'zh4', 'zh5', 'zh6', 'zh7', 'zh8', 'zu']
 
 
 

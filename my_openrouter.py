@@ -17,7 +17,7 @@ import my_log
 KEYS = SqliteDict('db/open_router_keys.db', autocommit=True)
 # {user_id(str):list(model, temperature, max_tokens, maxhistlines, maxhistchars)}
 PARAMS = SqliteDict('db/open_router_params.db', autocommit=True)
-PARAMS_DEFAULT = ['mistralai/mistral-7b-instruct:free', 1, 2000, 5, 6000]
+PARAMS_DEFAULT = ['google/gemma-2-9b-it:free', 1, 2000, 5, 8000]
 
 # сколько запросов хранить
 MAX_MEM_LINES = 10

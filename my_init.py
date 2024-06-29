@@ -195,7 +195,7 @@ def fix_translations_start(langs = []):
 
 if __name__ == '__main__':
     pass
-    my_db.init()
+    my_db.init(backup=False)
     my_groq.load_users_keys()
     my_gemini.load_users_keys()
     my_trans.load_users_keys()
@@ -204,5 +204,5 @@ if __name__ == '__main__':
     # generate_start_msg()
     # generate_help_msg()
 
-    # fix_translations_start(['am', ])
+    # fix_translations_start(['am', 'pt', 'pt-BR'])
     my_db.close()

@@ -2961,13 +2961,15 @@ def tts(message: telebot.types.Message, caption = None):
 {tr('''en, en2, de and fr voices are multilingual, you can use them to change voice for any language
 (/tts ru привет) and (/tts fr привет) will say hello in russian with 2 different voices''', lang)}
 
-{tr('Supported languages:', lang)} {', '.join(supported_langs_tts)}
+{tr('Supported languages:', lang)} https://telegra.ph/Golosa-dlya-TTS-06-29
 
 {tr('Write what to say to get a voice message.', lang)}
 """
 
         COMMAND_MODE[chat_id_full] = 'tts'
-        bot_reply(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
+        bot_reply(message, help, parse_mode = 'Markdown',
+                  reply_markup=get_keyboard('command_mode', message),
+                  disable_web_page_preview = True)
         return
 
     with semaphore_talks:

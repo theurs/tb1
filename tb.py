@@ -3074,6 +3074,11 @@ def get_user_image_counter(chat_id_full: str) -> int:
 @async_run
 def image10_bing_gen(message: telebot.types.Message):
     if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
+        chat_id_full = get_topic_id(message)
+        if my_db.get_user_property(chat_id_full, 'blocked_bing'):
+            bot_reply_tr(message, 'Bing вас забанил.')
+            return
+        
         bot_reply_tr(message, '10 times bing`s image generation started.')
         chat_id_full = get_topic_id(message)
         for _ in range(10):

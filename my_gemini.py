@@ -198,7 +198,7 @@ def chat(query: str,
                 my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error):
                     remove_key(key)
-                if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error):
+                if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error) or 'User location is not supported for the API use.' in str(error):
                     return ''
                 continue
 

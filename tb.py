@@ -3709,9 +3709,11 @@ def summ_text(message: telebot.types.Message):
 
                         if r:
                             my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
-                            my_db.set_user_property(chat_id_full, 'saved_file', r)
+                            text = my_sum.get_text_from_youtube(url, language = lang, transcribe = False)
+                            my_db.set_user_property(chat_id_full, 'saved_file', text)
                             rr = utils.bot_markdown_to_html(r)
-                            bot_reply(message, rr, disable_web_page_preview = True,
+                            ask = tr('Use /ask command to query this file. Example /ask generate a short version of part 1.', lang)
+                            bot_reply(message, rr + '\n' + ask, disable_web_page_preview = True,
                                                 parse_mode='HTML',
                                                 reply_markup=get_keyboard('translate', message))
                             add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
@@ -3734,11 +3736,11 @@ def summ_text(message: telebot.types.Message):
                                 return
                             if res:
                                 rr = utils.bot_markdown_to_html(res)
-                                bot_reply(message, rr, parse_mode='HTML',
+                                ask = tr('Use /ask command to query this file. Example /ask generate a short version of part 1.', lang)
+                                bot_reply(message, rr + '\n' + ask, parse_mode='HTML',
                                                     disable_web_page_preview = True,
                                                     reply_markup=get_keyboard('translate', message))
                                 my_db.set_sum_cache(url_id, res)
-                                bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
                                 add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
                                                 f'{tr("бот прочитал и ответил:", lang)} {res}',
                                                 chat_id_full)

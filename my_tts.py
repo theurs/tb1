@@ -250,6 +250,8 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
             return tts_google(text, lang)
 
         voice = get_voice(voice, gender)
+        if not voice:
+            voice = get_voice('de', gender)
 
         # Удаляем символы переноса строки и перевода каретки 
         text = text.replace('\r','') 

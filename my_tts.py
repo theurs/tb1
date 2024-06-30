@@ -225,7 +225,7 @@ def get_voice(language_code: str, gender: str = 'female'):
 
     if language_code == 'ua':
         language_code = 'uk'
-    return VOICES[language_code][gender]
+    return VOICES[language_code][gender] or ''
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)

@@ -3709,7 +3709,7 @@ def summ_text(message: telebot.types.Message):
 
                         if r:
                             my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
-                            text = my_sum.get_text_from_youtube(url, language = lang, transcribe = False)
+                            text = my_sum.summ_url(url, lang = lang, deep = False, download_only=True)
                             my_db.set_user_property(chat_id_full, 'saved_file', text)
                             rr = utils.bot_markdown_to_html(r)
                             ask = tr('Use /ask command to query this file. Example /ask generate a short version of part 1.', lang)

@@ -1642,6 +1642,7 @@ def handle_document(message: telebot.types.Message):
             # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
             if is_private and \
                 (message.document.mime_type in ('application/pdf',
+                                                'application/xml',
                                                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                                 'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
                                                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -1715,7 +1716,7 @@ def handle_document(message: telebot.types.Message):
                             bot_reply_tr(message, 'Не удалось распознать изображение')
                             return
                     elif message.document.mime_type.startswith('text/') or \
-                        message.document.mime_type in ('application/x-bat',):
+                        message.document.mime_type in ('application/x-bat','application/xml',):
                         data__ = file_bytes.read()
                         text = ''
                         try:

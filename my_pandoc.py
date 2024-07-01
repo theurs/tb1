@@ -19,6 +19,10 @@ catdoc_cmd = 'catdoc'
 
 def fb2_to_text(data: bytes, ext: str = '') -> str:
     """convert from fb2 or epub (bytes) and other types of books file to string"""
+    if isinstance(data, str):
+        with open(data, 'rb') as f:
+            data = f.read()
+
     ext = ext.lower()
     if ext.startswith('.'):
         ext = ext[1:]
@@ -53,7 +57,7 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
             text += page.extract_text()
         utils.remove_file(input_file)
         return text
-    elif book_type in ('xlsx', 'ods'):
+    elif book_type in ('xlsx', 'ods', 'xls'):
         df = pd.DataFrame(pd.read_excel(io.BytesIO(data)))
         buffer = io.StringIO()
         df.to_csv(buffer)
@@ -91,4 +95,4 @@ def read_pptx(input_file: str) -> str:
 if __name__ == '__main__':
     # result = fb2_to_text(open('1.pdf', 'rb').read(), '.pdf')
     # print(result)
-    print(read_pptx('D:/Downloads/1.pptx'))
+    print(fb2_to_text('D:/Downloads/1.xls', '.xls'))

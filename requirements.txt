@@ -54,3 +54,4 @@ trafilatura
 
 youtube_transcript_api
 unidecode
+xlrd

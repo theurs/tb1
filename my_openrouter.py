@@ -81,30 +81,35 @@ def ai(prompt: str = '',
         return 0, ''
     # if not model:
     #     # model = 'gpt-3.5-turbo'
-    #     model = 'google/gemma-7b-it:free'
+    #     model = 'google/gemma-2-9b-it:free'
     #     # model = 'openchat-7b:free'
     #     # model = 'mistral-7b-instruct:free'
     #     # model = 'llama-3-8b-instruct:free'
 
+    if hasattr(cfg, 'OPEN_ROUTER_KEY') and cfg.OPEN_ROUTER_KEY and user_id == 'test':
+        key = cfg.OPEN_ROUTER_KEY
+    elif user_id not in KEYS or not KEYS[user_id]:
+        if model == 'google/gemma-2-9b-it:free':
+            key = cfg.OPEN_ROUTER_KEY
+        else:
+            return 0, ''
+    else:
+        key = KEYS[user_id]
+
     if user_id not in PARAMS:
         PARAMS[user_id] = PARAMS_DEFAULT
     if user_id != 'test':
-        model, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[user_id]
+        model_, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[user_id]
+        if not model:
+            model = model_
     else:
-        model = 'google/gemma-7b-it:free'
+        model = 'google/gemma-2-9b-it:free'
 
     mem_ = mem or []
     if system:
         mem_ = [{'role': 'system', 'content': system}] + mem_
     if prompt:
         mem_ = mem_ + [{'role': 'user', 'content': prompt}]
-
-    if hasattr(cfg, 'OPEN_ROUTER_KEY') and cfg.OPEN_ROUTER_KEY and user_id == 'test':
-        key = cfg.OPEN_ROUTER_KEY
-    elif user_id not in KEYS or not KEYS[user_id]:
-        return 0, ''
-    else:
-        key = KEYS[user_id]
 
     YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
     YOUR_APP_NAME = 'kun4sun_bot'
@@ -157,7 +162,7 @@ def update_mem(query: str, resp: str, chat_id: str):
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
 
 
-def chat(query: str, chat_id: str = '', temperature: float = 0.1, system: str = '') -> str:
+def chat(query: str, chat_id: str = '', temperature: float = 0.1, system: str = '', model: str = '') -> str:
     global LOCKS
     if chat_id in LOCKS:
         lock = LOCKS[chat_id]
@@ -166,7 +171,7 @@ def chat(query: str, chat_id: str = '', temperature: float = 0.1, system: str = 
         LOCKS[chat_id] = lock
     with lock:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
-        status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system)
+        status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
         if text:
             my_db.add_msg(chat_id, 'openrouter')
             mem += [{'role': 'user', 'content': query}]
@@ -347,7 +352,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 
 if __name__ == '__main__':
     pass
-    my_db.init()
+    my_db.init(backup=False)
     # reset('test')
     chat_cli()
     my_db.close()

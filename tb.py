@@ -360,6 +360,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_groq.update_mem(query, resp, chat_id_full)
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.update_mem(query, resp, chat_id_full)
+    elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_openrouter.update_mem(query, resp, chat_id_full)
     elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.update_mem(query, resp, chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -1134,6 +1136,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2, button3, button4)
         return markup
 
+    elif kbd == 'gemma2-9b_chat':
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gemma2-9b_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'haiku_chat':
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
@@ -1214,11 +1228,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button1 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash', callback_data='select_gemini15_flash')
         button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro', callback_data='select_gemini15_pro')
         # button3 = telebot.types.InlineKeyboardButton('GPT-4o', callback_data='select_gpt4o')
+        button3 = telebot.types.InlineKeyboardButton('Gemma 2 9b', callback_data='select_gemma2-9b')
         button4 = telebot.types.InlineKeyboardButton('Llama-3 70b', callback_data='select_llama370')
         button5 = telebot.types.InlineKeyboardButton('GPT 3.5', callback_data='select_gpt35')
         button6 = telebot.types.InlineKeyboardButton('Haiku', callback_data='select_haiku')
         markup.row(button1, button2)
-        markup.row(button4, button5, button6)
+        markup.row(button3, button4)
+        markup.row(button5, button6)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -1429,6 +1445,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_llama370':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3 70b from DuckDuckGo.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
+        elif call.data == 'select_gemma2-9b':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemma 2 9b.', lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemma2-9b')
         elif call.data == 'select_haiku':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claud 3 Haiku from DuckDuckGo.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'haiku')
@@ -1451,6 +1470,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Groq llama 3 70b очищена.')
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('История диалога с Groq llama 3 70b очищена.', lang))
+        elif call.data == 'gemma2-9b_reset':
+            my_openrouter.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с Gemma 2 9b очищена.')
         elif call.data == 'openrouter_reset':
             my_openrouter.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с openrouter очищена.')
@@ -2547,6 +2569,8 @@ def undo(message: telebot.types.Message):
         my_groq.undo(chat_id_full)
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.undo(chat_id_full)
+    elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_openrouter.undo(chat_id_full)
     elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.undo(chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -2575,6 +2599,8 @@ def reset_(message: telebot.types.Message):
     elif 'llama' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.reset(chat_id_full)
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_openrouter.reset(chat_id_full)
+    elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.reset(chat_id_full)
     elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.reset(chat_id_full)
@@ -2734,6 +2760,10 @@ def send_debug_history(message: telebot.types.Message):
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Openrouter\n\n'
+        prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        prompt = 'Google Gemma 2 9b\n\n'
         prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -4979,6 +5009,48 @@ def do_task(message, custom_prompt: str = ''):
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt4o {error3}\n{error_traceback}')
                         return
+
+
+                # если активирован режим общения с gemma 2 9b
+                if chat_mode_ == 'gemma2-9b':
+                    if len(msg) > 6000:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для gemma2 9b:", lang)} {len(msg)} {tr("из", lang)} 6000')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
+                            status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_, model = 'google/gemma-2-9b-it:free')
+                            if not answer:
+                                time.sleep(5)
+                                status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_, model = 'google/gemma-2-9b-it:free')
+                            WHO_ANSWERED[chat_id_full] = 'gemma2-9b '
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not answer:
+                                answer = 'Gemma2 9b ' + tr('did not answered, try to /reset and start again', lang)
+                            else:
+                                my_openrouter.update_mem(message.text, answer, chat_id_full)
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            my_log.log_echo(message, f'[gemma2-9b] {answer}')
+                            try:
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('gemma2-9b_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('gemma2-9b_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:gemma2-9b {error3}\n{error_traceback}')
+                        return
+
 
 
                 # если активирован режим общения с haiku (duckduckgo)

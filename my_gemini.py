@@ -7,6 +7,7 @@ import pprint
 import random
 import re
 import sys
+import time
 import threading
 import traceback
 
@@ -145,7 +146,12 @@ def chat(query: str,
             if hash(key) in badkeys:
                 keys.remove(key)
 
+        time_start = time.time()
         for key in keys:
+            if time.time() > time_start + TIMEOUT:
+                my_log.log_gemini(f'my_gemini:chat: stop after timeout {round(time.time() - time_start, 2)}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                return ''
+
             genai.configure(api_key = key)
 
             GENERATION_CONFIG = GenerationConfig(

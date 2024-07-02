@@ -40,7 +40,7 @@ def get_coords(loc: str):
     '''
     geolocator = Nominatim(user_agent="kun4sun_bot")
     location = geolocator.geocode(loc)
-    return location.latitude, location.longitude
+    return round(location.latitude, 2), round(location.longitude, 2)
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)

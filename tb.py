@@ -5029,8 +5029,6 @@ def do_task(message, custom_prompt: str = ''):
 
                             if not answer:
                                 answer = 'Gemma2 9b ' + tr('did not answered, try to /reset and start again', lang)
-                            else:
-                                my_openrouter.update_mem(message.text, answer, chat_id_full)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)

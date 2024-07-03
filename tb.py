@@ -1662,6 +1662,18 @@ def handle_document(message: telebot.types.Message):
         lock = threading.Lock()
         DOCUMENT_LOCKS[chat_id_full] = lock
 
+    pandoc_support = ('application/vnd.ms-excel',
+        'application/vnd.oasis.opendocument.spreadsheet',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/octet-stream',
+        'application/epub+zip',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/rtf',
+        'application/msword',
+        'application/x-msexcel',
+    )
+
     with lock:
         with semaphore_talks:
             # если прислали текстовый файл или pdf
@@ -1669,17 +1681,9 @@ def handle_document(message: telebot.types.Message):
             if is_private and \
                 (message.document.mime_type in ('application/pdf',
                                                 'application/xml',
-                                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                                'application/vnd.ms-excel', 'application/vnd.oasis.opendocument.spreadsheet',
-                                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                                                'application/rtf',
                                                 'application/x-bat',
-                                                'application/msword',
-                                                'application/x-msexcel',
                                                 'image/svg+xml',
-                                                'application/octet-stream',
-                                                'application/epub+zip') or \
+                                                )+pandoc_support or \
                                                 message.document.mime_type.startswith('text/') or \
                                                 message.document.mime_type.startswith('video/') or \
                                                 message.document.mime_type.startswith('audio/')):
@@ -1705,17 +1709,7 @@ def handle_document(message: telebot.types.Message):
                             text += page.extract_text()
                         if not text.strip() or len(text) < 100:
                             text = my_ocr.get_text_from_pdf(file_bytes, get_ocr_language(message))
-                    elif message.document.mime_type in ('application/vnd.ms-excel',
-                                                        'application/vnd.oasis.opendocument.spreadsheet',
-                                                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                                        'application/octet-stream',
-                                                        'application/epub+zip',
-                                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                                        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                                                        'application/rtf',
-                                                        'application/msword',
-                                                        'application/x-msexcel',
-                                                        ):
+                    elif message.document.mime_type in pandoc_support:
                         ext = utils.get_file_ext(file_info.file_path)
                         text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
                     elif message.document.mime_type == 'image/svg+xml':

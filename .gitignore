@@ -1,4 +1,5 @@
 cfg.py
+*.pem
 sync
 __pycache__
 cookies.json

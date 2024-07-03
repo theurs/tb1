@@ -149,7 +149,6 @@ def update_mem(query: str, resp: str, chat_id: str):
     mem += [{'role': 'assistant', 'content': resp}]
     mem = clear_mem(mem, chat_id)
 
-
     mem__ = []
     try:
         i = 0

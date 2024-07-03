@@ -1398,7 +1398,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     hash = call.data[12:]
                     query = SEARCH_PICS[hash]
                     images = my_ddg.get_images(query)
-                    medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:1000]) for x in images]
+                    medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
                     # for _ in range(10):
                     #     my_db.add_msg(chat_id_full, 'gemini15_flash')
@@ -3271,7 +3271,7 @@ def image_gen(message: telebot.types.Message):
                                     continue
 
                             d = None
-                            caption_ = prompt[:1000]
+                            caption_ = prompt[:900]
                             if isinstance(i, str):
                                 d = utils.download_image_as_bytes(i)
                                 caption_ = 'bing.com\n\n' + caption_
@@ -3284,7 +3284,7 @@ def image_gen(message: telebot.types.Message):
                                 d = i
                             if d:
                                 try:
-                                    medias.append(telebot.types.InputMediaPhoto(d, caption = caption_))
+                                    medias.append(telebot.types.InputMediaPhoto(d, caption = caption_[:900]))
                                 except Exception as add_media_error:
                                     error_traceback = traceback.format_exc()
                                     my_log.log2(f'tb:image:add_media_bytes: {add_media_error}\n\n{error_traceback}')

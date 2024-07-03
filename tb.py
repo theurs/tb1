@@ -5017,8 +5017,8 @@ def do_task(message, custom_prompt: str = ''):
 
                 # если активирован режим общения с gemma 2 9b
                 if chat_mode_ == 'gemma2-9b':
-                    if len(msg) > 6000:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для gemma2 9b:", lang)} {len(msg)} {tr("из", lang)} 6000')
+                    if len(msg) > my_openrouter.MAX_REQUEST_GEMMA2_9B:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для gemma2 9b:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter.MAX_REQUEST_GEMMA2_9B}')
                         return
 
                     with ShowAction(message, action):

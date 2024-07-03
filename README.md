@@ -277,9 +277,6 @@ KANDINSKI_API = [
 # https://yandex.cloud/ru/docs/iam/operations/iam-token/create#api_1
 YND_OAUTH = ['xxx', 'yyy']
 
-# гпт4 и далли3. просто ссылка в меню на отдельного бота с гпт4-турбо и далли3
-coze_bot = 'https://t.me/kun6sun_bot'
-
 
 # https://console.groq.com/keys
 GROQ_API_KEY = [

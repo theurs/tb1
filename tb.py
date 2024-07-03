@@ -1221,10 +1221,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
-        if hasattr(cfg, 'coze_bot') and cfg.coze_bot:
-            button1 = telebot.types.InlineKeyboardButton("🤜 GPT-4o + Dalle3 (coze.com) 🤛",  url = cfg.coze_bot)
-            markup.row(button1)
-
         have_gemini_keys = chat_id_full in my_gemini.USER_KEYS or message.from_user.id in cfg.admins
         button1 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash', callback_data='select_gemini15_flash')
         if have_gemini_keys:
@@ -5225,6 +5221,8 @@ def main():
 
     log_group_daemon()
 
+    # bot.remove_webhook()
+    # time.sleep(1)
     bot.polling(timeout=90, long_polling_timeout=90)
 
 

@@ -1676,6 +1676,7 @@ def handle_document(message: telebot.types.Message):
                                                 'application/rtf',
                                                 'application/x-bat',
                                                 'application/msword',
+                                                'application/x-msexcel',
                                                 'image/svg+xml',
                                                 'application/octet-stream',
                                                 'application/epub+zip') or \
@@ -1713,6 +1714,7 @@ def handle_document(message: telebot.types.Message):
                                                         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                                                         'application/rtf',
                                                         'application/msword',
+                                                        'application/x-msexcel',
                                                         ):
                         ext = utils.get_file_ext(file_info.file_path)
                         text = my_pandoc.fb2_to_text(file_bytes.read(), ext)

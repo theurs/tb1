@@ -1225,8 +1225,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button1 = telebot.types.InlineKeyboardButton("🤜 GPT-4o + Dalle3 (coze.com) 🤛",  url = cfg.coze_bot)
             markup.row(button1)
 
+        have_gemini_keys = chat_id_full in my_gemini.USER_KEYS or message.from_user.id in cfg.admins
         button1 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash', callback_data='select_gemini15_flash')
-        button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro', callback_data='select_gemini15_pro')
+        if have_gemini_keys:
+            button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro', callback_data='select_gemini15_pro')
+        else:
+            button2 = telebot.types.InlineKeyboardButton('🔒Gemini 1.5 Pro', callback_data='select_gemini15_pro')
         # button3 = telebot.types.InlineKeyboardButton('GPT-4o', callback_data='select_gpt4o')
         button3 = telebot.types.InlineKeyboardButton('Gemma 2 9b', callback_data='select_gemma2-9b')
         button4 = telebot.types.InlineKeyboardButton('Llama-3 70b', callback_data='select_llama370')

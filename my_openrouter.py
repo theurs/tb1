@@ -17,7 +17,7 @@ import my_log
 KEYS = SqliteDict('db/open_router_keys.db', autocommit=True)
 # {user_id(str):list(model, temperature, max_tokens, maxhistlines, maxhistchars)}
 PARAMS = SqliteDict('db/open_router_params.db', autocommit=True)
-PARAMS_DEFAULT = ['google/gemma-2-9b-it:free', 1, 2000, 5, 8000]
+PARAMS_DEFAULT = ['google/gemma-2-9b-it:free', 1, 4000, 20, 12000]
 
 # сколько запросов хранить
 MAX_MEM_LINES = 10
@@ -268,7 +268,7 @@ def get_mem_as_string(chat_id: str) -> str:
         return ''
 
 
-def sum_big_text(text:str, query: str, temperature: float = 0.1, model: str = '') -> str:
+def sum_big_text(text:str, query: str, temperature: float = 0.1, model: str = '', max_size: int = None) -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature.
@@ -281,7 +281,7 @@ def sum_big_text(text:str, query: str, temperature: float = 0.1, model: str = ''
     Returns:
         str: The generated response from the AI model.
     """
-    query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
+    query = f'''{query}\n\n{text[:max_size or MAX_SUM_REQUEST]}'''
     s, r = ai(query, user_id='test', temperature=temperature, model=model)
     return r
 
@@ -354,5 +354,8 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     # reset('test')
+    with open('1.txt', 'r', encoding='utf-8') as f:
+        text = f.read()
+    print(sum_big_text(text, 'перескажи в 4000 символов', model = '', max_size=14000))
     chat_cli()
     my_db.close()

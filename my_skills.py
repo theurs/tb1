@@ -7,6 +7,7 @@ import decimal
 import numbers
 import numpy
 import numpy as np
+import os
 import random
 import re
 import requests

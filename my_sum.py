@@ -123,8 +123,8 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
 
         text = text.strip()
 
-        if not text and transcribe: # нет субтитров?
-            text, info = my_transcribe.download_youtube_clip(url, language=language)
+        # if not text and transcribe: # нет субтитров?
+            # text, info = my_transcribe.download_youtube_clip(url, language=language)
 
         return text
     except Exception as error:

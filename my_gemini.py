@@ -22,7 +22,7 @@ import cfg
 import my_db
 import my_log
 import my_sum
-from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, get_cryptocurrency_rates
+from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, get_cryptocurrency_rates, run_script
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -177,6 +177,11 @@ def chat(query: str,
                     get_currency_rates,
                     # get_cryptocurrency_rates, # broken, why?
                     ]
+                if chat_id:
+                    _user_id = int(chat_id.split(' ')[0].replace('[','').replace(']',''))
+                    if _user_id in cfg.admins:
+                        SKILLS += [run_script,]
+
                 model_ = genai.GenerativeModel(model,
                                         tools=SKILLS,
                                         generation_config = GENERATION_CONFIG,

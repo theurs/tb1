@@ -254,42 +254,37 @@ def get_cryptocurrency_rates():
         return f'Error: {error}'
 
 
-def run_script(fname: str, text: str) -> str:
+def run_script(filename: str, body: str) -> str:
     '''Save and run script in shell, return its output. Use "test_..." filename and hashbang.
-    It will run code for you - subprocess.check_output(f'./{fname}', shell=True, timeout=300)
-    Example: fname = "test_1.sh", text = "#!/bin/sh
-    ls -l", return list of files in current directory.
-    Example: fname = "test_2.py", text = "#!/usr/bin/env python3
-    import random
-    print(random.randint(1, 10))"
-    return random number.
+    It will run code for you - subprocess.check_output(f'./{filename}', shell=True, timeout=300)
+
     '''
-    text = text.replace('\\n', '\n')
+    # body = body.replace('\\n', '\n')
 
-    lines = text.splitlines()
-    if lines[0].startswith('#!/') and lines[0].endswith('\\'):
-        lines[0] = lines[0][:-1]
-    text = '\n'.join(lines)
+    # lines = body.splitlines()
+    # if lines[0].startswith('#!/') and lines[0].endswith('\\'):
+    #     lines[0] = lines[0][:-1]
+    # body = '\n'.join(lines)
 
-    my_log.log_gemini_skills(f'run_script {fname}\n\n{text}')
+    my_log.log_gemini_skills(f'run_script {filename}\n\n{body}')
     try:
-        with open(fname, 'w') as f:
-            f.write(text)
-        os.chmod(fname, 0o777)
+        with open(filename, 'w') as f:
+            f.write(body)
+        os.chmod(filename, 0o777)
         try:
-            output = subprocess.check_output(f'./{fname}', shell=True, timeout=300, stderr=subprocess.STDOUT)
+            output = subprocess.check_output(f'./{filename}', shell=True, timeout=300, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as error:
             if not error.output:
                 output = str(error).encode('utf-8', errors='replace')
             else:
                 output = error.output
-        utils.remove_file(fname)
+        utils.remove_file(filename)
         result = output.decode('utf-8', errors='replace')
         my_log.log_gemini_skills(f'run_script: {result}')
         return result
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{fname}\n{text}')
+        my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{filename}\n{body}')
         return f'{error}\n\n{traceback_error}'
 
 

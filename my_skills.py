@@ -265,7 +265,11 @@ def run_script(fname: str, text: str) -> str:
     return random number.
     '''
     text = text.replace('\\n', '\n')
-    text = text.replace('#!/bin/bash\\', '#!/bin/bash')
+
+    lines = text.splitlines()
+    if lines[0].startswith('#!/') and lines[0].endswith('\\'):
+        lines[0] = lines[0][:-1]
+    text = '\n'.join(lines)
 
     my_log.log_gemini_skills(f'run_script {fname}\n\n{text}')
     try:
@@ -299,7 +303,7 @@ if __name__ == '__main__':
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
     # print(calc("dir(cfg)"))
 
-    text='''#!/bin/sh
+    text='''#!/bin/sh\\
 ls -l'''
     print(run_script('test.sh', text))
 

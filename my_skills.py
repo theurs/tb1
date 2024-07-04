@@ -10,6 +10,7 @@ import numpy as np
 import random
 import re
 import requests
+import subprocess
 import traceback
 from math import *
 from decimal import *
@@ -27,6 +28,7 @@ import my_db
 import my_google
 import my_log
 import my_sum
+import utils
 
 
 MAX_REQUEST = 25000
@@ -251,6 +253,27 @@ def get_cryptocurrency_rates():
         return f'Error: {error}'
 
 
+def run_script(fname: str, text: str) -> str:
+    '''Save and run script in shell, return its output.
+    Example: fname = "test.sh", text = "#!/bin/sh\nls -l", return list of files in current directory.
+    Example: fname = "test.py", text = "#!/usr/bin/env python3\n\nimport random\nprint(random.randint(1, 10))", return random number.
+    '''
+    my_log.log_gemini_skills(f'run_script {fname}\n\n{text}')
+    try:
+        with open(fname, 'w') as f:
+            f.write(text)
+        os.chmod(fname, 0o777)
+        output = subprocess.check_output(fname, shell=True)
+        utils.remove_file(fname)
+        result = output.decode('utf-8')
+        my_log.log_gemini_skills(f'run_script: {result}')
+        return result
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{fname}\n{text}')
+        return f'{error}\n\n{traceback_error}'
+
+
 if __name__ == '__main__':
     pass
     # my_db.init()
@@ -261,6 +284,6 @@ if __name__ == '__main__':
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
     # print(calc("dir(cfg)"))
 
-    print(get_cryptocurrency_rates())
+    print(run_script('test.sh', '#!/bin/sh\nls -l'))
 
     # my_db.close()

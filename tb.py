@@ -1669,6 +1669,14 @@ def handle_document(message: telebot.types.Message):
         'application/msword',
         'application/x-msexcel',
     )
+    simple_text = ('application/x-bat',
+                   'application/xml',
+                   'application/javascript',
+                   'application/json',
+                   'application/x-sh',
+                   'application/xhtml+xml',
+                   'application/atom+xml',
+                   )
 
     with lock:
         with semaphore_talks:
@@ -1676,10 +1684,8 @@ def handle_document(message: telebot.types.Message):
             # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
             if is_private and \
                 (message.document.mime_type in ('application/pdf',
-                                                'application/xml',
-                                                'application/x-bat',
                                                 'image/svg+xml',
-                                                )+pandoc_support or \
+                                                )+pandoc_support+simple_text or \
                                                 message.document.mime_type.startswith('text/') or \
                                                 message.document.mime_type.startswith('video/') or \
                                                 message.document.mime_type.startswith('audio/')):
@@ -1734,7 +1740,7 @@ def handle_document(message: telebot.types.Message):
                             bot_reply_tr(message, 'Не удалось распознать изображение')
                             return
                     elif message.document.mime_type.startswith('text/') or \
-                        message.document.mime_type in ('application/x-bat','application/xml',):
+                        message.document.mime_type in simple_text:
                         data__ = file_bytes.read()
                         text = ''
                         try:

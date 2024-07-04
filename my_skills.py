@@ -265,9 +265,15 @@ def run_script(fname: str, text: str) -> str:
         with open(fname, 'w') as f:
             f.write(text)
         os.chmod(fname, 0o777)
-        output = subprocess.check_output(f'./{fname}', shell=True, timeout=300, stderr=subprocess.DEVNULL)
+        try:
+            output = subprocess.check_output(f'./{fname}', shell=True, timeout=300)
+        except subprocess.CalledProcessError as error:
+            if not error.output:
+                output = str(error).encode('utf-8', errors='replace')
+            else:
+                output = error.output
         utils.remove_file(fname)
-        result = output.decode('utf-8')
+        result = output.decode('utf-8', errors='replace')
         my_log.log_gemini_skills(f'run_script: {result}')
         return result
     except Exception as error:

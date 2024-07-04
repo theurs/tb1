@@ -263,7 +263,7 @@ def run_script(fname: str, text: str) -> str:
         with open(fname, 'w') as f:
             f.write(text)
         os.chmod(fname, 0o777)
-        output = subprocess.check_output(fname, shell=True)
+        output = subprocess.check_output(fname, shell=True, timeout=300)
         utils.remove_file(fname)
         result = output.decode('utf-8')
         my_log.log_gemini_skills(f'run_script: {result}')

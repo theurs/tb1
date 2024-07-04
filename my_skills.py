@@ -272,7 +272,7 @@ def run_script(fname: str, text: str) -> str:
                 output = str(error).encode('utf-8', errors='replace')
             else:
                 output = error.output
-        utils.remove_file(fname)
+        # utils.remove_file(fname)
         result = output.decode('utf-8', errors='replace')
         my_log.log_gemini_skills(f'run_script: {result}')
         return result

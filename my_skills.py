@@ -259,7 +259,7 @@ def run_script(filename: str, body: str) -> str:
     It will run code for you - subprocess.check_output(f'./{filename}', shell=True, timeout=300)
 
     '''
-    # body = body.replace('\\n', '\n')
+    body = body.replace('\\n', '\n')
 
     # lines = body.splitlines()
     # if lines[0].startswith('#!/') and lines[0].endswith('\\'):

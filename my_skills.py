@@ -255,9 +255,9 @@ def get_cryptocurrency_rates():
 
 
 def run_script(fname: str, text: str) -> str:
-    '''Save and run script in shell, return its output.
-    Example: fname = "test.sh", text = "#!/bin/sh\nls -l", return list of files in current directory.
-    Example: fname = "test.py", text = "#!/usr/bin/env python3\n\nimport random\nprint(random.randint(1, 10))", return random number.
+    '''Save and run script in shell, return its output. Always use test_ filename and hashbang.
+    Example: fname = "test_1.sh", text = "#!/bin/sh\nls -l", return list of files in current directory.
+    Example: fname = "test_2.py", text = "#!/usr/bin/env python3\n\nimport random\nprint(random.randint(1, 10))", return random number.
     '''
     my_log.log_gemini_skills(f'run_script {fname}\n\n{text}')
     try:

@@ -4936,7 +4936,7 @@ def do_task(message, custom_prompt: str = ''):
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
-                            my_log.log_echo(message, f'[openrouter] {answer}')
+                            my_log.log_echo(message, f'[openrouter {my_openrouter.PARAMS[chat_id_full][0]}] {answer}')
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('openrouter_chat', message), not_log=True, allow_voice = True)

@@ -1,6 +1,6 @@
 ## Что сделать
 
-
+Requires fastapi, uvicorn, and latest version of starlette.
 
 ## Баги
 

@@ -5207,6 +5207,8 @@ def main():
     """
     Runs the main function, which sets default commands and starts polling the bot.
     """
+    bot.remove_webhook()
+
     load_msgs()
 
     my_gemini.load_users_keys()
@@ -5221,8 +5223,6 @@ def main():
 
     log_group_daemon()
 
-    # bot.remove_webhook()
-    # time.sleep(1)
     bot.polling(timeout=90, long_polling_timeout=90)
 
 

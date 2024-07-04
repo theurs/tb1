@@ -264,6 +264,7 @@ def run_script(fname: str, text: str) -> str:
     print(random.randint(1, 10))"
     return random number.
     '''
+    text = text.replace('\\n', '\n')
     my_log.log_gemini_skills(f'run_script {fname}\n\n{text}')
     try:
         with open(fname, 'w') as f:
@@ -276,7 +277,7 @@ def run_script(fname: str, text: str) -> str:
                 output = str(error).encode('utf-8', errors='replace')
             else:
                 output = error.output
-        # utils.remove_file(fname)
+        utils.remove_file(fname)
         result = output.decode('utf-8', errors='replace')
         my_log.log_gemini_skills(f'run_script: {result}')
         return result
@@ -296,6 +297,8 @@ if __name__ == '__main__':
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
     # print(calc("dir(cfg)"))
 
-    print(run_script('test.sh', '#!/bin/sh\nls -l'))
+    text='''#!/bin/sh
+ls -l'''
+    print(run_script('test.sh', text))
 
     # my_db.close()

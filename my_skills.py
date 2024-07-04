@@ -265,6 +265,8 @@ def run_script(fname: str, text: str) -> str:
     return random number.
     '''
     text = text.replace('\\n', '\n')
+    text = text.replace('#!/bin/bash\\', '#!/bin/bash')
+
     my_log.log_gemini_skills(f'run_script {fname}\n\n{text}')
     try:
         with open(fname, 'w') as f:

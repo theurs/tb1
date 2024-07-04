@@ -33,14 +33,14 @@ def get_subs_from_dzen_video(url: str) -> str:
     list_of_subs = []
     cmd = f'yt-dlp -q --skip-download --list-subs "{url}"'
     try:
-        output = subprocess.check_output(cmd, shell=True)
+        output = subprocess.check_output(cmd, shell=True, timeout=300, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as error:
         if not error.output:
-            return None
+            output = str(error).encode('utf-8', errors='replace')
         else:
             output = error.output
 
-    output = output.decode('utf-8')
+    output = output.decode('utf-8', errors='replace')
 
     for line in output.splitlines():
         line = line.strip()

@@ -259,6 +259,7 @@ def run_script(filename: str, body: str) -> str:
     do not add any shebang to body.
     It will run code for you - subprocess.check_output(f'./{filename}', shell=True, timeout=300)
     '''
+    body = decode_string(body)
     filename = 'run_script_' + filename
     ext = utils.get_file_ext(filename)
     if ext.startswith('.'):

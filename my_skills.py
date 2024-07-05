@@ -254,6 +254,8 @@ def get_cryptocurrency_rates():
         return f'Error: {error}'
 
 
+# надо использовать стиль типа такого что бы он не отнекивался, не говорил что не может не умеет
+# /style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску
 def run_script(filename: str, body: str) -> str:
     '''Save and run script in shell, return its output. Allowed file ".py" for python and ".sh" for bash,
     do not add any shebang to body.
@@ -296,6 +298,7 @@ def run_script(filename: str, body: str) -> str:
         my_log.log_gemini_skills(f'run_script: {result}')
         return result
     except Exception as error:
+        utils.remove_file(filename)
         traceback_error = traceback.format_exc()
         my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{filename}\n{body}')
         return f'{error}\n\n{traceback_error}'

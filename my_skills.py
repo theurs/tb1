@@ -255,10 +255,22 @@ def get_cryptocurrency_rates():
 
 
 def run_script(filename: str, body: str) -> str:
-    '''Save and run script in shell, return its output. Use "test_..." filename and hashbang.
+    '''Save and run script in shell, return its output. Allowed file ".py" for python and ".sh" for bash,
+    do not add any shebang to body.
     It will run code for you - subprocess.check_output(f'./{filename}', shell=True, timeout=300)
-
     '''
+    filename = 'run_script_' + filename
+    ext = utils.get_file_ext(filename)
+    if ext.startswith('.'):
+        ext = ext[1:]
+
+    if ext == 'py':
+        if not body.split()[0].startswith('#!/'):
+            body = '#!/usr/bin/env python3\n\n' + body
+    elif ext == 'sh':
+        if not body.split()[0].startswith('#!/'):
+            body = '#!/bin/bash\n\n' + body
+
     body = body.replace('\\n', '\n')
 
     # lines = body.splitlines()
@@ -298,8 +310,7 @@ if __name__ == '__main__':
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
     # print(calc("dir(cfg)"))
 
-    text='''#!/bin/sh\\
-ls -l'''
+    text='''ls -l'''
     print(run_script('test.sh', text))
 
     # my_db.close()

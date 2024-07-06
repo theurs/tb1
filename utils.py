@@ -4,6 +4,7 @@
 import datetime
 import functools
 import hashlib
+import io
 import html
 import os
 import pathlib
@@ -19,7 +20,7 @@ import tempfile
 import threading
 import platform as platform_module
 
-
+import PIL
 import prettytable
 import telebot
 from pylatexenc.latex2text import LatexNodes2Text
@@ -554,6 +555,60 @@ def get_codepage():
     else:
         result = subprocess.getoutput("locale charmap")
         return result.lower()
+
+
+def make_collage(images: list) -> bytes:
+    """Создает коллаж из списка изображений, располагая их по 2 картинки в ряд. 
+    Учитывает разный размер картинок, чтобы избежать наплывания.
+
+    Args:
+        images (list): Список байтовых строк, представляющих изображения.
+
+    Returns:
+        bytes: Байтовая строка, представляющая итоговое изображение коллажа.
+    """
+
+    images = [PIL.Image.open(io.BytesIO(img)) for img in images]
+
+    collage_width = 0
+    collage_height = 0
+    x_offset = 0
+    y_offset = 0
+
+    for i, img in enumerate(images):
+        # Вычисляем ширину ряда (2 картинки)
+        if i % 2 == 0:
+            row_width = sum([img.width for img in images[i:i+2]])
+            collage_width = max(collage_width, row_width)  # Обновляем ширину коллажа
+
+        # Размещаем картинку
+        collage_height = max(collage_height, y_offset + img.height)
+        x_offset += img.width
+
+        # Переходим на следующий ряд
+        if (i + 1) % 2 == 0:
+            y_offset += max([img.height for img in images[i-1:i+1]])  # Максимальная высота картинок в ряду
+            x_offset = 0
+
+        # Создаем новый образ для коллажа с учетом вычисленных размеров после обработки всех картинок
+        if i == len(images) - 1:
+            collage = PIL.Image.new('RGB', (collage_width, collage_height))
+
+            # Вставляем изображения в коллаж
+            x_offset = 0
+            y_offset = 0
+            for j, img in enumerate(images):
+                collage.paste(img, (x_offset, y_offset))
+                x_offset += img.width
+                if (j + 1) % 2 == 0:
+                    y_offset += max([img.height for img in images[j-1:j+1]])  # Максимальная высота картинок в ряду
+                    x_offset = 0
+
+    # Сохраняем результат в буфер
+    result_image_as_bytes = io.BytesIO()
+    collage.save(result_image_as_bytes, format='PNG')
+    result_image_as_bytes.seek(0)
+    return result_image_as_bytes.read()
 
 
 if __name__ == '__main__':

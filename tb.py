@@ -494,7 +494,7 @@ def check_blocked_user(id_: str, from_user_id: int, check_trottle = True):
         raise Exception(f'user {user_id} in stop list, ignoring')
 
 
-def is_admin_member(message: telebot.types.Message):
+def is_admin_member(message: telebot.types.Message) -> bool:
     """Checks if the user is an admin member of the chat."""
     try:
         if message.data: # its a callback
@@ -517,7 +517,7 @@ def is_admin_member(message: telebot.types.Message):
     return True if 'creator' in member or 'administrator' in member else False
 
 
-def is_for_me(message: telebot.types.Message):
+def is_for_me(message: telebot.types.Message) -> bool:
     """Checks who the command is addressed to, this bot or another one.
 
     /cmd@botname args
@@ -1928,67 +1928,12 @@ def handle_photo(message: telebot.types.Message):
                     return
 
 
-        def make_collage(images):
-            """Создает коллаж из списка изображений, располагая их по 2 картинки в ряд. 
-            Учитывает разный размер картинок, чтобы избежать наплывания.
-
-            Args:
-                images (list): Список байтовых строк, представляющих изображения.
-
-            Returns:
-                bytes: Байтовая строка, представляющая итоговое изображение коллажа,
-                    или None, если коллаж создать не удалось.
-            """
-
-            images = [PIL.Image.open(io.BytesIO(img)) for img in images]
-
-            collage_width = 0
-            collage_height = 0
-            x_offset = 0
-            y_offset = 0
-
-            for i, img in enumerate(images):
-                # Вычисляем ширину ряда (2 картинки)
-                if i % 2 == 0:
-                    row_width = sum([img.width for img in images[i:i+2]])
-                    collage_width = max(collage_width, row_width)  # Обновляем ширину коллажа
-
-                # Размещаем картинку
-                collage_height = max(collage_height, y_offset + img.height)
-                x_offset += img.width
-
-                # Переходим на следующий ряд
-                if (i + 1) % 2 == 0:
-                    y_offset += max([img.height for img in images[i-1:i+1]])  # Максимальная высота картинок в ряду
-                    x_offset = 0
-
-                # Создаем новый образ для коллажа с учетом вычисленных размеров после обработки всех картинок
-                if i == len(images) - 1:
-                    collage = PIL.Image.new('RGB', (collage_width, collage_height))
-
-                    # Вставляем изображения в коллаж
-                    x_offset = 0
-                    y_offset = 0
-                    for j, img in enumerate(images):
-                        collage.paste(img, (x_offset, y_offset))
-                        x_offset += img.width
-                        if (j + 1) % 2 == 0:
-                            y_offset += max([img.height for img in images[j-1:j+1]])  # Максимальная высота картинок в ряду
-                            x_offset = 0
-
-            # Сохраняем результат в буфер
-            result_image_as_bytes = io.BytesIO()
-            collage.save(result_image_as_bytes, format='PNG')
-            result_image_as_bytes.seek(0)
-            return result_image_as_bytes.read()
-
-
         if is_private:
             # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку
             if len(MESSAGES) > 1:
                 with ShowAction(message, 'typing'):
                     images = [download_image_from_message(msg) for msg in MESSAGES]
-                    result_image_as_bytes = make_collage(images)
+                    result_image_as_bytes = utils.make_collage(images)
                     m = bot.send_photo(message.chat.id,
                                     result_image_as_bytes,
                                     disable_notification=True,

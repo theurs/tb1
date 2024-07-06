@@ -16,7 +16,6 @@ import time
 
 import cairosvg
 import langcodes
-import PIL
 import prettytable
 import PyPDF2
 import telebot

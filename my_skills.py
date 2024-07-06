@@ -314,7 +314,7 @@ if __name__ == '__main__':
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
     # print(calc("dir(cfg)"))
 
-    text='''ls -l'''
-    print(run_script('test.sh', text))
+    # text='''ls -l'''
+    # print(run_script('test.sh', text))
 
     # my_db.close()

@@ -5231,7 +5231,21 @@ def main():
 
     log_group_daemon()
 
-    bot.polling(timeout=90, long_polling_timeout=90)
+    # bot.polling(timeout=90, long_polling_timeout=90)
+
+    # Remove webhook, it fails sometimes the set if there is a previous webhook
+    bot.remove_webhook()
+    time.sleep(1)
+
+    if hasattr(cfg, 'WEBHOOK_DOMAIN') and hasattr(cfg, 'WEBHOOK_PORT') and hasattr(cfg, 'WEBHOOK_SSL_CERT') and hasattr(cfg, 'WEBHOOK_SSL_PRIV'):
+        bot.run_webhooks(
+            listen=cfg.WEBHOOK_DOMAIN,
+            port = cfg.WEBHOOK_PORT,
+            certificate=cfg.WEBHOOK_SSL_CERT,
+            certificate_key=cfg.WEBHOOK_SSL_PRIV
+        )
+    else:
+        bot.polling(timeout=90, long_polling_timeout=90)
 
 
 if __name__ == '__main__':

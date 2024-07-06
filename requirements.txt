@@ -8,6 +8,7 @@ cryptocompare
 deepl
 duckduckgo_search[lxml]
 edge_tts
+fastapi
 geopy
 httpx[socks]
 fake_useragent
@@ -46,6 +47,7 @@ python-Levenshtein
 python-pptx
 SpeechRecognition
 sqlitedict
+starlette
 #trafilatura==1.6.1
 trafilatura
 
@@ -53,5 +55,6 @@ trafilatura
 # TTS
 
 youtube_transcript_api
+uvicorn
 unidecode
 xlrd

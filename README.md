@@ -146,6 +146,19 @@
    
 5. Создайте файл cfg.py и добавьте в него строку
 ```
+# Quick'n'dirty SSL certificate generation:
+#
+# openssl genrsa -out webhook_pkey.pem 2048
+# openssl req -new -x509 -days 3650 -key webhook_pkey.pem -out webhook_cert.pem
+#
+# When asked for "Common Name (e.g. server FQDN or YOUR name)" you should reply
+# with the same value in you put in WEBHOOK_HOST
+# WEBHOOK_DOMAIN = 'bot777.hostname.com'
+# WEBHOOK_PORT = xxxx  # 443, 80, 88 or 8443 (port need to be 'open')
+# WEBHOOK_SSL_CERT = './webhook_cert.pem'  # Path to the ssl certificate
+# WEBHOOK_SSL_PRIV = './webhook_pkey.pem'  # Path to the ssl private key
+
+
 # не журналировать id чатов из этого списка
 DO_NOT_LOG = [xxx, yyy,]
 

@@ -1899,9 +1899,7 @@ def handle_photo(message: telebot.types.Message):
     del MESSAGE_QUEUE_IMG[chat_id_full]
 
 
-
     try:
-
         is_private = message.chat.type == 'private'
         supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
         if supch == 1:
@@ -1988,16 +1986,26 @@ def handle_photo(message: telebot.types.Message):
         if is_private:
             # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку
             if len(MESSAGES) > 1:
-                images = [download_image_from_message(msg) for msg in MESSAGES]
-                result_image_as_bytes = make_collage(images)
-                m = bot.send_photo(message.chat.id,
-                                result_image_as_bytes,
-                                disable_notification=True,
-                                reply_to_message_id=message.message_id,
-                                reply_markup=get_keyboard('hide', message))
-                log_message(m)
-                my_log.log_echo(message, f'Made collage of {len(images)} images.')
-                return
+                with ShowAction(message, 'typing'):
+                    images = [download_image_from_message(msg) for msg in MESSAGES]
+                    result_image_as_bytes = make_collage(images)
+                    m = bot.send_photo(message.chat.id,
+                                    result_image_as_bytes,
+                                    disable_notification=True,
+                                    reply_to_message_id=message.message_id,
+                                    reply_markup=get_keyboard('hide', message))
+                    log_message(m)
+                    my_log.log_echo(message, f'Made collage of {len(images)} images.')
+                    text = img2txt(result_image_as_bytes, lang, chat_id_full, message.caption)
+                    if text:
+                        text = utils.bot_markdown_to_html(text)
+                        text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
+                        bot_reply(message, text, parse_mode='HTML',
+                                            reply_markup=get_keyboard('translate', message),
+                                            disable_web_page_preview=True)
+                    else:
+                        bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                    return
 
 
         if chat_id_full in IMG_LOCKS:

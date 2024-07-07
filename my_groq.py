@@ -73,7 +73,7 @@ def ai(prompt: str = '',
         mem_ (list, optional): The list of previous messages. Defaults to [].
         temperature (float, optional): The randomness of the generated response. Defaults to 0.1.
         model_ (str, optional): The name of the GROQ model to use. Defaults to 'llama3-70b-8192'.
-            (llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it)
+            (llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it, gemma2-9b-it)
         max_tokens_ (int, optional): The maximum number of tokens in the generated response. Defaults to 2000.
         key_ (str, optional): The API key for the GROQ model. Defaults to ''.
 
@@ -111,8 +111,8 @@ def ai(prompt: str = '',
             random.shuffle(keys)
             keys = keys[:4]
 
-        # model="llama3-70b-8192", # llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it, whisper-large-v3??
-        model = model_ if model_ else 'llama3-70b-8192'
+        # model="llama3-70b-8192", # llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it, gemma2-9b-it, whisper-large-v3??
+        model = model_ if model_ else 'gemma2-9b-it'
 
         for key in keys:
             if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
@@ -230,6 +230,7 @@ def chat(query: str, chat_id: str,
             if model == 'llama3-8b-8192': model_ = 'llama3-8b-8192'
             if model == 'mixtral-8x7b-32768': model_ = 'mixtral-8x7b-32768'
             if model == 'gemma-7b-it': model_ = 'gemma-7b-it'
+            if model == 'gemma2-9b-it': model_ = 'gemma2-9b-it'
             my_db.add_msg(chat_id, model_)
         if r and update_memory:
             mem = update_mem(query, r, mem)
@@ -310,13 +311,13 @@ def get_mem_as_string(chat_id: str) -> str:
     return result
 
 
-def chat_cli():
+def chat_cli(model = ''):
     while 1:
         q = input('>')
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        r = chat('(отвечай всегда на языке [ru]) ' + q, 'test')
+        r = chat('(отвечай всегда на языке [ru]) ' + q, 'test', model = model)
         print(r)
 
 
@@ -473,9 +474,9 @@ def load_users_keys():
 if __name__ == '__main__':
     pass
     load_users_keys()
-    my_db.init()
+    my_db.init(backup=False)
 
-    chat_cli()
+    chat_cli(model='gemma2-9b-it')
 
     # for x in range(10):
     #     print(ai('1+1='))

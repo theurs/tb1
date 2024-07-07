@@ -15,6 +15,7 @@ import assemblyai as aai
 from pydub import AudioSegment
 
 import cfg
+import my_groq
 import my_transcribe
 import my_log
 import utils
@@ -121,6 +122,8 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
         input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
         try:
+            if not text:
+                text = my_groq.stt(data_from_file, lang)
             if not text and dur < 55:
                 # быстро и хорошо распознает но до 1 минуты всего
                 # и часто глотает последнее слово

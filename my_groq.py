@@ -2,7 +2,7 @@
 # install from PyPI
 # pip install groq
 
-
+import cachetools.func
 import random
 import re
 import threading
@@ -321,14 +321,21 @@ def chat_cli(model = ''):
         print(r)
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def stt(data: bytes = None, lang: str = '', key_: str = '') -> str:
     '''not work - need access to groq cloud'''
     try:
         if not data:
             with open('1.ogg', 'rb') as f:
                 data = f.read()
+        if not lang:
+            lang = 'ru'
 
-        key = key_ if key_ else random.choice(cfg.GROQ_API_KEY)
+        if key_:
+            key = key_
+        else:
+            key = random.choice(ALL_KEYS)
+
         if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
             client = Groq(
                 api_key=key,
@@ -337,11 +344,12 @@ def stt(data: bytes = None, lang: str = '', key_: str = '') -> str:
             )
         else:
             client = Groq(api_key=key, timeout = 120,)
-        transcription = client.audio.transcriptions.create(file=("123.ogg", data),
+        transcription = client.audio.transcriptions.create(file=("123.mp3", data),
                                                            model="whisper-large-v3",
-                                                           language=lang,
-                                                           response_format = 'text',
-                                                           timeout=120,)
+                                                        #    language=lang,
+                                                        #    response_format = 'text',
+                                                           timeout=120,
+                                                           )
         return transcription.text
     except Exception as error:
         error_traceback = traceback.format_exc()
@@ -476,7 +484,7 @@ if __name__ == '__main__':
     load_users_keys()
     my_db.init(backup=False)
 
-    chat_cli(model='gemma2-9b-it')
+    # chat_cli(model='gemma2-9b-it')
 
     # for x in range(10):
     #     print(ai('1+1='))
@@ -502,7 +510,7 @@ if __name__ == '__main__':
     #     t2 = time.time()
     #     print(len(r), round(t2 - t1, 2), f'{r[:20]}...{r[-20:]}'.replace('\n', ' '))
 
-    # stt()
+    print(stt())
 
     # test_cases = [
     #     'print("Hello, World!")',

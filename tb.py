@@ -1601,7 +1601,7 @@ def handle_voice(message: telebot.types.Message):
             with ShowAction(message, action):
 
                 try:
-                    prompt = tr('Распознай аудиозапись и исправь ошибки. Разбей на абзацы что бы легче было читать.', lang)
+                    prompt = tr('Распознай аудиозапись и исправь ошибки.', lang)
                     text = my_stt.stt(file_path, lang, chat_id_full, prompt)
                 except Exception as error_stt:
                     my_log.log2(f'tb:handle_voice: {error_stt}')

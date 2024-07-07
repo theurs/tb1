@@ -93,7 +93,7 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     return text
 
 
-def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
+def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '') -> str:
     """
     Generate the function comment for the given function body in a markdown code block with the correct language syntax.
 
@@ -123,7 +123,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_') -> str:
 
         try:
             if not text:
-                text = my_groq.stt(data_from_file, lang)
+                text = my_groq.stt(data_from_file, lang, prompt=prompt)
             if not text and dur < 55:
                 # быстро и хорошо распознает но до 1 минуты всего
                 # и часто глотает последнее слово

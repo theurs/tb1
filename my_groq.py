@@ -322,7 +322,11 @@ def chat_cli(model = ''):
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def stt(data: bytes = None, lang: str = '', key_: str = '') -> str:
+def stt(data: bytes = None,
+        lang: str = '',
+        key_: str = '',
+        prompt: str = 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.'
+        ) -> str:
     '''not work - need access to groq cloud'''
     try:
         if not data:
@@ -346,6 +350,7 @@ def stt(data: bytes = None, lang: str = '', key_: str = '') -> str:
             client = Groq(api_key=key, timeout = 120,)
         transcription = client.audio.transcriptions.create(file=("123.mp3", data),
                                                            model="whisper-large-v3",
+                                                           prompt=prompt,
                                                         #    language=lang,
                                                         #    response_format = 'text',
                                                            timeout=120,

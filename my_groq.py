@@ -138,7 +138,8 @@ def ai(prompt: str = '',
                 if 'invalid api key' in str(error).lower():
                     remove_key(key)
                     continue
-
+                if 'Rate limit reached for model' in str(error).lower():
+                    continue
             try:
                 resp = chat_completion.choices[0].message.content.strip()
             except UnboundLocalError:

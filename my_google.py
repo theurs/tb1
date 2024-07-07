@@ -85,13 +85,11 @@ Search results:
 
 
 if __name__ == "__main__":
-
-    lines = [
-        # 'курс доллара',
-        'что значит 42',
-        'что значит 42',
-        ]
-    for x in lines:
-        print(search_v3(x)[0], '\n\n')
-
-
+    pass
+    # lines = [
+    #     # 'курс доллара',
+    #     'что значит 42',
+    #     'что значит 42',
+    #     ]
+    # for x in lines:
+    #     print(search_v3(x)[0], '\n\n')

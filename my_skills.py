@@ -257,8 +257,8 @@ def get_cryptocurrency_rates():
 # надо использовать стиль типа такого что бы он не отнекивался, не говорил что не может не умеет
 # /style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску
 def run_script(filename: str, body: str) -> str:
-    '''Save and run script in shell, return its output. Allowed file ".py" for python and ".sh" for bash,
-    do not add any shebang to body.
+    '''Save and run script in shell, return its output. This script has full access to files and network, there are no any sandboxes.
+    Allowed file ".py" for python and ".sh" for bash, do not add any shebang to body.
     It will run code for you - subprocess.check_output(f'./{filename}', shell=True, timeout=300)
     '''
     body = decode_string(body)

@@ -2518,8 +2518,12 @@ def change_mode(message: telebot.types.Message):
 
 `/style 5`
 `/style {DEFAULT_ROLES[4]}`
-    """
 
+"""
+
+        _user_id = int(chat_id_full.split(' ')[0].replace('[','').replace(']',''))
+        if _user_id in cfg.admins:
+            msg += '`/style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску`'
         bot_reply(message, msg, parse_mode='Markdown')
 
 
@@ -2979,6 +2983,7 @@ def tts(message: telebot.types.Message, caption = None):
 /tts hello all
 /tts en hello, let me speak -  {tr('force english', lang)}
 /tts en +50% Hello at a speed of 1.5x - {tr('force english and speed', lang)}
+/tts en12 Tell me your name. - {tr('12th english voice - "en-KE-Chilemba" or "en-KE-Asilia"', lang)}
 
 {tr('''en, en2, de and fr voices are multilingual, you can use them to change voice for any language
 (/tts ru привет) and (/tts fr привет) will say hello in russian with 2 different voices''', lang)}

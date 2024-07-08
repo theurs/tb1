@@ -314,25 +314,38 @@ def run_script(filename: str, body: str) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
-def query_wikipedia(query: str) -> str:
+def query_wikipedia(query: str, lang: str = 'ru') -> str:
     """
     Queries Wikipedia for a given query and returns the page content.
 
     Args:
         query: The search query.
+        lang: Query language.
 
     Returns:
         The content of the Wikipedia page or a disambiguation message.
     """
     query = decode_string(query)
-    my_log.log_gemini_skills(f'Wikipedia: {query}')
+    lang = decode_string(lang)
+    my_log.log_gemini_skills(f'Wikipedia: {query} [{lang}]')
     try:
+        wikipedia.set_lang(lang)
         r = wikipedia.page(query)
         resp = r.content
         my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return str(resp)
     except wikipedia.DisambiguationError as error:
-        resp = 'Disambiguation Error, availabe options are:\n\n' + '\n'.join(error.options)
+        resp = 'Disambiguation error, try to query one of this options:\n\n' + '\n'.join(error.options)
+        my_log.log_gemini_skills(f'Wikipedia: {resp}')
+        return resp
+    except wikipedia.PageError as error:
+        resp = wikipedia.search(query)
+        if resp:
+            resp = query_wikipedia(resp[0], lang)
+        my_log.log_gemini_skills(f'Wikipedia: search {resp}')
+        return resp
+    except Exception as error:
+        resp = 'Error: ' + str(error)
         my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return resp
 
@@ -351,3 +364,5 @@ if __name__ == '__main__':
     # print(run_script('test.sh', text))
 
     # my_db.close()
+    
+    print(query_wikipedia('Григорий Бакунов'))

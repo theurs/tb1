@@ -22,7 +22,7 @@ import cfg
 import my_db
 import my_log
 import my_sum
-from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, get_cryptocurrency_rates, run_script
+from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, get_cryptocurrency_rates, run_script, query_wikipedia
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -170,6 +170,7 @@ def chat(query: str,
             # use_skills = False
             if use_skills:
                 SKILLS = [
+                    query_wikipedia,
                     search_google,
                     download_text_from_url,
                     update_user_profile,
@@ -280,6 +281,7 @@ def ai(q: str,
 
 
 def chat_cli(user_id: str = 'test', model: str = ''):
+    reset(user_id)
     while 1:
         q = input('>')
         if q == 'mem':

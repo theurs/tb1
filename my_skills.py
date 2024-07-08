@@ -13,6 +13,7 @@ import re
 import requests
 import subprocess
 import traceback
+import wikipedia
 from math import *
 from decimal import *
 from numbers import *
@@ -310,6 +311,28 @@ def run_script(filename: str, body: str) -> str:
         traceback_error = traceback.format_exc()
         my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{filename}\n{body}')
         return f'{error}\n\n{traceback_error}'
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
+def query_wikipedia(query: str) -> str:
+    """
+    Queries Wikipedia for a given query and returns the page content.
+
+    Args:
+        query: The search query.
+
+    Returns:
+        The content of the Wikipedia page or a disambiguation message.
+    """
+    query = decode_string(query)
+    my_log.log_gemini_skills(f'Wikipedia: {query}')
+    try:
+        r = wikipedia.page(query)
+        resp = r.content
+        my_log.log_gemini_skills(f'Wikipedia: {resp}')
+        return str(resp)
+    except wikipedia.DisambiguationError as error:
+        return 'Disambiguation Error, availabe options are:\n\n' + '\n'.join(error.options)
 
 
 if __name__ == '__main__':

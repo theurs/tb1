@@ -95,15 +95,23 @@ def get_currency_rates(date: str = '') -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def search_google(query: str) -> str:
-    '''Search Google for query, return texts of found web pages.
-    It works slow, do not call it often.
-    '''
+def search_google(query: str, lang: str = 'ru') -> str:
+    """
+    Searches Google for the given query and returns the search results.
+
+    Args:
+        query: The search query string.
+        lang: The language for the search (defaults to 'ru').
+
+    Returns:
+        A string containing the search results.
+        In case of an error, returns a string 'ERROR' with the error description.
+    """
     query = decode_string(query)
     my_log.log_gemini_skills(f'Google: {query}')
     try:
-        r = my_google.search_v3(query, max_search=10, download_only=True)
-        return r[:MAX_REQUEST]
+        r = my_google.search_v3(query, lang)
+        return r
     except Exception as error:
         my_log.log_gemini_skills(f'search_google:Error: {error}')
         return f'ERROR {error}'

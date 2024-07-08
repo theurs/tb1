@@ -3686,7 +3686,7 @@ def ask_file(message: telebot.types.Message):
 
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
     '''
-            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash-latest')
+            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash')
             if not result:
                 _, result = my_openrouter.ai(q[:my_openrouter.MAX_REQUEST_GEMMA2_9B], user_id=chat_id_full, model = 'google/gemma-2-9b-it:free', temperature=0.1, max_tokens=4000)
             # my_db.add_msg(chat_id_full, 'gemini15_flash')

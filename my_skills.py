@@ -332,7 +332,9 @@ def query_wikipedia(query: str) -> str:
         my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return str(resp)
     except wikipedia.DisambiguationError as error:
-        return 'Disambiguation Error, availabe options are:\n\n' + '\n'.join(error.options)
+        resp = 'Disambiguation Error, availabe options are:\n\n' + '\n'.join(error.options)
+        my_log.log_gemini_skills(f'Wikipedia: {resp}')
+        return resp
 
 
 if __name__ == '__main__':

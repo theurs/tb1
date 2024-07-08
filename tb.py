@@ -4517,6 +4517,33 @@ def do_task(message, custom_prompt: str = ''):
         if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, 'gemini15_pro', 60*60*24) > 300:
             chat_mode_ = 'gemini'
 
+
+    if msg.startswith('/gemma2'):
+        message.text = message.text[8:]
+        msg = msg[8:]
+        chat_mode_ = 'haiku'
+    if msg.startswith('/haiku'):
+        message.text = message.text[7:]
+        msg = msg[7:]
+        chat_mode_ = 'haiku'
+    if msg.startswith('/flash'):
+        message.text = message.text[7:]
+        msg = msg[7:]
+        chat_mode_ = 'gemini'
+    if msg.startswith('/pro'):
+        message.text = message.text[5:]
+        msg = msg[5:]
+        chat_mode_ = 'gemini15'
+    if msg.startswith('/llama'):
+        message.text = message.text[7:]
+        msg = msg[7:]
+        chat_mode_ = 'llama370'
+    if msg.startswith('/gpt35'):
+        message.text = message.text[7:]
+        msg = msg[7:]
+        chat_mode_ = 'gpt35'
+
+
     # обработка \image это неправильное /image
     if (msg.startswith('\\image ') and is_private):
         message.text = message.text.replace('/', '\\', 1)

@@ -55,7 +55,7 @@ if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
 MAX_CHAT_MEM_BYTES = 50000
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 25000
-MAX_SUM_REQUEST = 300000
+MAX_SUM_REQUEST = 200000
 # MAX_SUM_REQUEST = 31000
 
 MEM_UNCENSORED = [
@@ -105,6 +105,7 @@ def chat(query: str,
         str: The generated response from the AI model.
     '''
     try:
+        query = query[:MAX_SUM_REQUEST]
         if temperature < 0:
             temperature = 0
         if temperature > 1:

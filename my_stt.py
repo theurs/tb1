@@ -252,4 +252,7 @@ def assemblyai(audio_file: str, language: str = 'ru'):
 
 if __name__ == "__main__":
     pass
-    print(assemblyai('1.opus'))
+    r = assemblyai('d:\\Downloads\\rt_podcast917.mp3')
+    with open('d:\\Downloads\\rt_podcast917.mp3.txt', 'w', encoding='utf-8') as f:
+        f.write(r)
+    print(r[:1000])

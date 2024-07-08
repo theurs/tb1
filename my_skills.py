@@ -316,7 +316,8 @@ def run_script(filename: str, body: str) -> str:
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def query_wikipedia(query: str, lang: str = 'ru') -> str:
     """
-    Queries Wikipedia for a given query and returns the page content.
+    Queries Wikipedia for any facts. Returns the page content
+    or search result, if search results then select the most relevant result and query it again.
 
     Args:
         query: The search query.
@@ -335,14 +336,13 @@ def query_wikipedia(query: str, lang: str = 'ru') -> str:
         my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return str(resp)
     except wikipedia.DisambiguationError as error:
-        resp = 'Disambiguation error, try to query one of this options:\n\n' + '\n'.join(error.options)
+        resp = 'Search results:\n\n' + '\n'.join(error.options)
         my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return resp
     except wikipedia.PageError as error:
         resp = wikipedia.search(query)
-        if resp:
-            resp = query_wikipedia(resp[0], lang)
-        my_log.log_gemini_skills(f'Wikipedia: search {resp}')
+        resp = 'Search results:\n\n' + '\n'.join(resp)
+        my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return resp
     except Exception as error:
         resp = 'Error: ' + str(error)

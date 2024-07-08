@@ -159,6 +159,7 @@ def init(backup: bool = True):
 
                 blocked INTEGER,
                 blocked_bing INTEGER,
+                blocked_totally INTEGER,
                 auto_leave_chat INTEGER,
 
                 auto_translations INTEGER,
@@ -564,6 +565,20 @@ def get_user_all_bad_bing_ids():
         return [x[0] for x in result]
     except Exception as error:
         my_log.log2(f'my_db:get_user_all_bad_bing_ids {error}')
+        return []
+
+
+def get_user_all_bad_totally_ids():
+    '''get users ids if blocked_totally = True'''
+    try:
+        CUR.execute('''
+            SELECT id FROM users
+            WHERE blocked_totally = 1
+        ''')
+        result = CUR.fetchall()
+        return [x[0] for x in result]
+    except Exception as error:
+        my_log.log2(f'my_db:get_user_all_bad_totally_ids {error}')
         return []
 
 

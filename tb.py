@@ -939,8 +939,11 @@ def authorized_log(message: telebot.types.Message) -> bool:
     """
     Only log and banned
     """
-
     ACTIVITY_MONITOR['last_activity'] = time.time()
+
+    chat_id_full = get_topic_id(message)
+    if my_db.get_user_property(chat_id_full, 'blocked_totally'):
+        return False
 
     # do not process commands to another bot /cmd@botname args
     if is_for_me(message)[0]:
@@ -3494,6 +3497,54 @@ def shell_command(message: telebot.types.Message):
         my_log.log2(f'tb:shell_command {error}\n\n{traceback_error}')
 
 
+
+
+@bot.message_handler(commands=['blockadd3'], func=authorized_admin)
+@async_run
+def block_user_add3(message: telebot.types.Message):
+    """Добавить юзера в стоп список blocked_totally - юзеру не будет даже в логи попадать"""
+
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+
+    user_id = message.text[10:].strip()
+    if user_id:
+        my_db.set_user_property(user_id, 'blocked_totally', True)
+        bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
+    else:
+        bot_reply_tr(message, 'Usage: /blockadd3 <[user id] [group id]>')
+
+
+@bot.message_handler(commands=['blockdel3'], func=authorized_admin)
+@async_run
+def block_user_del3(message: telebot.types.Message):
+    """Убрать юзера из стоп списка totally"""
+
+    chat_full_id = get_topic_id(message)
+    lang = get_lang(chat_full_id, message)
+
+    user_id = message.text[10:].strip()
+    if user_id:
+        if my_db.get_user_property(user_id, 'blocked_totally'):
+            my_db.delete_user_property(user_id, 'blocked_totally')
+            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
+        else:
+            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
+    else:
+        bot_reply_tr(message, 'Usage: /blockdel3 <[user id] [group id]>')
+
+
+@bot.message_handler(commands=['blocklist3'], func=authorized_admin)
+@async_run
+def block_user_list3(message: telebot.types.Message):
+    """Показывает список совсем заблокированных юзеров"""
+    if my_db.get_user_all_bad_totally_ids():
+        bot_reply(message, '\n'.join(my_db.get_user_all_bad_totally_ids()))
+
+
+
+
+
 @bot.message_handler(commands=['blockadd2'], func=authorized_admin)
 @async_run
 def block_user_add2(message: telebot.types.Message):
@@ -5201,19 +5252,19 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            # queries = [
-            #     # '''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
-            #     # '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
-            #     # '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
-            #     # '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
-            #     '''ALTER TABLE users ADD COLUMN last_time_access REAL;''',
-            #            ]
-            # for q in queries:
-            #     try:
-            #         my_db.CUR.execute(q)
-            #         my_db.CON.commit()
-            #     except Exception as error:
-            #         my_log.log2(f'tb:one_time_shot: {error}')
+            queries = [
+                # '''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
+                # '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
+                # '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
+                # '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
+                '''ALTER TABLE users ADD COLUMN blocked_totally INTEGER;''',
+                       ]
+            for q in queries:
+                try:
+                    my_db.CUR.execute(q)
+                    my_db.CON.commit()
+                except Exception as error:
+                    my_log.log2(f'tb:one_time_shot: {error}')
 
 
             # # запоминаем время последнего обращения к боту

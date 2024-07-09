@@ -834,6 +834,11 @@ def authorized(message: telebot.types.Message) -> bool:
 
     ACTIVITY_MONITOR['last_activity'] = time.time()
 
+    # full block, no logs
+    chat_id_full = get_topic_id(message)
+    if my_db.get_user_property(chat_id_full, 'blocked_totally'):
+        return False
+
     # do not process commands to another bot /cmd@botname args
     if is_for_me(message)[0]:
         message.text = is_for_me(message)[1]
@@ -941,6 +946,7 @@ def authorized_log(message: telebot.types.Message) -> bool:
     """
     ACTIVITY_MONITOR['last_activity'] = time.time()
 
+    # full block, no logs
     chat_id_full = get_topic_id(message)
     if my_db.get_user_property(chat_id_full, 'blocked_totally'):
         return False

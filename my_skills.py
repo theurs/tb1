@@ -113,6 +113,7 @@ def search_google(query: str, lang: str = 'ru') -> str:
     my_log.log_gemini_skills(f'Google: {query}')
     try:
         r = my_google.search_v3(query, lang)[0]
+        my_log.log_gemini_skills(f'Google: {r}')
         return r
     except Exception as error:
         my_log.log_gemini_skills(f'search_google:Error: {error}')
@@ -315,6 +316,7 @@ def run_script(filename: str, body: str) -> str:
 
 
 def get_new_wikipedia_query(options: list, query: str) -> str:
+    '''AI Select best fit option from options list'''
     try:
         q = f'Select best possible option for query ({query}) from this list, what number fit best?\n\n'
         n = 1

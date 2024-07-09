@@ -321,6 +321,7 @@ def get_new_wikipedia_query(options: list, query: str) -> str:
         for x in options:
             q += f'Option {n}: {x}\n'
             n += 1
+        q += f'Option {n}: None of them\n'
 
         status, answer = my_openrouter.ai(q,
                                         model = 'google/gemma-2-9b-it:free',
@@ -331,6 +332,8 @@ def get_new_wikipedia_query(options: list, query: str) -> str:
         if answer:
             try:
                 answer_n = int(answer)
+                if answer_n == n:
+                    return ''
                 return options[answer_n - 1]
             except ValueError:
                 return ''
@@ -342,7 +345,7 @@ def get_new_wikipedia_query(options: list, query: str) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
-def query_wikipedia(query: str, lang: str = 'ru') -> str:
+def query_wikipedia(query: str, lang: str = 'ru', search: bool = True) -> str:
     """
     Queries Wikipedia for any facts. Returns the page content
     or search result, if search results then select the most relevant result and query it again.
@@ -359,26 +362,21 @@ def query_wikipedia(query: str, lang: str = 'ru') -> str:
     my_log.log_gemini_skills(f'Wikipedia: {query} [{lang}]')
     try:
         wikipedia.set_lang(lang)
-        r = wikipedia.page(query)
-        resp = r.content
-        my_log.log_gemini_skills(f'Wikipedia: {resp}')
-        return str(resp)
-    except wikipedia.DisambiguationError as error:
-        new_query = get_new_wikipedia_query(error.options, query)
-        if new_query and new_query in error.options:
-            resp = query_wikipedia(new_query, lang)
+        if search:
+            options = wikipedia.search(query)
+            my_log.log_gemini_skills(f'Wikipedia: options {options}')
+            if options:
+                new_query = get_new_wikipedia_query(options, query)
+                if new_query:
+                    resp = query_wikipedia(new_query, lang, search = False)
+                else:
+                    resp = ''
+            else:
+                resp = ''
         else:
-            resp = ''
-        my_log.log_gemini_skills(f'Wikipedia: {resp}')
-        return resp
-    except wikipedia.PageError as error:
-        resp = wikipedia.search(query)
-        new_query = get_new_wikipedia_query(resp, query)
-        if new_query and new_query in resp:
-            resp = query_wikipedia(new_query, lang)
-        else:
-            resp = ''
-        my_log.log_gemini_skills(f'Wikipedia: {resp}')
+            resp = str(wikipedia.page(query).content)
+        if not search:
+            my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return resp
     except Exception as error:
         resp = 'Error: ' + str(error)
@@ -401,4 +399,4 @@ if __name__ == '__main__':
 
     # my_db.close()
     
-    print(query_wikipedia('григорий бакунов'))
+    print(query_wikipedia('Евгений Борт'))

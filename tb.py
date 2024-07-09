@@ -3145,7 +3145,7 @@ def image10_stop(message: telebot.types.Message):
     bot_reply_tr(message, 'Image generation stopped.')
 
 
-@bot.message_handler(commands=['image10','img10', 'IMG10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10'], func=authorized)
+@bot.message_handler(commands=['image10','img10', 'IMG10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10', 'art10', 'Art10'], func=authorized)
 @async_run
 def image10_gen(message: telebot.types.Message):
     if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
@@ -3159,7 +3159,7 @@ def image10_gen(message: telebot.types.Message):
             time.sleep(60)
 
 
-@bot.message_handler(commands=['image2','IMG2', 'img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2'], func=authorized)
+@bot.message_handler(commands=['image2','IMG2', 'img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2', 'art2', 'Art2'], func=authorized)
 @async_run
 def image2_gen(message: telebot.types.Message):
     is_private = message.chat.type == 'private'
@@ -3170,7 +3170,7 @@ def image2_gen(message: telebot.types.Message):
     image_gen(message)
 
 
-@bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen'], func=authorized)
+@bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):
     """Generates a picture from a description"""

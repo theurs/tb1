@@ -214,6 +214,12 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
+        if 'gokaygokay/Kolors' in url:
+            try:
+                return Kolors(prompt, url, negative_prompt=negative_prompt)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\nPrompt: {prompt}\nURL: {url}')
+                return []
 
         n = 1
         result = []
@@ -807,6 +813,61 @@ def stable_diffusion_3_medium(prompt: str, url: str = "markmagic/Stable-Diffusio
     return images
 
 
+def Kolors(prompt: str, url: str = "gokaygokay/Kolors", number: int = 1, negative_prompt: str = "") -> list:
+    """
+    url = "gokaygokay/Kolors" only?
+    """
+    try:
+        client = gradio_client.Client(url)
+    except Exception as error:
+        my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    result = None
+    try:
+        result = client.predict(
+		prompt=prompt,
+		negative_prompt=negative_prompt,
+        # use_negative_prompt=bool(negative_prompt),
+		height=1024,
+		width=1024,
+		num_inference_steps=20,
+		guidance_scale=5,
+		num_images_per_prompt=number,
+		use_random_seed=True,
+		seed=0,
+		api_name="/predict"
+        )
+    except Exception as error:
+        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
+            my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    images = []
+    for fname in result[0]:
+        try:
+            fname = fname['image']
+        except:
+            continue
+        base_path = os.path.dirname(fname)
+        if fname:
+            try:
+                data = None
+                with open(fname, 'rb') as f:
+                    data = f.read()
+                try:
+                    utils.remove_file(fname)
+                    os.rmdir(base_path)
+                except Exception as error:
+                    my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\n\nPrompt: {prompt}\nURL: {url}')
+                if data:
+                    WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                    images.append(data)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return images
+
+
 def get_reprompt(prompt: str, conversation_history: str = '') -> str:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
@@ -985,8 +1046,8 @@ if __name__ == '__main__':
     # imgs = cosxl('an apple made of gold')
     # open('_cosxl.png', 'wb').write(imgs[0])
 
-    # imgs = stable_diffusion_3_medium('an big apple made of gold and pepper')
-    # open('_stable_diffusion_3_medium.png', 'wb').write(imgs[0])
+    imgs = Kolors('an big apple made of gold and pepper')
+    open('_Kolors.png', 'wb').write(imgs[0])
 
     # n = 1
     # for x in Hyper_SDXL('an apple made of gold'):

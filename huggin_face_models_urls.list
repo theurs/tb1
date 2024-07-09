@@ -29,6 +29,7 @@ https://api-inference.huggingface.co/models/fluently/Fluently-XL-Final
 multimodalart/cosxl
 PixArt-alpha/PixArt-Sigma
 ByteDance/Hyper-SDXL-1Step-T2I
+gokaygokay/Kolors
 
 # не работает? https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium
 # не работает https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium-diffusers
@@ -43,4 +44,4 @@ https://api-inference.huggingface.co/models/mann-e/Mann-E_Dreams
 https://api-inference.huggingface.co/models/alvdansen/m3lt
 https://api-inference.huggingface.co/models/alvdansen/midsommarcartoon
 
-https://api-inference.huggingface.co/models/Kwai-Kolors/Kolors
+# не работает? https://api-inference.huggingface.co/models/Kwai-Kolors/Kolors

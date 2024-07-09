@@ -374,7 +374,10 @@ def query_wikipedia(query: str, lang: str = 'ru', search: bool = True) -> str:
             else:
                 resp = ''
         else:
-            resp = str(wikipedia.page(query).content)
+            r = wikipedia.page(query)
+            # resp = str(r.content)
+            url = r.url
+            resp = my_sum.download_text_v2(url, max_req = 30000)
         if not search:
             my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return resp
@@ -399,4 +402,4 @@ if __name__ == '__main__':
 
     # my_db.close()
     
-    print(query_wikipedia('Евгений Борт'))
+    print(query_wikipedia('Список эпизодов телесериала «Орвилл»', lang = 'ru', search = False))

@@ -29,7 +29,7 @@ import cfg
 import my_db
 import my_google
 import my_log
-import my_openrouter
+import my_groq
 import my_sum
 import utils
 
@@ -325,12 +325,13 @@ def get_new_wikipedia_query(options: list, query: str) -> str:
             n += 1
         q += f'Option {n}: None of them\n'
 
-        status, answer = my_openrouter.ai(q,
-                                        model = 'google/gemma-2-9b-it:free',
-                                        system = 'answer supershot, your answer should contain only number of option',
-                                        max_tokens = 10,
-                                        temperature = 0,
-                                        timeout = 20)
+        answer = my_groq.ai(q,
+                            model_ = 'gemma2-9b-it',
+                            system = 'answer supershot, your answer should contain only number of option',
+                            max_tokens_ = 10,
+                            temperature = 0,
+                            # timeout = 20
+                            )
         if answer:
             try:
                 answer_n = int(answer)
@@ -404,4 +405,5 @@ if __name__ == '__main__':
 
     # my_db.close()
     
-    print(query_wikipedia('Список эпизодов телесериала «Орвилл»', lang = 'ru', search = False))
+    my_groq.load_users_keys()
+    print(query_wikipedia('григорий бакунов', lang = 'ru', search = True))

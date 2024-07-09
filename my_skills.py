@@ -29,6 +29,7 @@ import cfg
 import my_db
 import my_google
 import my_log
+import my_openrouter
 import my_sum
 import utils
 
@@ -313,6 +314,33 @@ def run_script(filename: str, body: str) -> str:
         return f'{error}\n\n{traceback_error}'
 
 
+def get_new_wikipedia_query(options: list, query: str) -> str:
+    try:
+        q = f'Select best possible option for query ({query}) from this list, what number fit best?\n\n'
+        n = 1
+        for x in options:
+            q += f'Option {n}: {x}\n'
+            n += 1
+
+        status, answer = my_openrouter.ai(q,
+                                        model = 'google/gemma-2-9b-it:free',
+                                        system = 'answer supershot, your answer should contain only number of option',
+                                        max_tokens = 10,
+                                        temperature = 0,
+                                        timeout = 20)
+        if answer:
+            try:
+                answer_n = int(answer)
+                return options[answer_n - 1]
+            except ValueError:
+                return ''
+        else:
+            return ''
+    except Exception as error:
+        my_log.log_gemini_skills(f'get_new_wikipedia_query: {error}')
+        return ''
+
+
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def query_wikipedia(query: str, lang: str = 'ru') -> str:
     """
@@ -336,12 +364,20 @@ def query_wikipedia(query: str, lang: str = 'ru') -> str:
         my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return str(resp)
     except wikipedia.DisambiguationError as error:
-        resp = 'Search results:\n\n' + '\n'.join(error.options)
+        new_query = get_new_wikipedia_query(error.options, query)
+        if new_query and new_query in error.options:
+            resp = query_wikipedia(new_query, lang)
+        else:
+            resp = ''
         my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return resp
     except wikipedia.PageError as error:
         resp = wikipedia.search(query)
-        resp = 'Search results:\n\n' + '\n'.join(resp)
+        new_query = get_new_wikipedia_query(resp, query)
+        if new_query and new_query in resp:
+            resp = query_wikipedia(new_query, lang)
+        else:
+            resp = ''
         my_log.log_gemini_skills(f'Wikipedia: {resp}')
         return resp
     except Exception as error:
@@ -365,4 +401,4 @@ if __name__ == '__main__':
 
     # my_db.close()
     
-    print(query_wikipedia('Григорий Бакунов'))
+    print(query_wikipedia('григорий бакунов'))

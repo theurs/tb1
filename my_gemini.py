@@ -170,7 +170,7 @@ def chat(query: str,
             # use_skills = False
             if use_skills:
                 SKILLS = [
-                    # query_wikipedia,
+                    query_wikipedia,
                     search_google,
                     download_text_from_url,
                     update_user_profile,

@@ -498,22 +498,21 @@ def drop_long_translations():
 
 def get_first_meet(user_id):
     '''Get first meet time of user'''
-    with LOCK:
-        try:
-            pass
-            # надо найти самое первое сообщение от юзера в таблице msg_counter
-            CUR.execute('''
-                SELECT MIN(access_time) FROM msg_counter
-                WHERE user_id = ?
-            ''', (user_id,))
-            result = CUR.fetchone()
-            if result and result[0]:
-                return result[0]
-            else:
-                return None
-        except Exception as error:
-            my_log.log2(f'my_db:get_first_meet {error}')
+    try:
+        pass
+        # надо найти самое первое сообщение от юзера в таблице msg_counter
+        CUR.execute('''
+            SELECT MIN(access_time) FROM msg_counter
+            WHERE user_id = ?
+        ''', (user_id,))
+        result = CUR.fetchone()
+        if result and result[0]:
+            return result[0]
+        else:
             return None
+    except Exception as error:
+        my_log.log2(f'my_db:get_first_meet {error}')
+        return None
 
 
 def get_user_property(user_id: str, property: str):

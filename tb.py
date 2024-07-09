@@ -360,7 +360,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.update_mem(query, resp, chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        my_openrouter.update_mem(query, resp, chat_id_full)
+        my_groq.update_mem(query, resp, chat_id_full)
     elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.update_mem(query, resp, chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -1479,7 +1479,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot_reply_tr(message, 'История диалога с Groq llama 3 70b очищена.')
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('История диалога с Groq llama 3 70b очищена.', lang))
         elif call.data == 'gemma2-9b_reset':
-            my_openrouter.reset(chat_id_full)
+            my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Gemma 2 9b очищена.')
         elif call.data == 'openrouter_reset':
             my_openrouter.reset(chat_id_full)
@@ -2574,7 +2574,7 @@ def undo(message: telebot.types.Message):
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.undo(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        my_openrouter.undo(chat_id_full)
+        my_groq.undo(chat_id_full)
     elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.undo(chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -2605,7 +2605,7 @@ def reset_(message: telebot.types.Message):
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.reset(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        my_openrouter.reset(chat_id_full)
+        my_groq.reset(chat_id_full)
     elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.reset(chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -2768,7 +2768,7 @@ def send_debug_history(message: telebot.types.Message):
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Google Gemma 2 9b\n\n'
-        prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'GPT-4o\n\n'
@@ -3745,7 +3745,7 @@ def ask_file(message: telebot.types.Message):
     '''
             result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash')
             if not result:
-                _, result = my_openrouter.ai(q[:my_openrouter.MAX_REQUEST_GEMMA2_9B], user_id=chat_id_full, model = 'google/gemma-2-9b-it:free', temperature=0.1, max_tokens=4000)
+                result = my_groq.ai(q[:my_groq.MAX_REQUEST_GEMMA2_9B], model_ = 'gemma2-9b-it', temperature=0.1, max_tokens_ = 4000)
             # my_db.add_msg(chat_id_full, 'gemini15_flash')
             if result:
                 answer = utils.bot_markdown_to_html(result)
@@ -5095,17 +5095,17 @@ def do_task(message, custom_prompt: str = ''):
 
                 # если активирован режим общения с gemma 2 9b
                 if chat_mode_ == 'gemma2-9b':
-                    if len(msg) > my_openrouter.MAX_REQUEST_GEMMA2_9B:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для gemma2 9b:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter.MAX_REQUEST_GEMMA2_9B}')
+                    if len(msg) > my_groq.MAX_REQUEST_GEMMA2_9B:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для gemma2 9b:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_GEMMA2_9B}')
                         return
 
                     with ShowAction(message, action):
                         try:
                             style_ = my_db.get_user_property(chat_id_full, 'role') or ''
-                            status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_, model = 'google/gemma-2-9b-it:free')
+                            answer = my_groq.chat(message.text, chat_id_full, style=style_, model = 'gemma2-9b-it')
                             if not answer:
                                 time.sleep(5)
-                                status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_, model = 'google/gemma-2-9b-it:free')
+                                answer = my_groq.chat(message.text, chat_id_full, style=style_, model = 'gemma2-9b-it')
                             WHO_ANSWERED[chat_id_full] = 'gemma2-9b '
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 

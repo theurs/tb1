@@ -24,6 +24,7 @@ from pydub.silence import split_on_silence
 
 import cfg
 import my_gemini
+import my_groq
 import my_log
 import my_ytb
 import utils
@@ -34,8 +35,10 @@ YT_DLP = 'yt-dlp'
 FFMPEG = 'ffmpeg'
 
 
-MAX_THREADS = 16  # Максимальное количество одновременных потоков
+MAX_THREADS = 8  # Максимальное количество одновременных потоков
+MAX_THREADS_V2 = 1  # Максимальное количество одновременных потоков
 download_worker_semaphore = threading.Semaphore(MAX_THREADS)  # Создаем семафор здесь
+download_worker_semaphore_v2 = threading.Semaphore(MAX_THREADS_V2)  # Создаем семафор здесь
 
 
 # не больше 8 потоков для распознавания речи гуглом
@@ -285,6 +288,47 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
         return stt_google_pydub_v2(audio_file, lang = language)
 
 
+def transcribe_groq(audio_file: str, prompt: str = '', language: str = 'ru') -> str:
+    '''
+    This function takes an audio file path and an optional prompt as input and returns the transcribed text.
+
+    Parameters
+    audio_file: The path to the audio file. This can be a local file path or a YouTube URL.
+    prompt: An optional prompt to provide to the Grow API. This can be used to guide the transcription process.
+    language: The language of the audio file. This is used to select the appropriate language model for transcription.
+    Returns
+    The transcribed text.
+
+    Raises
+    Exception: If an error occurs during transcription.
+    '''
+    if my_ytb.valid_youtube_url(audio_file):
+        audio_file_ = my_ytb.download_ogg(audio_file)
+        result = transcribe_groq(audio_file_, prompt, language)
+        utils.remove_file(audio_file_)
+        return result
+
+    try:
+        if not prompt:
+            prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text."
+
+        with open(audio_file, 'rb') as f:
+            data = f.read()
+
+        for _ in range(3):
+            text = my_groq.stt(data, lang=language, prompt=prompt).strip()
+            if text:
+                return text
+            time.sleep(2)
+
+        if not text:
+            return stt_google_pydub_v2(audio_file, lang = language)
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini(f'my_transcribe.py:transcribe_roq: Failed to convert audio data to text: {error}\n\n{traceback_error}')
+        return stt_google_pydub_v2(audio_file, lang = language)
+
+
 def download_worker(video_url: str, part: tuple, n: int, fname: str, language: str):
     with download_worker_semaphore:
         utils.remove_file(f'{fname}_{n}.ogg')
@@ -310,11 +354,36 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str, language: s
         utils.remove_file(f'{fname}_{n}.ogg')
 
 
+def download_worker_v2(video_url: str, part: tuple, n: int, fname: str, language: str):
+    with download_worker_semaphore_v2:
+        utils.remove_file(f'{fname}_{n}.ogg')
+        proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
+        stream_url = proc.stdout.decode('utf-8', errors='replace').strip()
+
+        proc = subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
+                        str(part[1]), f'{fname}_{n}.ogg'],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out_ = proc.stdout.decode('utf-8', errors='replace').strip()
+        err_ = proc.stderr.decode('utf-8', errors='replace').strip()
+        if 'error' in err_:
+            my_log.log2(f'my_transcribe:download_worker_v2: Error in FFMPEG: {err_}')
+        if 'error' in out_:
+            my_log.log2(f'my_transcribe:download_worker_v2: Error in FFMPEG: {out_}')
+
+        text = transcribe_groq(f'{fname}_{n}.ogg', language=language)
+
+        if text:
+            with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:
+                f.write(text)
+
+        utils.remove_file(f'{fname}_{n}.ogg')
+
+
 def download_youtube_clip(video_url: str, language: str):
     """
     Скачивает видео с YouTube по частям, транскрибирует.
     Возвращает транскрипцию к видео. text, info(dict с информацией о видео)
-    language - язык для транскрибации, используется только кусков которые джемини сфейлил.
+    language - язык для транскрибации, используется только для кусков которые джемини сфейлил.
                у джемини автоопределение языков а у резерва нет
     """
 
@@ -346,6 +415,59 @@ def download_youtube_clip(video_url: str, language: str):
     for part in parts:
         n += 1
         t = threading.Thread(target=download_worker, args=(video_url, part, n, output_name, language))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    result = ''
+    for x in range(1, n + 1):
+        # check if file exists
+        if os.path.exists(f'{output_name}_{x}.txt'):
+            with open(f'{output_name}_{x}.txt', 'r', encoding='utf-8') as f:
+                result += f.read() + '\n\n'
+            utils.remove_file(f'{output_name}_{x}.txt')
+
+    return result, info
+
+
+def download_youtube_clip_v2(video_url: str, language: str):
+    """
+    Скачивает видео с YouTube по частям, транскрибирует.
+    Возвращает транскрипцию к видео. text, info(dict с информацией о видео)
+    language - язык для транскрибации, используется только для кусков которые groq.
+               у groq автоопределение языков а у резерва нет
+    """
+
+    part_size = 10 * 60 # размер куска несколько минут
+    treshold = 5 # захватывать +- несколько секунд в каждом куске
+
+    proc = subprocess.run([YT_DLP, '--skip-download', '-J', video_url], stdout=subprocess.PIPE)
+    output = proc.stdout.decode('utf-8', errors='replace')
+    info = json.loads(output)
+    duration = info['duration']
+
+    output_name = utils.get_tmp_fname()
+
+    parts = []
+    start = 0
+    while start < duration:
+        end = min(start + part_size, duration)
+        if start == 0:
+            parts.append((0, min(duration, end + treshold)))  # Первый фрагмент
+        elif end == duration:
+            parts.append((max(0, start - treshold), duration - start))  # Последний фрагмент
+        else:
+            parts.append((max(0, start - treshold), min(duration - start, part_size) + 2 * treshold))  # Остальные фрагменты
+        start = end
+
+    n = 0
+    threads = []
+
+    for part in parts:
+        n += 1
+        t = threading.Thread(target=download_worker_v2, args=(video_url, part, n, output_name, language))
         threads.append(t)
         t.start()
 
@@ -561,12 +683,18 @@ def shazam(url: str):
 
 if __name__ == '__main__':
     pass
+    my_groq.load_users_keys()
+    my_gemini.load_users_keys()
+
     urls = [
-        'https://www.youtube.com/watch?v=rR19alK6QKM',
-        'https://www.youtube.com/watch?v=MqTFEahfgOk&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
-        'https://www.youtube.com/watch?v=fPO76Jlnz6c&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
-        'https://www.youtube.com/watch?v=5Fix7P6aGXQ&pp=ygU10LAg0YLRiyDRgtCw0LrQvtC5INC60YDQsNGB0LjQstGL0Lkg0YEg0LHQvtGA0L7QtNC-0Lk%3D',
-        'https://www.youtube.com/watch?v=xfT645b6l0s&pp=ygUX0L_QvtC60LjQvdGD0LvQsCDRh9Cw0YI%3D',
+        'https://www.youtube.com/shorts/4cFxuSQ4yro',
+        # 'https://www.youtube.com/watch?v=rR19alK6QKM',
+        # 'https://www.youtube.com/watch?v=MqTFEahfgOk&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
+        # 'https://www.youtube.com/watch?v=fPO76Jlnz6c&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
+        # 'https://www.youtube.com/watch?v=5Fix7P6aGXQ&pp=ygU10LAg0YLRiyDRgtCw0LrQvtC5INC60YDQsNGB0LjQstGL0Lkg0YEg0LHQvtGA0L7QtNC-0Lk%3D',
+        # 'https://www.youtube.com/watch?v=xfT645b6l0s&pp=ygUX0L_QvtC60LjQvdGD0LvQsCDRh9Cw0YI%3D',
     ]
     for x in urls:
-        shazam(x)
+        r = download_youtube_clip_v2(x, 'ru')
+        print(r[0])
+        

@@ -498,21 +498,22 @@ def drop_long_translations():
 
 def get_first_meet(user_id):
     '''Get first meet time of user'''
-    try:
-        pass
-        # надо найти самое первое сообщение от юзера в таблице msg_counter
-        CUR.execute('''
-            SELECT MIN(access_time) FROM msg_counter
-            WHERE user_id = ?
-        ''', (user_id,))
-        result = CUR.fetchone()
-        if result and result[0]:
-            return result[0]
-        else:
+    with LOCK:
+        try:
+            pass
+            # надо найти самое первое сообщение от юзера в таблице msg_counter
+            CUR.execute('''
+                SELECT MIN(access_time) FROM msg_counter
+                WHERE user_id = ?
+            ''', (user_id,))
+            result = CUR.fetchone()
+            if result and result[0]:
+                return result[0]
+            else:
+                return None
+        except Exception as error:
+            my_log.log2(f'my_db:get_first_meet {error}')
             return None
-    except Exception as error:
-        my_log.log2(f'my_db:get_first_meet {error}')
-        return None
 
 
 def get_user_property(user_id: str, property: str):
@@ -542,44 +543,47 @@ def get_user_property(user_id: str, property: str):
 
 def get_user_all_bad_ids():
     '''get users ids if blocked = True'''
-    try:
-        CUR.execute('''
-            SELECT id FROM users
-            WHERE blocked = 1
-        ''')
-        result = CUR.fetchall()
-        return [x[0] for x in result]
-    except Exception as error:
-        my_log.log2(f'my_db:get_user_all_bad_ids {error}')
-        return []
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT id FROM users
+                WHERE blocked = 1
+            ''')
+            result = CUR.fetchall()
+            return [x[0] for x in result]
+        except Exception as error:
+            my_log.log2(f'my_db:get_user_all_bad_ids {error}')
+            return []
 
 
 def get_user_all_bad_bing_ids():
     '''get users ids if blocked_bing = True'''
-    try:
-        CUR.execute('''
-            SELECT id FROM users
-            WHERE blocked_bing = 1
-        ''')
-        result = CUR.fetchall()
-        return [x[0] for x in result]
-    except Exception as error:
-        my_log.log2(f'my_db:get_user_all_bad_bing_ids {error}')
-        return []
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT id FROM users
+                WHERE blocked_bing = 1
+            ''')
+            result = CUR.fetchall()
+            return [x[0] for x in result]
+        except Exception as error:
+            my_log.log2(f'my_db:get_user_all_bad_bing_ids {error}')
+            return []
 
 
 def get_user_all_bad_totally_ids():
     '''get users ids if blocked_totally = True'''
-    try:
-        CUR.execute('''
-            SELECT id FROM users
-            WHERE blocked_totally = 1
-        ''')
-        result = CUR.fetchall()
-        return [x[0] for x in result]
-    except Exception as error:
-        my_log.log2(f'my_db:get_user_all_bad_totally_ids {error}')
-        return []
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT id FROM users
+                WHERE blocked_totally = 1
+            ''')
+            result = CUR.fetchall()
+            return [x[0] for x in result]
+        except Exception as error:
+            my_log.log2(f'my_db:get_user_all_bad_totally_ids {error}')
+            return []
 
 
 def delete_user_property(user_id: str, property: str):
@@ -788,7 +792,7 @@ def delete_from_im_suggests(hash: str):
 
 if __name__ == '__main__':
     pass
-    init()
+    init(backup=False)
 
     # a='xg'*100000
     # b = obj_to_blob(a)

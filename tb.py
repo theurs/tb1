@@ -4787,7 +4787,7 @@ def do_task(message, custom_prompt: str = ''):
                 # если активирован режим общения с Gemini Flash
                 if chat_mode_ == 'gemini':
                     if len(msg) > my_gemini.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
@@ -4867,7 +4867,7 @@ def do_task(message, custom_prompt: str = ''):
                 # если активирован режим общения с Gemini 1.5 pro
                 if chat_mode_ == 'gemini15':
                     if len(msg) > my_gemini.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
@@ -4946,7 +4946,7 @@ def do_task(message, custom_prompt: str = ''):
                 # если активирован режим общения с groq llama 3 70b
                 if chat_mode_ == 'llama370':
                     if len(msg) > my_groq.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3 70b:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3 70b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
@@ -5002,7 +5002,7 @@ def do_task(message, custom_prompt: str = ''):
                 if chat_mode_ == 'openrouter':
                     # не знаем какие там лимиты
                     # if len(msg) > my_openrouter.MAX_REQUEST:
-                    #     bot_reply(message, f'{tr("Слишком длинное сообщение для openrouter:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter.MAX_REQUEST}')
+                    #     bot_reply(message, f'{tr("Слишком длинное сообщение для openrouter, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter.MAX_REQUEST}')
                     #     return
 
                     with ShowAction(message, action):
@@ -5039,7 +5039,7 @@ def do_task(message, custom_prompt: str = ''):
                 if chat_mode_ == 'gpt4o':
                     # не знаем какие там лимиты
                     if len(msg) > my_shadowjourney.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для gpt-4o:", lang)} {len(msg)} {tr("из", lang)} {my_shadowjourney.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для gpt-4o, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_shadowjourney.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
@@ -5096,7 +5096,7 @@ def do_task(message, custom_prompt: str = ''):
                 # если активирован режим общения с gemma 2 9b
                 if chat_mode_ == 'gemma2-9b':
                     if len(msg) > my_groq.MAX_REQUEST_GEMMA2_9B:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для gemma2 9b:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_GEMMA2_9B}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для gemma2 9b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_GEMMA2_9B}')
                         return
 
                     with ShowAction(message, action):
@@ -5136,7 +5136,7 @@ def do_task(message, custom_prompt: str = ''):
                 # если активирован режим общения с haiku (duckduckgo)
                 if chat_mode_ == 'haiku':
                     if len(msg) > my_ddg.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для haiku:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для haiku, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
@@ -5172,7 +5172,7 @@ def do_task(message, custom_prompt: str = ''):
                 # если активирован режим общения с gpt35 (duckduckgo)
                 if chat_mode_ == 'gpt35':
                     if len(msg) > my_ddg.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 3.5:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 3.5, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):

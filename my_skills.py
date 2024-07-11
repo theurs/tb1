@@ -225,6 +225,7 @@ def calc(expression: str) -> str:
     try:
         expression_ = expression.replace('math.factorial', 'my_factorial')
         r = str(eval(expression_))
+        my_log.log_gemini_skills(f'Calc result: {r}')
         return r
     except Exception as error:
         return f'Error: {error}'

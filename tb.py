@@ -2884,9 +2884,9 @@ def set_new_temperature(message: telebot.types.Message):
 
 По-умолчанию 0.1''', lang)}
 
-`/temperature 0.1`
-`/temperature 1`
-`/temperature 1.9` {tr('На таких высоких значения он пишет один сплошной бред', lang)}
+`/temperature 0.5`
+`/temperature 1.5`
+`/temperature 2`
 """
         bot_reply(message, help, parse_mode='Markdown')
         return

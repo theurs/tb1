@@ -328,10 +328,25 @@ def stt(data: bytes = None,
         key_: str = '',
         prompt: str = 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.'
         ) -> str:
-    '''not work - need access to groq cloud'''
+    """Speech to text function. Uses Groq API for speech recognition.
+    Caches the results to avoid redundant API calls.
+    The cache can store up to 10 results and they expire after 10 minutes.
+
+    Args:
+        data (bytes, optional): Audio data or filename. Defaults to None.
+        lang (str, optional): Language code. Defaults to '' = 'ru'.
+        key_ (str, optional): API key. Defaults to '' = random.choice(ALL_KEYS).
+        prompt (str, optional): Prompt for the speech recognition model. Defaults to 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.'.
+
+    Returns:
+        str: Transcribed text.
+    """
     try:
         if not data:
             with open('1.ogg', 'rb') as f:
+                data = f.read()
+        if isinstance(data, str):
+            with open(data, 'rb') as f:
                 data = f.read()
         if not lang:
             lang = 'ru'

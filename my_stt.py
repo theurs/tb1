@@ -123,7 +123,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
 
         try:
             if not text:
-                text = my_groq.stt(data_from_file, lang, prompt=prompt)
+                text = my_groq.stt(input_file2, lang, prompt=prompt)
             if not text and dur < 55:
                 # быстро и хорошо распознает но до 1 минуты всего
                 # и часто глотает последнее слово

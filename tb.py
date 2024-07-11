@@ -4440,6 +4440,8 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
             chunks = utils.split_text(resp, 3800)
         counter = len(chunks)
         for chunk in chunks:
+            if not chunk.strip():
+                continue
             # в режиме только голоса ответы идут голосом без текста
             # скорее всего будет всего 1 чанк, не слишком длинный текст
             if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:

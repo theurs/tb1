@@ -2951,12 +2951,17 @@ def tts(message: telebot.types.Message, caption = None):
             if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url:
                 text = my_sum.get_text_from_youtube(url, lang)
                 text = my_gemini.rebuild_subtitles(text, lang)
+                if text:
+                    text = utils.bot_markdown_to_html(text)
+                    bot_reply(message, text, parse_mode='HTML',
+                              reply_markup=get_keyboard('translate', message),
+                              disable_web_page_preview=True)
             else:
                 text = my_sum.download_text([url, ], 100000, no_links = True)
-            if text:
-                bot_reply(message, text, parse_mode='',
-                                    reply_markup=get_keyboard('translate', message),
-                                        disable_web_page_preview=True)
+                if text:
+                    bot_reply(message, text, parse_mode='',
+                              reply_markup=get_keyboard('translate', message),
+                              disable_web_page_preview=True)
             return
 
     pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'

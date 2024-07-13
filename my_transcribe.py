@@ -142,7 +142,7 @@ def stt_google_pydub(audio_bytes: bytes|str,
             audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
             # Устанавливаем частоту дискретизации
             audio_segment = audio_segment.set_frame_rate(sample_rate)
-            
+
             # Разбиваем аудио на части по паузам в речи
             chunks = split_on_silence(audio_segment, min_silence_len=500, silence_thresh=-40)
 

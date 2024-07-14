@@ -3748,9 +3748,9 @@ def ask_file(message: telebot.types.Message):
 
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
     '''
-            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=0.1, tokens_limit=8000, model = 'gemini-1.5-flash')
+            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-flash')
             if not result:
-                result = my_groq.ai(q[:my_groq.MAX_REQUEST_GEMMA2_9B], model_ = 'gemma2-9b-it', temperature=0.1, max_tokens_ = 4000)
+                result = my_groq.ai(q[:my_groq.MAX_REQUEST_GEMMA2_9B], model_ = 'gemma2-9b-it', temperature=1, max_tokens_ = 4000)
             # my_db.add_msg(chat_id_full, 'gemini15_flash')
             if result:
                 answer = utils.bot_markdown_to_html(result)

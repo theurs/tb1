@@ -82,7 +82,7 @@ def chat(query: str,
         query (str): The query to be used for generating the response.
         chat_id (str, optional): The ID of the chat. Defaults to ''.
         temperature (float, optional): Controls the randomness of the output. Must be positive.
-                                       Typical values are in the range: [0.0,1.0]. Higher values
+                                       Typical values are in the range: [0.0,2.0]. Higher values
                                        produce a more random and varied response.
                                        A temperature of zero will be deterministic.
                                        The temperature parameter for controlling the randomness of the response.
@@ -108,8 +108,8 @@ def chat(query: str,
         query = query[:MAX_SUM_REQUEST]
         if temperature < 0:
             temperature = 0
-        if temperature > 1:
-            temperature = 1
+        if temperature > 2:
+            temperature = 2
         if max_tokens < 10:
             max_tokens = 10
         if max_tokens > 8000:

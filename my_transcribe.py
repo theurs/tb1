@@ -345,7 +345,9 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str, language: s
         if 'error' in out_:
             my_log.log2(f'my_transcribe:download_worker: Error in FFMPEG: {out_}')
 
-        text = transcribe_genai(f'{fname}_{n}.ogg', language=language)
+        text = my_groq.stt(f'{fname}_{n}.ogg', language=language)
+        if not text:
+            text = transcribe_genai(f'{fname}_{n}.ogg', language=language)
 
         if text:
             with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:

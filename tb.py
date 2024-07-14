@@ -4583,34 +4583,27 @@ def do_task(message, custom_prompt: str = ''):
             chat_mode_ = 'gemini'
 
 
-    if msg.startswith('/gemma2'):
-        message.text = message.text[8:]
-        msg = msg[8:]
-        chat_mode_ = 'gemma2-9b'
-    if msg.startswith('/gemma'):
-        message.text = message.text[7:]
-        msg = msg[7:]
-        chat_mode_ = 'gemma2-9b'
-    if msg.startswith('/haiku'):
-        message.text = message.text[7:]
-        msg = msg[7:]
-        chat_mode_ = 'haiku'
-    if msg.startswith('/flash'):
-        message.text = message.text[7:]
-        msg = msg[7:]
-        chat_mode_ = 'gemini'
-    if msg.startswith('/pro'):
-        message.text = message.text[5:]
-        msg = msg[5:]
-        chat_mode_ = 'gemini15'
-    if msg.startswith('/llama'):
-        message.text = message.text[7:]
-        msg = msg[7:]
-        chat_mode_ = 'llama370'
-    if msg.startswith('/gpt35'):
-        message.text = message.text[7:]
-        msg = msg[7:]
-        chat_mode_ = 'gpt35'
+    chat_modes = {
+        '/gemma2':  'gemma2-9b',
+        '/gemma':   'gemma2-9b',
+        '/haiku':   'haiku',
+        '/flash':   'gemini',
+        '/pro':     'gemini15',
+        '/llama':   'llama370',
+        '/gpt35':   'gpt35',
+    }
+    for command, mode in chat_modes.items():
+        if msg.startswith(command):
+            try:
+                l = len(command) + 1
+                message.text = message.text[l:]
+                msg = msg[l:]
+                chat_mode_ = mode
+            except IndexError:
+                pass
+            if not msg.strip():
+                return
+            break
 
 
     # обработка \image это неправильное /image

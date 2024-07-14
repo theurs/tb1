@@ -169,7 +169,9 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language:
         if 'error' in out_:
             my_log.log2(f'my_stt:stt_genai_worker: Error in FFMPEG: {out_}')
 
-        text = my_transcribe.transcribe_genai(f'{fname}_{n}.ogg', language=language)
+        text = my_groq.stt(f'{fname}_{n}.ogg', language)
+        if not text:
+            text = my_transcribe.transcribe_genai(f'{fname}_{n}.ogg', language=language)
 
         if text:
             with open(f'{fname}_{n}.txt', 'w', encoding='utf-8') as f:
@@ -191,7 +193,10 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
     prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps."
     duration = audio_duration(audio_file)
     if duration <= 10*60:
-        return my_transcribe.transcribe_genai(audio_file, prompt, language)
+        text = my_groq.stt(audio_file, language)
+        if not text:
+            text = my_transcribe.transcribe_genai(audio_file, prompt, language)
+        return text
     else:
         part_size = 10 * 60 # размер куска несколько минут
         treshold = 5 # захватывать +- несколько секунд в каждом куске

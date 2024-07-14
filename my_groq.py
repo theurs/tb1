@@ -5,6 +5,7 @@
 import cachetools.func
 import random
 import re
+import time
 import threading
 import traceback
 
@@ -326,7 +327,8 @@ def chat_cli(model = ''):
 def stt(data: bytes = None,
         lang: str = '',
         key_: str = '',
-        prompt: str = 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.'
+        prompt: str = 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.',
+        last_try: bool = False,
         ) -> str:
     """Speech to text function. Uses Groq API for speech recognition.
     Caches the results to avoid redundant API calls.
@@ -375,6 +377,9 @@ def stt(data: bytes = None,
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_groq(f'my_groq:stt: {error}\n\n{error_traceback}\n\n{lang}\n\n{key_}')
+        if not last_try and "'type': 'internal_server_error'" in str(error):
+            time.sleep(4)
+            return stt(data, lang, key_, prompt, True)
 
     return ''
 

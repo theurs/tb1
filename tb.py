@@ -4586,7 +4586,11 @@ def do_task(message, custom_prompt: str = ''):
     if msg.startswith('/gemma2'):
         message.text = message.text[8:]
         msg = msg[8:]
-        chat_mode_ = 'haiku'
+        chat_mode_ = 'gemma2-9b'
+    if msg.startswith('/gemma'):
+        message.text = message.text[7:]
+        msg = msg[7:]
+        chat_mode_ = 'gemma2-9b'
     if msg.startswith('/haiku'):
         message.text = message.text[7:]
         msg = msg[7:]

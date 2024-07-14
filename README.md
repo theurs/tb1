@@ -42,6 +42,7 @@
 ### Команды для юзера
 
 /openrouter - выбрать openrouter.ai поставщик разнообразных платных ИИ
+/gemma (gemma2 9b) /haiku /gpt35 /llama (llama 3 70b) /flash (gemini1.5flash) /gemini (gemini1.5pro) - обращение напрямую к этим моделям без изменения настроек
 
 ### Команды для администратора
 

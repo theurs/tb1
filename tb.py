@@ -3766,6 +3766,11 @@ def ask_file(message: telebot.types.Message):
         return
 
 
+@bot.message_handler(commands=['ping', 'echo'])
+def ping(message: telebot.types.Message):
+    bot.reply_to(message, 'pong')
+
+
 @bot.message_handler(commands=['sum'], func=authorized)
 @async_run
 def summ_text(message: telebot.types.Message):

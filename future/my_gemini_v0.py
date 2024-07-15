@@ -747,7 +747,7 @@ def load_users_keys():
                     ALL_KEYS.append(key)
 
 
-def sum_big_text(text:str, query: str, temperature: float = 0.1) -> str:
+def sum_big_text(text:str, query: str, temperature: float = 1) -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature. Split big text into chunks of 15000 characters.

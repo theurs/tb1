@@ -279,7 +279,7 @@ def get_mem_as_string(chat_id: str) -> str:
         return ''
 
 
-def sum_big_text(text:str, query: str, temperature: float = 0.1, model: str = '') -> str:
+def sum_big_text(text:str, query: str, temperature: float = 1, model: str = '') -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature.

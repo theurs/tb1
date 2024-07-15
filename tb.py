@@ -2948,7 +2948,11 @@ def tts(message: telebot.types.Message, caption = None):
     if len(args) == 2 and my_sum.is_valid_url(args[1]):
         with ShowAction(message, 'typing'):
             url = args[1]
-            if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url:
+            if  '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url or \
+                '//rutube.ru/video/' in url or 'pornhub.com/view_video.php?viewkey=' in url or \
+                ('tiktok.com' in url and 'video' in url) or \
+                ('vk.com' in url and '/video-' in url) or \
+                ('//my.mail.ru/v/' in url and '/video/' in url):
                 text = my_sum.get_text_from_youtube(url, lang)
                 text = my_gemini.rebuild_subtitles(text, lang)
                 if text:

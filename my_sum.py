@@ -4,6 +4,7 @@
 import cachetools.func
 import concurrent.futures
 import io
+import glob
 import os
 import random
 import re
@@ -22,8 +23,41 @@ import cfg
 import my_log
 import my_gemini
 import my_groq
+import my_stt
 import my_transcribe
 import utils
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+def get_subs_from_rutube(url: str) -> str:
+    '''Downloads subtitles from rutube(any yt-dlp capable urls actually) video url, converts them to text and returns the text. 
+    Returns None if no subtitles found.'''
+    tmpname = utils.get_tmp_fname()
+    result = ''
+    try:
+        cmd = f'yt-dlp -x -S "+size,+br" "{url}" -o {tmpname}'
+        try:
+            output = subprocess.check_output(cmd, shell=True, timeout=3000, stderr = subprocess.STDOUT)
+        except subprocess.CalledProcessError as error:
+            if not error.output:
+                output = str(error).encode('utf-8', errors='replace')
+            else:
+                output = error.output
+
+        output = output.decode('utf-8', errors='replace')
+
+        search = tmpname+'*'
+        new_tmp_fname = glob.glob(search)[0]
+        if not os.path.isfile(new_tmp_fname):
+            return ''
+        result = my_stt.stt(new_tmp_fname)
+        utils.remove_file(new_tmp_fname)
+        return result.strip()
+    except Exception as error:
+        my_log.log2(f'get_subs_from_rutube: {error} {url} {tmpname}')
+    finally:
+        utils.remove_file(tmpname)
+        return result
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
@@ -54,13 +88,13 @@ def get_subs_from_dzen_video(url: str) -> str:
         ext = f'.{list_of_subs[0][0]}.{list_of_subs[0][1].split(",")[0]}'
         # check if file exists
         if not os.path.isfile(tmpname + ext):
-            return None
+            return get_subs_from_rutube(url)
         with open(tmpname + ext, 'r', encoding='utf-8') as f:
             text = f.read()
         utils.remove_file(tmpname + ext)
         return clear_text_subs_from_dzen_video(text)
     else:
-        return None
+        return get_subs_from_rutube(url)
 
 
 def clear_text_subs_from_dzen_video(text: str) -> str:
@@ -92,6 +126,10 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
 
         if '//dzen.ru/video/watch/' in url:
             return get_subs_from_dzen_video(url)
+        if '//rutube.ru/video/' in url:
+            return get_subs_from_rutube(url)
+        if 'pornhub.com/view_video.php?viewkey=' in url:
+            return get_subs_from_rutube(url)
 
         try:
             video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
@@ -299,7 +337,7 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool 
     может просто скачать текст без саммаризации, для другой обработки"""
     youtube = False
     pdf = False
-    if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url:
+    if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url or '//rutube.ru/video/' in url or 'pornhub.com/view_video.php?viewkey=' in url:
         text = get_text_from_youtube(url, language=lang)
         youtube = True
     else:
@@ -386,47 +424,4 @@ def is_valid_url(url: str) -> bool:
 
 if __name__ == "__main__":
     pass
-
-    # print(get_text_from_youtube('https://youtu.be/Gt_IbDZbNYE',False, 'ru'))
-    
-    # print(download_text(['http://lib.ru/DETEKTIWY/BONANSINGA/blkmaria.txt_Ascii.txt',]))
-    # print(download_text(['http://lib.ru/DETEKTIWY/BONANSINGA/blkmaria.txt_Ascii.txt',]))
-
-
-    # print(summ_url('https://habr.com/ru/news/817099/', download_only=False, deep=True)[0])
-    # print(summ_url('http://lib.ru/BAUM/baum04.txt_Ascii.txt', download_only=False, deep=True)[0])
-    # print(summ_url('http://moldovenii.org/resources/files/photo/1/6/16844c00b585525863341db4e63269cb_800.jpg', download_only=False, deep=True)[0])
-    
-    
-
-    # print(summ_url('https://www.youtube.com/watch?v=nrFjjsAc_E8')[0])
-    # print(summ_url('https://www.youtube.com/watch?v=0uOCF04QcHk')[0])
-    # print(summ_url('https://www.youtube.com/watch?v=IVTzUg50f_4')[0])
-    # print(summ_url('https://www.youtube.com/watch?v=0MehBAmxj-E')[0])
-    # print(summ_url('https://www.youtube.com/watch?v=-fbQK1to7-s')[0])
-    # print(summ_url('https://www.youtube.com/watch?v=5ijY7TjBwVk')[0])
-    # print(summ_url('https://www.youtube.com/watch?v=uNCsO0JytPA')[0])
-    # print(summ_url('https://www.youtube.com/watch?v=DZkEg82Nc_k')[0])
-
-    # print(summ_url('https://www.linux.org.ru/news/opensource/17620258')[0])
-    # print(summ_url('https://habr.com/ru/companies/productradar/articles/815709/')[0])
-    # print(summ_url('https://habr.com/ru/news/815789/')[0])
-    # print(summ_url('http://lib.ru/RUFANT/ABARINOWA/shwabra.txt')[0])
-    # print(summ_url('http://lib.ru/RUFANT/ABARINOWA/nederzhanie_istiny.txt')[0])
-
-
-    # sys.exit(0)
-
-    # t = sys.argv[1]
-
-    # if is_valid_url(t):
-    #     print(summ_url(t))
-    # elif os.path.exists(t):
-    #     print(summ_text(open(t).read()))
-    # else:
-    #     print("""Usage ./summarize.py '|URL|filename""")
-
-    # s = get_text_from_youtube('https://www.youtube.com/watch?v=U2-eFnq7yyo', language='ru')
-    # t = my_gemini.rebuild_subtitles(s, 'ru')
-    # print(t)
-    
+    # my_groq.load_users_keys()

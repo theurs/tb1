@@ -668,7 +668,7 @@ def recognize_segment(recognizer, wav_bytes, lang, index):
         text = recognizer.recognize_google(audio_data, language=lang)
         return (index, text)
     except sr.UnknownValueError:
-        print("Не удалось распознать речь в сегменте.")
+        # print("Не удалось распознать речь в сегменте.")
         return (index, "")
     except sr.RequestError as e:
         print(f"Ошибка при распознавании речи: {e}")

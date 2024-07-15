@@ -3804,18 +3804,19 @@ def summ_text(message: telebot.types.Message):
                         r = my_db.get_from_sum(url_id)
 
                         if r:
-                            my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
-                            text = my_sum.summ_url(url, lang = lang, deep = False, download_only=True)
-                            my_db.set_user_property(chat_id_full, 'saved_file', text)
-                            rr = utils.bot_markdown_to_html(r)
-                            ask = tr('Use /ask command to query this file. Example /ask generate a short version of part 1.', lang)
-                            bot_reply(message, rr + '\n' + ask, disable_web_page_preview = True,
-                                                parse_mode='HTML',
-                                                reply_markup=get_keyboard('translate', message))
-                            add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                                f'{tr("бот прочитал и ответил:", lang)} {r}',
-                                                chat_id_full)
-                            return
+                            with ShowAction(message, 'typing'):
+                                my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
+                                text = my_sum.summ_url(url, lang = lang, deep = False, download_only=True)
+                                my_db.set_user_property(chat_id_full, 'saved_file', text)
+                                rr = utils.bot_markdown_to_html(r)
+                                ask = tr('Use /ask command to query this file. Example /ask generate a short version of part 1.', lang)
+                                bot_reply(message, rr + '\n' + ask, disable_web_page_preview = True,
+                                                    parse_mode='HTML',
+                                                    reply_markup=get_keyboard('translate', message))
+                                add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
+                                                    f'{tr("бот прочитал и ответил:", lang)} {r}',
+                                                    chat_id_full)
+                                return
 
                         with ShowAction(message, 'typing'):
                             res = ''

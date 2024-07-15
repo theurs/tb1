@@ -328,12 +328,12 @@ def remove_dimatorzok(text: str) -> str:
     Fix error in whisper dataset.
     '''
     lines = [
-        'Субтитры добавил DimaTorzok.'
-        'Субтитры создавал DimaTorzok.'
-        'Субтитры создавал DimaTorzok'
-        'Субтитры добавил DimaTorzok'
-        'DimaTorzok.'
-        'DimaTorzok'
+        'Субтитры добавил DimaTorzok.',
+        'Субтитры создавал DimaTorzok.',
+        'Субтитры создавал DimaTorzok',
+        'Субтитры добавил DimaTorzok',
+        'DimaTorzok.',
+        'DimaTorzok',
     ]
     for line in lines:
         text = text.replace(line, '')

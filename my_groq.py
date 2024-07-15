@@ -323,6 +323,23 @@ def chat_cli(model = ''):
         print(r)
 
 
+def remove_dimatorzok(text: str) -> str:
+    '''https://otvet.mail.ru/question/237076673
+    Fix error in whisper dataset.
+    '''
+    lines = [
+        'Субтитры добавил DimaTorzok.'
+        'Субтитры создавал DimaTorzok.'
+        'Субтитры создавал DimaTorzok'
+        'Субтитры добавил DimaTorzok'
+        'DimaTorzok.'
+        'DimaTorzok'
+    ]
+    for line in lines:
+        text = text.replace(line, '')
+    return text.strip()
+
+
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def stt(data: bytes = None,
         lang: str = '',
@@ -373,7 +390,7 @@ def stt(data: bytes = None,
                                                         #    response_format = 'text',
                                                            timeout=120,
                                                            )
-        return transcription.text
+        return remove_dimatorzok(transcription.text)
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_groq(f'my_groq:stt: {error}\n\n{error_traceback}\n\n{lang}\n\n{key_}')

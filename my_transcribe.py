@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-
+import cachetools.func
 import io
 import json
 import os
@@ -381,6 +381,19 @@ def download_worker_v2(video_url: str, part: tuple, n: int, fname: str, language
         utils.remove_file(f'{fname}_{n}.ogg')
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+def get_url_video_duration(url: str) -> int:
+    '''return duration of video, get with yt-dlp'''
+    proc = subprocess.run([YT_DLP, '--skip-download', '-J', url], stdout=subprocess.PIPE)
+    output = proc.stdout.decode('utf-8', errors='replace')
+    info = json.loads(output)
+    try:
+        duration = info['duration']
+    except:
+        duration = 0
+    return duration
+
+
 def download_youtube_clip(video_url: str, language: str):
     """
     Скачивает видео с YouTube по частям, транскрибирует.
@@ -392,10 +405,7 @@ def download_youtube_clip(video_url: str, language: str):
     part_size = 10 * 60 # размер куска несколько минут
     treshold = 5 # захватывать +- несколько секунд в каждом куске
 
-    proc = subprocess.run([YT_DLP, '--skip-download', '-J', video_url], stdout=subprocess.PIPE)
-    output = proc.stdout.decode('utf-8', errors='replace')
-    info = json.loads(output)
-    duration = info['duration']
+    duration = get_url_video_duration(video_url)
 
     output_name = utils.get_tmp_fname()
 

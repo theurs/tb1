@@ -36,6 +36,12 @@ def get_subs_from_rutube(url: str) -> str:
     cache = my_db.get_from_sum(url+'.sub')
     if cache:
         return cache
+
+    duration = my_transcribe.get_url_video_duration(url)
+    if duration == 0 or duration > 6*60*60:
+        my_log.log2(f'my_sum:get_subs_from_rutube: too long video {url} {duration}')
+        return ''
+
     tmpname = utils.get_tmp_fname()
     result = ''
     try:

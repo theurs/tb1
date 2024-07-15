@@ -146,7 +146,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
         finally:
             utils.remove_file(input_file2)
 
-        if text:
+        if text and len(text) > 1:
             text_ = text
             STT_CACHE.append([data, text_])
             STT_CACHE = STT_CACHE[-CACHE_SIZE:]

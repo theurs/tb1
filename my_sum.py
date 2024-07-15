@@ -20,6 +20,7 @@ import requests
 import trafilatura
 
 import cfg
+import my_db
 import my_log
 import my_gemini
 import my_groq
@@ -32,6 +33,9 @@ import utils
 def get_subs_from_rutube(url: str) -> str:
     '''Downloads subtitles from rutube(any yt-dlp capable urls actually) video url, converts them to text and returns the text. 
     Returns None if no subtitles found.'''
+    cache = my_db.get_from_sum(url)
+    if cache:
+        return cache
     tmpname = utils.get_tmp_fname()
     result = ''
     try:
@@ -52,7 +56,10 @@ def get_subs_from_rutube(url: str) -> str:
             return ''
         result = my_stt.stt(new_tmp_fname)
         utils.remove_file(new_tmp_fname)
-        return result.strip()
+        result = result.strip()
+        if result:
+            my_db.set_sum_cache(url, result)
+        return result
     except Exception as error:
         my_log.log2(f'get_subs_from_rutube: {error} {url} {tmpname}')
     finally:

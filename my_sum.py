@@ -130,6 +130,8 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             return get_subs_from_rutube(url)
         if 'pornhub.com/view_video.php?viewkey=' in url:
             return get_subs_from_rutube(url)
+        if 'tiktok.com' in url and 'video' in url:
+            return get_subs_from_rutube(url)
 
         try:
             video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
@@ -337,7 +339,9 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool 
     может просто скачать текст без саммаризации, для другой обработки"""
     youtube = False
     pdf = False
-    if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url or '//rutube.ru/video/' in url or 'pornhub.com/view_video.php?viewkey=' in url:
+    if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url or \
+       '//rutube.ru/video/' in url or 'pornhub.com/view_video.php?viewkey=' in url or \
+       ('tiktok.com' in url and 'video' in url):
         text = get_text_from_youtube(url, language=lang)
         youtube = True
     else:

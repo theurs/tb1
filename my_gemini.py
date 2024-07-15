@@ -249,14 +249,14 @@ def chat(query: str,
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def img2txt(data_: bytes, prompt: str = "Что на картинке, подробно?") -> str:
+def img2txt(data_: bytes, prompt: str = "Что на картинке, подробно?", temp: int = 1, model: str = 'gemini-1.5-flash') -> str:
     '''Convert image to text.
     '''
     try:
         data = io.BytesIO(data_)
         img = PIL.Image.open(data)
         q = [prompt, img]
-        res = chat(q, temperature=0.1, model = 'gemini-1.5-flash')
+        res = chat(q, temperature=temp, model = model)
         return res
     except Exception as error:
         traceback_error = traceback.format_exc()

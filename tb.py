@@ -2792,10 +2792,6 @@ def restart(message):
         bot_reply_tr(message, 'Restarting bot, please wait')
     my_log.log2(f'tb:restart: !!!RESTART!!!')
     bot.stop_polling()
-    LOG_GROUP_DAEMON_ENABLED = False
-    ACTIVITY_DAEMON_RUN = False
-    time.sleep(10)
-    my_db.close()
 
 
 @bot.message_handler(commands=['leave'], func=authorized_admin)
@@ -5339,7 +5335,12 @@ def main():
         # bot.polling(timeout=90, long_polling_timeout=90)
         bot.infinity_polling(timeout=90, long_polling_timeout=90)
 
+    global LOG_GROUP_DAEMON_ENABLED, ACTIVITY_DAEMON_RUN
+    LOG_GROUP_DAEMON_ENABLED = False
+    ACTIVITY_DAEMON_RUN = False
+    time.sleep(10)
+    my_db.close()
+
 
 if __name__ == '__main__':
     main()
-    my_db.CON.commit()

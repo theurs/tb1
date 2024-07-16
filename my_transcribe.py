@@ -35,14 +35,14 @@ YT_DLP = 'yt-dlp'
 FFMPEG = 'ffmpeg'
 
 
-MAX_THREADS = 8  # Максимальное количество одновременных потоков
+MAX_THREADS = 4  # Максимальное количество одновременных потоков
 MAX_THREADS_V2 = 1  # Максимальное количество одновременных потоков
 download_worker_semaphore = threading.Semaphore(MAX_THREADS)  # Создаем семафор здесь
 download_worker_semaphore_v2 = threading.Semaphore(MAX_THREADS_V2)  # Создаем семафор здесь
 
 
-# не больше 8 потоков для распознавания речи гуглом
-recognize_chunk_SEMAPHORE = threading.Semaphore(8)
+# не больше 4 потоков для распознавания речи гуглом
+recognize_chunk_SEMAPHORE = threading.Semaphore(4)
 
 # не выполнять больше чем в 1 поток, слишком сильно давит на память и процессор
 stt_google_pydub_lock = threading.Lock()

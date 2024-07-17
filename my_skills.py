@@ -195,7 +195,7 @@ def update_user_profile(name: str,
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def calc(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
-    Available modules: decimal, math, numbers, numpy, random.
+    Available modules: decimal, math, numbers, numpy, random, datetime.
     Use only one letter variables.
     Avoid text in math expressions.
 

@@ -3,6 +3,7 @@
 
 import cachetools.func
 import math
+import datetime
 import decimal
 import numbers
 import numpy
@@ -212,6 +213,12 @@ def calc(expression: str) -> str:
         'round', 'pow', 'sum', 'min', 'max', 'divmod',
         'for', 'in', 'and', 'if', 'next',
         'digit',
+
+        'datetime', 'date', 'today', 'days', 'time', 'timedelta', 'now', 'ctime', 'strftime', 
+        'strptime', 'timegm', 'localtime', 'utcfromtimestamp', 'timestamp', 'tzinfo', 
+        'timezone', 'isoformat', 'replace', 'year', 'month', 'day', 'hour', 'minute', 
+        'second', 'microsecond', 'weekday', 'weeknumber', 'dst', 'weeks', 'months', 
+        'daysofweek', 'daysinmonth', 'leapyear',
         ]
     allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(numpy) if not x.startswith('_')]
     allowed_words = sorted(list(set(allowed_words)))
@@ -395,7 +402,7 @@ if __name__ == '__main__':
     pass
     # my_db.init()
 
-    # print(calc("(1/5461512)**3 * (math.factorial(185)/(math.factorial(3)*math.factorial(128)))"))
+    print(calc("(datetime.date(2025, 6, 1) - datetime.date.today()).days"))
     # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
     # print(calc('[str(i) for i in range(5000, 100000) if "2" in str(i) and "9" in str(i)][0:5]'))
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
@@ -406,5 +413,5 @@ if __name__ == '__main__':
 
     # my_db.close()
     
-    my_groq.load_users_keys()
-    print(query_wikipedia('григорий бакунов', lang = 'ru', search = True))
+    # my_groq.load_users_keys()
+    # print(query_wikipedia('григорий бакунов', lang = 'ru', search = True))

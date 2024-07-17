@@ -553,7 +553,7 @@ if __name__ == '__main__':
     #     t2 = time.time()
     #     print(len(r), round(t2 - t1, 2), f'{r[:20]}...{r[-20:]}'.replace('\n', ' '))
 
-    print(stt())
+    # print(stt('d:\\downloads\\1.ogg', prompt='_'))
 
     # test_cases = [
     #     'print("Hello, World!")',

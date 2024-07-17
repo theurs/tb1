@@ -249,7 +249,7 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
                 if your_file == None:
                     your_file = genai.upload_file(audio_file)
                     genai.configure(api_key=key) # здесь может быть рейс кондишн?
-                model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+                model = genai.GenerativeModel('models/gemini-1.5-flash')
                 # tokens_count = model.count_tokens([your_file])
                 # if tokens_count.total_tokens > 7800:
                 #     response = ''
@@ -698,15 +698,16 @@ if __name__ == '__main__':
     my_groq.load_users_keys()
     my_gemini.load_users_keys()
 
-    urls = [
-        'https://www.youtube.com/shorts/4cFxuSQ4yro',
-        # 'https://www.youtube.com/watch?v=rR19alK6QKM',
-        # 'https://www.youtube.com/watch?v=MqTFEahfgOk&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
-        # 'https://www.youtube.com/watch?v=fPO76Jlnz6c&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
-        # 'https://www.youtube.com/watch?v=5Fix7P6aGXQ&pp=ygU10LAg0YLRiyDRgtCw0LrQvtC5INC60YDQsNGB0LjQstGL0Lkg0YEg0LHQvtGA0L7QtNC-0Lk%3D',
-        # 'https://www.youtube.com/watch?v=xfT645b6l0s&pp=ygUX0L_QvtC60LjQvdGD0LvQsCDRh9Cw0YI%3D',
-    ]
-    for x in urls:
-        r = download_youtube_clip_v2(x, 'ru')
-        print(r[0])
+    # urls = [
+    #     'https://www.youtube.com/shorts/4cFxuSQ4yro',
+    #     # 'https://www.youtube.com/watch?v=rR19alK6QKM',
+    #     # 'https://www.youtube.com/watch?v=MqTFEahfgOk&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
+    #     # 'https://www.youtube.com/watch?v=fPO76Jlnz6c&pp=ygUT0L_QtdGB0L3QuCDRhdC40YLRiw%3D%3D',
+    #     # 'https://www.youtube.com/watch?v=5Fix7P6aGXQ&pp=ygU10LAg0YLRiyDRgtCw0LrQvtC5INC60YDQsNGB0LjQstGL0Lkg0YEg0LHQvtGA0L7QtNC-0Lk%3D',
+    #     # 'https://www.youtube.com/watch?v=xfT645b6l0s&pp=ygUX0L_QvtC60LjQvdGD0LvQsCDRh9Cw0YI%3D',
+    # ]
+    # for x in urls:
+    #     r = download_youtube_clip_v2(x, 'ru')
+    #     print(r[0])
         
+    # print(transcribe_genai('d:\\downloads\\1.ogg', prompt='_'))

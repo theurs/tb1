@@ -3929,7 +3929,9 @@ def trans(message: telebot.types.Message):
                           + ' ' + detected_lang,
                           reply_markup=get_keyboard('translate', message))
             else:
-                bot_reply_tr(message, 'Ошибка перевода')
+                # bot_reply_tr(message, 'Ошибка перевода')
+                message.text = text
+                do_task(message)
 
 
 @bot.message_handler(commands=['name'], func=authorized_owner)

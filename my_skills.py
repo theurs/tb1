@@ -214,13 +214,9 @@ def calc(expression: str) -> str:
         'for', 'in', 'and', 'if', 'next',
         'digit',
 
-        'datetime', 'date', 'today', 'days', 'time', 'timedelta', 'now', 'ctime', 'strftime', 
-        'strptime', 'timegm', 'localtime', 'utcfromtimestamp', 'timestamp', 'tzinfo', 
-        'timezone', 'isoformat', 'replace', 'year', 'month', 'day', 'hour', 'minute', 
-        'second', 'microsecond', 'weekday', 'weeknumber', 'dst', 'weeks', 'months', 
-        'daysofweek', 'daysinmonth', 'leapyear',
+        'datetime', 'days', 'seconds', 'microseconds', 'milliseconds', 'minutes', 'hours', 'weeks',
         ]
-    allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(numpy) if not x.startswith('_')]
+    allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(datetime) + dir(datetime.date) + dir(numpy) if not x.startswith('_')]
     allowed_words = sorted(list(set(allowed_words)))
     # get all words from expression
     words = re.findall(r'[^\d\W]+', expression)

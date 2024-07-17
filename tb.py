@@ -4049,6 +4049,8 @@ def send_welcome_start(message: telebot.types.Message):
         help = my_init.start_msg
         my_log.log2(f'tb:send_welcome_start Unknown language: {lang}')
 
+    if chat_id_full not in NEW_KEYBOARD:
+        NEW_KEYBOARD[chat_id_full] = True
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
 
     # no language in user info, show language selector

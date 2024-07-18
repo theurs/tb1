@@ -2341,9 +2341,13 @@ def users_keys_for_gemini(message: telebot.types.Message):
             huggingface_keys = [x for x in huggingface_keys if x not in my_genimg.ALL_KEYS and x.startswith('hf_')]
 
             if huggingface_keys:
-                my_genimg.USER_KEYS[chat_id_full] = huggingface_keys[0]
-                my_log.log_keys(f'Added new API key for Huggingface: {chat_id_full} {huggingface_keys}')
-                bot_reply_tr(message, 'Added API key for Huggingface successfully!')
+                if my_genimg.test_hkey(huggingface_keys[0]):
+                    my_genimg.USER_KEYS[chat_id_full] = huggingface_keys[0]
+                    my_log.log_keys(f'Added new API key for Huggingface: {chat_id_full} {huggingface_keys}')
+                    bot_reply_tr(message, 'Added API key for Huggingface successfully!')
+                else:
+                    msg = tr('API key for Huggingface failed, check if it has permissions.', lang) + ' (Inference)'
+                    bot_reply(message, msg)
 
             if keys_groq:
                 my_groq.USER_KEYS[chat_id_full] = keys_groq[0]

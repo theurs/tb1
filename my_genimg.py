@@ -173,7 +173,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             'ByteDance/Hyper-SDXL-1Step-T2I',
         ]
 
-    payload = json.dumps({"inputs": prompt, negative_prompt: negative_prompt,})
+    payload = json.dumps({"inputs": prompt, "negative_prompt": negative_prompt,})
 
     def request_img(prompt, url, p):
         if 'PixArt-Sigma' in url:
@@ -1025,6 +1025,46 @@ def gen_images(prompt: str, moderation_flag: bool = False,
     return result
 
 
+def test_hkey(key: str):
+    '''test huggingface key'''
+    API_URL = [
+        "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
+        "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
+        "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
+        "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
+        "https://api-inference.huggingface.co/models/UnfilteredAI/NSFW-gen-v2",
+    ]
+
+    payload = json.dumps({"inputs": 'golden apple', "negative_prompt": 'big',})
+
+    n = 1
+    while n > 0:
+        n -= 1
+
+        if hasattr(cfg, 'bing_proxy'):
+            proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
+        else:
+            proxy = None
+        api_key = key
+        headers = {"Authorization": f"Bearer {api_key}"}
+
+        try:
+            response = requests.post(API_URL[0], headers=headers, json=payload, timeout=5, proxies=proxy)
+        except Exception as error:
+            # print(error)
+            continue
+
+        try:
+            resp_text = response.text
+        except:
+            return True
+        # print(resp_text)
+        if 'Authorization header is correct, but the token seems invalid' in resp_text:
+            return False
+
+        return True
+
+
 if __name__ == '__main__':
     load_users_keys()
 
@@ -1046,8 +1086,8 @@ if __name__ == '__main__':
     # imgs = cosxl('an apple made of gold')
     # open('_cosxl.png', 'wb').write(imgs[0])
 
-    imgs = Kolors('an big apple made of gold and pepper')
-    open('_Kolors.png', 'wb').write(imgs[0])
+    # imgs = Kolors('an big apple made of gold and pepper')
+    # open('_Kolors.png', 'wb').write(imgs[0])
 
     # n = 1
     # for x in Hyper_SDXL('an apple made of gold'):
@@ -1058,3 +1098,4 @@ if __name__ == '__main__':
     # for x in huggin_face_api('mans with big hands', 'ugly, blurry, bad anatomy, poorly drawn, out of frame, disfigured, deformed'):
     #     open(f'_huggin_face_api {n}.png', 'wb').write(x)
     #     n += 1
+

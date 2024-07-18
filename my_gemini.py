@@ -104,6 +104,7 @@ def chat(query: str,
     Returns:
         str: The generated response from the AI model.
     '''
+    global ALL_KEYS
     try:
         query = query[:MAX_SUM_REQUEST]
         if temperature < 0:
@@ -209,6 +210,9 @@ def chat(query: str,
             except Exception as error:
                 # my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)}\n{query}\n{mem}')
                 my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                if 'Resource has been exhausted (e.g. check quota)' in str(error):
+                    ALL_KEYS = [x for x in ALL_KEYS if x != key]
+                    my_log.log_gemini(f'Suspend key {key}, active left keys: {len(ALL_KEYS)}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error):
                     remove_key(key)
                 if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error) or 'User location is not supported for the API use.' in str(error):

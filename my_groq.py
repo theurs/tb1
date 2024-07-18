@@ -61,7 +61,7 @@ MEM_UNCENSORED = [
 def ai(prompt: str = '',
        system: str = '',
        mem_ = [],
-       temperature: float = 0.1,
+       temperature: float = 1,
        model_: str = '',
        max_tokens_: int = 2000,
        key_: str = '',
@@ -73,7 +73,7 @@ def ai(prompt: str = '',
         prompt (str, optional): The user's input prompt. Defaults to ''.
         system (str, optional): The system's initial message. Defaults to ''.
         mem_ (list, optional): The list of previous messages. Defaults to [].
-        temperature (float, optional): The randomness of the generated response. Defaults to 0.1.
+        temperature (float, optional): The randomness of the generated response. Defaults to 1.
         model_ (str, optional): The name of the GROQ model to use. Defaults to 'llama3-70b-8192'.
             (llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it, gemma2-9b-it)
         max_tokens_ (int, optional): The maximum number of tokens in the generated response. Defaults to 2000.

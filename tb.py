@@ -129,7 +129,7 @@ MESSAGE_QUEUE_IMG = {}
 # блокировать процесс отправки картинок что бы не было перемешивания разных запросов
 SEND_IMG_LOCK = threading.Lock()
 
-GEMIMI_TEMP_DEFAULT = 0.2
+GEMIMI_TEMP_DEFAULT = 1
 
 # имя бота по умолчанию, в нижнем регистре без пробелов и символов
 BOT_NAME_DEFAULT = cfg.default_bot_name

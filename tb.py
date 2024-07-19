@@ -3117,7 +3117,7 @@ def get_user_image_counter(chat_id_full: str) -> int:
     return my_db.get_user_property(chat_id_full, 'image_generated_counter')
 
 
-@bot.message_handler(commands=['bing10'], func=authorized)
+@bot.message_handler(commands=['bing10', 'Bing10', ], func=authorized)
 @async_run
 def image10_bing_gen(message: telebot.types.Message):
     if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
@@ -3136,7 +3136,7 @@ def image10_bing_gen(message: telebot.types.Message):
             time.sleep(15)
 
 
-@bot.message_handler(commands=['bing'], func=authorized)
+@bot.message_handler(commands=['bing', 'Bing'], func=authorized)
 @async_run
 def image_bing_gen(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)

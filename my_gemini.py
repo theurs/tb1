@@ -70,7 +70,7 @@ MEM_UNCENSORED = [
 
 def chat(query: str,
          chat_id: str = '',
-         temperature: float = 0.1,
+         temperature: float = 1,
          model: str = '',
          system: str = '',
          max_tokens: int = 8000,
@@ -270,7 +270,7 @@ def img2txt(data_: bytes, prompt: str = "Что на картинке, подр�
 
 def ai(q: str,
        mem = [],
-       temperature: float = 0.1,
+       temperature: float = 1,
        model: str = '',
        tokens_limit: int = 8000,
        chat_id: str = '',
@@ -769,12 +769,17 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
-
     # как юзать прокси
     # как отправить в чат аудиофайл
     # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
 
     # list_models()
-    chat_cli()
+    # chat_cli()
+
+    with open('d:\\downloads\\1.txt','r') as f:
+        text = f.read()
+
+    print(ai('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы\n\n'+text, mem=MEM_UNCENSORED))
+
 
     my_db.close()

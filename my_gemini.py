@@ -186,14 +186,13 @@ def chat(query: str,
                         SKILLS += [run_script,]
 
                 model_ = genai.GenerativeModel(model,
-                                        tools=SKILLS,
+                                        # tools=SKILLS,
                                         generation_config = GENERATION_CONFIG,
                                         safety_settings=SAFETY_SETTINGS,
                                         system_instruction = system
                                         )
             else:
                 model_ = genai.GenerativeModel(model,
-                        # tools=SKILLS,
                         generation_config = GENERATION_CONFIG,
                         safety_settings=SAFETY_SETTINGS,
                         system_instruction = system
@@ -205,7 +204,6 @@ def chat(query: str,
             try:
                 resp = chat.send_message(query,
                                     safety_settings=SAFETY_SETTINGS,
-                                    # tools=SKILLS,
                                     request_options=request_options)
             except Exception as error:
                 # my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)}\n{query}\n{mem}')

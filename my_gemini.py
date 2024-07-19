@@ -127,14 +127,14 @@ def chat(query: str,
         if not model:
             model = 'gemini-1.5-flash'
 
-        # if system == '':
-        #     system = None
+        if system == '':
+            system = None
 
-        if chat_id:
-            bio = my_db.get_user_property(chat_id, 'persistant_memory') or 'Empty'
-            system = f'user_id: {chat_id}\n\nUser profile: {bio}\n\n{str(system)}'
-        else:
-            system = f'user_id: None User profile: none, do not try to update it'
+        # if chat_id:
+        #     bio = my_db.get_user_property(chat_id, 'persistant_memory') or 'Empty'
+        #     system = f'user_id: {chat_id}\n\nUser profile: {bio}\n\n{str(system)}'
+        # else:
+        #     system = f'user_id: None User profile: none, do not try to update it'
 
         if not key__:
             keys = cfg.gemini_keys[:] + ALL_KEYS
@@ -200,7 +200,8 @@ def chat(query: str,
 
             request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
 
-            chat = model_.start_chat(history=mem, enable_automatic_function_calling=True)
+            # chat = model_.start_chat(history=mem, enable_automatic_function_calling=True)
+            chat = model_.start_chat(history=mem)
             try:
                 resp = chat.send_message(query,
                                     safety_settings=SAFETY_SETTINGS,

@@ -4576,8 +4576,8 @@ def do_task(message, custom_prompt: str = ''):
             message.from_user.id in cfg.admins
 
     # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15' and not have_keys and is_private:
-        chat_mode_ = 'gemini'
+    # if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15' and not have_keys and is_private:
+    #     chat_mode_ = 'gemini'
 
     if is_private:
         if not have_keys:

@@ -198,20 +198,21 @@ def chat(query: str,
                         system_instruction = system
                         )
 
-            request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
+            # request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
 
             chat = model_.start_chat(history=mem, enable_automatic_function_calling=True)
             # chat = model_.start_chat(history=mem)
             try:
                 resp = chat.send_message(query,
                                     safety_settings=SAFETY_SETTINGS,
-                                    request_options=request_options)
+                                    # request_options=request_options,
+                                    )
             except Exception as error:
                 # my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)}\n{query}\n{mem}')
                 my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
-                if 'Resource has been exhausted (e.g. check quota)' in str(error):
-                    ALL_KEYS = [x for x in ALL_KEYS if x != key]
-                    my_log.log_gemini(f'Suspend key {key}, active left keys: {len(ALL_KEYS)}')
+                # if 'Resource has been exhausted (e.g. check quota)' in str(error):
+                #     ALL_KEYS = [x for x in ALL_KEYS if x != key]
+                #     my_log.log_gemini(f'Suspend key {key}, active left keys: {len(ALL_KEYS)}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error):
                     remove_key(key)
                 if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error) or 'User location is not supported for the API use.' in str(error):

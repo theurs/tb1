@@ -396,7 +396,8 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     text = ''
 
     try:
-        text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-flash')
+        # text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-flash')
+        text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-pro')
         # my_db.add_msg(chat_id_full, 'gemini15_flash')
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')

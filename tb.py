@@ -929,7 +929,7 @@ def authorized(message: telebot.types.Message) -> bool:
     if message.text:
         if not chat_enabled(message) and not message.text.startswith('/enable'):
             if message.text and message.text.startswith('/'):
-                bot_reply(message, f'Not enabled here. User /enable@{_bot_name} to enable in this chat.')
+                bot_reply(message, f'Not enabled here. Use /enable@{_bot_name} to enable in this chat.')
             return False
     if not check_subscription(message):
         return False

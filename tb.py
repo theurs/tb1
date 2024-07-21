@@ -5125,7 +5125,7 @@ def do_task(message, custom_prompt: str = ''):
                     with ShowAction(message, action):
                         try:
                             style_ = my_db.get_user_property(chat_id_full, 'role') or ''
-                            answer = my_groq.chat(message.text, chat_id_full, style=style_, model = 'gemma2-9b-it')
+                            answer = my_groq.chat(message.text, chat_id_full, style=style_, model = 'gemma2-9b-it', timeout = 60)
                             if not answer:
                                 time.sleep(5)
                                 answer = my_groq.chat(message.text, chat_id_full, style=style_, model = 'gemma2-9b-it')

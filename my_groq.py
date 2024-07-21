@@ -65,6 +65,7 @@ def ai(prompt: str = '',
        model_: str = '',
        max_tokens_: int = 2000,
        key_: str = '',
+       timeout: int = 180,
        ) -> str:
     """
     Generates a response using the GROQ AI model.
@@ -121,10 +122,10 @@ def ai(prompt: str = '',
                 client = Groq(
                     api_key=key,
                     http_client = httpx.Client(proxy = random.choice(cfg.GROQ_PROXIES)),
-                    timeout = 120,
+                    timeout = timeout,
                 )
             else:
-                client = Groq(api_key=key, timeout = 120,)
+                client = Groq(api_key=key, timeout = timeout)
 
             try:
                 chat_completion = client.chat.completions.create(
@@ -211,10 +212,12 @@ def update_mem(query: str, resp: str, mem):
 
 
 def chat(query: str, chat_id: str,
-         temperature: float = 0.1,
+         temperature: float = 1,
          update_memory: bool = True,
          model: str = '',
-         style: str = '') -> str:
+         style: str = '',
+         timeout = 180,
+         ) -> str:
     global LOCKS
     if chat_id in LOCKS:
         lock = LOCKS[chat_id]
@@ -224,9 +227,9 @@ def chat(query: str, chat_id: str,
     with lock:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
         if style:
-            r = ai(query, system = style, mem_ = mem, temperature = temperature, model_ = model)
+            r = ai(query, system = style, mem_ = mem, temperature = temperature, model_ = model, timeout = timeout)
         else:
-            r = ai(query, mem_ = mem, temperature = temperature, model_ = model)
+            r = ai(query, mem_ = mem, temperature = temperature, model_ = model, timeout = timeout)
         if r:
             if not model or model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
             if model == 'llama3-8b-8192': model_ = 'llama3-8b-8192'

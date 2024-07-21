@@ -2,6 +2,7 @@
 # pip install -U google-generativeai
 # pip install assemblyai
 
+import datetime
 import hashlib
 import os
 import random
@@ -255,9 +256,47 @@ def assemblyai(audio_file: str, language: str = 'ru'):
         return ''
 
 
+def miliseconds_to_str(miliseconds: int) -> str:
+    '''int milliseconds to str 00:00:00'''
+    seconds = miliseconds // 1000
+    minutes = seconds // 60
+    hours = minutes // 60
+    seconds %= 60
+    minutes %= 60
+    return f'{hours:02}:{minutes:02}:{seconds:02}'
+
+
+def assemblyai_2(audio_file: str, language: str = 'ru'):
+    '''Converts the given audio file to text using the AssemblyAI API.
+    Multivoice version'''
+    try:
+        aai.settings.api_key = random.choice(cfg.ASSEMBLYAI_KEYS)
+        transcriber = aai.Transcriber()
+        audio_url = (audio_file)
+        config = aai.TranscriptionConfig(speaker_labels=True,
+                                         language_code = language,
+                                         entity_detection=True,
+                                         )
+        transcript = transcriber.transcribe(audio_url, config)
+        # my_log.log2(f'my_stt:assemblyai:DEBUG: {transcript.text}')
+        result = ''
+        for l in transcript.utterances:
+            text = l.text
+            speaker = l.speaker
+            start = l.start
+            start_ = miliseconds_to_str(start)
+            result += f'[{start_}] [{speaker}] {text}\n'
+        result = result.strip()
+        return result or ''
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'my_stt:assemblyai: {error}\n\n{traceback_error}')
+        return ''
+
+
 if __name__ == "__main__":
     pass
-    r = assemblyai('d:\\Downloads\\rt_podcast917.mp3')
-    with open('d:\\Downloads\\rt_podcast917.mp3.txt', 'w', encoding='utf-8') as f:
+    r = assemblyai_2('d:\\Downloads\\rt_podcast919.mp3')
+    with open('d:\\Downloads\\rt_podcast919.mp3.txt', 'w', encoding='utf-8') as f:
         f.write(r)
     print(r[:1000])

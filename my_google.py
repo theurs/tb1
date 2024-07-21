@@ -20,12 +20,14 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 6, download_only =
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
     try:
-        r = googlesearch.search(query, stop = max_search, lang=lang)
+        # r = googlesearch.search(query, stop = max_search, lang=lang)
+        r = my_ddg.get_links(query, max_search)
         # raise Exception('not implemented')
     except Exception as error:
         my_log.log2(f'my_google:search_google_v3: {error}')
         try:
-            r = my_ddg.get_links(query, max_search)
+            # r = my_ddg.get_links(query, max_search)
+            r = googlesearch.search(query, stop = max_search, lang=lang)
         except Exception as error:
             my_log.log2(f'my_google:search_google_v3: {error}')
             return ''

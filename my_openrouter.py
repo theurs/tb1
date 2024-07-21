@@ -74,7 +74,7 @@ def ai(prompt: str = '',
        user_id: str = '',
        system: str = '',
        model = '',
-       temperature: float = 0.1,
+       temperature: float = 1,
        max_tokens: int = 8000,
        timeout: int = 120) -> str:
 
@@ -104,7 +104,8 @@ def ai(prompt: str = '',
         if not model:
             model = model_
     else:
-        model = 'google/gemma-2-9b-it:free'
+        if not model:
+            model = 'google/gemma-2-9b-it:free'
 
     mem_ = mem or []
     if system:
@@ -307,7 +308,7 @@ answer with a single long sentence 50-300 words, start with the words Create ima
         return prompt
 
 
-def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False) -> str:
+def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False, model: str = '') -> str:
     """
     Translates the given text from one language to another.
     
@@ -342,9 +343,9 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
         query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
 
     if censored:
-        translated = ai(query, user_id = 'test', temperature=0.1, max_tokens=8000)
+        translated = ai(query, user_id = 'test', temperature=1, max_tokens=8000, model=model)
     else:
-        translated = ai(query, user_id = 'test', temperature=0.1, max_tokens=8000, mem=MEM_UNCENSORED)
+        translated = ai(query, user_id = 'test', temperature=1, max_tokens=8000, model=model, mem=MEM_UNCENSORED)
     if translated[0] == 200:
         return translated[1]
     else:
@@ -355,8 +356,17 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     # reset('test')
-    with open('1.txt', 'r', encoding='utf-8') as f:
-        text = f.read()
-    print(sum_big_text(text, 'перескажи в 4000 символов', model = '', max_size=14000))
+    # with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:
+    #     text = f.read()
+    # r = ai(f'сделай хороший перевод на английский этого текста:\n\n{text[:60000]}',
+    #          user_id='test',
+    #          model = 'openai/gpt-4o-mini',
+    #          max_tokens=16000,
+    #          timeout=600)
+    # r = r[1]
+    # with open('d:/downloads/2.txt', 'w', encoding='utf-8') as f:
+    #     f.write(r)
+    # print(len(r), r[:1000])
+
     chat_cli()
     my_db.close()

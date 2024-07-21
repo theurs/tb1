@@ -411,11 +411,11 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
 def get_lang(user_id: str, message: telebot.types.Message = None) -> str:
     """
     Returns the language corresponding to the given ID.
-    
+
     Args:
         user_id (str): The ID of the user.
         message (telebot.types.Message, optional): The message object. Defaults to None.
-    
+
     Returns:
         str: The language corresponding to the given user ID.
     """

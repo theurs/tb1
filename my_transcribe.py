@@ -459,6 +459,8 @@ def download_youtube_clip_v2(video_url: str, language: str):
     output = proc.stdout.decode('utf-8', errors='replace')
     info = json.loads(output)
     duration = info['duration']
+    if duration == 0 or duration > 4*60*60:
+        return '', info
 
     output_name = utils.get_tmp_fname()
 

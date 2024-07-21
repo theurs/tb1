@@ -334,7 +334,7 @@ def get_new_wikipedia_query(options: list, query: str) -> str:
                             system = 'answer supershot, your answer should contain only number of option',
                             max_tokens_ = 10,
                             temperature = 0,
-                            # timeout = 20
+                            timeout = 20,
                             )
         if answer:
             try:
@@ -398,7 +398,7 @@ if __name__ == '__main__':
     pass
     # my_db.init()
 
-    print(calc("(datetime.date(2025, 6, 1) - datetime.date.today()).days"))
+    # print(calc("(datetime.date(2025, 6, 1) - datetime.date.today()).days"))
     # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
     # print(calc('[str(i) for i in range(5000, 100000) if "2" in str(i) and "9" in str(i)][0:5]'))
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
@@ -409,5 +409,5 @@ if __name__ == '__main__':
 
     # my_db.close()
     
-    # my_groq.load_users_keys()
-    # print(query_wikipedia('григорий бакунов', lang = 'ru', search = True))
+    my_groq.load_users_keys()
+    print(query_wikipedia('орвилл', lang = 'ru', search = True))

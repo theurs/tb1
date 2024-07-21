@@ -461,6 +461,7 @@ def download_youtube_clip_v2(video_url: str, language: str):
     duration = info['duration']
     if duration == 0 or duration > 4*60*60:
         return '', info
+    my_log.log2(f'my_transcribe:download_youtube_clip_v2: {video_url} Duration: {duration}')
 
     output_name = utils.get_tmp_fname()
 

@@ -105,7 +105,8 @@ def ai(prompt: str = '',
             model = model_
     else:
         if not model:
-            model = 'google/gemma-2-9b-it:free'
+            # model = 'google/gemma-2-9b-it:free'
+            model = 'mistralai/mistral-7b-instruct:free'
 
     mem_ = mem or []
     if system:
@@ -164,7 +165,7 @@ def update_mem(query: str, resp: str, chat_id: str):
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
 
 
-def chat(query: str, chat_id: str = '', temperature: float = 0.1, system: str = '', model: str = '') -> str:
+def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = '', model: str = '') -> str:
     global LOCKS
     if chat_id in LOCKS:
         lock = LOCKS[chat_id]

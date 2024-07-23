@@ -114,7 +114,7 @@ def ai(prompt: str = '',
             random.shuffle(keys)
             keys = keys[:4]
 
-        # model="llama3-70b-8192", # llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it, gemma2-9b-it, whisper-large-v3??
+        # model="llama3-70b-8192", # llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it, gemma2-9b-it, 'llama-3.1-70b-versatile'
         model = model_ if model_ else 'gemma2-9b-it'
 
         for key in keys:
@@ -147,6 +147,8 @@ def ai(prompt: str = '',
                 resp = chat_completion.choices[0].message.content.strip()
             except UnboundLocalError:
                 resp = ''
+            if not resp and model_ == 'llama-3.1-70b-versatile':
+                return ai(prompt, system, mem_, temperature, 'llama3-70b-8192', max_tokens_, key_, timeout)
             if resp:
                 return resp
         return ''
@@ -231,8 +233,10 @@ def chat(query: str, chat_id: str,
         else:
             r = ai(query, mem_ = mem, temperature = temperature, model_ = model, timeout = timeout)
         if r:
-            if not model or model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
+            # if not model or model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
+            if not model or model == 'llama-3.1-70b-versatile': model_ = 'llama-3.1-70b-versatile'
             if model == 'llama3-8b-8192': model_ = 'llama3-8b-8192'
+            if model == 'llama-3.1-70b-versatile': model_ = 'llama-3.1-70b-versatile'
             if model == 'mixtral-8x7b-32768': model_ = 'mixtral-8x7b-32768'
             if model == 'gemma-7b-it': model_ = 'gemma-7b-it'
             if model == 'gemma2-9b-it': model_ = 'gemma2-9b-it'

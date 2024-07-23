@@ -238,6 +238,7 @@ def chat(query: str, chat_id: str,
             if not model or model == 'llama-3.1-70b-versatile': model_ = 'llama-3.1-70b-versatile'
             if model == 'llama3-8b-8192': model_ = 'llama3-8b-8192'
             if model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
+            if model == 'llama-3.1-8b-instant': model_ = 'llama-3.1-8b-instant'
             if model == 'llama-3.1-70b-versatile': model_ = 'llama-3.1-70b-versatile'
             if model == 'mixtral-8x7b-32768': model_ = 'mixtral-8x7b-32768'
             if model == 'gemma-7b-it': model_ = 'gemma-7b-it'
@@ -536,7 +537,8 @@ if __name__ == '__main__':
     load_users_keys()
     my_db.init(backup=False)
 
-    chat_cli(model='llama-3.1-70b-versatile')
+    reset('test')
+    chat_cli(model='llama-3.1-8b-instant')
 
     # for x in range(10):
     #     print(ai('1+1='))

@@ -20,7 +20,7 @@ utils.replace_tables - есть баги, не всегда может пере�
    undo
    reset
    mem
-   stats
+   #stats
    id
    purge
 

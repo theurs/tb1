@@ -137,6 +137,12 @@ def log_openrouter(text: str) -> None:
     log2(text[:2000], 'openrouter')
 
 
+def log_gpt4omini(text: str) -> None:
+    """для логов gpt4omini"""
+    log2(text[:2000], 'gpt4omini')
+
+
+
 def log_groq(text: str) -> None:
     """для логов groq"""
     log2(text[:2000], 'groq')

@@ -188,7 +188,8 @@ def init(backup: bool = True):
                 dialog_gemini BLOB,
                 dialog_groq BLOB,
                 dialog_openrouter BLOB,
-                dialog_shadow BLOB
+                dialog_shadow BLOB,
+                dialog_gpt4omini BLOB
             )
         ''')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_id ON users (id)')

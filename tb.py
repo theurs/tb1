@@ -30,6 +30,7 @@ import my_db
 import my_ddg
 import my_google
 import my_gemini
+import my_gpt4omini
 import my_groq
 import my_log
 import my_ocr
@@ -361,8 +362,10 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_openrouter.update_mem(query, resp, chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.update_mem(query, resp, chat_id_full)
-    elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+    elif 'gpt4o' == my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.update_mem(query, resp, chat_id_full)
+    elif 'gpt4omini' == my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_gpt4omini.update_mem(query, resp, chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_ddg.update_mem(query, resp, chat_id_full)
     elif 'gpt35' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -398,7 +401,9 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     try:
         # text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-flash')
         text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-pro')
-        # my_db.add_msg(chat_id_full, 'gemini15_flash')
+        if not text:
+            text = my_gpt4omini.img2txt(data, query, temp = 1)
+            my_db.add_msg(chat_id_full, 'gpt_4o_mini')
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
@@ -1184,6 +1189,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2, button3, button4)
         return markup
 
+    elif kbd == 'gpt4omini_chat':
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt4omini_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'groq_groq-llama370_chat':
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
@@ -1246,6 +1263,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1, button2)
         markup.row(button3, button4)
         markup.row(button5, button6)
+        if hasattr(cfg, 'GPT4OMINI_KEY'):
+            button7 = telebot.types.InlineKeyboardButton('GPT 4o mini', callback_data='select_gpt4omini')
+            markup.row(button7)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -1465,6 +1485,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_gpt35':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 3.5 from DuckDuckGo.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt35')
+        elif call.data == 'select_gpt4omini':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o mini.', lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt4omini')
         elif call.data == 'select_gemini15_flash':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
@@ -1493,6 +1516,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'gpt35_reset':
             my_ddg.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с GPT 3.5 очищена.')
+        elif call.data == 'gpt4omini_reset':
+            my_gpt4omini.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с GPT 4o mini очищена.')
         elif call.data == 'haiku_reset':
             my_ddg.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с haiku очищена.')
@@ -2582,7 +2608,9 @@ def undo(message: telebot.types.Message):
         my_openrouter.undo(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.undo(chat_id_full)
-    elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+    elif 'gpt4omini' == my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_gpt4omini.undo(chat_id_full)
+    elif 'gpt4o' == my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.undo(chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         bot_reply_tr(message, 'DuckDuckGo haiku do not support /undo command')
@@ -2613,12 +2641,14 @@ def reset_(message: telebot.types.Message):
         my_openrouter.reset(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.reset(chat_id_full)
-    elif 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+    elif 'gpt4o' == my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_shadowjourney.reset(chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_ddg.reset(chat_id_full)
     elif 'gpt35' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_ddg.reset(chat_id_full)
+    elif 'gpt4omini' == my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_gpt4omini.reset(chat_id_full)
     else:
         if isinstance(message, telebot.types.Message):
             bot_reply_tr(message, 'History WAS NOT cleared.')
@@ -2777,7 +2807,7 @@ def send_debug_history(message: telebot.types.Message):
         prompt = 'Google Gemma 2 9b\n\n'
         prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'gpt4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+    if 'gpt4o' == my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'GPT-4o\n\n'
         prompt += my_shadowjourney.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
@@ -2788,6 +2818,10 @@ def send_debug_history(message: telebot.types.Message):
     if 'gpt35' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = tr('DuckDuckGo GPT 3.5 do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
         prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if 'gpt4omini' == my_db.get_user_property(chat_id_full, 'chat_mode'):
+        prompt = 'GPT-4o-mini\n\n'
+        prompt += my_gpt4omini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
@@ -4153,6 +4187,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
             my_shadowjourney.reset(chat_id_full)
+            my_gpt4omini.reset(chat_id_full)
             my_ddg.reset(chat_id_full)
 
             my_db.delete_user_property(chat_id_full, 'role')
@@ -4602,13 +4637,14 @@ def do_task(message, custom_prompt: str = ''):
 
 
     chat_modes = {
-        '/gemma2':  'gemma2-9b',
-        '/gemma':   'gemma2-9b',
-        '/haiku':   'haiku',
-        '/flash':   'gemini',
-        '/pro':     'gemini15',
-        '/llama':   'llama370',
-        '/gpt35':   'gpt35',
+        '/gemma2':    'gemma2-9b',
+        '/gemma':     'gemma2-9b',
+        '/haiku':     'haiku',
+        '/flash':     'gemini',
+        '/pro':       'gemini15',
+        '/llama':     'llama370',
+        '/gpt35':     'gpt35',
+        '/gpt4omini': 'gpt4omini',
     }
     for command, mode in chat_modes.items():
         if msg.startswith(command):
@@ -5116,6 +5152,51 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
 
+
+                # если активирован режим общения с gpt-4o-mini
+                if chat_mode_ == 'gpt4omini':
+                    if len(msg) > my_gpt4omini.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для gpt-4o-mini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gpt4omini.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            status_code, answer = my_gpt4omini.chat(message.text, chat_id_full, system=hidden_text)
+                            WHO_ANSWERED[chat_id_full] = 'gpt-4o-mini '
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            llama_helped = False
+                            if not answer:
+                                answer = 'GPT-4o-mini ' + tr('did not answered, try to /reset and start again', lang)
+                            # llama_helped = True
+                            # else:
+                            #     my_gpt4omini.update_mem(message.text, answer, chat_id_full)
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            if llama_helped:
+                                WHO_ANSWERED[chat_id_full] = f'👇gpt4omini + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                my_log.log_echo(message, f'[groq-llama370] {answer}')
+                            else:
+                                my_log.log_echo(message, f'[gpt-4o] {answer}')
+                            try:
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('gpt4omini_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('gpt4omini_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:gpt4omini {error3}\n{error_traceback}')
+                        return
+
+
+
                 # если активирован режим общения с gemma 2 9b
                 if chat_mode_ == 'gemma2-9b':
                     if len(msg) > my_groq.MAX_REQUEST_GEMMA2_9B:
@@ -5286,7 +5367,7 @@ def one_time_shot():
                 # '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
                 # '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
                 # '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
-                '''ALTER TABLE users ADD COLUMN blocked_totally INTEGER;''',
+                '''ALTER TABLE users ADD COLUMN dialog_gpt4omini BLOB;''',
                        ]
             for q in queries:
                 try:

@@ -339,6 +339,11 @@ ASSEMBLYAI_KEYS = [
 # https://www.cryptocompare.com/
 # CRYPTOCOMPARE_KEY = 'xxx'
 
+# for gpt 4o mini
+# GPT4OMINI_URL = 'https://openrouter.ai/api/v1/chat/completions'
+# GPT4OMINI_KEY = 'xxx'
+
+
 # DEBUG = False
 ```
 

@@ -87,7 +87,8 @@ def ai(prompt: str = '',
         Exception: If an error occurs during the generation of the response. The error message and traceback are logged.
     """
     try:
-        temperature = temperature / 2
+        if 'llama-3.1' in model_:
+            temperature = temperature / 2
         mem = []
         if mem_:
             if system:
@@ -148,8 +149,8 @@ def ai(prompt: str = '',
                 resp = chat_completion.choices[0].message.content.strip()
             except UnboundLocalError:
                 resp = ''
-            if not resp and model_ == 'llama-3.1-70b-versatile':
-                return ai(prompt, system, mem_, temperature, 'llama3-70b-8192', max_tokens_, key_, timeout)
+            if not resp and model_ == 'llama-3.1' in model_:
+                return ai(prompt, system, mem_, temperature*2, model_, max_tokens_, key_, timeout)
             if resp:
                 return resp
         return ''

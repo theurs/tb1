@@ -5019,12 +5019,14 @@ def do_task(message, custom_prompt: str = ''):
                                                       chat_id_full,
                                                       my_db.get_user_property(chat_id_full, 'temperature'),
                                                       model = 'llama-3.1-70b-versatile',
+                                                    #   model = 'llama3-70b-8192',
                                                       )
                             else:
                                 answer = my_groq.chat(message.text,
                                                       chat_id_full,
                                                       my_db.get_user_property(chat_id_full, 'temperature'),
                                                       model = 'llama-3.1-70b-versatile',
+                                                    #   model = 'llama3-70b-8192',
                                                       )
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_groq.undo(chat_id_full)

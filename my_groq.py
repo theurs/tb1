@@ -87,6 +87,7 @@ def ai(prompt: str = '',
         Exception: If an error occurs during the generation of the response. The error message and traceback are logged.
     """
     try:
+        temperature = temperature / 2
         mem = []
         if mem_:
             if system:
@@ -236,6 +237,7 @@ def chat(query: str, chat_id: str,
             # if not model or model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
             if not model or model == 'llama-3.1-70b-versatile': model_ = 'llama-3.1-70b-versatile'
             if model == 'llama3-8b-8192': model_ = 'llama3-8b-8192'
+            if model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
             if model == 'llama-3.1-70b-versatile': model_ = 'llama-3.1-70b-versatile'
             if model == 'mixtral-8x7b-32768': model_ = 'mixtral-8x7b-32768'
             if model == 'gemma-7b-it': model_ = 'gemma-7b-it'
@@ -534,7 +536,7 @@ if __name__ == '__main__':
     load_users_keys()
     my_db.init(backup=False)
 
-    # chat_cli(model='gemma2-9b-it')
+    chat_cli(model='llama-3.1-70b-versatile')
 
     # for x in range(10):
     #     print(ai('1+1='))

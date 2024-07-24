@@ -1257,7 +1257,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton('🔒Gemini 1.5 Pro', callback_data='select_gemini15_pro')
         # button3 = telebot.types.InlineKeyboardButton('GPT-4o', callback_data='select_gpt4o')
         button3 = telebot.types.InlineKeyboardButton('Gemma 2 9b', callback_data='select_gemma2-9b')
-        button4 = telebot.types.InlineKeyboardButton('Llama-3 70b', callback_data='select_llama370')
+        button4 = telebot.types.InlineKeyboardButton('Llama-3.1 70b', callback_data='select_llama370')
         button5 = telebot.types.InlineKeyboardButton('GPT 3.5', callback_data='select_gpt35')
         button6 = telebot.types.InlineKeyboardButton('Haiku', callback_data='select_haiku')
         markup.row(button1, button2)

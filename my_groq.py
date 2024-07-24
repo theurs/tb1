@@ -345,6 +345,8 @@ def remove_dimatorzok(text: str) -> str:
     Fix error in whisper dataset.
     '''
     lines = [
+        'Субтитры сделал DimaTorzok.',
+        'Субтитры сделал DimaTorzok',
         'Субтитры добавил DimaTorzok.',
         'Субтитры создавал DimaTorzok.',
         'Субтитры создавал DimaTorzok',

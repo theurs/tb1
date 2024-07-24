@@ -149,7 +149,7 @@ def ai(prompt: str = '',
                 resp = chat_completion.choices[0].message.content.strip()
             except UnboundLocalError:
                 resp = ''
-            if not resp and model_ == 'llama-3.1' in model_:
+            if not resp and 'llama-3.1' in model_:
                 if model_ == 'llama-3.1-70b-versatile':
                     model__ = 'llama3-70b-8192'
                 elif model_ == 'llama-3.1-8b-instant':

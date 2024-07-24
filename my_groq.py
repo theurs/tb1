@@ -150,7 +150,13 @@ def ai(prompt: str = '',
             except UnboundLocalError:
                 resp = ''
             if not resp and model_ == 'llama-3.1' in model_:
-                return ai(prompt, system, mem_, temperature*2, model_, max_tokens_, key_, timeout)
+                if model_ == 'llama-3.1-70b-versatile':
+                    model__ = 'llama3-70b-8192'
+                elif model_ == 'llama-3.1-8b-instant':
+                    model__ = 'llama3-8b-8192'
+                else:
+                    return ''
+                return ai(prompt, system, mem_, temperature*2, model__, max_tokens_, key_, timeout)
             if resp:
                 return resp
         return ''

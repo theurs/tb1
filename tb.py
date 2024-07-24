@@ -519,7 +519,11 @@ def is_admin_member(message: telebot.types.Message) -> bool:
         chat_id = message.message.chat.id
     user_id = message.from_user.id
     member = bot.get_chat_member(chat_id, user_id).status.lower()
-    return True if 'creator' in member or 'administrator' in member else False
+    if 'creator' in member or 'administrator' in member:
+        return True
+    else:
+        my_log.log(f'User {user_id} is {member} of {chat_id}')
+        return False
 
 
 def is_for_me(message: telebot.types.Message) -> bool:

@@ -522,7 +522,8 @@ def is_admin_member(message: telebot.types.Message) -> bool:
     if 'creator' in member or 'administrator' in member or chat_id in cfg.admins:
         return True
     else:
-        my_log.log2(f'User {user_id} is {member} of {chat_id}')
+        if int(user_id) != int(chat_id):
+            my_log.log2(f'User {user_id} is {member} of {chat_id}')
         return False
 
 

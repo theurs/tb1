@@ -30,6 +30,7 @@ multimodalart/cosxl
 PixArt-alpha/PixArt-Sigma
 ByteDance/Hyper-SDXL-1Step-T2I
 gokaygokay/Kolors
+multimodalart/AuraFlow
 
 # не работает? https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium
 # не работает https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium-diffusers
@@ -46,4 +47,4 @@ https://api-inference.huggingface.co/models/alvdansen/midsommarcartoon
 
 # не работает? https://api-inference.huggingface.co/models/Kwai-Kolors/Kolors
 
-https://api-inference.huggingface.co/models/fal/AuraFlow
+

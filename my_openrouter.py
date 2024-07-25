@@ -80,6 +80,10 @@ def ai(prompt: str = '',
 
     if not prompt and not mem:
         return 0, ''
+
+    if model.startswith('meta-llama/llama-3.1-'):
+        temperature = temperature / 2
+
     # if not model:
     #     # model = 'gpt-3.5-turbo'
     #     model = 'google/gemma-2-9b-it:free'
@@ -184,13 +188,13 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
         return status_code, text
 
 
-def chat_cli():
+def chat_cli(model: str = ''):
     while 1:
         q = input('>')
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        s, r = chat(f'(отвечай всегда на языке [ru]) ' + q, 'test')
+        s, r = chat(f'(отвечай всегда на языке [ru]) ' + q, 'test', model = model)
         print(r)
 
 
@@ -369,5 +373,5 @@ if __name__ == '__main__':
     #     f.write(r)
     # print(len(r), r[:1000])
 
-    chat_cli()
+    chat_cli(model = 'meta-llama/llama-3.1-8b-instruct:free')
     my_db.close()

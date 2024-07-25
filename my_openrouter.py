@@ -81,9 +81,6 @@ def ai(prompt: str = '',
     if not prompt and not mem:
         return 0, ''
 
-    if model.startswith('meta-llama/llama-3.1-'):
-        temperature = temperature / 2
-
     # if not model:
     #     # model = 'gpt-3.5-turbo'
     #     model = 'google/gemma-2-9b-it:free'
@@ -111,6 +108,9 @@ def ai(prompt: str = '',
         if not model:
             # model = 'google/gemma-2-9b-it:free'
             model = 'mistralai/mistral-7b-instruct:free'
+
+    if model.startswith('meta-llama/llama-3.1-'):
+        temperature = temperature / 2
 
     mem_ = mem or []
     if system:

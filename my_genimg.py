@@ -220,6 +220,13 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
+        if 'multimodalart/AuraFlow' in url:
+            try:
+                return AuraFlow(prompt, url, negative_prompt=negative_prompt)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\nPrompt: {prompt}\nURL: {url}')
+                return []
+
 
         n = 1
         result = []

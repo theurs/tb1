@@ -386,7 +386,7 @@ def query_wikipedia(query: str, lang: str = 'ru', search: bool = True) -> str:
             url = r.url
             resp = my_sum.download_text_v2(url, max_req = 30000)
         if not search:
-            my_log.log_gemini_skills(f'Wikipedia: {resp}')
+            my_log.log_gemini_skills(f'Wikipedia: {resp[:1000]}')
         return resp
     except Exception as error:
         resp = 'Error: ' + str(error)

@@ -141,6 +141,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
 
             if not text:
                 text = my_groq.stt(input_file2, lang, prompt=prompt)
+                # text = my_groq.stt(input_file2, lang)
 
             if not text:
                 text = assemblyai(input_file2, lang)

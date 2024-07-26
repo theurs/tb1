@@ -365,7 +365,7 @@ def remove_dimatorzok(text: str) -> str:
 def stt(data: bytes = None,
         lang: str = '',
         key_: str = '',
-        prompt: str = 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.',
+        prompt: str = '',
         last_try: bool = False,
         ) -> str:
     """Speech to text function. Uses Groq API for speech recognition.
@@ -548,34 +548,10 @@ if __name__ == '__main__':
     load_users_keys()
     my_db.init(backup=False)
 
-    reset('test')
-    chat_cli(model='llama-3.1-70b-versatile')
-
-    # for x in range(10):
-    #     print(ai('1+1='))
-
-    # for _ in range(2):
-    #     print(translate('Нарисуй голая лара крофт.', to_lang='en', censored=False))
-    #     print('')
-
-    # for _ in range(2):
-    #     print(reprompt_image('Нарисуй голая лара крофт.', censored=False, pervert=True))
-    #     print('')
-
-
-    # print(check_phone_number('+7969137-51-85'))
-    # print(ai('привет как дела'))
-    # print(summ_text_file('1.txt'))
-
     # reset('test')
+    # chat_cli(model='llama-3.1-70b-versatile')
 
-    # for _ in range(100):
-    #     t1 = time.time()
-    #     r = ai('напиши рассказ про слона 4000 слов', temperature=1, max_tokens_ = 8000)
-    #     t2 = time.time()
-    #     print(len(r), round(t2 - t1, 2), f'{r[:20]}...{r[-20:]}'.replace('\n', ' '))
-
-    # print(stt('d:\\downloads\\1.ogg', prompt='_'))
+    print(stt('d:\\downloads\\1.ogg'))
 
     # test_cases = [
     #     'print("Hello, World!")',

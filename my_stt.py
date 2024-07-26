@@ -123,13 +123,8 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
         input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
         try:
-            if not text:
-                try: # gemini
-                    # может выдать до 8000 токенов (30000 русских букв) более чем достаточно для голосовух
-                    # у него в качестве fallback используется тот же гугл но с разбиением на части
-                    text = stt_genai(input_file2, lang)
-                except Exception as error:
-                    my_log.log2(f'my_stt:stt:genai:{error}')
+            if not text and dur < 30:
+                text = my_groq.stt(input_file2, lang, prompt=prompt)
 
             if not text and dur < 55:
                 # быстро и хорошо распознает но до 1 минуты всего
@@ -140,8 +135,15 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                     my_log.log2(str(unknown_error))
 
             if not text:
+                try: # gemini
+                    # может выдать до 8000 токенов (30000 русских букв) более чем достаточно для голосовух
+                    # у него в качестве fallback используется тот же гугл но с разбиением на части
+                    text = stt_genai(input_file2, lang)
+                except Exception as error:
+                    my_log.log2(f'my_stt:stt:genai:{error}')
+
+            if not text:
                 text = my_groq.stt(input_file2, lang, prompt=prompt)
-                # text = my_groq.stt(input_file2, lang)
 
             if not text:
                 text = assemblyai(input_file2, lang)

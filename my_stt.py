@@ -171,6 +171,7 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language:
         if 'error' in out_:
             my_log.log2(f'my_stt:stt_genai_worker: Error in FFMPEG: {out_}')
 
+        text = ''
         # text = my_groq.stt(f'{fname}_{n}.ogg', language)
         if not text:
             text = my_transcribe.transcribe_genai(f'{fname}_{n}.ogg', language=language)
@@ -199,46 +200,46 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
     #     if not text:
     #         text = my_transcribe.transcribe_genai(audio_file, prompt, language)
     #     return text
-    else:
-        part_size = 10 * 60 # размер куска несколько минут
-        treshold = 5 # захватывать +- несколько секунд в каждом куске
-        output_name = utils.get_tmp_fname()
+    # else:
+    part_size = 10 * 60 # размер куска несколько минут
+    treshold = 5 # захватывать +- несколько секунд в каждом куске
+    output_name = utils.get_tmp_fname()
 
-        parts = []
-        start = 0
-        while start < duration:
-            end = min(start + part_size, duration)
-            if start == 0:
-                parts.append((0, min(duration, end + treshold)))  # Первый фрагмент
-            elif end == duration:
-                parts.append((max(0, start - treshold), duration - start))  # Последний фрагмент
-            else:
-                parts.append((max(0, start - treshold), min(duration - start, part_size) + 2 * treshold))  # Остальные фрагменты
-            start = end
+    parts = []
+    start = 0
+    while start < duration:
+        end = min(start + part_size, duration)
+        if start == 0:
+            parts.append((0, min(duration, end + treshold)))  # Первый фрагмент
+        elif end == duration:
+            parts.append((max(0, start - treshold), duration - start))  # Последний фрагмент
+        else:
+            parts.append((max(0, start - treshold), min(duration - start, part_size) + 2 * treshold))  # Остальные фрагменты
+        start = end
 
-        n = 0
-        threads = []
+    n = 0
+    threads = []
 
-        for part in parts:
-            n += 1
-            t = threading.Thread(target=stt_genai_worker, args=(audio_file, part, n, output_name))
-            threads.append(t)
-            t.start()
+    for part in parts:
+        n += 1
+        t = threading.Thread(target=stt_genai_worker, args=(audio_file, part, n, output_name))
+        threads.append(t)
+        t.start()
 
-        for t in threads:
-            t.join()
+    for t in threads:
+        t.join()
 
-        result = ''
-        for x in range(1, n + 1):
-            # check if file exists
-            if os.path.exists(f'{output_name}_{x}.txt'):
-                with open(f'{output_name}_{x}.txt', 'r', encoding='utf-8') as f:
-                    result += f.read() + '\n\n'
-                utils.remove_file(f'{output_name}_{x}.txt')
+    result = ''
+    for x in range(1, n + 1):
+        # check if file exists
+        if os.path.exists(f'{output_name}_{x}.txt'):
+            with open(f'{output_name}_{x}.txt', 'r', encoding='utf-8') as f:
+                result += f.read() + '\n\n'
+            utils.remove_file(f'{output_name}_{x}.txt')
 
-        if 'please provide the audio file' in result.lower() and len(result) < 150:
-            return ''
-        return result
+    if 'please provide the audio file' in result.lower() and len(result) < 150:
+        return ''
+    return result
 
 
 def assemblyai(audio_file: str, language: str = 'ru'):

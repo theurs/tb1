@@ -176,7 +176,7 @@ bot_name = "Бот"
 default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
-# 'gemini', 'gemini15', 'llama370', 'openrouter'
+# 'gemini', 'gemini15', 'llama370', 'openrouter', 'gpt4o', 'gpt4omini', 'gemma2-9b', 'haiku', 'gpt35', 'llama370'
 chat_mode_default = 'gemini15'
 
 # default locale, язык на который переводятся все сообщения

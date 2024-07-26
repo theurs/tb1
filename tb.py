@@ -356,7 +356,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
     # Updates the memory of the selected bot based on the chat mode.
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_gemini.update_mem(query, resp, chat_id_full)
-    elif 'llama3' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+    elif 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.update_mem(query, resp, chat_id_full)
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.update_mem(query, resp, chat_id_full)

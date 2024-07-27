@@ -109,7 +109,7 @@ def ai(prompt: str = '',
             # model = 'google/gemma-2-9b-it:free'
             model = 'mistralai/mistral-7b-instruct:free'
 
-    if model.startswith('meta-llama/llama-3.1-'):
+    if model.startswith('meta-llama/llama-3'):
         temperature = temperature / 2
 
     mem_ = mem or []

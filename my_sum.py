@@ -217,7 +217,8 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str
     result = ''
 
     if subj == 'youtube_video':
-        qq = f'''Summarize the content of this YouTube video.
+        if len(text) > 2000:
+            qq = f'''Summarize the content of this YouTube video.
 
 Answer in [{lang}] language.
 
@@ -227,8 +228,19 @@ Show a block with a detail summary of the content of the video in your own words
 
 Extracted subtitles:
 '''
+        else:
+            qq = f'''Summarize the content of this YouTube video.
+
+Answer in [{lang}] language.
+
+The structure of the answer should be similar to the following:
+Show a block with the brief summary of the video in 5 sentences, which satisfies most people.
+
+Extracted subtitles:
+'''
     else:
-        qq = f'''Summarize the content of this text.
+        if len(text) > 2000:
+            qq = f'''Summarize the content of this text.
 
 Answer in [{lang}] language.
 
@@ -237,7 +249,19 @@ Show a block with the brief summary of the text in 2 sentences, which satisfies 
 Show a block with a detail summary of the content of the text in your own words, 50-2000 words.
 Markdown for links is mandatory.
 
-Text:'''
+Text:
+'''
+        else:
+            qq = f'''Summarize the content of this text.
+
+Answer in [{lang}] language.
+
+The structure of the answer should be similar to the following:
+Show a block with the brief summary of the text in 5 sentences, which satisfies most people.
+Markdown for links is mandatory.
+
+Text:
+'''
 
     if not result:
         try:

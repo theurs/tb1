@@ -36,7 +36,7 @@ FFMPEG = 'ffmpeg'
 
 
 MAX_THREADS = 4  # Максимальное количество одновременных потоков
-MAX_THREADS_V2 = 4  # Максимальное количество одновременных потоков
+MAX_THREADS_V2 = 2  # Максимальное количество одновременных потоков
 download_worker_semaphore = threading.Semaphore(MAX_THREADS)  # Создаем семафор здесь
 download_worker_semaphore_v2 = threading.Semaphore(MAX_THREADS_V2)  # Создаем семафор здесь
 

@@ -24,6 +24,7 @@ from sqlitedict import SqliteDict
 
 import cfg
 import bing_img
+import md2tgmd
 import my_init
 import my_genimg
 import my_db
@@ -2539,7 +2540,7 @@ def change_mode(message: telebot.types.Message):
             msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
         else:
             msg =  f'{tr("[Роли отключены]", lang)}'
-        bot_reply(message, msg, parse_mode='Markdown')
+        bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
     else:
         msg = f"""{tr('Текущий стиль', lang)}
 
@@ -2572,7 +2573,7 @@ def change_mode(message: telebot.types.Message):
         _user_id = int(chat_id_full.split(' ')[0].replace('[','').replace(']',''))
         if _user_id in cfg.admins:
             msg += '`/style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску`'
-        bot_reply(message, msg, parse_mode='Markdown')
+        bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
 
 
 @bot.message_handler(commands=['disable_chat_mode'], func=authorized_admin)
@@ -2784,7 +2785,7 @@ def change_mode2(message: telebot.types.Message):
 
     my_db.set_user_property(arg1, 'role', arg2)
     msg = tr('[Новая роль установлена]', lang) + ' `' + arg2 + '` ' + tr('для чата', lang) + ' `' + arg1 + '`'
-    bot_reply(message, msg, parse_mode='Markdown')
+    bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
 
 
 @bot.message_handler(commands=['mem'], func=authorized_owner)
@@ -2930,8 +2931,10 @@ def set_new_temperature(message: telebot.types.Message):
 `/temperature 0.5`
 `/temperature 1.5`
 `/temperature 2`
+
+{tr('Сейчас температура', lang)} = {my_db.get_user_property(chat_id_full, 'temperature')}
 """
-        bot_reply(message, help, parse_mode='Markdown')
+        bot_reply(message, md2tgmd.escape(help), parse_mode='MarkdownV2')
         return
 
     my_db.set_user_property(chat_id_full, 'temperature', new_temp)
@@ -2941,7 +2944,7 @@ def set_new_temperature(message: telebot.types.Message):
     my_openrouter.PARAMS[chat_id_full] = [model, float(new_temp), max_tokens, maxhistlines, maxhistchars]
 
     msg = f'{tr("New temperature set:", lang)} {new_temp}'
-    bot_reply(message, msg, parse_mode='Markdown')
+    bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
 
 
 @bot.message_handler(commands=['lang', 'language'], func=authorized_owner)
@@ -3055,7 +3058,7 @@ def tts(message: telebot.types.Message, caption = None):
 """
 
         COMMAND_MODE[chat_id_full] = 'tts'
-        bot_reply(message, help, parse_mode = 'Markdown',
+        bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2',
                   reply_markup=get_keyboard('command_mode', message),
                   disable_web_page_preview = True)
         return
@@ -3120,7 +3123,7 @@ def google(message: telebot.types.Message):
 {tr('Напишите запрос в гугл', lang)}
         """
             COMMAND_MODE[chat_id_full] = 'google'
-            bot_reply(message, help, parse_mode = 'Markdown', disable_web_page_preview = False, reply_markup=get_keyboard('command_mode', message))
+            bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2', disable_web_page_preview = False, reply_markup=get_keyboard('command_mode', message))
             return
 
         with ShowAction(message, 'typing'):
@@ -3473,7 +3476,7 @@ the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt
 
                 else:
                     COMMAND_MODE[chat_id_full] = 'image'
-                    bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
+                    bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2', reply_markup=get_keyboard('command_mode', message))
     except Exception as error_unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:image:send: {error_unknown}\n{traceback_error}')
@@ -3540,7 +3543,7 @@ def shell_command(message: telebot.types.Message):
                 stdout, stderr = proc.communicate()
             out_ = stdout + '\n\n' + stderr
             out_ = f'```cmd\n{out_}```'
-            bot_reply(message, out_, parse_mode='Markdown')
+            bot_reply(message, md2tgmd.escape(out_), parse_mode='MarkdownV2')
         else:
             msg = ''
             n = 1
@@ -3877,7 +3880,7 @@ def summ_text(message: telebot.types.Message):
                                 my_db.set_user_property(chat_id_full, 'saved_file', text)
                             except Exception as error2:
                                 print(error2)
-                                bot_reply_tr(message, 'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`', parse_mode='Markdown')
+                                bot_reply_tr(message, md2tgmd.escape('Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`'), parse_mode='MarkdownV2')
                                 return
                             if res:
                                 rr = utils.bot_markdown_to_html(res)
@@ -3897,7 +3900,7 @@ def summ_text(message: telebot.types.Message):
 
 {tr('Давайте вашу ссылку и я перескажу содержание', lang)}"""
         COMMAND_MODE[chat_id_full] = 'sum'
-        bot_reply(message, help, parse_mode = 'Markdown', reply_markup=get_keyboard('command_mode', message))
+        bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2', reply_markup=get_keyboard('command_mode', message))
 
 
 @bot.message_handler(commands=['sum2'], func=authorized)
@@ -3956,7 +3959,7 @@ def trans(message: telebot.types.Message):
             text = match.group(2) or ''
         else:
             COMMAND_MODE[chat_id_full] = 'trans'
-            bot_reply(message, help, parse_mode = 'Markdown',
+            bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2',
                          reply_markup=get_keyboard('command_mode', message))
             return
         llang = llang.strip()
@@ -4011,7 +4014,7 @@ def send_name(message: telebot.types.Message):
     else:
         help = f"{tr('Напишите новое имя бота и я поменяю его, цифры после букв, не больше 10 всего. Имена', lang)} {', '.join(BAD_NAMES) if BAD_NAMES else ''} {tr('уже заняты.', lang)}"
         COMMAND_MODE[chat_id_full] = 'name'
-        bot_reply(message, help, parse_mode='Markdown', reply_markup=get_keyboard('command_mode', message))
+        bot_reply(message, md2tgmd.escape(help), parse_mode='MarkdownV2', reply_markup=get_keyboard('command_mode', message))
 
 
 def is_language_code_valid_for_ocr(code: str) -> bool:

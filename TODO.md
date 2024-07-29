@@ -1,5 +1,7 @@
 ## Что сделать
 
+Не работает команда style lang config и любая кто через маркдаун пытается показать стиль с плохим набором символов. надо передалать в маркдаунВ2
+
 Requires fastapi, uvicorn, and latest version of starlette.
 
 ## Баги

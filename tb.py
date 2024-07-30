@@ -4091,8 +4091,8 @@ def send_welcome_start(message: telebot.types.Message):
 
     args = message.text.split(maxsplit = 1)
     if len(args) == 2:
-        if args[1] in my_init.supported_langs_trans:
-            lang = args[1]
+        if args[1].lower() in [x.lower() for x in my_init.supported_langs_trans+['pt-br',]]:
+            lang = args[1].lower()
 
     if lang in HELLO_MSG:
         help = HELLO_MSG[lang]
@@ -4120,7 +4120,7 @@ def send_welcome_help(message: telebot.types.Message):
     
     args = message.text.split(maxsplit = 1)
     if len(args) == 2:
-        if args[1] in my_init.supported_langs_trans:
+        if args[1] in my_init.supported_langs_trans+['pt-br',]:
             lang = args[1]
 
     help = HELP_MSG[lang] if lang in HELP_MSG else my_init.help_msg
@@ -4142,7 +4142,7 @@ def send_welcome_help_1(message: telebot.types.Message):
 
     args = message.text.split(maxsplit = 1)
     if len(args) == 2:
-        if args[1] in my_init.supported_langs_trans:
+        if args[1] in my_init.supported_langs_trans+['pt-br',]:
             lang = args[1]
 
     help = """

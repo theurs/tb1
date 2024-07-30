@@ -203,6 +203,12 @@ if __name__ == '__main__':
     my_trans.load_users_keys()
 
 
+    # with open(help_msg_file, 'rb') as f:
+    #     d = pickle.load(f)
+    # d['pt-br'] = d['pt']
+    # with open(help_msg_file, 'wb') as f:
+    #     pickle.dump(d, f)
+
     # generate_start_msg()
     # generate_help_msg()
 

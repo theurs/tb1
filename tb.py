@@ -1486,7 +1486,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemma 2 9b.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemma2-9b')
         elif call.data == 'select_haiku':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claud 3 Haiku from DuckDuckGo.', lang))
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claude 3 Haiku from DuckDuckGo.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'haiku')
         elif call.data == 'select_gpt-4o-mini-ddg':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o mini from DuckDuckGo.', lang))

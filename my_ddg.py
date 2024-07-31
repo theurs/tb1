@@ -403,7 +403,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 
 
 if __name__ == '__main__':
-    my_db.init()
+    # my_db.init(backup=False)
     pass
     chat_cli()
-    my_db.close()
+    # my_db.close()

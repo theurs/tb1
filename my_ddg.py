@@ -22,6 +22,7 @@ import utils
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 4000
+MAX_REQUEST_4O_MINI = 6000
 MAX_LINES = 20
 
 # Объекты для доступа к чату {id:DDG object}
@@ -405,5 +406,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 if __name__ == '__main__':
     # my_db.init(backup=False)
     pass
-    chat_cli()
+    q = 'hi ' * 2000
+    print(chat(q, 'test', model = 'gpt-4o-mini'))
+    # chat_cli()
     # my_db.close()

@@ -5284,8 +5284,8 @@ def do_task(message, custom_prompt: str = ''):
 
                 # если активирован режим общения с gpt-4o-mini-ddg (duckduckgo)
                 if chat_mode_ == 'gpt-4o-mini-ddg':
-                    if len(msg) > my_ddg.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 4o mini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
+                    if len(msg) > my_ddg.MAX_REQUEST_4O_MINI:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 4o mini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST_4O_MINI}')
                         return
 
                     with ShowAction(message, action):

@@ -42,7 +42,7 @@
 ### Команды для юзера
 
 /openrouter - выбрать openrouter.ai поставщик разнообразных платных ИИ
-/gemma (gemma2 9b) /haiku /gpt35 /llama (llama 3 70b) /flash (gemini1.5flash) /pro (gemini1.5pro) - обращение напрямую к этим моделям без изменения настроек
+/gemma (gemma2 9b) /haiku /gpt (4o mini ddg) /llama (llama 3 70b) /flash (gemini1.5flash) /pro (gemini1.5pro) - обращение напрямую к этим моделям без изменения настроек
 
 ### Команды для администратора
 
@@ -176,7 +176,7 @@ bot_name = "Бот"
 default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
-# 'gemini', 'gemini15', 'llama370', 'openrouter', 'gpt4o', 'gpt4omini', 'gemma2-9b', 'haiku', 'gpt35', 'llama370'
+# 'gemini', 'gemini15', 'llama370', 'openrouter', 'gpt4o', 'gpt4omini', 'gemma2-9b', 'haiku', 'gpt35', 'llama370', 'gpt-4o-mini-ddg'
 chat_mode_default = 'gemini15'
 
 # default locale, язык на который переводятся все сообщения

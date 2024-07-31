@@ -3277,6 +3277,16 @@ def image_gen(message: telebot.types.Message):
                     prompt = prompt[1]
                     COMMAND_MODE[chat_id_full] = ''
 
+                    # если новый юзер пытается рисовать сиськи то идет нафиг сразу
+                    if not my_db.get_user_property(chat_id_full, 'image_generated_counter'):
+                        prompt_lower = prompt.lower()
+                        with open('image_bad_words.txt.dat', 'r', encoding='utf-8') as f:
+                            bad_words = [x.strip().lower() for x in f.read().split() if x.strip() and not x.strip().startswith('#')]
+                        for x in bad_words:
+                            if x in prompt_lower:
+                                my_db.set_user_property(chat_id_full, 'blocked', True)
+                                return
+
                     # get chat history for content
                     conversation_history = ''
                     conversation_history = my_gemini.get_mem_as_string(chat_id_full) or ''

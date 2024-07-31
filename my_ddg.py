@@ -123,7 +123,7 @@ def chat(query: str,
          chat_id: str,
          model: str = '',
          ) -> str:
-    '''model = 'claude-3-haiku' | 'gpt-3.5' | 'llama-3-70b' | 'mixtral-8x7b'
+    '''model = 'claude-3-haiku' | 'gpt-3.5' | 'llama-3-70b' | 'mixtral-8x7b' | 'gpt-4o-mini'
     '''
 
     if chat_id not in CHATS_OBJ:
@@ -357,7 +357,8 @@ def chat_cli():
             continue
         # r = chat(q, 'test', model='mixtral-8x7b')
         # r = chat(q, 'test', model='llama-3-70b')
-        r = chat(q, 'test', model='claude-3-haiku')
+        # r = chat(q, 'test', model='claude-3-haiku')
+        r = chat(q, 'test', model='gpt-4o-mini')
         # r = chat(q, 'test', model='gpt-3.5')
         print(r)
         print('')

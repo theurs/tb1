@@ -1085,14 +1085,33 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button1)
         return markup
     elif kbd == 'select_lang':
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=2)
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
         most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de', 'fr', 'it', 'tr', 'ko', 'id', 'vi']
+
+        # Словарь с флагами
+        flags = {
+            'en': '🇬🇧',
+            'zh': '🇨🇳',
+            'es': '🇪🇸',
+            'ar': '🇸🇦',
+            'hi': '🇮🇳',
+            'pt': '🇧🇷',
+            'bn': '🇧🇩',
+            'ru': '🇷🇺',
+            'ja': '🇯🇵',
+            'de': '🇩🇪',
+            'fr': '🇫🇷',
+            'it': '🇮🇹',
+            'tr': '🇹🇷',
+            'ko': '🇰🇷',
+            'id': '🇮🇩',
+            'vi': '🇻🇳'
+        }
+
         pair = []
         for x in most_used_langs:
             native_name = langcodes.Language.make(language=x).display_name(language=x).capitalize()
-            # english_name = langcodes.Language.make(language=x).display_name(language='en').capitalize()
-            # lang_name = f'{english_name} ({native_name})'
-            lang_name = f'{native_name}'
+            lang_name = f'{flags[x]} {native_name}'  # Добавляем флаг к названию языка
             cb = f'select_lang-{x}'
             button = telebot.types.InlineKeyboardButton(lang_name, callback_data=cb)
             pair.append(button)
@@ -1103,8 +1122,10 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             markup.row(pair[0], pair[1])
         if len(pair) == 1:
             markup.row(pair[0])
+
         button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='erase_answer')
         markup.row(button1)
+
         return markup
     elif kbd == 'translate':
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):

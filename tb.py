@@ -4984,10 +4984,19 @@ def do_task(message, custom_prompt: str = ''):
                             answer = my_gemini.chat(message.text,
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
-                                                    model = 'gemini-1.5-pro',
+                                                    # model = 'gemini-1.5-pro',
+                                                    model = 'gemini-1.5-pro-exp-0801',
                                                     system = hidden_text,
-                                                    use_skills=True
+                                                    use_skills=True,
                                                     )
+                            if not answer:
+                                answer = my_gemini.chat(message.text,
+                                                        chat_id_full,
+                                                        my_db.get_user_property(chat_id_full, 'temperature'),
+                                                        model = 'gemini-1.5-pro',
+                                                        system = hidden_text,
+                                                        use_skills=True,
+                                                        )
 
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)

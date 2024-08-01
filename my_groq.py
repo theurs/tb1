@@ -36,9 +36,11 @@ LOCKS = {}
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 6000
+MAX_REQUEST_LLAMA31 = 20000
 MAX_REQUEST_GEMMA2_9B = 12000
 
 MAX_QUERY_LENGTH = 10000
+MAX_MEM_LLAMA31 = 50000
 # максимальное количество запросов которые можно хранить в памяти
 MAX_LINES = 20
 
@@ -118,6 +120,12 @@ def ai(prompt: str = '',
 
         # model="llama3-70b-8192", # llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it, gemma2-9b-it, 'llama-3.1-70b-versatile' 'llama-3.1-405b-reasoning'
         model = model_ if model_ else 'gemma2-9b-it'
+
+        max_mem = MAX_QUERY_LENGTH
+        if 'llama-3.1' in model:
+            max_mem = MAX_MEM_LLAMA31
+        while token_count(mem) > max_mem:
+            mem = mem[2:]
 
         for key in keys:
             if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
@@ -201,8 +209,8 @@ def update_mem(query: str, resp: str, mem):
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
     mem += [{'role': 'user', 'content': query}]
     mem += [{'role': 'assistant', 'content': resp}]
-    while token_count(mem) > MAX_QUERY_LENGTH:
-        mem = mem[2:]
+    # while token_count(mem) > MAX_QUERY_LENGTH:
+    #     mem = mem[2:]
     mem = mem[:MAX_LINES*2]
 
     # непонятный глюк с задвоением памяти, убираем дубли

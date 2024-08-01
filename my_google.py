@@ -70,18 +70,18 @@ Search results:
     r =  my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], model='gemini-1.5-flash', temperature=1)
     if r:
         r += '\n\n--\n[Gemini Flash]'
+    # if not r:
+    #     r = my_gemini.ai(q[:32000], model='gemini-1.5-flash', temperature=1)
+    #     if r:
+    #         r += '\n\n--\n[Gemini Flash]'
     if not r:
-        r = my_gemini.ai(q[:32000], model='gemini-1.5-flash', temperature=1)
+        r = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], max_tokens_ = 4000)
         if r:
-            r += '\n\n--\n[Gemini Flash]'
-        if not r:
-            r = my_groq.ai(q[:32000], max_tokens_ = 4000, model_ = 'mixtral-8x7b-32768')
-            if r:
-                r += '\n\n--\n[Mixtral-8x7b-32768]'
-            if not r:
-                r = my_groq.ai(q[:12000], max_tokens_ = 4000)
-                if r:
-                    r += '\n\n--\n[Llama 3 70b]'
+            r += '\n\n--\n[Llama 3.1 70b]'
+    if not r:
+        r = my_groq.ai(q[:32000], max_tokens_ = 4000, model_ = 'mixtral-8x7b-32768')
+        if r:
+            r += '\n\n--\n[Mixtral-8x7b-32768]'
 
     return r, f'Data extracted from Google with query "{query}":\n\n' + text
 

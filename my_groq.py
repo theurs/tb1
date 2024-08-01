@@ -43,7 +43,7 @@ MAX_QUERY_LENGTH = 10000
 MAX_LINES = 20
 
 # limit for summarize
-MAX_SUM_REQUEST = 12000
+MAX_SUM_REQUEST = 100000
 
 # {user_id:bool} в каких чатах добавлять разблокировку цензуры
 # CRACK_DB = SqliteDict('db/groq_crack.db', autocommit=True)
@@ -483,7 +483,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
     return translated
 
 
-def sum_big_text(text:str, query: str, temperature: float = 0.1, model = 'llama3-70b-8192') -> str:
+def sum_big_text(text:str, query: str, temperature: float = 1, model = 'llama-3.1-70b-versatile') -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature.
@@ -551,7 +551,7 @@ if __name__ == '__main__':
     # reset('test')
     # chat_cli(model='llama-3.1-70b-versatile')
 
-    print(stt('d:\\downloads\\1.ogg'))
+    # print(stt('d:\\downloads\\1.ogg'))
 
     # test_cases = [
     #     'print("Hello, World!")',
@@ -559,5 +559,11 @@ if __name__ == '__main__':
     # ]
     # for x in test_cases:
     #     print(x, '->', translate_text(x, 'ru'))
+
+
+    with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:
+        text = f.read()
+
+    print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
 
     my_db.close()

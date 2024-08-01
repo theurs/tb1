@@ -274,38 +274,13 @@ Text:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
 
-
-    # if not result:
-    #     try:
-    #         if query:
-    #             qq = query
-    #         r = my_openrouter.sum_big_text(text[:my_openrouter.MAX_SUM_REQUEST], qq, model = 'microsoft/phi-3-mini-128k-instruct:free').strip()
-    #         if r != '':
-    #             result = f'{r}\n\n--\microsoft/phi-3-mini-128k-instruct:free [{len(text[:my_openrouter.MAX_SUM_REQUEST])}]'
-    #     except Exception as error:
-    #         print(f'my_sum:summ_text_worker:gpt: {error}')
-    #         my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
-
-
-
     if not result:
         try:
             if query:
                 qq = query
-            r = my_groq.sum_big_text(text[:32000], qq, model = 'mixtral-8x7b-32768').strip()
+            r = my_groq.sum_big_text(text[:my_groq.MAX_SUM_REQUEST], qq).strip()
             if r != '':
-                result = f'{r}\n\n--\nMixtral-8x7b-32768 [Groq] [{len(text[:32000])}]'
-        except Exception as error:
-            print(f'my_sum:summ_text_worker:gpt: {error}')
-            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
-
-    if not result:
-        try:
-            if query:
-                qq = query
-            r = my_groq.sum_big_text(text[:my_groq.MAX_QUERY_LENGTH], qq).strip()
-            if r != '':
-                result = f'{r}\n\n--\nLlama3 70b [Groq] [{len(text[:my_groq.MAX_QUERY_LENGTH])}]'
+                result = f'{r}\n\n--\Llama 3.1 70b [Groq] [{len(text[:my_groq.MAX_SUM_REQUEST])}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')

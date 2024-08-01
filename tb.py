@@ -1290,9 +1290,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1, button2)
         markup.row(button3, button4)
         markup.row(button5, button6)
-        if hasattr(cfg, 'GPT4OMINI_KEY'):
-            button7 = telebot.types.InlineKeyboardButton('GPT 4o mini', callback_data='select_gpt4omini')
-            markup.row(button7)
+        # if hasattr(cfg, 'GPT4OMINI_KEY'):
+        #     button7 = telebot.types.InlineKeyboardButton('GPT 4o mini', callback_data='select_gpt4omini')
+        #     markup.row(button7)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

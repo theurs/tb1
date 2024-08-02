@@ -226,7 +226,12 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
-
+        if 'black-forest-labs/FLUX.1-schnell' in url:
+            try:
+                return FLUX1(prompt, url, negative_prompt=negative_prompt)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\nPrompt: {prompt}\nURL: {url}')
+                return []
 
         n = 1
         result = []
@@ -928,6 +933,56 @@ def AuraFlow(prompt: str, url: str = "multimodalart/AuraFlow", number: int = 1, 
     return images
 
 
+def FLUX1(prompt: str, url: str = "black-forest-labs/FLUX.1-schnell", number: int = 1, negative_prompt: str = "") -> list:
+    """
+    url = "black-forest-labs/FLUX.1-schnell" only?
+    """
+    try:
+        client = gradio_client.Client(url)
+    except Exception as error:
+        my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    result = None
+    try:
+        result = client.predict(
+            prompt=prompt,
+            # negative_prompt=negative_prompt,
+            seed=0,
+            randomize_seed=True,
+            width=1024,
+            height=1024,
+            num_inference_steps=4,
+            api_name="/infer"
+        )
+    except Exception as error:
+        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
+            my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\n\nPrompt: {prompt}\nURL: {url}')
+        return []
+
+    images = []
+    try:
+        fname = result[0]
+        base_path = os.path.dirname(fname)
+    except:
+        fname = ''
+    if fname:
+        try:
+            data = None
+            with open(fname, 'rb') as f:
+                data = f.read()
+            try:
+                utils.remove_file(fname)
+                os.rmdir(base_path)
+            except Exception as error:
+                my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\n\nPrompt: {prompt}\nURL: {url}')
+            if data:
+                WHO_AUTOR[hash(data)] = url.split('/')[-1]
+                images.append(data)
+        except Exception as error:
+            my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return images
+
 
 def get_reprompt(prompt: str, conversation_history: str = '') -> str:
     """
@@ -1150,8 +1205,12 @@ if __name__ == '__main__':
     # imgs = Kolors('an big apple made of gold and pepper')
     # open('_Kolors.png', 'wb').write(imgs[0])
 
-    imgs = AuraFlow('an big apple made of gold and pepper')
-    open('_AuraFlow.png', 'wb').write(imgs[0])
+    # imgs = AuraFlow('an big apple made of gold and pepper')
+    # open('_AuraFlow.png', 'wb').write(imgs[0])
+
+    imgs = FLUX1('an big apple made of gold and pepper')
+    open('_Flux1.png', 'wb').write(imgs[0])
+
 
 
     # n = 1

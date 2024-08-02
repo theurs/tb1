@@ -226,7 +226,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\nPrompt: {prompt}\nURL: {url}')
                 return []
-        if 'black-forest-labs/FLUX.1-schnell' in url:
+        if 'FLUX.1-schnell' in url or 'FLUX.1-schnell' in url:
             try:
                 return FLUX1(prompt, url, negative_prompt=negative_prompt)
             except Exception as error:
@@ -935,7 +935,7 @@ def AuraFlow(prompt: str, url: str = "multimodalart/AuraFlow", number: int = 1, 
 
 def FLUX1(prompt: str, url: str = "black-forest-labs/FLUX.1-schnell", number: int = 1, negative_prompt: str = "") -> list:
     """
-    url = "black-forest-labs/FLUX.1-schnell" only?
+    url = "black-forest-labs/FLUX.1-schnell" or "ChristianHappy/FLUX.1-schnell" only?
     """
     try:
         client = gradio_client.Client(url)

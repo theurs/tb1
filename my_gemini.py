@@ -231,6 +231,7 @@ def chat(query: str,
                     result = result[result.find(']') + 1:]
 
                 if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
+                if 'gemini-1.5-pro-exp-0801' in model: model_ = 'gemini-1.5-pro-exp-0801'
                 if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
                 if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
                 if not model: model_ = 'gemini15_flash'

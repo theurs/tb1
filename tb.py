@@ -4982,6 +4982,7 @@ def do_task(message, custom_prompt: str = ''):
                             #                         model = 'gemini-1.5-pro')
 
                             exp_ = True
+                            WHO_ANSWERED[chat_id_full] = 'gemini15pro-exp'
                             answer = my_gemini.chat(message.text,
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
@@ -4992,6 +4993,7 @@ def do_task(message, custom_prompt: str = ''):
                                                     )
                             if not answer:
                                 exp_ = False
+                                WHO_ANSWERED[chat_id_full] = 'gemini15pro'
                                 answer = my_gemini.chat(message.text,
                                                         chat_id_full,
                                                         my_db.get_user_property(chat_id_full, 'temperature'),
@@ -5044,7 +5046,10 @@ def do_task(message, custom_prompt: str = ''):
                                 WHO_ANSWERED[chat_id_full] = f'👇Gemini15pro + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                                 my_log.log_echo(message, f'[Gemini15pro + llama3-70] {answer}')
                             else:
-                                my_log.log_echo(message, f'[Gemini15pro] {answer}')
+                                if exp_:
+                                    my_log.log_echo(message, f'[Gemini15pro-exp] {answer}')
+                                else:
+                                    my_log.log_echo(message, f'[Gemini15pro] {answer}')
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)

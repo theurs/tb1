@@ -1743,6 +1743,7 @@ def handle_document(message: telebot.types.Message):
                    'application/x-sh',
                    'application/xhtml+xml',
                    'application/atom+xml',
+                   'application/x-subrip',
                    )
 
     with lock:

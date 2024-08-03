@@ -144,7 +144,7 @@ Translated text:
 
 {translated}
 '''
-    res = my_groq.ai(q, temperature = 0, max_tokens_ = 10)
+    res = my_groq.ai(q, temperature = 0, max_tokens_ = 10, model_='gemma2-9b-it')
     result = True if 'yes' in res.lower() else False
     return result
 

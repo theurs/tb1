@@ -45,7 +45,7 @@ MAX_MEM_LLAMA31 = 50000
 MAX_LINES = 20
 
 # limit for summarize
-MAX_SUM_REQUEST = 100000
+MAX_SUM_REQUEST = MAX_MEM_LLAMA31
 
 # {user_id:bool} в каких чатах добавлять разблокировку цензуры
 # CRACK_DB = SqliteDict('db/groq_crack.db', autocommit=True)
@@ -65,7 +65,7 @@ def ai(prompt: str = '',
        mem_ = [],
        temperature: float = 1,
        model_: str = '',
-       max_tokens_: int = 2000,
+       max_tokens_: int = 4000,
        key_: str = '',
        timeout: int = 180,
        ) -> str:
@@ -89,8 +89,6 @@ def ai(prompt: str = '',
         Exception: If an error occurs during the generation of the response. The error message and traceback are logged.
     """
     try:
-        if 'llama-3.1' in model_ or 'llama3' in model_:
-            temperature = temperature / 2
         mem = []
         if mem_:
             if system:
@@ -119,13 +117,16 @@ def ai(prompt: str = '',
             keys = keys[:4]
 
         # model="llama3-70b-8192", # llama3-8b-8192, mixtral-8x7b-32768, gemma-7b-it, gemma2-9b-it, 'llama-3.1-70b-versatile' 'llama-3.1-405b-reasoning'
-        model = model_ if model_ else 'gemma2-9b-it'
+        model = model_ if model_ else 'llama-3.1-70b-versatile'
 
         max_mem = MAX_QUERY_LENGTH
         if 'llama-3.1' in model:
             max_mem = MAX_MEM_LLAMA31
-        while token_count(mem) > max_mem:
+        while token_count(mem) > max_mem + 100:
             mem = mem[2:]
+
+        if 'llama-3.1' in model_ or 'llama3' in model_:
+            temperature = temperature / 2
 
         for key in keys:
             if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
@@ -199,7 +200,8 @@ def token_count(mem, model:str = "meta-llama/Meta-Llama-3-8B") -> int:
         text = mem
     else:
         text = ' '.join([m['content'] for m in mem])
-    return len(text)
+    l = len(text)
+    return l
 
 
 def update_mem(query: str, resp: str, mem):

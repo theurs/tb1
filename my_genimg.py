@@ -1010,7 +1010,7 @@ Dialog history: {conversation_history}
 
         reprompt = my_gemini.ai(query, temperature=1.5)
         if not reprompt:
-            reprompt = my_groq.ai(query, temperature=1)
+            reprompt = my_groq.ai(query, temperature=1, model_='gemma2-9b-it')
             if not reprompt:
                 reprompt = get_reprompt_nsfw(prompt)
                 if not reprompt:

@@ -4332,6 +4332,10 @@ def id_cmd_handler(message: telebot.types.Message):
 @async_run
 def enable_chat(message: telebot.types.Message):
     """что бы бот работал в чате надо его активировать там"""
+    is_private = message.chat.type == 'private'
+    if is_private:
+        bot_reply_tr(message, "Use this command to activate bot in public chat.")
+        return
     chat_id_full = f'[{message.from_user.id}] [0]'
     admin_have_keys = chat_id_full in my_gemini.USER_KEYS and chat_id_full in my_groq.USER_KEYS \
                       and chat_id_full in my_genimg.USER_KEYS or message.from_user.id in cfg.admins
@@ -4348,6 +4352,10 @@ def enable_chat(message: telebot.types.Message):
 @async_run
 def disable_chat(message: telebot.types.Message):
     """что бы бот не работал в чате надо его деактивировать там"""
+    is_private = message.chat.type == 'private'
+    if is_private:
+        bot_reply_tr(message, "Use this command to deactivate bot in public chat.")
+        return
     chat_id_full = get_topic_id(message)
     my_db.delete_user_property(chat_id_full, 'chat_enabled')
     bot_reply_tr(message, 'Chat disabled.')

@@ -428,14 +428,17 @@ def get_lang(user_id: str, message: telebot.types.Message = None) -> str:
     """
     lang = my_db.get_user_property(user_id, 'lang')
 
-    if lang == 'pt-br':
-        lang = 'pt'
-
     if not lang:
         lang = cfg.DEFAULT_LANGUAGE
         if message:
             lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
         my_db.set_user_property(user_id, 'lang', lang)
+
+    if lang == 'pt-br':
+        lang = 'pt'
+    if lang.startswith('zh-'):
+        lang = 'zh'
+
     return lang
 
 
@@ -1735,6 +1738,7 @@ def handle_document(message: telebot.types.Message):
         'application/rtf',
         'application/msword',
         'application/x-msexcel',
+        'application/x-fictionbook+xml',
     )
     simple_text = ('application/x-bat',
                    'application/xml',

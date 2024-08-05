@@ -280,7 +280,7 @@ Text:
                 qq = query
             r = my_groq.sum_big_text(text[:my_groq.MAX_SUM_REQUEST], qq).strip()
             if r != '':
-                result = f'{r}\n\n--Llama 3.1 70b [Groq] [{len(text[:my_groq.MAX_SUM_REQUEST])}]'
+                result = f'{r}\n\n--\nLlama 3.1 70b [Groq] [{len(text[:my_groq.MAX_SUM_REQUEST])}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gpt: {error}')
             my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')

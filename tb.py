@@ -4302,7 +4302,7 @@ def id_cmd_handler(message: telebot.types.Message):
 
 {tr("Выбранная чат модель:", lang)} {user_model}'''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
-        msg += ' ' + open_router_model
+        msg += f' <b>{open_router_model}</b>'
 
     gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
     groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []

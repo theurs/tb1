@@ -4277,6 +4277,22 @@ def id_cmd_handler(message: telebot.types.Message):
     user_id = message.from_user.id
     reported_language = message.from_user.language_code
     open_router_model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full] if chat_id_full in my_openrouter.PARAMS else my_openrouter.PARAMS_DEFAULT
+
+    user_model = my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.get_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default
+    models = {
+        'gemini': 'Gemini 1.5 Flash',
+        'gemini15': 'Gemini 1.5 Pro Exp 0801',
+        'llama370': 'Llama 3.1 70b',
+        'openrouter': 'openrouter.ai',
+        'gpt4o': 'GPT 4o',
+        'gpt4omini': 'GPT 4o mini [DuckDuckGo]',
+        'gemma2-9b': 'Gemma 2 9b',
+        'haiku': 'Claude 3 Haiku [DuckDuckGo]',
+        'gpt35': 'GPT 3.5',
+        'gpt-4o-mini-ddg': 'GPT 4o mini [DuckDuckGo]',
+    }
+    if user_model in models.keys():
+        user_model = f'<b>{models[user_model]}</b>'
  
     msg = f'''{tr("ID пользователя:", lang)} {user_id}
 
@@ -4284,7 +4300,7 @@ def id_cmd_handler(message: telebot.types.Message):
 
 {tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
 
-{tr("Выбранная чат модель:", lang)} {my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.get_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default}'''
+{tr("Выбранная чат модель:", lang)} {user_model}'''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         msg += ' ' + open_router_model
 
@@ -4330,7 +4346,7 @@ def id_cmd_handler(message: telebot.types.Message):
     if my_db.get_user_property(chat_id_full, 'persistant_memory'):
         msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_db.get_user_property(chat_id_full, "persistant_memory")}'
 
-    bot_reply(message, msg)
+    bot_reply(message, msg, parse_mode = 'HTML')
 
 
 @bot.message_handler(commands=['enable'], func=authorized_owner)

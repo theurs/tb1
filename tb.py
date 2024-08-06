@@ -4281,15 +4281,15 @@ def id_cmd_handler(message: telebot.types.Message):
     user_model = my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.get_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default
     models = {
         'gemini': 'Gemini 1.5 Flash',
-        'gemini15': 'Gemini 1.5 Pro Exp 0801',
+        'gemini15': 'Gemini 1.5 Pro',
         'llama370': 'Llama 3.1 70b',
         'openrouter': 'openrouter.ai',
         'gpt4o': 'GPT 4o',
-        'gpt4omini': 'GPT 4o mini [DuckDuckGo]',
+        'gpt4omini': 'GPT 4o mini',
         'gemma2-9b': 'Gemma 2 9b',
-        'haiku': 'Claude 3 Haiku [DuckDuckGo]',
+        'haiku': 'Claude 3 Haiku',
         'gpt35': 'GPT 3.5',
-        'gpt-4o-mini-ddg': 'GPT 4o mini [DuckDuckGo]',
+        'gpt-4o-mini-ddg': 'GPT 4o mini',
     }
     if user_model in models.keys():
         user_model = f'<b>{models[user_model]}</b>'

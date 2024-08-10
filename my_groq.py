@@ -559,7 +559,7 @@ if __name__ == '__main__':
     my_db.init(backup=False)
 
     # reset('test')
-    # chat_cli(model='llama-3.1-70b-versatile')
+    chat_cli(model='llama-3.1-70b-versatile')
 
     # print(stt('d:\\downloads\\1.ogg'))
 
@@ -571,9 +571,9 @@ if __name__ == '__main__':
     #     print(x, '->', translate_text(x, 'ru'))
 
 
-    with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:
-        text = f.read()
+    # with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:
+    #     text = f.read()
 
-    print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
+    # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
 
     my_db.close()

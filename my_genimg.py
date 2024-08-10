@@ -176,62 +176,62 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
     payload = json.dumps({"inputs": prompt, "negative_prompt": negative_prompt,})
 
     def request_img(prompt, url, p):
-        if 'PixArt-Sigma' in url:
-            try:
-                return PixArtSigma(prompt, url, negative_prompt=negative_prompt)
-            except:
-                return []
-        if 'Hyper-SDXL' in url:
-            try:
-                return Hyper_SDXL(prompt, url, negative_prompt=negative_prompt)
-            except:
-                return []
-        if 'cosxl' in url:
-            try:
-                return cosxl(prompt, url, negative_prompt=negative_prompt)
-            except:
-                return []
-        if 'stable-cascade' in url:
-            try:
-                return stable_cascade(prompt, url, negative_prompt=negative_prompt)
-            except:
-                return []
-        if 'playgroundai/playground-v2.5-1024px-aesthetic' in url:
-            try:
-                return playground25(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:playgroundai/playground-v2.5-1024px-aesthetic: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'AP123/SDXL-Lightning' in url:
-            try:
-                return SDXL_Lightning(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'Stable-Diffusion-3' in url:
-            try:
-                return stable_diffusion_3_medium(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'gokaygokay/Kolors' in url:
-            try:
-                return Kolors(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'multimodalart/AuraFlow' in url:
-            try:
-                return AuraFlow(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'FLUX.1-schnell' in url or 'FLUX.1-schnell' in url:
-            try:
-                return FLUX1(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
+        # if 'PixArt-Sigma' in url:
+        #     try:
+        #         return PixArtSigma(prompt, url, negative_prompt=negative_prompt)
+        #     except:
+        #         return []
+        # if 'Hyper-SDXL' in url:
+        #     try:
+        #         return Hyper_SDXL(prompt, url, negative_prompt=negative_prompt)
+        #     except:
+        #         return []
+        # if 'cosxl' in url:
+        #     try:
+        #         return cosxl(prompt, url, negative_prompt=negative_prompt)
+        #     except:
+        #         return []
+        # if 'stable-cascade' in url:
+        #     try:
+        #         return stable_cascade(prompt, url, negative_prompt=negative_prompt)
+        #     except:
+        #         return []
+        # if 'playgroundai/playground-v2.5-1024px-aesthetic' in url:
+        #     try:
+        #         return playground25(prompt, url, negative_prompt=negative_prompt)
+        #     except Exception as error:
+        #         my_log.log_huggin_face_api(f'my_genimg:playgroundai/playground-v2.5-1024px-aesthetic: {error}\nPrompt: {prompt}\nURL: {url}')
+        #         return []
+        # if 'AP123/SDXL-Lightning' in url:
+        #     try:
+        #         return SDXL_Lightning(prompt, url, negative_prompt=negative_prompt)
+        #     except Exception as error:
+        #         my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nURL: {url}')
+        #         return []
+        # if 'Stable-Diffusion-3' in url:
+        #     try:
+        #         return stable_diffusion_3_medium(prompt, url, negative_prompt=negative_prompt)
+        #     except Exception as error:
+        #         my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\nPrompt: {prompt}\nURL: {url}')
+        #         return []
+        # if 'gokaygokay/Kolors' in url:
+        #     try:
+        #         return Kolors(prompt, url, negative_prompt=negative_prompt)
+        #     except Exception as error:
+        #         my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\nPrompt: {prompt}\nURL: {url}')
+        #         return []
+        # if 'multimodalart/AuraFlow' in url:
+        #     try:
+        #         return AuraFlow(prompt, url, negative_prompt=negative_prompt)
+        #     except Exception as error:
+        #         my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\nPrompt: {prompt}\nURL: {url}')
+        #         return []
+        # if 'FLUX.1-schnell' in url or 'FLUX.1-schnell' in url:
+        #     try:
+        #         return FLUX1(prompt, url, negative_prompt=negative_prompt)
+        #     except Exception as error:
+        #         my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\nPrompt: {prompt}\nURL: {url}')
+        #         return []
 
         n = 1
         result = []

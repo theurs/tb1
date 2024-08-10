@@ -3269,6 +3269,9 @@ def image_gen(message: telebot.types.Message):
         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
             NSFW_FLAG = True
 
+        if NSFW_FLAG:
+            return
+
         # рисовать только бингом, команда /bing
         BING_FLAG = False
         if message.text.endswith('[{(BING)}]'):

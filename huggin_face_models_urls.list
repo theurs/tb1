@@ -1,7 +1,7 @@
-playgroundai/playground-v2.5-1024px-aesthetic
+#playgroundai/playground-v2.5-1024px-aesthetic
 https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2
-AP123/SDXL-Lightning
-multimodalart/stable-cascade
+#AP123/SDXL-Lightning
+#multimodalart/stable-cascade
 https://api-inference.huggingface.co/models/digiplay/Juggernaut_final
 https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10
 https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1
@@ -12,41 +12,22 @@ https://api-inference.huggingface.co/models/fluently/Fluently-XL-v4
 https://api-inference.huggingface.co/models/Corcelio/openvision
 https://api-inference.huggingface.co/models/SG161222/RealVisXL_V4.0
 
-# new test
+
 https://api-inference.huggingface.co/models/SPO-Diffusion-Models/SPO-SDXL_4k-p_10ep
 https://api-inference.huggingface.co/models/fluently/Fluently-XL-Final
-# ок но много https://api-inference.huggingface.co/models/yodayo-ai/holodayo-xl-2.1
-# ок но много https://api-inference.huggingface.co/models/yodayo-ai/kivotos-xl-2.0
 
 
-#плохо рисует https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE
-#нет такой модели https://api-inference.huggingface.co/models/tianweiy/DMD2
-# не рисует вообще https://api-inference.huggingface.co/models/WarriorMama777/OrangeMixs
-#плохо рисует https://api-inference.huggingface.co/models/prompthero/openjourney
-#плохо рисует https://api-inference.huggingface.co/models/gsdf/Counterfeit-V2.5
-#плохо рисует https://api-inference.huggingface.co/models/prompthero/openjourney-v4
+#multimodalart/cosxl
+#PixArt-alpha/PixArt-Sigma
+#ByteDance/Hyper-SDXL-1Step-T2I
+#gokaygokay/Kolors
 
-multimodalart/cosxl
-PixArt-alpha/PixArt-Sigma
-ByteDance/Hyper-SDXL-1Step-T2I
-gokaygokay/Kolors
-# не работает? multimodalart/AuraFlow
-black-forest-labs/FLUX.1-schnell
-ChristianHappy/FLUX.1-schnell
+#black-forest-labs/FLUX.1-schnell
+#ChristianHappy/FLUX.1-schnell
 
-# не работает? https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium
-# не работает https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium-diffusers
-
-# ок но много https://api-inference.huggingface.co/models/alvdansen/BandW-Manga
-
-### хз stabilityai/stable-diffusion-3-medium
-
-markmagic/Stable-Diffusion-3-FREE
+#markmagic/Stable-Diffusion-3-FREE
 
 https://api-inference.huggingface.co/models/mann-e/Mann-E_Dreams
 https://api-inference.huggingface.co/models/alvdansen/m3lt
 https://api-inference.huggingface.co/models/alvdansen/midsommarcartoon
-
-# не работает? https://api-inference.huggingface.co/models/Kwai-Kolors/Kolors
-
 

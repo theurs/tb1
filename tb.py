@@ -3188,23 +3188,23 @@ def get_user_image_counter(chat_id_full: str) -> int:
     return my_db.get_user_property(chat_id_full, 'image_generated_counter')
 
 
-@bot.message_handler(commands=['bing10', 'Bing10', ], func=authorized)
-@async_run
-def image10_bing_gen(message: telebot.types.Message):
-    if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
-        chat_id_full = get_topic_id(message)
-        if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-            bot_reply_tr(message, 'Bing вас забанил.')
-            return
+# @bot.message_handler(commands=['bing10', 'Bing10', ], func=authorized)
+# @async_run
+# def image10_bing_gen(message: telebot.types.Message):
+#     if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
+#         chat_id_full = get_topic_id(message)
+#         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
+#             bot_reply_tr(message, 'Bing вас забанил.')
+#             return
 
-        bot_reply_tr(message, '10 times bing`s image generation started.')
-        chat_id_full = get_topic_id(message)
-        for _ in range(10):
-            if chat_id_full in IMAGE10_STOP:
-                del IMAGE10_STOP[chat_id_full]
-                return
-            image_bing_gen(message)
-            time.sleep(15)
+#         bot_reply_tr(message, '10 times bing`s image generation started.')
+#         chat_id_full = get_topic_id(message)
+#         for _ in range(10):
+#             if chat_id_full in IMAGE10_STOP:
+#                 del IMAGE10_STOP[chat_id_full]
+#                 return
+#             image_bing_gen(message)
+#             time.sleep(15)
 
 
 @bot.message_handler(commands=['bing', 'Bing'], func=authorized)
@@ -3219,37 +3219,37 @@ def image_bing_gen(message: telebot.types.Message):
     image_gen(message)
 
 
-@bot.message_handler(commands=['stop','cancel'], func=authorized)
-@async_run
-def image10_stop(message: telebot.types.Message):
-    chat_id_full = get_topic_id(message)
-    IMAGE10_STOP[chat_id_full] = True
-    bot_reply_tr(message, 'Image generation stopped.')
+# @bot.message_handler(commands=['stop','cancel'], func=authorized)
+# @async_run
+# def image10_stop(message: telebot.types.Message):
+#     chat_id_full = get_topic_id(message)
+#     IMAGE10_STOP[chat_id_full] = True
+#     bot_reply_tr(message, 'Image generation stopped.')
 
 
-@bot.message_handler(commands=['image10','img10', 'IMG10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10', 'art10', 'Art10'], func=authorized)
-@async_run
-def image10_gen(message: telebot.types.Message):
-    if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
-        bot_reply_tr(message, '10 times image generation started.')
-        chat_id_full = get_topic_id(message)
-        for _ in range(10):
-            if chat_id_full in IMAGE10_STOP:
-                del IMAGE10_STOP[chat_id_full]
-                return
-            image_gen(message)
-            time.sleep(60)
+# @bot.message_handler(commands=['image10','img10', 'IMG10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10', 'art10', 'Art10'], func=authorized)
+# @async_run
+# def image10_gen(message: telebot.types.Message):
+#     if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
+#         bot_reply_tr(message, '10 times image generation started.')
+#         chat_id_full = get_topic_id(message)
+#         for _ in range(10):
+#             if chat_id_full in IMAGE10_STOP:
+#                 del IMAGE10_STOP[chat_id_full]
+#                 return
+#             image_gen(message)
+#             time.sleep(60)
 
 
-@bot.message_handler(commands=['image2','IMG2', 'img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2', 'art2', 'Art2'], func=authorized)
-@async_run
-def image2_gen(message: telebot.types.Message):
-    is_private = message.chat.type == 'private'
-    if not is_private:
-        bot_reply_tr(message, 'This command is only available in private chats.')
-        return
-    message.text += 'NSFW'
-    image_gen(message)
+# @bot.message_handler(commands=['image2','IMG2', 'img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2', 'art2', 'Art2'], func=authorized)
+# @async_run
+# def image2_gen(message: telebot.types.Message):
+#     is_private = message.chat.type == 'private'
+#     if not is_private:
+#         bot_reply_tr(message, 'This command is only available in private chats.')
+#         return
+#     message.text += 'NSFW'
+#     image_gen(message)
 
 
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art'], func=authorized)

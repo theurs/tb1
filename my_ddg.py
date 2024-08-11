@@ -300,13 +300,13 @@ def get_images(query: str, max_results: int = 16) -> list:
     return restored_images
 
 
-def ai(query: str, model: str = 'claude-3-haiku') -> str:
+def ai(query: str, model: str = 'gpt-4o-mini') -> str:
     """
     Generates a response from an AI model based on a given query and model.
 
     Args:
         query (str): The input query for the AI model.
-        model (str, optional): The model to use for generating the response. Defaults to 'claude-3-haiku'.
+        model (str, optional): The model to use for generating the response. Defaults to 'gpt-4o-mini'.
 
     Returns:
         str: The generated response from the AI model. If an error occurs during the chat, an empty string is returned.
@@ -315,8 +315,7 @@ def ai(query: str, model: str = 'claude-3-haiku') -> str:
         None
 
     Note:
-        The `model` parameter can be either "gpt-3.5" or "claude-3-haiku". If an invalid model is provided,
-        the default model 'claude-3-haiku' will be used.
+        model = 'claude-3-haiku' | 'gpt-3.5' | 'llama-3-70b' | 'mixtral-8x7b' | 'gpt-4o-mini'
     """
     # model = "gpt-3.5" or "claude-3-haiku"
     # start_time = time.time()
@@ -399,7 +398,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
     else:
         query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
 
-    translated = ai(query)
+    translated = ai(query, model = 'gpt-4o-mini')
     return translated
 
 

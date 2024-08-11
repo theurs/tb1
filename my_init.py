@@ -6,6 +6,7 @@ import time
 import my_gemini
 import my_groq
 import my_db
+import my_ddg
 import my_shadowjourney
 import my_trans
 
@@ -64,9 +65,7 @@ Change language with /lang command.
 Remove keyboard /remove_keyboard.
 '''
 
-help_msg = f"""Please use /image2 command for generating not safe pictures (nsfw).
-
-🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
+help_msg = f"""🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
 After the file or link is downloaded, you can ask questions about file using the /ask command.
 
 🛸 To get text from an image, send the image with the caption "ocr".
@@ -120,7 +119,7 @@ def generate_help_msg():
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
         # msg = my_trans.translate_text2(help_msg, x)
-        msg = my_shadowjourney.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot.')
+        msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot.')
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)

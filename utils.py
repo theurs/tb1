@@ -185,7 +185,8 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub('^\.  #### (.*)$', '<b>\\1</b>', text, flags=re.MULTILINE)
 
     # заменить двойные пробелы в тексте (только те что между буквами и знаками препинания)
-    text = re.sub(r'(?<=[\w.,!?;:"\'])  (?=[\w.,!?;:"\'])', ' ', text)
+    text = re.sub(r'(?<=\w)  (?=\S)', ' ', text)
+    text = re.sub(r'(?<=\S)  (?=\w)', ' ', text)
 
     # 1 или 2 * в <b></b>
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)

@@ -47,6 +47,9 @@ import utils
 from utils import async_run
 
 
+START_TIME = time.time()
+
+
 # устанавливаем рабочую папку = папке в которой скрипт лежит
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
@@ -276,6 +279,31 @@ class ShowAction(threading.Thread):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
+
+
+def get_uptime() -> str:
+    """Calculates and returns the uptime in a human-readable format (English).
+
+    Returns:
+        str: Uptime formatted as a string, e.g., "1 day, 2 hours, 3 minutes, 4 seconds".
+    """
+    uptime = time.time() - START_TIME
+    uptime_seconds = int(uptime)
+    days = uptime_seconds // 86400
+    hours = (uptime_seconds % 86400) // 3600
+    minutes = (uptime_seconds % 3600) // 60
+    seconds = uptime_seconds % 60
+
+    uptime_formatted = ""
+    if days > 0:
+        uptime_formatted += f"{days} day{'s' if days > 1 else ''} "
+    if hours > 0 or days > 0:
+        uptime_formatted += f"{hours} hour{'s' if hours > 1 else ''} "
+    if minutes > 0 or hours > 0 or days > 0:
+        uptime_formatted += f"{minutes} minute{'s' if minutes > 1 else ''} "
+    uptime_formatted += f"{seconds} second{'s' if seconds > 1 else ''}"
+
+    return uptime_formatted
 
 
 def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
@@ -3558,6 +3586,7 @@ def stats(message: telebot.types.Message):
         msg += f'\nGroq keys: {len(my_groq.ALL_KEYS)}'
         msg += f'\nHuggingface keys: {len(my_genimg.ALL_KEYS)}'
         msg += f'\nDEEPL keys: {len(my_trans.ALL_KEYS)+len(cfg.DEEPL_KEYS if hasattr(cfg, "DEEPL_KEYS") else [])}'
+        msg += f'\n\n Uptime: {get_uptime()}'
 
         bot_reply(message, msg)
 
@@ -4297,7 +4326,10 @@ def id_cmd_handler(message: telebot.types.Message):
     if user_model in models.keys():
         user_model = f'<b>{models[user_model]}</b>'
  
-    msg = f'''{tr("ID пользователя:", lang)} {user_id}
+    msg = ''
+    if message.from_user.id in cfg.admins:
+        msg += f'Uptime: {get_uptime()}\n\n'
+    msg += f'''{tr("ID пользователя:", lang)} {user_id}
 
 {tr("ID группы:", lang)} {chat_id_full}
 

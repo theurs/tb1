@@ -4,6 +4,7 @@ import chardet
 import concurrent.futures
 import datetime
 import io
+import importlib
 import hashlib
 import os
 import pickle
@@ -1709,6 +1710,14 @@ def handle_voice(message: telebot.types.Message):
                 text = text.strip()
                 # Отправляем распознанный текст
                 if text:
+                    # если текст длинный то попытаться его причесать, разбить на абзацы исправить ошибки
+                    if len(text) > 800:
+                        prompt = tr('Исправь ошибки распознавания речи в этой транскрипции, разбей на абзацы, покажи только исправленный текст без комментариев', lang)
+                        new_text = my_gemini.retranscribe(text, prompt)
+                        if not new_text:
+                            new_text = my_groq.retranscribe(text, prompt)
+                        if new_text:
+                            text = new_text
                     if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                         # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
                         pass
@@ -4382,6 +4391,20 @@ def id_cmd_handler(message: telebot.types.Message):
         msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_db.get_user_property(chat_id_full, "persistant_memory")}'
 
     bot_reply(message, msg, parse_mode = 'HTML')
+
+
+@bot.message_handler(commands=['reload'], func=authorized_admin)
+@async_run
+def reload_module(message: telebot.types.Message):
+    '''command for reload imported module on the fly'''
+    try:
+        module_name = message.text.split(' ', 1)[1].strip()
+        module = importlib.import_module(module_name)
+        importlib.reload(module)
+        bot_reply_tr(message, f"Модуль '{module_name}' успешно перезагружен.")
+    except Exception as e:
+        my_log.log2(f"Ошибка при перезагрузке модуля: {e}")
+        bot_reply_tr(message, f"Ошибка при перезагрузке модуля:\n\n```{e}```", parse_mode = 'MarkdownV2')
 
 
 @bot.message_handler(commands=['enable'], func=authorized_owner)

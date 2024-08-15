@@ -625,9 +625,12 @@ Text to be detected: {text[:100]}
     return result
 
 
-def retranscribe(text: str) -> str:
+def retranscribe(text: str, prompt: str = '') -> str:
     '''исправить текст после транскрипции выполненной гуглом'''
-    query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
+    if prompt:
+        query = f'{prompt}:\n\n{text}'
+    else:
+        query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
     result = ai(query, temperature=0.1, model='gemini-1.5-flash', mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 

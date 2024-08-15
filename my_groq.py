@@ -540,6 +540,16 @@ def check_phone_number(number: str) -> str:
     return response, text
 
 
+def retranscribe(text: str, prompt: str = '') -> str:
+    '''исправить текст после транскрипции выполненной гуглом'''
+    if prompt:
+        query = f'{prompt}:\n\n{text}'
+    else:
+        query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
+    result = ai(query, temperature=0.1, model_='llama-3.1-70b-versatile', mem_=MEM_UNCENSORED, max_tokens_=4000)
+    return result
+
+
 def load_users_keys():
     """
     Load users' keys into memory and update the list of all keys available.
@@ -559,7 +569,7 @@ if __name__ == '__main__':
     my_db.init(backup=False)
 
     # reset('test')
-    chat_cli(model='llama-3.1-70b-versatile')
+    # chat_cli(model='llama-3.1-70b-versatile')
 
     # print(stt('d:\\downloads\\1.ogg'))
 

@@ -1710,14 +1710,14 @@ def handle_voice(message: telebot.types.Message):
                 text = text.strip()
                 # Отправляем распознанный текст
                 if text:
-                    # если текст длинный то попытаться его причесать, разбить на абзацы исправить ошибки
-                    if len(text) > 800:
-                        prompt = tr('Исправь ошибки распознавания речи в этой транскрипции, разбей на абзацы, покажи только исправленный текст без комментариев', lang)
-                        new_text = my_gemini.retranscribe(text, prompt)
-                        if not new_text:
-                            new_text = my_groq.retranscribe(text, prompt)
-                        if new_text:
-                            text = new_text
+                    # # если текст длинный то попытаться его причесать, разбить на абзацы исправить ошибки
+                    # if len(text) > 800:
+                    #     prompt = tr('Исправь ошибки распознавания речи в этой транскрипции, разбей на абзацы, покажи только исправленный текст без комментариев', lang)
+                    #     new_text = my_gemini.retranscribe(text, prompt)
+                    #     if not new_text:
+                    #         new_text = my_groq.retranscribe(text, prompt)
+                    #     if new_text:
+                    #         text = new_text
                     if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                         # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
                         pass

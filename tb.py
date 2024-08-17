@@ -4252,7 +4252,19 @@ Voice recognition, drawing, etc. also all work on free services in one way or an
 def report_cmd_handler(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
-    bot_reply_tr(message, 'Support telegram group https://t.me/kun4_sun_bot_support')
+    if hasattr(cfg, 'SUPPORT_GROUP'):
+        bot_reply_tr(message, f'Support telegram group {cfg.SUPPORT_GROUP}')
+    else:
+        try:
+            args = message.text.split(maxsplit = 1)[1].strip()
+        except IndexError:
+            args = ''
+        if args:
+            msg = f'[Report from user {message.from_user.id}] {args}'
+            bot.send_message(cfg.admins[0], msg, disable_notification=True)
+            bot_reply_tr(message, 'OK.')
+        else:
+            bot_reply_tr(message, 'Use it to send message to admin.')
 
 
 @bot.message_handler(commands=['purge'], func = authorized_owner)

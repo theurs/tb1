@@ -33,7 +33,7 @@ https://api-inference.huggingface.co/models/alvdansen/midsommarcartoon
 
 
 https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev
-https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell
+# https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell
 https://api-inference.huggingface.co/models/XLabs-AI/flux-RealismLora
 https://api-inference.huggingface.co/models/XLabs-AI/flux-controlnet-collections
 https://api-inference.huggingface.co/models/XLabs-AI/flux-controlnet-canny

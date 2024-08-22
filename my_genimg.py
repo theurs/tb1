@@ -985,7 +985,7 @@ def FLUX1(prompt: str, url: str = "black-forest-labs/FLUX.1-schnell", number: in
     return images
 
 
-def runware(prompt: str, number: int = 2, negative_prompt: str = "") -> list:
+def runware(prompt: str, number: int = 2, negative_prompt: str = "", cache: bool = False) -> list:
     """
         runware.ai
     """
@@ -993,7 +993,7 @@ def runware(prompt: str, number: int = 2, negative_prompt: str = "") -> list:
         images = my_runware_ai.generate_images(prompt,
                                                 number_results=number,
                                                 negative_prompt=negative_prompt,
-                                                use_cache=True,
+                                                use_cache=cache,
                                                 )
 
         results = []

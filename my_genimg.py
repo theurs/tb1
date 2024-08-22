@@ -1126,11 +1126,11 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         result = (async_result1.get() or []) + \
                  (async_result2.get() or []) + \
+                 (async_result7.get() or []) + \
                  (async_result3.get() or []) + \
                  (async_result4.get() or []) + \
                  (async_result5.get() or []) + \
-                 (async_result6.get() or []) + \
-                 (async_result7.get() or [])
+                 (async_result6.get() or [])
     else:
         pool = ThreadPool(processes=7)
 
@@ -1145,11 +1145,11 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         async_result7 = pool.apply_async(runware, (prompt,))
 
         result = (async_result2.get() or []) + \
+                 (async_result7.get() or []) + \
                  (async_result3.get() or []) + \
                  (async_result4.get() or []) + \
                  (async_result5.get() or []) + \
-                 (async_result6.get() or []) + \
-                 (async_result7.get() or [])
+                 (async_result6.get() or [])
 
     # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
     # может удалить то что рисуют параллельные запросы и второй бот?

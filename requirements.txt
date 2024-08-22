@@ -45,6 +45,7 @@ pytelegrambotapi==4.16.1
 pytesseract
 python-Levenshtein
 python-pptx
+runware
 SpeechRecognition
 sqlitedict
 starlette

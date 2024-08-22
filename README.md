@@ -349,6 +349,9 @@ ASSEMBLYAI_KEYS = [
 # GPT4OMINI_URL = 'https://openrouter.ai/api/v1/chat/completions'
 # GPT4OMINI_KEY = 'xxx'
 
+# https://runware.ai/ (parse key from fastflux.ai)
+RUNWARE_KEYS = ['xxx','yyy']
+
 
 # DEBUG = False
 ```

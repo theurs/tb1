@@ -992,7 +992,9 @@ def runware(prompt: str, number: int = 2, negative_prompt: str = "") -> list:
     try:
         images = my_runware_ai.generate_images(prompt,
                                                 number_results=number,
-                                                negative_prompt=negative_prompt)
+                                                negative_prompt=negative_prompt,
+                                                use_cache=True,
+                                                )
 
         results = []
         images = [x for x in utils.download_image_as_bytes(images)]

@@ -995,8 +995,8 @@ def runware(prompt: str, number: int = 4, negative_prompt: str = "") -> list:
                                                 negative_prompt=negative_prompt)
 
         results = []
-        for image in images:
-            data = utils.download_image_as_bytes(image)
+        images = [x for x in utils.download_image_as_bytes(images)]
+        for data in images:
             if data:
                 WHO_AUTOR[hash(data)] = 'runware.ai'
                 results.append(data)

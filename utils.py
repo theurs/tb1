@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import concurrent.futures
 import datetime
 import functools
 import hashlib
@@ -426,23 +427,31 @@ def is_image_link(url: str) -> bool:
     return False
 
 
-def download_image_as_bytes(url: str) -> bytes:
-    """Загружает изображение по URL-адресу и возвращает его в виде байтов.
+def download_image_as_bytes(url_or_urls):
+    """Загружает изображение(я) по URL-адресу(ам) и возвращает его(их) в виде байтов.
 
     Args:
-        url: URL-адрес изображения.
+        url_or_urls: URL-адрес изображения или список URL-адресов изображений.
 
     Returns:
-        Изображение в виде байтов.
+        Изображение в виде байтов или список изображений в виде байтов.
     """
+    import concurrent.futures
 
-    try:
-        response = requests.get(url, timeout=30)
-    except Exception as error:
-        # error_traceback = traceback.format_exc()
-        # my_log.log2(f'download_image_as_bytes: {error}\n\n{error_traceback}')
+    if isinstance(url_or_urls, str):
+        try:
+            response = requests.get(url_or_urls, timeout=30)
+        except Exception as error:
+            return None
+        return response.content
+
+    elif isinstance(url_or_urls, list):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = list(executor.map(lambda url: requests.get(url, timeout=30).content if requests.get(url, timeout=30).status_code == 200 else None, url_or_urls))
+        return results
+
+    else:
         return None
-    return response.content
 
 
 def nice_hash(s: str, l: int = 12) -> str:

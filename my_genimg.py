@@ -1113,7 +1113,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         pool = ThreadPool(processes=7)
 
         async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
-        
+
         async_result2 = pool.apply_async(kandinski, (prompt,))
         async_result3 = pool.apply_async(kandinski, (prompt,))
 

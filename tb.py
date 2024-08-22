@@ -1119,6 +1119,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='cancel_command')
         markup.add(button1)
         return markup
+    elif kbd == 'fast_image':
+        markup = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(tr("Next image", lang), callback_data='fast_image_next')
+        markup.add(button1)
+        return markup
     elif kbd == 'select_lang':
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
         most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de', 'fr', 'it', 'tr', 'ko', 'id', 'vi']
@@ -1451,13 +1456,13 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             message.text = f'/tts {lang or "de"} {message.text or message.caption or ""}'
             tts(message)
         elif call.data.startswith('imagecmd_'):
-            hash = call.data[9:]
-            prompt = my_db.get_from_im_suggests(hash)
+            hash_ = call.data[9:]
+            prompt = my_db.get_from_im_suggests(hash_)
             message.text = f'/image {prompt}'
             image_gen(message)
         elif call.data.startswith('imagecmd2_'):
-            hash = call.data[10:]
-            prompt = my_db.get_from_im_suggests(hash)
+            hash_ = call.data[10:]
+            prompt = my_db.get_from_im_suggests(hash_)
             message.text = f'/image2 {prompt}'
             image2_gen(message)
         elif call.data.startswith('select_lang-'):
@@ -1477,15 +1482,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     bot.edit_message_caption(chat_id=message.chat.id, message_id=message.message_id, caption=translated, 
                                       reply_markup=get_keyboard('translate', message), parse_mode='HTML')
 
-
         elif call.data.startswith('search_pics_'):
             # Поиск картинок в дак дак гоу
             if chat_id_full not in GOOGLE_LOCKS:
                 GOOGLE_LOCKS[chat_id_full] = threading.Lock()
             with GOOGLE_LOCKS[chat_id_full]:
                 with ShowAction(message, 'upload_photo'):
-                    hash = call.data[12:]
-                    query = SEARCH_PICS[hash]
+                    hash_ = call.data[12:]
+                    query = SEARCH_PICS[hash_]
                     images = my_ddg.get_images(query)
                     medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
@@ -1532,6 +1536,21 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
                                       reply_markup=get_keyboard('chat', message))
+        elif call.data == 'fast_image_next':
+            reprompt = message.caption
+            data = my_genimg.runware(reprompt, number=1)[0]
+            if data:
+                hash_ = hash(data)
+                if hash_ in my_genimg.WHO_AUTOR:
+                    del my_genimg.WHO_AUTOR[hash_]
+                cid = message.chat.id
+                mid = message.id
+                image = telebot.types.InputMediaPhoto(data, caption=reprompt)
+                bot.edit_message_media(media = image,
+                                       chat_id=cid,
+                                       message_id=mid,
+                                       reply_markup=get_keyboard('fast_image', message),
+                                       )
         elif call.data == 'select_gpt4o':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT-4o.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt4o')
@@ -3244,6 +3263,34 @@ def get_user_image_counter(chat_id_full: str) -> int:
 #                 return
 #             image_bing_gen(message)
 #             time.sleep(15)
+
+
+@bot.message_handler(commands=['fim',], func=authorized)
+@async_run
+def image_fast_gen(message: telebot.types.Message):
+    '''рисует одну картинку самым быстрым способом, и показывает одну кнопку что бы быстро перерисовать и 1 кнопку что бы скачать(сделать копию?)'''
+    try:
+        arg = message.text.split(maxsplit=1)[1]
+        reprompt = my_genimg.get_reprompt(arg, '')
+        data = my_genimg.runware(reprompt, number=1)[0]
+        if data:
+            hash_ = hash(data)
+            if hash_ in my_genimg.WHO_AUTOR:
+                del my_genimg.WHO_AUTOR[hash_]
+            cid = message.chat.id
+
+            bot.send_photo(cid,
+                           photo = data,
+                           caption=reprompt[:999],
+                           disable_notification=True,
+                           reply_markup=get_keyboard('fast_image', message),
+                           )
+        else:
+            bot_reply_tr(message, 'FAILED')
+        return
+    except IndexError:
+        pass
+    bot_reply_tr(message, 'Usage: /fim prompt')
 
 
 @bot.message_handler(commands=['bing', 'Bing'], func=authorized)

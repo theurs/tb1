@@ -985,16 +985,23 @@ def FLUX1(prompt: str, url: str = "black-forest-labs/FLUX.1-schnell", number: in
     return images
 
 
-def runware(prompt: str, number: int = 2, negative_prompt: str = "", cache: bool = False) -> list:
+def runware(prompt: str, number: int = 2, negative_prompt: str = "", cache: bool = False, big: bool = False) -> list:
     """
         runware.ai
     """
     try:
+        h = 1024
+        w = 1024
+        if big:
+            h = 2048
+            w = 2048
         images = my_runware_ai.generate_images(prompt,
-                                                number_results=number,
-                                                negative_prompt=negative_prompt,
-                                                use_cache=cache,
-                                                )
+                                               number_results=number,
+                                               negative_prompt=negative_prompt,
+                                               use_cache=cache,
+                                               height=h,
+                                               width=w,
+                                               )
 
         results = []
         images = [x for x in utils.download_image_as_bytes(images)]

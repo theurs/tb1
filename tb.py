@@ -1538,7 +1538,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                       reply_markup=get_keyboard('chat', message))
         elif call.data == 'fast_image_next':
             reprompt = message.caption
-            data = my_genimg.runware(reprompt, number=1)[0]
+            data = my_genimg.runware(reprompt, number=1, big = True)[0]
             if data:
                 hash_ = hash(data)
                 if hash_ in my_genimg.WHO_AUTOR:
@@ -3272,7 +3272,7 @@ def image_fast_gen(message: telebot.types.Message):
     try:
         arg = message.text.split(maxsplit=1)[1]
         reprompt = my_genimg.get_reprompt(arg, '')
-        data = my_genimg.runware(reprompt, number=1, cache=True)[0]
+        data = my_genimg.runware(reprompt, number=1, cache=True, big = True)[0]
         if data:
             hash_ = hash(data)
             if hash_ in my_genimg.WHO_AUTOR:

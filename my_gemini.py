@@ -697,7 +697,7 @@ def ocr(data, lang: str = 'ru') -> str:
         if isinstance(data, str):
             with open(data, 'rb') as f:
                 data = f.read()
-        query = 'Достань весь текст с картинки, исправь ошибки распознавания, сохрани оригинальное форматирование текста. В твоем ответе должен быть только распознанный и исправленный текст. Язык текста должен остаться таким же какой он на картинке.'
+        query = 'Extract all the text from the image, correct any recognition errors, and preserve the original text formatting. Your response should only contain the recognized and corrected text. The language of the text should remain the same as it is in the image.'
         text = img2txt(data, query)
         return text
     except Exception as error:

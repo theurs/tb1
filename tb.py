@@ -3453,16 +3453,18 @@ def image_gen(message: telebot.types.Message):
                                     continue
 
                             d = None
+                            bot_addr = f'https://t.me/{_bot_name}'
                             caption_ = prompt[:900]
                             if isinstance(i, str):
                                 d = utils.download_image_as_bytes(i)
-                                caption_ = 'bing.com\n\n' + caption_
+                                caption_ = f'{bot_addr} bing.com\n\n' + caption_
                             elif isinstance(i, bytes):
                                 if hash(i) in my_genimg.WHO_AUTOR:
-                                    caption_ = my_genimg.WHO_AUTOR[hash(i)] + '\n\n' + caption_
+                                    nn_ = '\n\n'
+                                    caption_ = f"{bot_addr} {my_genimg.WHO_AUTOR[hash(i)]}{nn_}{caption_}"
                                     del my_genimg.WHO_AUTOR[hash(i)]
                                 else:
-                                    caption_ = 'error'
+                                    caption_ = f'{bot_addr} error'
                                 d = i
                             if d:
                                 try:

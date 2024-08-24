@@ -50,7 +50,10 @@ def fb2_to_text(data: bytes, ext: str = '') -> str:
         proc = subprocess.run([pandoc_cmd, '-f', 'rtf', '-t', 'plain', input_file], stdout=subprocess.PIPE)
     elif 'doc' in book_type:
         proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
-    elif 'pdf' in book_type:
+    elif 'pdf' in book_type or 'djvu' in book_type:
+        if 'djvu' in book_type:
+            input_file = convert_djvu2pdf(input_file)
+
         pdf_reader = PyPDF2.PdfReader(input_file)
         text = ''
         for page in pdf_reader.pages:
@@ -92,7 +95,15 @@ def read_pptx(input_file: str) -> str:
     return text
 
 
+def convert_djvu2pdf(input_file: str) -> str:
+    '''convert djvu to pdf and delete source file, return new file name'''
+    output_file = os.path.splitext(input_file)[0] + '.pdf'
+    subprocess.run(['ddjvu', '-format=pdf', input_file, output_file], check=True)
+    utils.remove_file(input_file)
+    return output_file
+
+
 if __name__ == '__main__':
     # result = fb2_to_text(open('1.pdf', 'rb').read(), '.pdf')
     # print(result)
-    print(fb2_to_text('D:/Downloads/1.xls', '.xls'))
+    print(convert_djvu2pdf('/home/ubuntu/tmp/1.pdf'))

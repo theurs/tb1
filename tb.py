@@ -1797,6 +1797,7 @@ def handle_document(message: telebot.types.Message):
         'application/msword',
         'application/x-msexcel',
         'application/x-fictionbook+xml',
+        'image/vnd.djvu+multipage', # hack
     )
     simple_text = ('application/x-bat',
                    'application/xml',

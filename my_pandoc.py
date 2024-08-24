@@ -104,12 +104,10 @@ def read_pptx(input_file: str) -> str:
 
 def convert_djvu2pdf(input_file: str) -> str:
     '''convert djvu to pdf and delete source file, return new file name'''
-    # output_file = input_file + '.pdf'
-    # subprocess.run(['ddjvu', '-format=pdf', input_file, output_file], check=True)
-    # utils.remove_file(input_file)
-    # return output_file
-
-    return 'd:/downloads/1.pdf'
+    output_file = input_file + '.pdf'
+    subprocess.run(['ddjvu', '-format=pdf', input_file, output_file], check=True)
+    utils.remove_file(input_file)
+    return output_file
 
 
 if __name__ == '__main__':

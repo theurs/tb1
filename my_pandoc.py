@@ -106,4 +106,4 @@ def convert_djvu2pdf(input_file: str) -> str:
 if __name__ == '__main__':
     # result = fb2_to_text(open('1.pdf', 'rb').read(), '.pdf')
     # print(result)
-    print(convert_djvu2pdf('/home/ubuntu/tmp/1.pdf'))
+    print(convert_djvu2pdf('/home/ubuntu/tmp/2.djvu'))

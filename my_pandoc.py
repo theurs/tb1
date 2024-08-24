@@ -61,7 +61,7 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
             text += page.extract_text()
 
         if len(text) < 100 and book_type == 'djvu':
-            with open(input, 'rb') as f:
+            with open(input_file, 'rb') as f:
                 file_bytes = f.read()
             text = my_ocr.get_text_from_pdf(file_bytes, lang)
 

@@ -1844,7 +1844,7 @@ def handle_document(message: telebot.types.Message):
                             text = my_ocr.get_text_from_pdf(file_bytes, get_ocr_language(message))
                     elif message.document.mime_type in pandoc_support:
                         ext = utils.get_file_ext(file_info.file_path)
-                        text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
+                        text = my_pandoc.fb2_to_text(file_bytes.read(), ext, lang = get_ocr_language(message))
                     elif message.document.mime_type == 'image/svg+xml':
                         try:
                             image = cairosvg.svg2png(file_bytes.read(), output_width=2048)

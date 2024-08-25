@@ -26,6 +26,7 @@ from sqlitedict import SqliteDict
 import cfg
 import bing_img
 import md2tgmd
+import my_correct_layout_ru
 import my_init
 import my_genimg
 import my_db
@@ -5005,6 +5006,12 @@ def do_task(message, custom_prompt: str = ''):
                 message.text = f'[{tr("голосовое сообщение, возможны ошибки распознавания речи, отвечай просто без форматирования текста - ответ будет зачитан вслух", lang)}]: ' + message.text
             else:
                 action = 'typing'
+
+
+            # попробовать исправить раскладку ghbdtn->привет
+            if lang == 'ru':
+                message.text = my_correct_layout_ru.correct_layout(message.text)
+
 
             # подсказка для ботов что бы понимали где и с кем общаются
             formatted_date = utils.get_full_time()

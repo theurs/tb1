@@ -5026,7 +5026,7 @@ def do_task(message, custom_prompt: str = ''):
 
 
             # попробовать исправить раскладку ghbdtn->привет
-            if lang == 'ru':
+            if lang == 'ru' and len(message.text) < 500:
                 message.text = my_correct_layout_ru.correct_layout(message.text)
 
 

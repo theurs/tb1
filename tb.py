@@ -3907,7 +3907,7 @@ def ask_file(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     try:
-        query = message.text.split(maxsplit=1)[1]
+        query = message.text.split(maxsplit=1)[1].strip()
     except IndexError:
         bot_reply_tr(message, 'Usage: /ask <query saved text>\n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.')
         if my_db.get_user_property(chat_id_full, 'saved_file_name'):
@@ -3917,6 +3917,23 @@ def ask_file(message: telebot.types.Message):
 
     if my_db.get_user_property(chat_id_full, 'saved_file_name'):
         with ShowAction(message, 'typing'):
+
+            ASK_MACRO = {}
+            try:
+                with open('ask_macro.txt.dat', 'r', encoding = 'utf8') as f:
+                    lines = f.readlines()
+                    lines = [x.strip() for x in lines]
+                for line in lines:
+                    if line:
+                        cmd, subs = line.split(maxsplit=1)
+                        ASK_MACRO[cmd] = subs
+            except:
+                pass
+            for x in ASK_MACRO.keys():
+                if query == x:
+                    query = ASK_MACRO[x]
+                    break
+
             if message.text.endswith('[123CLEAR321]'):
                 message.text = message.text[:-13]
                 q = f"{message.text}\n\n{tr('URL/file:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file_name')}\n\n{tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}"

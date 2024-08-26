@@ -13,6 +13,7 @@ geopy
 httpx[socks]
 fake_useragent
 fuzzywuzzy
+iso639-lang
 google
 google-generativeai
 groq

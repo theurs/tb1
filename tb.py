@@ -4,6 +4,7 @@ import chardet
 import concurrent.futures
 import datetime
 import io
+import iso639
 import importlib
 import hashlib
 import os
@@ -4213,6 +4214,17 @@ https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
         return
 
     llang = get_ocr_language(message)
+
+
+    # меняем двухбуквенные коды языков на 3 буквенные, на случай если юзер затупил
+    replacement_list = {}
+    for l in iso639.iter_langs():
+        if l.pt1 and l.pt3:
+            replacement_list[l.pt1] = l.pt3
+
+    for key, value in replacement_list.items():
+        arg = re.sub(r'\b' + key + r'\b', value, arg)
+
 
     msg = f'{tr("Старые настройки:", lang)} {llang}\n\n{tr("Новые настройки:", lang)} {arg}'
     my_db.set_user_property(chat_id_full, 'ocr_lang', arg)

@@ -97,7 +97,7 @@ def correct_layout(text: str) -> str:
             converted = convert_eng_to_rus(text)
             all_words = count_all_words(text)
             rus_words = count_russian_words(converted)
-            if rus_words > all_words/2:
+            if rus_words >= all_words/2:
                 return converted
     except Exception as error:
         traceback_error = traceback.format_exc()

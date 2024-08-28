@@ -137,10 +137,21 @@ def correct_layout(text: str) -> str:
 
 
 def init():
-    '''надо скачать и сохранить несколько книг на русском и английском что бы
-    получить корпус текстов я скачал по ~4мб
-    d:/downloads/eng.txt
-    d:/downloads/rus.txt'''
+    '''
+    Initializes the trigram frequency data for Russian and English languages.
+
+    This function processes text corpora for Russian and English languages to calculate
+    the frequency of trigrams (sequences of three letters). The calculated trigram frequencies
+    are then saved to pickle files ('trigram_eng.dat' and 'trigram_rus.dat') for
+    later use in layout correction.
+
+    The function assumes the availability of text files ('d:/downloads/eng.txt' and 'd:/downloads/rus.txt')
+    containing English and Russian text corpora, respectively.  These files should contain a substantial
+    amount of text, ideally the equivalent of several large books combined into a single text file,
+    to ensure accurate trigram frequency calculations.
+
+    Note: This function needs to be run only once to generate the trigram data files.
+    '''
 
     with open('d:/downloads/eng.txt', 'r', encoding='utf8') as f:
         text = f.read()
@@ -229,6 +240,4 @@ if __name__ == '__main__':
     ]
 
     for x in t:
-        # r = detect_wrong_layout(x)
-        # print(r, x)
-        print(correct_layout(x))
+         print(correct_layout(x))

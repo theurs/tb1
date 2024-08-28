@@ -1809,6 +1809,7 @@ def handle_document(message: telebot.types.Message):
                    'application/xhtml+xml',
                    'application/atom+xml',
                    'application/x-subrip',
+                   'application/yaml',
                    )
 
     with lock:

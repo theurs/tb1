@@ -771,7 +771,7 @@ def list_models():
 
 if __name__ == '__main__':
     pass
-    my_db.init(backup=False)
+    # my_db.init(backup=False)
     load_users_keys()
 
     # как юзать прокси
@@ -779,7 +779,7 @@ if __name__ == '__main__':
     # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
 
     list_models()
-    chat_cli()
+    # chat_cli()
     # chat_cli(model='gemini-1.5-pro-exp-0801')
 
     # with open('d:\\downloads\\1.txt','r') as f:

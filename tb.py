@@ -431,8 +431,8 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
     text = ''
 
     try:
-        # text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-flash')
-        text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-pro-exp-0801')
+        # text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-flash-exp-0827')
+        text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-pro-exp-0827')
         # text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-pro')
 
         # if not text:
@@ -3947,7 +3947,7 @@ def ask_file(message: telebot.types.Message):
 
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
     '''
-            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-flash')
+            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-flash-exp-0827')
             # result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-pro')
             if not result:
                 result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000, model_ = 'llama-3.1-70b-versatile')
@@ -5090,12 +5090,12 @@ def do_task(message, custom_prompt: str = ''):
                             # answer = my_gemini.chat(helped_query,
                             #                         chat_id_full,
                             #                         my_db.get_user_property(chat_id_full, 'temperature'),
-                            #                         model = 'gemini-1.5-flash')
+                            #                         model = 'gemini-1.5-flash-exp-0827')
 
                             answer = my_gemini.chat(message.text,
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
-                                                    model = 'gemini-1.5-flash',
+                                                    model = 'gemini-1.5-flash-exp-0827',
                                                     system = hidden_text,
                                                     use_skills=True
                                                     )
@@ -5178,7 +5178,7 @@ def do_task(message, custom_prompt: str = ''):
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
                                                     # model = 'gemini-1.5-pro',
-                                                    model = 'gemini-1.5-pro-exp-0801',
+                                                    model = 'gemini-1.5-pro-exp-0827',
                                                     system = hidden_text,
                                                     use_skills=True,
                                                     )

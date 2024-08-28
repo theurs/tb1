@@ -249,7 +249,7 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
                 if your_file == None:
                     your_file = genai.upload_file(audio_file)
                     genai.configure(api_key=key) # здесь может быть рейс кондишн?
-                model = genai.GenerativeModel('models/gemini-1.5-flash')
+                model = genai.GenerativeModel('models/gemini-1.5-flash-exp-0827')
                 # tokens_count = model.count_tokens([your_file])
                 # if tokens_count.total_tokens > 7800:
                 #     response = ''

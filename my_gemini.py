@@ -125,7 +125,7 @@ def chat(query: str,
             mem = insert_mem
 
         if not model:
-            model = 'gemini-1.5-flash'
+            model = 'gemini-1.5-flash-exp-0827'
 
         if system == '':
             system = None
@@ -231,7 +231,7 @@ def chat(query: str,
                     result = result[result.find(']') + 1:]
 
                 if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
-                if 'gemini-1.5-pro-exp-0801' in model: model_ = 'gemini-1.5-pro-exp-0801'
+                if 'gemini-1.5-pro-exp' in model: model_ = 'gemini-1.5-pro-exp-0801'
                 if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
                 if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
                 if not model: model_ = 'gemini15_flash'
@@ -255,7 +255,7 @@ def chat(query: str,
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def img2txt(data_: bytes, prompt: str = "Что на картинке, подробно?", temp: float = 1, model: str = 'gemini-1.5-flash') -> str:
+def img2txt(data_: bytes, prompt: str = "Что на картинке, подробно?", temp: float = 1, model: str = 'gemini-1.5-flash-exp-0827') -> str:
     '''Convert image to text.
     '''
     try:
@@ -608,7 +608,7 @@ def sum_big_text(text:str, query: str, temperature: float = 1) -> str:
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    return ai(query, temperature=temperature, model='gemini-1.5-flash')
+    return ai(query, temperature=temperature, model='gemini-1.5-flash-exp-0827')
 
 
 def detect_lang(text: str) -> str:
@@ -620,7 +620,7 @@ answer = (ru)
 
 Text to be detected: {text[:100]}
 '''
-    result = ai(q, temperature=0, model='gemini-1.5-flash', tokens_limit=10)
+    result = ai(q, temperature=0, model='gemini-1.5-flash-exp-0827', tokens_limit=10)
     result = result.replace('"', '').replace(' ', '').replace("'", '').replace('(', '').replace(')', '').strip()
     return result
 
@@ -631,7 +631,7 @@ def retranscribe(text: str, prompt: str = '') -> str:
         query = f'{prompt}:\n\n{text}'
     else:
         query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
-    result = ai(query, temperature=0.1, model='gemini-1.5-flash', mem=MEM_UNCENSORED, tokens_limit=8000)
+    result = ai(query, temperature=0.1, model='gemini-1.5-flash-exp-0827', mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 
 
@@ -685,7 +685,7 @@ def rebuild_subtitles(text: str, lang: str) -> str:
         return result
 
     query = f'Fix errors, make an easy to read text out of the subtitles, make a fine paragraphs and sentences, output language = [{lang}]:\n\n{text}'
-    result = ai(query, temperature=0.1, model='gemini-1.5-flash', mem=MEM_UNCENSORED, tokens_limit=8000)
+    result = ai(query, temperature=0.1, model='gemini-1.5-flash-exp-0827', mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 
 
@@ -780,7 +780,7 @@ if __name__ == '__main__':
 
     list_models()
     # chat_cli()
-    # chat_cli(model='gemini-1.5-pro-exp-0801')
+    # chat_cli(model='gemini-1.5-pro-exp-0827')
 
     # with open('d:\\downloads\\1.txt','r') as f:
         # text = f.read()

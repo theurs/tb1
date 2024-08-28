@@ -165,7 +165,7 @@ def fix_translations(fname: str = start_msg_file, original: str = start_msg, lan
         db = pickle.load(f)
     for lang in langs:
         print(lang)
-        translated = my_gemini.translate(original, to_lang=lang, model = 'gemini-1.5-pro')
+        translated = my_gemini.translate(original, to_lang=lang, model = 'gemini-1.5-pro-exp-0827')
         if translated:
             if 'no translation needed' in translated.lower():
                 translated = original
@@ -180,7 +180,7 @@ def fix_translations_start(langs = []):
         db = pickle.load(f)
     for lang in langs:
         print(lang)
-        translated = my_gemini.translate(db['en'], to_lang=lang, model = 'gemini-1.5-pro')
+        translated = my_gemini.translate(db['en'], to_lang=lang, model = 'gemini-1.5-pro-exp-0827')
         if not translated:
             translated = my_shadowjourney.translate(db['en'], to_lang=lang)
         if translated:

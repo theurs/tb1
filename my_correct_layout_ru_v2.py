@@ -57,27 +57,33 @@ REVERSE_LAYOUT_MAP = {
     '*': '*', '(': '(', ')': ')', '_': '_', '+': '+',
     '/': '|', '=': '='}
 
-def count_russian_english_letters(text):
+
+def correct_layout(text: str) -> str:
     """
-    Подсчитывает количество русских и английских букв в тексте.
+    Corrects text typed in the wrong keyboard layout (Russian/English).
+
+    This function detects and corrects text that has been accidentally typed in the wrong keyboard
+    layout (e.g., typing Russian using an English keyboard layout).
+
+    It uses a trigram-based approach, comparing the frequency of trigrams in the input text with
+    pre-calculated trigram frequencies for both Russian and English languages. If the text is
+    likely typed in the wrong layout, it is corrected using a layout mapping.
 
     Args:
-        text: Текст для анализа.
+        text (str): The input text to be checked and corrected.
 
     Returns:
-        Кортеж (количество русских букв, количество английских букв).
-    """
-    russian_letters = re.findall(r'[а-яА-ЯёЁ]', text)
-    english_letters = re.findall(r'[a-zA-Z]', text)
-    return len(russian_letters), len(english_letters)
+        str: The corrected text if a wrong layout is detected, otherwise the original text.
 
+    Example:
+        >>> correct_layout("Ghbdtn")
+        "Привет"
 
-def detect_wrong_layout(text: str) -> bool:
-    """
-    Определяет, набран ли текст в неправильной раскладке.
+        >>> correct_layout("Hello")
+        "Hello"
     """
     global TRIGRAM_RU, TRIGRAM_EN
-
+    original_text = text
     with LOCK:
         if isinstance(TRIGRAM_RU, str):
             with open('trigram_rus.dat', 'rb') as f:
@@ -89,7 +95,8 @@ def detect_wrong_layout(text: str) -> bool:
 
     text = re.sub(r'[^a-zA-Zа-яА-ЯёЁ]', '', text).lower()
 
-    russian_count, english_count = count_russian_english_letters(text)
+    russian_count = len(re.findall(r'[а-яА-ЯёЁ]', text))
+    english_count = len(re.findall(r'[a-zA-Z]', text))
 
     if english_count > russian_count:
         # Если больше английских букв:
@@ -104,14 +111,11 @@ def detect_wrong_layout(text: str) -> bool:
 
         # Сравниваем результаты
         if rus_score > eng_score_original:
-            if russian_count > english_count:
-                return False
-            else:
-                return True
+            return ''.join([LAYOUT_MAP.get(c, c) for c in original_text])
         else:
-            return False  # Раскладка английская
+            return original_text
 
-    else:
+    elif english_count < russian_count:
         # Если больше русских букв:
         # 1. Считаем триграммы и их суммы для русского языка от исходного текста
         trigrams = [text[i:i+3] for i in range(len(text) - 2)]
@@ -123,32 +127,13 @@ def detect_wrong_layout(text: str) -> bool:
         eng_score = sum(TRIGRAM_EN.get(trigram, 0) for trigram in trigrams)
 
         # Сравниваем результаты
-        if eng_score < rus_score_original:
-            if russian_count > english_count:
-                return False
-            else:
-                return True
+        if eng_score > rus_score_original:
+            return ''.join([REVERSE_LAYOUT_MAP.get(c, c) for c in original_text])
         else:
-            return True  # Раскладка английская
+            return original_text
 
-
-def correct_layout(text: str) -> str:
-    """
-    Меняет раскладку текста, если необходимо.
-    """
-
-    # Подсчитываем количество русских и английских букв
-    russian_count, english_count = count_russian_english_letters(text)
-
-    # Определяем раскладку с помощью detect_wrong_layout
-    wrong = detect_wrong_layout(text)
-
-    if wrong:
-        if english_count > russian_count:
-            return ''.join([LAYOUT_MAP.get(c, c) for c in text])
-        else:
-            return ''.join([REVERSE_LAYOUT_MAP.get(c, c) for c in text])
-    return text            
+    else:
+        return original_text
 
 
 def init():
@@ -212,6 +197,10 @@ if __name__ == '__main__':
     # init()
 
     t = [
+        'fkb',
+        'али',
+        '..ghbdtn',
+        '...руддщ',
         'https://example.com',
         'реезыЖ..учфьздуюсщь',
         'при',

@@ -27,7 +27,7 @@ from sqlitedict import SqliteDict
 import cfg
 import bing_img
 import md2tgmd
-import my_correct_layout_ru_v2
+import my_correct_layout_ru
 import my_init
 import my_genimg
 import my_db
@@ -4937,10 +4937,10 @@ def do_task(message, custom_prompt: str = ''):
         msg = message.text.lower()
 
 
-        # # попробовать исправить раскладку ghbdtn->привет
-        # if lang == 'ru' and not msg.startswith('/') and not msg.startswith('http') and len(message.text) < 1000 and len(message.text) > 2:
-        #     message.text = my_correct_layout_ru_v2.correct_layout(message.text)
-        #     msg = message.text.lower()
+        # попробовать исправить раскладку ghbdtn->привет
+        if lang == 'ru' and not msg.startswith('/') and not msg.startswith('http') and len(message.text) < 1000 and len(message.text) > 2:
+            message.text = my_correct_layout_ru.correct_layout(message.text)
+            msg = message.text.lower()
 
 
         # если предварительно была введена какая то команда то этот текст надо отправить в неё

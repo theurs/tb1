@@ -5642,13 +5642,15 @@ def main():
     """
     bot.remove_webhook()
 
+    my_db.init()
+
     load_msgs()
 
     my_gemini.load_users_keys()
     my_genimg.load_users_keys()
     my_groq.load_users_keys()
     my_trans.load_users_keys()
-    my_db.init()
+
     my_correct_layout_ru_v2.load()
 
     one_time_shot()

@@ -4,6 +4,8 @@ import pickle
 import re
 from collections import Counter
 
+import my_log
+
 
 TRIGRAM_RU = ''
 TRIGRAM_EN = ''
@@ -110,7 +112,9 @@ def correct_layout(text: str) -> str:
 
         # Сравниваем результаты
         if rus_score > eng_score_original:
-            return ''.join([LAYOUT_MAP.get(c, c) for c in original_text])
+            result = ''.join([LAYOUT_MAP.get(c, c) for c in original_text])
+            my_log.log_layout_switcher(original_text, result)
+            return result
         else:
             return original_text
 
@@ -127,7 +131,9 @@ def correct_layout(text: str) -> str:
 
         # Сравниваем результаты
         if eng_score > rus_score_original:
-            return ''.join([REVERSE_LAYOUT_MAP.get(c, c) for c in original_text])
+            result = ''.join([REVERSE_LAYOUT_MAP.get(c, c) for c in original_text])
+            my_log.log_layout_switcher(original_text, result)
+            return result
         else:
             return original_text
 

@@ -108,6 +108,23 @@ def correct_layout(text: str) -> str:
 if __name__ == '__main__':
 
     l = [
+        'напиши эту инструкцию сам',
+        'tOT',
+        'еще',
+        'to`',
+        'ещё',
+        'Global Unicast IPv6 адрес компьютера - fe80::1038:64bc:8e3b:fd25',
+        'fkb',
+        'али',
+        '..ghbdtn',
+        '...руддщ',
+        'https://example.com',
+        'реезыЖ..учфьздуюсщь',
+        'при',
+        'ghb',
+        'git',
+        'пше',
+        'руддщ',
         'ghbdtn',
         'привет',
         'ghtdtn',
@@ -115,15 +132,15 @@ if __name__ == '__main__':
         'нарисуй коня',
         'yfhbceq rjyz',
         'ye b xt',
-        'Съешь ещё этих мягких французских булок, да выпей чаю',  # Russian
-        'The quick brown fox jumps over the lazy dog.',  # English
+        'Съешь ещё этих мягких французских булок, да выпей чаю',
+        'The quick brown fox jumps over the lazy dog.',
         'This is a mixed text with both English and Russian words: привет!',
-        'Ghbdtn, rfr ltkf ghjcnj',  # Russian in English layout
-        'Привет, это тест на русском языке.',  # Russian
-        'This is another test, but in English.', #!
+        'Ghbdtn, rfr ltkf ghjcnj',
+        'Привет, это тест на русском языке.',
+        'This is another test, but in English.',
         'Just some random English words: keyboard, mouse, monitor.',
         'Ещё немного русских слов: солнце, небо, облака.',
-        'Ytnrf yt gjcktlyz vs ghbdt',  # Mixed Russian and English in English layout
+        'Ytnrf yt gjcktlyz vs ghbdt',
         '~, ndj. yfktdj',
         'Lf ,kznm ye xj jgznm',
         ]

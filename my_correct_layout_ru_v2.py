@@ -56,6 +56,13 @@ REVERSE_LAYOUT_MAP = {
     '/': '|', '=': '='}
 
 
+FORCE_TRANSLATE = {
+    'tot': 'еще',
+    'еще': 'еще',
+    'to`': 'ещё',
+}
+
+
 def correct_layout(text: str) -> str:
     """
     Corrects text typed in the wrong keyboard layout (Russian/English).
@@ -82,10 +89,21 @@ def correct_layout(text: str) -> str:
     """
     original_text = text
 
-    text = re.sub(r'[^a-zA-Zа-яА-ЯёЁ]', '', text).lower()
+    text = text.lower()
 
-    russian_count = len(re.findall(r'[а-яА-ЯёЁ]', text))
-    english_count = len(re.findall(r'[a-zA-Z]', text))
+
+    if text in FORCE_TRANSLATE:
+        new = FORCE_TRANSLATE[text]  # 'tot' -> 'еще'
+        res = ""
+        for i, char in enumerate(new):
+            res += char.upper() if original_text[i].isupper() else char
+        return res
+
+
+    text = re.sub(r'[^a-zа-яё]', '', text)
+
+    russian_count = len(re.findall(r'[а-яё]', text))
+    english_count = len(re.findall(r'[a-z]', text))
 
 
     total_letters = russian_count + english_count
@@ -224,6 +242,10 @@ if __name__ == '__main__':
     load()
 
     t = [
+        'tOT',
+        'еще',
+        'to`',
+        'ещё',
         'Global Unicast IPv6 адрес компьютера - fe80::1038:64bc:8e3b:fd25',
         'fkb',
         'али',

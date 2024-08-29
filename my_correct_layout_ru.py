@@ -98,6 +98,7 @@ def correct_layout(text: str) -> str:
             all_words = count_all_words(text)
             rus_words = count_russian_words(converted)
             if rus_words >= all_words/2:
+                my_log.log_layout_switcher(text, converted)
                 return converted
     except Exception as error:
         traceback_error = traceback.format_exc()

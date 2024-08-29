@@ -24,7 +24,7 @@ CON = None
 CUR = None
 COM_COUNTER = 0
 DAEMON_RUN = True
-DAEMON_TIME = 60
+DAEMON_TIME = 30
 
 
 # Serialize and compress an object

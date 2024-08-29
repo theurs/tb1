@@ -2,11 +2,7 @@
 
 import pickle
 import re
-import threading
 from collections import Counter
-
-
-LOCK = threading.Lock()
 
 
 TRIGRAM_RU = ''
@@ -82,16 +78,7 @@ def correct_layout(text: str) -> str:
         >>> correct_layout("Hello")
         "Hello"
     """
-    global TRIGRAM_RU, TRIGRAM_EN
     original_text = text
-    with LOCK:
-        if isinstance(TRIGRAM_RU, str):
-            with open('trigram_rus.dat', 'rb') as f:
-                TRIGRAM_RU = pickle.load(f)
-
-        if isinstance(TRIGRAM_EN, str):
-            with open('trigram_eng.dat', 'rb') as f:
-                TRIGRAM_EN = pickle.load(f)
 
     text = re.sub(r'[^a-zA-Zа-яА-ЯёЁ]', '', text).lower()
 
@@ -203,9 +190,20 @@ def init():
     print("Результаты сохранены в файл trigram_rus.dat")
 
 
+def load():
+    global TRIGRAM_RU, TRIGRAM_EN
+
+    with open('trigram_rus.dat', 'rb') as f:
+        TRIGRAM_RU = pickle.load(f)
+
+    with open('trigram_eng.dat', 'rb') as f:
+        TRIGRAM_EN = pickle.load(f)
+
+
 if __name__ == '__main__':
 
     # init()
+    load()
 
     t = [
         'fkb',

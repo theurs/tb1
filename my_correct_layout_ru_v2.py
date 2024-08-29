@@ -94,10 +94,11 @@ def correct_layout(text: str) -> str:
 
     if text in FORCE_TRANSLATE:
         new = FORCE_TRANSLATE[text]  # 'tot' -> 'еще'
-        res = ""
+        result = ""
         for i, char in enumerate(new):
-            res += char.upper() if original_text[i].isupper() else char
-        return res
+            result += char.upper() if original_text[i].isupper() else char
+        my_log.log_layout_switcher(original_text, result)
+        return result
 
 
     text = re.sub(r'[^a-zа-яё]', '', text)

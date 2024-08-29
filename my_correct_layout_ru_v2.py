@@ -85,6 +85,18 @@ def correct_layout(text: str) -> str:
     russian_count = len(re.findall(r'[а-яА-ЯёЁ]', text))
     english_count = len(re.findall(r'[a-zA-Z]', text))
 
+
+    total_letters = russian_count + english_count
+    if total_letters == 0:
+        return original_text
+
+    russian_percent = (russian_count / total_letters) * 100
+    english_percent = (english_count / total_letters) * 100
+
+    if russian_percent > 20 and english_percent > 20:
+        return original_text
+
+
     if english_count > russian_count:
         # Если больше английских букв:
         # 1. Считаем триграммы и их суммы для английского языка от исходного текста
@@ -206,6 +218,7 @@ if __name__ == '__main__':
     load()
 
     t = [
+        'Global Unicast IPv6 адрес компьютера - fe80::1038:64bc:8e3b:fd25',
         'fkb',
         'али',
         '..ghbdtn',

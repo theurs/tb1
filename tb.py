@@ -1104,24 +1104,10 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return markup
 
 
-    elif kbd == 'pay_stars_1':
+    elif kbd.startswith('pay_stars_'):
+        amount = int(kbd.split('_')[-1])
         keyboard = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 1 star", lang), pay = True)
-        keyboard.add()
-        return keyboard
-    elif kbd == 'pay_stars_100':
-        keyboard = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 100 stars", lang), pay = True)
-        keyboard.add()
-        return keyboard
-    elif kbd == 'pay_stars_200':
-        keyboard = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 200 stars", lang), pay = True)
-        keyboard.add()
-        return keyboard
-    elif kbd == 'pay_stars_300':
-        keyboard = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 300 stars", lang), pay = True)
+        button1 = telebot.types.InlineKeyboardButton(text=tr(f"Donate {amount} stars", lang), pay = True)
         keyboard.add()
         return keyboard
     elif kbd == 'donate_stars':

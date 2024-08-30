@@ -117,7 +117,12 @@ def log_layout_switcher(orig: str, translated: str):
     """для логов автоисправления раскладки"""
     t = orig + '\n->\n' + translated
     log2(t, 'log_layout_switcher')
-    
+
+
+def log_donate(text: str) -> None:
+    """для логов донатов"""
+    log2(text, 'donate')
+
 
 def log_gemini(text: str) -> None:
     """для логов gemini"""

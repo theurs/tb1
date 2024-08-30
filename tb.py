@@ -1102,6 +1102,38 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
         markup.add(button1, button2)
         return markup
+
+
+    elif kbd == 'pay_stars_1':
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 1 star", lang), pay = True)
+        keyboard.add()
+        return keyboard
+    elif kbd == 'pay_stars_100':
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 100 stars", lang), pay = True)
+        keyboard.add()
+        return keyboard
+    elif kbd == 'pay_stars_200':
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 200 stars", lang), pay = True)
+        keyboard.add()
+        return keyboard
+    elif kbd == 'pay_stars_300':
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 300 stars", lang), pay = True)
+        keyboard.add()
+        return keyboard
+    elif kbd == 'donate_stars':
+        keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
+        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 1 star", lang), callback_data = "buy_stars_1")
+        button2 = telebot.types.InlineKeyboardButton(text=tr("Donate 100 stars", lang), callback_data = "buy_stars_100")
+        button3 = telebot.types.InlineKeyboardButton(text=tr("Donate 200 stars", lang), callback_data = "buy_stars_200")
+        button4 = telebot.types.InlineKeyboardButton(text=tr("Donate 300 stars", lang), callback_data = "buy_stars_300")
+        keyboard.add(button1, button2, button3, button4)
+        return keyboard
+
+
     elif kbd == 'download_saved_text':
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Скачать", lang), callback_data='download_saved_text')
@@ -1425,6 +1457,22 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть историю"
             reset_(chat_id_full)
             bot.delete_message(message.chat.id, message.message_id)
+
+        elif call.data.startswith('buy_stars_'):
+            amount = int(call.data.split('_')[-1])
+            prices = [telebot.types.LabeledPrice(label = "XTR", amount = amount)]
+            bot.send_invoice(
+                call.message.chat.id,
+                title=tr(f'Donate {amount} stars', lang),
+                description = tr(f'Donate {amount} stars', lang),
+                invoice_payload="stars_donate_payload",
+                provider_token = "",  # Для XTR этот токен может быть пустым
+                currency = "XTR",
+                prices = prices,
+                reply_markup = get_keyboard(f'pay_stars_{amount}', message)
+            )
+
+
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
             message.dont_check_topic = True
@@ -1660,6 +1708,38 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'disabled_kbd', True)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+
+
+
+
+# Обработчик запросов перед оплатой
+@bot.pre_checkout_query_handler(func=lambda query: True)
+def handle_pre_checkout_query(pre_checkout_query):
+    bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+
+# Обработчик успешных платежей
+@bot.message_handler(content_types=['successful_payment'])
+def handle_successful_payment(message):
+    user_id = message.from_user.id
+    payment_id = message.successful_payment.provider_payment_charge_id
+    amount = message.successful_payment.total_amount
+    currency = message.successful_payment.currency
+
+    # Отправка подтверждающего сообщения о покупке
+    bot.send_message(message.chat.id, "✅ Донат принят.")
+
+    # Сохранение информации о платеже в базе данных
+    # save_payment(user_id, payment_id, amount, currency)
+    my_log.log_donate(f'{user_id} {payment_id} {amount} {currency}')
+
+
+# Обработчик команды /paysupport
+@bot.message_handler(commands=['paysupport'])
+def handle_pay_support(message):
+    bot_reply_tr(message, 'User /report command for contact human')
+
+
 
 
 @bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)
@@ -2578,7 +2658,7 @@ def addkeys(message: telebot.types.Message):
 @async_run
 def donate(message: telebot.types.Message):
     help = f'[<a href = "https://www.donationalerts.com/r/theurs">DonationAlerts</a> 💸 <a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> 💸 <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> 💸 <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>]'
-    bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
+    bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup = get_keyboard('donate_stars', message))
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)

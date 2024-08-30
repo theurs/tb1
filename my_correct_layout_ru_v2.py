@@ -239,10 +239,11 @@ def load():
 
 if __name__ == '__main__':
 
-    init()
+    # init()
     load()
 
     t = [
+        'Перевод Beni sevdiğini söylediğine göre boşanacaksın',
         'напиши эту инструкцию сам',
         'tOT',
         'еще',

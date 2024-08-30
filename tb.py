@@ -2589,7 +2589,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
                     return
 
         msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://huggingface.co/settings/tokens\n\nhttps://www.deepl.com'
-        bot_reply(message, msg, disable_web_page_preview = True)
+        bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
 
         if message.from_user.id in cfg.admins and is_private:
             msg = tr('Total users keys:', lang)
@@ -4930,7 +4930,7 @@ def do_task(message, custom_prompt: str = ''):
             if total_messages__ > 1 and total_messages__ % 50 == 0:
                 if message.chat.type == 'private':
                     msg = tr('This bot uses API keys to unlock more powerful AI features. You can obtain a free key at https://ai.google.dev/ and provide it to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-                    bot_reply(message, msg, disable_web_page_preview = True)
+                    bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
                     # если больше 1000 сообщений уже и нет ключей то нафиг
                     # if total_messages__ > 1000:
                     #     return

@@ -7,7 +7,9 @@ import re
 import threading
 import traceback
 
+import my_correct_layout_ru_v2
 import my_log
+import my_groq
 
 
 LOCK = threading.Lock()
@@ -91,7 +93,26 @@ def count_all_words(text):
     return len(words)
 
 
-def correct_layout(text: str) -> str:
+def ai(one: str, two: str) -> str:
+    '''определяет с помощью ИИ какой вариант правильный на случай если
+    словарный и частотный методы не сошлись во мнении'''
+    s = '''Надо определить какой из вариантов правильный а какой - набран в неправильной раскладке,
+    когда человек набрал текст забыв переключить раскладку.
+    Твой ответ должен содержать только одну цифру - какой вариант выглядит более правильным.'''
+    q = f'''
+1. {one}
+
+2. {two}
+'''
+    # print('!AI POWER!', one, two)
+    # result = my_groq.ai(q, temperature = 0.1, system = s, model_ = 'llama3-70b-8192', max_tokens_ = 1, timeout = 5)
+    result = my_groq.ai(q, temperature = 0.1, system = s, model_ = 'gemma2-9b-it', max_tokens_ = 1, timeout = 5)
+    if '2' in result:
+        return two
+    return one
+
+
+def correct_layout_(text: str) -> str:
     '''Исправляет раскладку в тексте ghbdtn->привет'''
     try:
         if is_mostly_english(text):
@@ -99,7 +120,6 @@ def correct_layout(text: str) -> str:
             all_words = count_all_words(text)
             rus_words = count_russian_words(converted)
             if rus_words >= all_words/2:
-                my_log.log_layout_switcher(text, converted)
                 return converted
     except Exception as error:
         traceback_error = traceback.format_exc()
@@ -107,46 +127,68 @@ def correct_layout(text: str) -> str:
     return text
 
 
+def correct_layout(text: str) -> str:
+    '''Исправляет раскладку в тексте ghbdtn->привет'''
+    if len(text) < 4:
+        return text
+
+    one = correct_layout_(text)
+    two = my_correct_layout_ru_v2.correct_layout(text)
+    if one == two:
+        result = one
+    else:
+        result = ai(one, two)
+
+    if text != result:
+        my_log.log_layout_switcher(text, result)
+
+    return result
+
+
 if __name__ == '__main__':
 
+    my_correct_layout_ru_v2.load()
+    my_groq.load_users_keys()
+
     l = [
-        # 'Перевод Beni sevdiğini söylediğine göre boşanacaksın',
-        # 'напиши эту инструкцию сам',
-        # 'tOT',
-        # 'еще',
-        # 'to`',
-        # 'ещё',
-        # 'Global Unicast IPv6 адрес компьютера - fe80::1038:64bc:8e3b:fd25',
-        # 'fkb',
-        # 'али',
-        # '..ghbdtn',
-        # '...руддщ',
-        # 'https://example.com',
-        # 'реезыЖ..учфьздуюсщь',
-        # 'при',
-        # 'ghb',
-        # 'git',
-        # 'пше',
-        # 'руддщ',
-        # 'ghbdtn',
-        # 'привет',
-        # 'ghtdtn',
-        # 'превет',
-        # 'нарисуй коня',
-        # 'yfhbceq rjyz',
-        # 'ye b xt',
-        # 'Съешь ещё этих мягких французских булок, да выпей чаю',
-        # 'The quick brown fox jumps over the lazy dog.',
-        # 'This is a mixed text with both English and Russian words: привет!',
-        # 'Ghbdtn, rfr ltkf ghjcnj',
-        # 'Привет, это тест на русском языке.',
-        # 'This is another test, but in English.',
-        # 'Just some random English words: keyboard, mouse, monitor.',
-        # 'Ещё немного русских слов: солнце, небо, облака.',
-        # 'Ytnrf yt gjcktlyz vs ghbdt', # !
-        # '~, ndj. yfktdj',
+        'Перевод Beni sevdiğini söylediğine göre boşanacaksın',
+        'напиши эту инструкцию сам',
+        'tOT',
+        'еще',
+        'to`',
+        'ещё',
+        'Global Unicast IPv6 адрес компьютера - fe80::1038:64bc:8e3b:fd25',
+        'fkb',
+        'али',
+        '..ghbdtn',
+        '...руддщ',
+        'https://example.com',
+        'реезыЖ..учфьздуюсщь',
+        'при',
+        'ghb',
+        'git',
+        'пше',
+        'руддщ',
+        'ghbdtn',
+        'привет',
+        'ghtdtn',
+        'превет',
+        'нарисуй коня',
+        'yfhbceq rjyz',
+        'ye b xt',
+        'Съешь ещё этих мягких французских булок, да выпей чаю',
+        'The quick brown fox jumps over the lazy dog.',
+        'This is a mixed text with both English and Russian words: привет!',
+        'Ghbdtn, rfr ltkf ghjcnj',
+        'Привет, это тест на русском языке.',
+        'This is another test, but in English.',
+        'Just some random English words: keyboard, mouse, monitor.',
+        'Ещё немного русских слов: солнце, небо, облака.',
+        'Ytnrf yt gjcktlyz vs ghbdt', # !
+        '~, ndj. yfktdj',
         'Lf ,kznm ye xj jgznm',
         ]
+
 
     for x in l:
         print(correct_layout(x))

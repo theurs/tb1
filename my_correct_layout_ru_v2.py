@@ -97,7 +97,6 @@ def correct_layout(text: str) -> str:
         result = ""
         for i, char in enumerate(new):
             result += char.upper() if original_text[i].isupper() else char
-        my_log.log_layout_switcher(original_text, result)
         return result
 
 
@@ -132,7 +131,6 @@ def correct_layout(text: str) -> str:
         # Сравниваем результаты
         if rus_score > eng_score_original:
             result = ''.join([LAYOUT_MAP.get(c, c) for c in original_text])
-            my_log.log_layout_switcher(original_text, result)
             return result
         else:
             return original_text
@@ -151,7 +149,6 @@ def correct_layout(text: str) -> str:
         # Сравниваем результаты
         if eng_score > rus_score_original:
             result = ''.join([REVERSE_LAYOUT_MAP.get(c, c) for c in original_text])
-            my_log.log_layout_switcher(original_text, result)
             return result
         else:
             return original_text

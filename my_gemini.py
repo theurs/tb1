@@ -12,11 +12,9 @@ import time
 import threading
 import traceback
 
-import langcodes
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold, GenerationConfig
 from google.generativeai.types import RequestOptions
-from google.api_core import retry
 from sqlitedict import SqliteDict
 
 import cfg
@@ -539,28 +537,41 @@ def translate(text: str,
         from_lang = 'autodetect'
     if to_lang == '':
         to_lang = 'ru'
-    try:
-        from_lang = langcodes.Language.make(language=from_lang).display_name(language='en') if from_lang != 'autodetect' else 'autodetect'
-    except Exception as error1:
-        error_traceback = traceback.format_exc()
-        my_log.log_translate(f'my_gemini:translate:error1: {error1}\n\n{error_traceback}')
-
-    try:
-        to_lang = langcodes.Language.make(language=to_lang).display_name(language='en')
-    except Exception as error2:
-        error_traceback = traceback.format_exc()
-        my_log.log_translate(f'my_gemini:translate:error2: {error2}\n\n{error_traceback}')
 
     if help:
-        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text, this can help you to translate better [{help}]:\n\n{text}'
+        query = f'''
+Translate TEXT from language [{from_lang}] to language [{to_lang}],
+this can help you to translate better: [{help}]
+
+Using this JSON schema:
+  translation = {{"lang_from": str, "lang_to": str, "translation": str}}
+Return a `translation`
+
+TEXT:
+
+{text}
+'''
     else:
-        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
+        query = f'''
+Translate TEXT from language [{from_lang}] to language [{to_lang}].
+
+Using this JSON schema:
+  translation = {{"lang_from": str, "lang_to": str, "translation": str}}
+Return a `translation`
+
+TEXT:
+
+{text}
+'''
 
     if censored:
-        translated = ai(query, temperature=0.1, model=model)
+        translated = chat(query, temperature=0.1, model=model, json_output = True)
     else:
-        translated = ai(query, temperature=0.1, mem=MEM_UNCENSORED, model=model)
-    return translated
+        translated = chat(query, temperature=0.1, insert_mem=MEM_UNCENSORED, model=model, json_output = True)
+    translated_dict = string_to_dict(translated)
+    if translated_dict:
+        return translated_dict['translation']
+    return text
 
 
 def reprompt_image(prompt: str, censored: bool = True, pervert: bool = False) -> str:
@@ -846,23 +857,6 @@ if __name__ == '__main__':
     # my_db.init(backup=False)
     load_users_keys()
 
-#     prompt = '''
-#   Translate TEXT from lang [autodetect] to lang [en]
-#   Using this JSON schema:
-#     translation = {"lang_from": str, "lang_to": str, "translation": str}
-#   Return a `translation`
-  
-#   TEXT:
-  
-# Здарова чо как сам?
-# Есть минутка?
-#     '''
-
-#     result = chat(prompt, json_output=True)
-#     result_dict = string_to_dict(result)
-#     print(result_dict['translation'])
-
-
     # как юзать прокси
     # как отправить в чат аудиофайл
     # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
@@ -875,6 +869,9 @@ if __name__ == '__main__':
         # text = f.read()
 
     # print(ai('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы\n\n'+text, mem=MEM_UNCENSORED))
+
+
+    print(translate('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы', to_lang='en', help='не меняй кейс символов и форматирование'))
 
 
     my_db.close()

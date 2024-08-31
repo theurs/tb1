@@ -420,29 +420,47 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
         data = text
     else:
         data = utils.download_image_as_bytes(text)
+    json_query = f'''
+Using this JSON schema:
+  image_transcription = {{"detailed_description": str, "extracted_formatted_text": str, "image_generation_prompt": str}}
+Return a `image_transcription`
+'''
+    detailed_description = ''
+    extracted_formatted_text = ''
+    image_generation_prompt = ''
     if not query:
-        query = tr('Что изображено на картинке? Если основная часть это текст то просто извлеки и покажи этот текст, сохраняя по возможности его форматирование, больше ничего делать не надо.\n\nЕсли основная часть это не текст то напиши подробное описание, и объясни подробно что это может означать, затем напиши длинный подробный промпт одним предложением для рисования этой картинки с помощью нейросетей, начни промпт со слов /image Create image of...', lang)
+        use_json = True
+        query = tr('Что изображено на картинке? Дай подробное описание и профессиональный промпт для генерации этого изображения на английском языке.', lang) + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang) + json_query
     else:
+        use_json = False
         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
 
     if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
+    text_ = ''
     text = ''
 
     try:
-        # text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-flash-exp-0827')
-        text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-pro-exp-0827')
-        # text = my_gemini.img2txt(data, query, temp = 1,  model = 'gemini-1.5-pro')
-
-        # if not text:
-        #     text = my_gpt4omini.img2txt(data, query, temp = 1)
-        #     my_db.add_msg(chat_id_full, 'gpt_4o_mini')
-
+        if use_json:
+            text_ = my_gemini.img2txt(data, query, json_output=True)
+            if text_:
+                d = my_gemini.string_to_dict(text_)
+                detailed_description = d['detailed_description']
+                extracted_formatted_text = d['extracted_formatted_text']
+                image_generation_prompt = d['image_generation_prompt']
+                if detailed_description:
+                    text = text + detailed_description + '\n\n'
+                if extracted_formatted_text:
+                    text = text + '\n```text\n' + extracted_formatted_text + '\n```\n\n'
+                if image_generation_prompt:
+                    text = text + f'`/img {image_generation_prompt}`'
+        else:
+            text = my_gemini.img2txt(data, query)
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
-    if text:
+    if text:        
         add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + query, text, chat_id_full)
 
     return text

@@ -273,14 +273,18 @@ def chat(query: str,
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def img2txt(data_: bytes, prompt: str = "Что на картинке, подробно?", temp: float = 1, model: str = 'gemini-1.5-flash-exp-0827') -> str:
+def img2txt(data_: bytes,
+            prompt: str = "Что на картинке, подробно?",
+            temp: float = 1,
+            model: str = 'gemini-1.5-flash-exp-0827',
+            json_output: bool = False) -> str:
     '''Convert image to text.
     '''
     try:
         data = io.BytesIO(data_)
         img = PIL.Image.open(data)
         q = [prompt, img]
-        res = chat(q, temperature=temp, model = model)
+        res = chat(q, temperature=temp, model = model, json_output = json_output)
         return res
     except Exception as error:
         traceback_error = traceback.format_exc()
@@ -811,6 +815,7 @@ def string_to_dict(input_string: str):
     Словарь, полученный из строки, или None, если возникли ошибки.
   """
   try:
+    input_string = input_string.replace(': null, ', ': "", ')
     result_dict = ast.literal_eval(input_string)
     return result_dict
   except (SyntaxError, ValueError) as e:

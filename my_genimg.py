@@ -1016,7 +1016,7 @@ def runware(prompt: str, number: int = 2, negative_prompt: str = "", cache: bool
         return []
 
 
-def get_reprompt(prompt: str, conversation_history: str = '') -> str:
+def get_reprompt(prompt: str, conversation_history: str = '') -> tuple[str, str] | None:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
     Parameters:
@@ -1039,22 +1039,22 @@ User's prompt: {prompt}
 
 Dialog history: {conversation_history}
 """
-
-        reprompt = my_gemini.ai(query, temperature=1.5)
+        negative = ''
+        reprompt, negative = my_gemini.get_reprompt_for_image(query, conversation_history)
         if not reprompt:
             reprompt = my_groq.ai(query, temperature=1, model_='gemma2-9b-it')
             if not reprompt:
-                reprompt = get_reprompt_nsfw(prompt)
+                reprompt = get_reprompt_nsfw(prompt, conversation_history)
                 if not reprompt:
                     reprompt = prompt
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
-    my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}')
-    return reprompt
+    my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}\n\nNegative: {negative}')
+    return reprompt, negative
 
 
-def get_reprompt_nsfw(prompt: str, conversation_history: str) -> str:
+def get_reprompt_nsfw(prompt: str, conversation_history: str = '') -> str:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
     Parameters:
@@ -1111,8 +1111,10 @@ def gen_images(prompt: str, moderation_flag: bool = False,
     if prompt.strip() == '':
         return []
 
+    negative = ''
+
     if use_bing:
-        reprompt = get_reprompt(prompt, conversation_history)
+        reprompt, negative = get_reprompt(prompt, conversation_history)
     else:
         reprompt = get_reprompt_nsfw(prompt, conversation_history)
 
@@ -1123,15 +1125,15 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
 
-        async_result2 = pool.apply_async(kandinski, (prompt,))
-        async_result3 = pool.apply_async(kandinski, (prompt,))
+        async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
+        async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
 
-        async_result4 = pool.apply_async(huggin_face_api, (prompt,))
+        async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
 
         async_result5 = pool.apply_async(yandex_cloud, (prompt,))
         async_result6 = pool.apply_async(yandex_cloud, (prompt,))
 
-        async_result7 = pool.apply_async(runware, (prompt,))
+        async_result7 = pool.apply_async(runware, (prompt, 2, negative))
 
         result = (async_result1.get() or []) + \
                  (async_result2.get() or []) + \
@@ -1261,4 +1263,6 @@ if __name__ == '__main__':
     #     open(f'_huggin_face_api {n}.png', 'wb').write(x)
     #     n += 1
 
-    print(runware('fireballs'))
+    # print(runware('fireballs'))
+
+    gen_images('an apple with gold bug')

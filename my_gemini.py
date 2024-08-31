@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import ast
 import cachetools.func
 import io
 import PIL
@@ -76,7 +77,8 @@ def chat(query: str,
          max_tokens: int = 8000,
          insert_mem = None,
          key__: str = '',
-         use_skills: bool = False) -> str:
+         use_skills: bool = False,
+         json_output: bool = False) -> str:
     '''Chat with AI model.
     Args:
         query (str): The query to be used for generating the response.
@@ -100,6 +102,9 @@ def chat(query: str,
         system (str, optional): The system instruction to use for generating the response. Defaults to ''.
         max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 8000. Range: [10,8000]
         insert_mem: (list, optional): The history of the chat. Defaults to None.
+        json_output: (bool, optional): Return json STRING, require something
+        like this in prompt - Using this JSON schema: Recipe = {"recipe_name": str} Return a `list[Recipe]`
+        Defaults to False.
 
     Returns:
         str: The generated response from the AI model.
@@ -156,17 +161,32 @@ def chat(query: str,
 
             genai.configure(api_key = key)
 
-            GENERATION_CONFIG = GenerationConfig(
-                temperature = temperature,
-                # top_p: typing.Optional[float] = None,
-                # top_k: typing.Optional[int] = None,
-                # candidate_count: typing.Optional[int] = None,
-                max_output_tokens = max_tokens,
-                # stop_sequences: typing.Optional[typing.List[str]] = None,
-                # presence_penalty: typing.Optional[float] = None,
-                # frequency_penalty: typing.Optional[float] = None,
-                # response_mime_type: typing.Optional[str] = None
-            )
+            if json_output:
+                GENERATION_CONFIG = GenerationConfig(
+                    temperature = temperature,
+                    # top_p: typing.Optional[float] = None,
+                    # top_k: typing.Optional[int] = None,
+                    # candidate_count: typing.Optional[int] = None,
+                    max_output_tokens = max_tokens,
+                    # stop_sequences: typing.Optional[typing.List[str]] = None,
+                    # presence_penalty: typing.Optional[float] = None,
+                    # frequency_penalty: typing.Optional[float] = None,
+                    # response_mime_type: typing.Optional[str] = None,
+                    response_mime_type = "application/json",
+                )
+            else:
+                GENERATION_CONFIG = GenerationConfig(
+                    temperature = temperature,
+                    # top_p: typing.Optional[float] = None,
+                    # top_k: typing.Optional[int] = None,
+                    # candidate_count: typing.Optional[int] = None,
+                    max_output_tokens = max_tokens,
+                    # stop_sequences: typing.Optional[typing.List[str]] = None,
+                    # presence_penalty: typing.Optional[float] = None,
+                    # frequency_penalty: typing.Optional[float] = None,
+                    # response_mime_type: typing.Optional[str] = None,
+                )
+
 
             # use_skills = False
             if use_skills:
@@ -769,16 +789,85 @@ def list_models():
         pprint.pprint(model)
 
 
+def string_to_dict(input_string: str):
+  """
+  Преобразует строку в словарь с помощью ast.literal_eval.
+
+  Args:
+    input_string: Строка, которую нужно преобразовать в словарь.
+
+  Returns:
+    Словарь, полученный из строки, или None, если возникли ошибки.
+  """
+  try:
+    result_dict = ast.literal_eval(input_string)
+    return result_dict
+  except (SyntaxError, ValueError) as e:
+    my_log.log2(f'my_gemini:string_to_dict: {e}\n\n{input_string}')
+    return None
+
+
+def get_reprompt_for_image(user_query: str, conversation_history: str = '') -> tuple[str, str] | None:
+    """
+    Generates a detailed prompt for image generation based on user query and conversation history.
+
+    Args:
+        user_query: User's query for image generation.
+        conversation_history: Conversation history with the user.
+
+    Returns:
+        A tuple of two strings: (positive prompt, negative prompt) or None if an error occurred. 
+    """
+
+    prompt = f'''
+User want to create image with text to image generator.
+Repromt user's PROMPT for image generation.
+Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
+Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
+Start your prompt with word Generate.
+
+User's PROMPT: {user_query}
+
+Dialog history: {conversation_history}
+
+Using this JSON schema:
+  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str\}}
+Return a `reprompt`
+    '''
+    result = chat(prompt, temperature=1.5, json_output=True)
+    result_dict = string_to_dict(result)
+    if result_dict:
+        return result_dict['reprompt'], result_dict['negative_reprompt']
+    return None
+
+
 if __name__ == '__main__':
     pass
     # my_db.init(backup=False)
     load_users_keys()
 
+#     prompt = '''
+#   Translate TEXT from lang [autodetect] to lang [en]
+#   Using this JSON schema:
+#     translation = {"lang_from": str, "lang_to": str, "translation": str}
+#   Return a `translation`
+  
+#   TEXT:
+  
+# Здарова чо как сам?
+# Есть минутка?
+#     '''
+
+#     result = chat(prompt, json_output=True)
+#     result_dict = string_to_dict(result)
+#     print(result_dict['translation'])
+
+
     # как юзать прокси
     # как отправить в чат аудиофайл
     # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
 
-    list_models()
+    # list_models()
     # chat_cli()
     # chat_cli(model='gemini-1.5-pro-exp-0827')
 

@@ -248,6 +248,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
 
             try:
                 if (any(word in negative_prompt for word in ["anime", "cartoon", "manga", 
+                                                             "childish", 
                                                             "animated", "comic", "hentai", 
                                                             "ecchi", "kawaii", "chibi", 
                                                             "mecha", "fanart", "doujinshi", 

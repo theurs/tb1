@@ -4913,7 +4913,7 @@ def do_task(message, custom_prompt: str = ''):
             tts(message)
             return
 
-        if msg.startswith(('/t', '/tr', '/trans', f'/trans@{_bot_name}')):
+        if msg.startswith('/t', '/tr', '/trans', f'/trans@{_bot_name}', f'/tr@{_bot_name}', f'/t@{_bot_name}'):
             trans(message)
             return
 

@@ -454,7 +454,7 @@ Return a `image_transcription`
                 if extracted_formatted_text:
                     text = text + '\n```text\n' + extracted_formatted_text + '\n```\n\n'
                 if image_generation_prompt:
-                    text = text + f'\n```text\n/img {image_generation_prompt}\n```'
+                    text = text + f'\n```prompt\n/img {image_generation_prompt}\n```'
         else:
             text = my_gemini.img2txt(data, query)
     except Exception as img_from_link_error:

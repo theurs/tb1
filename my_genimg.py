@@ -247,7 +247,15 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             headers = {"Authorization": f"Bearer {api_key}"}
 
             try:
-                if any(word in negative_prompt for word in ["anime", "cartoon", "manga", "animated", "comic", "hentai", "ecchi", "kawaii", "chibi", "mecha", "fanart", "doujinshi", "loli", "shota", "drawing", "graphicnovel", "stopmotion", "celanimation", "sketch", "lineart", "illustration"]) and any(word in url for word in ['m3lt', 'midsommarcartoon']):
+                if (any(word in negative_prompt for word in ["anime", "cartoon", "manga", 
+                                                            "animated", "comic", "hentai", 
+                                                            "ecchi", "kawaii", "chibi", 
+                                                            "mecha", "fanart", "doujinshi", 
+                                                            "loli", "shota", "drawing", 
+                                                            "graphicnovel", "stopmotion", 
+                                                            "celanimation", "sketch", 
+                                                            "lineart", "illustration"]) 
+                    and any(word in url for word in ['m3lt', 'midsommarcartoon'])):
                     return []
 
                 response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)
@@ -1043,7 +1051,10 @@ User's prompt: {prompt}
 Dialog history: {conversation_history}
 """
         negative = ''
-        reprompt, negative = my_gemini.get_reprompt_for_image(query, conversation_history)
+        reprompt = ''
+        r = my_gemini.get_reprompt_for_image(query, conversation_history)
+        if r:
+            reprompt, negative = r
         if not reprompt:
             reprompt = my_groq.ai(query, temperature=1, model_='gemma2-9b-it')
             if not reprompt:

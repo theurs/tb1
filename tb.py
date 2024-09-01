@@ -4906,15 +4906,26 @@ def do_task(message, custom_prompt: str = ''):
 
     msg = message.text.lower().strip()
 
+
     # detect /tts /t /tr /trans command
     if is_private:
-        if msg in ('/tts', f'/tts@{_bot_name}') or msg.startswith(('/tts ', '/tts\n', f'/tts@{_bot_name} ', f'/tts@{_bot_name}\n')):
+        if msg.startswith(('/tts', f'/tts@{_bot_name}')):
             tts(message)
             return
 
-        if msg in ('/t', '/tr', '/trans', f'/trans@{_bot_name}') or msg.startswith(('/t ', '/t\n', '/tr ', '/tr\n', '/trans ', '/trans\n', f'/trans@{_bot_name} ', f'/trans@{_bot_name}\n')):
+        if msg.startswith(('/t', '/tr', '/trans', f'/trans@{_bot_name}')):
             trans(message)
             return
+
+    else:  # Ветка else теперь только для не приватных чатов
+        if msg.startswith(f'/tts@{_bot_name}'):  # Только с упоминанием бота
+            tts(message)
+            return
+
+        if msg.startswith(f'/trans@{_bot_name}', f'/tr@{_bot_name}', f'/t@{_bot_name}'):  # Только с упоминанием бота
+            trans(message)
+            return
+
 
 
     chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')

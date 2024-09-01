@@ -247,6 +247,9 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             headers = {"Authorization": f"Bearer {api_key}"}
 
             try:
+                if any(word in negative_prompt for word in ["anime", "cartoon", "manga", "animated", "comic", "hentai", "ecchi", "kawaii", "chibi", "mecha", "fanart", "doujinshi", "loli", "shota", "drawing", "graphicnovel", "stopmotion", "celanimation", "sketch", "lineart", "illustration"]) and any(word in url for word in ['m3lt', 'midsommarcartoon']):
+                    return []
+
                 response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')

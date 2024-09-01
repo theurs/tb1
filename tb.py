@@ -591,8 +591,10 @@ def is_for_me(message: telebot.types.Message) -> bool:
     Returns (True/False, 'the same command but without the bot name').
     If there is no bot name at all, assumes that the command is addressed to this bot.
     """
+    chat_id_full = get_topic_id(message)
     cmd = message.text
-    is_private = message.chat.type == 'private'
+    supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+    is_private = message.chat.type == 'private' or supch
 
     # если не в привате, то есть в чате
     if not is_private and message.text:
@@ -4908,25 +4910,13 @@ def do_task(message, custom_prompt: str = ''):
 
 
     # detect /tts /t /tr /trans command
-    if is_private:
-        if msg.startswith(('/tts', f'/tts@{_bot_name}')):
-            tts(message)
-            return
+    if msg.startswith('/tts'):
+        tts(message)
+        return
 
-        if msg.startswith('/t', '/tr', '/trans', f'/trans@{_bot_name}', f'/tr@{_bot_name}', f'/t@{_bot_name}'):
-            trans(message)
-            return
-
-    else:  # Ветка else теперь только для не приватных чатов
-        if msg.startswith(f'/tts@{_bot_name}'):  # Только с упоминанием бота
-            tts(message)
-            return
-
-        if msg.startswith(f'/trans@{_bot_name}', f'/tr@{_bot_name}', f'/t@{_bot_name}'):  # Только с упоминанием бота
-            trans(message)
-            return
-
-
+    if msg.startswith(('/t', '/tr', '/trans')):
+        trans(message)
+        return
 
     chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')
 

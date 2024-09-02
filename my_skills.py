@@ -211,8 +211,10 @@ def calc(expression: str) -> str:
         'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
         'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
         'round', 'pow', 'sum', 'min', 'max', 'divmod',
-        'for', 'in', 'and', 'if', 'next',
+        'for', 'in', 'and', 'if', 'or', 'next',
         'digit',
+
+        'list','tuple','sorted','reverse','True','False',
 
         'datetime', 'days', 'seconds', 'microseconds', 'milliseconds', 'minutes', 'hours', 'weeks',
         ]

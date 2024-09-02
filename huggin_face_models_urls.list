@@ -33,7 +33,7 @@ https://api-inference.huggingface.co/models/alvdansen/midsommarcartoon
 
 
 https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev
-# https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell
+https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell
 https://api-inference.huggingface.co/models/XLabs-AI/flux-RealismLora
 #https://api-inference.huggingface.co/models/XLabs-AI/flux-controlnet-collections
 #https://api-inference.huggingface.co/models/XLabs-AI/flux-controlnet-canny
@@ -43,3 +43,6 @@ https://api-inference.huggingface.co/models/alvdansen/frosting_lane_flux
 https://api-inference.huggingface.co/models/alvdansen/flux_film_foto
 https://api-inference.huggingface.co/models/kudzueye/Boreal
 https://api-inference.huggingface.co/models/linoyts/yarn_art_Flux_LoRA
+
+https://api-inference.huggingface.co/models/ByteDance/Hyper-SD
+https://api-inference.huggingface.co/models/Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro

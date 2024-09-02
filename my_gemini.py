@@ -824,20 +824,20 @@ def list_models():
 
 
 def string_to_dict(input_string: str):
-  """
-  Преобразует строку в словарь с помощью json.loads.
+    """
+    Преобразует строку в словарь с помощью json.loads.
 
-  Args:
-    input_string: Строка, которую нужно преобразовать в словарь.
+    Args:
+        input_string: Строка, которую нужно преобразовать в словарь.
 
-  Returns:
-    Словарь, полученный из строки, или None, если возникли ошибки.
-  """
-  try:
-    result_dict = json.loads(input_string)
-    return result_dict
-  except json.JSONDecodeError as e:
-    my_log.log2(f'my_gemini:string_to_dict: {e}\n\n{input_string}')
+    Returns:
+        Словарь, полученный из строки, или None, если возникли ошибки.
+    """
+    try:
+        result_dict = json.loads(input_string)
+        return result_dict
+    except Exception as error:
+        my_log.log2(f'my_gemini:string_to_dict: {error}\n\n{input_string}')
     return None
 
 

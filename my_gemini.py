@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import ast
 import cachetools.func
 import io
+import json
 import PIL
 import pprint
 import random
@@ -804,9 +804,28 @@ def list_models():
         pprint.pprint(model)
 
 
+# def string_to_dict(input_string: str):
+#   """
+#   Преобразует строку в словарь с помощью ast.literal_eval.
+
+#   Args:
+#     input_string: Строка, которую нужно преобразовать в словарь.
+
+#   Returns:
+#     Словарь, полученный из строки, или None, если возникли ошибки.
+#   """
+#   try:
+#     input_string = input_string.replace(': null, ', ': "", ')
+#     result_dict = ast.literal_eval(input_string)
+#     return result_dict
+#   except (SyntaxError, ValueError) as e:
+#     my_log.log2(f'my_gemini:string_to_dict: {e}\n\n{input_string}')
+#     return None
+
+
 def string_to_dict(input_string: str):
   """
-  Преобразует строку в словарь с помощью ast.literal_eval.
+  Преобразует строку в словарь с помощью json.loads.
 
   Args:
     input_string: Строка, которую нужно преобразовать в словарь.
@@ -815,10 +834,9 @@ def string_to_dict(input_string: str):
     Словарь, полученный из строки, или None, если возникли ошибки.
   """
   try:
-    input_string = input_string.replace(': null, ', ': "", ')
-    result_dict = ast.literal_eval(input_string)
+    result_dict = json.loads(input_string)
     return result_dict
-  except (SyntaxError, ValueError) as e:
+  except json.JSONDecodeError as e:
     my_log.log2(f'my_gemini:string_to_dict: {e}\n\n{input_string}')
     return None
 
@@ -876,7 +894,8 @@ if __name__ == '__main__':
     # print(ai('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы\n\n'+text, mem=MEM_UNCENSORED))
 
 
-    print(translate('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы', to_lang='en', help='не меняй кейс символов и форматирование'))
+    # print(translate('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы', to_lang='en', help='не меняй кейс символов и форматирование'))
 
+    print(get_reprompt_for_image('собака на сене'))
 
     my_db.close()

@@ -128,7 +128,7 @@ def chat(query: str,
             mem = insert_mem
 
         if not model:
-            model = 'gemini-1.5-flash-exp-0827'
+            model = cfg.gemini_flash_model
 
         if system == '':
             system = None
@@ -276,7 +276,7 @@ def chat(query: str,
 def img2txt(data_: bytes,
             prompt: str = "Что на картинке, подробно?",
             temp: float = 1,
-            model: str = 'gemini-1.5-flash-exp-0827',
+            model: str = cfg.gemini_flash_model,
             json_output: bool = False) -> str:
     '''Convert image to text.
     '''
@@ -643,7 +643,7 @@ def sum_big_text(text:str, query: str, temperature: float = 1) -> str:
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    return ai(query, temperature=temperature, model='gemini-1.5-flash-exp-0827')
+    return ai(query, temperature=temperature, model=cfg.gemini_flash_model)
 
 
 def detect_lang(text: str) -> str:
@@ -655,7 +655,7 @@ answer = (ru)
 
 Text to be detected: {text[:100]}
 '''
-    result = ai(q, temperature=0, model='gemini-1.5-flash-exp-0827', tokens_limit=10)
+    result = ai(q, temperature=0, model=cfg.gemini_flash_model, tokens_limit=10)
     result = result.replace('"', '').replace(' ', '').replace("'", '').replace('(', '').replace(')', '').strip()
     return result
 
@@ -666,7 +666,7 @@ def retranscribe(text: str, prompt: str = '') -> str:
         query = f'{prompt}:\n\n{text}'
     else:
         query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
-    result = ai(query, temperature=0.1, model='gemini-1.5-flash-exp-0827', mem=MEM_UNCENSORED, tokens_limit=8000)
+    result = ai(query, temperature=0.1, model=cfg.gemini_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 
 
@@ -720,7 +720,7 @@ def rebuild_subtitles(text: str, lang: str) -> str:
         return result
 
     query = f'Fix errors, make an easy to read text out of the subtitles, make a fine paragraphs and sentences, output language = [{lang}]:\n\n{text}'
-    result = ai(query, temperature=0.1, model='gemini-1.5-flash-exp-0827', mem=MEM_UNCENSORED, tokens_limit=8000)
+    result = ai(query, temperature=0.1, model=cfg.gemini_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 
 
@@ -851,7 +851,7 @@ if __name__ == '__main__':
 
     # list_models()
     # chat_cli()
-    # chat_cli(model='gemini-1.5-pro-exp-0827')
+    # chat_cli(model=cfg.gemini_pro_model)
 
     # with open('d:\\downloads\\1.txt','r') as f:
         # text = f.read()

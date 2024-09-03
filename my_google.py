@@ -67,11 +67,11 @@ Search results:
 {text[:my_gemini.MAX_SUM_REQUEST]}
 '''
     r = ''
-    r =  my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], model='gemini-1.5-flash-exp-0827', temperature=1)
+    r =  my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], model=cfg.gemini_flash_model, temperature=1)
     if r:
         r += '\n\n--\n[Gemini Flash]'
     # if not r:
-    #     r = my_gemini.ai(q[:32000], model='gemini-1.5-flash-exp-0827', temperature=1)
+    #     r = my_gemini.ai(q[:32000], model=cfg.gemini_flash_model, temperature=1)
     #     if r:
     #         r += '\n\n--\n[Gemini Flash]'
     if not r:

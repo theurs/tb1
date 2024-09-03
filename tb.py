@@ -442,8 +442,9 @@ Return a `image_transcription`
     text = ''
 
     try:
+        model = cfg.img2_txt_model
         if use_json:
-            text_ = my_gemini.img2txt(data, query, json_output=True)
+            text_ = my_gemini.img2txt(data, query, json_output=True, model=model)
             if text_:
                 d = utils.string_to_dict(text_)
                 detailed_description = d['detailed_description']
@@ -456,7 +457,7 @@ Return a `image_transcription`
                 if image_generation_prompt:
                     text = text + f'\n```prompt\n/img {image_generation_prompt}\n```'
         else:
-            text = my_gemini.img2txt(data, query)
+            text = my_gemini.img2txt(data, query, model=model)
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
@@ -4034,7 +4035,7 @@ def ask_file(message: telebot.types.Message):
 
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
     '''
-            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-flash-exp-0827')
+            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = cfg.gemini_flash_model)
             # result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-pro')
             if not result:
                 result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000, model_ = 'llama-3.1-70b-versatile')
@@ -5176,12 +5177,12 @@ def do_task(message, custom_prompt: str = ''):
                             # answer = my_gemini.chat(helped_query,
                             #                         chat_id_full,
                             #                         my_db.get_user_property(chat_id_full, 'temperature'),
-                            #                         model = 'gemini-1.5-flash-exp-0827')
+                            #                         model = cfg.gemini_flash_model)
 
                             answer = my_gemini.chat(message.text,
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
-                                                    model = 'gemini-1.5-flash-exp-0827',
+                                                    model = cfg.gemini_flash_model,
                                                     system = hidden_text,
                                                     use_skills=True
                                                     )
@@ -5264,7 +5265,7 @@ def do_task(message, custom_prompt: str = ''):
                                                     chat_id_full,
                                                     my_db.get_user_property(chat_id_full, 'temperature'),
                                                     # model = 'gemini-1.5-pro',
-                                                    model = 'gemini-1.5-pro-exp-0827',
+                                                    model = cfg.gemini_pro_model,
                                                     system = hidden_text,
                                                     use_skills=True,
                                                     )

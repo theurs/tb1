@@ -10,14 +10,15 @@ import threading
 import traceback
 
 import httpx
-import langcodes
 from groq import Groq, PermissionDeniedError
+from groq.types.chat.completion_create_params import ResponseFormat
 from sqlitedict import SqliteDict
 
 import cfg
 import my_db
 import my_log
 import my_sum
+import utils
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -68,6 +69,7 @@ def ai(prompt: str = '',
        max_tokens_: int = 4000,
        key_: str = '',
        timeout: int = 180,
+       json_output: bool = False,
        ) -> str:
     """
     Generates a response using the GROQ AI model.
@@ -138,12 +140,17 @@ def ai(prompt: str = '',
             else:
                 client = Groq(api_key=key, timeout = timeout)
 
+            if json_output:
+                resp_type = 'json_object'
+            else:
+                resp_type = 'text'
             try:
                 chat_completion = client.chat.completions.create(
                     messages=mem,
                     model=model,
                     temperature=temperature,
                     max_tokens=max_tokens_,
+                    response_format = ResponseFormat(type = resp_type),
                 )
             except PermissionDeniedError:
                 my_log.log_groq(f'GROQ PermissionDeniedError: {key}')
@@ -452,7 +459,53 @@ answer with a single long sentence 50-300 words, start with the words Create ima
         return prompt
 
 
-def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False) -> str:
+# def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False) -> str:
+#     """
+#     Translates the given text from one language to another.
+    
+#     Args:
+#         text (str): The text to be translated.
+#         from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
+#         to_lang (str, optional): The language to translate the text into. If not specified, the text will be translated into Russian.
+#         help (str, optional): Help text for tranlator.
+        
+#     Returns:
+#         str: The translated text.
+#     """
+#     if from_lang == '':
+#         from_lang = 'autodetect'
+#     if to_lang == '':
+#         to_lang = 'ru'
+#     try:
+#         from_lang = langcodes.Language.make(language=from_lang).display_name(language='en') if from_lang != 'autodetect' else 'autodetect'
+#     except Exception as error1:
+#         error_traceback = traceback.format_exc()
+#         my_log.log_translate(f'my_groq:translate:error1: {error1}\n\n{error_traceback}')
+        
+#     try:
+#         to_lang = langcodes.Language.make(language=to_lang).display_name(language='en')
+#     except Exception as error2:
+#         error_traceback = traceback.format_exc()
+#         my_log.log_translate(f'my_groq:translate:error2: {error2}\n\n{error_traceback}')
+
+#     if help:
+#         query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text, this can help you to translate better [{help}]:\n\n{text}'
+#     else:
+#         query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
+
+#     if censored:
+#         translated = ai(query, temperature=0.1, max_tokens_=8000)
+#     else:
+#         translated = ai(query, temperature=0.1, max_tokens_=8000, mem_=MEM_UNCENSORED)
+#     return translated
+
+
+def translate(text: str,
+              from_lang: str = '',
+              to_lang: str = '',
+              help: str = '',
+              censored: bool = False,
+              model = '') -> str:
     """
     Translates the given text from one language to another.
     
@@ -469,28 +522,41 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
         from_lang = 'autodetect'
     if to_lang == '':
         to_lang = 'ru'
-    try:
-        from_lang = langcodes.Language.make(language=from_lang).display_name(language='en') if from_lang != 'autodetect' else 'autodetect'
-    except Exception as error1:
-        error_traceback = traceback.format_exc()
-        my_log.log_translate(f'my_groq:translate:error1: {error1}\n\n{error_traceback}')
-        
-    try:
-        to_lang = langcodes.Language.make(language=to_lang).display_name(language='en')
-    except Exception as error2:
-        error_traceback = traceback.format_exc()
-        my_log.log_translate(f'my_groq:translate:error2: {error2}\n\n{error_traceback}')
 
     if help:
-        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text, this can help you to translate better [{help}]:\n\n{text}'
+        query = f'''
+Translate TEXT from language [{from_lang}] to language [{to_lang}],
+this can help you to translate better: [{help}]
+
+Using this JSON schema:
+  translation = {{"lang_from": str, "lang_to": str, "translation": str}}
+Return a `translation`
+
+TEXT:
+
+{text}
+'''
     else:
-        query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
+        query = f'''
+Translate TEXT from language [{from_lang}] to language [{to_lang}].
+
+Using this JSON schema:
+  translation = {{"lang_from": str, "lang_to": str, "translation": str}}
+Return a `translation`
+
+TEXT:
+
+{text}
+'''
 
     if censored:
-        translated = ai(query, temperature=0.1, max_tokens_=8000)
+        translated = ai(query, temperature=0.1, model_=model, json_output = True)
     else:
-        translated = ai(query, temperature=0.1, max_tokens_=8000, mem_=MEM_UNCENSORED)
-    return translated
+        translated = ai(query, temperature=0.1, mem_=MEM_UNCENSORED, model_=model, json_output = True)
+    translated_dict = utils.string_to_dict(translated)
+    if translated_dict:
+        return translated_dict['translation']
+    return text
 
 
 def sum_big_text(text:str, query: str, temperature: float = 1, model = 'llama-3.1-70b-versatile') -> str:
@@ -566,7 +632,9 @@ def load_users_keys():
 if __name__ == '__main__':
     pass
     load_users_keys()
-    my_db.init(backup=False)
+    # my_db.init(backup=False)
+
+    # print(translate('Привет как дела!', to_lang='en', model = '', censored=False))
 
     # reset('test')
     # chat_cli(model='llama-3.1-70b-versatile')

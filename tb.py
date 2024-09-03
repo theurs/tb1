@@ -445,7 +445,7 @@ Return a `image_transcription`
         if use_json:
             text_ = my_gemini.img2txt(data, query, json_output=True)
             if text_:
-                d = my_gemini.string_to_dict(text_)
+                d = utils.string_to_dict(text_)
                 detailed_description = d['detailed_description']
                 extracted_formatted_text = d['extracted_formatted_text']
                 image_generation_prompt = d['image_generation_prompt']

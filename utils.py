@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-
+import ast
 import concurrent.futures
 import datetime
 import functools
 import hashlib
 import io
+import json
 import html
 import os
 import pathlib
@@ -632,6 +633,30 @@ def make_collage(images: list) -> bytes:
     collage.save(result_image_as_bytes, format='PNG') # PNG поддерживает прозрачность
     result_image_as_bytes.seek(0)
     return result_image_as_bytes.read()
+
+
+def string_to_dict(input_string: str):
+    """
+    Преобразует строку в словарь с помощью json.loads.
+
+    Args:
+        input_string: Строка, которую нужно преобразовать в словарь.
+
+    Returns:
+        Словарь, полученный из строки, или None, если возникли ошибки.
+    """
+    try:
+        input_string_ = input_string.replace('\n', '\\n').replace('\t', '\\t')
+        result_dict = json.loads(input_string_)
+        return result_dict
+    except Exception as error:
+        try:
+            input_string_ = input_string.replace('" : null', '" : ""')
+            result_dict = ast.literal_eval(input_string_)
+            return result_dict
+        except Exception as error2:
+            my_log.log2(f'utils:string_to_dict: {error}\n{error2}\n{input_string}')
+    return None
 
 
 if __name__ == '__main__':

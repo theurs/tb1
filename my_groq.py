@@ -644,7 +644,7 @@ Negative prompt: "sad, angry, blurry, cartoon"
 
 Result: The AI will generate an image of a cat in a wizard hat that looks realistic, rather joyful or neutral, not sad or angry, and the image will be sharp, not blurry.
 
-Start your prompt with word Generate.
+Start your prompt with word Generate and give 100-300 words.
 
 
 User's PROMPT: {user_query}

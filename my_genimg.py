@@ -1040,24 +1040,14 @@ def get_reprompt(prompt: str, conversation_history: str = '') -> tuple[str, str]
     try:
         conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
         conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
-        query = f"""
-User want to create image with text to image generator.
-Repromt user's prompt for image generation.
-Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
-Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
-Start your prompt with word Generate.
 
-User's prompt: {prompt}
-
-Dialog history: {conversation_history}
-"""
         negative = ''
         reprompt = ''
-        r = my_gemini.get_reprompt_for_image(query, conversation_history)
+        r = my_gemini.get_reprompt_for_image(prompt, conversation_history)
         if r:
             reprompt, negative = r
         if not reprompt:
-            r = my_groq.get_reprompt_for_image(query, conversation_history)
+            r = my_groq.get_reprompt_for_image(prompt, conversation_history)
             if r:
                 reprompt, negative = r
             if not reprompt:

@@ -1085,8 +1085,7 @@ Return a `reprompt`
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
     my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}\n\nNegative: {negative}')
-    if not reprompt:
-        reprompt = prompt
+
     return reprompt, negative
 
 
@@ -1154,7 +1153,10 @@ def gen_images(prompt: str, moderation_flag: bool = False,
     else:
         reprompt = get_reprompt_nsfw(prompt, conversation_history)
 
-    prompt = reprompt
+    if reprompt:
+        prompt = reprompt
+    else:
+        return []
 
     if use_bing:
         pool = ThreadPool(processes=7)

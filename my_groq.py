@@ -631,7 +631,13 @@ def get_reprompt_for_image(prompt: str) -> tuple[str, str] | None:
     result = ai(prompt, temperature=1.5, json_output=True, model_='')
     result_dict = utils.string_to_dict(result)
     if result_dict:
-        return result_dict['reprompt'], result_dict['negative_reprompt']
+        try:
+            return result_dict['reprompt'], result_dict['negative_reprompt']
+        except:
+            try:
+                return result_dict['reprompt'], result_dict['negative_prompt']
+            except:
+                pass
     return None
 
 

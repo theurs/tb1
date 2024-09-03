@@ -6,6 +6,7 @@ import traceback
 
 import googlesearch
 
+import cfg
 import my_log
 import my_gemini
 import my_ddg

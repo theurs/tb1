@@ -1077,10 +1077,10 @@ Return a `reprompt`
             r = my_groq.get_reprompt_for_image(query)
             if r:
                 reprompt, negative = r
-            if not reprompt:
-                reprompt = get_reprompt_nsfw(prompt, conversation_history)
-                if not reprompt:
-                    reprompt = prompt
+            # if not reprompt:
+            #     reprompt = get_reprompt_nsfw(query)
+            #     if not reprompt:
+            #         reprompt = prompt
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
@@ -1090,7 +1090,7 @@ Return a `reprompt`
     return reprompt, negative
 
 
-def get_reprompt_nsfw(prompt: str, conversation_history: str = '') -> str:
+def get_reprompt_nsfw(prompt: str) -> str:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
     Parameters:

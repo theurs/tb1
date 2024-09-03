@@ -1058,6 +1058,8 @@ def get_reprompt(prompt: str, conversation_history: str = '') -> tuple[str, str]
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
     my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}\n\nNegative: {negative}')
+    if not reprompt:
+        reprompt = prompt
     return reprompt, negative
 
 

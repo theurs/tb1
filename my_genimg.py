@@ -1070,11 +1070,11 @@ Return a `reprompt`
 
         negative = ''
         reprompt = ''
-        r = my_gemini.get_reprompt_for_image(query, conversation_history)
+        r = my_gemini.get_reprompt_for_image(query)
         if r:
             reprompt, negative = r
         if not reprompt:
-            r = my_groq.get_reprompt_for_image(query, conversation_history)
+            r = my_groq.get_reprompt_for_image(query)
             if r:
                 reprompt, negative = r
             if not reprompt:

@@ -646,19 +646,20 @@ def string_to_dict(input_string: str):
         Словарь, полученный из строки, или None, если возникли ошибки.
     """
     try:
-        try:
-            return json.loads(input_string)
-        except:
-            pass
+        return json.loads(input_string)
+    except:
+        pass
+    try:
+        return ast.literal_eval(input_string)
+    except:
+        pass
+
+    try:
         input_string_ = input_string.replace('\n', '\\n').replace('\t', '\\t')
         result_dict = json.loads(input_string_)
         return result_dict
     except Exception as error:
         try:
-            try:
-                return ast.literal_eval(input_string)
-            except:
-                pass
             input_string_ = input_string.replace('" : null', '" : ""')
             result_dict = ast.literal_eval(input_string_)
             return result_dict

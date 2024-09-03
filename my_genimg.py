@@ -1150,8 +1150,6 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
     if use_bing:
         reprompt, negative = get_reprompt(prompt, conversation_history)
-    else:
-        reprompt = get_reprompt_nsfw(prompt, conversation_history)
 
     if reprompt:
         prompt = reprompt

@@ -1057,7 +1057,9 @@ Dialog history: {conversation_history}
         if r:
             reprompt, negative = r
         if not reprompt:
-            reprompt = my_groq.ai(query, temperature=1, model_='gemma2-9b-it')
+            r = my_groq.get_reprompt_for_image(query, conversation_history)
+            if r:
+                reprompt, negative = r
             if not reprompt:
                 reprompt = get_reprompt_nsfw(prompt, conversation_history)
                 if not reprompt:

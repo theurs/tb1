@@ -616,6 +616,52 @@ def retranscribe(text: str, prompt: str = '') -> str:
     return result
 
 
+
+def get_reprompt_for_image(user_query: str, conversation_history: str = '') -> tuple[str, str] | None:
+    """
+    Generates a detailed prompt for image generation based on user query and conversation history.
+
+    Args:
+        user_query: User's query for image generation.
+        conversation_history: Conversation history with the user.
+
+    Returns:
+        A tuple of two strings: (positive prompt, negative prompt) or None if an error occurred. 
+    """
+
+    prompt = f'''
+User want to create image with text to image generator.
+Repromt user's PROMPT for image generation.
+Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
+Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
+A negative prompt in image generation lets you specify what you DON'T want to see in the picture. It helps exclude unwanted objects, styles, colors, or other characteristics, giving you more control over the result and speeding up the generation process.
+
+Example:
+
+Prompt: "Cat in a wizard hat"
+
+Negative prompt: "sad, angry, blurry, cartoon"
+
+Result: The AI will generate an image of a cat in a wizard hat that looks realistic, rather joyful or neutral, not sad or angry, and the image will be sharp, not blurry.
+
+Start your prompt with word Generate.
+
+
+User's PROMPT: {user_query}
+
+Dialog history: {conversation_history}
+
+Using this JSON schema:
+  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str\}}
+Return a `reprompt`
+    '''
+    result = ai(prompt, temperature=1.5, json_output=True, model='')
+    result_dict = utils.string_to_dict(result)
+    if result_dict:
+        return result_dict['reprompt'], result_dict['negative_reprompt']
+    return None
+
+
 def load_users_keys():
     """
     Load users' keys into memory and update the list of all keys available.

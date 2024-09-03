@@ -3567,23 +3567,36 @@ def image_gen(message: telebot.types.Message):
                         if medias and my_db.get_user_property(chat_id_full, 'suggest_enabled'):
                             # 1 запрос на генерацию предложений
                             suggest_query = tr("""Suggest a wide range options for a request to a neural network that
-generates images according to the description, show 5 options with no numbers and trailing symbols, add many rich details, 1 on 1 line, output example:
+generates images according to the description, show 5 options.
 
-Create image of ...
-Create image of ...
-Create image of ...
-Create image of ...
-Create image of ...
+the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt + """
 
-5 lines total in answer
 
-the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt
+Using this JSON schema:
+  suggestions = {"option1": str, "option2": str, "option3": str, "option4": str, "option5": str}
+Return a `suggestions`
+
+"""
                             if NSFW_FLAG:
-                                suggest = my_gemini.ai(suggest_query, temperature=1.5, mem=my_gemini.MEM_UNCENSORED)
+                                suggest = my_gemini.chat(suggest_query, temperature=1.5, insert_mem=my_gemini.MEM_UNCENSORED, json_output=True)
+                                if not suggest:
+                                    suggest = my_groq.ai(suggest_query, temperature=1.5, mem_=my_groq.MEM_UNCENSORED, json_output=True)
                             else:
-                                suggest = my_gemini.ai(suggest_query, temperature=1.5)
+                                suggest = my_gemini.chat(suggest_query, temperature=1.5, json_output=True)
+                                if not suggest:
+                                    suggest = my_groq.ai(suggest_query, temperature=1.5, json_output=True)
                             # my_db.add_msg(chat_id_full, 'gemini15_flash')
-                            suggest = utils.bot_markdown_to_html(suggest).strip()
+                            try:
+                                suggest = utils.string_to_dict(suggest)
+                                suggest = [
+                                    utils.bot_markdown_to_html(suggest['option1']).strip(),
+                                    utils.bot_markdown_to_html(suggest['option2']).strip(),
+                                    utils.bot_markdown_to_html(suggest['option3']).strip(),
+                                    utils.bot_markdown_to_html(suggest['option4']).strip(),
+                                    utils.bot_markdown_to_html(suggest['option5']).strip(),                                    
+                                    ]
+                            except Exception as sug_exp:
+                                my_log.log2(f'tb:image:generate_suggest: {sug_exp} {suggest}')
                         else:
                             suggest = ''
 
@@ -3631,15 +3644,6 @@ the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt
 
                                 if suggest:
                                     try:
-                                        suggest = [f'{x}'.replace('• ', '', 1).replace('1. ', '', 1).replace('2. ', '', 1).replace('3. ', '', 1).replace('4. ', '', 1).replace('5. ', '', 1).strip() for x in suggest.split('\n')]
-                                        suggest = [x for x in suggest if x]
-                                        suggest__ = suggest[:5]
-                                        suggest = []
-                                        for x__ in suggest__:
-                                            if x__.startswith('– '):
-                                                x__ = x__[2:]
-                                            suggest.append(x__.strip())
-
                                         suggest_hashes = [utils.nice_hash(x, 12) for x in suggest]
                                         markup  = telebot.types.InlineKeyboardMarkup()
                                         for s, h in zip(suggest, suggest_hashes):

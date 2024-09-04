@@ -37,11 +37,12 @@ def get_subs_from_rutube(url: str) -> str:
     if cache:
         return cache
 
-    duration = my_transcribe.get_url_video_duration(url)
-    my_log.log2(f'my_sum:get_subs_from_rutube: {url} Duration: {duration}')
-    if duration == 0 or duration > 2*60*60:
-        my_log.log2(f'my_sum:get_subs_from_rutube: too long video {url} {duration}')
-        return ''
+    if 'https://vimeo.com/' not in url:
+        duration = my_transcribe.get_url_video_duration(url)
+        my_log.log2(f'my_sum:get_subs_from_rutube: {url} Duration: {duration}')
+        if duration == 0 or duration > 2*60*60:
+            my_log.log2(f'my_sum:get_subs_from_rutube: too long video {url} {duration}')
+            return ''
 
     tmpname = utils.get_tmp_fname()
     result = ''

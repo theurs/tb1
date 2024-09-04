@@ -69,7 +69,8 @@ def get_subs_from_rutube(url: str) -> str:
             my_db.set_sum_cache(url+'.sub', result)
         return result
     except Exception as error:
-        my_log.log2(f'get_subs_from_rutube: {error} {url} {tmpname}')
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'get_subs_from_rutube: {error} {url} {tmpname}\n\n{traceback_error}')
     finally:
         utils.remove_file(tmpname)
         return result

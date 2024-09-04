@@ -3588,6 +3588,8 @@ Return a `suggestions`
                             # my_db.add_msg(chat_id_full, 'gemini15_flash')
                             try:
                                 suggest = utils.string_to_dict(suggest)
+                                if 'suggestions' in suggest:
+                                    suggest = suggest['suggestions']
                                 suggest = [
                                     utils.bot_markdown_to_html(suggest['option1']).strip(),
                                     utils.bot_markdown_to_html(suggest['option2']).strip(),

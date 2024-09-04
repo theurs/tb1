@@ -3173,6 +3173,7 @@ def tts(message: telebot.types.Message, caption = None):
             if  '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url or \
                 '//rutube.ru/video/' in url or 'pornhub.com/view_video.php?viewkey=' in url or \
                 ('tiktok.com' in url and 'video' in url) or \
+                ('https://vimeo.com/' in url) or \
                 ('vk.com' in url and '/video-' in url) or \
                 ('//my.mail.ru/v/' in url and '/video/' in url):
                 text = my_sum.get_text_from_youtube(url, lang)

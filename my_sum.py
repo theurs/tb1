@@ -39,7 +39,7 @@ def get_subs_from_rutube(url: str) -> str:
 
     duration = my_transcribe.get_url_video_duration(url)
     my_log.log2(f'my_sum:get_subs_from_rutube: {url} Duration: {duration}')
-    if duration == 0 or duration > 1*60*60:
+    if duration == 0 or duration > 2*60*60:
         my_log.log2(f'my_sum:get_subs_from_rutube: too long video {url} {duration}')
         return ''
 
@@ -149,6 +149,8 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
         if 'vk.com' in url and '/video-' in url:
             return get_subs_from_rutube(url)
         if '//my.mail.ru/v/' in url and '/video/' in url:
+            return get_subs_from_rutube(url)
+        if 'https://vimeo.com/' in url:
             return get_subs_from_rutube(url)
 
         try:
@@ -360,6 +362,7 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool 
        '//rutube.ru/video/' in url or 'pornhub.com/view_video.php?viewkey=' in url or \
        ('tiktok.com' in url and 'video' in url) or \
        ('vk.com' in url and '/video-' in url) or \
+        ('https://vimeo.com/' in url) or \
        ('//my.mail.ru/v/' in url and '/video/' in url):
         text = get_text_from_youtube(url, language=lang)
         youtube = True

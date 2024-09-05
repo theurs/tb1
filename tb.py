@@ -5582,10 +5582,13 @@ def do_task(message, custom_prompt: str = ''):
                     with ShowAction(message, action):
                         try:
                             # answer = my_ddg.chat(message.text, chat_id_full)
-                            answer = my_ddg.chat(helped_query, chat_id_full, model='claude-3-haiku')
-                            answer = answer.strip()
+                            answer = my_ddg.chat(helped_query, chat_id_full, model='claude-3-haiku').strip()
                             if not answer:
-                                answer = tr('Haiku did not answered, try to /reset and start again', lang)
+                                reset(message)
+                                time.sleep(2)
+                                answer = my_ddg.chat(helped_query, chat_id_full, model='claude-3-haiku').strip()
+                                if not answer:
+                                    answer = tr('Haiku did not answered, try to /reset and start again', lang)
                             WHO_ANSWERED[chat_id_full] = 'haiku-ddg'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
@@ -5618,10 +5621,14 @@ def do_task(message, custom_prompt: str = ''):
                     with ShowAction(message, action):
                         try:
                             # answer = my_ddg.chat(message.text, chat_id_full)
-                            answer = my_ddg.chat(helped_query, chat_id_full, model = 'gpt-4o-mini')
-                            answer = answer.strip()
+                            answer = my_ddg.chat(helped_query, chat_id_full, model = 'gpt-4o-mini').strip()
                             if not answer:
-                                answer = tr('GPT 4o mini did not answered, try to /reset and start again', lang)
+                                reset(message)
+                                time.sleep(2)
+                                answer = my_ddg.chat(helped_query, chat_id_full, model = 'gpt-4o-mini').strip()
+                                if not answer:
+                                    answer = tr('GPT 4o mini did not answered, try to /reset and start again', lang)
+
                             WHO_ANSWERED[chat_id_full] = 'gpt-4o-mini-ddg'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 

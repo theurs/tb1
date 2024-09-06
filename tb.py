@@ -3492,7 +3492,7 @@ def image_gen(message: telebot.types.Message):
                             bad_words = [x.strip().lower() for x in f.read().split() if x.strip() and not x.strip().startswith('#')]
                         for x in bad_words:
                             if x in prompt_lower:
-                                my_db.set_user_property(chat_id_full, 'blocked', True)
+                                my_db.set_user_property(chat_id_full, 'blocked_bing', True)
                                 return
 
                     # get chat history for content

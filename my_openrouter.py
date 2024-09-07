@@ -2,6 +2,7 @@
 
 import json
 import requests
+import time
 import threading
 import traceback
 
@@ -109,7 +110,7 @@ def ai(prompt: str = '',
             # model = 'google/gemma-2-9b-it:free'
             model = 'mistralai/mistral-7b-instruct:free'
 
-    if model.startswith('meta-llama/llama-3'):
+    if 'llama' in model and temperature > 0:
         temperature = temperature / 2
 
     mem_ = mem or []
@@ -178,7 +179,21 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
         LOCKS[chat_id] = lock
     with lock:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
+
         status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+
+        if not text:
+            time.sleep(2)
+            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+
+        if not text:
+            time.sleep(2)
+            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+
+        if not text:
+            time.sleep(2)
+            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+
         if text:
             my_db.add_msg(chat_id, 'openrouter')
             mem += [{'role': 'user', 'content': query}]

@@ -123,7 +123,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
         input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
         try:
-            if not text and dur < 30:
+            if not text and dur < 60:
                 text = my_groq.stt(input_file2, lang, prompt=prompt)
 
             if not text and dur < 55:

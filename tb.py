@@ -1744,7 +1744,7 @@ def handle_successful_payment(message):
 # Обработчик команды /paysupport
 @bot.message_handler(commands=['paysupport'])
 def handle_pay_support(message):
-    bot_reply_tr(message, 'User /report command for contact human')
+    bot_reply_tr(message, 'Use /report command for contact human')
 
 
 

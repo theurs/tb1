@@ -840,7 +840,7 @@ if __name__ == '__main__':
     # как отправить в чат аудиофайл
     # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
 
-    # list_models()
+    list_models()
     # chat_cli()
     # chat_cli(model=cfg.gemini_pro_model)
 

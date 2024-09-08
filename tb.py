@@ -2712,6 +2712,7 @@ def change_mode(message: telebot.types.Message):
         else:
             new_prompt = arg
         my_db.set_user_property(chat_id_full, 'role', new_prompt)
+        my_db.set_user_property(chat_id_full, 'original_mode', False)
         if new_prompt:
             msg =  f'{tr("[Новая роль установлена]", lang)} `{new_prompt}`'
         else:

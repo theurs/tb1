@@ -430,7 +430,7 @@ Return a `image_transcription`
     image_generation_prompt = ''
     if not query:
         use_json = True
-        query = tr(f'Отвечай на языке [{lang}]. Опиши ты видишь на картинке. Если там написан вопрос или задание то дай на него ответ. Дай подробное описание и профессиональный промпт для генерации этого изображения на английском языке.', lang) + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang) + json_query
+        query = tr(f'Отвечай на языке [{lang}]. Что изображено на картинке? Дай подробное описание и профессиональный промпт для генерации этого изображения на английском языке.', lang) + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang) + json_query
     else:
         use_json = False
         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)

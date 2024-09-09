@@ -237,6 +237,7 @@ def chat(query: str,
                     remove_key(key)
                 if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error) or 'User location is not supported for the API use.' in str(error):
                     return ''
+                time.sleep(2)
                 continue
 
             result = resp.text

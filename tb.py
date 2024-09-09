@@ -5235,7 +5235,7 @@ def do_task(message, custom_prompt: str = ''):
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
-                                    return
+                                    # return
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -5330,7 +5330,7 @@ def do_task(message, custom_prompt: str = ''):
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
-                                    return
+                                    # return
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):

@@ -190,6 +190,7 @@ def chat(query: str,
             if use_skills:
                 SKILLS = [
                     # "code_execution", # не работает одновременно с другими функциями
+
                     query_wikipedia,
                     search_google,
                     download_text_from_url,
@@ -197,6 +198,7 @@ def chat(query: str,
                     calc,
                     get_weather,
                     get_currency_rates,
+
                     # get_cryptocurrency_rates, # broken, why?
                     ]
                 if chat_id:
@@ -207,18 +209,22 @@ def chat(query: str,
                     if _user_id in cfg.admins or _user_id == 0:
                         SKILLS += [run_script,]
 
-                model_ = genai.GenerativeModel(model,
-                                        tools=SKILLS,
-                                        generation_config = GENERATION_CONFIG,
-                                        safety_settings=SAFETY_SETTINGS,
-                                        system_instruction = system
-                                        )
+                model_ = genai.GenerativeModel(
+                    model,
+                    tools=SKILLS,
+                    generation_config = GENERATION_CONFIG,
+                    safety_settings=SAFETY_SETTINGS,
+                    system_instruction = system,
+                )
             else:
-                model_ = genai.GenerativeModel(model,
-                        generation_config = GENERATION_CONFIG,
-                        safety_settings=SAFETY_SETTINGS,
-                        system_instruction = system
-                        )
+                model_ = genai.GenerativeModel(
+                    model,
+                    # tools="code_execution",
+                    generation_config = GENERATION_CONFIG,
+                    safety_settings=SAFETY_SETTINGS,
+                    system_instruction = system,
+                )
+
 
             # request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
             request_options = RequestOptions(timeout=TIMEOUT)
@@ -324,7 +330,8 @@ def chat_cli(user_id: str = 'test', model: str = ''):
         if '.jpg' in q or '.png' in q or '.webp' in q:
             img = PIL.Image.open(open(q, 'rb'))
             q = ['опиши картинку', img]
-        r = chat(q, user_id, model=model, use_skills=True)
+        # r = chat(q, user_id, model=model, use_skills=True)
+        r = chat(q, user_id, model=model)
         print(r)
 
 

@@ -635,6 +635,26 @@ def make_collage(images: list) -> bytes:
     return result_image_as_bytes.read()
 
 
+def get_image_size(data: bytes) -> tuple[int, int]:
+    """
+    Определяет размеры изображения из байтовых данных.
+
+    Args:
+        data: Байтовые данные изображения.
+
+    Returns:
+        Кортеж (ширина, высота) изображения. 
+        В случае ошибки возвращает (0, 0).
+    """
+    try:
+        image = PIL.Image.open(io.BytesIO(data))
+        width, height = image.size
+        return width, height
+    except Exception as error:
+        my_log.log2(f'utils:get_image_size: {error}')
+        return 0, 0
+
+
 def string_to_dict(input_string: str):
     """
     Преобразует строку в словарь с помощью json.loads.

@@ -2155,12 +2155,22 @@ def handle_photo(message: telebot.types.Message):
                 with ShowAction(message, 'typing'):
                     images = [download_image_from_message(msg) for msg in MESSAGES]
                     result_image_as_bytes = utils.make_collage(images)
-                    m = bot.send_photo(message.chat.id,
-                                    result_image_as_bytes,
-                                    disable_notification=True,
-                                    reply_to_message_id=message.message_id,
-                                    reply_markup=get_keyboard('hide', message))
+                    m = bot.send_photo( message.chat.id,
+                                        result_image_as_bytes,
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message))
                     log_message(m)
+                    width, height = utils.get_image_size(result_image_as_bytes)
+                    if width >= 1280 or height >= 1280:
+                        m = bot.send_document(  message.chat.id,
+                                                result_image_as_bytes,
+                                                # caption='images.png',
+                                                visible_file_name='images.png',
+                                                disable_notification=True,
+                                                reply_to_message_id=message.message_id,
+                                                reply_markup=get_keyboard('hide', message))
+                        log_message(m)
                     my_log.log_echo(message, f'Made collage of {len(images)} images.')
                     text = img2txt(result_image_as_bytes, lang, chat_id_full, message.caption)
                     if text:

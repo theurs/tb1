@@ -5223,9 +5223,9 @@ def do_task(message, custom_prompt: str = ''):
                                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
                                 if style_:
-                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.1-70b-versatile',)
+                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.1-70b-versatile',temperature=0.6)
                                 else:
-                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.1-70b-versatile',)
+                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.1-70b-versatile',temperature=0.6)
                                 if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                     my_groq.undo(chat_id_full)
                                     message.text = f'/image {message.text}'
@@ -5318,9 +5318,9 @@ def do_task(message, custom_prompt: str = ''):
                                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
                                 if style_:
-                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.1-70b-versatile',)
+                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.1-70b-versatile',temperature=0.6)
                                 else:
-                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.1-70b-versatile',)
+                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.1-70b-versatile',temperature=0.6)
                                 if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                     my_groq.undo(chat_id_full)
                                     message.text = f'/image {message.text}'

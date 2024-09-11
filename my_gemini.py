@@ -189,6 +189,7 @@ def chat(query: str,
             # use_skills = False
             if use_skills:
                 SKILLS = [
+                    # "code_execution", # не работает одновременно с другими функциями
                     query_wikipedia,
                     search_google,
                     download_text_from_url,
@@ -199,8 +200,11 @@ def chat(query: str,
                     # get_cryptocurrency_rates, # broken, why?
                     ]
                 if chat_id:
-                    _user_id = int(chat_id.split(' ')[0].replace('[','').replace(']',''))
-                    if _user_id in cfg.admins:
+                    if chat_id != 'test':
+                        _user_id = int(chat_id.split(' ')[0].replace('[','').replace(']',''))
+                    else:
+                        _user_id = 0
+                    if _user_id in cfg.admins or _user_id == 0:
                         SKILLS += [run_script,]
 
                 model_ = genai.GenerativeModel(model,
@@ -320,7 +324,7 @@ def chat_cli(user_id: str = 'test', model: str = ''):
         if '.jpg' in q or '.png' in q or '.webp' in q:
             img = PIL.Image.open(open(q, 'rb'))
             q = ['опиши картинку', img]
-        r = chat(q, user_id, model=model)
+        r = chat(q, user_id, model=model, use_skills=True)
         print(r)
 
 
@@ -843,7 +847,7 @@ if __name__ == '__main__':
 
     list_models()
     # chat_cli()
-    # chat_cli(model=cfg.gemini_pro_model)
+    chat_cli(model=cfg.gemini_flash_model)
 
     # with open('d:\\downloads\\1.txt','r') as f:
         # text = f.read()
@@ -853,6 +857,6 @@ if __name__ == '__main__':
 
     # print(translate('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы', to_lang='en', help='не меняй кейс символов и форматирование'))
 
-    print(get_reprompt_for_image('собака на сене'))
+    # print(get_reprompt_for_image('собака на сене'))
 
     my_db.close()

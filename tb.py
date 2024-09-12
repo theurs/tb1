@@ -2163,14 +2163,17 @@ def handle_photo(message: telebot.types.Message):
                     log_message(m)
                     width, height = utils.get_image_size(result_image_as_bytes)
                     if width >= 1280 or height >= 1280:
-                        m = bot.send_document(  message.chat.id,
-                                                result_image_as_bytes,
-                                                # caption='images.png',
-                                                visible_file_name='images.png',
-                                                disable_notification=True,
-                                                reply_to_message_id=message.message_id,
-                                                reply_markup=get_keyboard('hide', message))
-                        log_message(m)
+                        try:
+                            m = bot.send_document(  message.chat.id,
+                                                    result_image_as_bytes,
+                                                    # caption='images.png',
+                                                    visible_file_name='images.png',
+                                                    disable_notification=True,
+                                                    reply_to_message_id=message.message_id,
+                                                    reply_markup=get_keyboard('hide', message))
+                            log_message(m)
+                        except Exception as send_doc_error:
+                            my_log.log2(f'tb:handle_photo: {send_doc_error}')
                     my_log.log_echo(message, f'Made collage of {len(images)} images.')
                     text = img2txt(result_image_as_bytes, lang, chat_id_full, message.caption)
                     if text:

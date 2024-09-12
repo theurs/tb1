@@ -191,7 +191,8 @@ def chat(query: str,
                 SKILLS = [
                     # "code_execution", # не работает одновременно с другими функциями
 
-                    query_wikipedia,
+                    # query_wikipedia, # есть проблемы с поиском, википедия выдает варианты а гемма2 далеко не всегда справляется в выбором
+
                     search_google,
                     download_text_from_url,
                     update_user_profile,

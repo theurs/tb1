@@ -1,5 +1,10 @@
 ## Что сделать
 
+
+https://tdlib.github.io/telegram-bot-api/build.html?os=Linux
+https://www.pythonanywhere.com/forums/topic/33464/
+
+
 Requires fastapi, uvicorn, and latest version of starlette.
 
 ## Баги

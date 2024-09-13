@@ -5177,20 +5177,49 @@ def do_task(message, custom_prompt: str = ''):
             else:
                 action = 'typing'
 
-            # подсказка для ботов что бы понимали где и с кем общаются
             formatted_date = utils.get_full_time()
+
+
+
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                if my_db.get_user_property(chat_id_full, 'role'):
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", your special role here is "{my_db.get_user_property(chat_id_full, "role")}", do not address the user by name and no emoji unless it is required.]'
-                else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
+                hidden_text = (
+                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
+                    f'you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, '
+                    f'user have telegram commands (/img - image generator, /tts - text to speech, '
+                    f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
+                    f'images, documents, urls(any text and youtube subs)), you cannot do anything in the background, '
+                    f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
+                    f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
+                    f'no emoji unless it is required. '
+                    f'For text formatting, use markdown - two asterisks to highlight words and phrases within a single line **, '
+                    f'[Header](URL) or just URL for web links, single backticks for inline code and monospace font `,  '
+                    f'three backticks for multi-line code , and three backticks with language specification for syntax highlighting in multi-line code python, '
+                    f'tabular data should be formatted using monospace font , mathematical notation should be written using Unicode characters'
+                    f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
+                )
+
             else:
-                if my_db.get_user_property(chat_id_full, 'role'):
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", your special role here is "{my_db.get_user_property(chat_id_full, "role")}", do not address the user by name and no emoji unless it is required.]'
-                else:
-                    hidden_text = f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, user have telegram commands (/img - image generator, /tts - text to speech, /trans - translate, /sum - summarize, /google - search, you can answer voice messages, images, documents, urls(any text and youtube subs)), you cannot do anything in the background, user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and no emoji unless it is required.]'
+                hidden_text = (
+                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
+                    f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, '
+                    f'user have telegram commands (/img - image generator, /tts - text to speech, '
+                    f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
+                    f'images, documents, urls(any text and youtube subs)), you cannot do anything in the background, '
+                    f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
+                    f'no emoji unless it is required. '
+                    f'For text formatting, use markdown - two asterisks to highlight words and phrases within a single line **, '
+                    f'[Header](URL) or just URL for web links, single backticks for inline code and monospace font `,  '
+                    f'three backticks for multi-line code , and three backticks with language specification for syntax highlighting in multi-line code python, '
+                    f'tabular data should be formatted using monospace font , mathematical notation should be written using Unicode characters'
+                    f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
+                )
+
+
             hidden_text_for_llama370 = tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required.', lang)
+
+
+
             omode = my_db.get_user_property(chat_id_full, 'original_mode') or False
             if omode:
                 helped_query = message.text

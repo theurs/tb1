@@ -43,10 +43,10 @@ def handle_docs_photo(message):
 
     if file_id:
         file_info = bot.get_file(file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        file_size = len(downloaded_file)
-        
-        bot.reply_to(message, f"Размер скачанного файла: {file_size} байт")
+        print(file_info)
+        file_size = file_info.file_size
+        file_data = open(file_info.file_path, 'rb').read(10)
+        print(file_size, file_data)
 
 
 

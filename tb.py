@@ -3609,13 +3609,13 @@ Return a `suggestions`
 
 """
                             if NSFW_FLAG:
-                                suggest = my_gemini.chat(suggest_query, temperature=1.5, insert_mem=my_gemini.MEM_UNCENSORED, json_output=True)
+                                suggest = my_gemini.chat(suggest_query, temperature=0.7, insert_mem=my_gemini.MEM_UNCENSORED, json_output=True)
                                 if not suggest:
-                                    suggest = my_groq.ai(suggest_query, temperature=1.5, mem_=my_groq.MEM_UNCENSORED, json_output=True)
+                                    suggest = my_groq.ai(suggest_query, temperature=0.5, mem_=my_groq.MEM_UNCENSORED, json_output=True)
                             else:
-                                suggest = my_gemini.chat(suggest_query, temperature=1.5, json_output=True)
+                                suggest = my_gemini.chat(suggest_query, temperature=0.7, json_output=True)
                                 if not suggest:
-                                    suggest = my_groq.ai(suggest_query, temperature=1.5, json_output=True)
+                                    suggest = my_groq.ai(suggest_query, temperature=0.5, json_output=True)
                             # my_db.add_msg(chat_id_full, 'gemini15_flash')
                             try:
                                 suggest = utils.string_to_dict(suggest)

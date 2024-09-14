@@ -143,7 +143,7 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
         text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
 
         if text:
-            my_db.add_msg(chat_id, 'openrouter')
+            my_db.add_msg(chat_id, 'llama405')
             mem += [{'role': 'user', 'content': query}]
             mem += [{'role': 'assistant', 'content': text}]
             mem = clear_mem(mem, chat_id)

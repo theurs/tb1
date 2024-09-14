@@ -310,7 +310,14 @@ GROQ_API_KEY = [
 
 # ключ от опенроутера openrouter.ai
 OPEN_ROUTER_KEY = 'xxx'
-
+# ключи для использования бесплатных моделей с олпенроутера.
+# нужен аккаунт с картой, или просто оплаченный хотя бы раз хз
+# Free limit: If you are using a free model variant (with an ID ending in :free), then you will be
+# limited to 20 requests per minute and 200 requests per day.
+OPEN_ROUTER_FREE_KEYS = [
+    'xxx',
+    'yyy'
+]
 
 # translate api https://www.deepl.com
 # DEEPL_KEYS = ['xxx', 'yyy']

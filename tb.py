@@ -5569,14 +5569,28 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:
-                                answer = 'Llama 405b ' + tr('did not answered, try to /reset and start again.', lang)
+                                answer = my_openrouter_llama405free.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature'),
+                                    system=style_,
+                                    model = 'meta-llama/llama-3.1-8b-instruct:free',
+                                )
+                                WHO_ANSWERED[chat_id_full] = 'meta-llama/llama-3.1-8b-instruct:free'
+                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                if not answer:
+                                    answer = 'Llama 405b ' + tr('did not answered, try to /reset and start again.', lang)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
-                            my_log.log_echo(message, f'[llama405 nousresearch/hermes-3-llama-3.1-405b:free] {answer}')
+                            if 'meta-llama/llama-3.1-8b-instruct:free' in WHO_ANSWERED[chat_id_full]:
+                                my_log.log_echo(message, f'[meta-llama/llama-3.1-8b-instruct:free] {answer}')
+                            else:
+                                my_log.log_echo(message, f'[llama405 nousresearch/hermes-3-llama-3.1-405b:free] {answer}')
+
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('openrouter_llama405_chat', message), not_log=True, allow_voice = True)

@@ -12,6 +12,7 @@ from ai21.models.chat import UserMessage, AssistantMessage, SystemMessage
 from sqlitedict import SqliteDict
 
 import cfg
+import my_db
 import my_log
 
 
@@ -57,6 +58,8 @@ def chat(
 
     if not model:
         model = 'jamba-1.5-mini'
+
+    my_db.add_msg(user_id, model)
 
     mem = []
     if user_id in CHATS:
@@ -184,4 +187,9 @@ def chat_cli(model: str = ''):
 
 if __name__ == '__main__':
     pass
+
+    my_db.init(backup=False)
+
     chat_cli()
+
+    my_db.close()

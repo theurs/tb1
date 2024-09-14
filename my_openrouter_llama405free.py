@@ -143,7 +143,10 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
         text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
 
         if text:
-            my_db.add_msg(chat_id, 'llama405')
+            if 'llama-3.1-405b' in model:
+                my_db.add_msg(chat_id, 'llama405')
+            elif 'llama-3.1-8b' in model:
+                my_db.add_msg(chat_id, 'llama31-8b')
             mem += [{'role': 'user', 'content': query}]
             mem += [{'role': 'assistant', 'content': text}]
             mem = clear_mem(mem, chat_id)

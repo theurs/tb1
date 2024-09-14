@@ -133,6 +133,11 @@ def log_ddg(text: str) -> None:
     log2(text[:2000], 'ddg')
 
 
+def log_jamba(text: str) -> None:
+    """для логов jamba"""
+    log2(text[:2000], 'jamba')
+
+
 def log_shadowjourney(text: str) -> None:
     """для логов shadowjourney"""
     log2(text[:2000], 'shadowjourney')

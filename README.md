@@ -366,6 +366,12 @@ ASSEMBLYAI_KEYS = [
 # RUNWARE_KEYS = ['xxx','yyy']
 
 
+# https://ai21.com/
+JAMBA_KEYS = [
+    'key1',
+    'key2',
+]
+
 # DEBUG = False
 ```
 

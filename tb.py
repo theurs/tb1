@@ -1388,22 +1388,22 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
         have_gemini_keys = chat_id_full in my_gemini.USER_KEYS or message.from_user.id in cfg.admins
-        button1 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash', callback_data='select_gemini15_flash')
+        button1 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash 🚗', callback_data='select_gemini15_flash')
         if have_gemini_keys:
-            button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro', callback_data='select_gemini15_pro')
+            button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro 🚀', callback_data='select_gemini15_pro')
         else:
-            button2 = telebot.types.InlineKeyboardButton('🔒Gemini 1.5 Pro', callback_data='select_gemini15_pro')
-        # button3 = telebot.types.InlineKeyboardButton('GPT-4o', callback_data='select_gpt4o')
-        button3 = telebot.types.InlineKeyboardButton('Gemma 2 9b', callback_data='select_gemma2-9b')
-        button4 = telebot.types.InlineKeyboardButton('Llama-3.1 70b', callback_data='select_llama370')
-        button5 = telebot.types.InlineKeyboardButton('GPT 4o mini', callback_data='select_gpt-4o-mini-ddg')
-        button6 = telebot.types.InlineKeyboardButton('Haiku', callback_data='select_haiku')
+            button2 = telebot.types.InlineKeyboardButton('🔒Gemini 1.5 Pro 🚀', callback_data='select_gemini15_pro')
+        # button3 = telebot.types.InlineKeyboardButton('GPT-4o 🚀', callback_data='select_gpt4o')
+        button3 = telebot.types.InlineKeyboardButton('Gemma 2 9b 🚴‍♀️', callback_data='select_gemma2-9b')
+        button4 = telebot.types.InlineKeyboardButton('Llama-3.1 70b 🚗', callback_data='select_llama370')
+        button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
+        button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
         markup.row(button1, button2)
         markup.row(button3, button4)
         markup.row(button5, button6)
         if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') and hasattr(cfg, 'JAMBA_KEYS'):
-            button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b', callback_data='select_llama405')
-            button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini', callback_data='select_jamba')
+            button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
+            button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini 🚗', callback_data='select_jamba')
             markup.row(button7, button8)
         else:
             if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):

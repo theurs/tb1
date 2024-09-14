@@ -10,6 +10,10 @@ duckduckgo_search[lxml]
 edge_tts
 fastapi
 geopy
+
+#>=2.13.0
+ai21
+
 httpx[socks]
 fake_useragent
 fuzzywuzzy

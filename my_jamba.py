@@ -9,13 +9,14 @@ import traceback
 
 from ai21 import AI21Client
 from ai21.models.chat import UserMessage, AssistantMessage, SystemMessage
+from sqlitedict import SqliteDict
 
 import cfg
 import my_log
 
 
 SESSIONS = {}
-CHATS = {}
+CHATS = SqliteDict('db/dialogs_jambo.db', autocommit=True)
 MAX_LINES = 20
 MAX_BYTES = 80000
 MAX_REQUEST = 20000

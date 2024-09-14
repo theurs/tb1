@@ -36,6 +36,7 @@ import my_google
 import my_gemini
 import my_gpt4omini
 import my_groq
+import my_jamba
 import my_log
 import my_ocr
 import my_openrouter
@@ -395,6 +396,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_openrouter.update_mem(query, resp, chat_id_full)
     elif 'openrouter_llama405' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter_llama405free.update_mem(query, resp, chat_id_full)
+    elif 'jamba' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_jamba.update_mem(query, resp, chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.update_mem(query, resp, chat_id_full)
     elif 'gpt4o' == my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -1263,6 +1266,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2, button3, button4)
         return markup
 
+    elif kbd == 'jamba_chat':
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='jamba_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'gpt4o_chat':
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
@@ -1386,9 +1401,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1, button2)
         markup.row(button3, button4)
         markup.row(button5, button6)
-        if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
+        if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') and hasattr(cfg, 'JAMBA_KEYS'):
             button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b', callback_data='select_llama405')
-            markup.row(button7)
+            button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini', callback_data='select_jamba')
+            markup.row(button7, button8)
+        else:
+            if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
+                button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b', callback_data='select_llama405')
+                markup.row(button7)
+            if hasattr(cfg, 'JAMBA_KEYS'):
+                button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini', callback_data='select_jamba')
+                markup.row(button8)
         # if hasattr(cfg, 'GPT4OMINI_KEY'):
         #     button7 = telebot.types.InlineKeyboardButton('GPT 4o mini', callback_data='select_gpt4omini')
         #     markup.row(button7)
@@ -1635,6 +1658,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_llama405':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter_llama405')
+        elif call.data == 'select_jamba':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Jamba 1.5 mini.', lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'jamba')
         elif call.data == 'select_gemma2-9b':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemma 2 9b.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemma2-9b')
@@ -1672,6 +1698,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'openrouter_llama405_reset':
             my_openrouter_llama405free.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Llama 405b очищена.')
+        elif call.data == 'jamba_reset':
+            my_jamba.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с Jamba 1.5 mini очищена.')
         elif call.data == 'gpt4o_reset':
             my_shadowjourney.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с GPT-4o очищена.')
@@ -2829,6 +2858,8 @@ def undo(message: telebot.types.Message):
         my_openrouter.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         my_openrouter_llama405free.undo(chat_id_full)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
+        my_jamba.undo(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.undo(chat_id_full)
     elif 'gpt4omini' == my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -2864,6 +2895,8 @@ def reset_(message: telebot.types.Message):
         my_openrouter.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         my_openrouter_llama405free.reset(chat_id_full)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
+        my_jamba.reset(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.reset(chat_id_full)
     elif 'gpt4o' == my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3031,6 +3064,10 @@ def send_debug_history(message: telebot.types.Message):
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         prompt = 'Llama 405b\n\n'
         prompt += my_openrouter_llama405free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
+        prompt = 'Jamba 1.5 mini\n\n'
+        prompt += my_jamba.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Google Gemma 2 9b\n\n'
@@ -4527,6 +4564,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
             my_openrouter_llama405free.reset(chat_id_full)
+            my_jamba.reset(chat_id_full)
             my_shadowjourney.reset(chat_id_full)
             my_gpt4omini.reset(chat_id_full)
             my_ddg.reset(chat_id_full)
@@ -4588,6 +4626,7 @@ def id_cmd_handler(message: telebot.types.Message):
         'llama370': 'Llama 3.1 70b',
         'openrouter_llama405': 'Llama 3.1 405b',
         'openrouter': 'openrouter.ai',
+        'jamba': 'Jamba 1.5 mini',
         'gpt4o': 'GPT 4o',
         'gpt4omini': 'GPT 4o mini',
         'gemma2-9b': 'Gemma 2 9b',
@@ -5602,6 +5641,51 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:openrouter_llama405 {error3}\n{error_traceback}')
+                        return
+
+
+
+                # если активирован режим общения с jamba
+                if chat_mode_ == 'jamba':
+                    if len(msg) > my_jamba.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Jamba 1.5 mini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_jamba.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
+                            answer = my_jamba.chat(
+                                message.text,
+                                chat_id_full,
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature'),
+                                system=style_,
+                                model = 'jamba-1.5-mini',
+                            )
+
+                            WHO_ANSWERED[chat_id_full] = 'jamba-1.5-mini'
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not answer:
+                                answer = 'Jamba 1.5 mini ' + tr('did not answered, try to /reset and start again.', lang)
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            my_log.log_echo(message, f'[jamba-1.5-mini] {answer}')
+
+                            try:
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('jamba_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('jamba_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:jamba {error3}\n{error_traceback}')
                         return
 
 

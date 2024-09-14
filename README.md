@@ -179,7 +179,8 @@ bot_name = "Бот"
 default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
-# 'gemini', 'gemini15', 'llama370', 'openrouter', 'gpt4o', 'gpt4omini', 'gemma2-9b', 'haiku', 'gpt35', 'llama370', 'gpt-4o-mini-ddg'
+# 'gemini', 'gemini15', 'llama370', 'openrouter', 'gpt4o', 'gpt4omini', 'gemma2-9b', 'haiku', 'gpt35',
+# 'llama370', 'gpt-4o-mini-ddg', 'openrouter_llama405', 'jamba'
 chat_mode_default = 'gemini15'
 img2_txt_model = 'gemini-1.5-flash' # gemini-1.5-flash-exp-0827, gemini-1.5-flash-latest, gemini-1.5-flash-pro, ...
 gemini_flash_model = 'gemini-1.5-flash' # gemini-1.5-flash, gemini-1.5-flash-exp, gemini-1.5-pro-latest, ...

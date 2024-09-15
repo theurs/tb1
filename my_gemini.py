@@ -264,6 +264,8 @@ def chat(query: str,
                 if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
                 if 'gemini-1.5-pro-exp' in model: model_ = 'gemini-1.5-pro-exp-0801'
                 if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
+                if 'gemini-1.5-flash-8b' in model: model_ = 'gemini15_flash-8b'
+                if 'gemini-1.5-flash-8b-exp' in model: model_ = 'gemini15_flash-8b-exp'
                 if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
                 if not model: model_ = 'gemini15_flash'
                 my_db.add_msg(chat_id, model_)

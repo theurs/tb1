@@ -1412,6 +1412,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             if hasattr(cfg, 'JAMBA_KEYS'):
                 button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini', callback_data='select_jamba')
                 markup.row(button8)
+        button9 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash 🚴‍♀️', callback_data='select_gemini8')
+        markup.row(button9)
         # if hasattr(cfg, 'GPT4OMINI_KEY'):
         #     button7 = telebot.types.InlineKeyboardButton('GPT 4o mini', callback_data='select_gpt4omini')
         #     markup.row(button7)
@@ -1591,9 +1593,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     images = my_ddg.get_images(query)
                     medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
                     msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
-                    # for _ in range(10):
-                    #     my_db.add_msg(chat_id_full, 'gemini15_flash')
-                    #     time.sleep(0.01)
                     log_message(msgs_ids)
 
 
@@ -1676,6 +1675,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_gemini15_flash':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+        elif call.data == 'select_gemini8':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash 8b.', lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini8')
         elif call.data == 'select_gemini15_pro':
             have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or\
                 chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS\
@@ -2000,7 +2002,6 @@ def handle_document(message: telebot.types.Message):
                                         reply_markup=get_keyboard('translate', message),
                                         disable_notification=True)
                             text = img2txt(image, lang, chat_id_full, message.caption)
-                            # my_db.add_msg(chat_id_full, 'gemini15_flash')
                             if text:
                                 text = utils.bot_markdown_to_html(text)
                                 text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
@@ -2258,7 +2259,6 @@ def handle_photo(message: telebot.types.Message):
                             return
 
                         text = img2txt(image, lang, chat_id_full, message.caption)
-                        # my_db.add_msg(chat_id_full, 'gemini15_flash')
                         if text:
                             text = utils.bot_markdown_to_html(text)
                             text += '\n\n' + tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
@@ -2559,7 +2559,6 @@ def translation_gui(message: telebot.types.Message):
 
                     if not new_translation:
                         new_translation = my_gemini.translate(original, to_lang = lang, help = help)
-                        # my_db.add_msg(chat_id_full, 'gemini15_flash')
                     if not new_translation:
                         new_translation = my_groq.translate(original, to_lang = lang, help = help)
                         my_db.add_msg(chat_id_full, 'llama3-70b-8192')
@@ -3615,9 +3614,7 @@ def image_gen(message: telebot.types.Message):
                         if chat_id_full in IMAGE10_STOP:
                             # del IMAGE10_STOP[chat_id_full]
                             return
-                        # 1 а может и больше запросы к репромптеру
-                        # my_db.add_msg(chat_id_full, 'gemini15_flash')
-                        # medias = [telebot.types.InputMediaPhoto(i) for i in images if r'https://r.bing.com' not in i]
+
                         medias = []
                         has_good_images = False
                         for x in images:
@@ -3685,7 +3682,6 @@ Return a `suggestions`
                                 suggest = my_gemini.chat(suggest_query, temperature=0.7, json_output=True)
                                 if not suggest:
                                     suggest = my_groq.ai(suggest_query, temperature=0.5, json_output=True)
-                            # my_db.add_msg(chat_id_full, 'gemini15_flash')
                             try:
                                 suggest = utils.string_to_dict(suggest)
                                 if 'suggestions' in suggest:
@@ -4623,6 +4619,7 @@ def id_cmd_handler(message: telebot.types.Message):
     models = {
         'gemini': 'Gemini 1.5 Flash',
         'gemini15': 'Gemini 1.5 Pro',
+        'gemini8': 'Gemini 1.5 Flash 8b',
         'llama370': 'Llama 3.1 70b',
         'openrouter_llama405': 'Llama 3.1 405b',
         'openrouter': 'openrouter.ai',
@@ -5211,7 +5208,6 @@ def do_task(message, custom_prompt: str = ''):
             if utils.is_image_link(message.text):
                 with ShowAction(message, 'typing'):
                     text = img2txt(message.text, lang, chat_id_full)
-                    # my_db.add_msg(chat_id_full, 'gemini15_flash')
                     if text:
                         text = utils.bot_markdown_to_html(text)
                         bot_reply(message, text, parse_mode='HTML',
@@ -5310,7 +5306,10 @@ def do_task(message, custom_prompt: str = ''):
                     WHO_ANSWERED[chat_id_full] = 'gemini15flash'
                 elif chat_mode_ == 'gemini15':
                     WHO_ANSWERED[chat_id_full] = 'gemini15pro'
+                elif chat_mode_ == 'gemini8':
+                    WHO_ANSWERED[chat_id_full] = 'gemini8'
                 time_to_answer_start = time.time()
+
 
                 # если активирован режим общения с Gemini Flash
                 if chat_mode_ == 'gemini':
@@ -5489,6 +5488,72 @@ def do_task(message, custom_prompt: str = ''):
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gemini15 {error3}\n{error_traceback}')
                         return
+
+
+
+
+                # если активирован режим общения с Gemini 1.5 flash 8b
+                if chat_mode_ == 'gemini8':
+                    if len(msg) > my_gemini.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            if not my_db.get_user_property(chat_id_full, 'temperature'):
+                                my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
+
+                            WHO_ANSWERED[chat_id_full] = 'gemini8'
+                            answer = my_gemini.chat(message.text,
+                                                    chat_id_full,
+                                                    my_db.get_user_property(chat_id_full, 'temperature'),
+                                                    model = cfg.gemini_flash_light_model,
+                                                    system = hidden_text,
+                                                    use_skills=False, #!!
+                                                    )
+
+                            # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
+                            # передаем эстафету следующему претенденту (ламе)
+                            if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):
+                                answer = ''
+                            if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                                my_gemini.undo(chat_id_full)
+                                message.text = f'/image {message.text}'
+                                image_gen(message)
+                                return
+
+                            if chat_id_full not in WHO_ANSWERED:
+                                WHO_ANSWERED[chat_id_full] = 'gemini8'
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not answer:
+                                answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
+                                my_gemini.update_mem(message.text, answer, chat_id_full)
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            my_log.log_echo(message, f'[Gemini8] {answer}')
+
+                            try:
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:gemini8 {error3}\n{error_traceback}')
+                        return
+
+
+
+
+
 
                 # если активирован режим общения с groq llama 3.1 70b
                 if chat_mode_ == 'llama370':

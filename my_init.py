@@ -146,6 +146,26 @@ def generate_help_msg():
         pickle.dump(msgs, f)
 
 
+def regenerate_help_msg(langs):
+    if isinstance(langs, str):
+        langs = [langs, ]
+
+    with open(help_msg_file, 'rb') as f:
+        msgs = pickle.load(f)
+
+    for x in langs:
+        msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
+        if msg:
+            msgs[x] = msg
+            print('\n\n', x, '\n\n', msg)
+        if not msg:
+            print(f'google translate failed {x}')
+
+    with open(help_msg_file, 'wb') as f:
+        pickle.dump(msgs, f)
+
+
+
 def check_translations(original: str, translated: str, lang):
     q = f'''Decide if translation to language "lang" was made correctly.
 Your answer should be "yes" or "no" or "other".
@@ -226,6 +246,7 @@ if __name__ == '__main__':
 
     # generate_start_msg()
     # generate_help_msg()
+    # regenerate_help_msg('it')
 
     # fix_translations_start(['am', 'pt', 'pt-BR'])
     my_db.close()

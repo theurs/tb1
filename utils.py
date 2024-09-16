@@ -712,6 +712,42 @@ def string_to_dict(input_string: str):
     return None
 
 
+def telegram_html_to_markdown(html_text: str) -> str:
+    """
+    Конвертирует HTML текст Telegram в Markdown текст с помощью регулярных выражений.
+
+    Args:
+      html_text: HTML текст Telegram для конвертации.
+
+    Returns:
+      Markdown текст, полученный из HTML текста Telegram.
+    """
+    orig = html_text
+    try:
+        # Обработка кода отдельно
+        code_blocks = re.findall(r"<pre>(.*?)</pre>|<code class=\"language-(.*?)\">(.*?)</code>|<code>(.*?)</code>", html_text, flags=re.DOTALL)
+        
+        for code_block in code_blocks:
+            if code_block[0]:  # <pre>
+                html_text = html_text.replace(f"<pre>{code_block[0]}</pre>", f"```\n{code_block[0]}\n```")
+            elif code_block[1]:  # <code class="language-...">
+                html_text = html_text.replace(f"<code class=\"language-{code_block[1]}\">{code_block[2]}</code>", f"```{code_block[1]}\n{code_block[2]}\n```")
+            elif code_block[3]:  # <code>
+                html_text = html_text.replace(f"<code>{code_block[3]}</code>", f"`{code_block[3]}`")
+
+        # Обработка остального текста
+        html_text = re.sub(r"<b>(.*?)</b>", r"**\1**", html_text)
+        html_text = re.sub(r"<i>(.*?)</i>", r"*\1*", html_text)
+        html_text = re.sub(r"<u>(.*?)</u>", r"__\1__", html_text)
+        html_text = re.sub(r"<s>(.*?)</s>", r"~~\1~~", html_text)
+        html_text = re.sub(r"<a href=\"(.*?)\">(.*?)</a>", r"[\2](\1)", html_text)
+
+        return html_text
+    except Exception as error:
+        my_log.log2(f'utils:telegram_html_to_markdown {error}\n\n{orig}')
+        return orig
+
+
 if __name__ == '__main__':
     pass
 

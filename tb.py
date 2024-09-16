@@ -1952,6 +1952,7 @@ def handle_document(message: telebot.types.Message):
                    'application/atom+xml',
                    'application/x-subrip',
                    'application/yaml',
+                   'application/x-perl',
                    )
 
     with lock:

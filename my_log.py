@@ -242,6 +242,8 @@ def restore_message_text(s1: str, l) -> str:
                 s0 += f"```{i.language}\n{formatted_text}\n```"
             else:
                 s0 += f"```\n{formatted_text}\n```"
+        else:
+            s0 += formatted_text
 
         # Обновляем индекс последней позиции
         last_pos = i.offset + i.length

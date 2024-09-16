@@ -202,6 +202,55 @@ def log_translate(text: str) -> None:
     log2(text, 'translate')
 
 
+def restore_message_text(s1: str, l) -> str:
+    """
+    Функция принимает строку s1 и список l с описанием форматирования,
+    и возвращает строку s0 с примененным форматированием.
+
+    Args:
+        s1: Строка, к которой нужно применить форматирование.
+        l: Список словарей, описывающих форматирование.
+        Каждый словарь содержит информацию о типе форматирования (type),
+        начальной позиции (offset), длине (length) и языке (language,
+        если применимо).
+
+    Returns:
+        Строка s0 с примененным форматированием.
+    """
+    if not l:
+        return s1
+    s0 = ""
+    last_pos = 0
+    for i in sorted(l, key=lambda x: x.offset):
+        # Добавляем текст до текущего форматированного блока
+        s0 += s1[last_pos:i.offset]
+        
+        # Извлекаем форматируемый текст
+        formatted_text = s1[i.offset:i.offset + i.length]
+
+        # Применяем соответствующий формат
+        if i.type == 'bold':
+            s0 += f"**{formatted_text}**"
+        elif i.type == 'italic':
+            s0 += f"__{formatted_text}__"
+        elif i.type == 'strikethrough':
+            s0 += f"~~{formatted_text}~~"
+        elif i.type == 'code':
+            s0 += f"`{formatted_text}`"
+        elif i.type == 'pre':
+            if i.language:
+                s0 += f"```{i.language}\n{formatted_text}\n```"
+            else:
+                s0 += f"```\n{formatted_text}\n```"
+
+        # Обновляем индекс последней позиции
+        last_pos = i.offset + i.length
+
+    # Добавляем оставшийся текст после последнего форматирования
+    s0 += s1[last_pos:]
+    return s0
+
+
 def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bool = False) -> None:
     """записывает в журнал сообщение полученное обработчиком обычных сообщений либо ответ бота"""
     if hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
@@ -211,6 +260,10 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
         return
 
     global lock
+
+    # original_message_text = message.text
+    # message.text = restore_message_text(message.text, message.entities)
+
     time_now = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
     private_or_chat = 'private' if message.chat.type == 'private' else 'chat'
     chat_name = message.chat.username or message.chat.first_name or message.chat.title or ''

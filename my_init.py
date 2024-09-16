@@ -67,13 +67,28 @@ Remove keyboard /remove_keyboard.
 '''
 
 help_msg = f"""🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
-After the file or link is downloaded, you can ask questions about file using the /ask command.
+After the file or link is downloaded, you can ask questions about file using the `/ask` command.
 
 🛸 To get text from an image, send the image with the caption "ocr".
 
 🎙️ You can issue commands and make requests using voice messages.
 
-👻 /purge command to remove all your data
+👻 `/purge` command to remove all your data
+
+
+This bot utilizes only free models. However, if you wish to utilize all other models within this bot, you can create a paid account on the website https://openrouter.ai and insert the API key from that site into this bot.
+
+This will grant you access to all commercial models at manufacturer prices, or even cheaper.
+
+You can create an API key here: https://openrouter.ai/settings/keys
+
+View the list of available models here: https://openrouter.ai/models
+
+Use the command `/openrouter <API key>` to insert your key.
+
+Use the command `/openrouter` to view settings and switch to this mode.
+
+Use the command `/model <model name>` to select a model, for example, `/model openai/o1-preview` will select the o1-preview model from OpenAI.
 
 
 Report issues on Telegram:
@@ -120,7 +135,7 @@ def generate_help_msg():
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
         # msg = my_trans.translate_text2(help_msg, x)
-        msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot.')
+        msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)

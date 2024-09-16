@@ -1489,6 +1489,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         message = call.message
         chat_id = message.chat.id
         chat_id_full = get_topic_id(message)
+        user_full_id = f'[{call.from_user.id}] [0]'
         lang = get_lang(chat_id_full, message)
         bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
         MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {bot_name} /name
@@ -1679,8 +1680,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash 8b.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini8')
         elif call.data == 'select_gemini15_pro':
-            have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or\
-                chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS\
+            have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
+                user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
                     or message.from_user.id in cfg.admins
             if have_keys:
                 bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Pro.', lang))

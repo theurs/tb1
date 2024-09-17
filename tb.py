@@ -4599,8 +4599,13 @@ def purge_cmd_handler(message: telebot.types.Message):
 @async_run
 def id_cmd_handler(message: telebot.types.Message):
     """показывает id юзера и группы в которой сообщение отправлено"""
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
+    chat_id_full = f'[{message.from_user.id}] [0]'
+    group_id_full = f'[{message.chat.id}] [{message.message_thread_id or 0}]'
+    is_private = message.chat.type == 'private'
+    if is_private:
+        lang = get_lang(chat_id_full, message)
+    else:
+        lang = get_lang(group_id_full, message)
 
     COMMAND_MODE[chat_id_full] = ''
 
@@ -4618,7 +4623,10 @@ def id_cmd_handler(message: telebot.types.Message):
     reported_language = message.from_user.language_code
     open_router_model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full] if chat_id_full in my_openrouter.PARAMS else my_openrouter.PARAMS_DEFAULT
 
-    user_model = my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.get_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default
+    if is_private:
+        user_model = my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.get_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default
+    else:
+        user_model = my_db.get_user_property(group_id_full, 'chat_mode') if my_db.get_user_property(group_id_full, 'chat_mode') else cfg.chat_mode_default
     models = {
         'gemini': 'Gemini 1.5 Flash',
         'gemini15': 'Gemini 1.5 Pro',
@@ -4642,9 +4650,9 @@ def id_cmd_handler(message: telebot.types.Message):
         msg += f'Uptime: {get_uptime()}\n\n'
     msg += f'''{tr("ID пользователя:", lang)} {user_id}
 
-{tr("ID группы:", lang)} {chat_id_full}
+{tr("ID группы:", lang)} {group_id_full}
 
-{tr("Язык который телеграм сообщает боту:", lang)} {reported_language}
+{tr("Выбранный язык:", lang)} {reported_language}
 
 {tr("Выбранная чат модель:", lang)} {user_model}'''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':

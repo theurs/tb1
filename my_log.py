@@ -243,7 +243,13 @@ def restore_message_text(s1: str, l) -> str:
             else:
                 s0 += f"```\n{formatted_text}\n```"
         else:
-            if i.type not in ('hashtag', 'mention'):
+            if i.type not in ('hashtag',
+                              'mention',
+                              'bot_command', 
+                              'url',
+                              'text_link',
+                              'custom_emoji',
+                              'phone_number'):
                 log2(f'Unknown message entity type {i.type} {formatted_text}')
             s0 += formatted_text
 

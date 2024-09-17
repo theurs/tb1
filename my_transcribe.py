@@ -187,15 +187,18 @@ def stt_google_pydub(audio_bytes: bytes|str,
             return ''
 
 
-def genai_clear():
+def genai_clear(_key: str = ''):
     """Очистка файлов, загруженных через Gemini API.
     TODO: Проверить возможность удаления чужих файлов.
     TODO: Обработать потенциальный race condition при настройке API ключа.
     """
 
     try:
-        keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
-        random.shuffle(keys)
+        if not _key:
+            keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
+            random.shuffle(keys)
+        else:
+            keys = [_key,]
 
         for key in keys:
             print(key)
@@ -204,7 +207,7 @@ def genai_clear():
             for f in files:
                 print(f.name)
                 try:
-                    # genai.delete_file(f.name)
+                    genai.delete_file(f.name)
                     pass # можно ли удалять чужие файлы?
                 except Exception as error:
                     my_log.log_gemini(f'stt:genai_clear: delete file {error}\n{key}\n{f.name}')
@@ -270,9 +273,14 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
                 time.sleep(2)
 
         try:
-            genai.configure(api_key=key) # здесь может быть рейс кондишн?
             if your_file:
-                genai.delete_file(your_file.name)
+                for _ in range(3):
+                    try:
+                        genai.configure(api_key=key) # здесь может быть рейс кондишн?
+                        genai.delete_file(your_file.name)
+                    except Exception as error:
+                        my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
+                        time.sleep(4)
         except Exception as error:
             my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
 
@@ -717,3 +725,4 @@ if __name__ == '__main__':
     #     print(r[0])
         
     # print(transcribe_genai('d:\\downloads\\1.ogg', prompt='_'))
+    # genai_clear()

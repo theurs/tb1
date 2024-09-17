@@ -243,7 +243,8 @@ def restore_message_text(s1: str, l) -> str:
             else:
                 s0 += f"```\n{formatted_text}\n```"
         else:
-            log2(f'Unknown message entity type {i.type} {formatted_text}')
+            if i.type not in ('hashtag', 'mention'):
+                log2(f'Unknown message entity type {i.type} {formatted_text}')
             s0 += formatted_text
 
         # Обновляем индекс последней позиции

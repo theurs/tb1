@@ -278,6 +278,7 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
                     try:
                         genai.configure(api_key=key) # здесь может быть рейс кондишн?
                         genai.delete_file(your_file.name)
+                        break
                     except Exception as error:
                         my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
                         time.sleep(4)

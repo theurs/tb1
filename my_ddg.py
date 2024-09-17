@@ -138,7 +138,16 @@ def chat(query: str,
 
     with LOCKS[chat_id]:
         try:
-            resp = CHATS_OBJ[chat_id].chat(query, model)
+            try:
+                resp = CHATS_OBJ[chat_id].chat(query, model)
+            except Exception as error:
+                if model == 'gpt-4o-mini':
+                    model = 'claude-3-haiku'
+                else:
+                    model = 'gpt-4o-mini'
+                resp = CHATS_OBJ[chat_id].chat(query, model)
+                my_db.add_msg(chat_id, model)
+                return resp
             my_db.add_msg(chat_id, model)
             update_mem(query, resp, chat_id)
             return resp

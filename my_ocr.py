@@ -4,6 +4,7 @@
 import cachetools.func
 import concurrent.futures
 import io
+import iso639
 import re
 import threading
 from PIL import Image
@@ -68,6 +69,14 @@ def get_text_from_image(data: bytes, language: str = 'rus+eng') -> str:
     Returns:
         str: The extracted text from the image.
     """
+
+    # меняем двухбуквенные коды языков на 3 буквенные, на случай если юзер затупил
+    replacement_list = {}
+    for l in iso639.iter_langs():
+        if l.pt1 and l.pt3:
+            replacement_list[l.pt1] = l.pt3
+    pattern = r'\b(' + '|'.join(replacement_list.keys()) + r')\b'
+    language = re.sub(pattern, lambda m: replacement_list[m.group(0)], language)
 
     f = io.BytesIO(data)
 

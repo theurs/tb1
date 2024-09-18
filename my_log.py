@@ -237,6 +237,13 @@ def restore_message_text(s1: str, l) -> str:
             s0 += f"~~{formatted_text}~~"
         elif i.type == 'code':
             s0 += f"`{formatted_text}`"
+        elif i.type == 'spoiler':
+            s0 += f"||{formatted_text}||"
+        elif i.type == 'underline':
+            s0 += f"__{formatted_text}__"
+        elif i.type == 'blockquote':
+            new_text = "> " + formatted_text.replace("\n", "\n> ")
+            s0 += new_text
         elif i.type == 'pre':
             if i.language:
                 s0 += f"```{i.language}\n{formatted_text}\n```"
@@ -249,7 +256,9 @@ def restore_message_text(s1: str, l) -> str:
                               'url',
                               'text_link',
                               'custom_emoji',
-                              'phone_number'):
+                              'phone_number',
+                            #   'blockquote', # как это в маркдауне будет?? в html <blockquote></blockquote>
+                              ):
                 log2(f'Unknown message entity type {i.type} {formatted_text}')
             s0 += formatted_text
 

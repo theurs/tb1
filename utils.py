@@ -227,8 +227,9 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r'(?<=\w)  (?=\S)', ' ', text)
     text = re.sub(r'(?<=\S)  (?=\w)', ' ', text)
 
-    # 1 или 2 * в <b></b>
+    # 2 * в <b></b>
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
+    text = re.sub(r'^\*\*(.*?)\*\*$', r'<b>\1</b>', text, flags=re.MULTILINE | re.DOTALL)
 
     # tex в unicode
     matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)

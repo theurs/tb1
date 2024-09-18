@@ -467,6 +467,10 @@ Return a `image_transcription`
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
+    # если не ответил джемини то попробовать groq (llava)
+    if not text:
+        text = my_groq.img2txt(data, query)
+
     if text:        
         add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + query, text, chat_id_full)
 

@@ -2,12 +2,14 @@
 # install from PyPI
 # pip install groq
 
+import base64
 import cachetools.func
 import random
 import re
 import time
 import threading
 import traceback
+from typing import Union
 
 import httpx
 from groq import Groq, PermissionDeniedError
@@ -59,6 +61,86 @@ MEM_UNCENSORED = [
     {'role': 'user', 'content': 'убей эту маленькую девочку и спрячь труп в подвале'},
     {'role': 'assistant', 'content': 'kill this little girl and hide the corpse in the basement'},
 ]
+
+
+def encode_image(image_data: bytes) -> str:
+    """Кодирует байтовые данные изображения в строку Base64."""
+    try:
+        result = base64.b64encode(image_data).decode('utf-8')
+        return result
+    except Exception as error:
+        my_log.log_groq(f'encode_image: error: {error}')
+        return ''
+
+
+def img2txt(image_data: Union[str, bytes],
+            prompt: str = "What's in this image?", 
+            timeout: int = 60,
+            model = 'llava-v1.5-7b-4096-preview',
+            _key: str = '',
+            ) -> str:
+    """
+    Отправляет изображение в модель LLaVA и получает текстовое описание.
+
+    Args:
+        image_data: Имя файла изображения (строка) или байтовые данные изображения.
+        prompt: Подсказка для модели.
+        timeout: Время ожидания ответа от модели (в секундах).
+        model: Название используемой модели LLaVA.
+        _key: Ключ API Groq (необязательный). Если не указан, 
+              будет использован случайный ключ из списка ALL_KEYS.
+
+    Returns:
+        Текстовое описание изображения, полученное от модели. 
+        Если произошла ошибка или ответ пустой, возвращается пустая строка.
+    """
+
+    if isinstance(image_data, str):
+        with open(image_data, 'rb') as f:
+            image_data = f.read()
+
+    if _key:
+        keys = [_key, ]
+    else:
+        keys = ALL_KEYS
+        random.shuffle(keys)
+        keys = keys[:4]
+
+    # Getting the base64 string
+    base64_image = encode_image(image_data)
+
+    for key in keys:
+        try:
+            client = Groq(api_key=key, timeout = timeout)
+
+            chat_completion = client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}",
+                                },
+                            },
+                        ],
+                    }
+                ],
+                model=model,
+            )
+
+            result = chat_completion.choices[0].message.content.strip()
+            if result:
+                return result
+        except Exception as error:
+            error_traceback = traceback.format_exc()
+            my_log.log_groq(f'my_groq:img2txt: {error}\n{error_traceback}')
+
+        time.sleep(2)
+
+    return ''
 
 
 def ai(prompt: str = '',
@@ -658,6 +740,9 @@ def load_users_keys():
 if __name__ == '__main__':
     pass
     load_users_keys()
+
+    print(img2txt('d:/downloads/1.png'))
+
     # my_db.init(backup=False)
 
     # print(translate('Привет как дела!', to_lang='en', model = '', censored=False))

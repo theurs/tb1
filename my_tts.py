@@ -10,6 +10,7 @@ import traceback
 
 import edge_tts
 import gtts
+from langdetect import detect, detect_langs
 
 import utils
 import my_log
@@ -283,10 +284,19 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         return None
 
 
+def detect_lang_carefully(text: str) -> str:
+    if len(text) < 30:
+        return ''
+    language = detect(text)
+    return language
+
+
 if __name__ == "__main__":
+    pass
     # print(tts('привет', 'ja'))
-    l = []
-    for k in VOICES:
-        if k not in l:
-            l.append(k)
-    print(l)
+    # l = []
+    # for k in VOICES:
+    #     if k not in l:
+    #         l.append(k)
+    # print(l)
+    print(detect_lang_carefully('Однако здравствуйте, как ваше ничего сегодня? To continue effectively with.'))

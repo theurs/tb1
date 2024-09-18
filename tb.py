@@ -1558,7 +1558,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть ответ"
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'tts':
-            message.text = f'/tts {lang or "de"} {message.text or message.caption or ""}'
+            detected_lang = my_tts.detect_lang_carefully(message.text or message.caption or "")
+            if not detected_lang:
+                detected_lang = lang or "de"
+            message.text = f'/tts {detected_lang} {message.text or message.caption or ""}'
             tts(message)
         elif call.data.startswith('imagecmd_'):
             hash_ = call.data[9:]

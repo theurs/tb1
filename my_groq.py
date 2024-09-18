@@ -370,6 +370,7 @@ def remove_dimatorzok(text: str) -> str:
         'Субтитры создавал DimaTorzok.',
         'Субтитры создавал DimaTorzok',
         'Субтитры добавил DimaTorzok',
+        'Субтитры делал DimaTorzok',
         'DimaTorzok.',
         'DimaTorzok',
     ]

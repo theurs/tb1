@@ -1795,6 +1795,7 @@ def handle_pre_checkout_query(pre_checkout_query):
 # Обработчик успешных платежей
 @bot.message_handler(content_types=['successful_payment'])
 def handle_successful_payment(message):
+    chat_full_id = get_topic_id(message)
     user_id = message.from_user.id
     payment_id = message.successful_payment.provider_payment_charge_id
     amount = message.successful_payment.total_amount
@@ -1806,6 +1807,9 @@ def handle_successful_payment(message):
     # Сохранение информации о платеже в базе данных
     # save_payment(user_id, payment_id, amount, currency)
     my_log.log_donate(f'{user_id} {payment_id} {amount} {currency}')
+    user_stars = my_db.get_user_property(chat_full_id, 'telegram_stars')
+    user_stars += amount
+    my_db.set_user_property(chat_full_id, 'telegram_stars', user_stars)
 
 
 # Обработчик команды /paysupport
@@ -4655,7 +4659,9 @@ def id_cmd_handler(message: telebot.types.Message):
     }
     if user_model in models.keys():
         user_model = f'<b>{models[user_model]}</b>'
- 
+
+    telegram_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+
     msg = ''
     if message.from_user.id in cfg.admins:
         msg += f'Uptime: {get_uptime()}\n\n'
@@ -4668,6 +4674,12 @@ def id_cmd_handler(message: telebot.types.Message):
 {tr("Выбранная чат модель:", lang)} {user_model}'''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         msg += f' <b>{open_router_model}</b>'
+
+    tstarsmsg = tr('Telegram stars:', lang, help = 'Telegram Stars is a new feature that allows users to buy and spend Stars, a new digital currency, on digital goods and services within the Telegram ecosystem, like ebooks, online courses, or items in Telegram games.')
+    if telegram_stars:
+        msg += f'\n\n🌟 {tstarsmsg} {telegram_stars}'
+    else:
+        msg += f'\n\n⭐️ {tstarsmsg} {telegram_stars}'
 
     gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
     groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
@@ -6046,7 +6058,7 @@ def one_time_shot():
                 # '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
                 # '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
                 # '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
-                '''ALTER TABLE users ADD COLUMN dialog_gpt4omini BLOB;''',
+                '''ALTER TABLE users ADD COLUMN telegram_stars INTEGER;''',
                        ]
             for q in queries:
                 try:

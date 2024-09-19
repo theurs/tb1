@@ -151,6 +151,7 @@ def init(backup: bool = True):
                 lang TEXT,
                 first_meet REAL,
                 last_time_access REAL,
+                telegram_stars INTEGER,
 
                 image_generated_counter INTEGER,
 

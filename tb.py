@@ -2750,6 +2750,15 @@ def donate(message: telebot.types.Message):
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup = get_keyboard('donate_stars', message))
 
 
+@bot.message_handler(commands=['stars'], func=authorized_owner)
+@async_run
+def donate_stars_handler(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    help = tr('Help this bot, donate stars.', lang, help = 'Telegram Stars is a new feature that allows users to buy and spend Stars, a new digital currency, on digital goods and services within the Telegram ecosystem, like ebooks, online courses, or items in Telegram games.')
+    bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup = get_keyboard('donate_stars', message))
+
+
 @bot.message_handler(commands=['style'], func=authorized_owner)
 @async_run
 def change_mode(message: telebot.types.Message):
@@ -4677,9 +4686,9 @@ def id_cmd_handler(message: telebot.types.Message):
 
     tstarsmsg = tr('Telegram stars:', lang, help = 'Telegram Stars is a new feature that allows users to buy and spend Stars, a new digital currency, on digital goods and services within the Telegram ecosystem, like ebooks, online courses, or items in Telegram games.')
     if telegram_stars:
-        msg += f'\n\n🌟 {tstarsmsg} {telegram_stars}'
+        msg += f'\n\n🌟 {tstarsmsg} {telegram_stars} /stars'
     else:
-        msg += f'\n\n⭐️ {tstarsmsg} {telegram_stars}'
+        msg += f'\n\n⭐️ {tstarsmsg} {telegram_stars} /stars'
 
     gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
     groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []

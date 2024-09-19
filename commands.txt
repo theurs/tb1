@@ -18,4 +18,5 @@
 /id - показывает id чата
 /remove_keyboard - удалить клавиатуру
 /keys - вставить свой API ключ в бота
+/stars - donate telegram stars
 /report - сообщить о проблеме

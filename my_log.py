@@ -257,6 +257,7 @@ def restore_message_text(s1: str, l) -> str:
                               'text_link',
                               'custom_emoji',
                               'phone_number',
+                              'email',
                             #   'blockquote', # как это в маркдауне будет?? в html <blockquote></blockquote>
                               ):
                 log2(f'Unknown message entity type {i.type} {formatted_text}')

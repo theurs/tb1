@@ -40,7 +40,7 @@ import my_jamba
 import my_log
 import my_ocr
 import my_openrouter
-import my_openrouter_llama405free
+import my_openrouter_free
 import my_pandoc
 import my_shadowjourney
 import my_stt
@@ -395,7 +395,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.update_mem(query, resp, chat_id_full)
     elif 'openrouter_llama405' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        my_openrouter_llama405free.update_mem(query, resp, chat_id_full)
+        my_openrouter_free.update_mem(query, resp, chat_id_full)
     elif 'jamba' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_jamba.update_mem(query, resp, chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -466,6 +466,10 @@ Return a `image_transcription`
             text = my_gemini.img2txt(data, query, model=model)
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
+
+    # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
+    if not text:
+        text = my_openrouter_free.img2txt(data, query)
 
     # если не ответил джемини то попробовать groq (llava)
     if not text:
@@ -1706,7 +1710,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_openrouter.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с openrouter очищена.')
         elif call.data == 'openrouter_llama405_reset':
-            my_openrouter_llama405free.reset(chat_id_full)
+            my_openrouter_free.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Llama 405b очищена.')
         elif call.data == 'jamba_reset':
             my_jamba.reset(chat_id_full)
@@ -2866,7 +2870,7 @@ def undo(message: telebot.types.Message):
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         my_openrouter.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-        my_openrouter_llama405free.undo(chat_id_full)
+        my_openrouter_free.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
         my_jamba.undo(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -2903,7 +2907,7 @@ def reset_(message: telebot.types.Message):
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         my_openrouter.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-        my_openrouter_llama405free.reset(chat_id_full)
+        my_openrouter_free.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
         my_jamba.reset(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3072,7 +3076,7 @@ def send_debug_history(message: telebot.types.Message):
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         prompt = 'Llama 405b\n\n'
-        prompt += my_openrouter_llama405free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
         prompt = 'Jamba 1.5 mini\n\n'
@@ -4569,7 +4573,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_gemini.reset(chat_id_full)
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
-            my_openrouter_llama405free.reset(chat_id_full)
+            my_openrouter_free.reset(chat_id_full)
             my_jamba.reset(chat_id_full)
             my_shadowjourney.reset(chat_id_full)
             my_gpt4omini.reset(chat_id_full)
@@ -5675,14 +5679,14 @@ def do_task(message, custom_prompt: str = ''):
 
                 # если активирован режим общения с llama 405b
                 if chat_mode_ == 'openrouter_llama405':
-                    if len(msg) > my_openrouter_llama405free.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Llama 405b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter_llama405free.MAX_REQUEST}')
+                    if len(msg) > my_openrouter_free.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Llama 405b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter_free.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
                         try:
                             style_ = my_db.get_user_property(chat_id_full, 'role') or ''
-                            answer = my_openrouter_llama405free.chat(
+                            answer = my_openrouter_free.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature'),
@@ -5694,7 +5698,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:
-                                answer = my_openrouter_llama405free.chat(
+                                answer = my_openrouter_free.chat(
                                     message.text,
                                     chat_id_full,
                                     temperature=my_db.get_user_property(chat_id_full, 'temperature'),

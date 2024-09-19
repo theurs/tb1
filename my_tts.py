@@ -10,7 +10,7 @@ import traceback
 
 import edge_tts
 import gtts
-from langdetect import detect, detect_langs
+from langdetect import detect
 
 import utils
 import my_log

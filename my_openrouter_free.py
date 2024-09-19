@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import base64
 import json
 import random
 import requests
@@ -242,9 +243,113 @@ def get_mem_as_string(chat_id: str) -> str:
         return ''
 
 
+def img2txt(
+    image_data: bytes,
+    prompt: str = 'Describe picture',
+    model = 'mistralai/pixtral-12b:free',
+    temperature: float = 1,
+    max_tokens: int = 2000,
+    timeout: int = 120) -> str:
+    """
+    Describes an image using the specified model and parameters.
+
+    Args:
+        image_data: The image data as bytes.
+        prompt: The prompt to guide the description. Defaults to 'Describe picture'.
+        model: The model to use for generating the description. Defaults to 'mistralai/pixtral-12b:free'.
+        temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
+        max_tokens: The maximum number of tokens to generate. Defaults to 2000.
+        timeout: The timeout for the request in seconds. Defaults to 120.
+
+    Returns:
+        A string containing the description of the image, or an empty string if an error occurs.
+    """
+
+    if isinstance(image_data, str):
+        with open(image_data, 'rb') as f:
+            image_data = f.read()
+
+    if not model:
+        model = 'mistralai/pixtral-12b:free'
+
+    if not model.endswith(':free'):
+        return ''
+
+    if not prompt:
+        prompt = 'Describe picture'
+        return ''
+
+    if not hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
+        return ''
+
+    if 'llama' in model and temperature > 0:
+        temperature = temperature / 2
+
+    base64_image = base64.b64encode(image_data).decode()
+
+    YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
+    YOUR_APP_NAME = 'kun4sun_bot'
+
+    result = ''
+
+    for _ in range(3):
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {random.choice(cfg.OPEN_ROUTER_FREE_KEYS)}",
+                "HTTP-Referer": f"{YOUR_SITE_URL}",  # Optional, for including your app on openrouter.ai rankings.
+                "X-Title": f"{YOUR_APP_NAME}",  # Optional. Shows in rankings on openrouter.ai.
+            },
+            data=json.dumps({
+
+                "model": model,
+                "temperature": temperature,
+                "messages": [
+                    {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                    }
+                ],
+                "max_tokens": max_tokens
+
+            }),
+            timeout=timeout,
+        )
+
+        status = response.status_code
+        if status == 200:
+            try:
+                result = response.json()['choices'][0]['message']['content'].strip()
+                break
+            except Exception as error:
+                my_log.log_openrouter_free(f'Failed to parse response: {error}\n\n{str(response)}')
+                result = ''
+                time.sleep(2)
+        else:
+            my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response[:2000])}')
+            time.sleep(2)
+
+    return result
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
+
     reset('test')
     chat_cli()
+
+    # print(img2txt('d:/downloads/3.png', 'вытащи весь текст с форматированием из картинки'))
+
     my_db.close()

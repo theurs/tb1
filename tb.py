@@ -4056,7 +4056,7 @@ def message_to_user(message: telebot.types.Message):
         uid = int(args[1])
         text = args[2]
         bot.send_message(uid, text, message_thread_id = 0, disable_notification=True)
-        bot_reply_tr(message, 'ok')
+        bot_reply_tr(message, 'Message sent.')
         my_log.log_echo(message, f'Admin sent message to user {uid}: {text}')
         return
     except:
@@ -4564,7 +4564,7 @@ def report_cmd_handler(message: telebot.types.Message):
         if args:
             msg = f'[Report from user {message.from_user.id}] {args}'
             bot.send_message(cfg.admins[0], msg, disable_notification=True)
-            bot_reply_tr(message, 'OK.')
+            bot_reply_tr(message, 'Message sent.')
         else:
             bot_reply_tr(message, 'Use it to send message to admin.')
 

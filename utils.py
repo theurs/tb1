@@ -738,6 +738,16 @@ def string_to_dict(input_string: str):
     Returns:
         Словарь, полученный из строки, или None, если возникли ошибки.
     """
+    input_string = input_string.strip()
+    if input_string.startswith('```'):
+        input_string = input_string[3:]
+    if input_string.endswith('```'):
+        input_string = input_string[:-3]
+    input_string = input_string.strip()
+    if input_string.startswith('json'):
+        input_string = input_string[4:]
+        input_string = input_string.strip()
+
     try:
         return json.loads(input_string)
     except:

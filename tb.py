@@ -436,11 +436,14 @@ Return a `image_transcription`
     image_generation_prompt = ''
     if not query:
         use_json = True
-        query = tr(f'Отвечай на языке [{lang}]. Что изображено на картинке? Дай подробное описание и профессиональный промпт для генерации этого изображения на английском языке.', lang) + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang) + json_query
+        query = tr(f'''
+Если на картинке только текст, извлеки его с сохранением форматирования на языке [{lang}].
+Если на картинке задача (похожая на школьное задание) то напиши весь текст задачи и очень подробно и наглядно решение на языке [{lang}].
+В других случаях опиши что видишь на картинке  на языке [{lang}], напиши подробный промпт для генерации такой картинки на английском языке, и если есть то покажи какой на картинке обнаружен текст.
+        ''', lang) + json_query
     else:
         use_json = False
         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
-
     if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
@@ -451,29 +454,37 @@ Return a `image_transcription`
         model = cfg.img2_txt_model
         if use_json:
             text_ = my_gemini.img2txt(data, query, json_output=True, model=model)
+
+            # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
+            if not text_:
+                text_ = my_openrouter_free.img2txt(data, query)
+
+            # если не ответил джемини то попробовать groq (llava)
+            if not text_:
+                text_ = my_groq.img2txt(data, query)
+
             if text_:
                 d = utils.string_to_dict(text_)
-                detailed_description = d['detailed_description']
-                extracted_formatted_text = d['extracted_formatted_text']
-                image_generation_prompt = d['image_generation_prompt']
-                if detailed_description:
-                    text = text + detailed_description + '\n\n'
-                if extracted_formatted_text:
-                    text = text + '\n```text\n' + extracted_formatted_text + '\n```\n\n'
-                if image_generation_prompt:
-                    text = text + f'\n```\n/img {image_generation_prompt}\n```'
+                if d:
+                    try:
+                        detailed_description = d['detailed_description']
+                        extracted_formatted_text = d['extracted_formatted_text']
+                        image_generation_prompt = d['image_generation_prompt']
+                        if detailed_description:
+                            text = text + detailed_description + '\n\n'
+                        if extracted_formatted_text:
+                            text = text + '\n```text\n' + extracted_formatted_text + '\n```\n\n'
+                        if image_generation_prompt:
+                            text = text + f'\n```\n/img {image_generation_prompt}\n```'
+                    except Exception as error:
+                        my_log.log2(f'tb:img2txt: {error}\n\n{text_}')
+                        text = text_
+                else:
+                    text = text_
         else:
             text = my_gemini.img2txt(data, query, model=model)
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
-
-    # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
-    if not text:
-        text = my_openrouter_free.img2txt(data, query)
-
-    # если не ответил джемини то попробовать groq (llava)
-    if not text:
-        text = my_groq.img2txt(data, query)
 
     if text:        
         add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + query, text, chat_id_full)

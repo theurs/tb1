@@ -22,6 +22,7 @@ import tempfile
 import threading
 import platform as platform_module
 
+import json_repair
 import PIL
 import prettytable
 import telebot
@@ -730,7 +731,7 @@ def get_image_size(data: bytes) -> tuple[int, int]:
 
 def string_to_dict(input_string: str):
     """
-    Преобразует строку в словарь с помощью json.loads.
+    Преобразует строку в словарь.
 
     Args:
         input_string: Строка, которую нужно преобразовать в словарь.
@@ -738,36 +739,13 @@ def string_to_dict(input_string: str):
     Returns:
         Словарь, полученный из строки, или None, если возникли ошибки.
     """
-    input_string = input_string.strip()
-    if input_string.startswith('```'):
-        input_string = input_string[3:]
-    if input_string.endswith('```'):
-        input_string = input_string[:-3]
-    input_string = input_string.strip()
-    if input_string.startswith('json'):
-        input_string = input_string[4:]
-        input_string = input_string.strip()
-
     try:
-        return json.loads(input_string)
-    except:
-        pass
-    try:
-        return ast.literal_eval(input_string)
-    except:
-        pass
-
-    try:
-        input_string_ = input_string.replace('\n', '\\n').replace('\t', '\\t')
-        result_dict = json.loads(input_string_)
-        return result_dict
+        decoded_object = json_repair.loads(input_string)
+        if decoded_object:
+            return decoded_object
     except Exception as error:
-        try:
-            input_string_ = input_string.replace('" : null', '" : ""')
-            result_dict = ast.literal_eval(input_string_)
-            return result_dict
-        except Exception as error2:
-            my_log.log2(f'utils:string_to_dict: {error}\n{error2}\n{input_string}')
+        my_log.log2(f'utils:string_to_dict: {error}')
+    my_log.log2(f'utils:string_to_dict: {input_string}')
     return None
 
 
@@ -797,8 +775,15 @@ if __name__ == '__main__':
 W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub>, x<sub>i</sub>)]<sup>2</sup>Π[a(x<sub>i</sub>) = j] → min;
 
     """
-    print(bot_markdown_to_html(t))
+    # print(bot_markdown_to_html(t))
 
+
+
+    j = '''json(
+{"detailed_description": "На изображении представлен фрагмент онлайн-теста или обучающего материала, посвящённого вопросам авторского права. \n\n**Текст задачи:**\n\nСветлана звукорежиссер\nХорошо, а если мы хотим использовать какое-нибудь видео, автор которого неизвестен и которое уже многие перепостили...\nВедь мы можем свободно использовать его в нашем фильме?\n\nЧтобы ответить Светлане, выберите ВСЕ верные варианты.\n\n1. Нет, автор может увидеть свое видео и обратиться в суд, потребовав компенсации за его использование.\n2. Да, видео, которые многие перепостили, не защищается авторским правом.\n3. Да, если нам удастся связаться с автором и попросить разрешения на использование.\n4. Да, оно уже приобрело статус свободного использования, т.к. давно ходит в сети.\n5. Да, только нужно указать, что мы готовы сослаться на автора, если он найдётся.\n\n**Это задание на проверку знаний в области авторского права**, и, вероятно, правильными ответами являются варианты 2 и 5, так как авторские права на видео, которое многие перепостили, может быть сложно определить, а указание авторства, если оно будет обнаружено, - это признак уважения к интеллектуальной собственности.", "extracted_formatted_text": "Светлана звукорежиссер\nХорошо, а если мы хотим использовать какое-нибудь видео, автор которого неизвестен и которое уже многие перепостили...\nВедь мы можем свободно использовать его в нашем фильме?\n\nЧтобы ответить Светлане, выберите ВСЕ верные варианты.\n\n□ Нет, автор может увидеть свое видео и обратиться в суд, потребовав компенсации за его использование.\n□ Да, видео, которые многие перепостили, не защищается авторским правом.\n□ Да, если нам удастся связаться с автором и попросить разрешения на использование.\n□ Да, оно уже приобрело статус свободного использования, т.к. давно ходит в сети.\n□ Да, только нужно указать, что мы готовы сослаться на автора, если он найдётся.", "image_generation_prompt": "Generate an image of a computer screen displaying a quiz or test question related to copyright law. The question should be presented in a clear and easy-to-read format, with multiple-choice answer options. The question should involve a scenario where someone wants to use a video in their film, but they are unsure about the copyright status of the video. The answer options should explore the different aspects of copyright law, such as fair use, attribution, and the rights of the copyright holder. The image should also include some visual elements that are relevant to the scenario, such as a photo of a person filming a video or a video player interface. The screen should be dark and the text should be light colored for better readability. The prompt should be in Russian, something along the lines: \"Сгенерируйте изображение экрана компьютера, на котором отображается вопрос викторины или теста, связанный с законом об авторском праве. Вопрос должен быть представлен в четком и легко читаемом формате с вариантами ответов с множественным выбором. Вопрос должен включать в себя сценарий, в котором кто-то хочет использовать видео в своем фильме, но не уверен в статусе авторских прав на видео. Варианты ответов должны исследовать различные аспекты закона об авторском праве, такие как добросовестное использование, указание авторства и права правообладателя. Изображение также должно включать некоторые визуальные элементы, относящиеся к сценарию, такие как фотография человека, снимающего видео, или интерфейс видеоплеера. Экран должен быть темным, а текст светлого цвета для лучшей читаемости.\""}
+})
+    '''
+    print(string_to_dict(j))
 
     # print(get_full_time())
 

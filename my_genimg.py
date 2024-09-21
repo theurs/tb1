@@ -997,7 +997,7 @@ def FLUX1(prompt: str, url: str = "black-forest-labs/FLUX.1-schnell", number: in
     return images
 
 
-def runware(prompt: str, number: int = 2, negative_prompt: str = "", cache: bool = False, big: bool = False) -> list:
+def runware(prompt: str, number: int = 4, negative_prompt: str = "", cache: bool = False, big: bool = False) -> list:
     """
         runware.ai
     """
@@ -1170,7 +1170,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         async_result5 = pool.apply_async(yandex_cloud, (prompt,))
         async_result6 = pool.apply_async(yandex_cloud, (prompt,))
 
-        async_result7 = pool.apply_async(runware, (prompt, 2, negative))
+        async_result7 = pool.apply_async(runware, (prompt, 4, negative))
 
         result = (async_result1.get() or []) + \
                  (async_result2.get() or []) + \

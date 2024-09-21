@@ -159,14 +159,24 @@ def regenerate_help_msg(langs):
     for x in langs:
         msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
         if not msg:
-            msg_ = msg
-            msg = my_gemini.translate(help_msg,
-                                      from_lang='en',
-                                      to_lang=x,
-                                      help='It is a /help message for telegram chat bot. Keep the formatting.',
-                                      model = cfg.gemini_pro_model)
+            msg_ = help_msg
+            msg = my_gemini.translate(
+                help_msg,
+                from_lang='en',
+                to_lang=x,
+                help='It is a /help message for telegram chat bot. Keep the formatting.',
+                model = cfg.gemini_pro_model
+            )
             if msg == msg_:
                 msg = ''
+        if not msg:
+            msg = my_groq.translate(
+                help_msg,
+                from_lang='en',
+                to_lang=x,
+                help='It is a /help message for telegram chat bot. Keep the formatting.',
+                model = cfg.gemini_pro_model
+            )
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
@@ -188,16 +198,26 @@ def regenerate_start_msg(langs):
     print(missing)
 
     for x in langs:
-        msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
+        msg = my_ddg.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
         if not msg:
-            msg_ = msg
-            msg = my_gemini.translate(help_msg,
-                                      from_lang='en',
-                                      to_lang=x,
-                                      help='It is a /help message for telegram chat bot. Keep the formatting.',
-                                      model = cfg.gemini_pro_model)
+            msg_ = start_msg
+            msg = my_gemini.translate(
+                start_msg,
+                from_lang='en',
+                to_lang=x,
+                help='It is a /start message for telegram chat bot. Keep the formatting.',
+                model = cfg.gemini_pro_model
+            )
             if msg == msg_:
                 msg = ''
+        if not msg:
+            msg = my_groq.translate(
+                start_msg,
+                from_lang='en',
+                to_lang=x,
+                help='It is a /start message for telegram chat bot. Keep the formatting.',
+                model = cfg.gemini_pro_model
+            )
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
@@ -268,7 +288,7 @@ if __name__ == '__main__':
 
     # generate_start_msg()
     # generate_help_msg()
-    # regenerate_help_msg(['bn', 'eo', 'ga', 'gd', 'haw', 'hi', 'hr', 'ht', 'hu', 'ig', 'kk', 'km', 'ko', 'lb', 'lt', 'ne', 'or', 'rw', 'si', 'sq', 'st', 'su', 'vi', 'yo', 'zh-TW'])
+    regenerate_help_msg('eo')
     # regenerate_start_msg('en')
 
     my_db.close()

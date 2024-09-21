@@ -241,7 +241,7 @@ def restore_message_text(s1: str, l) -> str:
             s0 += f"||{formatted_text}||"
         elif i.type == 'underline':
             s0 += f"__{formatted_text}__"
-        elif i.type == 'blockquote':
+        elif i.type == 'blockquote' or i.type == 'expandable_blockquote':
             new_text = "> " + formatted_text.replace("\n", "\n> ")
             s0 += new_text
         elif i.type == 'pre':

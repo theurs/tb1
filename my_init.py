@@ -153,8 +153,20 @@ def regenerate_help_msg(langs):
     with open(help_msg_file, 'rb') as f:
         msgs = pickle.load(f)
 
+    missing = [x for x in supported_langs_trans if x not in msgs.keys()]
+    print(missing)
+
     for x in langs:
         msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
+        if not msg:
+            msg_ = msg
+            msg = my_gemini.translate(help_msg,
+                                      from_lang='en',
+                                      to_lang=x,
+                                      help='It is a /help message for telegram chat bot. Keep the formatting.',
+                                      model = cfg.gemini_pro_model)
+            if msg == msg_:
+                msg = ''
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
@@ -164,6 +176,36 @@ def regenerate_help_msg(langs):
     with open(help_msg_file, 'wb') as f:
         pickle.dump(msgs, f)
 
+
+def regenerate_start_msg(langs):
+    if isinstance(langs, str):
+        langs = [langs, ]
+
+    with open(start_msg_file, 'rb') as f:
+        msgs = pickle.load(f)
+
+    missing = [x for x in supported_langs_trans if x not in msgs.keys()]
+    print(missing)
+
+    for x in langs:
+        msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
+        if not msg:
+            msg_ = msg
+            msg = my_gemini.translate(help_msg,
+                                      from_lang='en',
+                                      to_lang=x,
+                                      help='It is a /help message for telegram chat bot. Keep the formatting.',
+                                      model = cfg.gemini_pro_model)
+            if msg == msg_:
+                msg = ''
+        if msg:
+            msgs[x] = msg
+            print('\n\n', x, '\n\n', msg)
+        if not msg:
+            print(f'google translate failed {x}')
+
+    with open(start_msg_file, 'wb') as f:
+        pickle.dump(msgs, f)
 
 
 def check_translations(original: str, translated: str, lang):
@@ -211,32 +253,12 @@ def fix_translations(fname: str = start_msg_file, original: str = start_msg, lan
         pickle.dump(db, f)
 
 
-def fix_translations_start(langs = []):
-    with open(start_msg_file, 'rb') as f:
-        db = pickle.load(f)
-    for lang in langs:
-        print(lang)
-        translated = my_gemini.translate(db['en'], to_lang=lang, model = cfg.gemini_pro_model)
-        if not translated:
-            translated = my_shadowjourney.translate(db['en'], to_lang=lang)
-        if translated:
-            if 'no translation needed' in translated.lower():
-                translated = db['en']
-            db[lang] = translated
-            print(translated)
-        else:
-            del db[lang]
-    with open(start_msg_file, 'wb') as f:
-        pickle.dump(db, f)
-
-
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     my_groq.load_users_keys()
     my_gemini.load_users_keys()
     my_trans.load_users_keys()
-
 
     # with open(help_msg_file, 'rb') as f:
     #     d = pickle.load(f)
@@ -246,7 +268,7 @@ if __name__ == '__main__':
 
     # generate_start_msg()
     # generate_help_msg()
-    # regenerate_help_msg('it')
+    # regenerate_help_msg(['bn', 'eo', 'ga', 'gd', 'haw', 'hi', 'hr', 'ht', 'hu', 'ig', 'kk', 'km', 'ko', 'lb', 'lt', 'ne', 'or', 'rw', 'si', 'sq', 'st', 'su', 'vi', 'yo', 'zh-TW'])
+    # regenerate_start_msg('en')
 
-    # fix_translations_start(['am', 'pt', 'pt-BR'])
     my_db.close()

@@ -5266,7 +5266,7 @@ def do_task(message, custom_prompt: str = ''):
 
         # если в сообщении только ссылка и она отправлена боту в приват
         # тогда сумморизируем текст из неё
-        if my_sum.is_valid_url(message.text) and is_private:
+        if my_sum.is_valid_url(message.text) and (is_private or bot_name_used):
             if utils.is_image_link(message.text):
                 with ShowAction(message, 'typing'):
                     text = img2txt(message.text, lang, chat_id_full)

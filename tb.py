@@ -3860,6 +3860,7 @@ def post_telegraph(message: telebot.types.Message):
         text = my_gemini.get_last_mem(chat_id_full)
     if text:
         html = utils.bot_markdown_to_html(text)
+        html = html.replace('\n', '<br />')
         url = my_telegraph.post(html, chat_id_full)
         if url:
             bot_reply(message, url)

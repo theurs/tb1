@@ -189,6 +189,13 @@ def log_bing_img(text: str) -> None:
 
 def log_huggin_face_api(text: str) -> None:
     """для логов от hugging_face_api"""
+    a = [
+        'Model too busy, unable to get response in less than 60 second',
+        'Rate limit reached. You reached free usage limit (reset hourly).',
+        'HTTPSConnectionPool(host=',
+        "runware: argument of type 'NoneType' is not iterable'",
+        
+    ]
     if 'Rate limit reached. You reached free usage limit (reset hourly).' in text:
         return
     log2(text, 'hugging_face_api')

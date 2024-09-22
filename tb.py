@@ -2785,7 +2785,10 @@ def download_ytb_audio(message: telebot.types.Message):
         
         if my_ytb.valid_youtube_url(url):
             with ShowAction(message, "upload_audio"):
-                title, pic, desc = my_ytb.get_title_and_poster(url)
+                title, pic, desc, size = my_ytb.get_title_and_poster(url)
+                if size == 0 or size > 6*60*60:
+                    bot_reply_tr(message, 'Слишком большое видео.')
+                    return
                 bot.send_photo(
                     message.chat.id,
                     pic,

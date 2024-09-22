@@ -48,8 +48,8 @@ def get_title(url: str) -> str:
         return ''
 
 
-def get_title_and_poster(url: str) -> Tuple[str, str, str]:
-    """Gets the title, thumbnail URL, and description of a YouTube video.
+def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
+    """Gets the title, thumbnail URL, description and size of a YouTube video.
 
     Args:
         url: The URL of the YouTube video.
@@ -63,11 +63,12 @@ def get_title_and_poster(url: str) -> Tuple[str, str, str]:
         title = yt.title
         pic = yt.thumbnail_url
         description = yt.description
+        size = yt.length
 
-        return title or '', pic, description or ''
+        return title or '', pic, description or '', size
     except Exception as error:
         my_log.log2(f'my_ytb:get_title_and_poster {url} {error}')
-        return '', '', ''
+        return '', '', '', 0
 
 
 def split_audio(input_file: str, max_size_mb: int) -> List[str]:
@@ -202,4 +203,4 @@ if __name__ == '__main__':
     # input = download_audio('https://www.youtube.com/watch?v=DYhs2rv7pT8')
     # print(input)
 
-    print(get_title_and_poster('https://www.youtube.com/watch?v=DYhs2rv7pT8'))
+    print(get_title_and_poster('https://www.youtube.com/watch?v=jfKfPfyJRdk'))

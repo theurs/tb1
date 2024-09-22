@@ -2850,7 +2850,7 @@ def change_mode(message: telebot.types.Message):
 
     if arg:
         arg = arg[0]
-        if arg in ('<0>', '<1>', '<2>', '<3>', '<4>', '<5>'):
+        if arg in ('<0>', '<1>', '<2>', '<3>', '<4>', '<5>', '<6>'):
             arg = arg[1:2]
         if arg == '1':
             new_prompt = DEFAULT_ROLES[0]

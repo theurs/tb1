@@ -403,6 +403,25 @@ def undo(chat_id: str):
         my_log.log_groq(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
 
 
+def get_last_mem(chat_id: str) -> str:
+    """
+    Returns the last answer for the given ID.
+
+    Parameters:
+        chat_id (str): The ID of the chat to get the history for.
+
+    Returns:
+        str:
+    """
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
+
+    last = mem[-1]
+    if last:
+        return last['content']
+    else:
+        return ''
+
+
 def get_mem_as_string(chat_id: str) -> str:
     """
     Returns the chat history as a string for the given ID.

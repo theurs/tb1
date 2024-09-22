@@ -610,6 +610,44 @@ TEXT:
     return text
 
 
+def md2html(text: str) -> str:
+    '''Переделывает маркдаун от llm в html для telegra.ph
+    Telegra.ph allows <a>, <blockquote>, <br>, <em>, <figure>, <h3>, <h4>, <img>,
+    <p>, <strong>, elements. It also supports embedded youtube and vimeo iframe tags.'''
+
+    query = f'''
+Convert this markdown to html that supported by telegra.ph.
+
+Telegra.ph allows <a>, <blockquote>, <br>, <em>, <figure>, <h3>, <h4>, <img>, <p>, <strong>, elements. 
+It also supports embedded youtube and vimeo iframe tags.
+
+Follow these rules:
+1. All text must be enclosed in tags, for example <p>some text</p>.
+2. All links must be in the format <a href="link">text</a>.
+3. All images must be in the format <img src="link">.
+4. All headings must be in the format <h3>heading</h3> or <h4>heading</h4>.
+5. All bold text must be in the format <strong>bold text</strong>.
+6. All italic text must be in the format <em>italic text</em>.
+7. All blockquotes must be in the format <blockquote>blockquote</blockquote>.
+8. All code blocks must be in the format <pre><code>code</code></pre>.
+9. All lists must be in the format <ul><li>item 1</li><li>item 2</li></ul> or <ol><li>item 1</li><li>item 2</li></ol>.
+
+Using this JSON schema:
+  html = {{"html": str}}
+Return a `html`
+
+Markdown:
+
+{text}
+'''
+    html_json = chat(query, temperature=0.1, model=cfg.gemini_flash_light_model, json_output = True)
+    html_dict = utils.string_to_dict(html_json)
+    if html_dict:
+        return html_dict['html']
+    return text
+
+
+
 def reprompt_image(prompt: str, censored: bool = True, pervert: bool = False) -> str:
     _pervert = ', very pervert' if pervert else ''
     query = f'''Rewrite the prompt for drawing a picture using a neural network,

@@ -3858,12 +3858,24 @@ def post_telegraph(message: telebot.types.Message):
         text = my_openrouter.get_last_mem(chat_id_full)
     elif 'gemini' in mode:
         text = my_gemini.get_last_mem(chat_id_full)
+    elif mode in ('llama370', 'gemma2-9b'):
+        text = my_groq.get_last_mem(chat_id_full)
+    elif mode == 'jamba':
+        text = my_jamba.get_last_mem(chat_id_full)
+    elif mode == 'openrouter_llama405':
+        text = my_openrouter_free.get_last_mem(chat_id_full)
+    elif mode in ('gpt4omini', 'haiku',):
+        text = my_ddg.get_last_mem(chat_id_full)
     if text:
-        html = utils.bot_markdown_to_html(text)
-        html = html.replace('\n', '<br />')
-        url = my_telegraph.post(html, chat_id_full)
-        if url:
-            bot_reply(message, url)
+        html = ''
+        # html = my_gemini.md2html(text)
+        if not html:
+            html = utils.bot_markdown_to_html(text)
+        html = html.strip().replace('\n', '<br />')
+        if html:
+            url = my_telegraph.post(html, chat_id_full)
+            if url:
+                bot_reply(message, url)
 
 
 @bot.message_handler(commands=['stats', 'stat'], func=authorized_admin)

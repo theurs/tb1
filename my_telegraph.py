@@ -41,7 +41,23 @@ def post(text: str, user_id: str) -> str:
 
 if __name__ == '__main__':
     pass
-    p1 = '<p>Этот абзац содержит <strong>много текста</strong>, включая <a href="https://example.com">ссылку</a> и <em>выделенный текст</em>. Он также содержит специальный символ &amp; и тег изображения <img src="image.jpg" alt="Пример изображения"></p>'
-    p2= '<p>!!!Этот абзац содержит!!! <strong>много текста</strong>, включая <a href="https://example.com">ссылку</a> и <em>выделенный текст</em>. Он также содержит специальный символ &amp; и тег изображения <img src="image.jpg" alt="Пример изображения"></p>'
+    p1 = '''
+<table border="1" cellpadding="5" cellspacing="2">
+  <tr>
+    <th>Заголовок 1</th>
+    <th>Заголовок 2</th>
+  </tr>
+  <tr>
+    <td>Данные 1</td>
+    <td>Данные 2</td>
+  </tr>
+  <tr>
+    <td>Данные 3</td>
+    <td>Данные 4</td>
+  </tr>
+</table>
+
+'''
+    p2 = '<p>!!!Этот абзац содержит!!! <strong>много текста</strong>, включая <a href="https://example.com">ссылку</a> и <em>выделенный текст</em>. Он также содержит специальный символ &amp; и тег изображения <img src="image.jpg" alt="Пример изображения"></p>'
     print(post(p1, '[1234567890] [0]'))
-    print(post(p2, '[1234567890] [0]'))
+    # print(post(p2, '[1234567890] [0]'))

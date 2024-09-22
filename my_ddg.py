@@ -61,6 +61,27 @@ def undo(chat_id: str):
         my_log.log_ddg(f'Failed to undo chat {chat_id}: {error}')
 
 
+def get_last_mem(chat_id: str) -> str:
+    """
+    Returns the last answer for the given ID.
+
+    Parameters:
+        chat_id (str): The ID of the chat to get the history for.
+
+    Returns:
+        str:
+    """
+    if chat_id not in CHATS:
+        CHATS[chat_id] = []
+    mem = CHATS[chat_id]
+
+    last = mem[-1]
+    if last:
+        return last['content']
+    else:
+        return ''
+
+
 def get_mem_as_string(chat_id: str) -> str:
     """
     Returns the chat history as a string for the given ID.

@@ -193,7 +193,9 @@ def log_huggin_face_api(text: str) -> None:
         'Model too busy, unable to get response in less than 60 second',
         'Rate limit reached. You reached free usage limit (reset hourly).',
         'HTTPSConnectionPool(host=',
-        "runware: argument of type 'NoneType' is not iterable'",
+        'runware: argument of type ',
+        'An error happened while trying to locate the file on the Hub and we cannot find the requested files in the local cache.',
+        'Task not found for this model',
     ]
     if any([x for x in a if x in text]):
         return

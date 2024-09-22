@@ -189,6 +189,8 @@ def log_bing_img(text: str) -> None:
 
 def log_huggin_face_api(text: str) -> None:
     """для логов от hugging_face_api"""
+    if 'Rate limit reached. You reached free usage limit (reset hourly).' in text:
+        return
     log2(text, 'hugging_face_api')
 
 

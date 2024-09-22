@@ -194,9 +194,8 @@ def log_huggin_face_api(text: str) -> None:
         'Rate limit reached. You reached free usage limit (reset hourly).',
         'HTTPSConnectionPool(host=',
         "runware: argument of type 'NoneType' is not iterable'",
-        
     ]
-    if 'Rate limit reached. You reached free usage limit (reset hourly).' in text:
+    if any([x for x in a if x in text]):
         return
     log2(text, 'hugging_face_api')
 

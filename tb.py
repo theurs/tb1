@@ -2779,39 +2779,42 @@ def download_ytb_audio(message: telebot.types.Message):
     """
     Download, split and send chunks to user.
     """
-    url = message.text.split(maxsplit=1)[1]
-    if my_ytb.valid_youtube_url(url):
-        with ShowAction(message, "upload_audio"):
-            title, pic, desc = my_ytb.get_title_and_poster(url)
-            bot.send_photo(
-                message.chat.id,
-                pic,
-                caption=f'{title}\n\n{desc}',
-                disable_notification=True,
-                )
-            source_file = my_ytb.download_audio(url)
-            if source_file:
-                bot_reply_tr(message, 'Скачено успешно, отправляю файл.')
-                files = my_ytb.split_audio(source_file, 20)
+    url = message.text.split(maxsplit=1)
+    if len(url) == 2:
+        url = url[1]
+        
+        if my_ytb.valid_youtube_url(url):
+            with ShowAction(message, "upload_audio"):
+                title, pic, desc = my_ytb.get_title_and_poster(url)
+                bot.send_photo(
+                    message.chat.id,
+                    pic,
+                    caption=f'{title}\n\n{desc}',
+                    disable_notification=True,
+                    )
+                source_file = my_ytb.download_audio(url)
+                if source_file:
+                    bot_reply_tr(message, 'Скачено успешно, отправляю файл.')
+                    files = my_ytb.split_audio(source_file, 20)
+                    if files:
+                        for fn in files:
+                            with open(fn, 'rb') as f:
+                                data = f.read()
+                            bot.send_voice(
+                                message.chat.id,
+                                data,
+                                caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}',
+                                disable_notification = True,
+                                )
+                else:
+                    bot_reply_tr(message, 'Не удалось скачать файл.')
+
+                my_ytb.remove_folder_or_parent(source_file)
                 if files:
-                    for fn in files:
-                        with open(fn, 'rb') as f:
-                            data = f.read()
-                        bot.send_voice(
-                            message.chat.id,
-                            data,
-                            caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}',
-                            disable_notification = True,
-                            )
-            else:
-                bot_reply_tr(message, 'Не удалось скачать файл.')
+                    my_ytb.remove_folder_or_parent(files[0])
+                return
 
-            my_ytb.remove_folder_or_parent(source_file)
-            if files:
-                my_ytb.remove_folder_or_parent(files[0])
-            return
-
-    bot_reply_tr(message, 'Usage: /ytb URL')
+    bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube.')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)

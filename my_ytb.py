@@ -2,12 +2,14 @@
 # pip install pytube
 
 
+import natsort
 import os
 import subprocess
 import shutil
 import tempfile
-from typing import List
+from typing import List, Tuple
 
+import natsort.natsort
 import pytube
 
 import my_log
@@ -44,6 +46,28 @@ def get_title(url: str) -> str:
         return yt.title
     except Exception as error:
         return ''
+
+
+def get_title_and_poster(url: str) -> Tuple[str, str, str]:
+    """Gets the title, thumbnail URL, and description of a YouTube video.
+
+    Args:
+        url: The URL of the YouTube video.
+
+    Returns:
+        A tuple containing the title, thumbnail URL, and description of the video. 
+        If an error occurs, returns a tuple of three empty strings.
+    """
+    try:
+        yt = pytube.YouTube(url)
+        title = yt.title
+        pic = yt.thumbnail_url
+        description = yt.description
+
+        return title or '', pic, description or ''
+    except Exception as error:
+        my_log.log2(f'my_ytb:get_title_and_poster {url} {error}')
+        return '', '', ''
 
 
 def split_audio(input_file: str, max_size_mb: int) -> List[str]:
@@ -92,6 +116,7 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
     # Get the list of files in the temporary folder
     files = [os.path.join(tmp_dir, f) for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]
 
+    natsort.natsorted(files)
     return files
 
 
@@ -178,3 +203,4 @@ if __name__ == '__main__':
     # input = download_audio('https://www.youtube.com/watch?v=DYhs2rv7pT8')
     # print(input)
 
+    print(get_title_and_poster('https://www.youtube.com/watch?v=DYhs2rv7pT8'))

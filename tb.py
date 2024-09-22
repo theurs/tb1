@@ -2782,7 +2782,13 @@ def download_ytb_audio(message: telebot.types.Message):
     url = message.text.split(maxsplit=1)[1]
     if my_ytb.valid_youtube_url(url):
         with ShowAction(message, "upload_audio"):
-            bot_reply_tr(message, 'Начинаю скачивать аудио по ссылке.')
+            title, pic, desc = my_ytb.get_title_and_poster(url)
+            bot.send_photo(
+                message.chat.id,
+                pic,
+                caption=f'{title}\n\n{desc}',
+                disable_notification=True,
+                )
             source_file = my_ytb.download_audio(url)
             if source_file:
                 bot_reply_tr(message, 'Скачено успешно, отправляю файл.')
@@ -2794,7 +2800,7 @@ def download_ytb_audio(message: telebot.types.Message):
                         bot.send_voice(
                             message.chat.id,
                             data,
-                            caption = os.path.splitext(os.path.basename(fn))[0],
+                            caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}',
                             disable_notification = True,
                             )
             else:

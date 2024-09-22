@@ -75,7 +75,11 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
         'ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=bit_rate',
         '-of', 'default=noprint_wrappers=1:nokey=1', input_file
     ]).decode().strip()
-    bit_rate = int(bit_rate_output) if bit_rate_output else 128000  # Use 128 kbps by default if bitrate is not found
+    # Check if bit_rate_output is a number
+    if bit_rate_output.isdigit():
+        bit_rate = int(bit_rate_output)
+    else:
+        bit_rate = 128000  # Use 128 kbps by default if bitrate is not found
 
     # Calculate the segment time in seconds
     segment_time = int(max_size_mb * 8 * 1000 * 1000 / bit_rate)

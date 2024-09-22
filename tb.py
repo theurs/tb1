@@ -39,6 +39,7 @@ import my_groq
 import my_jamba
 import my_log
 import my_ocr
+import my_telegraph
 import my_openrouter
 import my_openrouter_free
 import my_pandoc
@@ -3844,6 +3845,24 @@ Return a `suggestions`
     except Exception as error_unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:image:send: {error_unknown}\n{traceback_error}')
+
+
+@bot.message_handler(commands=['web'], func=authorized)
+@async_run
+def post_telegraph(message: telebot.types.Message):
+    """Generates a web version of last response"""
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+    if mode == 'openrouter':
+        text = my_openrouter.get_last_mem(chat_id_full)
+    elif 'gemini' in mode:
+        text = my_gemini.get_last_mem(chat_id_full)
+    if text:
+        html = utils.bot_markdown_to_html(text)
+        url = my_telegraph.post(html, chat_id_full)
+        if url:
+            bot_reply(message, url)
 
 
 @bot.message_handler(commands=['stats', 'stat'], func=authorized_admin)

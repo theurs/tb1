@@ -505,6 +505,22 @@ def get_mem_for_llama(chat_id: str, l: int = 3):
     return res_mem
 
 
+def get_last_mem(chat_id: str) -> str:
+    """
+    Returns the last answer for the given ID.
+
+    Parameters:
+        chat_id (str): The ID of the chat to get the history for.
+
+    Returns:
+        str:
+    """
+    mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
+    last = mem[-1]
+    if last:
+        return last['parts'][0]['text']
+
+
 def get_mem_as_string(chat_id: str) -> str:
     """
     Returns the chat history as a string for the given ID.

@@ -2,15 +2,20 @@
 # pip install pytube
 
 
+import os
 import subprocess
+import shutil
+import tempfile
+from typing import List
 
 import pytube
 
+import my_log
 import utils
 
 
 def download_ogg(url: str) -> str:
-    '''download audio from youtube url, save to temp file in ogg format, return path to ogg file'''
+    '''Downloads audio from a youtube URL, saves it to a temporary file in OGG format, and returns the path to the OGG file.'''
     tmp_file = utils.get_tmp_fname()
     subprocess.run(['yt-dlp', '-x', '--audio-format', 'vorbis', '-o', tmp_file, url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     # subprocess.run(['yt-dlp', '-x', '--audio-format', 'vorbis', '-o', tmp_file, url])
@@ -18,8 +23,8 @@ def download_ogg(url: str) -> str:
 
 
 def valid_youtube_url(url: str) -> str:
-    '''check if url is valid youtube url, all variants are supported
-       returns video id or empty string'''
+    '''Checks if the URL is a valid YouTube URL (all variants are supported). 
+       Returns the video ID or an empty string if the URL is invalid.'''
     if url.startswith('https://') and len(url.split()) == 1 and ('youtu.be/' in url or 'youtube.com/' in url):
         try:
             id_ = pytube.extract.video_id(url)
@@ -32,11 +37,112 @@ def valid_youtube_url(url: str) -> str:
 
 
 def get_title(url: str) -> str:
+    '''Gets the title of the YouTube video from the given URL.
+       Returns the title or an empty string if an error occurs.'''
     try:
         yt = pytube.YouTube(url)
         return yt.title
     except Exception as error:
         return ''
+
+
+def split_audio(input_file: str, max_size_mb: int) -> List[str]:
+    """
+    Splits audio file into parts no larger than the specified size using ffmpeg.
+
+    Args:
+        input_file: Path to the input audio file.
+        max_size_mb: Maximum part size in megabytes.
+
+    Returns:
+        A list of paths to files in a temporary folder.
+    """
+
+    # Create a temporary folder
+    tmp_dir = tempfile.mkdtemp()
+
+    # Create a temporary folder if it doesn't exist
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
+
+    output_prefix = os.path.join(tmp_dir, "part")
+
+    # Determine the file extension based on the file name
+    extension = os.path.splitext(input_file)[1][1:].lower()
+
+    # Get the audio file bitrate
+    bit_rate_output = subprocess.check_output([
+        'ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=bit_rate',
+        '-of', 'default=noprint_wrappers=1:nokey=1', input_file
+    ]).decode().strip()
+    bit_rate = int(bit_rate_output) if bit_rate_output else 128000  # Use 128 kbps by default if bitrate is not found
+
+    # Calculate the segment time in seconds
+    segment_time = int(max_size_mb * 8 * 1000 * 1000 / bit_rate)
+
+    subprocess.run([
+        'ffmpeg', '-i', input_file, '-f', 'segment', '-segment_time', str(segment_time),
+        '-c', 'copy', f'{output_prefix}%03d.{extension}'
+    ], check=True)
+
+    # Get the list of files in the temporary folder
+    files = [os.path.join(tmp_dir, f) for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]
+
+    return files
+
+
+def download_audio(url: str) -> str | None:
+    """
+    Downloads audio file using yt-dlp to a temporary folder
+    with audio quality 128k or lower.
+
+    Args:
+        url: Link to the audio file.
+
+    Returns:
+        Path to the downloaded file in the temporary folder, or None if download failed.
+    """
+
+    tmp_dir = tempfile.mkdtemp()
+    # Create a temporary folder if it doesn't exist
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
+    output_template = os.path.join(tmp_dir, r"123.%(ext)s")
+
+    subprocess.run([
+        'yt-dlp',
+        '-f', 'bestaudio[abr<=128]/bestaudio',
+        '-o', output_template,
+        # '--noplaylist',
+        # '--quiet',
+        url
+    ], check=True)
+
+    # Find the downloaded file in the folder
+    files = [f for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]
+    if files:
+        return os.path.join(tmp_dir, files[0])
+    else:
+        return None  # File not found
+
+
+def remove_folder_or_parent(path: str) -> None:
+    """
+    Removes a folder with all its contents or the parent folder of a file.
+
+    Args:
+        path: Path to the folder or file.
+    """
+    try:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+    except Exception as error:
+        my_log.log2(f'my_ytb:remove_folder_or_parent: {error}\n\n{path}')
+    try:
+        if os.path.isfile(path):
+            shutil.rmtree(os.path.dirname(path))
+    except Exception as error2:
+        my_log.log2(f'my_ytb:remove_folder_or_parent: {error2}\n\n{path}')
 
 
 if __name__ == '__main__':
@@ -59,4 +165,12 @@ if __name__ == '__main__':
     # for url in urls:
     #     video_id = valid_youtube_url(url)
     #     print(f"{url} -> {video_id}")
-    
+
+
+
+    # files = split_audio("C:/Users/user/AppData/Local/Temp/tmp9ug1aie1/123.m4a", 20) 
+    # print(files) # Выведет список файлов во временной папке
+
+    # input = download_audio('https://www.youtube.com/watch?v=DYhs2rv7pT8')
+    # print(input)
+

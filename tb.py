@@ -49,6 +49,7 @@ import my_sum
 import my_trans
 import my_transcribe
 import my_tts
+import my_ytb
 import utils
 from utils import async_run
 
@@ -2769,6 +2770,42 @@ def donate_stars_handler(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
     help = tr('Help this bot, donate stars.', lang, help = 'Telegram Stars is a new feature that allows users to buy and spend Stars, a new digital currency, on digital goods and services within the Telegram ecosystem, like ebooks, online courses, or items in Telegram games.')
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup = get_keyboard('donate_stars', message))
+
+
+
+@bot.message_handler(commands=['ytb'], func=authorized_owner)
+@async_run
+def download_ytb_audio(message: telebot.types.Message):
+    """
+    Download, split and send chunks to user.
+    """
+    url = message.text.split(maxsplit=1)[1]
+    if my_ytb.valid_youtube_url(url):
+        with ShowAction(message, "upload_audio"):
+            bot_reply_tr(message, 'Начинаю скачивать аудио по ссылке.')
+            source_file = my_ytb.download_audio(url)
+            if source_file:
+                bot_reply_tr(message, 'Скачено успешно, отправляю файл.')
+                files = my_ytb.split_audio(source_file, 20)
+                if files:
+                    for fn in files:
+                        with open(fn, 'rb') as f:
+                            data = f.read()
+                        bot.send_voice(
+                            message.chat.id,
+                            data,
+                            caption = os.path.splitext(os.path.basename(fn))[0],
+                            disable_notification = True,
+                            )
+            else:
+                bot_reply_tr(message, 'Не удалось скачать файл.')
+
+            my_ytb.remove_folder_or_parent(source_file)
+            if files:
+                my_ytb.remove_folder_or_parent(files[0])
+            return
+
+    bot_reply_tr(message, 'Usage: /ytb URL')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)

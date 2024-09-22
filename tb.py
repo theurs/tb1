@@ -3875,7 +3875,7 @@ def post_telegraph(message: telebot.types.Message):
         if html:
             url = my_telegraph.post(html, chat_id_full)
             if url:
-                bot_reply(message, url)
+                bot_reply(message, url, disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['stats', 'stat'], func=authorized_admin)

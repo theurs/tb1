@@ -362,13 +362,105 @@ def img2txt(
     return result
 
 
+# def voice2txt(
+#     voice_data: bytes,
+#     model = 'google/gemini-flash-8b-1.5-exp',
+#     temperature: float = 0,
+#     max_tokens: int = 2000,
+#     timeout: int = 120) -> str:
+#     """
+#     Transcribes audio data to text using the specified model and parameters.
+
+#     Args:
+#         voice_data: The audio data as bytes.
+#         model: The model to use for generating the transcription. Defaults to 'google/gemini-flash-8b-1.5-exp'.
+#         temperature: The temperature parameter for controlling the randomness of the output. Defaults to 0.
+#         max_tokens: The maximum number of tokens to generate. Defaults to 2000.
+#         timeout: The timeout for the request in seconds. Defaults to 120.
+
+#     Returns:
+#         A string containing the transcribed text, or an empty string if an error occurs.
+#     """
+
+#     if isinstance(voice_data, str):
+#         with open(voice_data, 'rb') as f:
+#             voice_data = f.read()
+
+#     if not model:
+#         model = 'google/gemini-flash-8b-1.5-exp'
+
+#     # if not model.endswith(':free'):
+#     #     return ''
+
+#     if not hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
+#         return ''
+
+#     base64_voice = base64.b64encode(voice_data).decode()
+
+#     YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
+#     YOUR_APP_NAME = 'kun4sun_bot'
+
+#     result = ''
+
+#     for _ in range(3):
+#         response = requests.post(
+#             url="https://openrouter.ai/api/v1/chat/completions",
+#             headers={
+#                 "Authorization": f"Bearer {random.choice(cfg.OPEN_ROUTER_FREE_KEYS)}",
+#                 "HTTP-Referer": f"{YOUR_SITE_URL}",  # Optional, for including your app on openrouter.ai rankings.
+#                 "X-Title": f"{YOUR_APP_NAME}",  # Optional. Shows in rankings on openrouter.ai.
+#             },
+#             data=json.dumps({
+
+#                 "model": model,
+#                 "temperature": temperature,
+#                 "messages": [
+#                     {
+#                     "role": "user",
+#                     "content": [
+#                         {
+#                             "type": "text",
+#                             "text": 'transcribe it'
+#                         },
+#                         {
+#                             "type": "voice_url",
+#                             "voice_url": {
+#                                 "url": f"data:audio/mpeg;base64,{base64_voice}"
+#                             }
+#                         }
+#                     ]
+#                     }
+#                 ],
+#                 "max_tokens": max_tokens
+
+#             }),
+#             timeout=timeout,
+#         )
+
+#         status = response.status_code
+#         if status == 200:
+#             try:
+#                 result = response.json()['text'].strip()
+#                 break
+#             except Exception as error:
+#                 my_log.log_openrouter_free(f'Failed to parse response: {error}\n\n{str(response)}')
+#                 result = ''
+#                 time.sleep(2)
+#         else:
+#             my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response[:2000])}')
+#             time.sleep(2)
+
+#     return result
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
-    reset('test')
-    chat_cli()
+    # reset('test')
+    # chat_cli()
 
-    # print(img2txt('d:/downloads/3.png', 'вытащи весь текст с форматированием из картинки'))
+    print(img2txt('d:/downloads/1.png', 'вытащи весь текст с форматированием из картинки',model='google/gemini-flash-1.5-exp'))
+    # print(voice2txt('d:/downloads/1.ogg'))
 
     my_db.close()

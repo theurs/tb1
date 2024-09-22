@@ -116,8 +116,7 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
     # Get the list of files in the temporary folder
     files = [os.path.join(tmp_dir, f) for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]
 
-    natsort.natsorted(files)
-    return files
+    return natsort.natsorted(files)
 
 
 def download_audio(url: str) -> str | None:

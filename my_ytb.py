@@ -92,26 +92,24 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
 
     output_prefix = os.path.join(tmp_dir, "part")
 
-    # Determine the file extension based on the file name
-    extension = os.path.splitext(input_file)[1][1:].lower()
-
-    # Get the audio file bitrate
-    bit_rate_output = subprocess.check_output([
-        'ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=bit_rate',
-        '-of', 'default=noprint_wrappers=1:nokey=1', input_file
-    ]).decode().strip()
-    # Check if bit_rate_output is a number
-    if bit_rate_output.isdigit():
-        bit_rate = int(bit_rate_output)
-    else:
-        bit_rate = 128000  # Use 128 kbps by default if bitrate is not found
+    bit_rate = 64000
 
     # Calculate the segment time in seconds
     segment_time = int(max_size_mb * 8 * 1000 * 1000 / bit_rate)
 
     subprocess.run([
-        'ffmpeg', '-i', input_file, '-f', 'segment', '-segment_time', str(segment_time),
-        '-c', 'copy', f'{output_prefix}%03d.{extension}'
+        'ffmpeg',
+        '-i',
+        input_file,
+        '-f',
+        'segment',
+        '-segment_time',
+        str(segment_time),
+        '-acodec',
+        'libvorbis',
+        '-ab',
+        '64k',
+        f'{output_prefix}%03d.ogg'
     ], check=True)
 
     # Get the list of files in the temporary folder

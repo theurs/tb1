@@ -37,6 +37,7 @@ openpyxl
 odfpy
 pandas
 Pillow
+pillow-heif
 prettytable
 pyarrow
 pyenchant

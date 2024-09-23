@@ -2130,6 +2130,10 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
             photo = message.photo[-1]
             try:
                 file_info = bot.get_file(photo.file_id)
+                if message.photo.mime_type == 'image/heif':
+                    HEIF = True
+                else:
+                    HEIF = False
             except telebot.apihelper.ApiTelegramException as error:
                 if 'file is too big' in str(error):
                     bot_reply_tr(message, 'Too big file.')
@@ -2140,6 +2144,10 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
         elif message.document:
             file_id = message.document.file_id
             try:
+                if message.document.mime_type == 'image/heif':
+                    HEIF = True
+                else:
+                    HEIF = False
                 file_info = bot.get_file(file_id)
             except telebot.apihelper.ApiTelegramException as error:
                 if 'file is too big' in str(error):
@@ -2150,7 +2158,10 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
             file = bot.download_file(file_info.file_path)
             fp = io.BytesIO(file)
             image = fp.read()
-        return image
+        if HEIF:
+            return utils.heic2jpg(image)
+        else:
+            return image
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:download_image_from_message: {error} {traceback_error}')

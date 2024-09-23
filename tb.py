@@ -3916,7 +3916,7 @@ def post_telegraph(message: telebot.types.Message):
         text = my_jamba.get_last_mem(chat_id_full)
     elif mode == 'openrouter_llama405':
         text = my_openrouter_free.get_last_mem(chat_id_full)
-    elif mode in ('gpt4omini', 'haiku',):
+    elif mode in ('gpt-4o-mini-ddg', 'haiku',):
         text = my_ddg.get_last_mem(chat_id_full)
     if text:
         html = ''

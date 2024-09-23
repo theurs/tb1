@@ -109,6 +109,10 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
         'libvorbis',
         '-ab',
         '64k',
+        '-avoid_negative_ts',
+        'make_zero',
+        '-loglevel',
+        'quiet',
         f'{output_prefix}%03d.ogg'
     ], check=True)
 

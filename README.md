@@ -378,6 +378,10 @@ JAMBA_KEYS = [
     'key2',
 ]
 
+# string for /donate command html parsing
+# DONATION_STRING = '<a href = "https://www.donationalerts.com/r/xxx">DonationAlerts</a>'
+
+
 # DEBUG = False
 ```
 

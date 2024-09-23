@@ -2767,7 +2767,10 @@ def addkeys(message: telebot.types.Message):
 @bot.message_handler(commands=['donate'], func=authorized_owner)
 @async_run
 def donate(message: telebot.types.Message):
-    help = f'[<a href = "https://www.donationalerts.com/r/theurs">DonationAlerts</a> 💸 <a href = "https://www.sberbank.com/ru/person/dl/jc?linkname=EiDrey1GTOGUc3j0u">SBER</a> 💸 <a href = "https://qiwi.com/n/KUN1SUN">QIWI</a> 💸 <a href = "https://yoomoney.ru/to/4100118478649082">Yoomoney</a>]'
+    if hasattr(cfg, 'DONATION_STRING'):
+        help = cfg.DONATION_STRING
+    else:
+        help = '<None>'
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup = get_keyboard('donate_stars', message))
 
 

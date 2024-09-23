@@ -2130,10 +2130,7 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
             photo = message.photo[-1]
             try:
                 file_info = bot.get_file(photo.file_id)
-                if message.photo.mime_type == 'image/heif':
-                    HEIF = True
-                else:
-                    HEIF = False
+                HEIF = False
             except telebot.apihelper.ApiTelegramException as error:
                 if 'file is too big' in str(error):
                     bot_reply_tr(message, 'Too big file.')

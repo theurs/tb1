@@ -476,7 +476,7 @@ Return a `image_transcription`
                             text = text + detailed_description + '\n\n'
                         if extracted_formatted_text:
                             text = text + '\n```text\n' + extracted_formatted_text + '\n```\n\n'
-                        if image_generation_prompt and len(extracted_formatted_text) < 30:
+                        if image_generation_prompt and extracted_formatted_text and len(extracted_formatted_text) < 30:
                             text = text + f'\n```\n/img {image_generation_prompt}\n```'
                     except Exception as error:
                         my_log.log2(f'tb:img2txt: {error}\n\n{text_}')

@@ -485,8 +485,9 @@ Return a `image_transcription`
                             text = text + detailed_description + '\n\n'
                         if extracted_formatted_text:
                             text = text + '\n```text\n' + extracted_formatted_text + '\n```\n\n'
-                        if image_generation_prompt and extracted_formatted_text and len(extracted_formatted_text) < 30:
-                            text = text + f'\n```\n/img {image_generation_prompt}\n```'
+                        if image_generation_prompt:
+                            if extracted_formatted_text and len(extracted_formatted_text) < 30 or not not extracted_formatted_text:
+                                text = text + f'\n```\n/img {image_generation_prompt}\n```'
                         if not text.strip():
                             text = text_
                     except Exception as error:

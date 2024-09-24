@@ -2800,12 +2800,13 @@ def download_ytb_audio(message: telebot.types.Message):
                 if size == 0 or size > 6*60*60:
                     bot_reply_tr(message, 'Слишком большое видео.')
                     return
-                bot.send_photo(
+                m = bot.send_photo(
                     message.chat.id,
                     pic,
                     caption=f'{title}\n\n{desc}',
                     disable_notification=True,
                     )
+                log_message(m)
                 source_file = my_ytb.download_audio(url)
                 if source_file:
                     bot_reply_tr(message, 'Скачено успешно, отправляю файл.')
@@ -2814,12 +2815,13 @@ def download_ytb_audio(message: telebot.types.Message):
                         for fn in files:
                             with open(fn, 'rb') as f:
                                 data = f.read()
-                            bot.send_voice(
+                            m = bot.send_voice(
                                 message.chat.id,
                                 data,
                                 caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}',
                                 disable_notification = True,
                                 )
+                            log_message(m)
                 else:
                     bot_reply_tr(message, 'Не удалось скачать файл.')
 

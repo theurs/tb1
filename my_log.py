@@ -426,7 +426,6 @@ def log_media(message: telebot.types.Message) -> None:
                     log_file.write(f"[{time_now}] [{user_name}]: [Отправил фото] [caption]: {caption}\n")
 
 
-
 def purge(chat_id: int) -> bool:
     """
     Remove log files associated with the given chat_id and return True if successful, False otherwise.

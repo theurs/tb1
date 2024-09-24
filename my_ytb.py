@@ -125,7 +125,7 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
 def download_audio(url: str) -> str | None:
     """
     Downloads audio file using yt-dlp to a temporary folder
-    with audio quality 256k or lower.
+    with audio quality 128k or lower.
 
     Args:
         url: Link to the audio file.
@@ -142,7 +142,7 @@ def download_audio(url: str) -> str | None:
 
     subprocess.run([
         'yt-dlp',
-        '-f', 'bestaudio[abr<=256]/bestaudio',
+        '-f', 'bestaudio[abr<=128]/bestaudio',
         '-o', output_template,
         # '--noplaylist',
         # '--quiet',

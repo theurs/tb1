@@ -476,7 +476,7 @@ Return a `image_transcription`
                             text = text + detailed_description + '\n\n'
                         if extracted_formatted_text:
                             text = text + '\n```text\n' + extracted_formatted_text + '\n```\n\n'
-                        if image_generation_prompt:
+                        if image_generation_prompt and len(extracted_formatted_text) < 30:
                             text = text + f'\n```\n/img {image_generation_prompt}\n```'
                     except Exception as error:
                         my_log.log2(f'tb:img2txt: {error}\n\n{text_}')
@@ -4695,6 +4695,12 @@ def purge_cmd_handler(message: telebot.types.Message):
 
         if my_log.purge(message.chat.id):
             lang = get_lang(chat_id_full, message)
+
+            with LOG_GROUP_MESSAGES_LOCK:
+                for k in [x for x in LOG_GROUP_MESSAGES.keys()]:
+                    data = LOG_GROUP_MESSAGES[k]
+                    if data[2] == chat_id_full:
+                        del LOG_GROUP_MESSAGES[k]
 
             my_gemini.reset(chat_id_full)
             my_groq.reset(chat_id_full)

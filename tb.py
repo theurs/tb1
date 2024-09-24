@@ -469,15 +469,26 @@ Return a `image_transcription`
                 d = utils.string_to_dict(text_)
                 if d:
                     try:
-                        detailed_description = d['detailed_description']
-                        extracted_formatted_text = d['extracted_formatted_text']
-                        image_generation_prompt = d['image_generation_prompt']
+                        try:
+                            detailed_description = d['detailed_description']
+                        except:
+                            detailed_description = ''
+                        try:
+                            extracted_formatted_text = d['extracted_formatted_text']
+                        except:
+                            extracted_formatted_text = ''
+                        try:
+                            image_generation_prompt = d['image_generation_prompt']
+                        except:
+                            image_generation_prompt = ''
                         if detailed_description:
                             text = text + detailed_description + '\n\n'
                         if extracted_formatted_text:
                             text = text + '\n```text\n' + extracted_formatted_text + '\n```\n\n'
                         if image_generation_prompt and extracted_formatted_text and len(extracted_formatted_text) < 30:
                             text = text + f'\n```\n/img {image_generation_prompt}\n```'
+                        if not text.strip():
+                            text = text_
                     except Exception as error:
                         my_log.log2(f'tb:img2txt: {error}\n\n{text_}')
                         text = text_
@@ -488,7 +499,7 @@ Return a `image_transcription`
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
-    if text:        
+    if text:
         add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + query, text, chat_id_full)
 
     return text

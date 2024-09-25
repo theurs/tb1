@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 
 
+import datetime
 import gzip
 import hashlib
+import io
 import lzma
+import matplotlib
 import pickle
+import pprint
 import time
 import threading
 import traceback
 import shutil
 import sqlite3
 import sys
+matplotlib.use('Agg') #  Отключаем вывод графиков на экран
+import matplotlib.pyplot as plt
+from collections import OrderedDict
+import matplotlib.dates as mdates
 
 from cachetools import LRUCache
 
@@ -374,6 +382,89 @@ def count_new_user_in_days(days: int) -> int:
         except Exception as error:
             my_log.log2(f'my_db:count_new_user_in_days {error}')
             return 0
+
+
+def get_users_for_last_days(days: int) -> OrderedDict:
+    """
+    Retrieves the number of active users for each of the past `days`, excluding today.
+
+    Args:
+        days: The number of past days to retrieve data for (excluding today).
+
+    Returns:
+        An OrderedDict containing the number of active users for each day. 
+        The keys are date strings in "YYYY-MM-DD" format, and the values are the 
+        corresponding user counts. The dates are ordered from oldest to newest.
+        Returns an empty OrderedDict if days is less than or equal to zero.
+    """
+
+    result = OrderedDict()
+    for i in range(days - 1, -1, -1):  # Итерация в обратном порядке
+        date_obj = datetime.date.today() - datetime.timedelta(days=i)
+        date_str = date_obj.strftime("%Y-%m-%d")
+        try:
+            start_timestamp = time.mktime(date_obj.timetuple())
+            end_timestamp = start_timestamp + 24 * 60 * 60
+
+            with LOCK:
+                CUR.execute('''
+                    SELECT COUNT(DISTINCT user_id) FROM msg_counter
+                    WHERE access_time >= ? AND access_time < ?
+                ''', (start_timestamp, end_timestamp))
+                users_count = CUR.fetchone()[0]
+        except Exception as error:
+            my_log.log2(f'my_db:get_users_for_last_days {error}')
+            users_count = 0
+
+        result[date_str] = users_count
+
+    if result:  # Проверяем, не пустой ли словарь
+        result.popitem() # Удаляем последний элемент
+
+    return result # Возвращаем OrderedDict
+
+
+def draw_user_activity(days: int = 7) -> bytes:
+    """
+    Generates a chart of user activity for the specified number of days and returns it as bytes.
+
+    Args:
+        days: The number of days for which to generate the chart. Defaults to 7.
+
+    Returns:
+        Bytes of the chart image in PNG format. Returns an empty byte array if an error occurs.
+    """
+
+    data = get_users_for_last_days(days)
+
+    dates = list(data.keys())
+    x_dates = [datetime.datetime.strptime(d, "%Y-%m-%d").date() for d in dates]
+    values = list(data.values())
+
+
+    fig, ax = plt.subplots(figsize=(10, 6), facecolor='white') # Увеличиваем размер графика, Устанавливаем белый фон для фигуры
+
+    ax.plot(x_dates, values, marker='o', linestyle='-', linewidth=2, color='#4C72B0') #  Добавляем маркеры, меняем цвет и толщину линии
+
+    ax.set_xlabel("Дата", fontsize=12)
+    ax.set_ylabel("Количество пользователей", fontsize=12)
+    ax.set_title(f"Активность пользователей за последние {days} дней", fontsize=14)
+
+    ax.grid(True, linestyle='--', alpha=0.7) #  Меняем стиль сетки
+
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # Автоматически выбираем лучшие метки для дат
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d')) # Форматируем даты
+    fig.autofmt_xdate() #  Автоматически поворачиваем даты
+
+    plt.tight_layout()
+
+    buf = io.BytesIO() # Создаем буфер в памяти
+    plt.savefig(buf, format="png", dpi=300, bbox_inches='tight') # Сохраняем график в буфер
+    buf.seek(0) # Перемещаем указатель в начало буфера
+    image_bytes = buf.read() # Читаем байты из буфера
+    buf.close() # Закрываем буфер
+
+    return image_bytes # Возвращаем байты изображения
 
 
 def get_translation(text: str, lang: str, help: str) -> str:
@@ -794,6 +885,12 @@ def delete_from_im_suggests(hash: str):
 if __name__ == '__main__':
     pass
     init(backup=False)
+
+    draw_user_activity(30)
+
+    # last_days_users = get_users_for_last_days(7)
+    # pprint.pprint(last_days_users)
+
 
     # a='xg'*100000
     # b = obj_to_blob(a)

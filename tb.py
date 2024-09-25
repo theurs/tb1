@@ -3993,7 +3993,18 @@ def stats(message: telebot.types.Message):
         msg += f'\nDEEPL keys: {len(my_trans.ALL_KEYS)+len(cfg.DEEPL_KEYS if hasattr(cfg, "DEEPL_KEYS") else [])}'
         msg += f'\n\n Uptime: {get_uptime()}'
 
+        usage_plots_image = my_db.draw_user_activity(90)
+
         bot_reply(message, msg)
+        if usage_plots_image:
+            m = bot.send_photo(
+                message.chat.id,
+                usage_plots_image,
+                disable_notification=True,
+                reply_to_message_id=message.message_id,
+                reply_markup=get_keyboard('hide', message),
+                )
+            log_message(m)
 
 
 @bot.message_handler(commands=['shell', 'cmd'], func=authorized_admin)

@@ -1064,7 +1064,7 @@ User's PROMPT: {prompt}
 Dialog history: {conversation_history}
 
 Using this JSON schema:
-  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str\}}
+  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str}}
 Return a `reprompt`
 '''
 

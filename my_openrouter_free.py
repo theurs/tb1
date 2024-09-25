@@ -64,6 +64,8 @@ def ai(prompt: str = '',
     if not hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
         return ''
 
+    if not temperature:
+        temperature = 0.1
     if 'llama' in model and temperature > 0:
         temperature = temperature / 2
 

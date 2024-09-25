@@ -276,6 +276,10 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
     text = re.sub(r'^\*\*(.*?)\*\*$', r'<b>\1</b>', text, flags=re.MULTILINE | re.DOTALL)
 
+    # 2 _ в <i></i>
+    text = re.sub('\_\_(.+?)\_\_', '<i>\\1</i>', text)
+    text = re.sub(r'^\_\_(.*?)\_\_$', r'<i>\1</i>', text, flags=re.MULTILINE | re.DOTALL)
+
     # tex в unicode
     matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
     for match in matches:
@@ -386,14 +390,14 @@ def replace_tables(text: str) -> str:
 
 def split_html(text: str, max_length: int = 1500) -> list:
     """
-    Split the given HTML text into chunks of maximum length specified by `max_length`.
+    Splits HTML text into chunks with a maximum length, respecting code blocks, bold, and italic tags.
 
-    Parameters:
-        text (str): The HTML text to be split into chunks.
-        max_length (int, optional): The maximum length of each chunk. Defaults to 1500.
+    Args:
+        text: The HTML text to split.
+        max_length: The maximum length of each chunk.
 
     Returns:
-        list: A list of chunks, where each chunk is a string.
+        A list of HTML chunks.
     """
     code_tag = ''
     in_code_mode = 0
@@ -405,37 +409,36 @@ def split_html(text: str, max_length: int = 1500) -> list:
         if line.startswith('<pre><code') and line.find('</code></pre>') == -1:
             in_code_mode = 1
             code_tag = line[:line.find('>', 10) + 1]
-
         elif line.startswith('<code>') and line.find('</code>') == -1:
             in_code_mode = 2
             code_tag = '<code>'
-
         elif line.startswith('<b>') and line.find('</b>') == -1:
             in_code_mode = 3
             code_tag = '<b>'
-
-        elif line == '</code></pre>' or line == '</code>' or line == '</b>':
+        elif line.startswith('<i>') and line.find('</i>') == -1:
+            in_code_mode = 4
+            code_tag = '<i>'
+        elif line == '</code></pre>' or line == '</code>' or line == '</b>' or line == '</i>':
             code_tag = ''
             in_code_mode = 0
-
         else:
             if len(chunk) + len(line) + 20 > max_length:
-
                 if in_code_mode == 1:
                     chunk += '</code></pre>\n'
                     chunks.append(chunk)
                     chunk = code_tag
-
-                if in_code_mode == 2:
+                elif in_code_mode == 2:
                     chunk += '</code>\n'
                     chunks.append(chunk)
                     chunk = code_tag
-
-                if in_code_mode == 3:
+                elif in_code_mode == 3:
                     chunk += '</b>\n'
                     chunks.append(chunk)
                     chunk = code_tag
-
+                elif in_code_mode == 4:
+                    chunk += '</i>\n'
+                    chunks.append(chunk)
+                    chunk = code_tag
                 elif in_code_mode == 0:
                     chunks.append(chunk)
                     chunk = ''
@@ -806,8 +809,10 @@ if __name__ == '__main__':
 
 W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub>, x<sub>i</sub>)]<sup>2</sup>Π[a(x<sub>i</sub>) = j] → min;
 
+Ну __вот и наклонный__ текст.
+
     """
-    # print(bot_markdown_to_html(t))
+    print(bot_markdown_to_html(t))
 
 
 

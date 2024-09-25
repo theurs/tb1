@@ -5452,6 +5452,7 @@ def do_task(message, custom_prompt: str = ''):
                     f'For text formatting, use markdown - two asterisks to highlight words and phrases within a single line **, '
                     f'[Header](URL) or just URL for web links, single backticks for inline code and monospace font `,  '
                     f'three backticks for multi-line code , and three backticks with language specification for syntax highlighting in multi-line code python, '
+                    f'two _ for __italic__ text, ',
                     f'tabular data should be formatted using monospace font , mathematical notation should be written using Unicode characters'
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
@@ -5468,6 +5469,7 @@ def do_task(message, custom_prompt: str = ''):
                     f'For text formatting, use markdown - two asterisks to highlight words and phrases within a single line **, '
                     f'[Header](URL) or just URL for web links, single backticks for inline code and monospace font `,  '
                     f'three backticks for multi-line code , and three backticks with language specification for syntax highlighting in multi-line code python, '
+                    f'two _ for __italic__ text, ',
                     f'tabular data should be formatted using monospace font , mathematical notation should be written using Unicode characters'
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )

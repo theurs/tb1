@@ -384,6 +384,47 @@ def count_new_user_in_days(days: int) -> int:
             return 0
 
 
+def get_new_users_for_last_days(days: int) -> OrderedDict:
+    """
+    Retrieves the number of new users for each of the past `days` from the database.
+
+    Args:
+        days: The number of past days to retrieve data for.
+
+    Returns:
+        An OrderedDict containing the number of new users for each day.
+        The keys are date strings in "YYYY-MM-DD" format, and the values are the
+        corresponding new user counts. The dates are ordered from oldest to newest.
+    """
+
+    result = OrderedDict()
+    today = datetime.date.today()
+    with LOCK:
+        try:
+            for i in range(days - 1, -1, -1):
+                date_obj = today - datetime.timedelta(days=i)
+                date_str = date_obj.strftime("%Y-%m-%d")
+                start_timestamp = time.mktime(date_obj.timetuple())
+                end_timestamp = start_timestamp + 24 * 60 * 60
+
+                CUR.execute('''
+                    SELECT COUNT(DISTINCT T1.user_id)
+                    FROM msg_counter AS T1
+                    INNER JOIN users AS T2 ON T1.user_id = T2.id
+                    WHERE T2.first_meet >= ? AND T2.first_meet < ?
+                ''', (start_timestamp, end_timestamp))
+                new_users_count = CUR.fetchone()[0]
+                result[date_str] = new_users_count
+
+        except Exception as error:
+            my_log.log2(f'my_db:get_new_users_for_last_days {error}')
+
+    if result:  # Проверяем, не пустой ли словарь
+        result.popitem() # Удаляем последний элемент
+
+    return result
+
+
 def get_users_for_last_days(days: int) -> OrderedDict:
     """
     Retrieves the number of active users for each of the past `days`, excluding today.
@@ -424,47 +465,63 @@ def get_users_for_last_days(days: int) -> OrderedDict:
     return result # Возвращаем OrderedDict
 
 
-def draw_user_activity(days: int = 7) -> bytes:
+def draw_user_activity(days: int = 90) -> bytes:
     """
-    Generates a chart of user activity for the specified number of days and returns it as bytes.
+    Generates a chart of user activity with English labels and comments.
 
     Args:
-        days: The number of days for which to generate the chart. Defaults to 7.
+        days: The number of days for which to generate the chart. Defaults to 90.
 
     Returns:
-        Bytes of the chart image in PNG format. Returns an empty byte array if an error occurs.
+        Bytes of the chart image in PNG format.
     """
 
     data = get_users_for_last_days(days)
+    new_users_data = get_new_users_for_last_days(days)
 
     dates = list(data.keys())
     x_dates = [datetime.datetime.strptime(d, "%Y-%m-%d").date() for d in dates]
-    values = list(data.values())
+    active_users = list(data.values())
+    new_users = list(new_users_data.values())
+
+    fig, ax1 = plt.subplots(figsize=(10, 6), facecolor='white')
+
+    # Plot active users on the primary y-axis
+    ax1.plot(x_dates, active_users, marker='o', color='#4C72B0', label='Active Users', alpha=0.7)
+    ax1.set_xlabel("Date", fontsize=12)
+    ax1.set_ylabel("Active Users", fontsize=12, color='#4C72B0')
+    ax1.tick_params(axis='y', labelcolor='#4C72B0')
+
+    # Create a secondary y-axis for new users
+    ax2 = ax1.twinx()
+    ax2.plot(x_dates, new_users, marker='x', linestyle='--', color='#C44E52', label='New Users', alpha=0.7)
+    ax2.set_ylabel("New Users", fontsize=12, color='#C44E52')
+    ax2.tick_params(axis='y', labelcolor='#C44E52')
+
+    # Set chart title and grid
+    ax1.set_title(f"User Activity for the Last {days} Days", fontsize=14)
+    ax1.grid(axis='y', linestyle='--', alpha=0.3)  # Lighter grid lines
+    ax2.grid(False) # Turn off grid for the secondary axis
 
 
-    fig, ax = plt.subplots(figsize=(10, 6), facecolor='white') # Увеличиваем размер графика, Устанавливаем белый фон для фигуры
+    # Format x-axis dates
+    ax1.xaxis.set_major_locator(mdates.AutoDateLocator())
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    fig.autofmt_xdate()
 
-    ax.plot(x_dates, values, marker='o', linestyle='-', linewidth=2, color='#4C72B0') #  Добавляем маркеры, меняем цвет и толщину линии
+    # Combine legends for both axes
+    handles1, labels1 = ax1.get_legend_handles_labels()
+    handles2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(handles1 + handles2, labels1 + labels2, loc="upper left")
 
-    ax.set_xlabel("Дата", fontsize=12)
-    ax.set_ylabel("Количество пользователей", fontsize=12)
-    ax.set_title(f"Активность пользователей за последние {days} дней", fontsize=14)
+    # Save the plot to a bytes buffer
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=300, bbox_inches='tight') # Increased DPI for better quality
+    buf.seek(0)
+    image_bytes = buf.read()
+    buf.close()
 
-    ax.grid(True, linestyle='--', alpha=0.7) #  Меняем стиль сетки
-
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # Автоматически выбираем лучшие метки для дат
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d')) # Форматируем даты
-    fig.autofmt_xdate() #  Автоматически поворачиваем даты
-
-    plt.tight_layout()
-
-    buf = io.BytesIO() # Создаем буфер в памяти
-    plt.savefig(buf, format="png", dpi=300, bbox_inches='tight') # Сохраняем график в буфер
-    buf.seek(0) # Перемещаем указатель в начало буфера
-    image_bytes = buf.read() # Читаем байты из буфера
-    buf.close() # Закрываем буфер
-
-    return image_bytes # Возвращаем байты изображения
+    return image_bytes
 
 
 def get_translation(text: str, lang: str, help: str) -> str:
@@ -886,11 +943,10 @@ if __name__ == '__main__':
     pass
     init(backup=False)
 
-    draw_user_activity(30)
+    # pprint.pprint(get_new_users_for_last_days(90))
 
-    # last_days_users = get_users_for_last_days(7)
-    # pprint.pprint(last_days_users)
-
+    # with open('d:/downloads/1.png', 'wb') as f:
+        # f.write(draw_user_activity(90))
 
     # a='xg'*100000
     # b = obj_to_blob(a)

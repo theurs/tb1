@@ -459,7 +459,11 @@ Return a `image_transcription`
 
             # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
             if not text_:
-                text_ = my_openrouter_free.img2txt(data, query)
+                text_ = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free')
+
+            # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
+            if not text_:
+                text_ = my_openrouter_free.img2txt(data, query, model='meta-llama/llama-3.2-11b-vision-instruct:free')
 
             # если не ответил джемини то попробовать groq (llava)
             if not text_:

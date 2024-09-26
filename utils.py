@@ -324,6 +324,7 @@ def bot_markdown_to_html(text: str) -> str:
 def replace_code_lang(t: str) -> str:
     """
     Replaces the code language in the given string with appropriate HTML tags.
+    Adds "language-plaintext" class if no language is specified but <code> tags are present.
 
     Parameters:
         t (str): The input string containing code snippets.
@@ -334,18 +335,21 @@ def replace_code_lang(t: str) -> str:
     result = ''
     state = 0
     for i in t.split('\n'):
-        if i.startswith('<code>') and len(i) >= 7 and '</code>' not in i:
-            result += f'<pre><code class = "language-{i[6:]}">'
-            state = 1
-        else:
-            if state == 1:
-                if i == '</code>':
-                    result += '</code></pre>\n'
-                    state = 0
-                else:
-                    result += i + '\n'
+        if i.startswith('<code>'):
+            if len(i) >= 7 and '</code>' not in i:
+                result += f'<pre><code class = "language-{i[6:]}">'
+                state = 1
+            elif i == '<code>':
+                result += '<pre><code class="language-plaintext">'
+                state = 1
+        elif state == 1:
+            if i == '</code>':
+                result += '</code></pre>\n'
+                state = 0
             else:
                 result += i + '\n'
+        else:
+            result += i + '\n'
 
     return result
 

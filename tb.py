@@ -1428,7 +1428,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton('🔒Gemini 1.5 Pro 🚀', callback_data='select_gemini15_pro')
         # button3 = telebot.types.InlineKeyboardButton('GPT-4o 🚀', callback_data='select_gpt4o')
         button3 = telebot.types.InlineKeyboardButton('Gemma 2 9b 🚴‍♀️', callback_data='select_gemma2-9b')
-        button4 = telebot.types.InlineKeyboardButton('Llama-3.1 70b 🚗', callback_data='select_llama370')
+        button4 = telebot.types.InlineKeyboardButton('Llama-3.2 90b 🚗', callback_data='select_llama370')
         button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
         button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
         markup.row(button1, button2)
@@ -1689,7 +1689,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT-4o.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt4o')
         elif call.data == 'select_llama370':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 70b Groq.', lang))
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.2 70b Groq.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
         elif call.data == 'select_llama405':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
@@ -1727,7 +1727,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'groq-llama370_reset':
             my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Groq llama 3.1 70b очищена.')
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('История диалога с Groq llama 3.1 70b очищена.', lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('История диалога с Groq llama 3.2 90b очищена.', lang))
         elif call.data == 'gemma2-9b_reset':
             my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Gemma 2 9b очищена.')
@@ -2611,7 +2611,7 @@ def translation_gui(message: telebot.types.Message):
                         new_translation = my_gemini.translate(original, to_lang = lang, help = help)
                     if not new_translation:
                         new_translation = my_groq.translate(original, to_lang = lang, help = help)
-                        my_db.add_msg(chat_id_full, 'llama3-70b-8192')
+                        my_db.add_msg(chat_id_full, 'llama-3.2-90b-text-preview')
                     if new_translation:
                         my_db.update_translation(original, lang, help, new_translation)
 
@@ -3174,7 +3174,7 @@ def send_debug_history(message: telebot.types.Message):
         prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        prompt = 'Groq llama 3.1 70b\n\n'
+        prompt = 'Groq llama 3.2 90b\n\n'
         prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
@@ -4303,7 +4303,7 @@ def ask_file(message: telebot.types.Message):
             result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = cfg.gemini_flash_model)
             # result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-pro')
             if not result:
-                result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000, model_ = 'llama-3.1-70b-versatile')
+                result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000, model_ = 'llama-3.2-90b-text-preview')
             if not result:
                 result = my_groq.ai(q[:my_groq.MAX_REQUEST_GEMMA2_9B], model_ = 'gemma2-9b-it', temperature=1, max_tokens_ = 4000)
 
@@ -4797,7 +4797,7 @@ def id_cmd_handler(message: telebot.types.Message):
         'gemini': 'Gemini 1.5 Flash',
         'gemini15': 'Gemini 1.5 Pro',
         'gemini8': 'Gemini 1.5 Flash 8b',
-        'llama370': 'Llama 3.1 70b',
+        'llama370': 'Llama 3.2 90b',
         'openrouter_llama405': 'Llama 3.1 405b',
         'openrouter': 'openrouter.ai',
         'jamba': 'Jamba 1.5 mini',
@@ -5380,7 +5380,7 @@ def do_task(message, custom_prompt: str = ''):
                             with ShowAction(message, 'typing'):
                                 # response, text__ = my_gemini.check_phone_number(number)
                                 response, text__ = my_groq.check_phone_number(number)
-                                my_db.add_msg(chat_id_full, 'llama3-70b-8192')
+                                my_db.add_msg(chat_id_full, 'llama-3.2-90b-text-preview')
                         if response:
                             my_db.set_user_property(chat_id_full, 'saved_file_name', f'User googled phone number: {message.text}.txt')
                             my_db.set_user_property(chat_id_full, 'saved_file', text__)
@@ -5543,15 +5543,15 @@ def do_task(message, custom_prompt: str = ''):
                                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
                                 if style_:
-                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.1-70b-versatile',temperature=0.6)
+                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
                                 else:
-                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.1-70b-versatile',temperature=0.6)
+                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
                                 if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                     my_groq.undo(chat_id_full)
                                     message.text = f'/image {message.text}'
                                     image_gen(message)
                                     return
-                                my_db.add_msg(chat_id_full, 'llama3-70b-8192')
+                                my_db.add_msg(chat_id_full, 'llama-3.2-90b-text-preview')
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -5564,8 +5564,8 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = answer_
 
                             if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15flash + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[Gemini15flash + llama3-70] {answer}')
+                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15flash + llama3-90 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                my_log.log_echo(message, f'[Gemini15flash + llama3-90] {answer}')
                             else:
                                 my_log.log_echo(message, f'[Gemini15flash] {answer}')
                             try:
@@ -5638,15 +5638,15 @@ def do_task(message, custom_prompt: str = ''):
                                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
                                 if style_:
-                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.1-70b-versatile',temperature=0.6)
+                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
                                 else:
-                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.1-70b-versatile',temperature=0.6)
+                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
                                 if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                     my_groq.undo(chat_id_full)
                                     message.text = f'/image {message.text}'
                                     image_gen(message)
                                     return
-                                my_db.add_msg(chat_id_full, 'llama3-70b-8192')
+                                my_db.add_msg(chat_id_full, 'llama-3.2-90b-text-preview')
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -5659,8 +5659,8 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = answer_
 
                             if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15pro + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[Gemini15pro + llama3-70] {answer}')
+                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15pro + llama3-90 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                my_log.log_echo(message, f'[Gemini15pro + llama3-90] {answer}')
                             else:
                                 if exp_:
                                     my_log.log_echo(message, f'[Gemini15pro-exp] {answer}')
@@ -5745,10 +5745,10 @@ def do_task(message, custom_prompt: str = ''):
 
 
 
-                # если активирован режим общения с groq llama 3.1 70b
+                # если активирован режим общения с groq llama 3.2 90b
                 if chat_mode_ == 'llama370':
                     if len(msg) > my_groq.MAX_REQUEST_LLAMA31:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3.1 70b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_LLAMA31}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3.2 90b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_LLAMA31}')
                         return
 
                     with ShowAction(message, action):
@@ -5761,14 +5761,14 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = my_groq.chat(f'({style_}) {message.text}',
                                                       chat_id_full,
                                                       my_db.get_user_property(chat_id_full, 'temperature'),
-                                                      model = 'llama-3.1-70b-versatile',
+                                                      model = 'llama-3.2-90b-text-preview',
                                                     #   model = 'llama3-70b-8192',
                                                       )
                             else:
                                 answer = my_groq.chat(message.text,
                                                       chat_id_full,
                                                       my_db.get_user_property(chat_id_full, 'temperature'),
-                                                      model = 'llama-3.1-70b-versatile',
+                                                      model = 'llama-3.2-90b-text-preview',
                                                     #   model = 'llama3-70b-8192',
                                                       )
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
@@ -5782,7 +5782,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:
-                                answer = 'Groq llama 3.1 70b ' + tr('did not answered, try to /reset and start again', lang)
+                                answer = 'Groq llama 3.2 90b ' + tr('did not answered, try to /reset and start again', lang)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)

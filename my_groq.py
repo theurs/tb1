@@ -209,7 +209,7 @@ def ai(prompt: str = '',
         while token_count(mem) > max_mem + 100:
             mem = mem[2:]
 
-        if 'llama-3.1' in model_ or 'llama3' in model_:
+        if 'llama-3.1' in model_ or 'llama3' in model_ or 'llama-3.2-' in model_:
             temperature = temperature / 2
 
         for key in keys:
@@ -254,6 +254,14 @@ def ai(prompt: str = '',
                     model__ = 'llama3-70b-8192'
                 elif model_ == 'llama-3.1-8b-instant':
                     model__ = 'llama3-8b-8192'
+                else:
+                    return ''
+                return ai(prompt, system, mem_, temperature*2, model__, max_tokens_, key_, timeout)
+            elif not resp and 'llama-3.2' in model_:
+                if model_ == 'llama-3.2-90b-text-preview':
+                    model__ = 'llama-3.1-70b-versatile'
+                elif model_ == 'llama-3.2-11b-text-preview':
+                    model__ = 'llama-3.1-8b-instant'
                 else:
                     return ''
                 return ai(prompt, system, mem_, temperature*2, model__, max_tokens_, key_, timeout)
@@ -351,6 +359,7 @@ def chat(query: str, chat_id: str,
             if model == 'mixtral-8x7b-32768': model_ = 'mixtral-8x7b-32768'
             if model == 'gemma-7b-it': model_ = 'gemma-7b-it'
             if model == 'gemma2-9b-it': model_ = 'gemma2-9b-it'
+            if model == 'llama-3.2-90b-text-preview': model_ = 'llama-3.2-90b-text-preview'
             my_db.add_msg(chat_id, model_)
         if r and update_memory:
             mem = update_mem(query, r, mem)
@@ -760,14 +769,14 @@ if __name__ == '__main__':
     pass
     load_users_keys()
 
-    print(img2txt('d:/downloads/1.png'))
+    # print(img2txt('d:/downloads/1.png'))
 
     # my_db.init(backup=False)
 
     # print(translate('Привет как дела!', to_lang='en', model = '', censored=False))
 
-    # reset('test')
-    # chat_cli(model='llama-3.1-70b-versatile')
+    reset('test')
+    chat_cli(model='llama-3.2-90b-text-preview')
 
     # print(stt('d:\\downloads\\1.ogg'))
 

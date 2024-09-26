@@ -334,7 +334,7 @@ def replace_code_lang(t: str) -> str:
     result = ''
     state = 0
     for i in t.split('\n'):
-        if i.startswith('<code>') and len(i) > 7 and '</code>' not in i:
+        if i.startswith('<code>') and len(i) >= 7 and '</code>' not in i:
             result += f'<pre><code class = "language-{i[6:]}">'
             state = 1
         else:

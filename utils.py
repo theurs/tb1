@@ -280,6 +280,11 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub('\_\_(.+?)\_\_', '<i>\\1</i>', text)
     text = re.sub(r'^\_\_(.*?)\_\_$', r'<i>\1</i>', text, flags=re.MULTILINE | re.DOTALL)
 
+    # Замена *текст* на <i>текст</i>
+    text = re.sub(r'\*([^\s*][^\*]*[^\s*])\*', r'<i>\1</i>', text)
+    # Замена _*текст*_ на <i>текст</i>
+    text = re.sub(r'_\*([^\s_\*][^\*]*[^\s_\*])\*_', r'<i>\1</i>', text)
+
     # tex в unicode
     matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
     for match in matches:

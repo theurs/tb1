@@ -146,6 +146,10 @@ def get_reprompt_for_image(prompt: str) -> tuple[str, str] | None:
                 return result_dict['reprompt'], result_dict['negative_prompt']
             except:
                 pass
+
+    if hasattr(cfg, 'SAMBANOVA_KEYS'):
+        my_log.log_sambanova(f'get_reprompt_for_image: FAILED {prompt}')
+
     return None
 
 

@@ -158,6 +158,11 @@ def log_openrouter_free(text: str) -> None:
     log2(text[:2000], 'openrouter_free')
 
 
+def log_sambanova(text: str) -> None:
+    """для логов openrouter sambanova"""
+    log2(text[:2000], 'sambanova')
+
+
 def log_gpt4omini(text: str) -> None:
     """для логов gpt4omini"""
     log2(text[:2000], 'gpt4omini')

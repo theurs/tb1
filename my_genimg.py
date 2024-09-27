@@ -27,6 +27,7 @@ import my_gemini
 import my_groq
 import my_log
 import my_runware_ai
+import my_sambanova
 import my_trans
 import utils
 
@@ -1070,7 +1071,11 @@ Return a `reprompt`
 
         negative = ''
         reprompt = ''
-        r = my_gemini.get_reprompt_for_image(query)
+
+        r = my_sambanova.get_reprompt_for_image(query)
+
+        if not r:
+            r = my_gemini.get_reprompt_for_image(query)
         if r:
             reprompt, negative = r
         if not reprompt:

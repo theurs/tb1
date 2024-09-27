@@ -378,8 +378,17 @@ JAMBA_KEYS = [
     'key2',
 ]
 
+
+# https://cloud.sambanova.ai/apis llama 8-405
+# free 10 запросов в секунду для 405b, 20 для 70b
+#SAMBANOVA_KEYS = [
+#    'xxx', 'yyy'
+#]
+
+
 # string for /donate command html parsing
 # DONATION_STRING = '<a href = "https://www.donationalerts.com/r/xxx">DonationAlerts</a>'
+
 
 
 # DEBUG = False

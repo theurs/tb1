@@ -1449,7 +1449,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             if hasattr(cfg, 'JAMBA_KEYS'):
                 button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini', callback_data='select_jamba')
                 markup.row(button8)
-        button9 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash 🚴‍♀️', callback_data='select_gemini8')
+        button9 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash 8b 🚴‍♀️', callback_data='select_gemini8')
         markup.row(button9)
         # if hasattr(cfg, 'GPT4OMINI_KEY'):
         #     button7 = telebot.types.InlineKeyboardButton('GPT 4o mini', callback_data='select_gpt4omini')

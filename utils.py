@@ -214,9 +214,10 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r'<sup>(.*?)</sup>', lambda m: ''.join(superscript_map.get(c, c) for c in m.group(1)), text)
     text = re.sub(r'<sub>(.*?)</sub>', lambda m: ''.join(subscript_map.get(c, c) for c in m.group(1)), text)
 
-    # заменяем странный способ обозначения кода когда идет 3 пробела в начале потом ` и название языка
-    pattern = r"^   `(\w+)\n(.*?)\n   `$"
-    replacement = r"```\1\n\2\n```"
+    # заменяем странный способ обозначения кода когда идет 0-6 пробелов в начале потом ` и название языка
+    pattern = r"^ {0,6}`(\w+)\n(.*?)\n  {0,6}`$"
+    # replacement = r"```\1\n\2\n```"
+    replacement = lambda match: f"```{match.group(1)}\n{re.sub(r'^ {1,6}', '', match.group(2), flags=re.MULTILINE)}\n```"
     text = re.sub(pattern, replacement, text, flags=re.MULTILINE | re.DOTALL)
 
     # экранируем весь текст для html

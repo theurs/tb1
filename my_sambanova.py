@@ -9,6 +9,7 @@ import traceback
 import langcodes
 
 import cfg
+import my_db
 import my_log
 import utils
 
@@ -23,6 +24,7 @@ def ai(prompt: str = '',
        temperature: float = 1,
        timeout: int = 120,
        json_output: bool = False,
+       chat_id: str = '',
        ) -> str:
 
     if not hasattr(cfg, 'SAMBANOVA_KEYS'):
@@ -72,6 +74,8 @@ def ai(prompt: str = '',
 
         status = response.status_code
         if status == 200:
+            if chat_id:
+                my_db.add_msg(chat_id, model)
             try:
                 result = response.json()['choices'][0]['message']['content'].strip()
                 break
@@ -125,7 +129,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
     return translated or text
 
 
-def get_reprompt_for_image(prompt: str) -> tuple[str, str] | None:
+def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | None:
     """
     Generates a detailed prompt for image generation based on user query and conversation history.
 
@@ -136,7 +140,7 @@ def get_reprompt_for_image(prompt: str) -> tuple[str, str] | None:
         A tuple of two strings: (positive prompt, negative prompt) or None if an error occurred. 
     """
 
-    result = ai(prompt, temperature=1.5, json_output=True)
+    result = ai(prompt, temperature=1.5, json_output=True, chat_id=chat_id)
     result_dict = utils.string_to_dict(result)
     if result_dict:
         try:
@@ -155,7 +159,9 @@ def get_reprompt_for_image(prompt: str) -> tuple[str, str] | None:
 
 if __name__ == '__main__':
     pass
+    my_db.init(backup=False)
 
     print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами'))
     # print(translate('напиши 100 слов самой жуткой лести, пиши большими буквами', to_lang='en'))
 
+    my_db.close()

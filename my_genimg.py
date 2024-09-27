@@ -1029,7 +1029,7 @@ def runware(prompt: str, number: int = 4, negative_prompt: str = "", cache: bool
         return []
 
 
-def get_reprompt(prompt: str, conversation_history: str = '') -> tuple[str, str] | None:
+def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> tuple[str, str] | None:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
     Parameters:
@@ -1072,7 +1072,7 @@ Return a `reprompt`
         negative = ''
         reprompt = ''
 
-        r = my_sambanova.get_reprompt_for_image(query)
+        r = my_sambanova.get_reprompt_for_image(query, chat_id)
 
         if not r:
             r = my_gemini.get_reprompt_for_image(query)
@@ -1155,7 +1155,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
     reprompt = ''
     if use_bing:
-        reprompt, negative = get_reprompt(prompt, conversation_history)
+        reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
 
     if reprompt:
         prompt = reprompt

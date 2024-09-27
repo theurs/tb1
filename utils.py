@@ -214,6 +214,10 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r'<sup>(.*?)</sup>', lambda m: ''.join(superscript_map.get(c, c) for c in m.group(1)), text)
     text = re.sub(r'<sub>(.*?)</sub>', lambda m: ''.join(subscript_map.get(c, c) for c in m.group(1)), text)
 
+    # заменяем странный способ обозначения кода когда идет 3 пробела в начале потом ` и название языка
+    pattern = r"^   `(\w+)\n(.*?)\n   `$"
+    replacement = r"```\1\n\2\n```"
+    text = re.sub(pattern, replacement, text, flags=re.MULTILINE | re.DOTALL)
 
     # экранируем весь текст для html
     text = html.escape(text)
@@ -823,6 +827,21 @@ if __name__ == '__main__':
 W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub>, x<sub>i</sub>)]<sup>2</sup>Π[a(x<sub>i</sub>) = j] → min;
 
 Ну __вот и наклонный__ текст.
+
+1. **Отсутствует **`begin`** после заголовка программы:**
+
+   `pascal
+   program Program1;
+
+   {... объявления переменных и процедур ...}
+
+   {* Здесь должен быть begin *}
+
+   end.  // <- Строка 24
+   `
+
+   **Решение:** Добавьте `begin` перед строкой 24 (или там, где должен начинаться основной блок кода программы).
+
 
     """
     print(bot_markdown_to_html(t))

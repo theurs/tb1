@@ -257,9 +257,9 @@ def chat(query: str,
                 result = result.strip()
                 if 'print(default_api.' in result[:100]:
                     return ''
-                if result.startswith('[Info to help you answer. You are a telegram chatbot named') and \
-                   'do not address the user by name and no emoji unless it is required.]' in result:
-                    result = result[result.find(']') + 1:]
+                # if result.startswith('[Info to help you answer. You are a telegram chatbot named') and \
+                #    'do not address the user by name and no emoji unless it is required.]' in result:
+                #     result = result[result.find(']') + 1:]
 
                 if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
                 if 'gemini-1.5-pro-exp' in model: model_ = 'gemini-1.5-pro-exp-0801'

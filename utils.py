@@ -210,6 +210,9 @@ def bot_markdown_to_html(text: str) -> str:
         'z': 'ᶻ'
     }
 
+    # экранируем весь текст для html
+    text = html.escape(text)
+
     # замена тегов <sub> <sup> на подстрочные и надстрочные символы
     text = re.sub(r'<sup>(.*?)</sup>', lambda m: ''.join(superscript_map.get(c, c) for c in m.group(1)), text)
     text = re.sub(r'<sub>(.*?)</sub>', lambda m: ''.join(subscript_map.get(c, c) for c in m.group(1)), text)
@@ -219,9 +222,6 @@ def bot_markdown_to_html(text: str) -> str:
     # replacement = r"```\1\n\2\n```"
     replacement = lambda match: f"```{match.group(1)}\n{re.sub(r'^ {1,6}', '', match.group(2), flags=re.MULTILINE)}\n```"
     text = re.sub(pattern, replacement, text, flags=re.MULTILINE | re.DOTALL)
-
-    # экранируем весь текст для html
-    text = html.escape(text)
 
     # найти все куски кода между ``` и заменить на хеши
     # спрятать код на время преобразований

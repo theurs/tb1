@@ -5412,19 +5412,29 @@ def do_task(message, custom_prompt: str = ''):
                 summ_text(message)
                 return
 
+
         # проверяем просят ли нарисовать что-нибудь
-        if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', tr('нарисуй', lang) + '\n', 'нарисуй ', 'нарисуй,', 'нарисуй\n', 'нарисуйте ', 'нарисуйте,', 'draw ', 'draw,', 'draw\n')):
-            prompt = message.text.split(' ', 1)[1]
-            message.text = f'/image {prompt}'
-            image_gen(message)
-            return
+        translated_draw = tr('нарисуй', lang)
+        pattern = r"^(" + translated_draw + r"|нарисуй|нарисуйте|draw)[ ,.\n]+"
+        if re.match(pattern, message.text, re.IGNORECASE):
+            prompt = re.sub(pattern, "", message.text, flags=re.IGNORECASE).strip()
+            if prompt:
+                message.text = f"/image {prompt}"
+                image_gen(message)
+                return
+            else:
+                pass # считать что не сработало
+
 
         # можно перенаправить запрос к гуглу, но он долго отвечает
         # не локализуем
-        if msg.startswith(('гугл ', 'гугл,', 'гугл\n')):
-            message.text = f'/google {msg[5:]}'
-            google(message)
-            return
+        if re.match(r"^(гугл|google)[ ,.\n]+", message.text, re.IGNORECASE):
+            query = re.sub(r"^(гугл|google)[ ,.\n]+", "", message.text, flags=re.IGNORECASE).strip()
+            if query:
+                message.text = f"/google {query}"
+                google(message)
+                return
+
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif is_reply or is_private or bot_name_used or chat_bot_cmd_was_used:

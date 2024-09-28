@@ -5413,7 +5413,7 @@ def do_task(message, custom_prompt: str = ''):
                 return
 
         # проверяем просят ли нарисовать что-нибудь
-        if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', 'нарисуй ', 'нарисуй,', 'нарисуйте ', 'нарисуйте,', 'draw ', 'draw,')):
+        if msg.startswith((tr('нарисуй', lang) + ' ', tr('нарисуй', lang) + ',', tr('нарисуй', lang) + '\n', 'нарисуй ', 'нарисуй,', 'нарисуй\n', 'нарисуйте ', 'нарисуйте,', 'draw ', 'draw,', 'draw\n')):
             prompt = message.text.split(' ', 1)[1]
             message.text = f'/image {prompt}'
             image_gen(message)

@@ -49,3 +49,7 @@ https://api-inference.huggingface.co/models/linoyts/yarn_art_Flux_LoRA
 
 https://api-inference.huggingface.co/models/Shakker-Labs/AWPortrait-FL
 # нет такой модели https://api-inference.huggingface.co/models/Shakker-Labs/FilmPortrait
+
+
+https://api-inference.huggingface.co/models/renderartist/simplevectorflux
+https://api-inference.huggingface.co/models/ashen0209/Flux-Dev2Pro

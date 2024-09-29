@@ -210,12 +210,12 @@ def bot_markdown_to_html(text: str) -> str:
         'z': 'ᶻ'
     }
 
-    # экранируем весь текст для html
-    text = html.escape(text)
-
     # замена тегов <sub> <sup> на подстрочные и надстрочные символы
     text = re.sub(r'<sup>(.*?)</sup>', lambda m: ''.join(superscript_map.get(c, c) for c in m.group(1)), text)
     text = re.sub(r'<sub>(.*?)</sub>', lambda m: ''.join(subscript_map.get(c, c) for c in m.group(1)), text)
+
+    # экранируем весь текст для html
+    text = html.escape(text)
 
     # заменяем странный способ обозначения кода когда идет 0-6 пробелов в начале потом ` или `` или ``` и название языка
     pattern = r"^ {0,6}`{1,3}(\w+)\n(.*?)\n  {0,6}`{1,3}$"
@@ -913,6 +913,12 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
    ```python
    plt.xticks(rotation=45, ha="right", fontsize=8)
    ```
+
+Прямая, по которой пересекаются плоскости A<sub>1</sub>BC и A<sub>1</sub>AD — это прямая A<sub>1</sub>A.
+
+
+
+**Каждый раз, когда вы задаете новый вопрос об изображении, вам придется отправить изображение еще раз.**
 
     """
     print(bot_markdown_to_html(t))

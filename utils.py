@@ -21,7 +21,7 @@ import sys
 import tempfile
 import threading
 import platform as platform_module
-from typing import Union
+from typing import Union, Optional
 
 import json_repair
 import PIL
@@ -217,11 +217,12 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r'<sup>(.*?)</sup>', lambda m: ''.join(superscript_map.get(c, c) for c in m.group(1)), text)
     text = re.sub(r'<sub>(.*?)</sub>', lambda m: ''.join(subscript_map.get(c, c) for c in m.group(1)), text)
 
-    # заменяем странный способ обозначения кода когда идет 0-6 пробелов в начале потом ` и название языка
-    pattern = r"^ {0,6}`(\w+)\n(.*?)\n  {0,6}`$"
+    # заменяем странный способ обозначения кода когда идет 0-6 пробелов в начале потом ` или `` или ``` и название языка
+    pattern = r"^ {0,6}`{1,3}(\w+)\n(.*?)\n  {0,6}`{1,3}$"
     # replacement = r"```\1\n\2\n```"
     replacement = lambda match: f"```{match.group(1)}\n{re.sub(r'^ {1,6}', '', match.group(2), flags=re.MULTILINE)}\n```"
     text = re.sub(pattern, replacement, text, flags=re.MULTILINE | re.DOTALL)
+
 
     # найти все куски кода между ``` и заменить на хеши
     # спрятать код на время преобразований
@@ -803,6 +804,39 @@ def heic2jpg(data: Union[bytes, str]) -> bytes:
         return b''
 
 
+def compress_png_bytes(image_bytes: bytes) -> bytes:
+    """Compresses a PNG image provided as bytes as much as possible.
+
+    Args:
+        image_bytes: The PNG image data as bytes.
+
+    Returns:
+        The compressed PNG image bytes, or the original 
+        image_bytes if compression fails.  Returns source if input is invalid.
+    """
+    try:
+        # Open image from bytes
+        img = PIL.Image.open(io.BytesIO(image_bytes))
+
+        # Reduce palette if possible (for further compression)
+        if img.mode == "P":
+            img = img.convert("RGB")  # Convert to RGB before quantizing if necessary
+            img = img.quantize(colors=256)  # Example: 256 colors
+
+        # Save with maximum compression and optimization
+        compressed_buf = io.BytesIO()
+        img.save(compressed_buf, "PNG", compress_level=9, optimize=True)
+        compressed_buf.seek(0)
+        compressed_image_bytes = compressed_buf.read()
+        compressed_buf.close()
+
+        return compressed_image_bytes
+
+    except Exception as e:
+        my_log.log2(f"utils:compress_png_bytes: Compression error: {e}")
+        return image_bytes  # Return original bytes on error
+
+
 if __name__ == '__main__':
     pass
 
@@ -833,15 +867,15 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
 
 
 1. **Отсутствует **`begin`** после заголовка программы:**
-        `pascal
-        program Program1;
+    `pascal
+    program Program1;
 
-        {... объявления переменных и процедур ...}
+    {... объявления переменных и процедур ...}
 
-        {* Здесь должен быть begin *}
+    {* Здесь должен быть begin *}
 
-        end.  // <- Строка 24
-        `
+    end.  // <- Строка 24
+    `
 
    **Решение:** Добавьте `begin` перед строкой 24 (или там, где должен начинаться основной блок кода программы).
 
@@ -865,6 +899,9 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
 Это _*наклонный шрифт*_да?
 
 
+   ```python
+   plt.xticks(rotation=45, ha="right", fontsize=8)
+   ```
 
     """
     print(bot_markdown_to_html(t))

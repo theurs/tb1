@@ -15,6 +15,8 @@ import traceback
 import shutil
 import sqlite3
 import sys
+from typing import List, Tuple, Dict
+
 matplotlib.use('Agg') #  Отключаем вывод графиков на экран
 import matplotlib.pyplot as plt
 from collections import OrderedDict
@@ -23,6 +25,7 @@ import matplotlib.dates as mdates
 from cachetools import LRUCache
 
 import my_log
+import utils
 from utils import async_run
 
 
@@ -341,6 +344,112 @@ def get_model_usage(days: int):
             return {}
 
 
+def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
+    """
+    Retrieves model usage data for the past num_days, excluding the current day. 
+    Data is sorted from oldest to newest.
+
+    Args:
+        num_days: The number of past days to retrieve data for.
+
+    Returns:
+        A list of tuples, where each tuple contains:
+        - The date (YYYY-MM-DD)
+        - A dictionary of model usage counts for that date.
+        Returns an empty list if there is an error or no data.
+    """
+
+    end_date = datetime.date.today() - datetime.timedelta(days=1) # Start from yesterday
+    usage_data: List[Tuple[str, Dict[str, int]]] = []
+
+    for i in range(num_days - 1, -1, -1):  # Iterate in reverse for oldest to newest
+        current_date = end_date - datetime.timedelta(days=i)
+        date_str = current_date.strftime("%Y-%m-%d")
+        start_timestamp = time.mktime(current_date.timetuple())
+        end_timestamp = start_timestamp + 24 * 60 * 60
+
+        with LOCK:  # Assuming LOCK is defined elsewhere
+            try:
+                CUR.execute('''
+                    SELECT model_used, COUNT(*) FROM msg_counter
+                    WHERE access_time >= ? AND access_time < ?
+                    GROUP BY model_used
+                ''', (start_timestamp, end_timestamp))
+                results = CUR.fetchall()
+                model_usage: Dict[str, int] = {}
+                for row in results:
+                    model = row[0]
+                    usage_count = row[1]
+                    model_usage[model] = usage_count
+                usage_data.append((date_str, model_usage))
+            except Exception as error:
+                my_log.log2(f'my_db:get_model_usage_for_days {error}')
+                return []
+
+    return usage_data
+
+
+def visualize_usage(usage_data):
+    """
+    Visualizes model usage data over time using matplotlib.
+
+    This function generates a line plot showing the usage count of each model
+    for each date in the input data. It handles cases with multiple models
+    and varying usage counts.
+
+    Args:
+        usage_data: A list of tuples, where each tuple contains:
+                     - The date (YYYY-MM-DD) as a string.
+                     - A dictionary of model usage counts for that date,
+                       where keys are model names and values are counts.
+
+    Returns:
+        bytes: A byte string containing the PNG image data of the generated plot.
+               Returns None if the input data is empty.
+    """
+
+    if not usage_data:
+        my_log.log2('my_db:visualize_usage: No data to visualize.')
+        return None
+
+    dates = [data[0] for data in usage_data]
+    models = sorted(set(model for date, usage in usage_data for model in usage))
+    model_counts = {model: [] for model in models}
+
+    for date, usage in usage_data:
+        for model in models:
+            model_counts[model].append(usage.get(model, 0))
+
+    plt.figure(figsize=(10, 6))
+
+    for model in models:
+        plt.plot(dates, model_counts[model], label=model, marker='o')
+
+    plt.xlabel("Date")
+    plt.ylabel("Usage Count")
+    plt.title("Model Usage Over Time")
+
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45, ha="right", fontsize=8)
+
+    # Dynamically adjust x-axis ticks based on data size
+    if len(dates) > 10:  # Adjust threshold as needed
+        step = len(dates) // 10
+        plt.xticks(dates[::step])
+
+
+    plt.legend(fontsize='small')
+    plt.tight_layout()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=150, bbox_inches='tight')
+    buf.seek(0)
+    image_bytes = buf.read()
+    buf.close()
+
+    return utils.compress_png_bytes(image_bytes)
+
+
 def get_total_msg_users() -> int:
     with LOCK:
         try:
@@ -516,12 +625,12 @@ def draw_user_activity(days: int = 90) -> bytes:
 
     # Save the plot to a bytes buffer
     buf = io.BytesIO()
-    plt.savefig(buf, format="png", dpi=300, bbox_inches='tight') # Increased DPI for better quality
+    plt.savefig(buf, format="png", dpi=150, bbox_inches='tight') # Increased DPI for better quality
     buf.seek(0)
     image_bytes = buf.read()
     buf.close()
 
-    return image_bytes
+    return utils.compress_png_bytes(image_bytes)
 
 
 def get_translation(text: str, lang: str, help: str) -> str:
@@ -942,6 +1051,12 @@ def delete_from_im_suggests(hash: str):
 if __name__ == '__main__':
     pass
     init(backup=False)
+
+
+    # usage_data = get_model_usage_for_days(90)  # Get data for the past 7 days
+    # with open('d:/downloads/1.png', 'wb') as f:
+    #     f.write(visualize_usage(usage_data))
+
 
     # pprint.pprint(get_new_users_for_last_days(90))
 

@@ -822,9 +822,16 @@ def compress_png_bytes(image_bytes: bytes) -> bytes:
         if img.format != "PNG":
             return image_bytes  # Return original bytes if it's not a PNG
 
-        # # Reduce palette if possible (for further compression)
-        # if img.mode != "P":
-        #     img = img.quantize(colors=256)  # Example: 256 colors
+        # Convert image to RGB for color counting, if necessary
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+
+        # Count the number of unique colors
+        unique_colors = len(img.getcolors(maxcolors=2**24))  # maxcolors to handle large images
+
+        # If there are more than 256 unique colors, quantize the image
+        if unique_colors < 256:
+            img = img.quantize(colors=256)
 
         # Save with maximum compression and optimization
         with io.BytesIO() as compressed_buf:

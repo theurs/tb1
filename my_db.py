@@ -429,6 +429,9 @@ def visualize_usage(usage_data):
     plt.ylabel("Usage Count")
     plt.title("Model Usage Over Time")
 
+    # Add horizontal grid lines
+    plt.grid(axis='y', linestyle='--')  # or linestyle=':' , '-' , etc.
+
     # Rotate x-axis labels for better readability
     plt.xticks(rotation=45, ha="right", fontsize=8)
 
@@ -1053,9 +1056,9 @@ if __name__ == '__main__':
     init(backup=False)
 
 
-    # usage_data = get_model_usage_for_days(90)  # Get data for the past 7 days
-    # with open('d:/downloads/1.png', 'wb') as f:
-    #     f.write(visualize_usage(usage_data))
+    usage_data = get_model_usage_for_days(90)  # Get data for the past 7 days
+    with open('d:/downloads/1.png', 'wb') as f:
+        f.write(visualize_usage(usage_data))
 
 
     # pprint.pprint(get_new_users_for_last_days(90))

@@ -3303,7 +3303,7 @@ def set_new_temperature(message: telebot.types.Message):
     if len(message.text.split()) < 2 or new_temp == -1:
         help = f"""/temperature <0-2>
 
-{tr('''Меняет температуру для Gemini
+{tr('''Меняет температуру для ИИ (только для текст, на картинки это не влияет)
 
 Температура это параметр, который контролирует степень случайности генерируемого текста. Чем выше температура, тем более случайным и креативным будет текст. Чем ниже температура, тем более точным и сфокусированным будет текст.
 
@@ -3655,6 +3655,7 @@ def image_gen(message: telebot.types.Message):
             NSFW_FLAG = True
 
         if NSFW_FLAG:
+            bot_reply_tr(message, 'Images was blocked. https://www.google.com/search?q=nsfw')
             return
 
         # рисовать только бингом, команда /bing

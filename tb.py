@@ -461,17 +461,17 @@ Return a `image_transcription`
             if not text_:
                 text_ = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free')
 
-            # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
-            if not text_:
-                text_ = my_groq.img2txt(data, query, model='llama-3.2-11b-vision-preview')
+            # # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
+            # if not text_:
+            #     text_ = my_groq.img2txt(data, query, model='llama-3.2-11b-vision-preview')
 
-            # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
-            if not text_:
-                text_ = my_openrouter_free.img2txt(data, query, model='meta-llama/llama-3.2-11b-vision-instruct:free')
+            # # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
+            # if not text_:
+            #     text_ = my_openrouter_free.img2txt(data, query, model='meta-llama/llama-3.2-11b-vision-instruct:free')
 
-            # если не ответил джемини то попробовать groq (llava)
-            if not text_:
-                text_ = my_groq.img2txt(data, query)
+            # # если не ответил джемини то попробовать groq (llava)
+            # if not text_:
+            #     text_ = my_groq.img2txt(data, query)
 
             if text_:
                 d = utils.string_to_dict(text_)
@@ -510,17 +510,17 @@ Return a `image_transcription`
             if not text:
                 text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free')
 
-            # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
-            if not text:
-                text = my_groq.img2txt(data, query, model='llama-3.2-11b-vision-preview')
+            # # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
+            # if not text:
+            #     text = my_groq.img2txt(data, query, model='llama-3.2-11b-vision-preview')
 
-            # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
-            if not text:
-                text = my_openrouter_free.img2txt(data, query, model='meta-llama/llama-3.2-11b-vision-instruct:free')
+            # # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
+            # if not text:
+            #     text = my_openrouter_free.img2txt(data, query, model='meta-llama/llama-3.2-11b-vision-instruct:free')
 
-            # если не ответил джемини то попробовать groq (llava)
-            if not text:
-                text = my_groq.img2txt(data, query)
+            # # если не ответил джемини то попробовать groq (llava)
+            # if not text:
+            #     text = my_groq.img2txt(data, query)
 
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')

@@ -210,10 +210,6 @@ def bot_markdown_to_html(text: str) -> str:
         'z': 'ᶻ'
     }
 
-    # замена тегов <sub> <sup> на подстрочные и надстрочные символы
-    text = re.sub(r'<sup>(.*?)</sup>', lambda m: ''.join(superscript_map.get(c, c) for c in m.group(1)), text)
-    text = re.sub(r'<sub>(.*?)</sub>', lambda m: ''.join(subscript_map.get(c, c) for c in m.group(1)), text)
-
     # экранируем весь текст для html
     text = html.escape(text)
 
@@ -238,6 +234,10 @@ def bot_markdown_to_html(text: str) -> str:
         random_string = str(hash(match))
         list_of_code_blocks.append([match, random_string])
         text = text.replace(f'```{match}```', random_string)
+
+    # замена тегов <sub> <sup> на подстрочные и надстрочные символы
+    text = re.sub(r'&lt;sup&gt;(.*?)&lt;sup&gt;', lambda m: ''.join(superscript_map.get(c, c) for c in m.group(1)), text)
+    text = re.sub(r'&lt;sub&gt;(.*?)&lt;/sub&gt;', lambda m: ''.join(subscript_map.get(c, c) for c in m.group(1)), text)
 
     # тут могут быть одиночные поворяющиеся `, меняем их на '
     text = text.replace('```', "'''")

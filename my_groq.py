@@ -78,6 +78,7 @@ def img2txt(image_data: Union[str, bytes],
             timeout: int = 60,
             model = 'llava-v1.5-7b-4096-preview',
             _key: str = '',
+            json_output=False,
             ) -> str:
     """
     Отправляет изображение в модель LLaVA и получает текстовое описание.
@@ -106,6 +107,11 @@ def img2txt(image_data: Union[str, bytes],
         random.shuffle(keys)
         keys = keys[:4]
 
+    if json_output:
+        resp_type = 'json_object'
+    else:
+        resp_type = 'text'
+
     # Getting the base64 string
     base64_image = encode_image(image_data)
 
@@ -129,6 +135,8 @@ def img2txt(image_data: Union[str, bytes],
                     }
                 ],
                 model=model,
+                response_format = ResponseFormat(type = resp_type),
+                temperature = 0.5,
             )
 
             result = chat_completion.choices[0].message.content.strip()
@@ -769,7 +777,7 @@ if __name__ == '__main__':
     pass
     load_users_keys()
 
-    # print(img2txt('d:/downloads/1.png'))
+    # print(img2txt('d:/downloads/1.jpg', prompt = 'Подробно опиши что тут на картинке', model='llama-3.2-11b-vision-preview'))
 
     # my_db.init(backup=False)
 

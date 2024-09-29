@@ -461,6 +461,10 @@ Return a `image_transcription`
             if not text_:
                 text_ = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free')
 
+            # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
+            if not text_:
+                text_ = my_groq.img2txt(data, query, model='llama-3.2-11b-vision-preview')
+
             # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
             if not text_:
                 text_ = my_openrouter_free.img2txt(data, query, model='meta-llama/llama-3.2-11b-vision-instruct:free')
@@ -501,6 +505,23 @@ Return a `image_transcription`
                     text = text_
         else:
             text = my_gemini.img2txt(data, query, model=model)
+
+            # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
+            if not text:
+                text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free')
+
+            # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
+            if not text:
+                text = my_groq.img2txt(data, query, model='llama-3.2-11b-vision-preview')
+
+            # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
+            if not text:
+                text = my_openrouter_free.img2txt(data, query, model='meta-llama/llama-3.2-11b-vision-instruct:free')
+
+            # если не ответил джемини то попробовать groq (llava)
+            if not text:
+                text = my_groq.img2txt(data, query)
+
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
@@ -4491,8 +4512,11 @@ def trans(message: telebot.types.Message):
             translated = tr(text, llang, save_cache=False)
             if translated and translated != text:
                 try:
-                    detected_lang = my_trans.detect(text) or 'unknown language'
-                    detected_lang = tr(langcodes.Language.make(language=detected_lang).display_name(language="en"), lang).lower()
+                    if len(text) > 30:
+                        detected_lang = my_trans.detect(text) or 'unknown language'
+                        detected_lang = tr(langcodes.Language.make(language=detected_lang).display_name(language="en"), lang).lower()
+                    else:
+                        detected_lang = tr('not detected', lang)
                 except:
                     detected_lang = tr('unknown language', lang)
 

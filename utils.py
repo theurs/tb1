@@ -812,23 +812,24 @@ def compress_png_bytes(image_bytes: bytes) -> bytes:
 
     Returns:
         The compressed PNG image bytes, or the original 
-        image_bytes if compression fails.  Returns source if input is invalid.
+        image_bytes if compression fails. Returns source if input is invalid.
     """
     try:
         # Open image from bytes
         img = PIL.Image.open(io.BytesIO(image_bytes))
 
-        # Reduce palette if possible (for further compression)
-        if img.mode == "P":
-            img = img.convert("RGB")  # Convert to RGB before quantizing if necessary
-            img = img.quantize(colors=256)  # Example: 256 colors
+        # Ensure the image is in PNG format
+        if img.format != "PNG":
+            return image_bytes  # Return original bytes if it's not a PNG
+
+        # # Reduce palette if possible (for further compression)
+        # if img.mode != "P":
+        #     img = img.quantize(colors=256)  # Example: 256 colors
 
         # Save with maximum compression and optimization
-        compressed_buf = io.BytesIO()
-        img.save(compressed_buf, "PNG", compress_level=9, optimize=True)
-        compressed_buf.seek(0)
-        compressed_image_bytes = compressed_buf.read()
-        compressed_buf.close()
+        with io.BytesIO() as compressed_buf:
+            img.save(compressed_buf, "PNG", compress_level=9, optimize=True)
+            compressed_image_bytes = compressed_buf.getvalue()
 
         return compressed_image_bytes
 

@@ -392,7 +392,7 @@ def replace_tables(text: str) -> str:
         try:
             x.field_names = header
         except Exception as error:
-            my_log.log2(f'tb:replace_tables: {error}')
+            my_log.log2(f'tb:replace_tables: {error}\n{text}\n\n{x}')
             continue
         for line in lines[2:]:
             row = [x.strip().replace('<b>', '').replace('</b>', '') for x in line.split('|') if x]
@@ -400,7 +400,7 @@ def replace_tables(text: str) -> str:
             try:
                 x.add_row(row)
             except Exception as error2:
-                my_log.log2(f'tb:replace_tables: {error2}')
+                my_log.log2(f'tb:replace_tables: {error2}\n{text}\n\n{x}')
                 continue
         new_table = x.get_string()
         text = text.replace(table, f'<pre><code>{new_table}\n</code></pre>')

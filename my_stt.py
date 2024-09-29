@@ -140,10 +140,10 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                     # у него в качестве fallback используется тот же гугл но с разбиением на части
                     text = stt_genai(input_file2, lang)
                     if len(text) < 100: # failed?
-                        my_log.log2(f'my_stt:stt: stt_genai failed long file, tring groq')
+                        my_log.log2(f'my_stt:stt: stt_genai failed long file, trying groq')
                         text = my_groq.stt(input_file2, lang, prompt=prompt) or text
                         if len(text) < 100: # failed?
-                            my_log.log2(f'my_stt:stt: stt groq failed long file, tring assemblyai')
+                            my_log.log2(f'my_stt:stt: stt groq failed long file, trying assemblyai')
                             text = assemblyai(input_file2, lang) or text
                 except Exception as error:
                     my_log.log2(f'my_stt:stt:genai:{error}')

@@ -211,7 +211,7 @@ def calc(expression: str) -> str:
         'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
         'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
         'round', 'pow', 'sum', 'min', 'max', 'divmod',
-        'for', 'in', 'and', 'if', 'or', 'next',
+        'for', 'not', 'in', 'and', 'if', 'or', 'next',
         'digit',
 
         'list','tuple','sorted','reverse','True','False',
@@ -398,18 +398,20 @@ def query_wikipedia(query: str, lang: str = 'ru', search: bool = True) -> str:
 
 if __name__ == '__main__':
     pass
-    # my_db.init()
+    my_db.init(backup=False)
+    my_groq.load_users_keys()
 
     # print(calc("(datetime.date(2025, 6, 1) - datetime.date.today()).days"))
     # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
     # print(calc('[str(i) for i in range(5000, 100000) if "2" in str(i) and "9" in str(i)][0:5]'))
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
-    # print(calc("dir(cfg)"))
+    print(calc("[str(i) + str(j) + str(k) + str(l) + str(m) for i in range(9, 0, -1) for j in range(i - 1, 0, -1) for k in range(j - 1, 0, -1) for l in range(k - 1, 0, -1) for m in range(l - 1, 0, -1) if i + j + k + l + m == 26 and 0 not in (i, j, k, l, m) and 8 not in (i, j, k, l, m)]"))
 
     # text='''ls -l'''
     # print(run_script('test.sh', text))
 
     # my_db.close()
     
-    my_groq.load_users_keys()
-    print(query_wikipedia('орвилл', lang = 'ru', search = True))
+    # print(query_wikipedia('орвилл', lang = 'ru', search = True))
+
+    my_db.close()

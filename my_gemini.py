@@ -187,7 +187,7 @@ def chat(query: str,
 
 
             # use_skills = False
-            if use_skills:
+            if use_skills and '-8b' not in model:
                 SKILLS = [
                     # "code_execution", # не работает одновременно с другими функциями
 
@@ -261,14 +261,15 @@ def chat(query: str,
                 #    'do not address the user by name and no emoji unless it is required.]' in result:
                 #     result = result[result.find(']') + 1:]
 
-                if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
-                if 'gemini-1.5-pro-exp' in model: model_ = 'gemini-1.5-pro-exp-0801'
-                if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
-                if 'gemini-1.5-flash-8b' in model: model_ = 'gemini15_flash-8b'
-                if 'gemini-1.5-flash-8b-exp' in model: model_ = 'gemini15_flash-8b-exp'
-                if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
-                if not model: model_ = 'gemini15_flash'
-                my_db.add_msg(chat_id, model_)
+                # if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
+                # if 'gemini-1.5-pro-exp' in model: model_ = 'gemini-1.5-pro-exp-0801'
+                # if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
+                # if 'gemini-1.5-flash-8b' in model: model_ = 'gemini15_flash-8b'
+                # if 'gemini-1.5-flash-8b-exp' in model: model_ = 'gemini15_flash-8b-exp'
+                # if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
+                # if not model: model_ = 'gemini15_flash'
+                # my_db.add_msg(chat_id, model_)
+                my_db.add_msg(chat_id, model)
                 if chat_id:
                     mem = chat.history[-MAX_CHAT_LINES*2:]
                     while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
@@ -277,7 +278,7 @@ def chat(query: str,
 
                 return result
             else:
-                return '' # не надо, пускай лучше другой ответит чем тянуть время
+                return ''
 
         my_log.log_gemini(f'my_gemini:chat:no results after 4 tries, query: {query}')
         return ''

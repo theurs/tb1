@@ -5529,19 +5529,21 @@ def do_task(message, custom_prompt: str = ''):
             if chat_id_full not in CHAT_LOCKS:
                 CHAT_LOCKS[chat_id_full] = threading.Lock()
             with CHAT_LOCKS[chat_id_full]:
+                if chat_mode_ == 'gemini':
+                    gmodel = cfg.gemini_flash_model
+                elif chat_mode_ == 'gemini15':
+                    gmodel = cfg.gemini_pro_model
+                elif chat_mode_ == 'gemini8':
+                    gmodel = cfg.gemini_flash_light_model
 
                 WHO_ANSWERED[chat_id_full] = chat_mode_
-                if chat_mode_ == 'gemini':
-                    WHO_ANSWERED[chat_id_full] = 'gemini15flash'
-                elif chat_mode_ == 'gemini15':
-                    WHO_ANSWERED[chat_id_full] = 'gemini15pro'
-                elif chat_mode_ == 'gemini8':
-                    WHO_ANSWERED[chat_id_full] = 'gemini8'
+                if chat_mode_.startswith('gemini'):
+                    WHO_ANSWERED[chat_id_full] = gmodel
                 time_to_answer_start = time.time()
 
 
-                # если активирован режим общения с Gemini Flash
-                if chat_mode_ == 'gemini':
+                # если активирован режим общения с Gemini
+                if chat_mode_.startswith('gemini'):
                     if len(msg) > my_gemini.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
                         return
@@ -5551,18 +5553,23 @@ def do_task(message, custom_prompt: str = ''):
                             if not my_db.get_user_property(chat_id_full, 'temperature'):
                                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
-                            # answer = my_gemini.chat(helped_query,
-                            #                         chat_id_full,
-                            #                         my_db.get_user_property(chat_id_full, 'temperature'),
-                            #                         model = cfg.gemini_flash_model)
-
-                            answer = my_gemini.chat(message.text,
-                                                    chat_id_full,
-                                                    my_db.get_user_property(chat_id_full, 'temperature'),
-                                                    model = cfg.gemini_flash_model,
-                                                    system = hidden_text,
-                                                    use_skills=True
-                                                    )
+                            answer = my_gemini.chat(
+                                message.text,
+                                chat_id_full,
+                                my_db.get_user_property(chat_id_full, 'temperature'),
+                                model = gmodel,
+                                system = hidden_text,
+                                use_skills=True)
+                            if not answer and gmodel == cfg.gemini_pro_model:
+                                gmodel = 'gemini-1.5-pro'
+                                answer = my_gemini.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    my_db.get_user_property(chat_id_full, 'temperature'),
+                                    model = gmodel,
+                                    system = hidden_text,
+                                    use_skills=True)
+                                WHO_ANSWERED[chat_id_full] = gmodel
 
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
@@ -5574,7 +5581,7 @@ def do_task(message, custom_prompt: str = ''):
                                 image_gen(message)
                                 return
                             if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'gemini15flash'
+                                WHO_ANSWERED[chat_id_full] = gmodel
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             flag_gpt_help = False
@@ -5603,10 +5610,10 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = answer_
 
                             if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15flash + llama3-90 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[Gemini15flash + llama3-90] {answer}')
+                                WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + llama3-90 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                my_log.log_echo(message, f'[{gmodel} + llama3-90] {answer}')
                             else:
-                                my_log.log_echo(message, f'[Gemini15flash] {answer}')
+                                my_log.log_echo(message, f'[{gmodel}] {answer}')
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
@@ -5617,167 +5624,167 @@ def do_task(message, custom_prompt: str = ''):
                                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:gemini10 {error3}\n{error_traceback}')
+                            my_log.log2(f'tb:do_task:{gmodel} {error3}\n{error_traceback}')
                         return
 
-                # если активирован режим общения с Gemini 1.5 pro
-                if chat_mode_ == 'gemini15':
-                    if len(msg) > my_gemini.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
-                        return
+                # # если активирован режим общения с Gemini 1.5 pro
+                # if chat_mode_ == 'gemini15':
+                #     if len(msg) > my_gemini.MAX_REQUEST:
+                #         bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                #         return
 
-                    with ShowAction(message, action):
-                        try:
-                            if not my_db.get_user_property(chat_id_full, 'temperature'):
-                                my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
+                #     with ShowAction(message, action):
+                #         try:
+                #             if not my_db.get_user_property(chat_id_full, 'temperature'):
+                #                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
-                            # answer = my_gemini.chat(helped_query,
-                            #                         chat_id_full,
-                            #                         my_db.get_user_property(chat_id_full, 'temperature'),
-                            #                         model = 'gemini-1.5-pro')
+                #             # answer = my_gemini.chat(helped_query,
+                #             #                         chat_id_full,
+                #             #                         my_db.get_user_property(chat_id_full, 'temperature'),
+                #             #                         model = 'gemini-1.5-pro')
 
-                            exp_ = True
-                            WHO_ANSWERED[chat_id_full] = 'gemini15pro-exp'
-                            answer = my_gemini.chat(message.text,
-                                                    chat_id_full,
-                                                    my_db.get_user_property(chat_id_full, 'temperature'),
-                                                    # model = 'gemini-1.5-pro',
-                                                    model = cfg.gemini_pro_model,
-                                                    system = hidden_text,
-                                                    use_skills=True,
-                                                    )
-                            if not answer:
-                                exp_ = False
-                                WHO_ANSWERED[chat_id_full] = 'gemini15pro'
-                                answer = my_gemini.chat(message.text,
-                                                        chat_id_full,
-                                                        my_db.get_user_property(chat_id_full, 'temperature'),
-                                                        model = 'gemini-1.5-pro',
-                                                        system = hidden_text,
-                                                        use_skills=True,
-                                                        )
+                #             exp_ = True
+                #             WHO_ANSWERED[chat_id_full] = 'gemini15pro-exp'
+                #             answer = my_gemini.chat(message.text,
+                #                                     chat_id_full,
+                #                                     my_db.get_user_property(chat_id_full, 'temperature'),
+                #                                     # model = 'gemini-1.5-pro',
+                #                                     model = cfg.gemini_pro_model,
+                #                                     system = hidden_text,
+                #                                     use_skills=True,
+                #                                     )
+                #             if not answer:
+                #                 exp_ = False
+                #                 WHO_ANSWERED[chat_id_full] = 'gemini15pro'
+                #                 answer = my_gemini.chat(message.text,
+                #                                         chat_id_full,
+                #                                         my_db.get_user_property(chat_id_full, 'temperature'),
+                #                                         model = 'gemini-1.5-pro',
+                #                                         system = hidden_text,
+                #                                         use_skills=True,
+                #                                         )
 
-                            # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
-                            # передаем эстафету следующему претенденту (ламе)
-                            if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):
-                                answer = ''
-                            if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
-                                my_gemini.undo(chat_id_full)
-                                message.text = f'/image {message.text}'
-                                image_gen(message)
-                                return
-                            if chat_id_full not in WHO_ANSWERED:
-                                if exp_:
-                                    WHO_ANSWERED[chat_id_full] = 'gemini15pro-exp'
-                                else:
-                                    WHO_ANSWERED[chat_id_full] = 'gemini15pro'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                            flag_gpt_help = False
-                            if not answer:
-                                style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                                mem__ = my_gemini.get_mem_for_llama(chat_id_full)
-                                if style_:
-                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
-                                else:
-                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
-                                if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
-                                    my_groq.undo(chat_id_full)
-                                    message.text = f'/image {message.text}'
-                                    image_gen(message)
-                                    return
-                                my_db.add_msg(chat_id_full, 'llama-3.2-90b-text-preview')
-                                flag_gpt_help = True
-                                if not answer:
-                                    answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
-                                    # return
-                                my_gemini.update_mem(message.text, answer, chat_id_full)
+                #             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
+                #             # передаем эстафету следующему претенденту (ламе)
+                #             if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):
+                #                 answer = ''
+                #             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                #                 my_gemini.undo(chat_id_full)
+                #                 message.text = f'/image {message.text}'
+                #                 image_gen(message)
+                #                 return
+                #             if chat_id_full not in WHO_ANSWERED:
+                #                 if exp_:
+                #                     WHO_ANSWERED[chat_id_full] = 'gemini15pro-exp'
+                #                 else:
+                #                     WHO_ANSWERED[chat_id_full] = 'gemini15pro'
+                #             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                #             flag_gpt_help = False
+                #             if not answer:
+                #                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
+                #                 mem__ = my_gemini.get_mem_for_llama(chat_id_full)
+                #                 if style_:
+                #                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
+                #                 else:
+                #                     answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
+                #                 if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                #                     my_groq.undo(chat_id_full)
+                #                     message.text = f'/image {message.text}'
+                #                     image_gen(message)
+                #                     return
+                #                 my_db.add_msg(chat_id_full, 'llama-3.2-90b-text-preview')
+                #                 flag_gpt_help = True
+                #                 if not answer:
+                #                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
+                #                     # return
+                #                 my_gemini.update_mem(message.text, answer, chat_id_full)
 
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
+                #             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                #                 answer_ = utils.bot_markdown_to_html(answer)
+                #                 DEBUG_MD_TO_HTML[answer_] = answer
+                #                 answer = answer_
 
-                            if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇Gemini15pro + llama3-90 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[Gemini15pro + llama3-90] {answer}')
-                            else:
-                                if exp_:
-                                    my_log.log_echo(message, f'[Gemini15pro-exp] {answer}')
-                                else:
-                                    my_log.log_echo(message, f'[Gemini15pro] {answer}')
-                            try:
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:gemini15 {error3}\n{error_traceback}')
-                        return
-
-
+                #             if flag_gpt_help:
+                #                 WHO_ANSWERED[chat_id_full] = f'👇Gemini15pro + llama3-90 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                #                 my_log.log_echo(message, f'[Gemini15pro + llama3-90] {answer}')
+                #             else:
+                #                 if exp_:
+                #                     my_log.log_echo(message, f'[Gemini15pro-exp] {answer}')
+                #                 else:
+                #                     my_log.log_echo(message, f'[Gemini15pro] {answer}')
+                #             try:
+                #                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                #                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                #             except Exception as error:
+                #                 print(f'tb:do_task: {error}')
+                #                 my_log.log2(f'tb:do_task: {error}')
+                #                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                #                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                #         except Exception as error3:
+                #             error_traceback = traceback.format_exc()
+                #             my_log.log2(f'tb:do_task:gemini15 {error3}\n{error_traceback}')
+                #         return
 
 
-                # если активирован режим общения с Gemini 1.5 flash 8b
-                if chat_mode_ == 'gemini8':
-                    if len(msg) > my_gemini.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
-                        return
 
-                    with ShowAction(message, action):
-                        try:
-                            if not my_db.get_user_property(chat_id_full, 'temperature'):
-                                my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
-                            WHO_ANSWERED[chat_id_full] = 'gemini8'
-                            answer = my_gemini.chat(message.text,
-                                                    chat_id_full,
-                                                    my_db.get_user_property(chat_id_full, 'temperature'),
-                                                    model = cfg.gemini_flash_light_model,
-                                                    system = hidden_text,
-                                                    use_skills=False, #!!
-                                                    )
+                # # если активирован режим общения с Gemini 1.5 flash 8b
+                # if chat_mode_ == 'gemini8':
+                #     if len(msg) > my_gemini.MAX_REQUEST:
+                #         bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                #         return
 
-                            # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
-                            # передаем эстафету следующему претенденту (ламе)
-                            if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):
-                                answer = ''
-                            if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
-                                my_gemini.undo(chat_id_full)
-                                message.text = f'/image {message.text}'
-                                image_gen(message)
-                                return
+                #     with ShowAction(message, action):
+                #         try:
+                #             if not my_db.get_user_property(chat_id_full, 'temperature'):
+                #                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
-                            if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'gemini8'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                #             WHO_ANSWERED[chat_id_full] = 'gemini8'
+                #             answer = my_gemini.chat(message.text,
+                #                                     chat_id_full,
+                #                                     my_db.get_user_property(chat_id_full, 'temperature'),
+                #                                     model = cfg.gemini_flash_light_model,
+                #                                     system = hidden_text,
+                #                                     use_skills=False, #!!
+                #                                     )
 
-                            if not answer:
-                                answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
-                                my_gemini.update_mem(message.text, answer, chat_id_full)
+                #             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
+                #             # передаем эстафету следующему претенденту (ламе)
+                #             if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):
+                #                 answer = ''
+                #             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
+                #                 my_gemini.undo(chat_id_full)
+                #                 message.text = f'/image {message.text}'
+                #                 image_gen(message)
+                #                 return
 
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
+                #             if chat_id_full not in WHO_ANSWERED:
+                #                 WHO_ANSWERED[chat_id_full] = 'gemini8'
+                #             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-                            my_log.log_echo(message, f'[Gemini8] {answer}')
+                #             if not answer:
+                #                 answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
+                #                 my_gemini.update_mem(message.text, answer, chat_id_full)
 
-                            try:
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:gemini8 {error3}\n{error_traceback}')
-                        return
+                #             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                #                 answer_ = utils.bot_markdown_to_html(answer)
+                #                 DEBUG_MD_TO_HTML[answer_] = answer
+                #                 answer = answer_
+
+                #             my_log.log_echo(message, f'[Gemini8] {answer}')
+
+                #             try:
+                #                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                #                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                #             except Exception as error:
+                #                 print(f'tb:do_task: {error}')
+                #                 my_log.log2(f'tb:do_task: {error}')
+                #                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                #                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                #         except Exception as error3:
+                #             error_traceback = traceback.format_exc()
+                #             my_log.log2(f'tb:do_task:gemini8 {error3}\n{error_traceback}')
+                #         return
 
 
 

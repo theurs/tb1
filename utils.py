@@ -734,7 +734,7 @@ def make_collage(images: list) -> bytes:
     result_image_as_bytes = io.BytesIO()
     collage.save(result_image_as_bytes, format='PNG') # PNG поддерживает прозрачность
     result_image_as_bytes.seek(0)
-    return result_image_as_bytes.read()
+    return compress_png_bytes(result_image_as_bytes.read())
 
 
 def get_image_size(data: bytes) -> tuple[int, int]:

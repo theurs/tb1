@@ -415,7 +415,7 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool 
                                        include_images=True,
                                        include_formatting=True,
                                        include_tables=True,
-                                       output_format='markdown'
+                                    #    output_format='markdown'
                                        )
             # if not text:
             #     text = content

@@ -236,7 +236,7 @@ def bot_markdown_to_html(text: str) -> str:
         text = text.replace(f'```{match}```', random_string)
 
     # замена тегов <sub> <sup> на подстрочные и надстрочные символы
-    text = re.sub(r'&lt;sup&gt;(.*?)&lt;sup&gt;', lambda m: ''.join(superscript_map.get(c, c) for c in m.group(1)), text)
+    text = re.sub(r'&lt;sup&gt;(.*?)&lt;/sup&gt;', lambda m: ''.join(superscript_map.get(c, c) for c in m.group(1)), text)
     text = re.sub(r'&lt;sub&gt;(.*?)&lt;/sub&gt;', lambda m: ''.join(subscript_map.get(c, c) for c in m.group(1)), text)
 
     # тут могут быть одиночные поворяющиеся `, меняем их на '
@@ -915,10 +915,8 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
    ```
 
 Прямая, по которой пересекаются плоскости A<sub>1</sub>BC и A<sub>1</sub>AD — это прямая A<sub>1</sub>A.
+Прямая, по которой пересекаются плоскости A<sub>1</sub>BC и A<sup>1</sup>AD — это прямая A<sub>1</sub>A.
 
-
-
-**Каждый раз, когда вы задаете новый вопрос об изображении, вам придется отправить изображение еще раз.**
 
     """
     print(bot_markdown_to_html(t))

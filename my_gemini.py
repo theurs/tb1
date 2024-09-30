@@ -133,11 +133,13 @@ def chat(query: str,
         if system == '':
             system = None
 
-        if chat_id:
-            bio = my_db.get_user_property(chat_id, 'persistant_memory') or 'Empty'
-            system = f'user_id: {chat_id}\n\nUser profile: {bio}\n\n{str(system)}'
-        else:
-            system = f'user_id: None User profile: none, do not try to update it'
+        # if chat_id:
+        #     bio = my_db.get_user_property(chat_id, 'persistant_memory') or 'Empty'
+        #     system = f'user_id: {chat_id}\n\nUser profile: {bio}\n\n{str(system)}'
+        # else:
+        #     system = f'user_id: None User profile: none, do not try to update it'
+
+        system = f'user_id: {chat_id}\n\n{str(system)}'
 
         if not key__:
             keys = cfg.gemini_keys[:] + ALL_KEYS
@@ -195,7 +197,9 @@ def chat(query: str,
 
                     search_google,
                     download_text_from_url,
-                    update_user_profile,
+
+                    # update_user_profile,
+
                     calc,
                     get_weather,
                     get_currency_rates,

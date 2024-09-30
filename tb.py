@@ -6294,7 +6294,9 @@ def one_time_shot():
                 # '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
                 # '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
                 # '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
-                '''ALTER TABLE users ADD COLUMN telegram_stars INTEGER;''',
+                # '''ALTER TABLE users ADD COLUMN telegram_stars INTEGER;''',
+                # '''ALTER TABLE users ADD COLUMN telegram_stars INTEGER;''',
+                '''UPDATE users SET persistant_memory = '';''',
                        ]
             for q in queries:
                 try:

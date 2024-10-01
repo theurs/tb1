@@ -1461,7 +1461,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button5, button6)
         if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') and hasattr(cfg, 'JAMBA_KEYS'):
             button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
-            button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini 🚗', callback_data='select_jamba')
+            button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini 🚴‍♀️', callback_data='select_jamba')
             markup.row(button7, button8)
         else:
             if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
@@ -1967,7 +1967,10 @@ def handle_voice(message: telebot.types.Message):
                 if text:
                     if not my_db.get_user_property(chat_id_full, 'transcribe_only'):
                         # message.text = f'voice message: {text}'
-                        message.text = text
+                        if message.caption:
+                            message.text = f'{message.caption}\n\n{tr("Audio message transcribed:", lang)}\n\n{text}'
+                        else:
+                            message.text = text
                         echo_all(message)
 
 

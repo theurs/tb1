@@ -293,7 +293,8 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r"(?<!\w)_(\S.*?\S)_(?!\w)", r"<i>\1</i>", text)
 
     # Замена *текст* на <i>текст</i>
-    text = re.sub(r"(?<!\w)\*(\S.*?\S)\*(?!\w)", r"<i>\1</i>", text)
+    # text = re.sub(r"(?<!\w)\*(\S.*?\S)\*(?!\w)", r"<i>\1</i>", text)
+    text = re.sub(r"\*(?!\s)([^*]+)(?<!\s)\*", r"<i>\1</i>", text)
 
     # tex в unicode
     matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
@@ -902,6 +903,7 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
 Это * наклонный * шрифт
 Это *наклонный шрифт* да?
 Это *наклонный шрифт*да?
+Это *1* + *2* наклонный шрифт да?
 
 Это _*наклонный *_ шрифт
 Это _*наклонный*_ шрифт

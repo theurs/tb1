@@ -1714,7 +1714,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT-4o.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt4o')
         elif call.data == 'select_llama370':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.2 70b Groq.', lang))
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.2 90b Groq.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
         elif call.data == 'select_llama405':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
@@ -1751,7 +1751,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))
         elif call.data == 'groq-llama370_reset':
             my_groq.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Groq llama 3.1 70b очищена.')
+            bot_reply_tr(message, 'История диалога с Groq llama 3.2 90b очищена.')
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('История диалога с Groq llama 3.2 90b очищена.', lang))
         elif call.data == 'gemma2-9b_reset':
             my_groq.reset(chat_id_full)
@@ -5848,14 +5848,12 @@ def do_task(message, custom_prompt: str = ''):
                                                       chat_id_full,
                                                       my_db.get_user_property(chat_id_full, 'temperature'),
                                                       model = 'llama-3.2-90b-text-preview',
-                                                    #   model = 'llama3-70b-8192',
                                                       )
                             else:
                                 answer = my_groq.chat(message.text,
                                                       chat_id_full,
                                                       my_db.get_user_property(chat_id_full, 'temperature'),
                                                       model = 'llama-3.2-90b-text-preview',
-                                                    #   model = 'llama3-70b-8192',
                                                       )
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_groq.undo(chat_id_full)
@@ -5954,9 +5952,9 @@ def do_task(message, custom_prompt: str = ''):
                                     chat_id_full,
                                     temperature=my_db.get_user_property(chat_id_full, 'temperature'),
                                     system=style_,
-                                    model = 'meta-llama/llama-3.1-8b-instruct:free',
+                                    model = 'meta-llama/llama-3.2-11b-vision-instruct:free',
                                 )
-                                WHO_ANSWERED[chat_id_full] = 'meta-llama/llama-3.1-8b-instruct:free'
+                                WHO_ANSWERED[chat_id_full] = 'meta-llama/llama-3.2-11b-vision-instruct:free'
                                 WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                                 if not answer:
                                     answer = 'Llama 405b ' + tr('did not answered, try to /reset and start again.', lang)
@@ -5966,8 +5964,8 @@ def do_task(message, custom_prompt: str = ''):
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
-                            if 'meta-llama/llama-3.1-8b-instruct:free' in WHO_ANSWERED[chat_id_full]:
-                                my_log.log_echo(message, f'[meta-llama/llama-3.1-8b-instruct:free] {answer}')
+                            if 'meta-llama/llama-3.2-11b-vision-instruct:free' in WHO_ANSWERED[chat_id_full]:
+                                my_log.log_echo(message, f'[meta-llama/llama-3.2-11b-vision-instruct:free] {answer}')
                             else:
                                 my_log.log_echo(message, f'[llama405 nousresearch/hermes-3-llama-3.1-405b:free] {answer}')
 

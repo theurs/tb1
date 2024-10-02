@@ -258,6 +258,8 @@ def restore_message_text(s1: str, l) -> str:
             s0 += f"||{formatted_text}||"
         elif i.type == 'underline':
             s0 += f"__{formatted_text}__"
+        elif i.type == 'text_link':
+            s0 += f"[{formatted_text}]({i.url})"
         elif i.type == 'blockquote' or i.type == 'expandable_blockquote':
             new_text = "> " + formatted_text.replace("\n", "\n> ")
             s0 += new_text
@@ -271,7 +273,6 @@ def restore_message_text(s1: str, l) -> str:
                               'mention',
                               'bot_command', 
                               'url',
-                              'text_link',
                               'custom_emoji',
                               'phone_number',
                               'email',

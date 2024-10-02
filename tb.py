@@ -436,13 +436,14 @@ Return a `image_transcription`
     detailed_description = ''
     extracted_formatted_text = ''
     image_generation_prompt = ''
+    original_query = query or tr('Describe in detail what you see in the picture. If there is text, write it out in a separate block. If there is very little text, then write a prompt to generate this image.', lang)
     if not query:
         use_json = True
-        query = tr(f'''
-Если на картинке только текст, извлеки его с сохранением форматирования на языке [{lang}].
-Если на картинке задача (похожая на школьное задание) то напиши весь текст задачи и очень подробно и наглядно решение на языке [{lang}].
-В других случаях опиши что видишь на картинке  на языке [{lang}], напиши подробный промпт для генерации такой картинки на английском языке, и если есть то покажи какой на картинке обнаружен текст.
-        ''', lang) + json_query
+        query = tr(f'''If the image contains only text, extract the text while preserving the formatting in the specified language [{lang}].
+
+If the image presents a problem or exercise (similar to a school assignment), provide the complete text of the problem and a very detailed and illustrative solution in the specified language [{lang}].
+
+In other cases, describe what you see in the image in the specified language [{lang}], write a detailed prompt for generating such an image in English, and if any text is present on the image, display the detected text.''', lang) + json_query
     else:
         use_json = False
         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
@@ -526,7 +527,7 @@ Return a `image_transcription`
         my_log.log2(f'tb:img2txt: {img_from_link_error}')
 
     if text:
-        add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + query, text, chat_id_full)
+        add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
 
     return text
 

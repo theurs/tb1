@@ -3680,7 +3680,7 @@ def image_gen(message: telebot.types.Message):
             NSFW_FLAG = True
 
         if NSFW_FLAG:
-            bot_reply_tr(message, 'Images was blocked. https://www.google.com/search?q=nsfw')
+            bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw')
             return
 
         # рисовать только бингом, команда /bing

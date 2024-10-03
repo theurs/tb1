@@ -387,16 +387,16 @@ def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
                     usage_count = row[1]
                     model_usage[model] = usage_count
 
-                # Image generation count (sum of image_generated_counter)
-                CUR.execute('''
-                    SELECT SUM(image_generated_counter) FROM users
-                    WHERE last_time_access >= ? AND last_time_access < ?
-                ''', (start_timestamp, end_timestamp))
-                image_count_result = CUR.fetchone()
+                # # Image generation count (sum of image_generated_counter)
+                # CUR.execute('''
+                #     SELECT SUM(image_generated_counter) FROM users
+                #     WHERE last_time_access >= ? AND last_time_access < ?
+                # ''', (start_timestamp, end_timestamp))
+                # image_count_result = CUR.fetchone()
 
-                if image_count_result:
-                    image_count = image_count_result[0]
-                    model_usage['image_generation'] = image_count # Add image count
+                # if image_count_result:
+                #     image_count = image_count_result[0]
+                #     model_usage['image_generation'] = image_count # Add image count
                 
                 usage_data.append((date_str, model_usage))
 
@@ -410,7 +410,7 @@ def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
 
 def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]]) -> Optional[bytes]:
     """
-    Visualizes model usage data over time with a separate scale for image generation.
+    Visualizes model usage data over time.
 
     Args:
         usage_data: A list of tuples, where each tuple contains:
@@ -429,44 +429,33 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]]) -> Optional[by
 
     dates: List[str] = [data[0] for data in usage_data]  # Extract dates
     models: List[str] = sorted(set(
-        model for date, usage in usage_data for model in usage if model != 'image_generation'
-    ))  # Extract unique model names (excluding image_generation)
+        model for date, usage in usage_data for model in usage
+    ))  # Extract unique model names
     model_counts: Dict[str, List[int]] = {model: [] for model in models}  # Initialize count lists for each model
-    image_counts: List[int] = []  # Initialize list for image generation counts
 
     # Populate data lists
     for date, usage in usage_data:
         for model in models:
             model_counts[model].append(usage.get(model, 0))  # Get count or default to 0
-        image_counts.append(usage.get('image_generation', 0))  # Get image generation count or default to 0
 
-    fig, ax1 = plt.subplots(figsize=(10, 6))  # Create figure and primary y-axis
+    fig, ax = plt.subplots(figsize=(10, 6))  # Create figure and axis
 
-    # Plot model usage on primary y-axis
+    # Plot model usage 
     for model in models:
-        ax1.plot(dates, model_counts[model], label=model, marker='o')
+        ax.plot(dates, model_counts[model], label=model, marker='o')
 
-    ax1.set_xlabel("Date")  # Set x-axis label
-    ax1.set_ylabel("Usage Count")  # Set primary y-axis label
-    ax1.set_title("Model Usage Over Time")  # Set plot title
-    ax1.grid(axis='y', linestyle='--')  # Add horizontal grid lines
-    ax1.tick_params(axis='x', rotation=45, labelsize=8)  # Rotate x-axis labels for better readability
+    ax.set_xlabel("Date")  # Set x-axis label
+    ax.set_ylabel("Usage Count")  # Set y-axis label
+    ax.set_title("Model Usage Over Time")  # Set plot title
+    ax.grid(axis='y', linestyle='--')  # Add horizontal grid lines
+    ax.tick_params(axis='x', rotation=45, labelsize=8)  # Rotate x-axis labels for better readability
 
     # Adjust x-axis ticks if too many dates
     if len(dates) > 10:
         step: int = len(dates) // 10  # Calculate step size for ticks
-        ax1.set_xticks(dates[::step])    # Set x-axis ticks
+        ax.set_xticks(dates[::step])    # Set x-axis ticks
 
-    # Create secondary y-axis for image generation
-    ax2 = ax1.twinx()  # Create secondary y-axis sharing x-axis with ax1
-    ax2.plot(dates, image_counts, label='image_generation', marker='x', color='red')  # Plot image generation counts
-    ax2.set_ylabel("Image Generation Count", color='red')  # Set secondary y-axis label
-    ax2.tick_params(axis='y', labelcolor='red')  # Set tick label color for secondary y-axis
-
-    # Combine legends
-    lines, labels = ax1.get_legend_handles_labels()  # Get lines and labels from primary axis
-    lines2, labels2 = ax2.get_legend_handles_labels()  # Get lines and labels from secondary axis
-    ax1.legend(lines + lines2, labels + labels2, fontsize='small')  # Combine and display legend
+    ax.legend(fontsize='small')  # Display legend
 
     plt.tight_layout()  # Adjust layout for better spacing
 
@@ -1082,9 +1071,9 @@ if __name__ == '__main__':
     init(backup=False)
 
 
-    usage_data = get_model_usage_for_days(90)  # Get data for the past 7 days
-    with open('d:/downloads/1.png', 'wb') as f:
-        f.write(visualize_usage(usage_data))
+    # usage_data = get_model_usage_for_days(90)  # Get data for the past 7 days
+    # with open('d:/downloads/1.png', 'wb') as f:
+    #     f.write(visualize_usage(usage_data))
 
 
     # pprint.pprint(get_new_users_for_last_days(90))

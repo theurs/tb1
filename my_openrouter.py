@@ -393,6 +393,8 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
+
+
     # reset('test')
     # with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()
@@ -405,6 +407,11 @@ if __name__ == '__main__':
     # with open('d:/downloads/2.txt', 'w', encoding='utf-8') as f:
     #     f.write(r)
     # print(len(r), r[:1000])
+
+
+    # a = ai('напиши 10 цифр словами от 0 до 9, в одну строку через запятую', user_id='test', temperature=0.1, model = 'openai/gpt-4o-mini')
+    # b = ai('напиши 10 цифр словами от 0 до 9, в одну строку через запятую', user_id='test', temperature=0.1, model = 'google/gemini-flash-1.5')
+    # print(a, b)
 
     chat_cli(model = 'meta-llama/llama-3.1-8b-instruct:free')
     my_db.close()

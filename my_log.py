@@ -7,6 +7,7 @@ import datetime
 import re
 import telebot
 import threading
+from collections import defaultdict
 from unidecode import unidecode
 
 import cfg
@@ -236,54 +237,68 @@ def restore_message_text(s1: str, l) -> str:
     """
     if not l:
         return s1
+    
+    # Группируем элементы по их диапазонам
+    formatted_intervals = defaultdict(list)
+    for i in l:
+        formatted_intervals[(i.offset, i.length)].append(i)
+
     s0 = ""
     last_pos = 0
-    for i in sorted(l, key=lambda x: x.offset):
-        # Добавляем текст до текущего форматированного блока
-        s0 += s1[last_pos:i.offset]
-        
-        # Извлекаем форматируемый текст
-        formatted_text = s1[i.offset:i.offset + i.length]
 
-        # Применяем соответствующий формат
-        if i.type == 'bold':
-            s0 += f"**{formatted_text}**"
-        elif i.type == 'italic':
-            s0 += f"__{formatted_text}__"
-        elif i.type == 'strikethrough':
-            s0 += f"~~{formatted_text}~~"
-        elif i.type == 'code':
-            s0 += f"`{formatted_text}`"
-        elif i.type == 'spoiler':
-            s0 += f"||{formatted_text}||"
-        elif i.type == 'underline':
-            s0 += f"__{formatted_text}__"
-        elif i.type == 'text_link':
-            s0 += f"[{formatted_text}]({i.url})"
-        elif i.type == 'blockquote' or i.type == 'expandable_blockquote':
-            new_text = "> " + formatted_text.replace("\n", "\n> ")
-            s0 += new_text
-        elif i.type == 'pre':
-            if i.language:
-                s0 += f"```{i.language}\n{formatted_text}\n```"
+    # Обрабатываем текст по интервалам
+    for (offset, length), formats in sorted(formatted_intervals.items(), key=lambda x: x[0][0]):
+        # Добавляем текст до текущего форматированного блока
+        s0 += s1[last_pos:offset]
+        
+        # Извлекаем текст для форматирования
+        formatted_text = s1[offset:offset + length]
+
+        formatted_text_space_trailing_flag = False
+        if formatted_text and formatted_text[-1] == ' ':
+            formatted_text_space_trailing_flag = True
+
+        formatted_text = formatted_text.strip()
+
+        # Применяем все форматы последовательно
+        for i in formats:
+            if i.type == 'bold':
+                formatted_text = f"**{formatted_text}**"
+            elif i.type == 'italic':
+                formatted_text = f"__{formatted_text}__"
+            elif i.type == 'strikethrough':
+                formatted_text = f"~~{formatted_text}~~"
+            elif i.type == 'code':
+                formatted_text = f"`{formatted_text}`"
+            elif i.type == 'spoiler':
+                formatted_text = f"||{formatted_text}||"
+            elif i.type == 'underline':
+                formatted_text = f"__{formatted_text}__"
+            elif i.type == 'text_link':
+                formatted_text = f"[{formatted_text}]({i.url})"
+            elif i.type == 'blockquote' or i.type == 'expandable_blockquote':
+                formatted_text = "> " + formatted_text.replace("\n", "\n> ")
+            elif i.type == 'pre':
+                if i.language:
+                    formatted_text = f"```{i.language}\n{formatted_text}\n```"
+                else:
+                    formatted_text = f"```\n{formatted_text}\n```"
             else:
-                s0 += f"```\n{formatted_text}\n```"
-        else:
-            if i.type not in ('hashtag',
-                              'mention',
-                              'bot_command', 
-                              'url',
-                              'custom_emoji',
-                              'phone_number',
-                              'email',
-                              'cashtag',
-                            #   'blockquote', # как это в маркдауне будет?? в html <blockquote></blockquote>
-                              ):
-                log2(f'Unknown message entity type {i.type} {formatted_text}')
-            s0 += formatted_text
+                if i.type not in (
+                    'hashtag', 'mention', 'bot_command', 
+                    'url', 'custom_emoji', 'phone_number', 
+                    'email', 'cashtag'
+                ):
+                    log2(f'Unknown message entity type {i.type} {formatted_text}')
+        
+        # Добавляем результат в итоговую строку
+        s0 += formatted_text
+
+        if formatted_text_space_trailing_flag:
+            s0 += ' '
 
         # Обновляем индекс последней позиции
-        last_pos = i.offset + i.length
+        last_pos = offset + length
 
     # Добавляем оставшийся текст после последнего форматирования
     s0 += s1[last_pos:]

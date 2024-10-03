@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 #pip install lxml[html_clean]
+# pip install webvtt-py
 
 import cachetools.func
 import concurrent.futures
@@ -18,6 +19,7 @@ import chardet
 import PyPDF2
 import requests
 import trafilatura
+import webvtt
 
 import cfg
 import my_db
@@ -101,6 +103,7 @@ def get_subs_from_dzen_video(url: str) -> str:
         cmd = f'yt-dlp -q --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}" "{url}" -o "{tmpname}"'
         subprocess.call(cmd, shell=True)
         ext = f'.{list_of_subs[0][0]}.{list_of_subs[0][1].split(",")[0]}'
+        ext = ext.replace(' ', '')
         # check if file exists
         if not os.path.isfile(tmpname + ext):
             return get_subs_from_rutube(url)
@@ -113,13 +116,41 @@ def get_subs_from_dzen_video(url: str) -> str:
 
 
 def clear_text_subs_from_dzen_video(text: str) -> str:
-    """Removes time codes and empty lines from subtitles text, returns clear text."""
-    lines = text.splitlines()[1:]
-    result = []
-    for i in range(len(lines)):
-        if "-->" not in lines[i] and lines[i] != '':
-            result.append(lines[i])
-    return '\n'.join(result).strip()
+    """Removes time codes, empty lines and duplicate lines from dzen video subtitles.
+
+    Args:
+        text: The input string containing the subtitles in WebVTT format.
+
+    Returns:
+        A string containing the cleaned subtitles text.
+    """
+    # Parse the WebVTT subtitles using the webvtt library.
+    captions = webvtt.from_buffer(io.StringIO(text))
+
+    # Extract the text from each caption and join them with newline characters.
+    t = ''.join(caption.text.strip() + '\n' for caption in captions)
+
+    # Split the text into lines and remove leading/trailing whitespace from each line.
+    lines = [x.strip() for x in t.strip().split('\n')]
+
+    # Initialize an empty string to store the result and a variable to store the previous line.
+    result = ''
+    prev = ''
+
+    # Iterate over the lines and remove consecutive duplicate lines.
+    for line in lines:
+        if line != prev:  # Only add the line if it's not the same as the previous one
+            result += line + '\n'
+            prev = line
+
+    return result.strip()
+
+    # lines = text.splitlines()[1:]
+    # result = []
+    # for i in range(len(lines)):
+    #     if "-->" not in lines[i] and lines[i] != '':
+    #         result.append(lines[i])
+    # return '\n'.join(result).strip()
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
@@ -139,7 +170,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             top_langs = [x for x in top_langs if x != language]
             top_langs.insert(0, language)
 
-        if '//dzen.ru/video/watch/' in url:
+        if '//dzen.ru/video/watch/' in url or ('vk.com' in url and '/video-' in url):
             return get_subs_from_dzen_video(url)
         if '//rutube.ru/video/' in url:
             return get_subs_from_rutube(url)
@@ -147,8 +178,8 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             return get_subs_from_rutube(url)
         if 'tiktok.com' in url and 'video' in url:
             return get_subs_from_rutube(url)
-        if 'vk.com' in url and '/video-' in url:
-            return get_subs_from_rutube(url)
+        # if 'vk.com' in url and '/video-' in url:
+        #     return get_subs_from_rutube(url)
         if '//my.mail.ru/v/' in url and '/video/' in url:
             return get_subs_from_rutube(url)
         if 'https://vimeo.com/' in url:
@@ -198,7 +229,12 @@ def check_ytb_subs_exists(url: str) -> bool:
     '''проверяет наличие субтитров на ютубе, если это не ютуб или есть субтитры
     то возвращает True, иначе False
     '''
-    if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url:
+    if '/youtu.be/' in url or 'youtube.com/' in url or '//dzen.ru/video/watch/' in url or \
+                '//rutube.ru/video/' in url or 'pornhub.com/view_video.php?viewkey=' in url or \
+                ('tiktok.com' in url and 'video' in url) or \
+                ('https://vimeo.com/' in url) or \
+                ('vk.com' in url and '/video-' in url) or \
+                ('//my.mail.ru/v/' in url and '/video/' in url):
         return len(get_text_from_youtube(url, transcribe=False)) > 0
     return False
     
@@ -453,3 +489,5 @@ def is_valid_url(url: str) -> bool:
 if __name__ == "__main__":
     pass
     # my_groq.load_users_keys()
+    r = get_subs_from_dzen_video('https://www.youtube.com/watch?v=lyGvQn_clQM')
+    print(r)

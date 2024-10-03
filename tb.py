@@ -3802,7 +3802,7 @@ def image_gen(message: telebot.types.Message):
                                     nn_ = '\n\n'
                                     author = my_genimg.WHO_AUTOR[hash(i)]
                                     caption_ = f"{bot_addr} {author}{nn_}{caption_}"
-                                    my_db.add_msg(chat_id_full, author)
+                                    my_db.add_msg(chat_id_full, 'img ' + author)
                                     del my_genimg.WHO_AUTOR[hash(i)]
                                 else:
                                     caption_ = f'{bot_addr} error'

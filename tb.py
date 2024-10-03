@@ -3800,7 +3800,9 @@ def image_gen(message: telebot.types.Message):
                             elif isinstance(i, bytes):
                                 if hash(i) in my_genimg.WHO_AUTOR:
                                     nn_ = '\n\n'
-                                    caption_ = f"{bot_addr} {my_genimg.WHO_AUTOR[hash(i)]}{nn_}{caption_}"
+                                    author = my_genimg.WHO_AUTOR[hash(i)]
+                                    caption_ = f"{bot_addr} {author}{nn_}{caption_}"
+                                    my_db.add_msg(chat_id_full, author)
                                     del my_genimg.WHO_AUTOR[hash(i)]
                                 else:
                                     caption_ = f'{bot_addr} error'

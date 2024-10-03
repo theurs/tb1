@@ -15,7 +15,7 @@ import traceback
 import shutil
 import sqlite3
 import sys
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 
 matplotlib.use('Agg') #  Отключаем вывод графиков на экран
 import matplotlib.pyplot as plt
@@ -346,7 +346,8 @@ def get_model_usage(days: int):
 
 def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
     """
-    Retrieves model usage data for the past num_days, excluding the current day. 
+    Retrieves model usage data for the past num_days, excluding the current day.
+    Includes image generation counts.
     Data is sorted from oldest to newest.
 
     Args:
@@ -355,33 +356,51 @@ def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
     Returns:
         A list of tuples, where each tuple contains:
         - The date (YYYY-MM-DD)
-        - A dictionary of model usage counts for that date.
+        - A dictionary of model usage counts for that date, including image generation.
         Returns an empty list if there is an error or no data.
     """
 
-    end_date = datetime.date.today() - datetime.timedelta(days=1) # Start from yesterday
+    end_date = datetime.date.today() - datetime.timedelta(days=1)
     usage_data: List[Tuple[str, Dict[str, int]]] = []
 
-    for i in range(num_days - 1, -1, -1):  # Iterate in reverse for oldest to newest
+    for i in range(num_days - 1, -1, -1):
         current_date = end_date - datetime.timedelta(days=i)
         date_str = current_date.strftime("%Y-%m-%d")
         start_timestamp = time.mktime(current_date.timetuple())
         end_timestamp = start_timestamp + 24 * 60 * 60
 
-        with LOCK:  # Assuming LOCK is defined elsewhere
+        model_usage: Dict[str, int] = {} # Initialize model_usage here
+
+
+        with LOCK:
             try:
+                # Existing model usage query (msg_counter table)
                 CUR.execute('''
                     SELECT model_used, COUNT(*) FROM msg_counter
                     WHERE access_time >= ? AND access_time < ?
                     GROUP BY model_used
                 ''', (start_timestamp, end_timestamp))
                 results = CUR.fetchall()
-                model_usage: Dict[str, int] = {}
+                
                 for row in results:
                     model = row[0]
                     usage_count = row[1]
                     model_usage[model] = usage_count
+
+                # Image generation count (sum of image_generated_counter)
+                CUR.execute('''
+                    SELECT SUM(image_generated_counter) FROM users
+                    WHERE last_time_access >= ? AND last_time_access < ?
+                ''', (start_timestamp, end_timestamp))
+                image_count_result = CUR.fetchone()
+
+                if image_count_result:
+                    image_count = image_count_result[0]
+                    model_usage['image_generation'] = image_count # Add image count
+                
                 usage_data.append((date_str, model_usage))
+
+
             except Exception as error:
                 my_log.log2(f'my_db:get_model_usage_for_days {error}')
                 return []
@@ -389,68 +408,75 @@ def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
     return usage_data
 
 
-def visualize_usage(usage_data):
+def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]]) -> Optional[bytes]:
     """
-    Visualizes model usage data over time using matplotlib.
-
-    This function generates a line plot showing the usage count of each model
-    for each date in the input data. It handles cases with multiple models
-    and varying usage counts.
+    Visualizes model usage data over time with a separate scale for image generation.
 
     Args:
         usage_data: A list of tuples, where each tuple contains:
-                     - The date (YYYY-MM-DD) as a string.
-                     - A dictionary of model usage counts for that date,
-                       where keys are model names and values are counts.
+            - The date (YYYY-MM-DD) as a string.
+            - A dictionary of model usage counts for that date,
+              where keys are model names (str) and values are counts (int).
 
     Returns:
-        bytes: A byte string containing the PNG image data of the generated plot.
-               Returns None if the input data is empty.
+        A byte string containing the PNG image data of the generated plot,
+        or None if the input data is empty.
     """
 
-    if not usage_data:
+    if not usage_data:  # Check for empty input data
         my_log.log2('my_db:visualize_usage: No data to visualize.')
         return None
 
-    dates = [data[0] for data in usage_data]
-    models = sorted(set(model for date, usage in usage_data for model in usage))
-    model_counts = {model: [] for model in models}
+    dates: List[str] = [data[0] for data in usage_data]  # Extract dates
+    models: List[str] = sorted(set(
+        model for date, usage in usage_data for model in usage if model != 'image_generation'
+    ))  # Extract unique model names (excluding image_generation)
+    model_counts: Dict[str, List[int]] = {model: [] for model in models}  # Initialize count lists for each model
+    image_counts: List[int] = []  # Initialize list for image generation counts
 
+    # Populate data lists
     for date, usage in usage_data:
         for model in models:
-            model_counts[model].append(usage.get(model, 0))
+            model_counts[model].append(usage.get(model, 0))  # Get count or default to 0
+        image_counts.append(usage.get('image_generation', 0))  # Get image generation count or default to 0
 
-    plt.figure(figsize=(10, 6))
+    fig, ax1 = plt.subplots(figsize=(10, 6))  # Create figure and primary y-axis
 
+    # Plot model usage on primary y-axis
     for model in models:
-        plt.plot(dates, model_counts[model], label=model, marker='o')
+        ax1.plot(dates, model_counts[model], label=model, marker='o')
 
-    plt.xlabel("Date")
-    plt.ylabel("Usage Count")
-    plt.title("Model Usage Over Time")
+    ax1.set_xlabel("Date")  # Set x-axis label
+    ax1.set_ylabel("Usage Count")  # Set primary y-axis label
+    ax1.set_title("Model Usage Over Time")  # Set plot title
+    ax1.grid(axis='y', linestyle='--')  # Add horizontal grid lines
+    ax1.tick_params(axis='x', rotation=45, labelsize=8)  # Rotate x-axis labels for better readability
 
-    # Add horizontal grid lines
-    plt.grid(axis='y', linestyle='--')  # or linestyle=':' , '-' , etc.
+    # Adjust x-axis ticks if too many dates
+    if len(dates) > 10:
+        step: int = len(dates) // 10  # Calculate step size for ticks
+        ax1.set_xticks(dates[::step])    # Set x-axis ticks
 
-    # Rotate x-axis labels for better readability
-    plt.xticks(rotation=45, ha="right", fontsize=8)
+    # Create secondary y-axis for image generation
+    ax2 = ax1.twinx()  # Create secondary y-axis sharing x-axis with ax1
+    ax2.plot(dates, image_counts, label='image_generation', marker='x', color='red')  # Plot image generation counts
+    ax2.set_ylabel("Image Generation Count", color='red')  # Set secondary y-axis label
+    ax2.tick_params(axis='y', labelcolor='red')  # Set tick label color for secondary y-axis
 
-    # Dynamically adjust x-axis ticks based on data size
-    if len(dates) > 10:  # Adjust threshold as needed
-        step = len(dates) // 10
-        plt.xticks(dates[::step])
+    # Combine legends
+    lines, labels = ax1.get_legend_handles_labels()  # Get lines and labels from primary axis
+    lines2, labels2 = ax2.get_legend_handles_labels()  # Get lines and labels from secondary axis
+    ax1.legend(lines + lines2, labels + labels2, fontsize='small')  # Combine and display legend
 
+    plt.tight_layout()  # Adjust layout for better spacing
 
-    plt.legend(fontsize='small')
-    plt.tight_layout()
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png", dpi=150, bbox_inches='tight')
-    buf.seek(0)
-    image_bytes = buf.read()
-    buf.close()
-
-    return utils.compress_png_bytes(image_bytes)
+    # Save plot to byte buffer
+    buf = io.BytesIO()   # Create in-memory byte buffer
+    plt.savefig(buf, format="png", dpi=150, bbox_inches='tight') # Save plot to buffer as PNG
+    buf.seek(0)            # Reset buffer position
+    image_bytes: bytes = buf.read() # Read image bytes from buffer
+    buf.close()           # Close buffer
+    return utils.compress_png_bytes(image_bytes) # Return compressed PNG image bytes
 
 
 def get_total_msg_users() -> int:

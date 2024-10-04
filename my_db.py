@@ -371,7 +371,6 @@ def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
 
         model_usage: Dict[str, int] = {} # Initialize model_usage here
 
-
         with LOCK:
             try:
                 # Existing model usage query (msg_counter table)
@@ -387,19 +386,7 @@ def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
                     usage_count = row[1]
                     model_usage[model] = usage_count
 
-                # # Image generation count (sum of image_generated_counter)
-                # CUR.execute('''
-                #     SELECT SUM(image_generated_counter) FROM users
-                #     WHERE last_time_access >= ? AND last_time_access < ?
-                # ''', (start_timestamp, end_timestamp))
-                # image_count_result = CUR.fetchone()
-
-                # if image_count_result:
-                #     image_count = image_count_result[0]
-                #     model_usage['image_generation'] = image_count # Add image count
-                
                 usage_data.append((date_str, model_usage))
-
 
             except Exception as error:
                 my_log.log2(f'my_db:get_model_usage_for_days {error}')
@@ -408,7 +395,7 @@ def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
     return usage_data
 
 
-def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]]) -> Optional[bytes]:
+def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'llm') -> Optional[bytes]:
     """
     Visualizes model usage data over time.
 
@@ -417,6 +404,7 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]]) -> Optional[by
             - The date (YYYY-MM-DD) as a string.
             - A dictionary of model usage counts for that date,
               where keys are model names (str) and values are counts (int).
+        mode: The visualization mode ('llm' or 'img'). If 'llm', only non-image models are plotted. If 'img', only image models are plotted.
 
     Returns:
         A byte string containing the PNG image data of the generated plot,
@@ -442,6 +430,12 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]]) -> Optional[by
 
     # Plot model usage 
     for model in models:
+        if mode == 'llm':
+            if model.startswith('img '):
+                continue
+        elif mode == 'img':
+            if not model.startswith('img '):
+                continue
         ax.plot(dates, model_counts[model], label=model, marker='o')
 
     ax.set_xlabel("Date")  # Set x-axis label
@@ -1071,9 +1065,9 @@ if __name__ == '__main__':
     init(backup=False)
 
 
-    # usage_data = get_model_usage_for_days(90)  # Get data for the past 7 days
-    # with open('d:/downloads/1.png', 'wb') as f:
-    #     f.write(visualize_usage(usage_data))
+    usage_data = get_model_usage_for_days(90)  # Get data for the past 7 days
+    with open('d:/downloads/1.png', 'wb') as f:
+        f.write(visualize_usage(usage_data))
 
 
     # pprint.pprint(get_new_users_for_last_days(90))

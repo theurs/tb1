@@ -4026,7 +4026,10 @@ def stats(message: telebot.types.Message):
         msg += f'\n\n Uptime: {get_uptime()}'
 
         usage_plots_image = my_db.draw_user_activity(90)
-        usage_plots_image2 = my_db.visualize_usage(my_db.get_model_usage_for_days(90))
+        # llm
+        usage_plots_image2 = my_db.visualize_usage(my_db.get_model_usage_for_days(90), mode = 'llm')
+        # img
+        usage_plots_image3 = my_db.visualize_usage(my_db.get_model_usage_for_days(90), mode = 'img')
 
         bot_reply(message, msg)
 
@@ -4040,10 +4043,20 @@ def stats(message: telebot.types.Message):
                 )
             log_message(m)
 
-        if usage_plots_image:
+        if usage_plots_image2:
             m = bot.send_photo(
                 message.chat.id,
                 usage_plots_image2,
+                disable_notification=True,
+                reply_to_message_id=message.message_id,
+                reply_markup=get_keyboard('hide', message),
+                )
+            log_message(m)
+
+        if usage_plots_image3:
+            m = bot.send_photo(
+                message.chat.id,
+                usage_plots_image3,
                 disable_notification=True,
                 reply_to_message_id=message.message_id,
                 reply_markup=get_keyboard('hide', message),

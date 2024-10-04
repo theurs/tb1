@@ -1067,7 +1067,7 @@ if __name__ == '__main__':
 
     usage_data = get_model_usage_for_days(90)  # Get data for the past 7 days
     with open('d:/downloads/1.png', 'wb') as f:
-        f.write(visualize_usage(usage_data))
+        f.write(visualize_usage(usage_data, mode='img'))
 
 
     # pprint.pprint(get_new_users_for_last_days(90))

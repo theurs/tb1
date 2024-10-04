@@ -447,7 +447,10 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
     # Adjust x-axis ticks if too many dates
     if len(dates) > 10:
         step: int = len(dates) // 10  # Calculate step size for ticks
-        ax.set_xticks(dates[::step])    # Set x-axis ticks
+        try:
+            ax.set_xticks(dates[::step])    # Set x-axis ticks
+        except:
+            return None
 
     ax.legend(fontsize='small')  # Display legend
 

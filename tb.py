@@ -3726,6 +3726,16 @@ def image_gen(message: telebot.types.Message):
                             bad_words = [x.strip().lower() for x in f.read().split() if x.strip() and not x.strip().startswith('#')]
                         for x in bad_words:
                             if x in prompt_lower:
+                                if my_groq.test_image_prompt(prompt, chat_id_full) and my_gemini.test_image_prompt(prompt, chat_id_full):
+                                    break
+                                if hasattr(cfg, 'LOGS_BAD_IMGS_GROUP'):
+                                    bot.send_message(
+                                        cfg.LOGS_GROUP,
+                                        f'{message.from_user.id}\n\n{prompt}',
+                                        disable_web_page_preview=True,
+                                        disable_notification=True,
+                                        message_thread_id=cfg.LOGS_BAD_IMGS_GROUP,
+                                        )
                                 my_db.set_user_property(chat_id_full, 'blocked_bing', True)
                                 return
                     # если не новый юзер пытается рисовать что то не то то посылать репорты
@@ -3735,6 +3745,8 @@ def image_gen(message: telebot.types.Message):
                             bad_words = [x.strip().lower() for x in f.read().split() if x.strip() and not x.strip().startswith('#')]
                         for x in bad_words:
                             if x in prompt_lower:
+                                if my_groq.test_image_prompt(prompt, chat_id_full) and my_gemini.test_image_prompt(prompt, chat_id_full):
+                                    break
                                 bot.send_message(
                                     cfg.LOGS_GROUP,
                                     f'{message.from_user.id}\n\n{prompt}',

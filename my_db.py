@@ -429,6 +429,9 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
 
     fig, ax = plt.subplots(figsize=(10, 6))  # Create figure and axis
 
+    # Create a list of tuples (handle, label, value) for the legend
+    handles_labels_values = []
+
     # Plot model usage
     for model in models:
         if mode == 'llm':
@@ -439,8 +442,16 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
                 continue
 
         label = model[4:] if model.startswith('img ') else model
+        line, = ax.plot(dates, model_counts[model], label=label, marker='o')
+        value = model_counts[model][-1]
+        handles_labels_values.append((line, label, value))
 
-        ax.plot(dates, model_counts[model], label=label, marker='o')
+    # Sort by values in descending order
+    handles_labels_values.sort(key=lambda x: x[2], reverse=True)
+
+    # Unpack tuples into separate lists
+    handles, labels, values = zip(*handles_labels_values)
+
 
     ax.set_xlabel("Date")  # Set x-axis label
     ax.set_ylabel("Usage Count")  # Set y-axis label
@@ -456,9 +467,9 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
         except:
             return None
 
+    fontP = FontProperties(size='x-small')
+    ax.legend(handles, [f"{label} ({value})" for label, value in zip(labels, values)], loc='upper left', prop=fontP)
 
-    fontP = FontProperties(size='x-small')  # Или другой размер, например, 'small', 'medium'
-    ax.legend(fontsize='small', loc='upper left', prop=fontP)  # Display legend
 
     plt.tight_layout()  # Adjust layout for better spacing
 

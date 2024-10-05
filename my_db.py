@@ -21,6 +21,7 @@ matplotlib.use('Agg') #  Отключаем вывод графиков на э�
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 import matplotlib.dates as mdates
+from matplotlib.font_manager import FontProperties
 
 from cachetools import LRUCache
 
@@ -428,7 +429,7 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
 
     fig, ax = plt.subplots(figsize=(10, 6))  # Create figure and axis
 
-    # Plot model usage 
+    # Plot model usage
     for model in models:
         if mode == 'llm':
             if model.startswith('img '):
@@ -436,7 +437,9 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
         elif mode == 'img':
             if not model.startswith('img '):
                 continue
-        ax.plot(dates, model_counts[model], label=model, marker='o')
+        if model.startswith('img '):
+            label = model[4:]
+        ax.plot(dates, model_counts[model], label=label, marker='o')
 
     ax.set_xlabel("Date")  # Set x-axis label
     ax.set_ylabel("Usage Count")  # Set y-axis label
@@ -452,7 +455,9 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
         except:
             return None
 
-    ax.legend(fontsize='small')  # Display legend
+
+    fontP = FontProperties(size='x-small')  # Или другой размер, например, 'small', 'medium'
+    ax.legend(fontsize='small', loc='upper left', prop=fontP)  # Display legend
 
     plt.tight_layout()  # Adjust layout for better spacing
 

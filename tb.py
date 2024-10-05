@@ -5289,7 +5289,8 @@ def do_task(message, custom_prompt: str = ''):
 
     have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
         chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or\
-            message.from_user.id in cfg.admins
+        message.from_user.id in cfg.admins or\
+        (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) > 100
 
     # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
     # if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15' and not have_keys and is_private:

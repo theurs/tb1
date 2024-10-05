@@ -144,8 +144,20 @@ def ai(prompt: str = '',
             text = response.json()['choices'][0]['message']['content'].strip()
         except Exception as error:
             my_log.log_openrouter(f'Failed to parse response: {error}\n\n{str(response)}')
+            if model == 'google/gemini-pro-1.5-exp':
+                model = 'google/gemini-flash-1.5-exp'
+                return ai(prompt, mem, user_id, system, model, temperature, max_tokens, timeout)
+            if model == 'nousresearch/hermes-3-llama-3.1-405b:free':
+                model == 'meta-llama/llama-3.2-11b-vision-instruct:free'
+                return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
             text = ''
     else:
+        if model == 'google/gemini-pro-1.5-exp':
+            model = 'google/gemini-flash-1.5-exp'
+            return ai(prompt, mem, user_id, system, model, temperature, max_tokens, timeout)
+        if model == 'nousresearch/hermes-3-llama-3.1-405b:free':
+            model == 'meta-llama/llama-3.2-11b-vision-instruct:free'
+            return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
         text = ''
     return status, text
 

@@ -287,17 +287,13 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r'^\_\_(.*?)\_\_$', r'<i>\1</i>', text, flags=re.MULTILINE | re.DOTALL)
 
     # Замена _*текст*_ на <i>текст</i>
-    # text = re.sub(r"(?<!\w)_\*(\S.*?\S)\*_(?!\w)", r"<i>\1</i>", text)
-    text = re.sub(r"(?<!\w)_\*([^\n\s].*?[^\n\s])\*_(?!\w)", r"<i>\1</i>", text)
+    text = re.sub(r"(?<!\S)_\*([^\n\s].*?[^\n\s])\*_(?!\S)", r"<i>\1</i>", text)
 
     # 1 _ в <i></i>
-    # text = re.sub(r"(?<!\w)_(\S.*?\S)_(?!\w)", r"<i>\1</i>", text)
-    text = re.sub(r"(?<!\w)_([^\n\s].*?[^\n\s])_(?!\w)", r"<i>\1</i>", text)
+    text = re.sub(r"(?<!\S)_([^\n\s].*?[^\n\s])_(?!\S)", r"<i>\1</i>", text)
 
     # Замена *текст* на <i>текст</i>
-    # text = re.sub(r"\*(?!\s)([^*]+)(?<!\s)\*", r"<i>\1</i>", text) # без ограничений на количество строк!!
-    text = re.sub(r"\*(?!\s)([^\n*]+)(?<!\s)\*", r"<i>\1</i>", text)
-
+    text = re.sub(r"(?<!\S)\*(?!\s)([^\n*]+)(?<!\s)\*(?!\S)", r"<i>\1</i>", text)
 
     # tex в unicode
     matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
@@ -920,6 +916,7 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
 на 1 строку*_ да?
 Это _*наклонный шрифт*_да?
 
+ОХ*ЕЛИ ОТ ПИ*ДАТОСТИ
 
    ```python
    plt.xticks(rotation=45, ha="right", fontsize=8)

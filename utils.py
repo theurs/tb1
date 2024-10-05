@@ -290,7 +290,7 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r"(?<!\S)_\*([^\n\s].*?[^\n\s])\*_(?!\S)", r"<i>\1</i>", text)
 
     # 1 _ в <i></i>
-    text = re.sub(r"(?<!\S)_([^\n\s].*?[^\n\s])_(?!\S)", r"<i>\1</i>", text)
+    text = re.sub(r"(?<!\S)_([^\n\s_*][^\n*_]*[^\n\s_*])_(?!\S)", r"<i>\1</i>", text)
 
     # Замена *текст* на <i>текст</i>
     text = re.sub(r"(?<!\S)\*(?!\s)([^\n*]+)(?<!\s)\*(?!\S)", r"<i>\1</i>", text)

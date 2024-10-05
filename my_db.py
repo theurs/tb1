@@ -437,8 +437,9 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
         elif mode == 'img':
             if not model.startswith('img '):
                 continue
-        if model.startswith('img '):
-            label = model[4:]
+
+        label = model[4:] if model.startswith('img ') else model
+
         ax.plot(dates, model_counts[model], label=label, marker='o')
 
     ax.set_xlabel("Date")  # Set x-axis label

@@ -44,6 +44,7 @@ import my_openrouter
 import my_openrouter_free
 import my_pandoc
 import my_shadowjourney
+import my_stat
 import my_stt
 import my_sum
 import my_trans
@@ -4026,11 +4027,12 @@ def stats(message: telebot.types.Message):
         msg += f'\nDEEPL keys: {len(my_trans.ALL_KEYS)+len(cfg.DEEPL_KEYS if hasattr(cfg, "DEEPL_KEYS") else [])}'
         msg += f'\n\n Uptime: {get_uptime()}'
 
-        usage_plots_image = my_db.draw_user_activity(90)
+        usage_plots_image = my_stat.draw_user_activity(90)
+        stat_data = my_stat.get_model_usage_for_days(90)
         # llm
-        usage_plots_image2 = my_db.visualize_usage(my_db.get_model_usage_for_days(90), mode = 'llm')
+        usage_plots_image2 = my_stat.visualize_usage(stat_data, mode = 'llm')
         # img
-        usage_plots_image3 = my_db.visualize_usage(my_db.get_model_usage_for_days(90), mode = 'img')
+        usage_plots_image3 = my_stat.visualize_usage(stat_data, mode = 'img')
 
         bot_reply(message, msg)
 

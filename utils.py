@@ -295,6 +295,12 @@ def bot_markdown_to_html(text: str) -> str:
     # Замена *текст* на <i>текст</i>
     text = re.sub(r"(?<!\w)\*(?!\s)([^\n*]+?)(?<!\s)\*(?!\w)", r"<i>\1</i>", text)
 
+    # Замена ~~текст~~ на <s>текст</s>
+    text = re.sub(r"(?<!\w)~~(?!\s)([^\n*]+?)(?<!\s)~~(?!\w)", r"<s>\1</s>", text)
+
+    # Замена ||текст|| на <tg-spoiler>текст</tg-spoiler>
+    text = re.sub(r"(?<!\w)\|\|(?!\s)([^\n*]+?)(?<!\s)\|\|(?!\w)", r"<tg-spoiler>\1</tg-spoiler>", text)
+
     # tex в unicode
     matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
     for match in matches:
@@ -918,6 +924,9 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
 на 1 строку*_ да?
 Это _*наклонный шрифт*_да?
 Это наклонный шрифт (_*да*_?
+
+Это ~~перечеркнутый~~ шрифт
+Это [||спойлер||, шрифт
 
 ОХ*ЕЛИ ОТ ПИ*ДАТОСТИ
 

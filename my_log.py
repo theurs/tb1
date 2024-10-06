@@ -196,14 +196,14 @@ def log_bing_img(text: str) -> None:
 def log_huggin_face_api(text: str) -> None:
     """для логов от hugging_face_api"""
     a = [
-        # 'Model too busy, unable to get response in less than 60 second',
-        # 'Rate limit reached. You reached free usage limit',
-        # 'HTTPSConnectionPool(host=',
-        # 'runware: argument of type ',
-        # 'An error happened while trying to locate the file on the Hub and we cannot find the requested files in the local cache.',
-        # 'Task not found for this model',
-        # 'CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.',
-        # 'Remote end closed connection without response',
+        'Model too busy, unable to get response in less than 60 second',
+        'Rate limit reached. You reached free usage limit',
+        'HTTPSConnectionPool(host=',
+        'runware: argument of type ',
+        'An error happened while trying to locate the file on the Hub and we cannot find the requested files in the local cache.',
+        'Task not found for this model',
+        'CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.',
+        'Remote end closed connection without response',
     ]
     if any([x for x in a if x in text]):
         return

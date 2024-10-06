@@ -183,10 +183,21 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
     # Unpack tuples into separate lists
     handles, labels, values = zip(*handles_labels_values)
 
+    # Calculate total daily usage for the last day, considering the mode
+    last_date_usage = usage_data[-1][1] if usage_data else {}
+    total_last_day: int = 0
+    for model, count in last_date_usage.items():
+        if mode == 'llm':
+            if not model.startswith('img '):
+                total_last_day += count
+        elif mode == 'img':
+            if model.startswith('img '):
+                total_last_day += count
 
     ax.set_xlabel("Date")  # Set x-axis label
     ax.set_ylabel("Usage Count")  # Set y-axis label
-    ax.set_title("Model Usage Over Time")  # Set plot title
+    # ax.set_title("Model Usage Over Time")  # Set plot title
+    ax.set_title(f"Model Usage Over Time (Total for last day: {total_last_day})")
     ax.grid(axis='y', linestyle='--')  # Add horizontal grid lines
     ax.tick_params(axis='x', rotation=45, labelsize=8)  # Rotate x-axis labels for better readability
 

@@ -183,16 +183,11 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
     # Unpack tuples into separate lists
     handles, labels, values = zip(*handles_labels_values)
 
-    # Calculate total daily usage for the last day, considering the mode
-    last_date_usage = usage_data[-1][1] if usage_data else {}
-    total_last_day: int = 0
-    for model, count in last_date_usage.items():
-        if mode == 'llm':
-            if not model.startswith('img '):
-                total_last_day += count
-        elif mode == 'img':
-            if model.startswith('img '):
-                total_last_day += count
+    # Calculate total from filtered values in the legend
+    total_last_day = 0
+    for label, value in zip(labels, values):  # Iterate through filtered labels and values
+        if label != "Total":  # Exclude previously added "Total" (if it exists)
+            total_last_day += value
 
     ax.set_xlabel("Date")  # Set x-axis label
     ax.set_ylabel("Usage Count")  # Set y-axis label

@@ -27,6 +27,7 @@ from sqlitedict import SqliteDict
 import cfg
 import bing_img
 import md2tgmd
+import my_alert
 import my_correct_layout_ru
 import my_init
 import my_genimg
@@ -4275,42 +4276,23 @@ def alert(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     if message.chat.id in cfg.admins:
+        message.text = my_log.restore_message_text(message.text, message.entities)
         text = message.text[7:]
         if text:
             text = utils.bot_markdown_to_html(text)
             text = f'<b>{tr("Широковещательное сообщение от Верховного Адмнистратора, не обращайте внимания", lang)}</b>' + '\n\n\n' + text
 
-            ids = []
-            all_users = list(set(my_db.get_all_users_ids()))
-            for x in all_users:
-                x = x[0]
-                x = x.replace('[','').replace(']','')
-                chat = int(x.split()[0])
-                # if chat not in cfg.admins:
-                #     return
-                thread = int(x.split()[1])
+            ids = my_alert.get_targets(DDOS_BLOCKED_USERS, chat_id_full)
 
-                # в чаты не слать
-                if chat < 0:
-                    continue
-                chat_id = f'[{chat}] [{thread}]'
-                # заблокированым не посылать
-                if chat_id in DDOS_BLOCKED_USERS:
-                    continue
-                if my_db.get_user_property(chat_id, 'blocked'):
-                    continue
-                # только тех кто был активен в течение 7 дней
-                if my_db.get_user_property(chat_id_full, 'last_time_access') and my_db.get_user_property(chat_id_full, 'last_time_access') + (3600*7*24) < time.time():
-                    continue
-
-                ids.append(chat_id)
+            for target in ids:
                 try:
-                    bot.send_message(chat_id = chat, message_thread_id=thread, text = text, parse_mode='HTML',
+                    bot.send_message(chat_id = target, message_thread_id = 0, text = text, parse_mode='HTML',
                                     disable_notification = True, reply_markup=get_keyboard('translate', message))
-                    my_log.log2(f'tb:alert: sent to {chat_id}')
+                    my_log.log2(f'tb:alert: sent to {target}')
                 except Exception as error2:
-                    my_log.log2(f'tb:alert: {error2}')
+                    my_log.log2(f'tb:alert: FAILED sent to {target} {error2}')
                 time.sleep(0.3)
+            ids = [str(x) for x in ids]
             bot_reply(message, 'Sent to: ' + ', '.join(ids) + '\n\nTotal: ' + str(len(ids)))
             return
 

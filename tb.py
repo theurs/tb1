@@ -3960,7 +3960,7 @@ Return a `suggestions`
                                 if not have_keys:
                                     msg = tr('We need more tokens to generate free images. Please add your token from Hugging Face. You can find Hugging Face at', lang)
                                     msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
-                                    bot_reply(message, msg2)
+                                    bot_reply(message, msg2, disable_web_page_preview = True)
                         else:
                             bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
                             # if hasattr(cfg, 'enable_image_adv') and cfg.enable_image_adv:

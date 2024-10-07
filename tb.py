@@ -3952,6 +3952,15 @@ Return a `suggestions`
                                 add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
                                                     f'{tr("images was generated successfully", lang)}',
                                                     chat_id_full)
+                                have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
+                                            chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
+                                            message.from_user.id in cfg.admins or \
+                                            (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) > 100 or \
+                                            (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 5000
+                                if not have_keys:
+                                    msg = tr('We need more tokens to generate free images. Please add your token from Hugging Face. You can find Hugging Face at', lang)
+                                    msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
+                                    bot_reply(message, msg2)
                         else:
                             bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
                             # if hasattr(cfg, 'enable_image_adv') and cfg.enable_image_adv:

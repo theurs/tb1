@@ -3958,7 +3958,7 @@ Return a `suggestions`
                                             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) > 100 or \
                                             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 5000
                                 if not have_keys:
-                                    msg = tr('We need more tokens to generate free images. Please add your token from Hugging Face. You can find Hugging Face at', lang)
+                                    msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
                                     msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
                                     bot_reply(message, msg2, disable_web_page_preview = True)
                         else:

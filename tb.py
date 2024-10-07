@@ -5198,6 +5198,8 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                     else:
                         my_log.log2(f'tb:reply_to_long_message: {error}')
                         my_log.log2(chunk)
+                    if parse_mode == 'HTML':
+                        chunk = utils.html.unescape(chunk)
                     if send_message:
                         m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
                                             link_preview_options=preview, reply_markup=reply_markup)

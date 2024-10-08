@@ -352,10 +352,10 @@ OPEN_ROUTER_FREE_KEYS = [
 
 
 # https://www.assemblyai.com/ speech-to-text free 100hours. slow in free account?
-ASSEMBLYAI_KEYS = [
-    'key1',
-    'key2',
-]
+#ASSEMBLYAI_KEYS = [
+#    'key1',
+#    'key2',
+#]
 
 
 # курсы валют
@@ -375,10 +375,10 @@ ASSEMBLYAI_KEYS = [
 
 
 # https://ai21.com/
-JAMBA_KEYS = [
-    'key1',
-    'key2',
-]
+#JAMBA_KEYS = [
+#    'key1',
+#    'key2',
+#]
 
 
 # https://cloud.sambanova.ai/apis llama 8-405

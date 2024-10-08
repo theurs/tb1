@@ -4136,6 +4136,12 @@ def block_user_add3(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
 
     user_id = message.text[10:].strip()
+    try:
+        user_id_int = int(user_id)
+        if user_id_int:
+            user_id = f'[{user_id_int}] [0]'
+    except ValueError:
+        pass
     if user_id:
         my_db.set_user_property(user_id, 'blocked_totally', True)
         bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
@@ -4152,6 +4158,12 @@ def block_user_del3(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
 
     user_id = message.text[10:].strip()
+    try:
+        user_id_int = int(user_id)
+        if user_id_int:
+            user_id = f'[{user_id_int}] [0]'
+    except ValueError:
+        pass
     if user_id:
         if my_db.get_user_property(user_id, 'blocked_totally'):
             my_db.delete_user_property(user_id, 'blocked_totally')
@@ -4182,6 +4194,14 @@ def block_user_add2(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
 
     user_id = message.text[10:].strip()
+
+    try:
+        user_id_int = int(user_id)
+        if user_id_int:
+            user_id = f'[{user_id_int}] [0]'
+    except ValueError:
+        pass
+
     if user_id:
         my_db.set_user_property(user_id, 'blocked_bing', True)
         bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
@@ -4198,6 +4218,12 @@ def block_user_del2(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
 
     user_id = message.text[10:].strip()
+    try:
+        user_id_int = int(user_id)
+        if user_id_int:
+            user_id = f'[{user_id_int}] [0]'
+    except ValueError:
+        pass
     if user_id:
         if my_db.get_user_property(user_id, 'blocked_bing'):
             my_db.delete_user_property(user_id, 'blocked_bing')
@@ -4225,6 +4251,12 @@ def block_user_add(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
 
     user_id = message.text[10:].strip()
+    try:
+        user_id_int = int(user_id)
+        if user_id_int:
+            user_id = f'[{user_id_int}] [0]'
+    except ValueError:
+        pass
     if user_id:
         my_db.set_user_property(user_id, 'blocked', True)
         bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
@@ -4241,6 +4273,12 @@ def block_user_del(message: telebot.types.Message):
     lang = get_lang(chat_full_id, message)
 
     user_id = message.text[10:].strip()
+    try:
+        user_id_int = int(user_id)
+        if user_id_int:
+            user_id = f'[{user_id_int}] [0]'
+    except ValueError:
+        pass
     if user_id:
         if my_db.get_user_property(user_id, 'blocked'):
             my_db.delete_user_property(user_id, 'blocked')

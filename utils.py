@@ -270,6 +270,15 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub('^\.  ### (.*)$', '▎<b>\\1</b>', text, flags=re.MULTILINE)
     text = re.sub('^\.  #### (.*)$', '▎<b>\\1</b>', text, flags=re.MULTILINE)
 
+    # цитаты начинаются с > их надо заменить на <blockquote> </blockquote>
+    # > должен быть либо в начале строки, либо сначала пробелы потом >
+    # если несколько подряд строк начинаются с > то их всех надо объединить в один блок <blockquote>
+    def replace_quote(match):
+        quote_lines = match.group(2).splitlines()
+        cleaned_lines = [line.lstrip(' &gt;') for line in quote_lines]
+        return "\n<blockquote>" + "\n".join(cleaned_lines) + "</blockquote>\n"
+    text = re.sub(r"(^|\n)([ ]*&gt;.*?)(?=\n[^&gt;\s]|\Z)", replace_quote, text, flags=re.MULTILINE | re.DOTALL)
+
     # заменить двойные и тройные пробелы в тексте (только те что между буквами и знаками препинания)
     text = re.sub(r'(?<=\w)    (?=\S)', ' ', text)
     text = re.sub(r'(?<=\S)    (?=\w)', ' ', text)
@@ -937,6 +946,13 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
 Прямая, по которой пересекаются плоскости A<sub>1</sub>BC и A<sub>1</sub>AD — это прямая A<sub>1</sub>A.
 Прямая, по которой пересекаются плоскости A<sub>1</sub>BC и A<sup>1</sup>AD — это прямая A<sub>1</sub>A.
 
+текст
+> цитата строка *1*
+> цитата строка *2*
+
+> цитата строка *3*
+текст
+> цитата строка *4*
 
     """
     print(bot_markdown_to_html(t))

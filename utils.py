@@ -261,16 +261,16 @@ def bot_markdown_to_html(text: str) -> str:
     text = new_text.strip()
 
     # 1,2,3,4 # в начале строки меняем всю строку на жирный текст
-    text = re.sub('^#### (.*)$', '▏<b>\\1</b>', text, flags=re.MULTILINE)
-    text = re.sub('^### (.*)$', '▏<b>\\1</b>', text, flags=re.MULTILINE)
-    text = re.sub('^## (.*)$', '▎<b>\\1</b>', text, flags=re.MULTILINE)
-    text = re.sub('^# (.*)$', '█ <b>\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^#### (.*)$', '<b>▏\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^### (.*)$', '<b>▏\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^## (.*)$', '<b>▌ \\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^# (.*)$', '<b>█ \\1</b>', text, flags=re.MULTILINE)
     # точка пробел три хеша и пробел в начале тоже делать жирным
-    text = re.sub('^\.  #### (.*)$', '▏<b>\\1</b>', text, flags=re.MULTILINE)
-    text = re.sub('^\. ### (.*)$', '▏<b>\\1</b>', text, flags=re.MULTILINE)
-    text = re.sub('^\.  ### (.*)$', '▏<b>\\1</b>', text, flags=re.MULTILINE)
-    text = re.sub('^\.  ## (.*)$', '▎<b>\\1</b>', text, flags=re.MULTILINE)
-    text = re.sub('^\.  # (.*)$', '█ <b>\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^\.  #### (.*)$', '<b>▏\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^\. ### (.*)$', '<b>▏\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^\.  ### (.*)$', '<b>▏\\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^\.  ## (.*)$', '<b>▌ \\1</b>', text, flags=re.MULTILINE)
+    text = re.sub('^\.  # (.*)$', '<b>█ \\1</b>', text, flags=re.MULTILINE)
     
 
     # цитаты начинаются с > их надо заменить на <blockquote> </blockquote>

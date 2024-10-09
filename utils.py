@@ -271,16 +271,44 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub('^\.  ### (.*)$', '<b>▏\\1</b>', text, flags=re.MULTILINE)
     text = re.sub('^\.  ## (.*)$', '<b>▌ \\1</b>', text, flags=re.MULTILINE)
     text = re.sub('^\.  # (.*)$', '<b>█ \\1</b>', text, flags=re.MULTILINE)
-    
 
-    # цитаты начинаются с > их надо заменить на <blockquote> </blockquote>
-    # > должен быть либо в начале строки, либо сначала пробелы потом >
-    # если несколько подряд строк начинаются с > то их всех надо объединить в один блок <blockquote>
-    def replace_quote(match):
-        quote_lines = match.group(2).splitlines()
-        cleaned_lines = [line.lstrip(' &gt;') for line in quote_lines]
-        return "\n<blockquote>" + "\n".join(cleaned_lines) + "</blockquote>\n"
-    text = re.sub(r"(^|\n)([ ]*&gt;.*?)(?=\n[^&gt;\s]|\Z)", replace_quote, text, flags=re.MULTILINE | re.DOTALL)
+    # цитаты начинаются с &gt; их надо заменить на <blockquote></blockquote>
+    # &gt; должен быть либо в начале строки, либо сначала пробелы потом &gt;
+    # если несколько подряд строк начинаются с &gt; то их всех надо объединить в один блок <blockquote>
+    # def replace_quote(match):
+    #     quote_lines = match.group(2).splitlines()
+    #     cleaned_lines = [line.lstrip(' &gt;') for line in quote_lines]
+    #     return "\n<blockquote>" + "\n".join(cleaned_lines) + "</blockquote>\n"
+    # text = re.sub(r"(^|\n)([ ]*&gt;.*?)(?=\n[^&gt;\s]|\Z)", replace_quote, text, flags=re.MULTILINE | re.DOTALL)
+    def process_quotes(text):
+        # Разбиваем текст на строки
+        lines = text.split('\n')
+        result = []
+        quote_lines = []
+        
+        for line in lines:
+            # Проверяем, является ли строка цитатой (с учетом пробелов в начале)
+            if re.match('^\s*&gt;\s*(.*)$', line):
+                # Извлекаем текст после &gt;
+                quote_content = re.sub('^\s*&gt;\s*(.*)$', '\\1', line)
+                quote_lines.append(quote_content)
+            else:
+                # Если накопились цитаты, добавляем их в результат
+                if quote_lines:
+                    quote_text = '\n'.join(quote_lines)
+                    result.append(f'<blockquote>{quote_text}</blockquote>')
+                    quote_lines = []
+                result.append(line)
+        
+        # Добавляем оставшиеся цитаты в конце текста
+        if quote_lines:
+            quote_text = '\n'.join(quote_lines)
+            result.append(f'<blockquote>{quote_text}</blockquote>')
+        
+        return '\n'.join(result)
+
+    text = process_quotes(text)
+
 
     # заменить двойные и тройные пробелы в тексте (только те что между буквами и знаками препинания)
     text = re.sub(r'(?<=\w)    (?=\S)', ' ', text)
@@ -289,6 +317,9 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r'(?<=\S)   (?=\w)', ' ', text)
     text = re.sub(r'(?<=\w)  (?=\S)', ' ', text)
     text = re.sub(r'(?<=\S)  (?=\w)', ' ', text)
+
+    # 3 и больше переносов строки идущих подряд меняем на 2
+    text = re.sub('(?:\s*\n){3,}', '\n\n\n', text)
 
     # 2 * в <b></b>
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
@@ -956,6 +987,9 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
 > цитата строка *3*
 текст
 > цитата строка *4*
+
+text
+
 
 
 # Заголовок первого уровня

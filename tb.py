@@ -5475,16 +5475,20 @@ def do_task(message, custom_prompt: str = ''):
                         amount = 0
                     if amount:
                         prices = [telebot.types.LabeledPrice(label = "XTR", amount = amount)]
-                        bot.send_invoice(
-                            message.chat.id,
-                            title=tr(f'Donate {amount} stars', lang),
-                            description = tr(f'Donate {amount} stars', lang),
-                            invoice_payload="stars_donate_payload",
-                            provider_token = "",  # Для XTR этот токен может быть пустым
-                            currency = "XTR",
-                            prices = prices,
-                            reply_markup = get_keyboard(f'pay_stars_{amount}', message)
-                        )
+                        try:
+                            bot.send_invoice(
+                                message.chat.id,
+                                title=tr(f'Donate {amount} stars', lang),
+                                description = tr(f'Donate {amount} stars', lang),
+                                invoice_payload="stars_donate_payload",
+                                provider_token = "",  # Для XTR этот токен может быть пустым
+                                currency = "XTR",
+                                prices = prices,
+                                reply_markup = get_keyboard(f'pay_stars_{amount}', message)
+                            )
+                        except Exception as error:
+                            my_log.log_donate(f'tb:do_task: {error}\n\n{message.chat.id} {amount}')
+                            bot_reply_tr(message, 'Invalid input. Please try the donation process again. Make sure the donation amount is correct. It might be too large or too small.')
                     else:
                         bot_reply_tr(message, 'Invalid input. Please try the donation process again.')
                 COMMAND_MODE[chat_id_full] = ''

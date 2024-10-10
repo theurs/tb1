@@ -275,11 +275,6 @@ def bot_markdown_to_html(text: str) -> str:
     # цитаты начинаются с &gt; их надо заменить на <blockquote></blockquote>
     # &gt; должен быть либо в начале строки, либо сначала пробелы потом &gt;
     # если несколько подряд строк начинаются с &gt; то их всех надо объединить в один блок <blockquote>
-    # def replace_quote(match):
-    #     quote_lines = match.group(2).splitlines()
-    #     cleaned_lines = [line.lstrip(' &gt;') for line in quote_lines]
-    #     return "\n<blockquote>" + "\n".join(cleaned_lines) + "</blockquote>\n"
-    # text = re.sub(r"(^|\n)([ ]*&gt;.*?)(?=\n[^&gt;\s]|\Z)", replace_quote, text, flags=re.MULTILINE | re.DOTALL)
     def process_quotes(text):
         # Разбиваем текст на строки
         lines = text.split('\n')
@@ -318,12 +313,8 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r'(?<=\w)  (?=\S)', ' ', text)
     text = re.sub(r'(?<=\S)  (?=\w)', ' ', text)
 
-    # # 3 и больше переносов строки идущих подряд меняем на 2
-    # text = re.sub('(?:\s*\n){3,}', '\n\n\n', text)
-    # убрать 3 и 4 пустые сроки подряд
-    text = text.replace('\n\n\n\n\n', '\n\n\n')
-    text = text.replace('\n\n\n\n', '\n\n\n')
-
+    # 3 и больше переносов строки идущих подряд меняем на 2
+    text = re.sub('(?:\s*\n){3,}', '\n\n\n', text)
 
     # 2 * в <b></b>
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
@@ -359,7 +350,6 @@ def bot_markdown_to_html(text: str) -> str:
 
 
     # меняем маркдаун ссылки на хтмл
-    # text = re.sub(r'\[([^\]]*)\]\(([^\)]*)\)', r'<a href="\2">\1</a>', text)
     text = re.sub('''\[(.*?)\]\((https?://\S+)\)''', r'<a href="\2">\1</a>', text)
 
     # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
@@ -381,9 +371,8 @@ def bot_markdown_to_html(text: str) -> str:
 
     text = replace_code_lang(text)
 
-    # убрать 3 и 4 пустые сроки подряд (только после блоков кода или любых тегов)
-    text = text.replace('>\n\n\n\n\n', '>\n\n\n')
-    text = text.replace('>\n\n\n\n', '>\n\n\n')
+    # убрать 3 и более пустые сроки подряд (только после блоков кода или любых тегов)
+    text = re.sub(r'>\n{4,}', '>\n\n\n', text)
 
     return text
 
@@ -392,80 +381,191 @@ def replace_code_lang(t: str) -> str:
     """
     Replaces the code language in the given string with appropriate HTML tags.
     Adds "language-plaintext" class if no language is specified but <code> tags are present.
-
     Parameters:
         t (str): The input string containing code snippets.
-
     Returns:
         str: The modified string with code snippets wrapped in HTML tags.
     """
     result = ''
     state = 0
-    for i in t.split('\n'):
-        if i.startswith('<code>'):
-            if len(i) >= 7 and '</code>' not in i:
-                new_lang = i[6:]
+    lines = t.split('\n')
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+
+        # Однострочный код оставляем как есть
+        if '<code>' in line and '</code>' in line and line.startswith('<code>'):
+            result += line + '\n'
+            i += 1
+            continue
+
+        # Обработка многострочного кода
+        if line.startswith('<code>'):
+            if len(line) >= 7 and '</code>' not in line:
+                new_lang = line[6:]
                 if new_lang.lower() == 'c++':
                     new_lang = 'cpp'
-                result += f'<pre><code class = "language-{new_lang}">'
+                result += f'<pre><code class="language-{new_lang}">'
                 state = 1
-            elif i == '<code>':
+            elif line == '<code>':
                 result += '<pre><code class="language-plaintext">'
                 state = 1
         elif state == 1:
-            if i == '</code>':
+            if line == '</code>':
                 result += '</code></pre>\n'
                 state = 0
             else:
-                result += i + '\n'
+                result += line + '\n'
         else:
-            result += i + '\n'
-
+            result += line + '\n'
+        i += 1
     return result
 
 
+
 def replace_tables(text: str) -> str:
+    """
+    Заменяет markdown таблицы на их prettytable представление.
+    Добавлена валидация формата таблицы.
+    """
     text += '\n'
     state = 0
     table = ''
     results = []
-    for line in text.split('\n'):
-        if line.count('|') > 2 and len(line) > 4:
-            if state == 0:
-                state = 1
-            table += line + '\n'
-        else:
-            if state == 1:
-                results.append(table[:-1])
-                table = ''
-                state = 0
+    
+    def is_valid_separator(line: str) -> bool:
+        """Проверяет, является ли строка валидным разделителем заголовка таблицы"""
+        if not line or line.count('|') < 2:
+            return False
+        # Убираем крайние |
+        parts = line.strip('|').split('|')
+        # Проверяем, что каждая ячейка состоит только из - и : (для выравнивания)
+        return all(part.strip().replace('-', '').replace(':', '') == '' for part in parts)
 
+    def is_valid_table_row(line: str) -> bool:
+        """Проверяет, является ли строка похожей на строку таблицы"""
+        if not line or line.count('|') < 2:
+            return False
+        # Проверяем, что есть хотя бы один символ между |
+        parts = line.strip('|').split('|')
+        return all(len(part.strip()) > 0 for part in parts)
+
+    lines = text.split('\n')
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        
+        # Если находим потенциальную строку таблицы
+        if is_valid_table_row(line):
+            # Проверяем следующую строку (разделитель)
+            if i + 1 < len(lines) and is_valid_separator(lines[i + 1]):
+                if state == 0:
+                    state = 1
+                    table = line + '\n'
+                    table += lines[i + 1] + '\n'
+                    i += 2
+                    continue
+            elif state == 1:
+                # Если мы уже в таблице, добавляем строку
+                table += line + '\n'
+                i += 1
+                continue
+        
+        # Если строка не подходит для таблицы
+        if state == 1:
+            results.append(table[:-1])
+            table = ''
+            state = 0
+        i += 1
+
+    # Обработка найденных таблиц
     for table in results:
-        x = prettytable.PrettyTable(align = "l",
-                                    set_style = prettytable.MSWORD_FRIENDLY,
-                                    hrules = prettytable.HEADER,
-                                    junction_char = '|')
-
+        x = prettytable.PrettyTable(align="l",
+                                   set_style=prettytable.MSWORD_FRIENDLY,
+                                   hrules=prettytable.HEADER,
+                                   junction_char='|')
         lines = table.split('\n')
-        header = [x.strip().replace('<b>', '').replace('</b>', '') for x in lines[0].split('|') if x]
-        header = [split_long_string(x, header = True) for x in header]
+        
+        # Проверяем, что у нас есть хотя бы заголовок и разделитель
+        if len(lines) < 2:
+            continue
+            
+        # Обработка заголовка
+        header = [x.strip().replace('<b>', '').replace('</b>', '') 
+                 for x in lines[0].split('|') 
+                 if x]
+        header = [split_long_string(x, header=True) for x in header]
+        
         try:
             x.field_names = header
         except Exception as error:
             my_log.log2(f'tb:replace_tables: {error}\n{text}\n\n{x}')
             continue
+
+        # Обработка строк данных (пропускаем разделитель)
         for line in lines[2:]:
-            row = [x.strip().replace('<b>', '').replace('</b>', '') for x in line.split('|') if x]
+            row = [x.strip().replace('<b>', '').replace('</b>', '') 
+                  for x in line.split('|') 
+                  if x]
+            # Проверяем, что количество столбцов совпадает с заголовком
+            if len(row) != len(header):
+                continue
             row = [split_long_string(x) for x in row]
             try:
                 x.add_row(row)
             except Exception as error2:
                 my_log.log2(f'tb:replace_tables: {error2}\n{text}\n\n{x}')
                 continue
+
         new_table = x.get_string()
         text = text.replace(table, f'<pre><code>{new_table}\n</code></pre>')
-
+    
     return text
+
+
+
+# def replace_tables(text: str) -> str:
+#     text += '\n'
+#     state = 0
+#     table = ''
+#     results = []
+#     for line in text.split('\n'):
+#         if line.count('|') > 2 and len(line) > 4:
+#             if state == 0:
+#                 state = 1
+#             table += line + '\n'
+#         else:
+#             if state == 1:
+#                 results.append(table[:-1])
+#                 table = ''
+#                 state = 0
+
+#     for table in results:
+#         x = prettytable.PrettyTable(align = "l",
+#                                     set_style = prettytable.MSWORD_FRIENDLY,
+#                                     hrules = prettytable.HEADER,
+#                                     junction_char = '|')
+
+#         lines = table.split('\n')
+#         header = [x.strip().replace('<b>', '').replace('</b>', '') for x in lines[0].split('|') if x]
+#         header = [split_long_string(x, header = True) for x in header]
+#         try:
+#             x.field_names = header
+#         except Exception as error:
+#             my_log.log2(f'tb:replace_tables: {error}\n{text}\n\n{x}')
+#             continue
+#         for line in lines[2:]:
+#             row = [x.strip().replace('<b>', '').replace('</b>', '') for x in line.split('|') if x]
+#             row = [split_long_string(x) for x in row]
+#             try:
+#                 x.add_row(row)
+#             except Exception as error2:
+#                 my_log.log2(f'tb:replace_tables: {error2}\n{text}\n\n{x}')
+#                 continue
+#         new_table = x.get_string()
+#         text = text.replace(table, f'<pre><code>{new_table}\n</code></pre>')
+
+#     return text
 
 
 def split_html(text: str, max_length: int = 1500) -> list:
@@ -1007,6 +1107,17 @@ text
 ### Заголовок 3 уровня
 #### Заголовок 4 уровня
 
+Изображение представляет собой рисунок девушки с короткими каштановыми волосами, одетой в серую толстовку с капюшоном. Она выглядит грустной или уставшей, её глаза опухшие, а взгляд опущен. В руке она держит зажжённую сигарету, от которой идёт дым.  Рисунок выполнен в мультяшном стиле, линии несколько неровные, что придаёт ему небрежный, но при этом  милый характер. В правом нижнем углу изображения есть подпись: `@PANI_STRAWBERRY`.
+
+Подпись на рисунке:
+
+`@PANI_STRAWBERRY`
+
+Пример запроса для генерации подобного изображения:
+
+```prompt
+/img a cartoon drawing of a sad girl with short brown hair wearing a grey hoodie, holding a cigarette with smoke coming out of it. Her eyes are droopy and she looks tired. The style should be slightly messy and cute, like a quick sketch.  Include the watermark "@PANI_STRAWBERRY" in the bottom right corner.
+```
 
     """
     print(bot_markdown_to_html(t))

@@ -1148,79 +1148,89 @@ def gen_images(prompt: str, moderation_flag: bool = False,
                use_bing: bool = True) -> list:
     """рисует одновременно всеми доступными способами"""
 
-    if prompt.strip() == '':
-        return []
+    if not user_id:
+        user_id = 'test'
 
-    negative = ''
-
-    reprompt = ''
-    if use_bing:
-        reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
-
-    if reprompt:
-        prompt = reprompt
+    if user_id in LOCKS:
+        lock = LOCKS[user_id]
     else:
-        return []
+        lock = threading.Lock()
+        LOCKS[user_id] = lock
 
-    if use_bing:
-        pool = ThreadPool(processes=7)
+    with lock:
+        if prompt.strip() == '':
+            return []
 
-        async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
+        negative = ''
 
-        async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
-        async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
+        reprompt = ''
+        if use_bing:
+            reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
 
-        async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
+        if reprompt:
+            prompt = reprompt
+        else:
+            return []
 
-        async_result5 = pool.apply_async(yandex_cloud, (prompt,))
-        async_result6 = pool.apply_async(yandex_cloud, (prompt,))
+        if use_bing:
+            pool = ThreadPool(processes=7)
 
-        async_result7 = pool.apply_async(runware, (prompt, 2, negative))
+            async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
 
-        result = (async_result1.get() or []) + \
-                 (async_result2.get() or []) + \
-                 (async_result3.get() or []) + \
-                 (async_result7.get() or []) + \
-                 (async_result4.get() or []) + \
-                 (async_result5.get() or []) + \
-                 (async_result6.get() or [])
-    else:
-        pool = ThreadPool(processes=7)
+            async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
+            async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
 
-        async_result2 = pool.apply_async(kandinski, (prompt,))
-        async_result3 = pool.apply_async(kandinski, (prompt,))
+            async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
 
-        async_result4 = pool.apply_async(huggin_face_api, (prompt,))
+            async_result5 = pool.apply_async(yandex_cloud, (prompt,))
+            async_result6 = pool.apply_async(yandex_cloud, (prompt,))
 
-        async_result5 = pool.apply_async(yandex_cloud, (prompt,))
-        async_result6 = pool.apply_async(yandex_cloud, (prompt,))
+            async_result7 = pool.apply_async(runware, (prompt, 2, negative))
 
-        async_result7 = pool.apply_async(runware, (prompt,))
+            result = (async_result1.get() or []) + \
+                    (async_result2.get() or []) + \
+                    (async_result3.get() or []) + \
+                    (async_result7.get() or []) + \
+                    (async_result4.get() or []) + \
+                    (async_result5.get() or []) + \
+                    (async_result6.get() or [])
+        else:
+            pool = ThreadPool(processes=7)
 
-        result = (async_result2.get() or []) + \
-                 (async_result3.get() or []) + \
-                 (async_result7.get() or []) + \
-                 (async_result4.get() or []) + \
-                 (async_result5.get() or []) + \
-                 (async_result6.get() or [])
+            async_result2 = pool.apply_async(kandinski, (prompt,))
+            async_result3 = pool.apply_async(kandinski, (prompt,))
 
-    # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
-    # может удалить то что рисуют параллельные запросы и второй бот?
-    try:
-        for f in glob.glob('/tmp/*'):
-            if len(f) == 45:
-                try:
-                    os.rmdir(f)
-                except Exception as unknown:
-                    if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
-                        my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{f}')
-        shutil.rmtree('/tmp/gradio')
-    except Exception as unknown:
-        error_traceback = traceback.format_exc()
-        if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
-            my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
+            async_result4 = pool.apply_async(huggin_face_api, (prompt,))
 
-    return result
+            async_result5 = pool.apply_async(yandex_cloud, (prompt,))
+            async_result6 = pool.apply_async(yandex_cloud, (prompt,))
+
+            async_result7 = pool.apply_async(runware, (prompt,))
+
+            result = (async_result2.get() or []) + \
+                    (async_result3.get() or []) + \
+                    (async_result7.get() or []) + \
+                    (async_result4.get() or []) + \
+                    (async_result5.get() or []) + \
+                    (async_result6.get() or [])
+
+        # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
+        # может удалить то что рисуют параллельные запросы и второй бот?
+        try:
+            for f in glob.glob('/tmp/*'):
+                if len(f) == 45:
+                    try:
+                        os.rmdir(f)
+                    except Exception as unknown:
+                        if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
+                            my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{f}')
+            shutil.rmtree('/tmp/gradio')
+        except Exception as unknown:
+            error_traceback = traceback.format_exc()
+            if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
+                my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
+
+        return result
 
 
 def test_hkey(key: str):

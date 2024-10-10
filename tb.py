@@ -439,16 +439,25 @@ Return a `image_transcription`
     extracted_formatted_text = ''
     image_generation_prompt = ''
     original_query = query or tr('Describe in detail what you see in the picture. If there is text, write it out in a separate block. If there is very little text, then write a prompt to generate this image.', lang)
+
     if not query:
-        use_json = True
-        query = tr(f'''Answer always in [{lang}] language! If the image contains only text, extract the text while preserving the formatting.
-
-If the image presents a problem or exercise (similar to a school assignment), provide the complete text of the problem and a very detailed and illustrative solution.
-
-In other cases, describe what you see in the image, write a detailed prompt for generating such an image in English, and if any text is present on the image, display the detected text.''', lang) + json_query
+        query = tr('Describe the image, what do you see here? Extract all text and show it preserving text formatting. Write a prompt to generate the same image - use markdown code with syntax highlighting ```prompt\n/img your prompt in english```', lang)
+        query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
+        use_json = False
     else:
         use_json = False
-        query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
+        query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)        
+
+#         use_json = True
+#         query = tr(f'''Answer always in [{lang}] language! If the image contains only text, extract the text while preserving the formatting.
+
+# If the image presents a problem or exercise (similar to a school assignment), provide the complete text of the problem and a very detailed and illustrative solution.
+
+# In other cases, describe what you see in the image, write a detailed prompt for generating such an image in English, and if any text is present on the image, display the detected text.''', lang) + json_query
+#     else:
+#         use_json = False
+#         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
+
     if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
@@ -3210,6 +3219,16 @@ def send_debug_history(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     COMMAND_MODE[chat_id_full] = ''
+
+    try:
+        if message.from_user.id in cfg.admins:
+            arg = message.text.split(maxsplit=1)[1].strip()
+            if arg:
+                if '[' not in arg:
+                    arg = f'[{arg}] [0]'
+                chat_id_full = arg
+    except IndexError:
+        pass
 
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Gemini\n\n'

@@ -3807,7 +3807,8 @@ def image_gen(message: telebot.types.Message):
 
                             d = None
                             bot_addr = f'https://t.me/{_bot_name}'
-                            caption_ = prompt[:900]
+                            caption_ = re.sub(r"(\s)\1+", r"\1\1", prompt)[:900]
+                            # caption_ = prompt[:900]
                             if isinstance(i, str):
                                 d = utils.download_image_as_bytes(i)
                                 caption_ = f'{bot_addr} bing.com\n\n' + caption_

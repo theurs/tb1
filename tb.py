@@ -2709,6 +2709,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
             if huggingface_keys:
                 if my_genimg.test_hkey(huggingface_keys[0]):
                     my_genimg.USER_KEYS[chat_id_full] = huggingface_keys[0]
+                    my_genimg.ALL_KEYS.append(huggingface_keys[0])
                     my_log.log_keys(f'Added new API key for Huggingface: {chat_id_full} {huggingface_keys}')
                     bot_reply_tr(message, 'Added API key for Huggingface successfully!')
                 else:
@@ -2717,11 +2718,13 @@ def users_keys_for_gemini(message: telebot.types.Message):
 
             if keys_groq:
                 my_groq.USER_KEYS[chat_id_full] = keys_groq[0]
+                my_groq.ALL_KEYS.append(keys_groq[0])
                 my_log.log_keys(f'Added new API key for Groq: {chat_id_full} {keys_groq}')
                 bot_reply_tr(message, 'Added API key for Groq successfully!')
 
             if deepl_keys:
                 my_trans.USER_KEYS[chat_id_full] = deepl_keys[0]
+                my_trans.ALL_KEYS.append(deepl_keys[0])
                 my_log.log_keys(f'Added new API key for Deepl: {chat_id_full} {deepl_keys}')
                 bot_reply_tr(message, 'Added API key for Deepl successfully!')
 

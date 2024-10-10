@@ -441,11 +441,11 @@ Return a `image_transcription`
     original_query = query or tr('Describe in detail what you see in the picture. If there is text, write it out in a separate block. If there is very little text, then write a prompt to generate this image.', lang)
     if not query:
         use_json = True
-        query = tr(f'''If the image contains only text, extract the text while preserving the formatting in the specified language [{lang}].
+        query = tr(f'''If the image contains only text, extract the text while preserving the formatting.
 
-If the image presents a problem or exercise (similar to a school assignment), provide the complete text of the problem and a very detailed and illustrative solution in the specified language [{lang}].
+If the image presents a problem or exercise (similar to a school assignment), provide the complete text of the problem and a very detailed and illustrative solution.
 
-In other cases, describe what you see in the image in the specified language [{lang}], write a detailed prompt for generating such an image in English, and if any text is present on the image, display the detected text.''', lang) + json_query
+In other cases, describe what you see in the image, write a detailed prompt for generating such an image in English, and if any text is present on the image, display the detected text. Answer always in language:''', lang) + ' ' + lang + json_query
     else:
         use_json = False
         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)

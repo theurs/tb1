@@ -4,6 +4,7 @@
 import glob
 import os
 import datetime
+import html
 import re
 import telebot
 import threading
@@ -356,13 +357,13 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
                 if reply_from_bot:
                     log_file.write(f"[{time_now}] [BOT]: {reply_from_bot}\n")
                 else:
-                    log_file.write(f"[{time_now}] [{user_name}]: {message.text or message.caption or ''}\n")
+                    log_file.write(f"[{time_now}] [{user_name}]: {html.unescape(message.text) or html.unescape(message.caption) or ''}\n")
         if LOG_MODE in (0,1):
             with open(log_file_path.replace('logs/', 'logs2/', 1), 'a', encoding="utf-8") as log_file:
                 if reply_from_bot:
                     log_file.write(f"[{time_now}] [BOT]: {reply_from_bot}\n")
                 else:
-                    log_file.write(f"[{time_now}] [{user_name}]: {message.text or message.caption or ''}\n")
+                    log_file.write(f"[{time_now}] [{user_name}]: {html.unescape(message.text) or html.unescape(message.caption) or ''}\n")
 
 
 def log_media(message: telebot.types.Message) -> None:

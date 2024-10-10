@@ -320,6 +320,10 @@ def bot_markdown_to_html(text: str) -> str:
 
     # # 3 и больше переносов строки идущих подряд меняем на 2
     # text = re.sub('(?:\s*\n){3,}', '\n\n\n', text)
+    # убрать 3 и 4 пустые сроки подряд
+    text = text.replace('\n\n\n\n\n', '\n\n\n')
+    text = text.replace('\n\n\n\n', '\n\n\n')
+
 
     # 2 * в <b></b>
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
@@ -376,6 +380,10 @@ def bot_markdown_to_html(text: str) -> str:
         text = text.replace(random_string, f'<code>{new_match}</code>')
 
     text = replace_code_lang(text)
+
+    # убрать 3 и 4 пустые сроки подряд (только после блоков кода или любых тегов)
+    text = text.replace('>\n\n\n\n\n', '>\n\n\n')
+    text = text.replace('>\n\n\n\n', '>\n\n\n')
 
     return text
 
@@ -987,6 +995,8 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
 > цитата строка *3*
 текст
 > цитата строка *4*
+
+
 
 text
 

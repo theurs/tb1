@@ -284,6 +284,11 @@ gemini_keys = ['xxx', 'yyy']
 # если боту написать номер то он попробует проверить его на сайтах для проверки телефонов
 PHONE_CATCHER = True
 
+# https://huggingface.co/
+huggin_face_api = [
+    'xxx',
+    'yyy',
+]
 
 # huggin_face_models_urls = [
 #     #"https://api-inference.huggingface.co/models/thibaud/sdxl_dpo_turbo",

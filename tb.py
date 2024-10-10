@@ -1578,17 +1578,20 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 COMMAND_MODE[chat_id_full] = 'enter_start_amount'
                 return
             prices = [telebot.types.LabeledPrice(label = "XTR", amount = amount)]
-            bot.send_invoice(
-                call.message.chat.id,
-                title=tr(f'Donate {amount} stars', lang),
-                description = tr(f'Donate {amount} stars', lang),
-                invoice_payload="stars_donate_payload",
-                provider_token = "",  # Для XTR этот токен может быть пустым
-                currency = "XTR",
-                prices = prices,
-                reply_markup = get_keyboard(f'pay_stars_{amount}', message)
-            )
-
+            try:
+                bot.send_invoice(
+                    call.message.chat.id,
+                    title=tr(f'Donate {amount} stars', lang),
+                    description = tr(f'Donate {amount} stars', lang),
+                    invoice_payload="stars_donate_payload",
+                    provider_token = "",  # Для XTR этот токен может быть пустым
+                    currency = "XTR",
+                    prices = prices,
+                    reply_markup = get_keyboard(f'pay_stars_{amount}', message)
+                )
+            except Exception as error:
+                my_log.log_donate(f'tb:callback_inline_thread: {error}\n\n{call.message.chat.id} {amount}')
+                bot_reply_tr(message, 'An unexpected error occurred during the payment process. Please try again later. If the problem persists, contact support.')
 
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"

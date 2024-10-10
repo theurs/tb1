@@ -318,8 +318,8 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r'(?<=\w)  (?=\S)', ' ', text)
     text = re.sub(r'(?<=\S)  (?=\w)', ' ', text)
 
-    # 3 и больше переносов строки идущих подряд меняем на 2
-    text = re.sub('(?:\s*\n){3,}', '\n\n\n', text)
+    # # 3 и больше переносов строки идущих подряд меняем на 2
+    # text = re.sub('(?:\s*\n){3,}', '\n\n\n', text)
 
     # 2 * в <b></b>
     text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)

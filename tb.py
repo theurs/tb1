@@ -1200,10 +1200,10 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         return keyboard
     elif kbd == 'donate_stars':
         keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
-        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 1 star", lang), callback_data = "buy_stars_1")
-        button2 = telebot.types.InlineKeyboardButton(text=tr("Donate 100 stars", lang), callback_data = "buy_stars_100")
-        button3 = telebot.types.InlineKeyboardButton(text=tr("Donate 200 stars", lang), callback_data = "buy_stars_200")
-        button4 = telebot.types.InlineKeyboardButton(text=tr("Donate 300 stars", lang), callback_data = "buy_stars_300")
+        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 100 stars", lang), callback_data = "buy_stars_100")
+        button2 = telebot.types.InlineKeyboardButton(text=tr("Donate 500 stars", lang), callback_data = "buy_stars_500")
+        button3 = telebot.types.InlineKeyboardButton(text=tr("Donate 1000 stars", lang), callback_data = "buy_stars_1000")
+        button4 = telebot.types.InlineKeyboardButton(text=tr("Donate custom amount of stars", lang), callback_data = "buy_stars_0")
         keyboard.add(button1, button2, button3, button4)
         return keyboard
 
@@ -1571,7 +1571,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.delete_message(message.chat.id, message.message_id)
 
         elif call.data.startswith('buy_stars_'):
+            
             amount = int(call.data.split('_')[-1])
+            if amount == 0:
+                bot_reply_tr(message, 'Please enter the desired amount of stars you would like to donate', reply_markup=get_keyboard('command_mode', message))
+                COMMAND_MODE[chat_id_full] = 'enter_start_amount'
+                return
             prices = [telebot.types.LabeledPrice(label = "XTR", amount = amount)]
             bot.send_invoice(
                 call.message.chat.id,
@@ -5463,6 +5468,25 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
+                elif COMMAND_MODE[chat_id_full] == 'enter_start_amount':
+                    try:
+                        amount = int(message.text)
+                    except ValueError:
+                        amount = 0
+                    if amount:
+                        prices = [telebot.types.LabeledPrice(label = "XTR", amount = amount)]
+                        bot.send_invoice(
+                            message.chat.id,
+                            title=tr(f'Donate {amount} stars', lang),
+                            description = tr(f'Donate {amount} stars', lang),
+                            invoice_payload="stars_donate_payload",
+                            provider_token = "",  # Для XTR этот токен может быть пустым
+                            currency = "XTR",
+                            prices = prices,
+                            reply_markup = get_keyboard(f'pay_stars_{amount}', message)
+                        )
+                    else:
+                        bot_reply_tr(message, 'Invalid input. Please try the donation process again.')
                 COMMAND_MODE[chat_id_full] = ''
                 return
 

@@ -1119,6 +1119,20 @@ text
 /img a cartoon drawing of a sad girl with short brown hair wearing a grey hoodie, holding a cigarette with smoke coming out of it. Her eyes are droopy and she looks tired. The style should be slightly messy and cute, like a quick sketch.  Include the watermark "@PANI_STRAWBERRY" in the bottom right corner.
 ```
 
+| Столбец 1 | Столбец 2 | Столбец 3 |
+|---|---|---|
+| данные1 | данные2 | данные3 |
+| данные4 | данные5 | данные6 |
+| данные7 | данные8 | данные9 |
+| данные10 | данные11 | данные12 |
+| данные13 | данные14 | данные15 |
+| данные16 | данные17 | данные18 |
+| данные19 | данные20 | данные21 |
+| данные22 | данные23 | данные24 |
+| данные25 | данные26 | данные27 |
+| данные28 | данные29 | данные30 |
+
+
     """
     print(bot_markdown_to_html(t))
 

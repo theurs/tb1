@@ -507,6 +507,7 @@ def stt(data: bytes = None,
         key_: str = '',
         prompt: str = '',
         last_try: bool = False,
+        model: str = 'whisper-large-v3-turbo',
         ) -> str:
     """Speech to text function. Uses Groq API for speech recognition.
     Caches the results to avoid redundant API calls.
@@ -544,20 +545,22 @@ def stt(data: bytes = None,
             )
         else:
             client = Groq(api_key=key, timeout = 120,)
-        transcription = client.audio.transcriptions.create(file=("123.mp3", data),
-                                                           model="whisper-large-v3",
-                                                           prompt=prompt,
-                                                        #    language=lang,
-                                                        #    response_format = 'text',
-                                                           timeout=120,
-                                                           )
+        transcription = client.audio.transcriptions.create(
+            file=("123.mp3", data),
+            #    model="whisper-large-v3",
+            model = model,
+            prompt=prompt,
+            #    language=lang,
+            #    response_format = 'text',
+            timeout=120,
+            )
         return remove_dimatorzok(transcription.text)
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_groq(f'my_groq:stt: {error}\n\n{error_traceback}\n\n{lang}\n\n{key_}')
+        my_log.log_groq(f'my_groq:stt: {error}\n\n{error_traceback}\n\n{lang}\n{model}\n{key_}')
         if not last_try and "'type': 'internal_server_error'" in str(error):
             time.sleep(4)
-            return stt(data, lang, key_, prompt, True)
+            return stt(data, lang, key_, prompt, True, model)
 
     return ''
 
@@ -826,10 +829,10 @@ if __name__ == '__main__':
 
     # print(translate('Привет как дела!', to_lang='en', model = '', censored=False))
 
-    reset('test')
-    chat_cli(model='llama-3.2-90b-text-preview')
+    # reset('test')
+    # chat_cli(model='llama-3.2-90b-text-preview')
 
-    # print(stt('d:\\downloads\\1.ogg'))
+    print(stt('d:\\downloads\\1.ogg'))
 
     # test_cases = [
     #     'print("Hello, World!")',

@@ -124,7 +124,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
 
         try:
             if not text and dur < 60:
-                text = my_groq.stt(input_file2, lang, prompt=prompt)
+                text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo')
 
             if not text and dur < 55:
                 # быстро и хорошо распознает но до 1 минуты всего
@@ -149,7 +149,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                     my_log.log2(f'my_stt:stt:genai:{error}')
 
             if not text:
-                text = my_groq.stt(input_file2, lang, prompt=prompt)
+                text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
 
             if not text:
                 text = assemblyai(input_file2, lang)

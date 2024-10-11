@@ -5407,10 +5407,10 @@ def do_task(message, custom_prompt: str = ''):
                     #     return
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
         # на бесплатных ключах лимит - 50, 300 может получится за счет взаимопомощи
-        if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, 'gemini15_pro', 60*60*24) > 300:
+        if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, cfg.gemini_pro_model, 60*60*24) > 300:
             chat_mode_ = 'gemini'
     else:
-        if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, 'gemini15_pro', 60*60*24) > 300:
+        if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, cfg.gemini_pro_model, 60*60*24) > 300:
             chat_mode_ = 'gemini'
 
     chat_modes = {

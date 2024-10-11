@@ -1877,7 +1877,7 @@ def handle_successful_payment(message):
     # Сохранение информации о платеже в базе данных
     # save_payment(user_id, payment_id, amount, currency)
     my_log.log_donate(f'{user_id} {payment_id} {amount} {currency}')
-    user_stars = my_db.get_user_property(chat_full_id, 'telegram_stars')
+    user_stars = my_db.get_user_property(chat_full_id, 'telegram_stars') or 0
     user_stars += amount
     my_db.set_user_property(chat_full_id, 'telegram_stars', user_stars)
 

@@ -419,7 +419,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_ddg.update_mem(query, resp, chat_id_full)
 
 
-def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
+def img2txt(text, lang: str, chat_id_full: str, query: str = '', model: str = '') -> str:
     """
     Generate the text description of an image.
 
@@ -427,6 +427,7 @@ def img2txt(text, lang: str, chat_id_full: str, query: str = '') -> str:
         text (str): The image file URL or downloaded data(bytes).
         lang (str): The language code for the image description.
         chat_id_full (str): The full chat ID.
+        model (str): gemini model
 
     Returns:
         str: The text description of the image.
@@ -470,7 +471,8 @@ Return a `image_transcription`
     text = ''
 
     try:
-        model = cfg.img2_txt_model
+        if not model:
+            model = cfg.img2_txt_model
         if use_json:
             text_ = my_gemini.img2txt(data, query, json_output=True, model=model)
 
@@ -1623,7 +1625,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'image_prompt_solve':
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_SOLVE, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_pro_model)
 
         elif call.data == 'image_prompt_repeat_last':
             COMMAND_MODE[chat_id_full] = ''
@@ -2089,7 +2091,7 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
     bot_reply(message, msg, disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
 
 
-def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, message: telebot.types.Message):
+def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, message: telebot.types.Message, model: str = ''):
     '''Processes the user's chosen action for the uncaptioned image.
 
     Args:
@@ -2097,6 +2099,7 @@ def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, messa
         chat_id_full: The full chat ID string.
         lang: The user's language code.
         message: The Telegram message object.
+        model: Model to use.
     '''
     with ShowAction(message, "typing"): # Display "typing" action while processing.
         # Define default prompts.
@@ -2119,7 +2122,8 @@ def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, messa
                 text = UNCAPTIONED_IMAGES[chat_id_full][1],
                 lang = lang,
                 chat_id_full = chat_id_full,
-                query = image_prompt
+                query = image_prompt,
+                model = model
             )
             # Send the processed text to the user.
             if text:
@@ -5720,15 +5724,6 @@ def do_task(message, custom_prompt: str = ''):
             if utils.is_image_link(message.text):
                     proccess_image(chat_id_full, utils.download_image_as_bytes(message.text), message)
                     return
-
-                    # text = img2txt(message.text, lang, chat_id_full)
-                    # if text:
-                    #     text = utils.bot_markdown_to_html(text)
-                    #     bot_reply(message, text, parse_mode='HTML',
-                    #                         reply_markup=get_keyboard('translate', message))
-                    # else:
-                    #     bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                    # return
             else:
                 message.text = '/sum ' + message.text
                 summ_text(message)

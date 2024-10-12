@@ -403,11 +403,11 @@ def replace_code_lang(t: str) -> str:
             result += f'<pre><code class="language-{lang}">'
             if '</code>' in line:
                 # Однострочный код
-                code_content = line[6:line.index('</code>')]
+                code_content = line[line.index('>') + 1:line.index('</code>')]
                 result += code_content + '</code></pre>\n'
             else:
                 state = 1
-                code_content = line[line.index('>') + 1:] + '\n'
+                code_content = ''  # Не добавляем первую строку, так как она содержит только тег
         elif state == 1:
             if '</code>' in line:
                 # Конец блока кода
@@ -420,7 +420,6 @@ def replace_code_lang(t: str) -> str:
             result += line + '\n'
         i += 1
     return result
-
 
 
 def replace_tables(text: str) -> str:

@@ -1221,11 +1221,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(tr("Extract all text from image", lang), callback_data='image_prompt_text')
         button3 = telebot.types.InlineKeyboardButton(tr("Create image generation prompt", lang), callback_data='image_prompt_generate')
         button4 = telebot.types.InlineKeyboardButton(tr("Solve the problem shown in the image", lang), callback_data='image_prompt_solve')
+        button6 = telebot.types.InlineKeyboardButton(tr("Cancel", lang), callback_data='erase_answer')
         if chat_id_full in UNCAPTIONED_PROMPTS:
             button5 = telebot.types.InlineKeyboardButton(tr("Repeat my last request", lang), callback_data='image_prompt_repeat_last')
-            markup.add(button1, button2, button3, button4, button5)
+            markup.add(button1, button2, button3, button4, button5, button6)
         else:
-            markup.add(button1, button2, button3, button4)
+            markup.add(button1, button2, button3, button4, button6)
         return markup
 
     elif kbd == 'download_saved_text':
@@ -1594,23 +1595,23 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data == 'image_prompt_describe':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr('Provide a detailed description of everything you see in the image.', lang)
+            image_prompt = tr(PROMPT_DESCRIBE, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_text':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr('Copy all the text from this image. Maintain the original formatting (except for line breaks, which should be corrected).', lang)
+            image_prompt = tr(PROMPT_COPY_TEXT, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_generate':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr('Write an image generation prompt as if you were an expert prompt engineer. Format your response as follows:', lang) + \
+            image_prompt = tr(PROMPT_REPROMPT, lang) + \
                            '\n\n```prompt\n/img image generation prompt in english```\n\n'
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_solve':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr('Solve the problem shown in the image. Show your work and provide the final answer.', lang)
+            image_prompt = tr(PROMPT_SOLVE, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_repeat_last':
@@ -1668,6 +1669,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message, 'admin'))
         elif call.data == 'erase_answer':
             # обработка нажатия кнопки "Стереть ответ"
+            COMMAND_MODE[chat_id_full] = ''
             bot.delete_message(message.chat.id, message.message_id)
         elif call.data == 'tts':
             detected_lang = my_tts.detect_lang_carefully(message.text or message.caption or "")
@@ -2041,6 +2043,10 @@ def handle_voice(message: telebot.types.Message):
 UNCAPTIONED_IMAGES = {}
 # {user_id: image_prompt}
 UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
+PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image.'
+PROMPT_COPY_TEXT = 'Copy all the text from this image. Maintain the original formatting (except for line breaks, which should be corrected).'
+PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. Format your response as follows:'
+PROMPT_SOLVE = 'Solve the problem shown in the image. Show your work and provide the final answer.'
 
 
 def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Message):
@@ -2073,7 +2079,16 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
 
 def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, message: telebot.types.Message):
     with ShowAction(message, "typing"):
-        UNCAPTIONED_PROMPTS[chat_id_full] = image_prompt
+        default_prompts = (
+            tr(PROMPT_DESCRIBE, lang),
+            tr(PROMPT_COPY_TEXT, lang),
+            tr(PROMPT_REPROMPT, lang),
+            tr(PROMPT_SOLVE, lang),
+        )
+
+        if not any(default_prompt in image_prompt for default_prompt in default_prompts):
+            UNCAPTIONED_PROMPTS[chat_id_full] = image_prompt
+        
         if chat_id_full in UNCAPTIONED_IMAGES:
             text = img2txt(
                 text = UNCAPTIONED_IMAGES[chat_id_full][1],

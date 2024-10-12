@@ -387,35 +387,35 @@ def replace_code_lang(t: str) -> str:
         str: The modified string with code snippets wrapped in HTML tags.
     """
     result = ''
+    code_content = ''
     state = 0
     lines = t.split('\n')
     i = 0
     while i < len(lines):
         line = lines[i]
-
-        # Однострочный код оставляем как есть
-        if '<code>' in line and '</code>' in line and line.startswith('<code>'):
-            result += line + '\n'
-            i += 1
-            continue
-
-        # Обработка многострочного кода
-        if line.startswith('<code>'):
-            if len(line) >= 7 and '</code>' not in line:
-                new_lang = line[6:]
-                if new_lang.lower() == 'c++':
-                    new_lang = 'cpp'
-                result += f'<pre><code class="language-{new_lang}">'
+        if state == 0 and line.startswith('<code>'):
+            # Начало блока кода
+            lang = line[6:].strip().lower()
+            if lang == 'c++':
+                lang = 'cpp'
+            elif not lang:
+                lang = 'plaintext'
+            result += f'<pre><code class="language-{lang}">'
+            if '</code>' in line:
+                # Однострочный код
+                code_content = line[6:line.index('</code>')]
+                result += code_content + '</code></pre>\n'
+            else:
                 state = 1
-            elif line == '<code>':
-                result += '<pre><code class="language-plaintext">'
-                state = 1
+                code_content = line[line.index('>') + 1:] + '\n'
         elif state == 1:
-            if line == '</code>':
-                result += '</code></pre>\n'
+            if '</code>' in line:
+                # Конец блока кода
+                code_content += line[:line.index('</code>')]
+                result += code_content + '</code></pre>\n'
                 state = 0
             else:
-                result += line + '\n'
+                code_content += line + '\n'
         else:
             result += line + '\n'
         i += 1
@@ -1133,30 +1133,12 @@ text
 | данные28 | данные29 | данные30 |
 
 
+```prompt
+/img A photorealistic image of a young woman with long black hair, wearing traditional samurai armor, holding a katana, in a dramatic pose. The scene is set in a Japanese garden with a traditional temple in the background. The image is in black and white and has a gritty, cinematic feel.  The lighting is dramatic and the focus is on the woman's face and the katana.  The image is full of details, including the woman's sharp eyes, the intricate patterns on her armor, and the texture of the stone of the temple.
+```
+
     """
+
     print(bot_markdown_to_html(t))
-
-
-
-    j = '''json(
-{"detailed_description": "На изображении представлен фрагмент онлайн-теста или обучающего материала, посвящённого вопросам авторского права. \n\n**Текст задачи:**\n\nСветлана звукорежиссер\nХорошо, а если мы хотим использовать какое-нибудь видео, автор которого неизвестен и которое уже многие перепостили...\nВедь мы можем свободно использовать его в нашем фильме?\n\nЧтобы ответить Светлане, выберите ВСЕ верные варианты.\n\n1. Нет, автор может увидеть свое видео и обратиться в суд, потребовав компенсации за его использование.\n2. Да, видео, которые многие перепостили, не защищается авторским правом.\n3. Да, если нам удастся связаться с автором и попросить разрешения на использование.\n4. Да, оно уже приобрело статус свободного использования, т.к. давно ходит в сети.\n5. Да, только нужно указать, что мы готовы сослаться на автора, если он найдётся.\n\n**Это задание на проверку знаний в области авторского права**, и, вероятно, правильными ответами являются варианты 2 и 5, так как авторские права на видео, которое многие перепостили, может быть сложно определить, а указание авторства, если оно будет обнаружено, - это признак уважения к интеллектуальной собственности.", "extracted_formatted_text": "Светлана звукорежиссер\nХорошо, а если мы хотим использовать какое-нибудь видео, автор которого неизвестен и которое уже многие перепостили...\nВедь мы можем свободно использовать его в нашем фильме?\n\nЧтобы ответить Светлане, выберите ВСЕ верные варианты.\n\n□ Нет, автор может увидеть свое видео и обратиться в суд, потребовав компенсации за его использование.\n□ Да, видео, которые многие перепостили, не защищается авторским правом.\n□ Да, если нам удастся связаться с автором и попросить разрешения на использование.\n□ Да, оно уже приобрело статус свободного использования, т.к. давно ходит в сети.\n□ Да, только нужно указать, что мы готовы сослаться на автора, если он найдётся.", "image_generation_prompt": "Generate an image of a computer screen displaying a quiz or test question related to copyright law. The question should be presented in a clear and easy-to-read format, with multiple-choice answer options. The question should involve a scenario where someone wants to use a video in their film, but they are unsure about the copyright status of the video. The answer options should explore the different aspects of copyright law, such as fair use, attribution, and the rights of the copyright holder. The image should also include some visual elements that are relevant to the scenario, such as a photo of a person filming a video or a video player interface. The screen should be dark and the text should be light colored for better readability. The prompt should be in Russian, something along the lines: \"Сгенерируйте изображение экрана компьютера, на котором отображается вопрос викторины или теста, связанный с законом об авторском праве. Вопрос должен быть представлен в четком и легко читаемом формате с вариантами ответов с множественным выбором. Вопрос должен включать в себя сценарий, в котором кто-то хочет использовать видео в своем фильме, но не уверен в статусе авторских прав на видео. Варианты ответов должны исследовать различные аспекты закона об авторском праве, такие как добросовестное использование, указание авторства и права правообладателя. Изображение также должно включать некоторые визуальные элементы, относящиеся к сценарию, такие как фотография человека, снимающего видео, или интерфейс видеоплеера. Экран должен быть темным, а текст светлого цвета для лучшей читаемости.\""}
-})
-    '''
-    # print(string_to_dict(j))
-
-
-    # d = heic2jpg('d:/downloads/1.heic')
-    # with open('d:/downloads/1.jpg', 'wb') as f:
-    #     f.write(d)
-
-
-    # print(get_full_time())
-
-    # counter = MessageCounter()
-    # print(counter.status('user1'))
-    # counter.increment('user1', 5)
-    # print(counter.status('user1'))
-    # counter.increment('user1', 1)
-    # print(counter.status('user1'))
 
     pass

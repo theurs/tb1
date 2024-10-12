@@ -1200,7 +1200,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button1, button2)
         return markup
 
-
     elif kbd.startswith('pay_stars_'):
         amount = int(kbd.split('_')[-1])
         keyboard = telebot.types.InlineKeyboardMarkup()
@@ -1216,6 +1215,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         keyboard.add(button1, button2, button3, button4)
         return keyboard
 
+    elif kbd == 'image_prompt':
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
+        button1 = telebot.types.InlineKeyboardButton(tr("Describe the image", lang), callback_data='image_prompt_describe')
+        button2 = telebot.types.InlineKeyboardButton(tr("Extract all text from image", lang), callback_data='image_prompt_text')
+        button3 = telebot.types.InlineKeyboardButton(tr("Create image generation prompt", lang), callback_data='image_prompt_generate')
+        button4 = telebot.types.InlineKeyboardButton(tr("Solve the problem shown in the image", lang), callback_data='image_prompt_solve')
+        if chat_id_full in UNCAPTIONED_PROMPTS:
+            button5 = telebot.types.InlineKeyboardButton(tr("Repeat my last request", lang), callback_data='image_prompt_repeat_last')
+            markup.add(button1, button2, button3, button4, button5)
+        else:
+            markup.add(button1, button2, button3, button4)
+        return markup
 
     elif kbd == 'download_saved_text':
         markup  = telebot.types.InlineKeyboardMarkup()
@@ -1241,6 +1252,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button1 = telebot.types.InlineKeyboardButton(tr("Next image", lang), callback_data='fast_image_next')
         markup.add(button1)
         return markup
+
     elif kbd == 'select_lang':
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
         most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de', 'fr', 'it', 'tr', 'ko', 'id', 'vi']
@@ -1284,6 +1296,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1)
 
         return markup
+
     elif kbd == 'translate':
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
@@ -1293,6 +1306,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button3 = telebot.types.InlineKeyboardButton(tr("Перевод", lang), callback_data='translate')
         markup.add(button1, button2, button3)
         return markup
+
     elif kbd == 'start':
         b_msg_draw = '/img'
         b_msg_search = '/google'
@@ -1383,7 +1397,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
         markup.add(button0, button1, button2, button3, button4)
         return markup
-
 
     elif kbd == 'gpt-4o-mini-ddg_chat':
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
@@ -1578,6 +1591,31 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть историю"
             reset_(chat_id_full)
             bot.delete_message(message.chat.id, message.message_id)
+
+        elif call.data == 'image_prompt_describe':
+            COMMAND_MODE[chat_id_full] = ''
+            image_prompt = tr('Provide a detailed description of everything you see in the image.', lang)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+
+        elif call.data == 'image_prompt_text':
+            COMMAND_MODE[chat_id_full] = ''
+            image_prompt = tr('Copy all the text from this image. Maintain the original formatting (except for line breaks, which should be corrected).', lang)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+
+        elif call.data == 'image_prompt_generate':
+            COMMAND_MODE[chat_id_full] = ''
+            image_prompt = tr('Write an image generation prompt as if you were an expert prompt engineer. Format your response as follows:', lang) + \
+                           '\n\n```prompt\n/img image generation prompt in english```\n\n'
+            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+
+        elif call.data == 'image_prompt_solve':
+            COMMAND_MODE[chat_id_full] = ''
+            image_prompt = tr('Solve the problem shown in the image. Show your work and provide the final answer.', lang)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+
+        elif call.data == 'image_prompt_repeat_last':
+            COMMAND_MODE[chat_id_full] = ''
+            process_image_stage_2(UNCAPTIONED_PROMPTS[chat_id_full], chat_id_full, lang, message)
 
         elif call.data.startswith('buy_stars_'):
             
@@ -1994,6 +2032,70 @@ def handle_voice(message: telebot.types.Message):
                         echo_all(message)
 
 
+
+
+
+
+
+# {user_id:(date, image),} keep up to 20 images
+UNCAPTIONED_IMAGES = {}
+# {user_id: image_prompt}
+UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
+
+
+def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Message):
+    '''юзеру прислали картинку без подписи, надо спросить что с ней делать
+    сохранить картинку, показать клавиатуру с вариантами
+    '''
+    current_date = time.time()
+
+    UNCAPTIONED_IMAGES[chat_id_full] = (current_date, image)
+
+    # Ограничение на 20 картинок
+    if len(UNCAPTIONED_IMAGES) > 20:
+        sorted_images = sorted(UNCAPTIONED_IMAGES.items(), key=lambda item: item[1][0])
+        user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - 20]]
+        for user_id in user_ids_to_delete:
+            del UNCAPTIONED_IMAGES[user_id]
+
+    COMMAND_MODE[chat_id_full] = 'image_prompt'
+    user_prompt = ''
+    if chat_id_full in UNCAPTIONED_PROMPTS:
+        user_prompt = UNCAPTIONED_PROMPTS[chat_id_full]
+
+    lang = get_lang(chat_id_full, message)
+    msg = tr('What would you like to do with this image?', lang)
+    if user_prompt:
+        msg += '\n\n' + tr('Repeat my last request', lang) + ' - ' + user_prompt
+
+    bot_reply(message, msg, disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
+
+
+def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, message: telebot.types.Message):
+    with ShowAction(message, "typing"):
+        UNCAPTIONED_PROMPTS[chat_id_full] = image_prompt
+        if chat_id_full in UNCAPTIONED_IMAGES:
+            text = img2txt(
+                text = UNCAPTIONED_IMAGES[chat_id_full][1],
+                lang = lang,
+                chat_id_full = chat_id_full,
+                query = image_prompt
+            )
+            if text:
+                bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
+            else:
+                bot_reply_tr(message, "I'm sorry, I wasn't able to process that image or understand your request.")
+        else:
+            bot_reply_tr(message, 'The image has already faded from my memory.')
+
+
+
+
+
+
+
+
+
 @bot.message_handler(content_types = ['document'], func=authorized)
 @async_run
 def handle_document(message: telebot.types.Message):
@@ -2091,6 +2193,9 @@ def handle_document(message: telebot.types.Message):
                                         caption=message.document.file_name + '.png',
                                         reply_markup=get_keyboard('translate', message),
                                         disable_notification=True)
+                            if not message.caption:
+                                proccess_image(chat_id_full, image, message)
+                                return
                             text = img2txt(image, lang, chat_id_full, message.caption)
                             if text:
                                 text = utils.bot_markdown_to_html(text)
@@ -2327,6 +2432,9 @@ def handle_photo(message: telebot.types.Message):
                         except Exception as send_doc_error:
                             my_log.log2(f'tb:handle_photo: {send_doc_error}')
                     my_log.log_echo(message, f'Made collage of {len(images)} images.')
+                    if not message.caption:
+                        proccess_image(chat_id_full, result_image_as_bytes, message)
+                        return
                     text = img2txt(result_image_as_bytes, lang, chat_id_full, message.caption)
                     if text:
                         text = utils.bot_markdown_to_html(text)
@@ -2356,6 +2464,9 @@ def handle_photo(message: telebot.types.Message):
                             my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
                             return
 
+                        if not message.caption:
+                            proccess_image(chat_id_full, image, message)
+                            return
                         text = img2txt(image, lang, chat_id_full, message.caption)
                         if text:
                             text = utils.bot_markdown_to_html(text)
@@ -3942,8 +4053,6 @@ Return a `suggestions`
                                 if pics_group and not NSFW_FLAG:
                                     try:
                                         translated_prompt = tr(prompt, 'ru', save_cache=False)
-                                        # bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{utils.nice_hash(chat_id_full)}',
-                                        #                 link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
                                         hashtag = 'H' + chat_id_full.replace('[', '').replace(']', '')
                                         bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
@@ -3951,8 +4060,6 @@ Return a `suggestions`
 
                                         ratio = fuzz.ratio(translated_prompt, prompt)
                                         if ratio < 70:
-                                            # bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{utils.nice_hash(chat_id_full)}',
-                                            #                 link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
                                             bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
                                                             link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
@@ -5285,7 +5392,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                 except Exception as error:
                     if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
                         error_traceback = traceback.format_exc()
-                        my_log.log_parser_error(f'{str(error)}\n\n{error_traceback}\n\n{DEBUG_MD_TO_HTML[resp]}\n=====================================================\n{resp}')
+                        my_log.log_parser_error(f'{str(error)}\n\n{error_traceback}\n\n{DEBUG_MD_TO_HTML.get(resp, "")}\n=====================================================\n{resp}')
                     else:
                         my_log.log2(f'tb:reply_to_long_message: {error}')
                         my_log.log2(chunk)
@@ -5515,6 +5622,10 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
+                elif COMMAND_MODE[chat_id_full] == 'image_prompt':
+                    image_prompt = message.text
+                    process_image_stage_2(image_prompt, chat_id_full, lang, message)
+
                 elif COMMAND_MODE[chat_id_full] == 'enter_start_amount':
                     try:
                         amount = int(message.text)
@@ -5577,15 +5688,17 @@ def do_task(message, custom_prompt: str = ''):
         # тогда сумморизируем текст из неё
         if my_sum.is_valid_url(message.text) and (is_private or bot_name_used):
             if utils.is_image_link(message.text):
-                with ShowAction(message, 'typing'):
-                    text = img2txt(message.text, lang, chat_id_full)
-                    if text:
-                        text = utils.bot_markdown_to_html(text)
-                        bot_reply(message, text, parse_mode='HTML',
-                                            reply_markup=get_keyboard('translate', message))
-                    else:
-                        bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                    proccess_image(chat_id_full, utils.download_image_as_bytes(message.text), message)
                     return
+
+                    # text = img2txt(message.text, lang, chat_id_full)
+                    # if text:
+                    #     text = utils.bot_markdown_to_html(text)
+                    #     bot_reply(message, text, parse_mode='HTML',
+                    #                         reply_markup=get_keyboard('translate', message))
+                    # else:
+                    #     bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                    # return
             else:
                 message.text = '/sum ' + message.text
                 summ_text(message)

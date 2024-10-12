@@ -292,7 +292,7 @@ def chat(query: str,
         return ''
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+# @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def img2txt(data_: bytes,
             prompt: str = "Что на картинке, подробно?",
             temp: float = 1,
@@ -939,6 +939,39 @@ PROMPT:
     return True
 
 
+def imagen(prompt: str = "Fuzzy bunnies in my kitchen"):
+    '''!!!не работает пока!!!
+    https://ai.google.dev/gemini-api/docs/imagen
+    AttributeError: module 'google.generativeai' has no attribute 'ImageGenerationModel'
+    '''
+    keys = cfg.gemini_keys[:] + ALL_KEYS
+    random.shuffle(keys)
+    keys = keys[:4]
+    badkeys = ['3166979107466835308',]
+    for key in keys[:]:
+        if hash(key) in badkeys:
+            keys.remove(key)
+
+    for key in keys:
+        genai.configure(api_key = key)
+
+        imagen_ = genai.ImageGenerationModel("imagen-3.0-generate-001")
+
+        result = imagen_.generate_images(
+            prompt=prompt,
+            number_of_images=4,
+            safety_filter_level="block_only_high",
+            person_generation="allow_adult",
+            aspect_ratio="3:4",
+            negative_prompt="Outside",
+        )
+
+        for image in result.images:
+            print(image)
+
+        break
+
+
 if __name__ == '__main__':
     pass
     # my_db.init(backup=False)
@@ -951,6 +984,8 @@ if __name__ == '__main__':
     # как юзать прокси
     # как отправить в чат аудиофайл
     # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
+
+    # imagen()
 
     list_models()
     # chat_cli()

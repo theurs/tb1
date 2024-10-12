@@ -178,6 +178,16 @@ LOG_GROUP_DAEMON_ENABLED = True
 NEW_KEYBOARD = SqliteDict('db/new_keyboard_installed.db', autocommit=True)
 
 
+# {user_id:(date, image),} keep up to 20 images
+UNCAPTIONED_IMAGES = {}
+# {user_id: image_prompt}
+UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
+PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image.'
+PROMPT_COPY_TEXT = 'Copy all the text from this image. Maintain the original formatting (except for line breaks, which should be corrected).'
+PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. Format your response as follows:'
+PROMPT_SOLVE = 'Solve the problem shown in the image. Show your work and provide the final answer.'
+
+
 supported_langs_trans = my_init.supported_langs_trans
 supported_langs_tts = my_init.supported_langs_tts
 
@@ -2034,51 +2044,61 @@ def handle_voice(message: telebot.types.Message):
                         echo_all(message)
 
 
-
-
-
-
-
-# {user_id:(date, image),} keep up to 20 images
-UNCAPTIONED_IMAGES = {}
-# {user_id: image_prompt}
-UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
-PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image.'
-PROMPT_COPY_TEXT = 'Copy all the text from this image. Maintain the original formatting (except for line breaks, which should be corrected).'
-PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. Format your response as follows:'
-PROMPT_SOLVE = 'Solve the problem shown in the image. Show your work and provide the final answer.'
-
-
 def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Message):
-    '''юзеру прислали картинку без подписи, надо спросить что с ней делать
-    сохранить картинку, показать клавиатуру с вариантами
+    '''The user sent an image without a caption.  Ask the user what to do with it,
+    save the image, and display a keyboard with options.
+    
+    Args:
+        chat_id_full: The full chat ID string.
+        image: The image data as bytes.
+        message: The Telegram message object.
     '''
     current_date = time.time()
 
+    # Store the image and timestamp associated with the chat ID.
     UNCAPTIONED_IMAGES[chat_id_full] = (current_date, image)
 
-    # Ограничение на 20 картинок
+    # Limit the storage to 20 uncaptioned images.
     if len(UNCAPTIONED_IMAGES) > 20:
+        # Sort the images by timestamp (oldest first).
         sorted_images = sorted(UNCAPTIONED_IMAGES.items(), key=lambda item: item[1][0])
+        # Get the IDs of the oldest images to delete.
         user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - 20]]
+        # Delete the oldest images.
         for user_id in user_ids_to_delete:
             del UNCAPTIONED_IMAGES[user_id]
 
+    # Set the command mode for the chat to 'image_prompt'.
     COMMAND_MODE[chat_id_full] = 'image_prompt'
+    
+    # Retrieve the last prompt used by the user for uncaptioned images, if any.
     user_prompt = ''
     if chat_id_full in UNCAPTIONED_PROMPTS:
         user_prompt = UNCAPTIONED_PROMPTS[chat_id_full]
 
+    # Get the user's language.
     lang = get_lang(chat_id_full, message)
+    # Create the message to send to the user.
     msg = tr('What would you like to do with this image?', lang)
+    # Append the last prompt to the message, if available.
     if user_prompt:
         msg += '\n\n' + tr('Repeat my last request', lang) + ' - ' + user_prompt
 
+    # Send the message to the user with the appropriate keyboard.
     bot_reply(message, msg, disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
 
 
 def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, message: telebot.types.Message):
-    with ShowAction(message, "typing"):
+    '''Processes the user's chosen action for the uncaptioned image.
+
+    Args:
+        image_prompt: The user's chosen action or prompt.
+        chat_id_full: The full chat ID string.
+        lang: The user's language code.
+        message: The Telegram message object.
+    '''
+    with ShowAction(message, "typing"): # Display "typing" action while processing.
+        # Define default prompts.
         default_prompts = (
             tr(PROMPT_DESCRIBE, lang),
             tr(PROMPT_COPY_TEXT, lang),
@@ -2086,29 +2106,28 @@ def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, messa
             tr(PROMPT_SOLVE, lang),
         )
 
+        # Save the user's prompt if it's not one of the default prompts.
         if not any(default_prompt in image_prompt for default_prompt in default_prompts):
             UNCAPTIONED_PROMPTS[chat_id_full] = image_prompt
-        
+
+        # Retrieve the image data if available.
         if chat_id_full in UNCAPTIONED_IMAGES:
+            # Process the image based on the user's prompt.
             text = img2txt(
                 text = UNCAPTIONED_IMAGES[chat_id_full][1],
                 lang = lang,
                 chat_id_full = chat_id_full,
                 query = image_prompt
             )
+            # Send the processed text to the user.
             if text:
                 bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
             else:
+                # Send an error message if the image processing fails.
                 bot_reply_tr(message, "I'm sorry, I wasn't able to process that image or understand your request.")
         else:
+            # Send a message if the image is no longer available.
             bot_reply_tr(message, 'The image has already faded from my memory.')
-
-
-
-
-
-
-
 
 
 @bot.message_handler(content_types = ['document'], func=authorized)

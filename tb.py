@@ -1617,7 +1617,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data == 'image_prompt_text_tr':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(PROMPT_COPY_TEXT, lang)
+            image_prompt = tr(PROMPT_COPY_TEXT_TR, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_generate':

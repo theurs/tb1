@@ -183,7 +183,7 @@ UNCAPTIONED_IMAGES = SqliteDict('db/user_images.db', autocommit = True)
 # {user_id: image_prompt}
 UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
 PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image. Break down long responses into easy-to-read paragraphs. Use markdown formatting to make it look good.'
-PROMPT_COPY_TEXT = 'Copy all the text from this image. Maintain the original formatting (except for line breaks, which should be corrected).'
+PROMPT_COPY_TEXT = 'Copy all the text from this image, save it as is - do not translate. Maintain the original formatting (except for line breaks, which should be corrected).'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. Format your response as follows:'
 PROMPT_SOLVE = 'Solve the problem shown in the image. Show your work and provide the final answer.'
 

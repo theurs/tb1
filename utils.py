@@ -372,7 +372,7 @@ def bot_markdown_to_html(text: str) -> str:
     text = replace_code_lang(text)
 
     # убрать 3 и более пустые сроки подряд (только после блоков кода или любых тегов)
-    text = re.sub(r"^\s*$", r"\n", text, flags=re.MULTILINE)
+    # text = re.sub(r"^\s*$", r"\n", text, flags=re.MULTILINE)
     # text = re.sub(r'>\n{4,}', '>\n\n\n', text)
     def replace_newlines(match):
         return '\n\n\n'

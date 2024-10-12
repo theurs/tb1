@@ -182,11 +182,6 @@ NEW_KEYBOARD = SqliteDict('db/new_keyboard_installed.db', autocommit=True)
 UNCAPTIONED_IMAGES = SqliteDict('db/user_images.db', autocommit = True)
 # {user_id: image_prompt}
 UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
-PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image. Break down long responses into easy-to-read paragraphs. Use markdown formatting to make it look good.'
-PROMPT_COPY_TEXT = 'Copy all the text from this image, save it as is - do not translate. Maintain the original formatting (except for line breaks, which should be corrected).'
-PROMPT_COPY_TEXT_TR = 'Copy all the text from this image, translate to my language. Maintain the original formatting (except for line breaks, which should be corrected).'
-PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. Format your response as follows:'
-PROMPT_SOLVE = 'Solve the problem shown in the image. Show your work and provide the final answer.'
 
 
 supported_langs_trans = my_init.supported_langs_trans
@@ -1607,28 +1602,28 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data == 'image_prompt_describe':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(PROMPT_DESCRIBE, lang)
+            image_prompt = tr(my_init.PROMPT_DESCRIBE, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_text':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(PROMPT_COPY_TEXT, lang)
+            image_prompt = tr(my_init.PROMPT_COPY_TEXT, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_text_tr':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(PROMPT_COPY_TEXT_TR, lang)
+            image_prompt = tr(my_init.PROMPT_COPY_TEXT_TR, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_generate':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(PROMPT_REPROMPT, lang) + \
+            image_prompt = tr(my_init.PROMPT_REPROMPT, lang) + \
                            '\n\n```prompt\n/img image generation prompt in english```\n\n'
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_solve':
             COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(PROMPT_SOLVE, lang)
+            image_prompt = tr(my_init.PROMPT_SOLVE, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_repeat_last':
@@ -2107,11 +2102,11 @@ def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, messa
     with ShowAction(message, "typing"): # Display "typing" action while processing.
         # Define default prompts.
         default_prompts = (
-            tr(PROMPT_DESCRIBE, lang),
-            tr(PROMPT_COPY_TEXT, lang),
-            tr(PROMPT_COPY_TEXT_TR, lang),
-            tr(PROMPT_REPROMPT, lang),
-            tr(PROMPT_SOLVE, lang),
+            tr(my_init.PROMPT_DESCRIBE, lang),
+            tr(my_init.PROMPT_COPY_TEXT, lang),
+            tr(my_init.PROMPT_COPY_TEXT_TR, lang),
+            tr(my_init.PROMPT_REPROMPT, lang),
+            tr(my_init.PROMPT_SOLVE, lang),
         )
 
         # Save the user's prompt if it's not one of the default prompts.

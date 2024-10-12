@@ -184,6 +184,7 @@ UNCAPTIONED_IMAGES = SqliteDict('db/user_images.db', autocommit = True)
 UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
 PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image. Break down long responses into easy-to-read paragraphs. Use markdown formatting to make it look good.'
 PROMPT_COPY_TEXT = 'Copy all the text from this image, save it as is - do not translate. Maintain the original formatting (except for line breaks, which should be corrected).'
+PROMPT_COPY_TEXT_TR = 'Copy all the text from this image, translate to my language. Maintain the original formatting (except for line breaks, which should be corrected).'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. Format your response as follows:'
 PROMPT_SOLVE = 'Solve the problem shown in the image. Show your work and provide the final answer.'
 
@@ -1229,14 +1230,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
         button1 = telebot.types.InlineKeyboardButton(tr("Describe the image", lang), callback_data='image_prompt_describe')
         button2 = telebot.types.InlineKeyboardButton(tr("Extract all text from image", lang), callback_data='image_prompt_text')
+        button2_2 = telebot.types.InlineKeyboardButton(tr("Translate all text from image", lang), callback_data='image_prompt_text_tr')
         button3 = telebot.types.InlineKeyboardButton(tr("Create image generation prompt", lang), callback_data='image_prompt_generate')
         button4 = telebot.types.InlineKeyboardButton(tr("Solve the problem shown in the image", lang), callback_data='image_prompt_solve')
         button6 = telebot.types.InlineKeyboardButton(tr("Cancel", lang), callback_data='erase_answer')
         if chat_id_full in UNCAPTIONED_PROMPTS:
             button5 = telebot.types.InlineKeyboardButton(tr("Repeat my last request", lang), callback_data='image_prompt_repeat_last')
-            markup.add(button1, button2, button3, button4, button5, button6)
+            markup.add(button1, button2, button2_2, button3, button4, button5, button6)
         else:
-            markup.add(button1, button2, button3, button4, button6)
+            markup.add(button1, button2, button2_2, button3, button4, button6)
         return markup
 
     elif kbd == 'download_saved_text':
@@ -1609,6 +1611,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_text':
+            COMMAND_MODE[chat_id_full] = ''
+            image_prompt = tr(PROMPT_COPY_TEXT, lang)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+
+        elif call.data == 'image_prompt_text_tr':
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(PROMPT_COPY_TEXT, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
@@ -2102,6 +2109,7 @@ def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, messa
         default_prompts = (
             tr(PROMPT_DESCRIBE, lang),
             tr(PROMPT_COPY_TEXT, lang),
+            tr(PROMPT_COPY_TEXT_TR, lang),
             tr(PROMPT_REPROMPT, lang),
             tr(PROMPT_SOLVE, lang),
         )

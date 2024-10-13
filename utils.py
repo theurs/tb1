@@ -423,6 +423,7 @@ def replace_code_lang(t: str) -> str:
         else:
             result += line + '\n'
         i += 1
+    result = re.sub(r"\n{2,}</code>", "\n</code>", result)
     return result
 
 
@@ -1086,6 +1087,9 @@ W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub
 
    ```python
    plt.xticks(rotation=45, ha="right", fontsize=8)
+
+
+
    ```
 
 Прямая, по которой пересекаются плоскости A<sub>1</sub>BC и A<sub>1</sub>AD — это прямая A<sub>1</sub>A.
@@ -1140,11 +1144,8 @@ text
 /img A photorealistic image of a young woman with long black hair, wearing traditional samurai armor, holding a katana, in a dramatic pose. The scene is set in a Japanese garden with a traditional temple in the background. The image is in black and white and has a gritty, cinematic feel.  The lighting is dramatic and the focus is on the woman's face and the katana.  The image is full of details, including the woman's sharp eyes, the intricate patterns on her armor, and the texture of the stone of the temple.
 ```
 
-3. **Приведем дроби к общему знаменателю:**
-
 `(x + 1) / ((x - 1)(x + 1)) + 2(x - 1) / ((x - 1)(x + 1)) = 3 / ((x - 1)(x + 1))`
 
-4. **Избавимся от знаменателей:**
 
     """
 

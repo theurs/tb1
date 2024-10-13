@@ -571,73 +571,191 @@ def replace_tables(text: str) -> str:
 #     return text
 
 
+# def split_html(text: str, max_length: int = 1500) -> list:
+#     """
+#     Splits HTML text into chunks with a maximum length, respecting code blocks, bold, and italic tags.
+
+#     Args:
+#         text: The HTML text to split.
+#         max_length: The maximum length of each chunk.
+
+#     Returns:
+#         A list of HTML chunks.
+#     """
+#     code_tag = ''
+#     in_code_mode = 0
+
+#     chunks = []
+#     chunk = ''
+
+#     for line in text.split('\n'):
+#         if line.startswith('<pre><code') and line.find('</code></pre>') == -1:
+#             in_code_mode = 1
+#             code_tag = line[:line.find('>', 10) + 1]
+#         elif line.startswith('<code>') and line.find('</code>') == -1:
+#             in_code_mode = 2
+#             code_tag = '<code>'
+#         elif line.startswith('<b>') and line.find('</b>') == -1:
+#             in_code_mode = 3
+#             code_tag = '<b>'
+#         elif line.startswith('<i>') and line.find('</i>') == -1:
+#             in_code_mode = 4
+#             code_tag = '<i>'
+#         elif line == '</code></pre>' or line == '</code>' or line == '</b>' or line == '</i>':
+#             code_tag = ''
+#             in_code_mode = 0
+#         else:
+#             if len(chunk) + len(line) + 20 > max_length:
+#                 if in_code_mode == 1:
+#                     chunk += '</code></pre>\n'
+#                     chunks.append(chunk)
+#                     chunk = code_tag
+#                 elif in_code_mode == 2:
+#                     chunk += '</code>\n'
+#                     chunks.append(chunk)
+#                     chunk = code_tag
+#                 elif in_code_mode == 3:
+#                     chunk += '</b>\n'
+#                     chunks.append(chunk)
+#                     chunk = code_tag
+#                 elif in_code_mode == 4:
+#                     chunk += '</i>\n'
+#                     chunks.append(chunk)
+#                     chunk = code_tag
+#                 elif in_code_mode == 0:
+#                     chunks.append(chunk)
+#                     chunk = ''
+
+#         chunk += line + '\n'
+
+#     chunks.append(chunk)
+
+#     chunks2 = []
+#     for chunk in chunks:
+#         if len(chunk) > max_length:
+#             chunks2 += split_text(chunk, max_length)
+#         else:
+#             chunks2.append(chunk)
+
+#     return chunks2
+
+
+import re
+
 def split_html(text: str, max_length: int = 1500) -> list:
     """
-    Splits HTML text into chunks with a maximum length, respecting code blocks, bold, and italic tags.
-
+    Разделяет HTML-подобный текст на куски максимальной длины, сохраняя целостность тегов
+    и корректно обрабатывая различные типы блоков кода, включая их закрывающие теги.
+    
     Args:
-        text: The HTML text to split.
-        max_length: The maximum length of each chunk.
-
+        text: HTML-подобный текст для разделения.
+        max_length: Максимальная длина каждого куска.
+    
     Returns:
-        A list of HTML chunks.
+        Список кусков HTML-подобного текста.
     """
-    code_tag = ''
-    in_code_mode = 0
-
     chunks = []
-    chunk = ''
+    current_chunk = ""
+    open_tags = []
+    in_code_block = False
+    code_block_opening_tag = ""
+    code_block_closing_tag = ""
+    
+    # Регулярное выражение для поиска тегов
+    tag_pattern = re.compile(r'</?(?:pre|code|b|i).*?>')
+    
+    def split_code_block(code_block, opening_tag, closing_tag):
+        """Разделяет длинный блок кода на части."""
+        code_chunks = []
+        lines = code_block.split('\n')
+        current_code_chunk = f"{opening_tag}\n"
+        
+        for line in lines:
+            if len(current_code_chunk) + len(line) + len(closing_tag) + 10 > max_length:  # 10 для запаса
+                current_code_chunk += closing_tag + "\n"
+                code_chunks.append(current_code_chunk)
+                current_code_chunk = f"{opening_tag}\n"
+            current_code_chunk += line + "\n"
+        
+        if current_code_chunk:
+            current_code_chunk += closing_tag + "\n"
+            code_chunks.append(current_code_chunk)
+        
+        return code_chunks
 
     for line in text.split('\n'):
-        if line.startswith('<pre><code') and line.find('</code></pre>') == -1:
-            in_code_mode = 1
-            code_tag = line[:line.find('>', 10) + 1]
-        elif line.startswith('<code>') and line.find('</code>') == -1:
-            in_code_mode = 2
-            code_tag = '<code>'
-        elif line.startswith('<b>') and line.find('</b>') == -1:
-            in_code_mode = 3
-            code_tag = '<b>'
-        elif line.startswith('<i>') and line.find('</i>') == -1:
-            in_code_mode = 4
-            code_tag = '<i>'
-        elif line == '</code></pre>' or line == '</code>' or line == '</b>' or line == '</i>':
-            code_tag = ''
-            in_code_mode = 0
-        else:
-            if len(chunk) + len(line) + 20 > max_length:
-                if in_code_mode == 1:
-                    chunk += '</code></pre>\n'
-                    chunks.append(chunk)
-                    chunk = code_tag
-                elif in_code_mode == 2:
-                    chunk += '</code>\n'
-                    chunks.append(chunk)
-                    chunk = code_tag
-                elif in_code_mode == 3:
-                    chunk += '</b>\n'
-                    chunks.append(chunk)
-                    chunk = code_tag
-                elif in_code_mode == 4:
-                    chunk += '</i>\n'
-                    chunks.append(chunk)
-                    chunk = code_tag
-                elif in_code_mode == 0:
-                    chunks.append(chunk)
-                    chunk = ''
-
-        chunk += line + '\n'
-
-    chunks.append(chunk)
-
-    chunks2 = []
-    for chunk in chunks:
-        if len(chunk) > max_length:
-            chunks2 += split_text(chunk, max_length)
-        else:
-            chunks2.append(chunk)
-
-    return chunks2
+        # Проверяем, начинается ли блок кода
+        if not in_code_block:
+            pre_code_match = re.match(r'<pre><code.*?>', line)
+            code_match = re.match(r'<code.*?>', line)
+            if pre_code_match:
+                in_code_block = True
+                code_block_opening_tag = pre_code_match.group(0)
+                code_block_closing_tag = '</code></pre>'
+                current_chunk += line + "\n"
+                continue
+            elif code_match:
+                in_code_block = True
+                code_block_opening_tag = code_match.group(0)
+                code_block_closing_tag = '</code>'
+                current_chunk += line + "\n"
+                continue
+        
+        # Проверяем, заканчивается ли блок кода
+        if in_code_block and (line.endswith(code_block_closing_tag) or line == code_block_closing_tag):
+            in_code_block = False
+            current_chunk += line + "\n"
+            
+            # Если текущий кусок слишком длинный, разделяем его
+            if len(current_chunk) > max_length:
+                code_chunks = split_code_block(current_chunk, code_block_opening_tag, code_block_closing_tag)
+                chunks.extend(code_chunks)
+                current_chunk = ""
+            
+            code_block_opening_tag = ""
+            code_block_closing_tag = ""
+            continue
+        
+        # Обрабатываем содержимое внутри блока кода
+        if in_code_block:
+            current_chunk += line + "\n"
+            continue
+        
+        # Обычная обработка для не-кодовых частей
+        if len(current_chunk) + len(line) > max_length and current_chunk:
+            # Закрываем все открытые теги
+            for tag in reversed(open_tags):
+                current_chunk += f"</{tag}>\n"
+            chunks.append(current_chunk.strip())
+            
+            # Начинаем новый кусок, открывая все необходимые теги
+            current_chunk = ""
+            for tag in open_tags:
+                current_chunk += f"<{tag}>\n"
+        
+        # Обрабатываем теги в текущей строке
+        for match in tag_pattern.finditer(line):
+            tag = match.group(0)
+            if tag.startswith("</"):
+                # Закрывающий тег
+                tag_name = tag[2:-1]
+                if tag_name in open_tags:
+                    open_tags.remove(tag_name)
+            elif not tag.endswith("/>"):
+                # Открывающий тег
+                tag_name = tag[1:-1].split()[0]
+                open_tags.append(tag_name)
+        
+        current_chunk += line + "\n"
+    
+    # Добавляем последний кусок
+    if current_chunk:
+        # Закрываем все оставшиеся открытые теги
+        for tag in reversed(open_tags):
+            current_chunk += f"</{tag}>\n"
+        chunks.append(current_chunk.strip())
+    
+    return chunks
 
 
 def get_tmp_fname() -> str:

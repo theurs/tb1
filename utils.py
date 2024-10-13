@@ -385,6 +385,7 @@ def replace_code_lang(t: str) -> str:
     """
     Replaces the code language in the given string with appropriate HTML tags.
     Adds "language-plaintext" class if no language is specified but <code> tags are present.
+    Does not add language class for single-line code snippets.
     Parameters:
         t (str): The input string containing code snippets.
     Returns:
@@ -399,17 +400,16 @@ def replace_code_lang(t: str) -> str:
         line = lines[i]
         if state == 0 and line.startswith('<code>'):
             # Начало блока кода
-            lang = line[6:].strip().lower()
-            if lang == 'c++':
-                lang = 'cpp'
-            elif not lang:
-                lang = 'plaintext'
-            result += f'<pre><code class="language-{lang}">'
             if '</code>' in line:
                 # Однострочный код
-                code_content = line[line.index('>') + 1:line.index('</code>')]
-                result += code_content + '</code></pre>\n'
+                result += line + '\n'  # Оставляем без изменений
             else:
+                lang = line[6:].strip().lower()
+                if lang == 'c++':
+                    lang = 'cpp'
+                elif not lang:
+                    lang = 'plaintext'
+                result += f'<pre><code class="language-{lang}">'
                 state = 1
                 code_content = ''  # Не добавляем первую строку, так как она содержит только тег
         elif state == 1:
@@ -1139,6 +1139,12 @@ text
 ```prompt
 /img A photorealistic image of a young woman with long black hair, wearing traditional samurai armor, holding a katana, in a dramatic pose. The scene is set in a Japanese garden with a traditional temple in the background. The image is in black and white and has a gritty, cinematic feel.  The lighting is dramatic and the focus is on the woman's face and the katana.  The image is full of details, including the woman's sharp eyes, the intricate patterns on her armor, and the texture of the stone of the temple.
 ```
+
+3. **Приведем дроби к общему знаменателю:**
+
+`(x + 1) / ((x - 1)(x + 1)) + 2(x - 1) / ((x - 1)(x + 1)) = 3 / ((x - 1)(x + 1))`
+
+4. **Избавимся от знаменателей:**
 
     """
 

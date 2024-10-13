@@ -960,7 +960,7 @@ def imagen(prompt: str = "Fuzzy bunnies in my kitchen"):
         result = imagen_.generate_images(
             prompt=prompt,
             number_of_images=4,
-            safety_filter_level="block_only_high",
+            safety_filter_level="block_fewest",
             person_generation="allow_adult",
             aspect_ratio="3:4",
             negative_prompt="Outside",
@@ -985,7 +985,7 @@ if __name__ == '__main__':
     # как отправить в чат аудиофайл
     # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
 
-    # imagen()
+    imagen()
 
     list_models()
     # chat_cli()

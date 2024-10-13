@@ -368,6 +368,7 @@ def bot_markdown_to_html(text: str) -> str:
     def replace_newlines(match):
         return '\n\n'
     text = re.sub(r"(?<!<pre>)(?<!<code>)\n{3,}(?!</code>)(?!</pre>)", replace_newlines, text, flags=re.DOTALL)
+    text = text.replace('>\n\n\n', '>\n\n')
 
     return text
 

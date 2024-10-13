@@ -37,6 +37,7 @@ opencv-python
 openpyxl
 odfpy
 pandas
+pendulum
 Pillow
 pillow-heif
 prettytable

@@ -18,6 +18,7 @@ import time
 
 import cairosvg
 import langcodes
+import pendulum
 import prettytable
 import PyPDF2
 import telebot
@@ -5117,10 +5118,20 @@ def id_cmd_handler(message: telebot.types.Message):
 
     telegram_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
 
+    first_meet = my_db.get_user_property(chat_id_full, 'first_meet') or 0
+    first_meet_dt = pendulum.from_timestamp(first_meet)
+    first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale=lang)
+    now = pendulum.now()
+    diff = now - first_meet_dt
+    delta_time_str = diff.in_words(locale=lang)
+
     msg = ''
     if message.from_user.id in cfg.admins:
         msg += f'Uptime: {get_uptime()}\n\n'
     msg += f'''{tr("ID пользователя:", lang)} {user_id}
+
+{tr("Дата встречи:", lang)} {first_meet_str}
+{delta_time_str}
 
 {tr("ID группы:", lang)} {group_id_full}
 

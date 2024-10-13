@@ -519,51 +519,6 @@ def replace_tables(text: str) -> str:
     return text
 
 
-
-# def replace_tables(text: str) -> str:
-#     text += '\n'
-#     state = 0
-#     table = ''
-#     results = []
-#     for line in text.split('\n'):
-#         if line.count('|') > 2 and len(line) > 4:
-#             if state == 0:
-#                 state = 1
-#             table += line + '\n'
-#         else:
-#             if state == 1:
-#                 results.append(table[:-1])
-#                 table = ''
-#                 state = 0
-
-#     for table in results:
-#         x = prettytable.PrettyTable(align = "l",
-#                                     set_style = prettytable.MSWORD_FRIENDLY,
-#                                     hrules = prettytable.HEADER,
-#                                     junction_char = '|')
-
-#         lines = table.split('\n')
-#         header = [x.strip().replace('<b>', '').replace('</b>', '') for x in lines[0].split('|') if x]
-#         header = [split_long_string(x, header = True) for x in header]
-#         try:
-#             x.field_names = header
-#         except Exception as error:
-#             my_log.log2(f'tb:replace_tables: {error}\n{text}\n\n{x}')
-#             continue
-#         for line in lines[2:]:
-#             row = [x.strip().replace('<b>', '').replace('</b>', '') for x in line.split('|') if x]
-#             row = [split_long_string(x) for x in row]
-#             try:
-#                 x.add_row(row)
-#             except Exception as error2:
-#                 my_log.log2(f'tb:replace_tables: {error2}\n{text}\n\n{x}')
-#                 continue
-#         new_table = x.get_string()
-#         text = text.replace(table, f'<pre><code>{new_table}\n</code></pre>')
-
-#     return text
-
-
 def split_html(text: str, max_length: int = 1500) -> list:
     """
     Splits HTML text into chunks with a maximum length, respecting code blocks, bold, and italic tags.

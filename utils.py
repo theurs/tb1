@@ -250,8 +250,8 @@ def bot_markdown_to_html(text: str) -> str:
         text = text.replace(f'`{match}`', random_string)
 
     # переделываем списки на более красивые
-    text = re.sub(r"^(\s*)\*\s", r"\1• ", text)
-    text = re.sub(r"^(\s*)-\s", r"\1– ", text)
+    text = re.sub(r"^(\s*)\*\s", r"\1• ", text, flags=re.MULTILINE)
+    text = re.sub(r"^(\s*)-\s", r"\1– ", text, flags=re.MULTILINE)
 
     # 1,2,3,4 # в начале строки меняем всю строку на жирный текст
     text = re.sub(r"^(?:\.\s)?#(?:#{2,})\s(.*)$", r"<b>▏\1</b>", text, flags=re.MULTILINE)  # 3+ hashes
@@ -1193,6 +1193,8 @@ x - y = 1
 \end{cases}
 \]
 
+
+Semoga bermanfaat dan menginspirasi.
 
     """
 

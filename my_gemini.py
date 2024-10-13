@@ -434,6 +434,25 @@ def update_mem(query: str, resp: str, mem):
     return mem
 
 
+def force(chat_id: str, text: str):
+    '''update last bot answer with given text'''
+    try:
+        if chat_id in LOCKS:
+            lock = LOCKS[chat_id]
+        else:
+            lock = threading.Lock()
+            LOCKS[chat_id] = lock
+        with lock:
+            mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
+            # remove last bot answer and append new
+            if len(mem) > 1:
+                mem[-1]['parts'][0]['text'] = text
+                my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini(f'Failed to force text in chat {chat_id}: {error}\n\n{error_traceback}\n\n{text}')
+
+    
 def undo(chat_id: str):
     """
     Undo the last two lines of chat history for a given chat ID.
@@ -448,8 +467,6 @@ def undo(chat_id: str):
         None
     """
     try:
-        global LOCKS
-
         if chat_id in LOCKS:
             lock = LOCKS[chat_id]
         else:
@@ -974,8 +991,10 @@ def imagen(prompt: str = "Fuzzy bunnies in my kitchen"):
 
 if __name__ == '__main__':
     pass
-    # my_db.init(backup=False)
+    my_db.init(backup=False)
     load_users_keys()
+
+    force('[1651196] [0]', 'fuck off')
 
     # print(utils.string_to_dict("""{"detailed_description": "На изображении представлена картинка, разделённая на две части, обе из которых выполнены в розовом цвете. На каждой части представлен текст, написанный белым шрифтом. \n\nВ левой части указана дата 3.09.2024 и фраза \"День раскрытия своей истинной сути и создания отношений.\" Ниже приведён список тем, связанных с саморазвитием и отношениями: желания, цели, осознанность, энергия, эмоции, отношения, семья, духовность, любовь, партнёрство, сотрудничество, взаимопонимание. \n\nВ правой части представлен текст, призывающий следовать своим истинным желаниям, раскрывать свои качества, способности и таланты, а также выстраивать отношения с любовью и принятием, включая личные и деловые. Также текст призывает стремиться к пониманию и сотрудничеству.", "extracted_formatted_text": "3.09.2024 - день раскрытия\nсвоей истинной сути и\nсоздания отношений.\nЖелания, цели, осознанность,\nэнергия, эмоции, отношения,\nсемья, духовность, любовь,\nпартнёрство, сотрудничество,\nвзаимопонимание.\n\nСледуйте своим истинным\nжеланиям, раскрывайте свои\nкачества, способности и\нталанты. С любовью и\nпринятием выстраивайте\nотношения - личные и\nделовые. Стремитесь к\nпониманию и сотрудничеству.", "image_generation_prompt": "Create a pink background with two columns of white text. On the left, include the date '3.09.2024' and the phrase 'Day of revealing your true essence and creating relationships'. Below that, list personal development and relationship themes, such as desires, goals, awareness, energy, emotions, relationships, family, spirituality, love, partnership, cooperation, understanding. On the right, write text encouraging people to follow their true desires, reveal their qualities, abilities, and talents. Emphasize building relationships with love and acceptance, including personal and business relationships. End with a call to strive for understanding and cooperation."} """))
 
@@ -985,11 +1004,11 @@ if __name__ == '__main__':
     # как отправить в чат аудиофайл
     # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
 
-    imagen()
+    # imagen()
 
-    list_models()
+    # list_models()
     # chat_cli()
-    chat_cli(model=cfg.gemini_flash_model)
+    # chat_cli(model=cfg.gemini_flash_model)
 
     # with open('d:\\downloads\\1.txt','r') as f:
         # text = f.read()

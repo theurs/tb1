@@ -3167,9 +3167,64 @@ def disable_chat_mode(message: telebot.types.Message):
         bot_reply(message, msg, parse_mode='HTML')
 
 
+def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.Message):
+    '''изменяет последний ответ от бота на text'''
+    if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_gemini.force(chat_id_full, text)
+
+    # elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama370':
+    #     my_groq.force(chat_id_full, text)
+    # elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+    #     my_openrouter.force(chat_id_full, text)
+    # elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
+    #     my_openrouter_free.force(chat_id_full, text)
+    # elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
+    #     my_jamba.force(chat_id_full, text)
+    # elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+    #     my_groq.force(chat_id_full, text)
+    # elif 'gpt4omini' == my_db.get_user_property(chat_id_full, 'chat_mode'):
+    #     my_gpt4omini.force(chat_id_full, text)
+    # elif 'gpt4o' == my_db.get_user_property(chat_id_full, 'chat_mode'):
+    #     my_shadowjourney.force(chat_id_full, text)
+
+    elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        bot_reply_tr(message, 'DuckDuckGo haiku do not support /force command')
+        return
+    elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        bot_reply_tr(message, 'DuckDuckGo GPT 4o mini do not support /force command')
+        return
+
+    else:
+        bot_reply_tr(message, 'History WAS NOT changed.')
+        return
+
+    bot_reply_tr(message, 'Last answer was updated.')
+
+
+@bot.message_handler(commands=['force',], func=authorized_log)
+@async_run
+def force_cmd(message: telebot.types.Message):
+    """Update last bot answer"""
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+    COMMAND_MODE[chat_id_full] = ''
+    original_message_text = message.text
+    message.text = my_log.restore_message_text(message.text, message.entities)
+    try:
+        text = message.text.split(' ', maxsplit=1)[1]
+        if text:
+            change_last_bot_answer(chat_id_full, text, message)
+            return
+    except IndexError:
+        pass
+
+    msg = '/force text - ' + tr("Force the bot to respond with the given text, updating its memory as if it had generated that response itself. This command overrides the usual bot behavior and makes it say exactly what you specify.", lang)
+    bot_reply(message, msg)
+
+
 @bot.message_handler(commands=['undo', 'u', 'U', 'Undo'], func=authorized_log)
 @async_run
-def undo(message: telebot.types.Message):
+def undo_cmd(message: telebot.types.Message):
     """Clear chat history last message (bot's memory)"""
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''

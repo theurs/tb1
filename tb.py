@@ -5070,126 +5070,135 @@ def purge_cmd_handler(message: telebot.types.Message):
 @async_run
 def id_cmd_handler(message: telebot.types.Message):
     """показывает id юзера и группы в которой сообщение отправлено"""
-    chat_id_full = f'[{message.from_user.id}] [0]'
-    group_id_full = f'[{message.chat.id}] [{message.message_thread_id or 0}]'
-    is_private = message.chat.type == 'private'
-    if is_private:
-        lang = get_lang(chat_id_full, message)
-    else:
-        lang = get_lang(group_id_full, message)
-
-    COMMAND_MODE[chat_id_full] = ''
-
     try:
+        chat_id_full = f'[{message.from_user.id}] [0]'
+        group_id_full = f'[{message.chat.id}] [{message.message_thread_id or 0}]'
+        is_private = message.chat.type == 'private'
+        if is_private:
+            lang = get_lang(chat_id_full, message)
+        else:
+            lang = get_lang(group_id_full, message)
+
+        COMMAND_MODE[chat_id_full] = ''
+
+        try:
+            if message.from_user.id in cfg.admins:
+                arg = message.text.split(maxsplit=1)[1].strip()
+                if arg:
+                    if '[' not in arg:
+                        arg = f'[{arg}] [0]'
+                    chat_id_full = arg
+        except IndexError:
+            pass
+
+        user_id = message.from_user.id
+        reported_language = message.from_user.language_code
+        open_router_model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full] if chat_id_full in my_openrouter.PARAMS else my_openrouter.PARAMS_DEFAULT
+
+        if is_private:
+            user_model = my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.get_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default
+        else:
+            user_model = my_db.get_user_property(group_id_full, 'chat_mode') if my_db.get_user_property(group_id_full, 'chat_mode') else cfg.chat_mode_default
+        models = {
+            'gemini': 'Gemini 1.5 Flash',
+            'gemini15': 'Gemini 1.5 Pro',
+            'gemini8': 'Gemini 1.5 Flash 8b',
+            'llama370': 'Llama 3.2 90b',
+            'openrouter_llama405': 'Llama 3.1 405b',
+            'openrouter': 'openrouter.ai',
+            'jamba': 'Jamba 1.5 mini',
+            'gpt4o': 'GPT 4o',
+            'gpt4omini': 'GPT 4o mini',
+            'gemma2-9b': 'Gemma 2 9b',
+            'haiku': 'Claude 3 Haiku',
+            'gpt35': 'GPT 3.5',
+            'gpt-4o-mini-ddg': 'GPT 4o mini',
+        }
+        if user_model in models.keys():
+            user_model = f'<b>{models[user_model]}</b>'
+
+        telegram_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+
+        total_msgs = my_db.get_total_msg_user(chat_id_full)
+        totals_pics = my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0
+
+        first_meet = my_db.get_user_property(chat_id_full, 'first_meet') or 0
+        first_meet_dt = pendulum.from_timestamp(first_meet)
+        first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale=lang)
+        now = pendulum.now()
+        diff = now - first_meet_dt
+        delta_time_str = diff.in_words(locale=lang)
+
+        msg = ''
         if message.from_user.id in cfg.admins:
-            arg = message.text.split(maxsplit=1)[1].strip()
-            if arg:
-                if '[' not in arg:
-                    arg = f'[{arg}] [0]'
-                chat_id_full = arg
-    except IndexError:
-        pass
-
-    user_id = message.from_user.id
-    reported_language = message.from_user.language_code
-    open_router_model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full] if chat_id_full in my_openrouter.PARAMS else my_openrouter.PARAMS_DEFAULT
-
-    if is_private:
-        user_model = my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.get_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default
-    else:
-        user_model = my_db.get_user_property(group_id_full, 'chat_mode') if my_db.get_user_property(group_id_full, 'chat_mode') else cfg.chat_mode_default
-    models = {
-        'gemini': 'Gemini 1.5 Flash',
-        'gemini15': 'Gemini 1.5 Pro',
-        'gemini8': 'Gemini 1.5 Flash 8b',
-        'llama370': 'Llama 3.2 90b',
-        'openrouter_llama405': 'Llama 3.1 405b',
-        'openrouter': 'openrouter.ai',
-        'jamba': 'Jamba 1.5 mini',
-        'gpt4o': 'GPT 4o',
-        'gpt4omini': 'GPT 4o mini',
-        'gemma2-9b': 'Gemma 2 9b',
-        'haiku': 'Claude 3 Haiku',
-        'gpt35': 'GPT 3.5',
-        'gpt-4o-mini-ddg': 'GPT 4o mini',
-    }
-    if user_model in models.keys():
-        user_model = f'<b>{models[user_model]}</b>'
-
-    telegram_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
-
-    first_meet = my_db.get_user_property(chat_id_full, 'first_meet') or 0
-    first_meet_dt = pendulum.from_timestamp(first_meet)
-    first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale=lang)
-    now = pendulum.now()
-    diff = now - first_meet_dt
-    delta_time_str = diff.in_words(locale=lang)
-
-    msg = ''
-    if message.from_user.id in cfg.admins:
-        msg += f'Uptime: {get_uptime()}\n\n'
-    msg += f'''{tr("ID пользователя:", lang)} {user_id}
+            msg += f'Uptime: {get_uptime()}\n\n'
+        msg += f'''{tr("ID пользователя:", lang)} {user_id}
 
 {tr("Дата встречи:", lang)} {first_meet_str}
 {delta_time_str}
+
+{tr("Количество сообщений/изображений:", lang)} {total_msgs}/{totals_pics}
 
 {tr("ID группы:", lang)} {group_id_full}
 
 {tr("Выбранный язык:", lang)} {reported_language}
 
 {tr("Выбранная чат модель:", lang)} {user_model}'''
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
-        msg += f' <b>{open_router_model}</b>'
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+            msg += f' <b>{open_router_model}</b>'
 
-    tstarsmsg = tr('Telegram stars:', lang, help = 'Telegram Stars is a new feature that allows users to buy and spend Stars, a new digital currency, on digital goods and services within the Telegram ecosystem, like ebooks, online courses, or items in Telegram games.')
-    if telegram_stars:
-        msg += f'\n\n🌟 {tstarsmsg} {telegram_stars} /stars'
-    else:
-        msg += f'\n\n⭐️ {tstarsmsg} {telegram_stars} /stars'
+        tstarsmsg = tr('Telegram stars:', lang, help = 'Telegram Stars is a new feature that allows users to buy and spend Stars, a new digital currency, on digital goods and services within the Telegram ecosystem, like ebooks, online courses, or items in Telegram games.')
+        if telegram_stars:
+            msg += f'\n\n🌟 {tstarsmsg} {telegram_stars} /stars'
+        else:
+            msg += f'\n\n⭐️ {tstarsmsg} {telegram_stars} /stars'
 
-    gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
-    groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
-    openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
-    deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
-    huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
-    # keys_count = len(gemini_keys) + len(groq_keys) + len(openrouter_keys) + len(deepl_keys)
-    keys_count = len(gemini_keys) + len(groq_keys) + len(deepl_keys)
-    keys_count_ = '🔑'*keys_count
+        gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
+        groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
+        openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
+        deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
+        huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
+        # keys_count = len(gemini_keys) + len(groq_keys) + len(openrouter_keys) + len(deepl_keys)
+        keys_count = len(gemini_keys) + len(groq_keys) + len(deepl_keys)
+        keys_count_ = '🔑'*keys_count
 
-    if openrouter_keys:
-        msg += '\n\n🔑️ OpenRouter\n'
-    else:
-        msg += '\n\n🔒 OpenRouter\n'
-    if gemini_keys:
-        msg += '🔑️ Gemini\n'
-    else:
-        msg += '🔒 Gemini\n'
-    if groq_keys:
-        msg += '🔑️ Groq\n'
-    else:
-        msg += '🔒 Groq\n'
-    if deepl_keys:
-        msg += '🔑️ Deepl\n'
-    else:
-        msg += '🔒 Deepl\n'
-    if huggingface_keys:
-        msg += '🔑️ Huggingface\n'
-    else:
-        msg += '🔒 Huggingface\n'
+        if openrouter_keys:
+            msg += '\n\n🔑️ OpenRouter\n'
+        else:
+            msg += '\n\n🔒 OpenRouter\n'
+        if gemini_keys:
+            msg += '🔑️ Gemini\n'
+        else:
+            msg += '🔒 Gemini\n'
+        if groq_keys:
+            msg += '🔑️ Groq\n'
+        else:
+            msg += '🔒 Groq\n'
+        if deepl_keys:
+            msg += '🔑️ Deepl\n'
+        else:
+            msg += '🔒 Deepl\n'
+        if huggingface_keys:
+            msg += '🔑️ Huggingface\n'
+        else:
+            msg += '🔒 Huggingface\n'
 
-    if my_db.get_user_property(chat_id_full, 'blocked'):
-        msg += f'\n{tr("User was banned.", lang)}\n'
+        if my_db.get_user_property(chat_id_full, 'blocked'):
+            msg += f'\n{tr("User was banned.", lang)}\n'
 
-    if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-        msg += f'\n{tr("User was banned in bing.com.", lang)}\n'
+        if my_db.get_user_property(chat_id_full, 'blocked_bing'):
+            msg += f'\n{tr("User was banned in bing.com.", lang)}\n'
 
-    if str(message.chat.id) in DDOS_BLOCKED_USERS and not my_db.get_user_property(chat_id_full, 'blocked'):
-        msg += f'\n{tr("User was temporarily banned.", lang)}\n'
+        if str(message.chat.id) in DDOS_BLOCKED_USERS and not my_db.get_user_property(chat_id_full, 'blocked'):
+            msg += f'\n{tr("User was temporarily banned.", lang)}\n'
 
-    if my_db.get_user_property(chat_id_full, 'persistant_memory'):
-        msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_db.get_user_property(chat_id_full, "persistant_memory")}'
+        if my_db.get_user_property(chat_id_full, 'persistant_memory'):
+            msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_db.get_user_property(chat_id_full, "persistant_memory")}'
 
-    bot_reply(message, msg, parse_mode = 'HTML')
+        bot_reply(message, msg, parse_mode = 'HTML')
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'tb:id: {error}\n\n{error_traceback}\n\n{message}')
 
 
 @bot.message_handler(commands=['reload'], func=authorized_admin)

@@ -326,6 +326,19 @@ def bot_markdown_to_html(text: str) -> str:
         text = text.replace(f'\[{match}\]', new_match)
         text = text.replace(f'\({match}\)', new_match)
 
+    def latex_to_text(latex_formula):
+        # Здесь должна быть реализация преобразования LaTeX в текст
+        # В данном примере просто возвращаем формулу без изменений
+        r = LatexNodes2Text().latex_to_text(latex_formula).strip()
+        return r
+
+    def replace_function_lt1(match):
+        latex_code = match.group(2) if match.group(2) is not None else match.group(3) if match.group(3) is not None else match.group(4)
+        return latex_to_text(latex_code)
+
+    pattern = r"\\begin\{(.*?)\}(.*?)\\end\{\1\}|\\\[(.*?)\\\]|\\begin(.*?)\\end"
+    text = re.sub(pattern, replace_function_lt1, text, flags=re.DOTALL)
+
 
     # меняем маркдаун ссылки на хтмл
     text = re.sub('''\[(.*?)\]\((https?://\S+)\)''', r'<a href="\2">\1</a>', text)
@@ -1130,6 +1143,56 @@ text
     - еще один вложенный
   - вложенный элемент 2
 - элемент 2
+
+\begin{equation}
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+\end{equation}
+
+\[ E=mc^2 \]
+
+\begin
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+\end
+
+\begin{enumerate}
+    \item Сложение: $2 + 3 = 5$
+    \item Вычитание: $10 - 5 = 5$
+    \item Умножение: $4 \times 6 = 24$
+    \item Деление: $\frac{12}{3} = 4$
+    \item Возведение в степень: $2^3 = 8$
+    \item Квадратный корень: $\sqrt{16} = 4$
+    \item Дробь: $\frac{1}{2} + \frac{1}{4} = \frac{3}{4}$
+    \item Тригонометрия: $\sin(30^\circ) = \frac{1}{2}$
+    \item Логарифм: $\log_{10} 100 = 2$
+    \item Интеграл: $\int x^2 dx = \frac{x^3}{3} + C$
+\end{enumerate}
+
+$e^{i\pi} + 1 = 0$
+
+$$ \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi} $$
+
+\[ \frac{d}{dx} \sin(x) = \cos(x) \]
+
+\begin{equation}
+a^2 + b^2 = c^2
+\end{equation}
+
+$\sum_{i=1}^{n} i = \frac{n(n+1)}{2}$
+
+$$
+\begin{pmatrix}
+1 & 2 \\
+3 & 4
+\end{pmatrix}
+$$
+
+\[
+\begin{cases}
+x + y = 5 \\
+x - y = 1
+\end{cases}
+\]
+
 
     """
 

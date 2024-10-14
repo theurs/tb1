@@ -958,8 +958,57 @@ def compress_png_bytes(image_bytes: bytes) -> bytes:
         return image_bytes  # Return original bytes on error
 
 
+def resize_image(image_bytes: bytes, max_size: int = 10 * 1024 * 1024) -> bytes:
+    """
+    Resizes the image to a maximum size in bytes.
+
+    Args:
+        image_bytes: Image bytes.
+        max_size: Maximum size in bytes (default is 10MB).
+
+    Returns:
+        Resized image bytes in JPEG format.
+        Returns original bytes if any error occurs or if image is already smaller than max_size.
+    """
+    if len(image_bytes) <= max_size:
+        return image_bytes # Already small enough
+
+    try:
+        img = PIL.Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    except Exception:
+        return image_bytes  # Return original bytes if open fails
+
+    quality = 95
+    while True:
+      output = io.BytesIO()
+      try:
+          img.save(output, format="JPEG", quality=quality, optimize=True, subsampling=0) # optimize and preserve text
+      except Exception:
+          return image_bytes # Return original bytes if save fails
+
+      size = output.tell()
+
+      if size <= max_size:
+        return output.getvalue()
+
+      if quality <= 10:  # Minimum quality
+        return output.getvalue()
+      
+      quality -= 5
+
+
 if __name__ == '__main__':
     pass
+
+
+with open("d:/downloads/1.png", "rb") as f:
+
+    # image_bytes = f.read()
+    # resized_image_bytes = resize_image(image_bytes)
+    # with open("d:/downloads/2.jpg", "wb") as outfile:
+    #     outfile.write(resized_image_bytes)
+    # print("Изображение успешно уменьшено и сохранено.")
+
 
     # print(bot_markdown_to_tts("Привет, мир! Hello, world! 123 こんにちは 你好 В этом примере регулярноwor😘😗☺️😚😙🥲😋😛😜🤪😝🤑🤗🤭🫢🫣🤫🤔🫡🤐🤨😐😑😶🫥😶‍🌫️😏😒🙄😬😮‍💨🤥🫨😌😔ldе выражение r'[^\p{L}\p{N}\p{P}]' находит все символы, которые не являются буквами, цифрами или знаками препинания, и заменяет их на пустую строку. Класс символов \p{L} соответствует всем буквам, \p{N} — всем цифрам, а \p{P} — всем знакам препинания."))
 

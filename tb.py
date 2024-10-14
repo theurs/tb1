@@ -2453,6 +2453,8 @@ def handle_photo(message: telebot.types.Message):
                 with ShowAction(message, 'typing'):
                     images = [download_image_from_message(msg) for msg in MESSAGES]
                     result_image_as_bytes = utils.make_collage(images)
+                    if len(result_image_as_bytes) > 10 * 1024 *1024:
+                        result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
                     m = bot.send_photo( message.chat.id,
                                         result_image_as_bytes,
                                         disable_notification=True,
@@ -2462,13 +2464,15 @@ def handle_photo(message: telebot.types.Message):
                     width, height = utils.get_image_size(result_image_as_bytes)
                     if width >= 1280 or height >= 1280:
                         try:
-                            m = bot.send_document(  message.chat.id,
-                                                    result_image_as_bytes,
-                                                    # caption='images.png',
-                                                    visible_file_name='images.png',
-                                                    disable_notification=True,
-                                                    reply_to_message_id=message.message_id,
-                                                    reply_markup=get_keyboard('hide', message))
+                            m = bot.send_document(
+                                message.chat.id,
+                                result_image_as_bytes,
+                                # caption='images.png',
+                                visible_file_name='images.png',
+                                disable_notification=True,
+                                reply_to_message_id=message.message_id,
+                                reply_markup=get_keyboard('hide', message)
+                                )
                             log_message(m)
                         except Exception as send_doc_error:
                             my_log.log2(f'tb:handle_photo: {send_doc_error}')

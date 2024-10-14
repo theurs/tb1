@@ -878,6 +878,11 @@ def log_message(message: telebot.types.Message):
                             message.message_id)
 
         elif isinstance(message, list):
+
+            # do not copy-log list of images if heavy load
+            if len(LOG_GROUP_MESSAGES.keys()) > 30:
+                return
+
             chat_full_id = get_topic_id(message[0])
             chat_name = utils.get_username_for_log(message[0])
             m_ids = [x.message_id for x in message]

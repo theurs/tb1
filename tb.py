@@ -3148,6 +3148,24 @@ def change_mode(message: telebot.types.Message):
         bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
 
 
+@bot.message_handler(commands=['set_chat_mode'], func=authorized_admin)
+@async_run
+def set_chat_mode(message: telebot.types.Message):
+    """mandatory switch user from one chatbot to another"""
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    try:
+        _user = f'[{message.text.split(maxsplit=3)[1].strip()}] [0]'
+        _mode = message.text.split(maxsplit=3)[2].strip()
+        my_db.set_user_property(_user, 'chat_mode', _mode)
+        msg = f'{tr("Changed: ", lang)} {_user} -> {_mode}.'
+        bot_reply(message, msg)
+    except:
+        msg = f"{tr('Example usage: /set_chat_mode user_id_as_int new_mode', lang)} gemini15, gemini, ..."
+        bot_reply(message, msg, parse_mode='HTML')
+
+
 @bot.message_handler(commands=['disable_chat_mode'], func=authorized_admin)
 @async_run
 def disable_chat_mode(message: telebot.types.Message):
@@ -3158,7 +3176,7 @@ def disable_chat_mode(message: telebot.types.Message):
     try:
         _from = message.text.split(maxsplit=3)[1].strip()
         _to = message.text.split(maxsplit=3)[2].strip()
-        
+
         n = 0
         for x in my_db.get_all_users_ids():
             if my_db.get_user_property(x, 'chat_mode') == _from:

@@ -34,6 +34,9 @@ def post(text: str, user_id: str) -> str:
         )
         return response['url']
     except Exception as error:
+        if 'ACCOUNT_NOT_FOUND' in str(error):
+            del TOKENS[user_id]
+            return post(text, user_id)
         traceback_error = traceback.format_exc()
         my_log.log2(f'my_telegraph:post: {error}\n\n{traceback_error}\n\n{text}\n\n{user_id}')
         return None

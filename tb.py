@@ -3293,7 +3293,7 @@ def reset_(message: telebot.types.Message):
         bot_reply_tr(message, 'History cleared.')
 
 
-@bot.message_handler(commands=['reset', 'clear'], func=authorized_log)
+@bot.message_handler(commands=['reset', 'clear', 'new'], func=authorized_log)
 @async_run
 def reset(message: telebot.types.Message):
     """Clear chat history (bot's memory)"""

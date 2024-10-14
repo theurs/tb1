@@ -5263,6 +5263,9 @@ def id_cmd_handler(message: telebot.types.Message):
         if my_db.get_user_property(chat_id_full, 'blocked'):
             msg += f'\n{tr("User was banned.", lang)}\n'
 
+        if my_db.get_user_property(chat_id_full, 'blocked_totally'):
+            msg += f'\n{tr("User was banned totally.", lang)}\n'
+
         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
             msg += f'\n{tr("User was banned in bing.com.", lang)}\n'
 

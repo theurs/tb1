@@ -3171,33 +3171,31 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
     '''изменяет последний ответ от бота на text'''
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_gemini.force(chat_id_full, text)
-
-    # elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama370':
-    #     my_groq.force(chat_id_full, text)
-    # elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
-    #     my_openrouter.force(chat_id_full, text)
-    # elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-    #     my_openrouter_free.force(chat_id_full, text)
-    # elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
-    #     my_jamba.force(chat_id_full, text)
-    # elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-    #     my_groq.force(chat_id_full, text)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama370':
+        my_groq.force(chat_id_full, text)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+        my_openrouter.force(chat_id_full, text)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
+        my_openrouter_free.force(chat_id_full, text)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
+        my_jamba.force(chat_id_full, text)
+    elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_groq.force(chat_id_full, text)
+    # openrouter paid not implemented
     # elif 'gpt4omini' == my_db.get_user_property(chat_id_full, 'chat_mode'):
     #     my_gpt4omini.force(chat_id_full, text)
+    # not implemented
     # elif 'gpt4o' == my_db.get_user_property(chat_id_full, 'chat_mode'):
     #     my_shadowjourney.force(chat_id_full, text)
-
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         bot_reply_tr(message, 'DuckDuckGo haiku do not support /force command')
         return
     elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         bot_reply_tr(message, 'DuckDuckGo GPT 4o mini do not support /force command')
         return
-
     else:
         bot_reply_tr(message, 'History WAS NOT changed.')
         return
-
     bot_reply_tr(message, 'Last answer was updated.')
 
 

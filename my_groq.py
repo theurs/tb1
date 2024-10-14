@@ -393,6 +393,28 @@ def reset(chat_id: str):
     my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob(mem))
 
 
+def force(chat_id: str, text: str):
+    '''update last bot answer with given text'''
+    try:
+        if chat_id in LOCKS:
+            lock = LOCKS[chat_id]
+        else:
+            lock = threading.Lock()
+            LOCKS[chat_id] = lock
+        with lock:
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
+            if mem:
+                # update last bot answer
+                if len(mem) > 1:
+                    mem[-1]['content'] = text 
+                    my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob(mem))
+            else:
+                my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob([text])) # first message in history, assume it was bot
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_groq(f'Failed to force message in chat {chat_id}: {error}\n\n{error_traceback}')
+
+
 def undo(chat_id: str):
     """
     Undo the last two lines of chat history for a given chat ID.
@@ -407,8 +429,6 @@ def undo(chat_id: str):
         None
     """
     try:
-        global LOCKS
-
         if chat_id in LOCKS:
             lock = LOCKS[chat_id]
         else:
@@ -819,6 +839,7 @@ PROMPT:
 
 if __name__ == '__main__':
     pass
+    my_db.init(backup=False)
     load_users_keys()
 
     # print(test_image_prompt('Грациозная антропоморфная черная лисица с пронзительными фиолетовыми глазами сидит на возвышении, окруженном мягким сиянием. В ее лапках — волшебный шар, излучающий мистический свет. На фоне — темное звездное небо и разноцветная фиолетовая туманность, создающие атмосферу волшебства и тайны. Хвост лисицы мягко изгибается, добавляя ей изящества. Стиль: Мистический, фурри-арт волшебный, ночной, милый, фантастический. Черный (лисица), фиолетовый (глаза, туманность), разнообразные цвета туманности, белый, голубой (звезды), мягкий свет от шара.'))

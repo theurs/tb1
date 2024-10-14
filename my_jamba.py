@@ -153,6 +153,22 @@ def get_mem_as_string(chat_id: str) -> str:
         return ''
 
 
+def force(chat_id: str, text: str):
+    '''update last bot answer with given text'''
+    try:
+        if chat_id not in CHATS:
+            CHATS[chat_id] = []  # Initialize if chat doesn't exist
+        mem = CHATS[chat_id]
+        if mem:
+            # Update the last bot answer
+            if len(mem) > 1:
+                mem[-1].content = text
+                CHATS[chat_id] = mem
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_jamba(f'Failed to force message in chat {chat_id}: {error}\n\n{error_traceback}')
+
+
 def undo(chat_id: str):
     """
     Undo the last two lines of chat history for a given chat ID.

@@ -960,7 +960,8 @@ def compress_png_bytes(image_bytes: bytes) -> bytes:
 
 def resize_image(image_bytes: bytes, max_size: int = 10 * 1024 * 1024) -> bytes:
     """
-    Resizes the image to a maximum size in bytes.
+    Resizes the image to a maximum size in bytes, specifically for Telegram.
+    Converts the image to JPEG regardless of the original format to ensure compatibility and reduce size.
 
     Args:
         image_bytes: Image bytes.

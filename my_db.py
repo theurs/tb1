@@ -112,6 +112,9 @@ def init(backup: bool = True):
     week_seconds = day_seconds * 7
     month_seconds = day_seconds * 30
     year_seconds = day_seconds * 365
+    keep_files_seconds = 1 * week_seconds
+    keep_messages_seconds = 1 * month_seconds
+    keep_global_messages_seconds = 10 * year_seconds
     try:
         if backup:
             backup_db()
@@ -126,7 +129,7 @@ def init(backup: bool = True):
                 model_used TEXT
             )
         ''')
-        CUR.execute('''DELETE FROM msg_counter WHERE access_time < ?''', (time.time() - year_seconds,))
+        CUR.execute('''DELETE FROM msg_counter WHERE access_time < ?''', (time.time() - keep_global_messages_seconds,))
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_access_time ON msg_counter (access_time)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_user_id ON msg_counter (user_id)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_model_used ON msg_counter (model_used)')
@@ -198,17 +201,18 @@ def init(backup: bool = True):
         ''')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_id ON users (id)')
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_first_meet ON users (first_meet)')
-        # удалить файлы старше 1 дня и диалоги старше 1 недели
+        # удалить файлы старше xx дня и диалоги старше yyy недели
         CUR.execute("""UPDATE users SET saved_file = NULL,
                     saved_file_name = NULL WHERE last_time_access < ?
-                    """, (time.time() - day_seconds,))
+                    """, (time.time() - keep_files_seconds,))
         CUR.execute("""UPDATE users SET dialog_gemini = NULL,
                     dialog_groq = NULL,
                     dialog_openrouter = NULL,
                     dialog_shadow = NULL,
+                    dialog_gpt4omini = NULL,
                     persistant_memory = NULL
                     WHERE last_time_access < ?
-                    """, (time.time() - week_seconds,))
+                    """, (time.time() - keep_messages_seconds,))
 
         CUR.execute('''
             CREATE TABLE IF NOT EXISTS sum (

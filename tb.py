@@ -2126,11 +2126,11 @@ def image_info(image_bytes: bytes, lang: str = "ru") -> str:
         info_str += f"{size_label}: {image.width}x{image.height}\n"
         # info_str += f"{mode_label}: {image.mode}\n"
 
-        # Check for palette information.
-        if image.palette:
-            info_str += f"{palette_label}: Yes\n"
-        else:
-            info_str += f"{palette_label}: No\n"
+        # # Check for palette information.
+        # if image.palette:
+        #     info_str += f"{palette_label}: Yes\n"
+        # else:
+        #     info_str += f"{palette_label}: No\n"
 
         return info_str.strip()
 

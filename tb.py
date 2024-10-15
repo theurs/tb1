@@ -6064,7 +6064,7 @@ def do_task(message, custom_prompt: str = ''):
                             flag_gpt_help = False
                             if not answer:
                                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                                mem__ = my_gemini.get_mem_for_llama(chat_id_full)
+                                mem__ = my_gemini.get_mem_for_llama(chat_id_full, l = 5)
                                 if style_:
                                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
                                 else:

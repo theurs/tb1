@@ -2121,6 +2121,7 @@ def image_info(image_bytes: bytes, lang: str = "ru") -> str:
         palette_label = tr("Palette", lang)
         exif_label = tr("EXIF Data", lang)
 
+        info_str = ''
         # info_str = f"{format_label}: {image.format}\n"
         info_str += f"{size_label}: {image.width}x{image.height}\n"
         # info_str += f"{mode_label}: {image.mode}\n"

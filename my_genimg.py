@@ -247,17 +247,15 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             api_key = random.choice(ALL_KEYS)
             headers = {"Authorization": f"Bearer {api_key}"}
 
+            mult_words = [
+                'animated', 'anime', 'cartoon', 'cartoonish', 'celanimation', 'chibi',
+                'childish', 'comic', 'doujinshi', 'drawing', 'ecchi', 'fanart',
+                'graphicnovel', 'hentai', 'illustration', 'kawaii', 'lineart',
+                'loli', 'manga', 'mecha', 'shota', 'simple', 'sketch', 'stopmotion'
+                ]
             try:
-                if (any(word in negative_prompt for word in ["anime", "cartoon", "manga", 
-                                                             "childish", 
-                                                            "animated", "comic", "hentai", 
-                                                            "ecchi", "kawaii", "chibi", 
-                                                            "mecha", "fanart", "doujinshi", 
-                                                            "loli", "shota", "drawing", 
-                                                            "graphicnovel", "stopmotion", 
-                                                            "celanimation", "sketch", 
-                                                            "lineart", "illustration"]) 
-                    and any(word in url for word in ['m3lt', 'midsommarcartoon'])):
+                if (any(word in negative_prompt for word in mult_words)
+                    and any(word in url for word in ['m3lt', 'midsommarcartoon', 'FLUX.1-dev-LoRA-One-Click-Creative-Template', 'flux-ghibsky-illustration'])):
                     return []
 
                 response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)

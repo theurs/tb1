@@ -15,7 +15,6 @@ import tempfile
 import traceback
 import threading
 import time
-from typing import Any, Dict
 
 import cairosvg
 import langcodes
@@ -422,7 +421,12 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_ddg.update_mem(query, resp, chat_id_full)
 
 
-def img2txt(text, lang: str, chat_id_full: str, query: str = '', model: str = '') -> str:
+def img2txt(text, lang: str,
+            chat_id_full: str,
+            query: str = '',
+            model: str = '',
+            temperature: float = 1
+            ) -> str:
     """
     Generate the text description of an image.
 
@@ -477,11 +481,11 @@ Return a `image_transcription`
         if not model:
             model = cfg.img2_txt_model
         if use_json:
-            text_ = my_gemini.img2txt(data, query, json_output=True, model=model)
+            text_ = my_gemini.img2txt(data, query, json_output=True, model=model, temp=temperature)
 
             # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
             if not text_:
-                text_ = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free')
+                text_ = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature)
 
             # # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
             # if not text_:
@@ -526,11 +530,11 @@ Return a `image_transcription`
                 else:
                     text = text_
         else:
-            text = my_gemini.img2txt(data, query, model=model)
+            text = my_gemini.img2txt(data, query, model=model, temp=temperature)
 
             # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
             if not text:
-                text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free')
+                text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature)
 
             # # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
             # if not text:
@@ -1628,12 +1632,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_REPROMPT, lang) + \
                            '\n\n```prompt\n/img image generation prompt in english```\n\n'
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message, , temp = 1.5)
 
         elif call.data == 'image_prompt_solve':
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_SOLVE, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_pro_model)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_pro_model, temp = 0.1)
 
         elif call.data == 'image_prompt_repeat_last':
             COMMAND_MODE[chat_id_full] = ''
@@ -2139,7 +2143,12 @@ def image_info(image_bytes: bytes, lang: str = "ru") -> str:
         return f"{error_message}: {e}"
 
 
-def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, message: telebot.types.Message, model: str = ''):
+def process_image_stage_2(image_prompt: str,
+                          chat_id_full: str,
+                          lang: str,
+                          message: telebot.types.Message,
+                          model: str = '',
+                          temp: float = 1):
     '''Processes the user's chosen action for the uncaptioned image.
 
     Args:
@@ -2171,7 +2180,8 @@ def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, messa
                 lang = lang,
                 chat_id_full = chat_id_full,
                 query = image_prompt,
-                model = model
+                model = model,
+                temperature = temp
             )
             # Send the processed text to the user.
             if text:

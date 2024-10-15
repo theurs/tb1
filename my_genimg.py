@@ -248,12 +248,23 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             headers = {"Authorization": f"Bearer {api_key}"}
 
             mult_words = [
-                'animated', 'anime', 'cartoon', 'cartoonish', 'celanimation', 'chibi',
-                'childish', 'comic', 'doujinshi', 'drawing', 'ecchi', 'fanart',
-                'graphicnovel', 'hentai', 'illustration', 'kawaii', 'lineart',
-                'loli', 'manga', 'mecha', 'shota', 'simple', 'simplistic', 'sketch',
-                'stopmotion'
+                '2D', '3D', 'CGI', 'VFX', 'abstract', 'animate', 'animated', 'animatic',
+                'animation', 'animation_studio', 'animator', 'anime', 'art', 'asset', 'assets', 'background',
+                'blurry', 'bright colors', 'cartoon', 'cartoonish', 'cel', 'celanimation', 'cels', 'character',
+                'character_design', 'characters', 'chibi', 'childish', 'claymation', 'comic', 'compositing', 'concept_art',
+                'concept_design', 'design', 'digital', 'doujinshi', 'draw', 'drawing', 'dreamlike', 'ecchi',
+                'editing', 'effects', 'fanart', 'fantasy', 'film', 'filmmaking', 'frame', 'frames',
+                'genre', 'graphicnovel', 'graphics', 'hentai', 'illustrate', 'illustration', 'inbetween', 'kawaii',
+                'keyframe', 'lighting', 'lineart', 'loli', 'loop', 'low-contrast', 'low-resolution', 'manga',
+                'mecha', 'mocap', 'model', 'modeling', 'models', 'modern', 'motion', 'motion_capture',
+                'movie', 'narrative', 'paint', 'painting', 'palette', 'pipeline', 'pixelated', 'post-production',
+                'pre-production', 'production', 'program', 'puppet', 'puppets', 'render', 'rendering', 'rigging',
+                'rotoscoping', 'scene', 'scenes', 'script', 'scripting', 'sequence', 'sequences', 'shading',
+                'short', 'shota', 'simple', 'simplistic', 'sketch', 'software', 'stop_motion', 'stopmotion',
+                'story', 'storyboard', 'storyboards', 'style', 'sunny', 'surreal', 'technique', 'texturing',
+                'timeline', 'tool', 'tween', 'urban', 'vibrant', 'vibrant colors', 'visual', 'visual_development',
                 ]
+
             try:
                 if (any(word in negative_prompt for word in mult_words)
                     and any(word in url for word in ['m3lt', 'midsommarcartoon', 'FLUX.1-dev-LoRA-One-Click-Creative-Template', 'flux-ghibsky-illustration'])):

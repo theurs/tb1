@@ -270,6 +270,10 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
                     and any(word in url for word in ['m3lt', 'midsommarcartoon', 'FLUX.1-dev-LoRA-One-Click-Creative-Template', 'flux-ghibsky-illustration'])):
                     return []
 
+                if (any(word in prompt for word in mult_words)
+                    and any(word in url for word in ['flux_film_foto',])):
+                    return []
+
                 response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')

@@ -56,3 +56,7 @@ https://api-inference.huggingface.co/models/renderartist/simplevectorflux
 
 # не работает? https://api-inference.huggingface.co/models/ostris/OpenFLUX.1
 # мусор рисует https://api-inference.huggingface.co/models/OnomaAIResearch/Illustrious-xl-early-release-v0
+
+https://api-inference.huggingface.co/models/alimama-creative/FLUX.1-Turbo-Alpha
+https://api-inference.huggingface.co/models/Shakker-Labs/FLUX.1-dev-LoRA-One-Click-Creative-Template
+https://api-inference.huggingface.co/models/aleksa-codes/flux-ghibsky-illustration

@@ -251,7 +251,8 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
                 'animated', 'anime', 'cartoon', 'cartoonish', 'celanimation', 'chibi',
                 'childish', 'comic', 'doujinshi', 'drawing', 'ecchi', 'fanart',
                 'graphicnovel', 'hentai', 'illustration', 'kawaii', 'lineart',
-                'loli', 'manga', 'mecha', 'shota', 'simple', 'sketch', 'stopmotion'
+                'loli', 'manga', 'mecha', 'shota', 'simple', 'simplistic', 'sketch',
+                'stopmotion'
                 ]
             try:
                 if (any(word in negative_prompt for word in mult_words)

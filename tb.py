@@ -15,10 +15,12 @@ import tempfile
 import traceback
 import threading
 import time
+from typing import Any, Dict
 
 import cairosvg
 import langcodes
 import pendulum
+import PIL
 import prettytable
 import PyPDF2
 import telebot
@@ -2089,12 +2091,51 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
     lang = get_lang(chat_id_full, message)
     # Create the message to send to the user.
     msg = tr('What would you like to do with this image?', lang)
+    msg += '\n\n' + image_info(image, lang)
     # Append the last prompt to the message, if available.
     if user_prompt:
         msg += '\n\n' + tr('Repeat my last request', lang) + ' - ' + user_prompt
 
     # Send the message to the user with the appropriate keyboard.
     bot_reply(message, msg, disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
+
+
+def image_info(image_bytes: bytes, lang: str = "ru") -> str:
+    """Extracts information from an image and formats it as a string.
+
+    Args:
+        image_bytes: The image data as bytes.
+        lang: The language code for output labels. Defaults to 'ru'.
+
+    Returns:
+        A string containing image information. If an error occurs during 
+        processing, returns an error message.
+    """
+    try:
+        image = PIL.Image.open(io.BytesIO(image_bytes))
+
+        # Translate labels using the provided language.
+        format_label = tr("Format", lang)
+        size_label = tr("Size", lang)
+        mode_label = tr("Color Model", lang)
+        palette_label = tr("Palette", lang)
+        exif_label = tr("EXIF Data", lang)
+
+        info_str = f"{format_label}: {image.format}\n"
+        info_str += f"{size_label}: {image.width}x{image.height}\n"
+        info_str += f"{mode_label}: {image.mode}\n"
+
+        # Check for palette information.
+        if image.palette:
+            info_str += f"{palette_label}: Yes\n"
+        else:
+            info_str += f"{palette_label}: No\n"
+
+        return info_str.strip()
+
+    except Exception as e:
+        error_message = tr("Error", lang)
+        return f"{error_message}: {e}"
 
 
 def process_image_stage_2(image_prompt: str, chat_id_full: str, lang: str, message: telebot.types.Message, model: str = ''):
@@ -2460,20 +2501,23 @@ def handle_photo(message: telebot.types.Message):
                     result_image_as_bytes = utils.make_collage(images)
                     if len(result_image_as_bytes) > 10 * 1024 *1024:
                         result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
-                    m = bot.send_photo( message.chat.id,
-                                        result_image_as_bytes,
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message))
-                    log_message(m)
+                    try:
+                        m = bot.send_photo( message.chat.id,
+                                            result_image_as_bytes,
+                                            disable_notification=True,
+                                            reply_to_message_id=message.message_id,
+                                            reply_markup=get_keyboard('hide', message))
+                        log_message(m)
+                    except Exception as send_img_error:
+                        my_log.log2(f'tb:handle_photo: {send_img_error}')
                     width, height = utils.get_image_size(result_image_as_bytes)
                     if width >= 1280 or height >= 1280:
                         try:
                             m = bot.send_document(
                                 message.chat.id,
                                 result_image_as_bytes,
-                                # caption='images.png',
-                                visible_file_name='images.png',
+                                # caption='images.jpg',
+                                visible_file_name='images.jpg',
                                 disable_notification=True,
                                 reply_to_message_id=message.message_id,
                                 reply_markup=get_keyboard('hide', message)

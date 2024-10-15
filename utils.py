@@ -790,10 +790,70 @@ def get_codepage():
         return result.lower()
 
 
+# def make_collage(images: list) -> bytes:
+#     """Создает коллаж из списка изображений, располагая их по 2 картинки в ряд.
+#     Учитывает разный размер картинок, приводя их к одному размеру перед склейкой,
+#     сохраняя пропорции. Фон коллажа прозрачный.
+
+#     Args:
+#         images (list): Список байтовых строк, представляющих изображения.
+
+#     Returns:
+#         bytes: Байтовая строка, представляющая итоговое изображение коллажа.
+#     """
+
+#     images = [PIL.Image.open(io.BytesIO(img)) for img in images]
+
+#     # Находим максимальную ширину и высоту среди всех картинок
+#     max_width = max(img.width for img in images)
+#     max_height = max(img.height for img in images)
+
+#     # Изменяем размер всех картинок до максимального, сохраняя пропорции
+#     resized_images = []
+#     for img in images:
+#         # Вычисляем коэффициент масштабирования
+#         scale_factor = min(max_width / img.width, max_height / img.height)
+
+#         # Вычисляем новые размеры с сохранением пропорций
+#         new_width = int(img.width * scale_factor)
+#         new_height = int(img.height * scale_factor)
+
+#         # Изменяем размер картинки с использованием метода LANCZOS
+#         resized_img = img.resize((new_width, new_height), PIL.Image.LANCZOS)
+
+#         # Если картинка не имеет альфа-канала, добавляем его
+#         if resized_img.mode != 'RGBA':
+#             resized_img = resized_img.convert('RGBA')
+
+#         resized_images.append(resized_img)
+
+#     # Создаем коллаж из картинок одинакового размера с прозрачным фоном
+#     collage_width = max_width * 2  # Ширина коллажа - 2 картинки в ряд
+#     collage_height = max_height * (len(images) // 2 + len(images) % 2)  # Высота коллажа - количество рядов * высота картинки
+
+#     collage = PIL.Image.new('RGBA', (collage_width, collage_height), (0, 0, 0, 0))  # Прозрачный фон
+
+#     x_offset = 0
+#     y_offset = 0
+#     for i, img in enumerate(resized_images):
+#         collage.paste(img, (x_offset, y_offset), img) # Вставляем картинку с учетом ее альфа-канала
+#         if (i + 1) % 2 == 0:
+#             y_offset += max_height
+#             x_offset = 0
+#         else:
+#             x_offset += max_width
+
+#     # Сохраняем результат в буфер
+#     result_image_as_bytes = io.BytesIO()
+#     collage.save(result_image_as_bytes, format='PNG') # PNG поддерживает прозрачность
+#     result_image_as_bytes.seek(0)
+#     return compress_png_bytes(result_image_as_bytes.read())
+
+
 def make_collage(images: list) -> bytes:
     """Создает коллаж из списка изображений, располагая их по 2 картинки в ряд.
     Учитывает разный размер картинок, приводя их к одному размеру перед склейкой,
-    сохраняя пропорции. Фон коллажа прозрачный.
+    сохраняя пропорции. Фон коллажа белый.
 
     Args:
         images (list): Список байтовых строк, представляющих изображения.
@@ -827,16 +887,16 @@ def make_collage(images: list) -> bytes:
 
         resized_images.append(resized_img)
 
-    # Создаем коллаж из картинок одинакового размера с прозрачным фоном
+    # Создаем коллаж из картинок одинакового размера с белым фоном
     collage_width = max_width * 2  # Ширина коллажа - 2 картинки в ряд
     collage_height = max_height * (len(images) // 2 + len(images) % 2)  # Высота коллажа - количество рядов * высота картинки
 
-    collage = PIL.Image.new('RGBA', (collage_width, collage_height), (0, 0, 0, 0))  # Прозрачный фон
+    collage = PIL.Image.new('RGB', (collage_width, collage_height), (255, 255, 255))  # Белый фон
 
     x_offset = 0
     y_offset = 0
     for i, img in enumerate(resized_images):
-        collage.paste(img, (x_offset, y_offset), img) # Вставляем картинку с учетом ее альфа-канала
+        collage.paste(img, (x_offset, y_offset)) # Вставляем картинку
         if (i + 1) % 2 == 0:
             y_offset += max_height
             x_offset = 0
@@ -845,9 +905,9 @@ def make_collage(images: list) -> bytes:
 
     # Сохраняем результат в буфер
     result_image_as_bytes = io.BytesIO()
-    collage.save(result_image_as_bytes, format='PNG') # PNG поддерживает прозрачность
+    collage.save(result_image_as_bytes, format='JPEG', quality=95, optimize=True, subsampling=0)
     result_image_as_bytes.seek(0)
-    return compress_png_bytes(result_image_as_bytes.read())
+    return result_image_as_bytes.read()
 
 
 def get_image_size(data: bytes) -> tuple[int, int]:

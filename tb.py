@@ -1632,7 +1632,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_REPROMPT, lang) + \
                            '\n\n```prompt\n/img image generation prompt in english```\n\n'
-            process_image_stage_2(image_prompt, chat_id_full, lang, message, , temp = 1.5)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message, temp = 1.5)
 
         elif call.data == 'image_prompt_solve':
             COMMAND_MODE[chat_id_full] = ''

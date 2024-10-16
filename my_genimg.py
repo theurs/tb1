@@ -271,7 +271,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
                     return []
 
                 if (any(word in prompt for word in mult_words)
-                    and any(word in url for word in ['flux_film_foto',])):
+                    and any(word in url for word in ['flux_film_foto', 'Juggernaut_final'])):
                     return []
 
                 response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)

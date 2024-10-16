@@ -4359,18 +4359,22 @@ def stats(message: telebot.types.Message):
         model_usage30 = my_db.get_model_usage(30)
 
         msg = f'Total messages in DB: {my_db.count_msgs_all()}'
+
+        def format_model_usage(model_usage):
+            output = ""
+            if model_usage:
+                sorted_usage = sorted(model_usage.items(), key=lambda item: item[1], reverse=True)
+                for model, count in sorted_usage:
+                    if not model.startswith('img '):
+                        output += f'{model} - {count}\n'
+            return output
+
         msg += '\n\n1 day\n'
-        if model_usage1:
-            for model in model_usage1:
-                msg += f'{model} - {model_usage1[model]}\n'
+        msg += format_model_usage(model_usage1)
         msg += '\n\n7 days\n'
-        if model_usage7:
-            for model in model_usage7:
-                msg += f'{model} - {model_usage7[model]}\n'
+        msg += format_model_usage(model_usage7)
         msg += '\n\n30 days\n'
-        if model_usage30:
-            for model in model_usage30:
-                msg += f'{model} - {model_usage30[model]}\n'
+        msg += format_model_usage(model_usage30)
 
         msg += f'\n\nTotal users: {my_db.get_total_msg_users()}'
         msg += f'\n\nActive users in 1 day: {my_db.get_total_msg_users_in_days(1)}'

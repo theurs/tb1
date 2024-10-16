@@ -179,7 +179,8 @@ LOG_GROUP_DAEMON_ENABLED = True
 NEW_KEYBOARD = SqliteDict('db/new_keyboard_installed.db', autocommit=True)
 
 
-# {user_id:(date, image),} keep up to 20 images
+# {user_id:(date, image),} keep up to UNCAPTIONED_IMAGES_MAX images
+UNCAPTIONED_IMAGES_MAX = 50
 UNCAPTIONED_IMAGES = SqliteDict('db/user_images.db', autocommit = True)
 # {user_id: image_prompt}
 UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
@@ -2075,12 +2076,12 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
     # Store the image and timestamp associated with the chat ID.
     UNCAPTIONED_IMAGES[chat_id_full] = (current_date, image)
 
-    # Limit the storage to 20 uncaptioned images.
-    if len(UNCAPTIONED_IMAGES) > 20:
+    # Limit the storage to UNCAPTIONED_IMAGES_MAX uncaptioned images.
+    if len(UNCAPTIONED_IMAGES) > UNCAPTIONED_IMAGES_MAX:
         # Sort the images by timestamp (oldest first).
         sorted_images = sorted(UNCAPTIONED_IMAGES.items(), key=lambda item: item[1][0])
         # Get the IDs of the oldest images to delete.
-        user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - 20]]
+        user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - UNCAPTIONED_IMAGES_MAX]]
         # Delete the oldest images.
         for user_id in user_ids_to_delete:
             del UNCAPTIONED_IMAGES[user_id]

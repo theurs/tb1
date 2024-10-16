@@ -481,15 +481,16 @@ Return a `image_transcription`
         if not model:
             model = cfg.img2_txt_model
         if use_json:
+            text_ = ''
             text_ = my_gemini.img2txt(data, query, json_output=True, model=model, temp=temperature)
+
+            # если не ответил джемини то попробовать groq (llama-3.2-90b-vision-preview)
+            if not text_:
+                text_ = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, json_output=True)
 
             # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
             if not text_:
                 text_ = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature)
-
-            # # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
-            # if not text_:
-            #     text_ = my_groq.img2txt(data, query, model='llama-3.2-11b-vision-preview')
 
             # # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
             # if not text_:
@@ -530,15 +531,16 @@ Return a `image_transcription`
                 else:
                     text = text_
         else:
+            text = ''
             text = my_gemini.img2txt(data, query, model=model, temp=temperature)
+
+            # если не ответил джемини то попробовать groq (llama-3.2-90b-vision-preview)
+            if not text:
+                text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature)
 
             # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
             if not text:
                 text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature)
-
-            # # если не ответил джемини то попробовать groq (llama-3.2-11b-vision-preview)
-            # if not text:
-            #     text = my_groq.img2txt(data, query, model='llama-3.2-11b-vision-preview')
 
             # # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
             # if not text:

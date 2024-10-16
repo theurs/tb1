@@ -1,7 +1,21 @@
-#playgroundai/playground-v2.5-1024px-aesthetic
+playgroundai/playground-v2.5-1024px-aesthetic
+
+AP123/SDXL-Lightning
+multimodalart/stable-cascade
+
+multimodalart/cosxl
+PixArt-alpha/PixArt-Sigma
+ByteDance/Hyper-SDXL-1Step-T2I
+gokaygokay/Kolors
+
+black-forest-labs/FLUX.1-schnell
+ChristianHappy/FLUX.1-schnell
+
+markmagic/Stable-Diffusion-3-FREE
+
+
 https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2
-#AP123/SDXL-Lightning
-#multimodalart/stable-cascade
+
 https://api-inference.huggingface.co/models/digiplay/Juggernaut_final
 https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10
 https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1
@@ -17,15 +31,6 @@ https://api-inference.huggingface.co/models/SPO-Diffusion-Models/SPO-SDXL_4k-p_1
 https://api-inference.huggingface.co/models/fluently/Fluently-XL-Final
 
 
-#multimodalart/cosxl
-#PixArt-alpha/PixArt-Sigma
-#ByteDance/Hyper-SDXL-1Step-T2I
-#gokaygokay/Kolors
-
-#black-forest-labs/FLUX.1-schnell
-#ChristianHappy/FLUX.1-schnell
-
-#markmagic/Stable-Diffusion-3-FREE
 
 https://api-inference.huggingface.co/models/mann-e/Mann-E_Dreams
 https://api-inference.huggingface.co/models/alvdansen/m3lt

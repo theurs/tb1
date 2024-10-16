@@ -83,6 +83,7 @@ def img2txt(image_data: Union[str, bytes],
             model = 'llava-v1.5-7b-4096-preview',
             _key: str = '',
             json_output=False,
+            temperature: float = 1,
             ) -> str:
     """
     Отправляет изображение в модель LLaVA и получает текстовое описание.
@@ -94,11 +95,15 @@ def img2txt(image_data: Union[str, bytes],
         model: Название используемой модели LLaVA.
         _key: Ключ API Groq (необязательный). Если не указан, 
               будет использован случайный ключ из списка ALL_KEYS.
+        temperature: темпрературы для модели, если это llama 3+ то будет поделена на 2
 
     Returns:
         Текстовое описание изображения, полученное от модели. 
         Если произошла ошибка или ответ пустой, возвращается пустая строка.
     """
+
+    if 'llama-3' in model.lower():
+        temperature = temperature / 2
 
     if isinstance(image_data, str):
         with open(image_data, 'rb') as f:
@@ -140,7 +145,7 @@ def img2txt(image_data: Union[str, bytes],
                 ],
                 model=model,
                 response_format = ResponseFormat(type = resp_type),
-                temperature = 0.5,
+                temperature = temperature,
             )
 
             result = chat_completion.choices[0].message.content.strip()
@@ -844,7 +849,7 @@ if __name__ == '__main__':
 
     # print(test_image_prompt('Грациозная антропоморфная черная лисица с пронзительными фиолетовыми глазами сидит на возвышении, окруженном мягким сиянием. В ее лапках — волшебный шар, излучающий мистический свет. На фоне — темное звездное небо и разноцветная фиолетовая туманность, создающие атмосферу волшебства и тайны. Хвост лисицы мягко изгибается, добавляя ей изящества. Стиль: Мистический, фурри-арт волшебный, ночной, милый, фантастический. Черный (лисица), фиолетовый (глаза, туманность), разнообразные цвета туманности, белый, голубой (звезды), мягкий свет от шара.'))
 
-    # print(img2txt('d:/downloads/1.jpg', prompt = 'Подробно опиши что тут на картинке', model='llama-3.2-11b-vision-preview'))
+    # print(img2txt('d:/downloads/4.jpg', prompt = 'Извлеки весь текст, сохрани исходное форматирование', model='llama-3.2-90b-vision-preview'))
 
     # my_db.init(backup=False)
 
@@ -853,14 +858,7 @@ if __name__ == '__main__':
     # reset('test')
     # chat_cli(model='llama-3.2-90b-text-preview')
 
-    print(stt('d:\\downloads\\1.ogg'))
-
-    # test_cases = [
-    #     'print("Hello, World!")',
-    #     'Let me learn how to code in Python.',
-    # ]
-    # for x in test_cases:
-    #     print(x, '->', translate_text(x, 'ru'))
+    # print(stt('d:\\downloads\\1.ogg'))
 
 
     # with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:

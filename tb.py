@@ -5169,6 +5169,8 @@ def purge_cmd_handler(message: telebot.types.Message):
 
             my_db.delete_user_property(chat_id_full, 'role')
             my_db.delete_user_property(chat_id_full, 'persistant_memory')
+            if chat_id_full in UNCAPTIONED_IMAGES:
+                del UNCAPTIONED_IMAGES[chat_id_full]
 
             my_db.set_user_property(chat_id_full, 'bot_name', BOT_NAME_DEFAULT)
             if my_db.get_user_property(chat_id_full, 'saved_file_name'):

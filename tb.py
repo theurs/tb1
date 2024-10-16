@@ -483,23 +483,15 @@ Return a `image_transcription`
             model = cfg.img2_txt_model
         if use_json:
             text_ = ''
-            text_ = my_gemini.img2txt(data, query, json_output=True, model=model, temp=temperature)
+            text_ = my_gemini.img2txt(data, query, json_output=True, model=model, temp=temperature, chat_id=chat_id_full)
 
             # если не ответил джемини то попробовать groq (llama-3.2-90b-vision-preview)
             if not text_:
-                text_ = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, json_output=True)
+                text_ = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, json_output=True, chat_id=chat_id_full)
 
             # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
             if not text_:
-                text_ = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature)
-
-            # # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
-            # if not text_:
-            #     text_ = my_openrouter_free.img2txt(data, query, model='meta-llama/llama-3.2-11b-vision-instruct:free')
-
-            # # если не ответил джемини то попробовать groq (llava)
-            # if not text_:
-            #     text_ = my_groq.img2txt(data, query)
+                text_ = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
 
             if text_:
                 d = utils.string_to_dict(text_)
@@ -533,23 +525,15 @@ Return a `image_transcription`
                     text = text_
         else:
             text = ''
-            text = my_gemini.img2txt(data, query, model=model, temp=temperature)
+            text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
 
             # если не ответил джемини то попробовать groq (llama-3.2-90b-vision-preview)
             if not text:
-                text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature)
+                text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, chat_id=chat_id_full)
 
             # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
             if not text:
-                text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature)
-
-            # # если не ответил джемини то попробовать openrouter_free meta-llama/llama-3.2-11b-vision-instruct:free
-            # if not text:
-            #     text = my_openrouter_free.img2txt(data, query, model='meta-llama/llama-3.2-11b-vision-instruct:free')
-
-            # # если не ответил джемини то попробовать groq (llava)
-            # if not text:
-            #     text = my_groq.img2txt(data, query)
+                text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
 
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')

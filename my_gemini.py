@@ -297,7 +297,9 @@ def img2txt(data_: bytes,
             prompt: str = "Что на картинке, подробно?",
             temp: float = 1,
             model: str = cfg.gemini_flash_model,
-            json_output: bool = False) -> str:
+            json_output: bool = False,
+            chat_id: str = '',
+            ) -> str:
     '''Convert image to text.
     '''
     try:
@@ -305,6 +307,8 @@ def img2txt(data_: bytes,
         img = PIL.Image.open(data)
         q = [prompt, img]
         res = chat(q, temperature=temp, model = model, json_output = json_output)
+        if chat_id:
+            my_db.add_msg(chat_id, model)
         return res
     except Exception as error:
         traceback_error = traceback.format_exc()

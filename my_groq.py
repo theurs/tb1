@@ -84,6 +84,7 @@ def img2txt(image_data: Union[str, bytes],
             _key: str = '',
             json_output=False,
             temperature: float = 1,
+            chat_id: str = ''
             ) -> str:
     """
     Отправляет изображение в модель LLaVA и получает текстовое описание.
@@ -96,6 +97,7 @@ def img2txt(image_data: Union[str, bytes],
         _key: Ключ API Groq (необязательный). Если не указан, 
               будет использован случайный ключ из списка ALL_KEYS.
         temperature: темпрературы для модели, если это llama 3+ то будет поделена на 2
+        chat_id: для учета количества сообщений
 
     Returns:
         Текстовое описание изображения, полученное от модели. 
@@ -150,6 +152,7 @@ def img2txt(image_data: Union[str, bytes],
 
             result = chat_completion.choices[0].message.content.strip()
             if result:
+                my_db.add_msg(chat_id, model)
                 return result
         except Exception as error:
             error_traceback = traceback.format_exc()
@@ -276,9 +279,9 @@ def ai(prompt: str = '',
                 return ai(prompt, system, mem_, temperature*2, model__, max_tokens_, key_, timeout)
             elif not resp and 'llama-3.2' in model_:
                 if model_ == 'llama-3.2-90b-text-preview':
+                    model__ = 'llama-3.2-90b-vision-preview'
+                elif model_ == 'llama-3.2-90b-vision-preview':
                     model__ = 'llama-3.1-70b-versatile'
-                elif model_ == 'llama-3.2-11b-text-preview':
-                    model__ = 'llama-3.1-8b-instant'
                 else:
                     return ''
                 return ai(prompt, system, mem_, temperature*2, model__, max_tokens_, key_, timeout)
@@ -368,15 +371,10 @@ def chat(query: str, chat_id: str,
             r = ai(query, mem_ = mem, temperature = temperature, model_ = model, timeout = timeout)
         if r:
             # if not model or model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
-            if not model or model == 'llama-3.1-70b-versatile': model_ = 'llama-3.1-70b-versatile'
-            if model == 'llama3-8b-8192': model_ = 'llama3-8b-8192'
-            if model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
-            if model == 'llama-3.1-8b-instant': model_ = 'llama-3.1-8b-instant'
-            if model == 'llama-3.1-70b-versatile': model_ = 'llama-3.1-70b-versatile'
-            if model == 'mixtral-8x7b-32768': model_ = 'mixtral-8x7b-32768'
-            if model == 'gemma-7b-it': model_ = 'gemma-7b-it'
-            if model == 'gemma2-9b-it': model_ = 'gemma2-9b-it'
-            if model == 'llama-3.2-90b-text-preview': model_ = 'llama-3.2-90b-text-preview'
+            if not model:
+                model_ = DEFAULT_MODEL
+            else:
+                model_ = model
             my_db.add_msg(chat_id, model_)
         if r and update_memory:
             mem = update_mem(query, r, mem)

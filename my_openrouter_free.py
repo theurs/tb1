@@ -290,7 +290,9 @@ def img2txt(
     model = 'mistralai/pixtral-12b:free',
     temperature: float = 1,
     max_tokens: int = 2000,
-    timeout: int = 120) -> str:
+    timeout: int = 120,
+    chat_id: str = '',
+    ) -> str:
     """
     Describes an image using the specified model and parameters.
 
@@ -380,7 +382,8 @@ def img2txt(
         else:
             my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response[:2000])}')
             time.sleep(2)
-
+    if chat_id:
+        my_db.add_msg(chat_id, model)
     return result
 
 

@@ -1,17 +1,17 @@
-playgroundai/playground-v2.5-1024px-aesthetic
+#playgroundai/playground-v2.5-1024px-aesthetic
 
-AP123/SDXL-Lightning
-multimodalart/stable-cascade
+#AP123/SDXL-Lightning
+#multimodalart/stable-cascade
 
-multimodalart/cosxl
-PixArt-alpha/PixArt-Sigma
-ByteDance/Hyper-SDXL-1Step-T2I
-gokaygokay/Kolors
+#multimodalart/cosxl
+#PixArt-alpha/PixArt-Sigma
+#ByteDance/Hyper-SDXL-1Step-T2I
+#gokaygokay/Kolors
 
-black-forest-labs/FLUX.1-schnell
-ChristianHappy/FLUX.1-schnell
+#black-forest-labs/FLUX.1-schnell
+#ChristianHappy/FLUX.1-schnell
 
-markmagic/Stable-Diffusion-3-FREE
+#markmagic/Stable-Diffusion-3-FREE
 
 
 https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2

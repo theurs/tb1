@@ -131,7 +131,10 @@ def chat(query: str,
             model = cfg.gemini_flash_model
 
         # remove empty answers (function calls)
-        mem = [x for x in mem if x.parts[0].text]
+        try:
+            mem = [x for x in mem if x.parts[0].text]
+        except AttributeError:
+            mem = [x for x in mem if x['parts'][0]['text']]
 
         if system == '':
             system = None

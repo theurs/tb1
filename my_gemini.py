@@ -130,6 +130,9 @@ def chat(query: str,
         if not model:
             model = cfg.gemini_flash_model
 
+        # remove empty answers (function calls)
+        mem = [x for x in mem if x.parts[0].text]
+
         if system == '':
             system = None
 
@@ -997,6 +1000,8 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     load_users_keys()
+
+    chat('11', chat_id='[1651196] [0]')
 
     # print(utils.string_to_dict("""{"detailed_description": "На изображении представлена картинка, разделённая на две части, обе из которых выполнены в розовом цвете. На каждой части представлен текст, написанный белым шрифтом. \n\nВ левой части указана дата 3.09.2024 и фраза \"День раскрытия своей истинной сути и создания отношений.\" Ниже приведён список тем, связанных с саморазвитием и отношениями: желания, цели, осознанность, энергия, эмоции, отношения, семья, духовность, любовь, партнёрство, сотрудничество, взаимопонимание. \n\nВ правой части представлен текст, призывающий следовать своим истинным желаниям, раскрывать свои качества, способности и таланты, а также выстраивать отношения с любовью и принятием, включая личные и деловые. Также текст призывает стремиться к пониманию и сотрудничеству.", "extracted_formatted_text": "3.09.2024 - день раскрытия\nсвоей истинной сути и\nсоздания отношений.\nЖелания, цели, осознанность,\nэнергия, эмоции, отношения,\nсемья, духовность, любовь,\nпартнёрство, сотрудничество,\nвзаимопонимание.\n\nСледуйте своим истинным\nжеланиям, раскрывайте свои\nкачества, способности и\нталанты. С любовью и\nпринятием выстраивайте\nотношения - личные и\nделовые. Стремитесь к\nпониманию и сотрудничеству.", "image_generation_prompt": "Create a pink background with two columns of white text. On the left, include the date '3.09.2024' and the phrase 'Day of revealing your true essence and creating relationships'. Below that, list personal development and relationship themes, such as desires, goals, awareness, energy, emotions, relationships, family, spirituality, love, partnership, cooperation, understanding. On the right, write text encouraging people to follow their true desires, reveal their qualities, abilities, and talents. Emphasize building relationships with love and acceptance, including personal and business relationships. End with a call to strive for understanding and cooperation."} """))
 

@@ -133,21 +133,23 @@ def download_audio(url: str) -> str | None:
     Returns:
         Path to the downloaded file in the temporary folder, or None if download failed.
     """
-
     tmp_dir = tempfile.mkdtemp()
     # Create a temporary folder if it doesn't exist
     if not os.path.exists(tmp_dir):
         os.makedirs(tmp_dir)
     output_template = os.path.join(tmp_dir, r"123.%(ext)s")
 
-    subprocess.run([
-        'yt-dlp',
-        '-f', 'bestaudio[abr<=128]/bestaudio',
-        '-o', output_template,
-        # '--noplaylist',
-        # '--quiet',
-        url
-    ], check=True)
+    try:
+        subprocess.run([
+            'yt-dlp',
+            '-f', 'bestaudio[abr<=128]/bestaudio',
+            '-o', output_template,
+            # '--noplaylist',
+            # '--quiet',
+            url
+        ], check=True)
+    except  subprocess.CalledProcessError:
+        return None
 
     # Find the downloaded file in the folder
     files = [f for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]

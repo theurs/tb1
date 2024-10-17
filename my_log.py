@@ -128,6 +128,13 @@ def log_donate(text: str) -> None:
 
 def log_gemini(text: str) -> None:
     """для логов gemini"""
+    a = [
+        '429 Resource has been exhausted (e.g. check quota)',
+        '503 The model is overloaded. Please try again later.',
+        'no results after 4 tries, query:',
+    ]
+    if any([x for x in a if x in text]):
+        return
     log2(text[:2000], 'gemini')
 
 def log_ddg(text: str) -> None:

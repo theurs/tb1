@@ -60,7 +60,7 @@ PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the i
 PROMPT_COPY_TEXT = 'Copy all the text from this image, save it as is - do not translate. Maintain the original formatting (except for line breaks, which should be corrected).'
 PROMPT_COPY_TEXT_TR = 'Copy all the text from this image, translate to my language. Maintain the original formatting (except for line breaks, which should be corrected).'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. 50-300 words. Format your response as follows:'
-PROMPT_SOLVE = 'Solve the problem shown in the image. Show your work and provide the final answer.'
+PROMPT_SOLVE = 'Solve all problems shown in the image. Show your work and provide the final answer.'
 
 
 start_msg = '''Hello, I`m AI chat bot powered by Google, Microsoft, Openai etc.

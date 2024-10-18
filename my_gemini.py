@@ -308,6 +308,7 @@ def img2txt(data_: bytes,
             model: str = cfg.gemini_flash_model,
             json_output: bool = False,
             chat_id: str = '',
+            use_skills: str = True
             ) -> str:
     '''Convert image to text.
     '''
@@ -315,7 +316,7 @@ def img2txt(data_: bytes,
         data = io.BytesIO(data_)
         img = PIL.Image.open(data)
         q = [prompt, img]
-        res = chat(q, temperature=temp, model = model, json_output = json_output)
+        res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills)
         if chat_id:
             my_db.add_msg(chat_id, model)
         return res

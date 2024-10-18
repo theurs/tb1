@@ -3900,6 +3900,35 @@ def get_user_image_counter(chat_id_full: str) -> int:
     return my_db.get_user_property(chat_id_full, 'image_generated_counter')
 
 
+def check_vip_user(chat_id_full: str) -> bool:
+    '''проверяет есть ли у юзера ключи или звезды'''
+    user_id = int(chat_id_full.split(' ')[0].replace('[', '').replace(']', ''))
+    have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
+            chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
+            user_id in cfg.admins or \
+            (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) > 100
+    return have_keys
+
+
+@bot.message_handler(commands=['downgrade', ], func=authorized_admin)
+@async_run
+def downgrade_handler(message: telebot.types.Message):
+    '''ищет юзеров у которых уже есть больше 1000 сообщений и при этом нет ключей и звёзд,
+    если у таких юзеров выбран чат режим gemini pro то меняет его на gemini
+    снова включить pro они смогут только добавив какой-нибудь ключ или звёзды
+    '''
+    users = my_db.find_users_with_many_messages()
+    counter = 0
+    for user in users:
+        chat_mode = my_db.get_user_property(user, 'chat_mode')
+        if chat_mode == 'gemini15':
+            if not check_vip_user(user):
+                my_db.set_user_property(user, 'chat_mode', 'gemini')
+                counter += 1
+    bot_reply_tr(message, 'Поиск юзеров завершен.')
+    bot_reply(message, str(counter))
+
+
 # @bot.message_handler(commands=['bing10', 'Bing10', ], func=authorized)
 # @async_run
 # def image10_bing_gen(message: telebot.types.Message):

@@ -12,6 +12,7 @@ import traceback
 import shutil
 import sqlite3
 import sys
+from typing import List
 
 from collections import OrderedDict
 
@@ -891,9 +892,33 @@ def delete_from_im_suggests(hash: str):
             my_log.log2(f'my_db:remove_from_im_suggests {error}')
 
 
+def find_users_with_many_messages() -> List[str]:
+    """
+    Finds users in the database who have more than 1000 messages.
+
+    Returns:
+        A list of user IDs (as strings) that match the criteria. 
+        Returns an empty list if no users match or an error occurs.
+    """
+    with LOCK:
+        try:
+            CUR.execute("""
+                SELECT id
+                FROM users
+                WHERE id IN (SELECT user_id FROM msg_counter GROUP BY user_id HAVING COUNT(*) > 1000)
+                  AND id NOT LIKE '%-10%'  -- Exclude users with '-10' in their ID
+            """)
+            results = CUR.fetchall()
+            return [user_id[0] for user_id in results]  
+        except Exception as error:
+            my_log.log2(f'my_db:find_users_with_many_messages {error}')
+            return []
+
+
 if __name__ == '__main__':
     pass
     init(backup=False)
 
+    print(find_users_with_many_messages())
 
     close()

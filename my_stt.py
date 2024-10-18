@@ -122,10 +122,13 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
         dur = audio_duration(input_file)
         input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
+        done_flag = False
+
         try:
             if not text and dur < 60:
                 text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo')
-                if text:
+                if text and not done_flag:
+                    done_flag = True
                     my_db.add_msg(chat_id, 'TTS whisper-large-v3-turbo')
 
             if not text and dur < 55:
@@ -133,7 +136,8 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                 # и часто глотает последнее слово
                 try: # пробуем через гугл
                     text = stt_google(input_file2, lang)
-                    if text:
+                    if text and not done_flag:
+                        done_flag = True
                         my_db.add_msg(chat_id, 'TTS google-free')
                 except Exception as unknown_error:
                     my_log.log2(str(unknown_error))
@@ -143,29 +147,35 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                     # может выдать до 8000 токенов (30000 русских букв) более чем достаточно для голосовух
                     # у него в качестве fallback используется тот же гугл но с разбиением на части
                     text = stt_genai(input_file2, lang)
-                    if text:
+                    if text and not done_flag:
+                        done_flag = True
                         my_db.add_msg(chat_id, cfg.gemini_flash_model)
                     if len(text) < 100: # failed?
+                        done_flag = False
                         my_log.log2(f'my_stt:stt: stt_genai failed long file, trying groq')
                         text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo') or text
-                        if text:
+                        if text and not done_flag:
+                            done_flag = True
                             my_db.add_msg(chat_id, 'TTS whisper-large-v3-turbo')
                         if len(text) < 100: # failed?
                             my_log.log2(f'my_stt:stt: stt groq failed long file, trying assemblyai')
                             text = assemblyai(input_file2, lang) or text
-                            if text:
+                            if text and not done_flag:
+                                done_flag = True
                                 my_db.add_msg(chat_id, 'TTS assembly.ai')
                 except Exception as error:
                     my_log.log2(f'my_stt:stt:genai:{error}')
 
             if not text:
                 text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
-            if text:
+            if text and not done_flag:
+                done_flag = True
                 my_db.add_msg(chat_id, 'TTS whisper-large-v3')
 
             if not text:
                 text = assemblyai(input_file2, lang)
-            if text:
+            if text and not done_flag:
+                done_flag = True
                 my_db.add_msg(chat_id, 'TTS assembly.ai')
 
         finally:

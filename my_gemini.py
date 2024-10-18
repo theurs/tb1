@@ -14,6 +14,7 @@ import traceback
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold, GenerationConfig
 from google.generativeai.types import RequestOptions
+from google.ai.generativelanguage_v1beta import types as protos
 from sqlitedict import SqliteDict
 
 import cfg
@@ -127,14 +128,16 @@ def chat(query: str,
         if not mem and insert_mem:
             mem = insert_mem
 
+        mem = transform_mem2(mem)
+
         if not model:
             model = cfg.gemini_flash_model
 
         # remove empty answers (function calls)
-        try:
-            mem = [x for x in mem if x.parts[0].text]
-        except AttributeError:
-            mem = [x for x in mem if x['parts'][0]['text']]
+        # try:
+        #     mem = [x for x in mem if x.parts[0].text]
+        # except Exception as error_mem:
+        #     my_log.log_gemini(f'chat: {error_mem} {str(mem)[-1000:]}')
 
         if system == '':
             system = None
@@ -354,7 +357,7 @@ def chat_cli(user_id: str = 'test', model: str = ''):
 
 
 def transform_mem(data):
-    """
+    """!!!удалить!!!
     Преобразует данные в формат, подходящий для моей функции джемини.
 
     Args:
@@ -415,6 +418,18 @@ def transform_mem(data):
         return []
 
 
+def transform_mem2(mem):
+    '''переделывает словари в объекты, для совместимости, потом надо будет удалить'''
+    mem_ = []
+    for x in mem:
+        if isinstance(x, dict):
+            u = protos.Content(role=x['role'], parts=[protos.Part(text=x['parts'][0]['text'])])
+            mem_.append(u)
+        else:
+            mem_.append(x)
+    return mem_
+
+
 def update_mem(query: str, resp: str, mem):
     """
     Update the memory with the given query and response.
@@ -430,10 +445,13 @@ def update_mem(query: str, resp: str, mem):
     chat_id = ''
     if isinstance(mem, str): # if mem - chat_id
         chat_id = mem
-        mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+        mem = transform_mem2(mem)
 
-    mem.append({"role": "user", "parts": [{"text": query}]})
-    mem.append({"role": "model", "parts": [{"text": resp}]})
+    u = protos.Content(role='user', parts=[protos.Part(text=query)])
+    b = protos.Content(role='model', parts=[protos.Part(text=resp)])
+    mem.append(u)
+    mem.append(b)
 
     mem = mem[-MAX_CHAT_LINES*2:]
     while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
@@ -453,10 +471,11 @@ def force(chat_id: str, text: str):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+            mem = transform_mem2(mem)
             # remove last bot answer and append new
             if len(mem) > 1:
-                mem[-1]['parts'][0]['text'] = text
+                mem[-1].parts[0].text = text
                 my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
@@ -483,7 +502,8 @@ def undo(chat_id: str):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+            mem = transform_mem2(mem)
             # remove 2 last lines from mem
             mem = mem[:-2]
             my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -520,15 +540,16 @@ def get_mem_for_llama(chat_id: str, l: int = 3):
     res_mem = []
     l = l*2
 
-    mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    mem = transform_mem2(mem)
     mem = mem[-l:]
 
     for x in mem:
-        role = x['role']
+        role = x.role
         try:
-            text = x['parts'][0]['text'].split(']: ', maxsplit=1)[1]
+            text = x.parts[0].text.split(']: ', maxsplit=1)[1]
         except IndexError:
-            text = x['parts'][0]['text']
+            text = x.parts[0].text
         if role == 'user':
             res_mem += [{'role': 'user', 'content': text}]
         else:
@@ -547,10 +568,11 @@ def get_last_mem(chat_id: str) -> str:
     Returns:
         str:
     """
-    mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    mem = transform_mem2(mem)
     last = mem[-1]
     if last:
-        return last['parts'][0]['text']
+        return last.parts[0].text
 
 
 def get_mem_as_string(chat_id: str) -> str:
@@ -563,24 +585,25 @@ def get_mem_as_string(chat_id: str) -> str:
     Returns:
         str: The chat history as a string.
     """
-    mem = transform_mem(my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini'))) or []
-    # print(type(mem), mem)
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    mem = transform_mem2(mem)
+
     result = ''
     for x in mem:
-        role = x['role']
+        role = x.role
         if role == 'user': role = '𝐔𝐒𝐄𝐑'
         if role == 'model': role = '𝐁𝐎𝐓'
         try:
-            text = x['parts'][0]['text'].split(']: ', maxsplit=1)[1]
+            text = x.parts[0].text.split(']: ', maxsplit=1)[1]
         except IndexError:
-            text = x['parts'][0]['text']
+            text = x.parts[0].text
         if text.startswith('[Info to help you answer'):
             end = text.find(']') + 1
             text = text[end:].strip()
         result += f'{role}: {text}\n'
         if role == '𝐁𝐎𝐓':
             result += '\n'
-    return result    
+    return result
 
 
 def translate(text: str,
@@ -1004,7 +1027,8 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
-    chat('11', chat_id='[1651196] [0]')
+    # chat('привет', chat_id='[1651196] [0]')
+    update_mem('1+2', '3', '[1651196] [0]')
 
     # print(utils.string_to_dict("""{"detailed_description": "На изображении представлена картинка, разделённая на две части, обе из которых выполнены в розовом цвете. На каждой части представлен текст, написанный белым шрифтом. \n\nВ левой части указана дата 3.09.2024 и фраза \"День раскрытия своей истинной сути и создания отношений.\" Ниже приведён список тем, связанных с саморазвитием и отношениями: желания, цели, осознанность, энергия, эмоции, отношения, семья, духовность, любовь, партнёрство, сотрудничество, взаимопонимание. \n\nВ правой части представлен текст, призывающий следовать своим истинным желаниям, раскрывать свои качества, способности и таланты, а также выстраивать отношения с любовью и принятием, включая личные и деловые. Также текст призывает стремиться к пониманию и сотрудничеству.", "extracted_formatted_text": "3.09.2024 - день раскрытия\nсвоей истинной сути и\nсоздания отношений.\nЖелания, цели, осознанность,\nэнергия, эмоции, отношения,\nсемья, духовность, любовь,\nпартнёрство, сотрудничество,\nвзаимопонимание.\n\nСледуйте своим истинным\nжеланиям, раскрывайте свои\nкачества, способности и\нталанты. С любовью и\nпринятием выстраивайте\nотношения - личные и\nделовые. Стремитесь к\nпониманию и сотрудничеству.", "image_generation_prompt": "Create a pink background with two columns of white text. On the left, include the date '3.09.2024' and the phrase 'Day of revealing your true essence and creating relationships'. Below that, list personal development and relationship themes, such as desires, goals, awareness, energy, emotions, relationships, family, spirituality, love, partnership, cooperation, understanding. On the right, write text encouraging people to follow their true desires, reveal their qualities, abilities, and talents. Emphasize building relationships with love and acceptance, including personal and business relationships. End with a call to strive for understanding and cooperation."} """))
 

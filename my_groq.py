@@ -570,11 +570,9 @@ def stt(data: bytes = None,
             client = Groq(api_key=key, timeout = 120,)
         transcription = client.audio.transcriptions.create(
             file=("123.mp3", data),
-            #    model="whisper-large-v3",
             model = model,
+            language=lang,
             prompt=prompt,
-            #    language=lang,
-            #    response_format = 'text',
             timeout=120,
             )
         return remove_dimatorzok(transcription.text)
@@ -856,7 +854,7 @@ if __name__ == '__main__':
     # reset('test')
     # chat_cli(model='llama-3.2-90b-text-preview')
 
-    # print(stt('d:\\downloads\\1.ogg'))
+    print(stt('d:\\downloads\\1.ogg', 'en'))
 
 
     # with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:

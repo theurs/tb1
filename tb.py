@@ -677,7 +677,7 @@ def is_for_me(message: telebot.types.Message) -> bool:
     # если не в привате, то есть в чате
     if not is_private and message.text:
         if message.text.lower().startswith('/'):
-            cmd_ = message.text.lower().split(maxsplit=1)[0].strip()
+            cmd_ = message.text.split(maxsplit=1)[0].strip()
             # и если команда не обращена к этому боту
             if not cmd_.endswith(f'@{_bot_name}'):
                 return (False, cmd)

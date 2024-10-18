@@ -308,7 +308,7 @@ def img2txt(data_: bytes,
             model: str = cfg.gemini_flash_model,
             json_output: bool = False,
             chat_id: str = '',
-            use_skills: str = True
+            use_skills: str = False
             ) -> str:
     '''Convert image to text.
     '''

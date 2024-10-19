@@ -1111,13 +1111,15 @@ def string_to_dict(input_string: str):
 
 
 def heic2jpg(data: Union[bytes, str]) -> bytes:
-    """Converts HEIC image data (bytes or filepath) to JPEG bytes.
+    """Converts HEIC/HEIF image data (bytes or filepath) to JPEG bytes.
 
     Args:
-        data: The HEIC image data as bytes or a string representing the filepath.
+        data: The image data as bytes or a string representing the filepath.
 
     Returns:
-        The JPEG image data as bytes, or the original data if it's not HEIC, or an empty bytes object if conversion fails.
+        The JPEG image data as bytes if the image was HEIC/HEIF,
+        or the original data if it's not HEIC/HEIF,
+        or an empty bytes object if conversion fails.
     """
 
     try:
@@ -1125,18 +1127,18 @@ def heic2jpg(data: Union[bytes, str]) -> bytes:
             with open(data, 'rb') as f:
                 data = f.read()
 
-        with PIL.Image.open(io.BytesIO(data)) as image:
-            if image.format.upper() in ('HEIF', 'HEIC'):
+        if data[4:12] == b'ftypheic' or data[4:12] == b'ftypmif1':
+            with PIL.Image.open(io.BytesIO(data)) as image:
                 with io.BytesIO() as output:
                     image.save(output, format="JPEG", quality=80, optimize=True, progressive=True, subsampling="4:4:4")
                     contents = output.getvalue()
                     return contents
-            else:
-                return data # Возвращаем исходные данные, если не HEIC
+        else:
+            return data
 
     except Exception as error:
-        my_log.log2(f'utils:heic2jpg {error}') # все также логируем ошибку
-        return b'' # Возвращаем пустые байты в случае ошибки
+        my_log.log2(f'utils:heic2jpg {error}')
+        return b''
 
 
 def compress_png_bytes(image_bytes: bytes) -> bytes:

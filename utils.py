@@ -443,12 +443,21 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20) -> 
     def is_valid_table_row(line: str) -> bool:
         return line.strip().startswith('|') and line.strip().endswith('|')
 
+    def strip_tags(text: str) -> str:
+        text = text.replace('<b>', '   ')
+        text = text.replace('<i>', '   ')
+        text = text.replace('</b>', '    ')
+        text = text.replace('</i>', '    ')
+        return text
+
     def truncate_text(text: str, max_width: int) -> str:
+        text = strip_tags(text)
         if len(text) <= max_width:
             return text
         return text[:max_width-3] + '...'
 
     def wrap_long_text(text: str, max_width: int) -> str:
+        text = strip_tags(text)
         if len(text) <= max_width:
             return text
         return '\n'.join(wrap(text, max_width))
@@ -500,13 +509,7 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20) -> 
         # Установка максимальной ширины таблицы
         x.max_width = max_width
 
-        r = x.get_string()
-        r = r.replace('<b>', '   ')
-        r = r.replace('<i>', '   ')
-        r = r.replace('</b>', '    ')
-        r = r.replace('</i>', '    ')
-        
-        return f'\n\n<pre><code>{r}\n</code></pre>'
+        return f'\n\n<pre><code>{x.get_string()}\n</code></pre>'
 
     # Находим все таблицы в тексте
     table_pattern = re.compile(r'(\n|^)\s*\|.*\|.*\n\s*\|[-:\s|]+\|\s*\n(\s*\|.*\|.*\n)*', re.MULTILINE)
@@ -1455,6 +1458,17 @@ Semoga bermanfaat dan menginspirasi.
 
 
 **Примечания:**
+
+Состав Антанты (Тройственное Согласие):
+
+| Страна        | Дата присоединения |
+|----------------|--------------------|
+| **Франция**       | 1892 (военно-политический союз с Россией), 1904 (сердечное согласие с Великобританией), 1907 (образование Тройственной Антанты) |
+| **Российская Империя** | 1892 (военно-политический союз с Францией), 1907 (образование Тройственной Антанты) |
+| **Великобритания** | 1904 (сердечное согласие с Францией), 1907 (образование Тройственной Антанты)|
+
+
+Впоследствии к Антанте присоединились:
 
     """
 

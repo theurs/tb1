@@ -29,6 +29,7 @@ import prettytable
 import telebot
 from pylatexenc.latex2text import LatexNodes2Text
 from pillow_heif import register_heif_opener
+from prettytable import PrettyTable
 
 import my_log
 
@@ -424,101 +425,171 @@ def replace_code_lang(t: str) -> str:
 def replace_tables(text: str) -> str:
     """
     Заменяет markdown таблицы на их prettytable представление.
-    Добавлена валидация формата таблицы.
+    Улучшена обработка различных форматов таблиц, включая удаление дубликатов и лишних разделителей.
     """
-    text += '\n'
-    state = 0
-    table = ''
-    results = []
-    
     def is_valid_separator(line: str) -> bool:
         """Проверяет, является ли строка валидным разделителем заголовка таблицы"""
-        if not line or line.count('|') < 2:
+        if not line or not line.strip('| '):
             return False
-        # Убираем крайние |
-        parts = line.strip('|').split('|')
-        # Проверяем, что каждая ячейка состоит только из - и : (для выравнивания)
+        parts = line.strip().strip('|').split('|')
         return all(part.strip().replace('-', '').replace(':', '') == '' for part in parts)
 
     def is_valid_table_row(line: str) -> bool:
-        """Проверяет, является ли строка похожей на строку таблицы"""
-        if not line or line.count('|') < 2:
-            return False
-        # Проверяем, что есть хотя бы один символ между |
-        parts = line.strip('|').split('|')
-        return all(len(part.strip()) > 0 for part in parts)
+        """Проверяет, является ли строка строкой таблицы"""
+        return line.strip().startswith('|') and line.strip().endswith('|')
 
-    lines = text.split('\n')
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        
-        # Если находим потенциальную строку таблицы
-        if is_valid_table_row(line):
-            # Проверяем следующую строку (разделитель)
-            if i + 1 < len(lines) and is_valid_separator(lines[i + 1]):
-                if state == 0:
-                    state = 1
-                    table = line + '\n'
-                    table += lines[i + 1] + '\n'
-                    i += 2
-                    continue
-            elif state == 1:
-                # Если мы уже в таблице, добавляем строку
-                table += line + '\n'
-                i += 1
-                continue
-        
-        # Если строка не подходит для таблицы
-        if state == 1:
-            results.append(table[:-1])
-            table = ''
-            state = 0
-        i += 1
+    def process_table(table_text: str) -> str:
+        lines = table_text.strip().split('\n')
+        x = PrettyTable()
+        x.header = True
+        x.hrules = 1
 
-    # Обработка найденных таблиц
-    for table in results:
-        x = prettytable.PrettyTable(align="l",
-                                   set_style=prettytable.MSWORD_FRIENDLY,
-                                   hrules=prettytable.HEADER,
-                                   junction_char='|')
-        lines = table.split('\n')
-        
-        # Проверяем, что у нас есть хотя бы заголовок и разделитель
-        if len(lines) < 2:
-            continue
-            
+        # Находим заголовок и разделитель
+        header_index = next((i for i, line in enumerate(lines) if is_valid_table_row(line)), None)
+        if header_index is None:
+            return table_text
+
+        separator_index = next((i for i in range(header_index + 1, len(lines)) if is_valid_separator(lines[i])), None)
+        if separator_index is None:
+            return table_text
+
         # Обработка заголовка
-        header = [x.strip().replace('<b>', '').replace('</b>', '') 
-                 for x in lines[0].split('|') 
-                 if x]
-        header = [split_long_string(x, header=True) for x in header]
+        header = [cell.strip() for cell in lines[header_index].strip('|').split('|')]
+        x.field_names = header
+
+        # Настройка выравнивания на основе разделителя
+        alignments = []
+        for cell in lines[separator_index].strip('|').split('|'):
+            cell = cell.strip()
+            if cell.startswith(':') and cell.endswith(':'):
+                alignments.append('c')
+            elif cell.endswith(':'):
+                alignments.append('r')
+            else:
+                alignments.append('l')
         
-        try:
-            x.field_names = header
-        except Exception as error:
-            my_log.log2(f'tb:replace_tables: {error}\n{text}\n\n{x}')
-            continue
+        for i, align in enumerate(alignments):
+            x.align[x.field_names[i]] = align
 
-        # Обработка строк данных (пропускаем разделитель)
-        for line in lines[2:]:
-            row = [x.strip().replace('<b>', '').replace('</b>', '') 
-                  for x in line.split('|') 
-                  if x]
-            # Проверяем, что количество столбцов совпадает с заголовком
-            if len(row) != len(header):
-                continue
-            row = [split_long_string(x) for x in row]
-            try:
-                x.add_row(row)
-            except Exception as error2:
-                my_log.log2(f'tb:replace_tables: {error2}\n{text}\n\n{x}')
-                continue
+        # Обработка данных
+        seen_rows = set()  # Для отслеживания уникальных строк
+        for line in lines[separator_index + 1:]:
+            if is_valid_table_row(line) and not is_valid_separator(line):
+                row = [cell.strip() for cell in line.strip('|').split('|')]
+                # Дополняем строку пустыми ячейками, если их не хватает
+                row += [''] * (len(header) - len(row))
+                row = tuple(row[:len(header)])  # Преобразуем в кортеж для хеширования
+                if row not in seen_rows:
+                    seen_rows.add(row)
+                    x.add_row(row)
 
-        new_table = x.get_string()
-        text = text.replace(table, f'<pre><code>{new_table}\n</code></pre>')
+        return f'\n\n<pre><code>{x.get_string()}\n\n</code></pre>'
+
+    # Находим все таблицы в тексте
+    table_pattern = re.compile(r'(\n|^)\s*\|.*\|.*\n\s*\|[-:\s|]+\|\s*\n(\s*\|.*\|.*\n)*', re.MULTILINE)
+
+    # Заменяем каждую найденную таблицу
+    return table_pattern.sub(lambda m: process_table(m.group(0)), text)
+
+
+# def replace_tables(text: str) -> str:
+#     """
+#     Заменяет markdown таблицы на их prettytable представление.
+#     Добавлена валидация формата таблицы.
+#     """
+#     text += '\n'
+#     state = 0
+#     table = ''
+#     results = []
     
-    return text
+#     def is_valid_separator(line: str) -> bool:
+#         """Проверяет, является ли строка валидным разделителем заголовка таблицы"""
+#         if not line or line.count('|') < 2:
+#             return False
+#         # Убираем крайние |
+#         parts = line.strip('|').split('|')
+#         # Проверяем, что каждая ячейка состоит только из - и : (для выравнивания)
+#         return all(part.strip().replace('-', '').replace(':', '') == '' for part in parts)
+
+#     def is_valid_table_row(line: str) -> bool:
+#         """Проверяет, является ли строка похожей на строку таблицы"""
+#         if not line or line.count('|') < 2:
+#             return False
+#         # Проверяем, что есть хотя бы один символ между |
+#         parts = line.strip('|').split('|')
+#         return all(len(part.strip()) > 0 for part in parts)
+
+#     lines = text.split('\n')
+#     i = 0
+#     while i < len(lines):
+#         line = lines[i]
+        
+#         # Если находим потенциальную строку таблицы
+#         if is_valid_table_row(line):
+#             # Проверяем следующую строку (разделитель)
+#             if i + 1 < len(lines) and is_valid_separator(lines[i + 1]):
+#                 if state == 0:
+#                     state = 1
+#                     table = line + '\n'
+#                     table += lines[i + 1] + '\n'
+#                     i += 2
+#                     continue
+#             elif state == 1:
+#                 # Если мы уже в таблице, добавляем строку
+#                 table += line + '\n'
+#                 i += 1
+#                 continue
+        
+#         # Если строка не подходит для таблицы
+#         if state == 1:
+#             results.append(table[:-1])
+#             table = ''
+#             state = 0
+#         i += 1
+
+#     # Обработка найденных таблиц
+#     for table in results:
+#         x = prettytable.PrettyTable(align="l",
+#                                    set_style=prettytable.MSWORD_FRIENDLY,
+#                                    hrules=prettytable.HEADER,
+#                                    junction_char='|')
+#         lines = table.split('\n')
+        
+#         # Проверяем, что у нас есть хотя бы заголовок и разделитель
+#         if len(lines) < 2:
+#             continue
+            
+#         # Обработка заголовка
+#         header = [x.strip().replace('<b>', '').replace('</b>', '') 
+#                  for x in lines[0].split('|') 
+#                  if x]
+#         header = [split_long_string(x, header=True) for x in header]
+        
+#         try:
+#             x.field_names = header
+#         except Exception as error:
+#             my_log.log2(f'tb:replace_tables: {error}\n{text}\n\n{x}')
+#             continue
+
+#         # Обработка строк данных (пропускаем разделитель)
+#         for line in lines[2:]:
+#             row = [x.strip().replace('<b>', '').replace('</b>', '') 
+#                   for x in line.split('|') 
+#                   if x]
+#             # Проверяем, что количество столбцов совпадает с заголовком
+#             if len(row) != len(header):
+#                 continue
+#             row = [split_long_string(x) for x in row]
+#             try:
+#                 x.add_row(row)
+#             except Exception as error2:
+#                 my_log.log2(f'tb:replace_tables: {error2}\n{text}\n\n{x}')
+#                 continue
+
+#         new_table = x.get_string()
+#         text = text.replace(table, f'<pre><code>{new_table}\n</code></pre>')
+    
+#     return text
 
 
 def split_html(text: str, max_length: int = 1500) -> list:
@@ -1253,6 +1324,22 @@ x - y = 1
 
 
 Semoga bermanfaat dan menginspirasi.
+
+
+**Задание 6**
+
+| Параметр | Кабамазепин | Этосуксимид | Вальпроевая кислота | Фенитоин |
+|---|---|---|---|---|
+| Блокада Na+ каналов | + |  | + | + |
+| Блокада Ca2+ каналов Т-типа |  | + | + |  |
+| Активация ГАМК |  |  | + | + |
+| Ингибирование CYP | 3A4 |  | 2C9 | 2C9, 2C19 |
+| Угнетение кроветворения | + |  | + |  |
+| Гиперплазия десен | + |  | + | + |
+| Сонливость | + | + | + | + |
+
+
+**Задание 7**
 
     """
 

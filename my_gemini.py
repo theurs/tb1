@@ -357,66 +357,66 @@ def chat_cli(user_id: str = 'test', model: str = ''):
         print(r)
 
 
-def transform_mem(data):
-    """!!!удалить!!!
-    Преобразует данные в формат, подходящий для моей функции джемини.
+# def transform_mem(data):
+#     """!!!удалить!!!
+#     Преобразует данные в формат, подходящий для моей функции джемини.
 
-    Args:
-        data: Данные в одном из возможных форматов:
-        - Список словарей в формате тип1 (см. описание выше).
-        - Список словарей в формате тип2 (см. описание выше).
-        - Объект 'Content' (предполагается, что он может быть преобразован в словарь).
+#     Args:
+#         data: Данные в одном из возможных форматов:
+#         - Список словарей в формате тип1 (см. описание выше).
+#         - Список словарей в формате тип2 (см. описание выше).
+#         - Объект 'Content' (предполагается, что он может быть преобразован в словарь).
 
-    Returns:
-        Список словарей в формате, подходящем для моей функции:
-        тип1
-        <class 'list'> [
-            parts {text: "1+1"}
-            role: "user",
+#     Returns:
+#         Список словарей в формате, подходящем для моей функции:
+#         тип1
+#         <class 'list'> [
+#             parts {text: "1+1"}
+#             role: "user",
 
-            parts {text: "2"}
-            role: "model",
-        ]
+#             parts {text: "2"}
+#             role: "model",
+#         ]
 
-        тип 2 для genai
-        <class 'list'> [
-            {'role': 'user', 'parts': [{'text': '1+1'}]},
-            {'role': 'model', 'parts': [{'text': '2'}]},
+#         тип 2 для genai
+#         <class 'list'> [
+#             {'role': 'user', 'parts': [{'text': '1+1'}]},
+#             {'role': 'model', 'parts': [{'text': '2'}]},
 
-            {'role': 'user', 'parts': [{'text': '2+2'}]},
-            {'role': 'model', 'parts': [{'text': '4'}]},
-        ]
+#             {'role': 'user', 'parts': [{'text': '2+2'}]},
+#             {'role': 'model', 'parts': [{'text': '4'}]},
+#         ]
 
-    """
-    try:
-        if not data:
-            return []
+#     """
+#     try:
+#         if not data:
+#             return []
 
-        # Проверяем, в каком формате данные
-        if isinstance(data[0], dict):
-            return data  # Данные уже в формате тип2
+#         # Проверяем, в каком формате данные
+#         if isinstance(data[0], dict):
+#             return data  # Данные уже в формате тип2
 
-        transformed_data = []
-        role1 = ''
-        role2 = ''
-        text1 = ''
-        text2 = ''
+#         transformed_data = []
+#         role1 = ''
+#         role2 = ''
+#         text1 = ''
+#         text2 = ''
         
-        for x in data:
-            if x.role == 'user':
-                role1 = x.role
-                text1 = x.parts[0].text
-            else:
-                role2 = x.role
-                text2 = x.parts[0].text
-                transformed_data.append({'role': role1, 'parts': [{'text': text1}]})
-                transformed_data.append({'role': role2, 'parts': [{'text': text2}]})
+#         for x in data:
+#             if x.role == 'user':
+#                 role1 = x.role
+#                 text1 = x.parts[0].text
+#             else:
+#                 role2 = x.role
+#                 text2 = x.parts[0].text
+#                 transformed_data.append({'role': role1, 'parts': [{'text': text1}]})
+#                 transformed_data.append({'role': role2, 'parts': [{'text': text2}]})
 
-        return transformed_data
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'my_gemini:transform_mem: {error}\n\n{traceback_error}')
-        return []
+#         return transformed_data
+#     except Exception as error:
+#         traceback_error = traceback.format_exc()
+#         my_log.log_gemini(f'my_gemini:transform_mem: {error}\n\n{traceback_error}')
+#         return []
 
 
 def transform_mem2(mem):

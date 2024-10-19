@@ -589,6 +589,12 @@ def get_mem_as_string(chat_id: str) -> str:
     mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
     mem = transform_mem2(mem)
 
+    # remove empty answers (function calls)
+    # try:
+    #     mem = [x for x in mem if x.parts[0].text]
+    # except Exception as error_mem:
+    #     my_log.log_gemini(f'get_mem_as_string: {error_mem} {str(mem)[-1000:]}')
+
     result = ''
     for x in mem:
         role = x.role

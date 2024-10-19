@@ -500,18 +500,19 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20) -> 
         # Установка максимальной ширины таблицы
         x.max_width = max_width
 
-        return f'\n\n<pre><code>{x.get_string()}\n</code></pre>'
+        r = x.get_string()
+        r = r.replace('<b>', '   ')
+        r = r.replace('<i>', '   ')
+        r = r.replace('</b>', '    ')
+        r = r.replace('</i>', '    ')
+        
+        return f'\n\n<pre><code>{r}\n</code></pre>'
 
     # Находим все таблицы в тексте
     table_pattern = re.compile(r'(\n|^)\s*\|.*\|.*\n\s*\|[-:\s|]+\|\s*\n(\s*\|.*\|.*\n)*', re.MULTILINE)
 
     # Заменяем каждую найденную таблицу
-    r =  table_pattern.sub(lambda m: process_table(m.group(0)), text)
-    r = r.replace('<b>', '   ')
-    r = r.replace('<i>', '   ')
-    r = r.replace('</b>', '    ')
-    r = r.replace('</i>', '    ')
-    return r
+    return table_pattern.sub(lambda m: process_table(m.group(0)), text)
 
 
 # def replace_tables(text: str) -> str:

@@ -2380,7 +2380,6 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
             photo = message.photo[-1]
             try:
                 file_info = bot.get_file(photo.file_id)
-                HEIF = False
             except telebot.apihelper.ApiTelegramException as error:
                 if 'file is too big' in str(error):
                     bot_reply_tr(message, 'Too big file.')
@@ -2391,10 +2390,6 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
         elif message.document:
             file_id = message.document.file_id
             try:
-                if message.document.mime_type == 'image/heif':
-                    HEIF = True
-                else:
-                    HEIF = False
                 file_info = bot.get_file(file_id)
             except telebot.apihelper.ApiTelegramException as error:
                 if 'file is too big' in str(error):
@@ -2405,10 +2400,8 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
             file = bot.download_file(file_info.file_path)
             fp = io.BytesIO(file)
             image = fp.read()
-        if HEIF:
-            return utils.heic2jpg(image)
-        else:
-            return image
+
+        return utils.heic2jpg(image)
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:download_image_from_message: {error} {traceback_error}')
@@ -2558,6 +2551,7 @@ def handle_photo(message: telebot.types.Message):
                             my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
                             return
 
+                        image = utils.heic2jpg(image)
                         if not message.caption:
                             proccess_image(chat_id_full, image, message)
                             return
@@ -2602,6 +2596,7 @@ def handle_photo(message: telebot.types.Message):
                             my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
                             return
 
+                        image = utils.heic2jpg(image)
                         # распознаем текст на фотографии с помощью pytesseract
                         llang = get_ocr_language(message)
                         if message.caption.strip()[3:]:

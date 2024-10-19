@@ -1117,24 +1117,26 @@ def heic2jpg(data: Union[bytes, str]) -> bytes:
         data: The HEIC image data as bytes or a string representing the filepath.
 
     Returns:
-        The JPEG image data as bytes, or an empty bytes object if conversion fails.
+        The JPEG image data as bytes, or the original data if it's not HEIC, or an empty bytes object if conversion fails.
     """
 
     try:
         if isinstance(data, str):
-            # If input is a filepath, open and read the file
             with open(data, 'rb') as f:
                 data = f.read()
 
         with PIL.Image.open(io.BytesIO(data)) as image:
-            with io.BytesIO() as output:
-                image.save(output, format="JPEG")
-                contents = output.getvalue()
-        return contents
+            if image.format.upper() in ('HEIF', 'HEIC'):
+                with io.BytesIO() as output:
+                    image.save(output, format="JPEG", quality=80, optimize=True, progressive=True, subsampling="4:4:4")
+                    contents = output.getvalue()
+                    return contents
+            else:
+                return data # Возвращаем исходные данные, если не HEIC
 
     except Exception as error:
-        my_log.log2(f'utils:heic2jpg {error}')
-        return b''
+        my_log.log2(f'utils:heic2jpg {error}') # все также логируем ошибку
+        return b'' # Возвращаем пустые байты в случае ошибки
 
 
 def compress_png_bytes(image_bytes: bytes) -> bytes:

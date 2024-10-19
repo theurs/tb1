@@ -34,7 +34,7 @@ USER_KEYS_LOCK = threading.Lock()
 
 
 # for ai func
-DEFAULT_MODEL = 'llama-3.1-70b-versatile'
+DEFAULT_MODEL = 'llama-3.2-90b-text-preview'
 
 
 # блокировка чатов что бы не испортить историю 
@@ -706,7 +706,7 @@ TEXT:
     return text
 
 
-def sum_big_text(text:str, query: str, temperature: float = 1, model = 'llama-3.1-70b-versatile') -> str:
+def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_MODEL) -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature.

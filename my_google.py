@@ -76,9 +76,9 @@ Search results:
     #     if r:
     #         r += '\n\n--\n[Gemini Flash]'
     if not r:
-        r = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], max_tokens_ = 4000, model_= 'llama-3.1-70b-versatile')
+        r = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], max_tokens_ = 4000)
         if r:
-            r += '\n\n--\n[Llama 3.1 70b]'
+            r += '\n\n--\n[Llama 3.2 90b]'
     if not r:
         r = my_groq.ai(q[:32000], max_tokens_ = 4000, model_ = 'mixtral-8x7b-32768')
         if r:

@@ -30,6 +30,7 @@ import telebot
 from pylatexenc.latex2text import LatexNodes2Text
 from pillow_heif import register_heif_opener
 from prettytable import PrettyTable
+from textwrap import wrap
 
 import my_log
 
@@ -422,21 +423,35 @@ def replace_code_lang(t: str) -> str:
     return result
 
 
-def replace_tables(text: str) -> str:
+def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20) -> str:
     """
     Заменяет markdown таблицы на их prettytable представление.
-    Улучшена обработка различных форматов таблиц, включая удаление дубликатов и лишних разделителей.
+    Улучшена обработка различных форматов таблиц, включая ограничение ширины и обрезание длинных заголовков.
+    
+    :param text: Исходный текст с markdown таблицами
+    :param max_width: Максимальная ширина таблицы в символах
+    :param max_cell_width: Максимальная ширина ячейки в символах
+    :return: Текст с замененными таблицами
     """
+
     def is_valid_separator(line: str) -> bool:
-        """Проверяет, является ли строка валидным разделителем заголовка таблицы"""
         if not line or not line.strip('| '):
             return False
         parts = line.strip().strip('|').split('|')
         return all(part.strip().replace('-', '').replace(':', '') == '' for part in parts)
 
     def is_valid_table_row(line: str) -> bool:
-        """Проверяет, является ли строка строкой таблицы"""
         return line.strip().startswith('|') and line.strip().endswith('|')
+
+    def truncate_text(text: str, max_width: int) -> str:
+        if len(text) <= max_width:
+            return text
+        return text[:max_width-3] + '...'
+
+    def wrap_long_text(text: str, max_width: int) -> str:
+        if len(text) <= max_width:
+            return text
+        return '\n'.join(wrap(text, max_width))
 
     def process_table(table_text: str) -> str:
         lines = table_text.strip().split('\n')
@@ -454,7 +469,7 @@ def replace_tables(text: str) -> str:
             return table_text
 
         # Обработка заголовка
-        header = [cell.strip() for cell in lines[header_index].strip('|').split('|')]
+        header = [truncate_text(cell.strip(), max_cell_width) for cell in lines[header_index].strip('|').split('|') if cell.strip()]
         x.field_names = header
 
         # Настройка выравнивания на основе разделителя
@@ -472,24 +487,98 @@ def replace_tables(text: str) -> str:
             x.align[x.field_names[i]] = align
 
         # Обработка данных
-        seen_rows = set()  # Для отслеживания уникальных строк
+        seen_rows = set()
         for line in lines[separator_index + 1:]:
             if is_valid_table_row(line) and not is_valid_separator(line):
-                row = [cell.strip() for cell in line.strip('|').split('|')]
-                # Дополняем строку пустыми ячейками, если их не хватает
+                row = [wrap_long_text(cell.strip(), max_cell_width) for cell in line.strip('|').split('|') if cell.strip()]
                 row += [''] * (len(header) - len(row))
-                row = tuple(row[:len(header)])  # Преобразуем в кортеж для хеширования
+                row = tuple(row[:len(header)])
                 if row not in seen_rows:
                     seen_rows.add(row)
                     x.add_row(row)
 
-        return f'\n\n<pre><code>{x.get_string()}\n\n</code></pre>'
+        # Установка максимальной ширины таблицы
+        x.max_width = max_width
+
+        return f'\n\n<pre><code>{x.get_string()}\n</code></pre>'
 
     # Находим все таблицы в тексте
     table_pattern = re.compile(r'(\n|^)\s*\|.*\|.*\n\s*\|[-:\s|]+\|\s*\n(\s*\|.*\|.*\n)*', re.MULTILINE)
 
     # Заменяем каждую найденную таблицу
     return table_pattern.sub(lambda m: process_table(m.group(0)), text)
+
+
+# def replace_tables(text: str) -> str:
+#     """
+#     Заменяет markdown таблицы на их prettytable представление.
+#     Улучшена обработка различных форматов таблиц, включая удаление дубликатов и лишних разделителей.
+#     """
+#     def is_valid_separator(line: str) -> bool:
+#         """Проверяет, является ли строка валидным разделителем заголовка таблицы"""
+#         if not line or not line.strip('| '):
+#             return False
+#         parts = line.strip().strip('|').split('|')
+#         return all(part.strip().replace('-', '').replace(':', '') == '' for part in parts)
+
+#     def is_valid_table_row(line: str) -> bool:
+#         """Проверяет, является ли строка строкой таблицы"""
+#         return line.strip().startswith('|') and line.strip().endswith('|')
+
+#     def process_table(table_text: str) -> str:
+#         lines = table_text.strip().split('\n')
+#         x = PrettyTable()
+#         x.header = True
+#         x.hrules = 1
+
+#         # Находим заголовок и разделитель
+#         header_index = next((i for i, line in enumerate(lines) if is_valid_table_row(line)), None)
+#         if header_index is None:
+#             return table_text
+
+#         separator_index = next((i for i in range(header_index + 1, len(lines)) if is_valid_separator(lines[i])), None)
+#         if separator_index is None:
+#             return table_text
+
+#         # Обработка заголовка
+#         header = [cell.strip() for cell in lines[header_index].strip('|').split('|')]
+#         x.field_names = header
+
+#         # Настройка выравнивания на основе разделителя
+#         alignments = []
+#         for cell in lines[separator_index].strip('|').split('|'):
+#             cell = cell.strip()
+#             if cell.startswith(':') and cell.endswith(':'):
+#                 alignments.append('c')
+#             elif cell.endswith(':'):
+#                 alignments.append('r')
+#             else:
+#                 alignments.append('l')
+        
+#         for i, align in enumerate(alignments):
+#             x.align[x.field_names[i]] = align
+
+#         # Обработка данных
+#         seen_rows = set()  # Для отслеживания уникальных строк
+#         for line in lines[separator_index + 1:]:
+#             if is_valid_table_row(line) and not is_valid_separator(line):
+#                 row = [cell.strip() for cell in line.strip('|').split('|')]
+#                 # Дополняем строку пустыми ячейками, если их не хватает
+#                 row += [''] * (len(header) - len(row))
+#                 row = tuple(row[:len(header)])  # Преобразуем в кортеж для хеширования
+#                 if row not in seen_rows:
+#                     seen_rows.add(row)
+#                     x.add_row(row)
+
+#         return f'\n\n<pre><code>{x.get_string()}\n\n</code></pre>'
+
+#     # Находим все таблицы в тексте
+#     table_pattern = re.compile(r'(\n|^)\s*\|.*\|.*\n\s*\|[-:\s|]+\|\s*\n(\s*\|.*\|.*\n)*', re.MULTILINE)
+
+#     # Заменяем каждую найденную таблицу
+#     return table_pattern.sub(lambda m: process_table(m.group(0)), text)
+
+
 
 
 # def replace_tables(text: str) -> str:
@@ -1334,7 +1423,7 @@ Semoga bermanfaat dan menginspirasi.
 | Блокада Ca2+ каналов Т-типа |  | + | + |  |
 | Активация ГАМК |  |  | + | + |
 | Ингибирование CYP | 3A4 |  | 2C9 | 2C9, 2C19 |
-| Угнетение кроветворения | + |  | + |  |
+| Угнетение кроветворения | + |  | + | itiuy kduhfg difug kdufg kd dddddddddddddddddddddddddd |
 | Гиперплазия десен | + |  | + | + |
 | Сонливость | + | + | + | + |
 

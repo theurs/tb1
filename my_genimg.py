@@ -1016,7 +1016,6 @@ def runware(prompt: str, number: int = 2, negative_prompt: str = "", cache: bool
     """
         runware.ai
     """
-    return []
     try:
         h = 1024
         w = 1024

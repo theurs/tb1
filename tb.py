@@ -3957,7 +3957,7 @@ def huggingface_image_gen(message: telebot.types.Message):
                     # Send the generated image to the user.
                     if image_bytes:
                         bot_addr = f'https://t.me/{_bot_name}'
-                        cap = (bot_addr + '\n' + url + '\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
+                        cap = (bot_addr + '\n' + model + '\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
                         m = bot.send_photo(
                             message.chat.id,
                             image_bytes,

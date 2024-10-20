@@ -6137,20 +6137,14 @@ def do_task(message, custom_prompt: str = ''):
                                 my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
                             style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                            if style_:
-                                answer = my_groq.chat(f'({style_}) {message.text}',
-                                                      chat_id_full,
-                                                      my_db.get_user_property(chat_id_full, 'temperature'),
-                                                      model = 'llama-3.2-90b-text-preview',
-                                                    #   model = 'llama-3.2-90b-vision-preview',
-                                                      )
-                            else:
-                                answer = my_groq.chat(message.text,
-                                                      chat_id_full,
-                                                      my_db.get_user_property(chat_id_full, 'temperature'),
-                                                      model = 'llama-3.2-90b-text-preview',
-                                                    #   model = 'llama-3.2-90b-vision-preview',
-                                                      )
+                            answer = my_groq.chat(
+                                message.text,
+                                chat_id_full,
+                                style = style_,
+                                temperature = my_db.get_user_property(chat_id_full, 'temperature'),
+                                model = 'llama-3.2-90b-text-preview',
+                            #   model = 'llama-3.2-90b-vision-preview',
+                                )
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                 my_groq.undo(chat_id_full)
                                 message.text = f'/image {message.text}'

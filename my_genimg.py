@@ -319,6 +319,66 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
     return result
 
 
+def huggin_face_api_one_image(
+    url: str,
+    positive_prompt: str,
+    negative_prompt: str,
+    retries: int = 5,
+    delay: int = 10,
+    timeout: int = 120,
+    ) -> bytes:
+    """
+    Попытка сгенерировать изображения через Hugging Face API с заданными положительным и отрицательным промптами.
+    Пытается несколько раз в случае неудачи, используя случайные ключи API.
+
+    Args:
+        url (str): URL API Hugging Face.
+        positive_prompt (str): Положительный промпт.
+        negative_prompt (str): Отрицательный промпт.
+        retries (int): Количество попыток.
+        delay (int): Задержка между попытками (в секундах).
+
+    Returns:
+        bytes: Изображение в байтах.
+    """
+    if not ALL_KEYS:
+        # raise Exception("Нет доступных ключей для Hugging Face API")
+        return []
+
+    payload = json.dumps({
+        "inputs": positive_prompt, 
+        "negative_prompt": negative_prompt,
+    })
+
+    start_time = time.time()
+    for attempt in range(retries):
+        api_key = random.choice(ALL_KEYS)  # Выбираем случайный ключ
+        headers = {"Authorization": f"Bearer {api_key}"}
+
+        try:
+            response = requests.post(url, headers=headers, data=payload, timeout=timeout)
+
+            if response.status_code == 200 and len(response.content) > 100:
+                # my_log.log_huggin_face_api(f"Успешно сгенерировано изображение на попытке {attempt + 1}")
+                return response.content
+
+            # Логируем ошибку статуса
+            my_log.log_huggin_face_api(f"huggin_face_api_one_image: Попытка {attempt + 1} не удалась: статус {response.status_code}, ответ: {response.text[:300]}")
+
+        except Exception as e:
+            error_traceback = traceback.format_exc()
+            my_log.log_huggin_face_api(f"huggin_face_api_one_image: {str(e)}\nТрассировка: {error_traceback}")
+
+        end_time = time.time()
+        if end_time - start_time > timeout:
+            return b''
+
+        time.sleep(delay)  # Задержка перед новой попыткой
+
+    # raise Exception("Не удалось получить изображение после нескольких попыток")
+    return b''
+
+
 def PixArtSigma(prompt: str, url: str = 'PixArt-alpha/PixArt-Sigma', negative_prompt: str = "") -> bytes:
     """
     url = "PixArt-alpha/PixArt-Sigma" only?
@@ -1089,17 +1149,13 @@ Return a `reprompt`
         r = my_sambanova.get_reprompt_for_image(query, chat_id)
 
         if not r:
-            r = my_gemini.get_reprompt_for_image(query)
+            r = my_gemini.get_reprompt_for_image(query, chat_id)
         if r:
             reprompt, negative = r
         if not reprompt:
-            r = my_groq.get_reprompt_for_image(query)
+            r = my_groq.get_reprompt_for_image(query, chat_id)
             if r:
                 reprompt, negative = r
-            # if not reprompt:
-            #     reprompt = get_reprompt_nsfw(query)
-            #     if not reprompt:
-            #         reprompt = prompt
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
@@ -1287,6 +1343,63 @@ def test_hkey(key: str):
         return True
 
 
+def gen_one_image(prompt: str,
+               user_id: str = '',
+               url: str = '',
+               ) -> bytes:
+    """рисует указанной в урле моделькой хаггинг фейса"""
+
+    if not url.startswith('http'):
+        if '/' in url:
+            url = 'https://api-inference.huggingface.co/models/' + url
+        else:
+            try:
+                if os.path.exists('huggin_face_models_urls.list'):
+                    with open('huggin_face_models_urls.list', 'r') as f:
+                        API_URL = f.read().splitlines()
+                    API_URL = [x.strip() for x in API_URL if x.strip() and not x.strip().startswith('#')]
+                    for x in API_URL:
+                        if url in x:
+                            url = x
+                            break
+                    if not url.startswith('http'):
+                        return None 
+            except:
+                return None
+
+    if not user_id:
+        user_id = 'test'
+
+    if user_id in LOCKS:
+        lock = LOCKS[user_id]
+    else:
+        lock = threading.Lock()
+        LOCKS[user_id] = lock
+
+    with lock:
+        if prompt.strip() == '':
+            return None
+
+        negative = ''
+
+        reprompt = ''
+
+        reprompt, negative = get_reprompt(prompt, '', user_id)
+
+        if reprompt:
+            prompt = reprompt
+        else:
+            return None
+
+        result = huggin_face_api_one_image(
+            url,
+            prompt,
+            negative
+            )
+
+        return result
+
+
 if __name__ == '__main__':
     load_users_keys()
 
@@ -1331,4 +1444,13 @@ if __name__ == '__main__':
 
     # print(runware('fireballs'))
 
-    gen_images('an apple with gold bug')
+    # gen_images('an apple with gold bug')
+
+    d = gen_one_image(
+        'Generate a stunning, minimalist artwork featuring a stylized alligator in the sea, executed with a flowing and abstract design language. The alligator should be rendered in sleek, continuous lines with a focus on thinner, more refined strokes, giving the piece a sense of elegance and poise. The background of the artwork should remain pure white to emphasize the clean lines and minimalist aesthetic of the black line art, creating a sense of visual balance and harmony.',
+        'test',
+        'flux-RealismLora',
+        )
+    if d:
+        with open('d:/downloads/1.jpg', 'wb') as f:
+            f.write(d)

@@ -764,7 +764,7 @@ def retranscribe(text: str, prompt: str = '') -> str:
 
 
 
-def get_reprompt_for_image(prompt: str) -> tuple[str, str] | None:
+def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | None:
     """
     Generates a detailed prompt for image generation based on user query and conversation history.
 
@@ -776,6 +776,7 @@ def get_reprompt_for_image(prompt: str) -> tuple[str, str] | None:
     """
 
     result = ai(prompt, temperature=1.5, json_output=True, model_='')
+    my_db.add_msg(chat_id, DEFAULT_MODEL)
     result_dict = utils.string_to_dict(result)
     if result_dict:
         try:

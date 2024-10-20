@@ -935,7 +935,7 @@ def list_models():
         pprint.pprint(model)
 
 
-def get_reprompt_for_image(prompt: str) -> tuple[str, str] | None:
+def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | None:
     """
     Generates a detailed prompt for image generation based on user query and conversation history.
 
@@ -946,7 +946,12 @@ def get_reprompt_for_image(prompt: str) -> tuple[str, str] | None:
         A tuple of two strings: (positive prompt, negative prompt) or None if an error occurred. 
     """
 
-    result = chat(prompt, temperature=1.5, json_output=True, model='gemini-1.5-flash')
+    result = chat(prompt,
+                  temperature=1.5,
+                  json_output=True,
+                  model=cfg.gemini_flash_model,
+                  chat_id=chat_id
+                  )
     result_dict = utils.string_to_dict(result)
     if result_dict:
         try:

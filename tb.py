@@ -89,9 +89,6 @@ semaphore_talks = threading.Semaphore(500)
 if not os.path.exists('db'):
     os.mkdir('db')
 
-# {user_id:True} была ли команда на остановку генерации image10
-IMAGE10_STOP = {}
-
 # сообщения приветствия и помощи
 HELLO_MSG = {}
 HELP_MSG = {}
@@ -3926,51 +3923,54 @@ def downgrade_handler(message: telebot.types.Message):
     bot_reply(message, str(counter))
 
 
-# @bot.message_handler(commands=['bing10', 'Bing10', ], func=authorized)
-# @async_run
-# def image10_bing_gen(message: telebot.types.Message):
-#     if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
-#         chat_id_full = get_topic_id(message)
-#         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-#             bot_reply_tr(message, 'Bing вас забанил.')
-#             return
-
-#         bot_reply_tr(message, '10 times bing`s image generation started.')
-#         chat_id_full = get_topic_id(message)
-#         for _ in range(10):
-#             if chat_id_full in IMAGE10_STOP:
-#                 del IMAGE10_STOP[chat_id_full]
-#                 return
-#             image_bing_gen(message)
-#             time.sleep(15)
-
-
-@bot.message_handler(commands=['fim',], func=authorized)
+@bot.message_handler(commands=['hf',], func=authorized)
 @async_run
-def image_fast_gen(message: telebot.types.Message):
-    '''рисует одну картинку самым быстрым способом, и показывает одну кнопку что бы быстро перерисовать и 1 кнопку что бы скачать(сделать копию?)'''
-    try:
-        arg = message.text.split(maxsplit=1)[1]
-        reprompt = my_genimg.get_reprompt(arg, '')
-        data = my_genimg.runware(reprompt, number=1, cache=True, big = True)[0]
-        if data:
-            hash_ = hash(data)
-            if hash_ in my_genimg.WHO_AUTOR:
-                del my_genimg.WHO_AUTOR[hash_]
-            cid = message.chat.id
+def huggingface_image_gen(message: telebot.types.Message):
+    """Generates an image using the Hugging Face model."""
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
 
-            bot.send_photo(cid,
-                           photo = data,
-                           caption=reprompt[:999],
-                           disable_notification=True,
-                           reply_markup=get_keyboard('fast_image', message),
-                           )
-        else:
-            bot_reply_tr(message, 'FAILED')
-        return
+    # Check if the user has provided a prompt and model.
+    try:
+        parts = message.text.split(maxsplit=2)  # Split into command, prompt, and optional model
+        model = parts[1].strip()
+        prompt = parts[2].strip()
     except IndexError:
-        pass
-    bot_reply_tr(message, 'Usage: /fim prompt')
+        bot_reply_tr(message, f"/hf <model_name (full URL or part of it)> <prompt>\n\n{tr('Generates an image using the Hugging Face model. Provide a prompt and optionally specify a model name.', lang)}")
+        return
+
+    if chat_id_full in IMG_GEN_LOCKS:
+        lock = IMG_GEN_LOCKS[chat_id_full]
+    else:
+        lock = threading.Lock()
+        IMG_GEN_LOCKS[chat_id_full] = lock
+
+    with lock:
+        with semaphore_talks:
+            with ShowAction(message, 'upload_photo'):
+                try:
+                    # Generate the image using the provided function.
+                    image_bytes = my_genimg.gen_one_image(prompt, user_id=chat_id_full, url=model)
+
+                    # Send the generated image to the user.
+                    if image_bytes:
+                        bot.send_photo(
+                            message.chat.id,
+                            image_bytes,
+                            caption=prompt[:900],
+                            reply_to_message_id=message.message_id,
+                            disable_notification=True
+                            )
+                        update_user_image_counter(chat_id_full, 1)
+                        add_to_bots_mem(f'{tr("user used /hf command to generate image", lang)} "{prompt}"',
+                                        f'{tr("image was generated successfully", lang)}',
+                                        chat_id_full)
+                    else:
+                        bot_reply_tr(message, tr("Image generation failed.", lang))
+                except Exception as e:
+                    error_traceback = traceback.format_exc()
+                    my_log.log2(f"tb:huggingface_image_gen: Error generating image with Hugging Face model: {e}\n{error_traceback}")
+                    bot_reply_tr(message, tr("An error occurred during image generation.", lang))
 
 
 @bot.message_handler(commands=['bing', 'Bing'], func=authorized)
@@ -3983,39 +3983,6 @@ def image_bing_gen(message: telebot.types.Message):
         return
     message.text += '[{(BING)}]'
     image_gen(message)
-
-
-# @bot.message_handler(commands=['stop','cancel'], func=authorized)
-# @async_run
-# def image10_stop(message: telebot.types.Message):
-#     chat_id_full = get_topic_id(message)
-#     IMAGE10_STOP[chat_id_full] = True
-#     bot_reply_tr(message, 'Image generation stopped.')
-
-
-# @bot.message_handler(commands=['image10','img10', 'IMG10', 'Image10', 'Img10', 'i10', 'I10', 'imagine10', 'imagine10:', 'Imagine10', 'Imagine10:', 'generate10', 'gen10', 'Generate10', 'Gen10', 'art10', 'Art10'], func=authorized)
-# @async_run
-# def image10_gen(message: telebot.types.Message):
-#     if len(message.text.strip().split(maxsplit=1)) > 1 and message.text.strip().split(maxsplit=1)[1].strip():
-#         bot_reply_tr(message, '10 times image generation started.')
-#         chat_id_full = get_topic_id(message)
-#         for _ in range(10):
-#             if chat_id_full in IMAGE10_STOP:
-#                 del IMAGE10_STOP[chat_id_full]
-#                 return
-#             image_gen(message)
-#             time.sleep(60)
-
-
-# @bot.message_handler(commands=['image2','IMG2', 'img2', 'Image2', 'Img2', 'i2', 'I2', 'imagine2', 'imagine2:', 'Imagine2', 'Imagine2:', 'generate2', 'gen2', 'Generate2', 'Gen2', 'art2', 'Art2'], func=authorized)
-# @async_run
-# def image2_gen(message: telebot.types.Message):
-#     is_private = message.chat.type == 'private'
-#     if not is_private:
-#         bot_reply_tr(message, 'This command is only available in private chats.')
-#         return
-#     message.text += 'NSFW'
-#     image_gen(message)
 
 
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art'], func=authorized)
@@ -4130,9 +4097,6 @@ def image_gen(message: telebot.types.Message):
                                 images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history)
                             else:
                                 images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
-                        if chat_id_full in IMAGE10_STOP:
-                            # del IMAGE10_STOP[chat_id_full]
-                            return
 
                         medias = []
                         has_good_images = False

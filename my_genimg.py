@@ -1370,34 +1370,27 @@ def gen_one_image(prompt: str,
     if not user_id:
         user_id = 'test'
 
-    if user_id in LOCKS:
-        lock = LOCKS[user_id]
+    if prompt.strip() == '':
+        return None
+
+    negative = ''
+
+    reprompt = ''
+
+    reprompt, negative = get_reprompt(prompt, '', user_id)
+
+    if reprompt:
+        prompt = reprompt
     else:
-        lock = threading.Lock()
-        LOCKS[user_id] = lock
+        return None
 
-    with lock:
-        if prompt.strip() == '':
-            return None
+    result = huggin_face_api_one_image(
+        url,
+        prompt,
+        negative
+        )
 
-        negative = ''
-
-        reprompt = ''
-
-        reprompt, negative = get_reprompt(prompt, '', user_id)
-
-        if reprompt:
-            prompt = reprompt
-        else:
-            return None
-
-        result = huggin_face_api_one_image(
-            url,
-            prompt,
-            negative
-            )
-
-        return result
+    return result
 
 
 if __name__ == '__main__':

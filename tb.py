@@ -3923,6 +3923,18 @@ def downgrade_handler(message: telebot.types.Message):
     bot_reply(message, str(counter))
 
 
+@async_run
+def async_hf_get_one_image(prompt: str, user_id: str, url: str, container: list):
+    try:
+        image_bytes = my_genimg.gen_one_image(prompt, user_id, url)
+    except:
+        image_bytes = None
+    if image_bytes:
+        container.append(image_bytes)
+    else:
+        container.append(b'1')
+
+
 @bot.message_handler(commands=['hf',], func=authorized)
 @async_run
 def huggingface_image_gen(message: telebot.types.Message):
@@ -3951,24 +3963,46 @@ def huggingface_image_gen(message: telebot.types.Message):
         with semaphore_talks:
             with ShowAction(message, 'upload_photo'):
                 try:
-                    # Generate the image using the provided function.
-                    image_bytes = my_genimg.gen_one_image(prompt, user_id=chat_id_full, url=model)
+                    images1 = []
+                    images2 = []
+                    images3 = []
+                    images4 = []
+                    images5 = []
+                    async_hf_get_one_image(prompt, chat_id_full, model, images1)
+                    async_hf_get_one_image(prompt, chat_id_full, model, images2)
+                    async_hf_get_one_image(prompt, chat_id_full, model, images3)
+                    async_hf_get_one_image(prompt, chat_id_full, model, images4)
+                    while not all([images1, images2, images3, images4]):
+                        time.sleep(1)
 
-                    # Send the generated image to the user.
-                    if image_bytes:
+                    images5 = images1 + images2 + images3 + images4
+                    images5 = [x for x in images5 if x != b'1']
+
+                    if images5:
                         bot_addr = f'https://t.me/{_bot_name}'
                         cap = (bot_addr + '\n' + model + '\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
-                        m = bot.send_photo(
-                            message.chat.id,
-                            image_bytes,
-                            caption=cap,
-                            reply_to_message_id=message.message_id,
-                            disable_notification=True
-                            )
-                        log_message(m)
-                        update_user_image_counter(chat_id_full, 1)
-                        add_to_bots_mem(f'{tr("user used /hf command to generate image", lang)} "{prompt}"',
-                                        f'{tr("image was generated successfully", lang)}',
+                        medias = [telebot.types.InputMediaPhoto(x, caption = cap) for x in images5]
+                        msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                        log_message(msgs_ids)
+                        if pics_group:
+                            try:
+                                translated_prompt = tr(prompt, 'ru', save_cache=False)
+
+                                hashtag = 'H' + chat_id_full.replace('[', '').replace(']', '')
+                                bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
+                                                link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
+
+                                ratio = fuzz.ratio(translated_prompt, prompt)
+                                if ratio < 70:
+                                    bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
+                                                    link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
+
+                                bot.send_media_group(pics_group, medias)
+                            except Exception as error2:
+                                my_log.log2(f'tb:huggingface_image_gen:send to pics_group: {error2}')
+                        update_user_image_counter(chat_id_full, len(medias))
+                        add_to_bots_mem(f'{tr("User used /hf command to generate images", lang)} "{prompt}"',
+                                        f'{tr("Images was generated successfully", lang)}',
                                         chat_id_full)
                     else:
                         bot_reply_tr(message, tr("Image generation failed.", lang))

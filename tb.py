@@ -958,7 +958,7 @@ def check_subscription(message: telebot.types.Message) -> bool:
                 return False
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log2(f'tb:check_blocks: {error}\n\n{error_traceback}\n\n{u_id}')
+        my_log.log2(f'tb:check_subscription: {error}\n\n{error_traceback}\n\n{u_id}')
 
     # Пользователь подписан, обновляем кэш
     subscription_cache[u_id] = current_time
@@ -1136,11 +1136,11 @@ def authorized_log(message: telebot.types.Message) -> bool:
     return True
 
 
-def check_blocks(chat_id_full: str) -> bool:
-    """в каких чатах выключены автопереводы"""
-    if not my_db.get_user_property(chat_id_full, 'auto_translations'):
-        my_db.set_user_property(chat_id_full, 'auto_translations', 0)
-    return False if my_db.get_user_property(chat_id_full, 'auto_translations') == 1 else True
+# def check_blocks(chat_id_full: str) -> bool:
+#     """в каких чатах выключены автопереводы"""
+#     if not my_db.get_user_property(chat_id_full, 'auto_translations'):
+#         my_db.set_user_property(chat_id_full, 'auto_translations', 0)
+#     return False if my_db.get_user_property(chat_id_full, 'auto_translations') == 1 else True
 
 
 def bot_reply_tr(message: telebot.types.Message,
@@ -1478,33 +1478,34 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
-        have_gemini_keys = chat_id_full in my_gemini.USER_KEYS or message.from_user.id in cfg.admins
+        have_gemini_keys = check_vip_user(chat_id_full)
         button1 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash 🚗', callback_data='select_gemini15_flash')
         if have_gemini_keys:
             button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro 🚀', callback_data='select_gemini15_pro')
         else:
             button2 = telebot.types.InlineKeyboardButton('🔒Gemini 1.5 Pro 🚀', callback_data='select_gemini15_pro')
         # button3 = telebot.types.InlineKeyboardButton('GPT-4o 🚀', callback_data='select_gpt4o')
-        button3 = telebot.types.InlineKeyboardButton('Gemma 2 9b 🚴‍♀️', callback_data='select_gemma2-9b')
+        # button3 = telebot.types.InlineKeyboardButton('Gemma 2 9b 🚴‍♀️', callback_data='select_gemma2-9b')
         button4 = telebot.types.InlineKeyboardButton('Llama-3.2 90b 🚗', callback_data='select_llama370')
+        button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
         button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
         button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
         markup.row(button1, button2)
-        markup.row(button3, button4)
+        markup.row(button4, button7)
         markup.row(button5, button6)
-        if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') and hasattr(cfg, 'JAMBA_KEYS'):
-            button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
-            button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini 🚴‍♀️', callback_data='select_jamba')
-            markup.row(button7, button8)
-        else:
-            if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
-                button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b', callback_data='select_llama405')
-                markup.row(button7)
-            if hasattr(cfg, 'JAMBA_KEYS'):
-                button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini', callback_data='select_jamba')
-                markup.row(button8)
-        button9 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash 8b 🚴‍♀️', callback_data='select_gemini8')
-        markup.row(button9)
+        # if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') and hasattr(cfg, 'JAMBA_KEYS'):
+        #     button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
+        #     button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini 🚴‍♀️', callback_data='select_jamba')
+        #     markup.row(button7, button8)
+        # else:
+        #     if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
+        #         button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b', callback_data='select_llama405')
+        #         markup.row(button7)
+        #     if hasattr(cfg, 'JAMBA_KEYS'):
+        #         button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini', callback_data='select_jamba')
+        #         markup.row(button8)
+        # button9 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash 8b 🚴‍♀️', callback_data='select_gemini8')
+        # markup.row(button9)
         # if hasattr(cfg, 'GPT4OMINI_KEY'):
         #     button7 = telebot.types.InlineKeyboardButton('GPT 4o mini', callback_data='select_gpt4omini')
         #     markup.row(button7)
@@ -1516,18 +1517,19 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton(tr('☑️Только голос', lang), callback_data='voice_only_mode_enable')
         markup.row(button1, button2)
 
-        if not my_db.get_user_property(chat_id_full, 'auto_translations'):
-            my_db.set_user_property(chat_id_full, 'auto_translations', 0)
+        # if not my_db.get_user_property(chat_id_full, 'auto_translations'):
+            # my_db.set_user_property(chat_id_full, 'auto_translations', 0)
 
-        if my_db.get_user_property(chat_id_full, 'auto_translations') == 1:
-            button1 = telebot.types.InlineKeyboardButton(tr(f'✅Авто переводы', lang), callback_data='autotranslate_disable')
-        else:
-            button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Авто переводы', lang), callback_data='autotranslate_enable')
+        # if my_db.get_user_property(chat_id_full, 'auto_translations') == 1:
+        #     button1 = telebot.types.InlineKeyboardButton(tr(f'✅Авто переводы', lang), callback_data='autotranslate_disable')
+        # else:
+        #     button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Авто переводы', lang), callback_data='autotranslate_enable')
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
         else:
             button2 = telebot.types.InlineKeyboardButton(tr(f'✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
-        markup.row(button1, button2)
+        # markup.row(button1, button2)
+        markup.row(button2)
 
         if my_db.get_user_property(chat_id_full, 'suggest_enabled'):
             button1 = telebot.types.InlineKeyboardButton(tr(f'✅Show image suggestions', lang), callback_data='suggest_image_prompts_disable')
@@ -1888,14 +1890,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'transcribe_only', True)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'autotranslate_disable' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'auto_translations', 0)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'autotranslate_enable' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'auto_translations', 1)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'autotranslate_disable' and is_admin_member(call):
+        #     my_db.set_user_property(chat_id_full, 'auto_translations', 0)
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'autotranslate_enable' and is_admin_member(call):
+        #     my_db.set_user_property(chat_id_full, 'auto_translations', 1)
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'disable_chat_kbd' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'disabled_kbd', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
@@ -1954,8 +1956,8 @@ def handle_voice(message: telebot.types.Message):
     if supch == 1:
         is_private = True
 
-    if check_blocks(get_topic_id(message)) and not is_private:
-        return
+    # if check_blocks(get_topic_id(message)) and not is_private:
+    #     return
 
     if chat_id_full in VOICE_LOCKS:
         lock = VOICE_LOCKS[chat_id_full]
@@ -2197,8 +2199,8 @@ def handle_document(message: telebot.types.Message):
 
     chat_id = message.chat.id
 
-    if check_blocks(chat_id_full) and not is_private:
-        return
+    # if check_blocks(chat_id_full) and not is_private:
+    #     return
 
     if chat_id_full in DOCUMENT_LOCKS:
         lock = DOCUMENT_LOCKS[chat_id_full]
@@ -2477,11 +2479,11 @@ def handle_photo(message: telebot.types.Message):
         else:
             state = ''
 
-        # выключены ли автопереводы
-        if check_blocks(get_topic_id(message)):
-            if not is_private:
-                if state == 'translate':
-                    return
+        # # выключены ли автопереводы
+        # if check_blocks(get_topic_id(message)):
+        #     if not is_private:
+        #         if state == 'translate':
+        #             return
 
 
         if is_private:

@@ -362,8 +362,9 @@ def huggin_face_api_one_image(
                 # my_log.log_huggin_face_api(f"Успешно сгенерировано изображение на попытке {attempt + 1}")
                 return response.content
 
+
             # Логируем ошибку статуса
-            my_log.log_huggin_face_api(f"huggin_face_api_one_image: Попытка {attempt + 1} не удалась: статус {response.status_code}, ответ: {response.text[:300]}")
+            # my_log.log_huggin_face_api(f"huggin_face_api_one_image: Попытка {attempt + 1} не удалась: статус {response.status_code}, ответ: {response.text[:300]}")
 
         except Exception as e:
             error_traceback = traceback.format_exc()

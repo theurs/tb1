@@ -4832,7 +4832,8 @@ def summ_text(message: telebot.types.Message):
                             try:
                                 has_subs = my_sum.check_ytb_subs_exists(url)
                                 if not has_subs and ('/youtu.be/' in url or 'youtube.com/' in url):
-                                    bot_reply_tr(message, 'Видео с ютуба не содержит субтитров, обработка может занять некоторое время.')
+                                    bot_reply_tr(message, 'Видео с ютуба не содержит субтитров.')
+                                    return
                                 res, text = my_sum.summ_url(url, lang = lang, deep = False)
                                 my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
                                 my_db.set_user_property(chat_id_full, 'saved_file', text)

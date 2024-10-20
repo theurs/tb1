@@ -6155,7 +6155,7 @@ def do_task(message, custom_prompt: str = ''):
                                 return
 
                             if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'qroq-llama370'
+                                WHO_ANSWERED[chat_id_full] = 'groq-llama390'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:
@@ -6166,7 +6166,7 @@ def do_task(message, custom_prompt: str = ''):
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
-                            my_log.log_echo(message, f'[groq-llama370] {answer}')
+                            my_log.log_echo(message, f'[groq-llama390] {answer}')
                             try:
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
@@ -6349,7 +6349,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             if llama_helped:
                                 WHO_ANSWERED[chat_id_full] = f'👇gpt4o + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[groq-llama370] {answer}')
+                                my_log.log_echo(message, f'[groq-llama390] {answer}')
                             else:
                                 my_log.log_echo(message, f'[gpt-4o] {answer}')
                             try:
@@ -6393,7 +6393,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             if llama_helped:
                                 WHO_ANSWERED[chat_id_full] = f'👇gpt4omini + llama3-70 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[groq-llama370] {answer}')
+                                my_log.log_echo(message, f'[groq-llama390] {answer}')
                             else:
                                 my_log.log_echo(message, f'[gpt-4o] {answer}')
                             try:

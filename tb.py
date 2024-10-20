@@ -3936,7 +3936,9 @@ def huggingface_image_gen(message: telebot.types.Message):
         model = parts[1].strip()
         prompt = parts[2].strip()
     except IndexError:
-        bot_reply_tr(message, f"/hf <model_name (full URL or part of it)> <prompt>\n\n{tr('Generates an image using the Hugging Face model. Provide a prompt and optionally specify a model name.', lang)}")
+        msg = f"/hf <model_name (full URL or part of it)> <prompt>\n\n{tr('Generates an image using the Hugging Face model. Provide a prompt and optionally specify a model name.', lang)}\n\nExamples:"
+        msg += '\n\n/hf FLUX.1-dev Anime style dog\n\n/hf black-forest-labs/FLUX.1-dev Anime style dog\n\n/hf https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev Anime style dog' 
+        bot_reply(message, msg, disable_web_page_preview=True)
         return
 
     if chat_id_full in IMG_GEN_LOCKS:
@@ -3954,13 +3956,16 @@ def huggingface_image_gen(message: telebot.types.Message):
 
                     # Send the generated image to the user.
                     if image_bytes:
-                        bot.send_photo(
+                        bot_addr = f'https://t.me/{_bot_name}'
+                        cap = (bot_addr + '\n' + url + '\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
+                        m = bot.send_photo(
                             message.chat.id,
                             image_bytes,
-                            caption=prompt[:900],
+                            caption=cap,
                             reply_to_message_id=message.message_id,
                             disable_notification=True
                             )
+                        log_message(m)
                         update_user_image_counter(chat_id_full, 1)
                         add_to_bots_mem(f'{tr("user used /hf command to generate image", lang)} "{prompt}"',
                                         f'{tr("image was generated successfully", lang)}',

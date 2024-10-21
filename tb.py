@@ -1957,6 +1957,13 @@ def handle_voice(message: telebot.types.Message):
 
     # if check_blocks(get_topic_id(message)) and not is_private:
     #     return
+    # определяем какое имя у бота в этом чате, на какое слово он отзывается
+    bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+    if not is_private:
+        if not message.caption or not message.caption.startswith('?') or \
+            not message.caption.startswith(f'@{_bot_name}') or \
+                not message.caption.startswith(bot_name):
+            return
 
     if chat_id_full in VOICE_LOCKS:
         lock = VOICE_LOCKS[chat_id_full]
@@ -2200,6 +2207,12 @@ def handle_document(message: telebot.types.Message):
 
     # if check_blocks(chat_id_full) and not is_private:
     #     return
+    bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+    if not is_private:
+        if not message.caption or not message.caption.startswith('?') or \
+            not message.caption.startswith(f'@{_bot_name}') or \
+                not message.caption.startswith(bot_name):
+            return
 
     if chat_id_full in DOCUMENT_LOCKS:
         lock = DOCUMENT_LOCKS[chat_id_full]
@@ -2483,7 +2496,12 @@ def handle_photo(message: telebot.types.Message):
         #     if not is_private:
         #         if state == 'translate':
         #             return
-
+        bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+        if not is_private:
+            if not message.caption or not message.caption.startswith('?') or \
+                not message.caption.startswith(f'@{_bot_name}') or \
+                    not message.caption.startswith(bot_name):
+                return
 
         if is_private:
             # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку

@@ -987,7 +987,8 @@ def authorized(message: telebot.types.Message) -> bool:
 
     # full block, no logs
     chat_id_full = get_topic_id(message)
-    if my_db.get_user_property(chat_id_full, 'blocked_totally'):
+    from_user_id = f'[{message.from_user.id}] [0]'
+    if my_db.get_user_property(chat_id_full, 'blocked_totally') or my_db.get_user_property(from_user_id, 'blocked_totally'):
         return False
 
     # do not process commands to another bot /cmd@botname args

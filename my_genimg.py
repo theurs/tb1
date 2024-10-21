@@ -1374,7 +1374,7 @@ def gen_one_image(prompt: str,
     """рисует указанной в урле моделькой хаггинг фейса"""
 
     url = guess_hf_url(url)
-    if not url:
+    if not url or not url.startswith('https://api-inference.huggingface.co/models/'):
         return None
 
     if not user_id:

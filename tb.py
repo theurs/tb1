@@ -3980,7 +3980,10 @@ def huggingface_image_gen(message: telebot.types.Message):
 
                     if images5:
                         bot_addr = f'https://t.me/{_bot_name}'
-                        cap = (bot_addr + '\n' + model + '\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
+                        model_ = my_genimg.guess_hf_url(model)
+                        if model_.startswith('https://api-inference.huggingface.co/models/'):
+                            model_ = model_[44:]
+                        cap = (bot_addr + '\n\n' + model_ + '\n\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
                         medias = [telebot.types.InputMediaPhoto(x, caption = cap) for x in images5]
                         msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                         log_message(msgs_ids)

@@ -1344,13 +1344,10 @@ def test_hkey(key: str):
         return True
 
 
-def gen_one_image(prompt: str,
-               user_id: str = '',
-               url: str = '',
-               ) -> bytes:
-    """рисует указанной в урле моделькой хаггинг фейса"""
-
-    if not url.startswith('http'):
+def guess_hf_url(url: str) -> str:
+    if url.startswith('http'):
+        return url
+    else:
         if '/' in url:
             url = 'https://api-inference.huggingface.co/models/' + url
         else:
@@ -1364,9 +1361,21 @@ def gen_one_image(prompt: str,
                             url = x
                             break
                     if not url.startswith('http'):
-                        return None 
+                        return ''
             except:
-                return None
+                return ''
+    return url
+
+
+def gen_one_image(prompt: str,
+               user_id: str = '',
+               url: str = '',
+               ) -> bytes:
+    """рисует указанной в урле моделькой хаггинг фейса"""
+
+    url = guess_hf_url(url)
+    if not url:
+        return None
 
     if not user_id:
         user_id = 'test'

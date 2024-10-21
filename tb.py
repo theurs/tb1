@@ -623,11 +623,11 @@ def check_blocked_user(id_: str, from_user_id: int, check_trottle = True):
             raise Exception(f'user {user_id} in ddos stop list, ignoring')
 
     from_user_id = f'[{from_user_id}] [0]'
-    if my_db.get_user_property(from_user_id, 'blocked') or my_db.get_user_property(from_user_id, 'blocked_totally'):
+    if my_db.get_user_property(from_user_id, 'blocked'):
         my_log.log2(f'tb:check_blocked_user: User {from_user_id} is blocked')
         raise Exception(f'user {from_user_id} in stop list, ignoring')
 
-    if my_db.get_user_property(id_, 'blocked') or my_db.get_user_property(id_, 'blocked_totally'):
+    if my_db.get_user_property(id_, 'blocked'):
         my_log.log2(f'tb:check_blocked_user: User {id_} is blocked')
         raise Exception(f'user {user_id} in stop list, ignoring')
 
@@ -921,7 +921,7 @@ def authorized_callback(call: telebot.types.CallbackQuery) -> bool:
 
     chat_id_full = f'[{call.from_user.id}] [0]'
     # banned users do nothing
-    if my_db.get_user_property(chat_id_full, 'blocked') or my_db.get_user_property(chat_id_full, 'blocked_totally'):
+    if my_db.get_user_property(chat_id_full, 'blocked'):
         return False
 
     # check for blocking and throttling
@@ -1017,7 +1017,7 @@ def authorized(message: telebot.types.Message) -> bool:
 
     # banned users do nothing
     chat_id_full = get_topic_id(message)
-    if my_db.get_user_property(chat_id_full, 'blocked') or my_db.get_user_property(chat_id_full, 'blocked_totally'):
+    if my_db.get_user_property(chat_id_full, 'blocked'):
         return False
 
     # if this chat was forcibly left (banned), then when trying to enter it immediately exit
@@ -1086,7 +1086,7 @@ def authorized(message: telebot.types.Message) -> bool:
         return False
 
     # этого тут быть не должно но яхз что пошло не так, дополнительная проверка
-    if my_db.get_user_property(chat_id_full, 'blocked') or my_db.get_user_property(chat_id_full, 'blocked_totally'):
+    if my_db.get_user_property(chat_id_full, 'blocked'):
         my_log.log2(f'tb:authorized: User {chat_id_full} is blocked')
         return False
 
@@ -5706,7 +5706,7 @@ def do_task(message, custom_prompt: str = ''):
     message.text = my_log.restore_message_text(message.text, message.entities)
 
     from_user_id = f'[{message.from_user.id}] [0]'
-    if my_db.get_user_property(from_user_id, 'blocked') or my_db.get_user_property(chat_id_full, 'blocked_totally'):
+    if my_db.get_user_property(from_user_id, 'blocked'):
         return
 
     chat_id_full = get_topic_id(message)

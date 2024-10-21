@@ -65,3 +65,5 @@ https://api-inference.huggingface.co/models/renderartist/simplevectorflux
 # перестала работать https://api-inference.huggingface.co/models/alimama-creative/FLUX.1-Turbo-Alpha
 https://api-inference.huggingface.co/models/Shakker-Labs/FLUX.1-dev-LoRA-One-Click-Creative-Template
 https://api-inference.huggingface.co/models/aleksa-codes/flux-ghibsky-illustration
+
+https://api-inference.huggingface.co/models/Jovie/Midjourney

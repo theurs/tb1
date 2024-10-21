@@ -127,6 +127,8 @@ DDOS_BLOCKED_USERS = {}
 # кешировать запросы типа кто звонил {number:(result, full text searched)}
 CACHE_CHECK_PHONE = {}
 
+# {user_id: last_used_model,}
+HF_LAST_USED_MODEL = SqliteDict('db/hf_last_used_model.db', autocommit=True)
 
 # Глобальный массив для хранения состояния подписки (user_id: timestamp)
 subscription_cache = {}
@@ -3949,9 +3951,12 @@ def huggingface_image_gen(message: telebot.types.Message):
         prompt = parts[2].strip()
     except IndexError:
         msg = f"/hf <model_name (full URL or part of it)> <prompt>\n\n{tr('Generates an image using the Hugging Face model. Provide a prompt and optionally specify a model name.', lang)}\n\nExamples:"
-        msg += '\n\n/hf FLUX.1-dev Anime style dog\n\n/hf black-forest-labs/FLUX.1-dev Anime style dog\n\n/hf https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev Anime style dog' 
+        msg += '\n\n/hf FLUX.1-dev Anime style dog\n\n/hf black-forest-labs/FLUX.1-dev Anime style dog\n\n/hf https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev Anime style dog\n\n'
+        msg += tr('Use /hff <prompt> for repeat last used model.', lang)
         bot_reply(message, msg, disable_web_page_preview=True)
         return
+
+    HF_LAST_USED_MODEL[chat_id_full] = model
 
     if chat_id_full in IMG_GEN_LOCKS:
         lock = IMG_GEN_LOCKS[chat_id_full]
@@ -4013,6 +4018,28 @@ def huggingface_image_gen(message: telebot.types.Message):
                     error_traceback = traceback.format_exc()
                     my_log.log2(f"tb:huggingface_image_gen: Error generating image with Hugging Face model: {e}\n{error_traceback}")
                     bot_reply_tr(message, tr("An error occurred during image generation.", lang))
+
+
+@bot.message_handler(commands=['hff',], func=authorized)
+@async_run
+def huggingface_image_gen_fast(message: telebot.types.Message):
+    """Generates an image using the last used Hugging Face model. Use /hf to set the model."""
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    try:
+        prompt = message.text.split(maxsplit=1)[1].strip()
+    except IndexError:
+        bot_reply(message, tr("Please provide a prompt after /hff.", lang))
+        return
+
+    model = HF_LAST_USED_MODEL.get(chat_id_full)
+    if not model:
+        bot_reply(message, tr("No previous model used. Use /hf <model> <prompt> first.", lang))
+        return
+
+    message.text = f"/hf {model} {prompt}"
+    huggingface_image_gen(message)
 
 
 @bot.message_handler(commands=['bing', 'Bing'], func=authorized)

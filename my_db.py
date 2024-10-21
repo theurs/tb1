@@ -196,7 +196,6 @@ def init(backup: bool = True):
             dialog_groq BLOB,
             dialog_openrouter BLOB,
             dialog_shadow BLOB,
-            dialog_test1 BLOB,
             dialog_gpt4omini BLOB
         """
 

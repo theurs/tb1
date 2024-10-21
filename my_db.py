@@ -151,121 +151,80 @@ def init(backup: bool = True):
         CUR.execute('CREATE INDEX IF NOT EXISTS idx_translation ON translations (translation)')
         # CUR.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON translations (timestamp)')
 
+        user_columns = """
+            id_num INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT,
+            lang TEXT,
+            first_meet REAL,
+            last_time_access REAL,
+            telegram_stars INTEGER,
+
+            image_generated_counter INTEGER,
+
+            saved_file TEXT,
+            saved_file_name TEXT,
+
+            blocked INTEGER,
+            blocked_bing INTEGER,
+            blocked_totally INTEGER,
+
+            auto_leave_chat INTEGER,
+            auto_translations INTEGER,
+            tts_gender TEXT,
+            suggest_enabled INTEGER,
+            chat_enabled INTEGER,
+            original_mode INTEGER,
+            ocr_lang TEXT,
+            superchat INTEGER,
+            transcribe_only INTEGER,
+            command_mode TEXT,
+            voice_only_mode INTEGER,
+            disabled_kbd INTEGER,
+            chat_mode TEXT,
+            role TEXT,
+            temperature REAL,
+            bot_name TEXT,
+
+            persistant_memory TEXT,
+
+            api_key_gemini TEXT,
+            api_key_groq TEXT,
+            api_key_deepl TEXT,
+            api_key_huggingface TEXT,
+
+            dialog_gemini BLOB,
+            dialog_groq BLOB,
+            dialog_openrouter BLOB,
+            dialog_shadow BLOB,
+            dialog_test1 BLOB,
+            dialog_gpt4omini BLOB
+        """
+
         # Проверяем существование таблицы
         CUR.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
         table_exists = CUR.fetchone() is not None
 
         if not table_exists:
-            CUR.execute('''
+            CUR.execute(f'''
                 CREATE TABLE IF NOT EXISTS users (
-                    id_num INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id TEXT,
-                    lang TEXT,
-                    first_meet REAL,
-                    last_time_access REAL,
-                    telegram_stars INTEGER,
-
-                    image_generated_counter INTEGER,
-
-                    saved_file TEXT,
-                    saved_file_name TEXT,
-
-                    blocked INTEGER,
-                    blocked_bing INTEGER,
-                    blocked_totally INTEGER,
-                    auto_leave_chat INTEGER,
-
-                    auto_translations INTEGER,
-                    tts_gender TEXT,
-                    suggest_enabled INTEGER,
-                    chat_enabled INTEGER,
-                    original_mode INTEGER,
-                    ocr_lang TEXT,
-                    superchat INTEGER,
-                    transcribe_only INTEGER,
-                    command_mode TEXT,
-                    voice_only_mode INTEGER,
-                    disabled_kbd INTEGER,
-
-                    chat_mode TEXT,
-                    role TEXT,
-                    temperature REAL,
-                    bot_name TEXT,
-                    persistant_memory TEXT,
-
-                    api_key_gemini TEXT,
-                    api_key_groq TEXT,
-                    api_key_deepl TEXT,
-                    api_key_huggingface TEXT,
-
-                    dialog_gemini BLOB,
-                    dialog_groq BLOB,
-                    dialog_openrouter BLOB,
-                    dialog_shadow BLOB,
-                    dialog_gpt4omini BLOB
+                    {user_columns}
                 )
             ''')
             CUR.execute('CREATE INDEX IF NOT EXISTS idx_id ON users (id)')
             CUR.execute('CREATE INDEX IF NOT EXISTS idx_first_meet ON users (first_meet)')
         else:
             # Таблица существует, проверяем наличие полей и добавляем их при необходимости
-            columns_to_check = [
-                "id_num INTEGER PRIMARY KEY AUTOINCREMENT",
-                "id TEXT",
-                "lang TEXT",
-                "first_meet REAL",
-                "last_time_access REAL",
-                "telegram_stars INTEGER",
-
-                "image_generated_counter INTEGER",
-
-                "saved_file TEXT",
-                "saved_file_name TEXT",
-
-                "blocked INTEGER",
-                "blocked_bing INTEGER",
-                "blocked_totally INTEGER",
-                "auto_leave_chat INTEGER",
-
-                "auto_translations INTEGER",
-                "tts_gender TEXT",
-                "suggest_enabled INTEGER",
-                "chat_enabled INTEGER",
-                "original_mode INTEGER",
-                "ocr_lang TEXT",
-                "superchat INTEGER",
-                "transcribe_only INTEGER",
-                "command_mode TEXT",
-                "voice_only_mode INTEGER",
-                "disabled_kbd INTEGER",
-
-                "chat_mode TEXT",
-                "role TEXT",
-                "temperature REAL",
-                "bot_name TEXT",
-                "persistant_memory TEXT",
-
-                "api_key_gemini TEXT",
-                "api_key_groq TEXT",
-                "api_key_deepl TEXT",
-                "api_key_huggingface TEXT",
-
-                "dialog_gemini BLOB",
-                "dialog_groq BLOB",
-                "dialog_openrouter BLOB",
-                "dialog_shadow BLOB",
-                "dialog_gpt4omini BLOB",
-            ]
-
-            for column in columns_to_check:
+            columns = [col.strip() for col in user_columns.strip().split(',')]
+            for column_def in columns:
+                column_name = column_def.split()[0]
                 try:
-                    CUR.execute(f"ALTER TABLE users ADD COLUMN {column}")
-                    my_log.log2(f'my_db:init: added columns to users {column}')
+                    CUR.execute(f"ALTER TABLE users ADD COLUMN {column_def}")
+                    my_log.log2(f'my_db:init: added column to users: {column_def}')
                 except sqlite3.OperationalError as op_error:
                     if 'duplicate column name' not in str(op_error):
-                        my_log.log2(f'my_db:init: add columns to users {op_error}')
+                        my_log.log2(f'my_db:init: error adding column {column_name} to users: {op_error}')
                 except Exception as error:
-                    my_log.log2(f'my_db:init: add columns to users {error}')
+                    my_log.log2(f'my_db:init: error adding column {column_name} to users: {error}')
 
 
         # удалить файлы старше xx дня и диалоги старше yyy недели

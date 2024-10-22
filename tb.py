@@ -5675,6 +5675,10 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                         my_log.log2(chunk)
                     if parse_mode == 'HTML':
                         chunk = utils.html.unescape(chunk)
+                        chunk = chunk.replace('<b>', '')
+                        chunk = chunk.replace('<i>', '')
+                        chunk = chunk.replace('</b>', '')
+                        chunk = chunk.replace('</i>', '')
                     if send_message:
                         m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
                                             link_preview_options=preview, reply_markup=reply_markup)

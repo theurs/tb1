@@ -3338,7 +3338,7 @@ def undo_cmd(message: telebot.types.Message):
     bot_reply_tr(message, 'Last message was cancelled.')
 
 
-def reset_(message: telebot.types.Message):
+def reset_(message: telebot.types.Message, say: bool = True):
     """Clear chat history (bot's memory)
     message - is chat id or message object"""
     if isinstance(message, str):
@@ -3371,10 +3371,12 @@ def reset_(message: telebot.types.Message):
         my_gpt4omini.reset(chat_id_full)
     else:
         if isinstance(message, telebot.types.Message):
-            bot_reply_tr(message, 'History WAS NOT cleared.')
+            if say:
+                bot_reply_tr(message, 'History WAS NOT cleared.')
         return
     if isinstance(message, telebot.types.Message):
-        bot_reply_tr(message, 'History cleared.')
+        if say:
+            bot_reply_tr(message, 'History cleared.')
 
 
 @bot.message_handler(commands=['reset', 'clear', 'new'], func=authorized_log)
@@ -5139,6 +5141,8 @@ def send_welcome_start(message: telebot.types.Message):
     # no language in user info, show language selector
     if not user_have_lang:
         language(message)
+
+    reset_(message, say = False)
 
 
 @bot.message_handler(commands=['help'], func = authorized_log)

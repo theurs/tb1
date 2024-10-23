@@ -6020,7 +6020,7 @@ def do_task(message, custom_prompt: str = ''):
                     f'you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, '
                     f'user have telegram commands (/img - image generator, /tts - text to speech, '
                     f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
-                    f'images, documents, urls(any text and youtube subs)), you cannot do anything in the background, '
+                    f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
                     f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
                     f'no emoji unless it is required. '
@@ -6033,7 +6033,7 @@ def do_task(message, custom_prompt: str = ''):
                     f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, '
                     f'user have telegram commands (/img - image generator, /tts - text to speech, '
                     f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
-                    f'images, documents, urls(any text and youtube subs)), you cannot do anything in the background, '
+                    f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
                     f'no emoji unless it is required. '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
@@ -6103,6 +6103,25 @@ def do_task(message, custom_prompt: str = ''):
                     WHO_ANSWERED[chat_id_full] = gmodel
                 time_to_answer_start = time.time()
 
+
+                def command_in_answer(answer: str, message: telebot.types.Message) -> bool:
+                    if answer.startswith('```'):
+                        answer = answer[3:]
+                    if answer.startswith(('/img ','/tts ','/google ','/trans ', '/sum ')):
+                        cmd = answer.split(maxsplit=1)[0]
+                        message.text = answer
+                        if cmd == '/img':
+                            image_gen(message)
+                        elif cmd == '/tts':
+                            tts(message)
+                        elif cmd == '/google':
+                            google(message)
+                        elif cmd == '/trans':
+                            trans(message)
+                        elif cmd == '/sum':
+                            summ_text(message)
+                        return True
+                    return False
 
                 # если активирован режим общения с Gemini
                 if chat_mode_.startswith('gemini'):
@@ -6177,6 +6196,8 @@ def do_task(message, custom_prompt: str = ''):
                             else:
                                 my_log.log_echo(message, f'[{gmodel}] {answer}')
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
@@ -6230,6 +6251,8 @@ def do_task(message, custom_prompt: str = ''):
 
                             my_log.log_echo(message, f'[groq-llama390] {answer}')
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
@@ -6267,6 +6290,8 @@ def do_task(message, custom_prompt: str = ''):
 
                             my_log.log_echo(message, f'[openrouter {my_openrouter.PARAMS[chat_id_full][0]}] {answer}')
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('openrouter_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
@@ -6325,6 +6350,8 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log_echo(message, f'[llama405 nousresearch/hermes-3-llama-3.1-405b:free] {answer}')
 
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('openrouter_llama405_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
@@ -6370,6 +6397,8 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log_echo(message, f'[jamba-1.5-mini] {answer}')
 
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('jamba_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
@@ -6415,6 +6444,8 @@ def do_task(message, custom_prompt: str = ''):
                             else:
                                 my_log.log_echo(message, f'[gpt-4o] {answer}')
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gpt4o_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
@@ -6459,6 +6490,8 @@ def do_task(message, custom_prompt: str = ''):
                             else:
                                 my_log.log_echo(message, f'[gpt-4o] {answer}')
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gpt4omini_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
@@ -6499,6 +6532,8 @@ def do_task(message, custom_prompt: str = ''):
 
                             my_log.log_echo(message, f'[gemma2-9b] {answer}')
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gemma2-9b_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
@@ -6539,6 +6574,8 @@ def do_task(message, custom_prompt: str = ''):
 
                             my_log.log_echo(message, f'[haiku-ddg] {answer}')
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('haiku_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
@@ -6579,6 +6616,8 @@ def do_task(message, custom_prompt: str = ''):
 
                             my_log.log_echo(message, f'[gpt-4o-mini-ddg] {answer}')
                             try:
+                                if command_in_answer(answer, message):
+                                    return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gpt-4o-mini-ddg_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:

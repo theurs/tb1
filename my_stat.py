@@ -175,6 +175,8 @@ def visualize_usage(usage_data: List[Tuple[str, Dict[str, int]]], mode: str = 'l
         label = model[4:] if model.startswith('img ') else model
         line, = ax.plot(dates, model_counts[model], label=label, marker='o')
         value = model_counts[model][-1]
+        if not value:
+            continue
         handles_labels_values.append((line, label, value))
 
     # Sort by values in descending order

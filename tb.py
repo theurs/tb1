@@ -5142,7 +5142,7 @@ def send_welcome_start(message: telebot.types.Message):
     if not user_have_lang:
         language(message)
 
-    reset_(message, say = False)
+    # reset_(message, say = False)
 
 
 @bot.message_handler(commands=['help'], func = authorized_log)

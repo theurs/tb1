@@ -4110,6 +4110,18 @@ def image_gen(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     try:
+        # если уже есть 10000 картинок и нет ключей то давай до свидания
+        have_keys_10000 = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
+                    chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
+                    message.from_user.id in cfg.admins or \
+                    (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) > 100 or \
+                    (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 10000
+        if not have_keys_10000:
+            msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
+            msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
+            bot_reply(message, msg2, disable_web_page_preview = True)
+            return
+
         # не использовать бинг для рисования запрещенки, он за это банит
         NSFW_FLAG = False
         if message.text.endswith('NSFW'):
@@ -6024,7 +6036,9 @@ def do_task(message, custom_prompt: str = ''):
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif is_reply or is_private or bot_name_used or chat_bot_cmd_was_used:
             if len(msg) > cfg.max_message_from_user:
-                bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота, отправьте запрос в файле и используйте команду /ask:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
+                my_db.set_user_property(chat_id_full, 'saved_file_name', 'big_request_auto_saved_to_file.txt')
+                my_db.set_user_property(chat_id_full, 'saved_file', message.text)
+                bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота было автоматически сохранено как файл, используйте команду /ask  что бы задавать вопросы по этому тексту:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
                 return
 
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

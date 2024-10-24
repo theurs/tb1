@@ -6027,7 +6027,7 @@ def do_task(message, custom_prompt: str = ''):
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
         elif is_reply or is_private or bot_name_used or chat_bot_cmd_was_used:
             if len(msg) > cfg.max_message_from_user:
-                bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
+                bot_reply(message, f'{tr("Слишком длинное сообщение для чат-бота, отправьте запрос в файле и используйте команду /ask:", lang)} {len(msg)} {tr("из", lang)} {cfg.max_message_from_user}')
                 return
 
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

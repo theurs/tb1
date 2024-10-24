@@ -3702,6 +3702,32 @@ def set_new_temperature(message: telebot.types.Message):
     bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
 
 
+@bot.message_handler(commands=['alang'], func=authorized_admin)
+def change_user_language(message):
+    try:
+        # Разделяем команду на части
+        parts = message.text.split()
+        if len(parts) != 3:
+            bot_reply_tr(message, "Неправильный формат команды. Используйте: /alang <user_id_as_int> <lang_code_2_letters>")
+            return
+
+        user_id = int(parts[1])
+        new_lang = parts[2].lower()
+
+        # Проверка допустимости кода языка ISO 639-1
+        if len(new_lang) != 2 or not langcodes.Language.get(new_lang):
+            bot_reply_tr(message, "Недопустимый код языка. Используйте двухбуквенный код ISO 639-1.")
+
+        # Обновляем язык пользователя в базе данных
+        my_db.set_user_property(f'[{user_id}] [0]', 'lang', new_lang)
+
+        # Подтверждение успешного изменения
+        bot_reply_tr(message, f"Язык пользователя {user_id} успешно изменен на {new_lang}.")
+
+    except Exception as e:
+        bot_reply_tr(message, f"Произошла ошибка при обработке команды. {e}")
+
+
 @bot.message_handler(commands=['lang', 'language'], func=authorized_owner)
 @async_run
 def language(message: telebot.types.Message):

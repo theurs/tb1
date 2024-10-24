@@ -6044,7 +6044,7 @@ def do_task(message, custom_prompt: str = ''):
                 hidden_text = (
                     f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
                     f'you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, '
-                    f'user have telegram commands (/img - image generator, /tts - text to speech, '
+                    f'user have telegram commands (/img - image generator, /tts - text to speech, /reset - clear chat context, '
                     f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
@@ -6057,49 +6057,13 @@ def do_task(message, custom_prompt: str = ''):
                 hidden_text = (
                     f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
                     f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, '
-                    f'user have telegram commands (/img - image generator, /tts - text to speech, '
+                    f'user have telegram commands (/img - image generator, /tts - text to speech, /reset - clear chat context, '
                     f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
                     f'no emoji unless it is required. '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
-
-            # if message.chat.title:
-            #     lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-            #     hidden_text = (
-            #         f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
-            #         f'you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, '
-            #         f'user have telegram commands (/img - image generator, /tts - text to speech, '
-            #         f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
-            #         f'images, documents, urls(any text and youtube subs)), you cannot do anything in the background, '
-            #         f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
-            #         f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-            #         f'no emoji unless it is required. '
-            #         f'For text formatting, use markdown - two asterisks to highlight words and phrases within a single line **, '
-            #         f'[Header](URL) or just URL for web links, single backticks for inline code and monospace font `,  '
-            #         f'three backticks for multi-line code , and three backticks with language specification for syntax highlighting in multi-line code python, '
-            #         f'two _ for __italic__ text, ',
-            #         f'tabular data should be formatted using monospace font , mathematical notation should be written using Unicode characters'
-            #         f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
-            #     )
-
-            # else:
-            #     hidden_text = (
-            #         f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
-            #         f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, '
-            #         f'user have telegram commands (/img - image generator, /tts - text to speech, '
-            #         f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
-            #         f'images, documents, urls(any text and youtube subs)), you cannot do anything in the background, '
-            #         f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-            #         f'no emoji unless it is required. '
-            #         f'For text formatting, use markdown - two asterisks to highlight words and phrases within a single line **, '
-            #         f'[Header](URL) or just URL for web links, single backticks for inline code and monospace font `,  '
-            #         f'three backticks for multi-line code , and three backticks with language specification for syntax highlighting in multi-line code python, '
-            #         f'two _ for __italic__ text, ',
-            #         f'tabular data should be formatted using monospace font , mathematical notation should be written using Unicode characters'
-            #         f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
-            #     )
 
 
             hidden_text_for_llama370 = tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required.', lang)
@@ -6133,7 +6097,7 @@ def do_task(message, custom_prompt: str = ''):
                 def command_in_answer(answer: str, message: telebot.types.Message) -> bool:
                     if answer.startswith('```'):
                         answer = answer[3:]
-                    if answer.startswith(('/img ','/tts ','/google ','/trans ', '/sum ')):
+                    if answer.startswith(('/img ','/tts ','/google ','/trans ', '/sum ', '/reset')):
                         cmd = answer.split(maxsplit=1)[0]
                         message.text = answer
                         if cmd == '/img':
@@ -6146,6 +6110,8 @@ def do_task(message, custom_prompt: str = ''):
                             trans(message)
                         elif cmd == '/sum':
                             summ_text(message)
+                        elif cmd == '/reset':
+                            reset_(message)
                         return True
                     return False
 

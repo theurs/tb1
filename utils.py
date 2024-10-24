@@ -348,8 +348,6 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
     # а зачем собственно? text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
 
-    # меняем таблицы до возвращения кода
-    text = replace_tables(text)
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
@@ -361,6 +359,9 @@ def bot_markdown_to_html(text: str) -> str:
     for match, random_string in list_of_code_blocks:
         new_match = match
         text = text.replace(random_string, f'<code>{new_match}</code>')
+
+    # меняем таблицы до возвращения кода
+    text = replace_tables(text)
 
     text = replace_code_lang(text)
 
@@ -423,7 +424,7 @@ def replace_code_lang(t: str) -> str:
     return result
 
 
-def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20) -> str:
+def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -> str:
     """
     Заменяет markdown таблицы на их prettytable представление.
     Улучшена обработка различных форматов таблиц, включая ограничение ширины и обрезание длинных заголовков.

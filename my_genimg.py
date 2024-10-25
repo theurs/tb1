@@ -1328,9 +1328,10 @@ def test_hkey(key: str):
         headers = {"Authorization": f"Bearer {api_key}"}
 
         try:
-            response = requests.post(API_URL[0], headers=headers, json=payload, timeout=5, proxies=proxy)
+            response = requests.post(API_URL[0], headers=headers, json=payload, timeout=10, proxies=proxy)
         except Exception as error:
             # print(error)
+            my_log.log_keys(f'hf key test error: {api_key}\n\n{str(response)}')
             continue
 
         try:
@@ -1339,9 +1340,10 @@ def test_hkey(key: str):
             return True
         # print(resp_text)
         if 'Authorization header is correct, but the token seems invalid' in resp_text:
+            my_log.log_keys(f'hf key test error: {resp_text}\n{api_key}\n\n{str(response)}')
             return False
 
-        return True
+    return True
 
 
 def guess_hf_url(url: str) -> str:

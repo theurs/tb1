@@ -1331,7 +1331,7 @@ def test_hkey(key: str):
             response = requests.post(API_URL[0], headers=headers, json=payload, timeout=10, proxies=proxy)
         except Exception as error:
             # print(error)
-            my_log.log_keys(f'hf key test error: {api_key}\n\n{str(response)}')
+            my_log.log_keys(f'hf key test error: {api_key}\n\n{str(error)}')
             continue
 
         try:

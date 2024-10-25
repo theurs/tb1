@@ -3434,6 +3434,7 @@ def set_bing_cookies(message: telebot.types.Message):
         args = message.text.split(maxsplit=1)[1]
         args = args.replace('\n', ' ')
         cookies = args.split()
+        cookies = [x for x in cookies if not x.startswith('-')]
         n = 0
 
         for cookie in cookies:

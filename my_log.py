@@ -212,6 +212,7 @@ def log_huggin_face_api(text: str) -> None:
         'Task not found for this model',
         'CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.',
         'Remote end closed connection without response',
+        'Max requests total reached on image generation inference (3). Wait up to one minute before being able to process more Diffusion requests.',
     ]
     if any([x for x in a if x in text]):
         return

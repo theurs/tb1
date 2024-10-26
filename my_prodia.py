@@ -43,7 +43,7 @@ def gen_image(prompt: str, negative_prompt: str) -> bytes:
         result = prodia.wait(job)
 
         if result.image_url:
-            utils.download_image_as_bytes(result.image_url)
+            return utils.download_image_as_bytes(result.image_url)
         else:
             return b''
     except Exception as error:

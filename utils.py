@@ -653,7 +653,6 @@ def download_image_as_bytes(url_or_urls):
     Returns:
         Изображение в виде байтов или список изображений в виде байтов.
     """
-    import concurrent.futures
 
     if isinstance(url_or_urls, str):
         try:

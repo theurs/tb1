@@ -54,3 +54,4 @@ def gen_image(prompt: str, negative_prompt: str) -> bytes:
 
 if __name__ == "__main__":
     pass
+    # print(gen_image('cat', ''))

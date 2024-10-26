@@ -607,7 +607,7 @@ def prodia(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, neg
         image = my_prodia.gen_image(prompt, negative_prompt)
         results = []
         if image:
-            data = base64.b64decode(image)
+            data = image
             WHO_AUTOR[hash(data)] = 'prodia.com sdxl'
             results.append(data)
             return results

@@ -4860,7 +4860,7 @@ def ask_file(message: telebot.types.Message):
 
             if result:
                 answer = utils.bot_markdown_to_html(result)
-                bot_reply(message, answer, parse_mode='HTML')
+                bot_reply(message, answer, parse_mode='HTML', reply_markup=get_keyboard('translate', message))
                 add_to_bots_mem(tr("The user asked to answer the question based on the saved text:", lang) + ' ' + my_db.get_user_property(chat_id_full, 'saved_file_name')+'\n'+query,
                                 result, chat_id_full)
             else:

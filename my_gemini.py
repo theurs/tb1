@@ -357,68 +357,6 @@ def chat_cli(user_id: str = 'test', model: str = ''):
         print(r)
 
 
-# def transform_mem(data):
-#     """!!!удалить!!!
-#     Преобразует данные в формат, подходящий для моей функции джемини.
-
-#     Args:
-#         data: Данные в одном из возможных форматов:
-#         - Список словарей в формате тип1 (см. описание выше).
-#         - Список словарей в формате тип2 (см. описание выше).
-#         - Объект 'Content' (предполагается, что он может быть преобразован в словарь).
-
-#     Returns:
-#         Список словарей в формате, подходящем для моей функции:
-#         тип1
-#         <class 'list'> [
-#             parts {text: "1+1"}
-#             role: "user",
-
-#             parts {text: "2"}
-#             role: "model",
-#         ]
-
-#         тип 2 для genai
-#         <class 'list'> [
-#             {'role': 'user', 'parts': [{'text': '1+1'}]},
-#             {'role': 'model', 'parts': [{'text': '2'}]},
-
-#             {'role': 'user', 'parts': [{'text': '2+2'}]},
-#             {'role': 'model', 'parts': [{'text': '4'}]},
-#         ]
-
-#     """
-#     try:
-#         if not data:
-#             return []
-
-#         # Проверяем, в каком формате данные
-#         if isinstance(data[0], dict):
-#             return data  # Данные уже в формате тип2
-
-#         transformed_data = []
-#         role1 = ''
-#         role2 = ''
-#         text1 = ''
-#         text2 = ''
-        
-#         for x in data:
-#             if x.role == 'user':
-#                 role1 = x.role
-#                 text1 = x.parts[0].text
-#             else:
-#                 role2 = x.role
-#                 text2 = x.parts[0].text
-#                 transformed_data.append({'role': role1, 'parts': [{'text': text1}]})
-#                 transformed_data.append({'role': role2, 'parts': [{'text': text2}]})
-
-#         return transformed_data
-#     except Exception as error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log_gemini(f'my_gemini:transform_mem: {error}\n\n{traceback_error}')
-#         return []
-
-
 def transform_mem2(mem):
     '''переделывает словари в объекты, для совместимости, потом надо будет удалить'''
     mem_ = []
@@ -1040,7 +978,7 @@ if __name__ == '__main__':
     load_users_keys()
 
     # chat('привет', chat_id='[1651196] [0]')
-    update_mem('1+2', '3', '[1651196] [0]')
+    # update_mem('1+2', '3', '[1651196] [0]')
 
     # print(utils.string_to_dict("""{"detailed_description": "На изображении представлена картинка, разделённая на две части, обе из которых выполнены в розовом цвете. На каждой части представлен текст, написанный белым шрифтом. \n\nВ левой части указана дата 3.09.2024 и фраза \"День раскрытия своей истинной сути и создания отношений.\" Ниже приведён список тем, связанных с саморазвитием и отношениями: желания, цели, осознанность, энергия, эмоции, отношения, семья, духовность, любовь, партнёрство, сотрудничество, взаимопонимание. \n\nВ правой части представлен текст, призывающий следовать своим истинным желаниям, раскрывать свои качества, способности и таланты, а также выстраивать отношения с любовью и принятием, включая личные и деловые. Также текст призывает стремиться к пониманию и сотрудничеству.", "extracted_formatted_text": "3.09.2024 - день раскрытия\nсвоей истинной сути и\nсоздания отношений.\nЖелания, цели, осознанность,\nэнергия, эмоции, отношения,\nсемья, духовность, любовь,\nпартнёрство, сотрудничество,\nвзаимопонимание.\n\nСледуйте своим истинным\nжеланиям, раскрывайте свои\nкачества, способности и\нталанты. С любовью и\nпринятием выстраивайте\nотношения - личные и\nделовые. Стремитесь к\nпониманию и сотрудничеству.", "image_generation_prompt": "Create a pink background with two columns of white text. On the left, include the date '3.09.2024' and the phrase 'Day of revealing your true essence and creating relationships'. Below that, list personal development and relationship themes, such as desires, goals, awareness, energy, emotions, relationships, family, spirituality, love, partnership, cooperation, understanding. On the right, write text encouraging people to follow their true desires, reveal their qualities, abilities, and talents. Emphasize building relationships with love and acceptance, including personal and business relationships. End with a call to strive for understanding and cooperation."} """))
 

@@ -16,7 +16,7 @@ import utils
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def search_v3(query: str, lang: str = 'ru', max_search: int = 12, download_only = False):
+def search_v3(query: str, lang: str = 'ru', max_search: int = 10, download_only = False):
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
@@ -65,7 +65,7 @@ Search results:
 {text[:my_gemini.MAX_SUM_REQUEST]}
 '''
     r = ''
-    r =  my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], model=cfg.gemini_flash_model, temperature=1)
+    r =  my_gemini.ai(q[:100000], model=cfg.gemini_flash_model, temperature=1)
     if r:
         r += '\n\n--\n[Gemini Flash]'
     if not r:

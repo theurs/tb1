@@ -21,9 +21,7 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 12, download_only 
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
     try:
-        # r = googlesearch.search(query, stop = max_search, lang=lang)
         r = my_ddg.get_links(query, max_search)
-        # raise Exception('not implemented')
     except Exception as error:
         my_log.log2(f'my_google:search_google_v3: {error}')
         try:
@@ -44,7 +42,6 @@ def search_v3(query: str, lang: str = 'ru', max_search: int = 12, download_only 
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
 
-    # text = my_sum.download_in_parallel(urls, my_gemini.MAX_SUM_REQUEST)
     text = my_sum.download_text(urls, my_gemini.MAX_SUM_REQUEST)
 
     if download_only:
@@ -71,10 +68,6 @@ Search results:
     r =  my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], model=cfg.gemini_flash_model, temperature=1)
     if r:
         r += '\n\n--\n[Gemini Flash]'
-    # if not r:
-    #     r = my_gemini.ai(q[:32000], model=cfg.gemini_flash_model, temperature=1)
-    #     if r:
-    #         r += '\n\n--\n[Gemini Flash]'
     if not r:
         r = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], max_tokens_ = 4000)
         if r:

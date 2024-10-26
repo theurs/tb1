@@ -2984,18 +2984,18 @@ def users_keys_for_gemini(message: telebot.types.Message):
         msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://huggingface.co/settings/tokens\n\nhttps://www.deepl.com'
         bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
 
-        if message.from_user.id in cfg.admins and is_private:
-            msg = tr('Total users keys:', lang)
-            msg = f'{msg} {len(my_gemini.ALL_KEYS)}'
-            bot_reply(message, msg)
-            keys = []
-            for x in my_gemini.USER_KEYS.keys():
-                keys += my_gemini.USER_KEYS[x]
+        # if message.from_user.id in cfg.admins and is_private:
+        #     msg = tr('Total users keys:', lang)
+        #     msg = f'{msg} {len(my_gemini.ALL_KEYS)}'
+        #     bot_reply(message, msg)
+        #     keys = []
+        #     for x in my_gemini.USER_KEYS.keys():
+        #         keys += my_gemini.USER_KEYS[x]
 
-            msg = tr('All user`s keys:', lang) + '\n\n<code>'
-            for key in keys:
-                msg += f'"{key}",\n'
-            bot_reply(message, msg+'</code>', parse_mode='HTML')
+            # msg = tr('All user`s keys:', lang) + '\n\n<code>'
+            # for key in keys:
+            #     msg += f'"{key}",\n'
+            # bot_reply(message, msg+'</code>', parse_mode='HTML')
 
         # показать юзеру его ключи
         if is_private:

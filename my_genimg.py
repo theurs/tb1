@@ -26,6 +26,7 @@ import cfg
 import my_gemini
 import my_groq
 import my_log
+import my_prodia
 import my_runware_ai
 import my_sambanova
 import my_trans
@@ -585,6 +586,36 @@ def stable_cascade(prompt: str, url: str = "multimodalart/stable-cascade", negat
                 return [data,]
         except Exception as error:
             my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
+    return []
+
+
+
+def prodia(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
+    """
+    Generates images based on a prompt using the PRODIA API.
+
+    Args:
+        prompt (str): The prompt for generating the images.
+        width (int, optional): The width of the images. Defaults to 1024.
+        height (int, optional): The height of the images. Defaults to 1024.
+        num (int, optional): The number of images to generate. Defaults to 1.
+
+    Returns:
+        list: A list of generated images in bytes format.
+    """
+    try:
+        image = my_prodia.gen_image(prompt, negative_prompt)
+        results = []
+        if image:
+            data = base64.b64decode(image)
+            WHO_AUTOR[hash(data)] = 'prodia.com sdxl'
+            results.append(data)
+            return results
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_huggin_face_api(f'my_genimg:prodia: {error}\n\n{error_traceback}')
+
     return []
 
 
@@ -1243,47 +1274,31 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         else:
             return []
 
-        if use_bing:
-            pool = ThreadPool(processes=7)
+        pool = ThreadPool(processes=8)
 
-            async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
+        async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
 
-            async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
-            async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
+        async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
+        async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
 
-            async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
+        async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
 
-            async_result5 = pool.apply_async(yandex_cloud, (prompt,))
-            async_result6 = pool.apply_async(yandex_cloud, (prompt,))
+        async_result5 = pool.apply_async(yandex_cloud, (prompt,))
+        async_result6 = pool.apply_async(yandex_cloud, (prompt,))
 
-            async_result7 = pool.apply_async(runware, (prompt, 2, negative))
+        async_result7 = pool.apply_async(runware, (prompt, 2, negative))
 
-            result = (async_result1.get() or []) + \
-                    (async_result2.get() or []) + \
-                    (async_result3.get() or []) + \
-                    (async_result7.get() or []) + \
-                    (async_result4.get() or []) + \
-                    (async_result5.get() or []) + \
-                    (async_result6.get() or [])
-        else:
-            pool = ThreadPool(processes=7)
+        async_result8 = pool.apply_async(prodia, (prompt, negative))
 
-            async_result2 = pool.apply_async(kandinski, (prompt,))
-            async_result3 = pool.apply_async(kandinski, (prompt,))
+        result = (async_result1.get() or []) + \
+                 (async_result2.get() or []) + \
+                 (async_result3.get() or []) + \
+                 (async_result4.get() or []) + \
+                 (async_result5.get() or []) + \
+                 (async_result6.get() or []) + \
+                 (async_result7.get() or []) + \
+                 (async_result8.get() or [])
 
-            async_result4 = pool.apply_async(huggin_face_api, (prompt,))
-
-            async_result5 = pool.apply_async(yandex_cloud, (prompt,))
-            async_result6 = pool.apply_async(yandex_cloud, (prompt,))
-
-            async_result7 = pool.apply_async(runware, (prompt,))
-
-            result = (async_result2.get() or []) + \
-                    (async_result3.get() or []) + \
-                    (async_result7.get() or []) + \
-                    (async_result4.get() or []) + \
-                    (async_result5.get() or []) + \
-                    (async_result6.get() or [])
 
         # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
         # может удалить то что рисуют параллельные запросы и второй бот?

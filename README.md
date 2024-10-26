@@ -400,6 +400,14 @@ OPEN_ROUTER_FREE_KEYS = [
 #]
 
 
+# https://app.prodia.com
+# 1000 free images per key
+#PRODIA_KEYS = [
+#    'xxx',
+#    'yyy',
+#]
+
+
 # string for /donate command html parsing
 # DONATION_STRING = '<a href = "https://www.donationalerts.com/r/xxx">DonationAlerts</a>'
 

@@ -41,6 +41,7 @@ pendulum
 Pillow
 pillow-heif
 prettytable
+prodiapy
 pyarrow
 pyenchant
 pydub

@@ -468,7 +468,6 @@ def purge(chat_id: int) -> bool:
     :param chat_id: An integer representing the chat ID
     :return: A boolean indicating the success of the purge operation
     """
-    return True
     f1 = glob.glob('logs/*.log')
     f2 = glob.glob('logs2/*.log')
     f3 = f1 + f2

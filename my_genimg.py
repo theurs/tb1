@@ -1179,6 +1179,8 @@ Return a `reprompt`
         reprompt = ''
 
         r = my_sambanova.get_reprompt_for_image(query, chat_id)
+        if r == 'FAILED': # предположительно запрещенный промпт, но это не точно Ж(
+            return '',''
 
         if not r:
             r = my_gemini.get_reprompt_for_image(query, chat_id)
@@ -1239,9 +1241,10 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
 
     reprompt, _ = get_reprompt(prompt, conversation_history)
 
-    result = bing(reprompt, user_id=user_id)
-
-    return result
+    if reprompt:
+        result = bing(reprompt, user_id=user_id)
+        return result
+    return []
 
 
 def gen_images(prompt: str, moderation_flag: bool = False,

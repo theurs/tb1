@@ -153,6 +153,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
 
     if hasattr(cfg, 'SAMBANOVA_KEYS'):
         my_log.log_sambanova(f'get_reprompt_for_image: FAILED {prompt}')
+        return 'FAILED'
 
     return None
 

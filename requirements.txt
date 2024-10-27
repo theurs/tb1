@@ -74,3 +74,5 @@ unidecode
 xlrd
 webvtt-py
 wikipedia
+
+zhipuai

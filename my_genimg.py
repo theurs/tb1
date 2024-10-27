@@ -24,6 +24,7 @@ from PIL import Image
 import bing_img
 import cfg
 import my_gemini
+import my_glm
 import my_groq
 import my_log
 import my_prodia
@@ -588,6 +589,35 @@ def stable_cascade(prompt: str, url: str = "multimodalart/stable-cascade", negat
             my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
     return []
 
+
+def glm(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
+    """
+    Generates images based on a prompt using the bigmodel.cn API.
+
+    Args:
+        prompt (str): The prompt for generating the images.
+        width (int, optional): The width of the images. Defaults to 1024.
+        height (int, optional): The height of the images. Defaults to 1024.
+        num (int, optional): The number of images to generate. Defaults to 1.
+
+    Returns:
+        list: A list of generated images in bytes format.
+    """
+    try:
+        images = my_glm.txt2img(prompt, user_id='-')
+        results = []
+        if images:
+            for image in images:
+                data = utils.download_image_as_bytes(image)
+                WHO_AUTOR[hash(data)] = 'bigmodel.cn cogView-3-plus'
+                results.append(data)
+            return results
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_huggin_face_api(f'glm: {error}\n\n{error_traceback}')
+
+    return []
 
 
 def prodia(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
@@ -1277,7 +1307,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         else:
             return []
 
-        pool = ThreadPool(processes=8)
+        pool = ThreadPool(processes=9)
 
         async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
 
@@ -1293,6 +1323,8 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result8 = pool.apply_async(prodia, (prompt, negative))
 
+        async_result9 = pool.apply_async(glm, (prompt, negative))
+
         result = (async_result1.get() or []) + \
                  (async_result2.get() or []) + \
                  (async_result3.get() or []) + \
@@ -1300,7 +1332,8 @@ def gen_images(prompt: str, moderation_flag: bool = False,
                  (async_result5.get() or []) + \
                  (async_result6.get() or []) + \
                  (async_result7.get() or []) + \
-                 (async_result8.get() or [])
+                 (async_result8.get() or []) + \
+                 (async_result9.get() or [])
 
 
         # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?

@@ -167,6 +167,11 @@ def log_openrouter_free(text: str) -> None:
     log2(text[:2000], 'openrouter_free')
 
 
+def log_glm(text: str) -> None:
+    """для логов glm"""
+    log2(text[:2000], 'glm')
+
+
 def log_sambanova(text: str) -> None:
     """для логов openrouter sambanova"""
     log2(text[:2000], 'sambanova')

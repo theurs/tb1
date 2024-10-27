@@ -61,7 +61,7 @@ def ai(prompt: str = '',
     if not prompt and not mem:
         return ''
 
-    if not hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
+    if not hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') or len(cfg.OPEN_ROUTER_FREE_KEYS) < 1:
         return ''
 
     if not temperature:

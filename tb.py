@@ -36,6 +36,7 @@ import my_db
 import my_ddg
 import my_google
 import my_gemini
+import my_glm
 import my_gpt4omini
 import my_groq
 import my_jamba
@@ -407,6 +408,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_openrouter.update_mem(query, resp, chat_id_full)
     elif 'openrouter_llama405' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter_free.update_mem(query, resp, chat_id_full)
+    elif 'glm4plus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_glm.update_mem(query, resp, chat_id_full)
     elif 'jamba' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_jamba.update_mem(query, resp, chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -484,6 +487,10 @@ Return a `image_transcription`
             text_ = ''
             text_ = my_gemini.img2txt(data, query, json_output=True, model=model, temp=temperature, chat_id=chat_id_full)
 
+            # если не ответил джемини то попробовать glm
+            if not text_:
+                text_ = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
+
             # если не ответил джемини то попробовать groq (llama-3.2-90b-vision-preview)
             if not text_:
                 text_ = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, json_output=True, chat_id=chat_id_full)
@@ -525,6 +532,10 @@ Return a `image_transcription`
         else:
             text = ''
             text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
+
+            # если не ответил джемини то попробовать glm
+            if not text:
+                text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
 
             # если не ответил джемини то попробовать groq (llama-3.2-90b-vision-preview)
             if not text:
@@ -1358,6 +1369,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2, button3, button4)
         return markup
 
+    elif kbd == 'glm4plus_chat':
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='glm4plus_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'jamba_chat':
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
@@ -1490,9 +1513,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
         button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
         button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
+        button7 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚀', callback_data='select_glm4plus')
         markup.row(button1, button2)
         markup.row(button4, button7)
         markup.row(button5, button6)
+        markup.row(button7)
         # if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') and hasattr(cfg, 'JAMBA_KEYS'):
         #     button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
         #     button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini 🚴‍♀️', callback_data='select_jamba')
@@ -1793,6 +1818,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_llama405':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter_llama405')
+        elif call.data == 'select_glm4plus':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GLM 4 PLUS.', lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'glm4plus')
         elif call.data == 'select_jamba':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Jamba 1.5 mini.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'jamba')
@@ -1836,6 +1864,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'openrouter_llama405_reset':
             my_openrouter_free.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Llama 405b очищена.')
+        elif call.data == 'glm4plus':
+            my_glm.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с GLM 4 PLUS очищена.')
         elif call.data == 'jamba_reset':
             my_jamba.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Jamba 1.5 mini очищена.')
@@ -3260,11 +3291,13 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
         my_openrouter.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         my_openrouter_free.force(chat_id_full, text)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
+        my_glm.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
         my_jamba.force(chat_id_full, text)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.force(chat_id_full, text)
-    # openrouter paid not implemented
+    # paid not implemented
     # elif 'gpt4omini' == my_db.get_user_property(chat_id_full, 'chat_mode'):
     #     my_gpt4omini.force(chat_id_full, text)
     # not implemented
@@ -3317,6 +3350,8 @@ def undo_cmd(message: telebot.types.Message):
         my_openrouter.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         my_openrouter_free.undo(chat_id_full)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm3plus':
+        my_glm.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
         my_jamba.undo(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3354,6 +3389,8 @@ def reset_(message: telebot.types.Message, say: bool = True):
         my_openrouter.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         my_openrouter_free.reset(chat_id_full)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
+        my_glm.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
         my_jamba.reset(chat_id_full)
     elif 'gemma2-9b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3558,6 +3595,10 @@ def send_debug_history(message: telebot.types.Message):
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         prompt = 'Llama 405b\n\n'
         prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
+        prompt = 'GLM 4 PLUS\n\n'
+        prompt += my_glm.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
         prompt = 'Jamba 1.5 mini\n\n'
@@ -4443,6 +4484,8 @@ def post_telegraph(message: telebot.types.Message):
         text = my_jamba.get_last_mem(chat_id_full)
     elif mode == 'openrouter_llama405':
         text = my_openrouter_free.get_last_mem(chat_id_full)
+    elif mode == 'glm4plus':
+        text = my_glm.get_last_mem(chat_id_full)
     elif mode in ('gpt-4o-mini-ddg', 'haiku',):
         text = my_ddg.get_last_mem(chat_id_full)
     if text:
@@ -5286,6 +5329,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
             my_openrouter_free.reset(chat_id_full)
+            my_glm.reset(chat_id_full)
             my_jamba.reset(chat_id_full)
             my_shadowjourney.reset(chat_id_full)
             my_gpt4omini.reset(chat_id_full)
@@ -5360,6 +5404,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'llama370': 'Llama 3.2 90b',
             'openrouter_llama405': 'Llama 3.1 405b',
             'openrouter': 'openrouter.ai',
+            'glm4plus': 'GLM 4 PLUS',
             'jamba': 'Jamba 1.5 mini',
             'gpt4o': 'GPT 4o',
             'gpt4omini': 'GPT 4o mini',
@@ -6367,6 +6412,54 @@ def do_task(message, custom_prompt: str = ''):
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:openrouter_llama405 {error3}\n{error_traceback}')
                         return
+
+
+
+                # если активирован режим общения с glm4plus
+                if chat_mode_ == 'glm4plus':
+                    if len(msg) > my_glm.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для GLM 4 PLUS, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_glm.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
+                            answer = my_glm.chat(
+                                message.text,
+                                chat_id_full,
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature'),
+                                system=style_,
+                                model = my_glm.DEFAULT_MODEL,
+                            )
+
+                            WHO_ANSWERED[chat_id_full] = my_glm.DEFAULT_MODEL
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not answer:
+                                answer = 'GLM 4 PLUS ' + tr('did not answered, try to /reset and start again.', lang)
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            my_log.log_echo(message, f'[{my_glm.DEFAULT_MODEL}] {answer}')
+
+                            try:
+                                if command_in_answer(answer, message):
+                                    return
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('glm4plus_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('glm4plus_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:glm4plus {error3}\n{error_traceback}')
+                        return
+
 
 
 

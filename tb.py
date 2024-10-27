@@ -1513,7 +1513,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
         button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
         button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
-        button7 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚀', callback_data='select_glm4plus')
+        button7 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚗', callback_data='select_glm4plus')
         markup.row(button1, button2)
         markup.row(button4, button7)
         markup.row(button5, button6)

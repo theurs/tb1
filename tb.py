@@ -6423,12 +6423,11 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             answer = my_glm.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature'),
-                                system=style_,
+                                system=hidden_text,
                                 model = my_glm.DEFAULT_MODEL,
                             )
 

@@ -604,14 +604,15 @@ def glm(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negati
         list: A list of generated images in bytes format.
     """
     try:
-        images = my_glm.txt2img(prompt, user_id='-')
-        results = []
-        if images:
-            for image in images:
-                data = utils.download_image_as_bytes(image)
-                WHO_AUTOR[hash(data)] = 'bigmodel.cn cogView-3-plus'
-                results.append(data)
-            return results
+        if hasattr(cfg, 'GLM_IMAGES') and cfg.GLM_IMAGES:
+            images = my_glm.txt2img(prompt, user_id='-')
+            results = []
+            if images:
+                for image in images:
+                    data = utils.download_image_as_bytes(image)
+                    WHO_AUTOR[hash(data)] = 'bigmodel.cn cogView-3-plus'
+                    results.append(data)
+                return results
 
     except Exception as error:
         error_traceback = traceback.format_exc()

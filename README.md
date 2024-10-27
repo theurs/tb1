@@ -412,7 +412,8 @@ OPEN_ROUTER_FREE_KEYS = [
 #    'xxx',
 #    'yyy',
 #]
-
+# use or no bigmodel.cn images
+#GLM_IMAGES = False
 
 
 # string for /donate command html parsing

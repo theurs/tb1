@@ -1717,11 +1717,15 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             message.text = f'/tts {detected_lang} {message.text or message.caption or ""}'
             tts(message)
         elif call.data.startswith('imagecmd_'):
+            if my_db.get_user_property(user_full_id, 'blocked_bing'):
+                return
             hash_ = call.data[9:]
             prompt = my_db.get_from_im_suggests(hash_)
             message.text = f'/image {prompt}'
             image_gen(message)
         elif call.data.startswith('imagecmd2_'):
+            if my_db.get_user_property(user_full_id, 'blocked_bing'):
+                return
             hash_ = call.data[10:]
             prompt = my_db.get_from_im_suggests(hash_)
             message.text = f'/image2 {prompt}'

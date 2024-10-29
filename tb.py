@@ -3992,7 +3992,7 @@ def check_vip_user(chat_id_full: str) -> bool:
     have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
             user_id in cfg.admins or \
-            (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) > 100
+            (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
     return have_keys
 
 
@@ -4160,7 +4160,7 @@ def image_gen(message: telebot.types.Message):
         have_keys_10000 = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
                     chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
                     message.from_user.id in cfg.admins or \
-                    (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) > 100 or \
+                    (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
                     (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 10000
         if not have_keys_10000:
             msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
@@ -4446,7 +4446,7 @@ Return a `suggestions`
                                 have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
                                             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
                                             message.from_user.id in cfg.admins or \
-                                            (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) > 100 or \
+                                            (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
                                             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 5000
                                 if not have_keys:
                                     msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
@@ -5865,7 +5865,7 @@ def do_task(message, custom_prompt: str = ''):
     have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
         chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or\
         message.from_user.id in cfg.admins or\
-        (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) > 100
+        (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
 
     # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
     # if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15' and not have_keys and is_private:

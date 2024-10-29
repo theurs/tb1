@@ -256,9 +256,10 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r"^(\s*)-\s", r"\1– ", text, flags=re.MULTILINE)
 
     # 1,2,3,4 # в начале строки меняем всю строку на жирный текст
-    text = re.sub(r"^(?:\.\s)?#(?:#{2,})\s(.*)$", r"<b>▏\1</b>", text, flags=re.MULTILINE)  # 3+ hashes
-    text = re.sub(r"^(?:\.\s)?##\s(.*)$", r"<b>▌ \1</b>", text, flags=re.MULTILINE)  # 2 hashes
-    text = re.sub(r"^(?:\.\s)?#\s(.*)$", r"<b>█ \1</b>", text, flags=re.MULTILINE)  # 1 hash
+    # text = re.sub(r"^(?:\.\s)?#(?:#{2,})\s(.*)$", r"<b>▏\1</b>", text, flags=re.MULTILINE)  # 3+ hashes
+    # text = re.sub(r"^(?:\.\s)?##\s(.*)$", r"<b>▌ \1</b>", text, flags=re.MULTILINE)  # 2 hashes
+    # text = re.sub(r"^(?:\.\s)?#\s(.*)$", r"<b>█ \1</b>", text, flags=re.MULTILINE)  # 1 hash
+    text = re.sub(r"^(?:\.\s)?#(?:#{0,})\s(.*)$", r"<b>\1</b>", text, flags=re.MULTILINE)  # 1+ hashes
 
     # цитаты начинаются с &gt; их надо заменить на <blockquote></blockquote>
     # &gt; должен быть либо в начале строки, либо сначала пробелы потом &gt;
@@ -1011,7 +1012,7 @@ if __name__ == '__main__':
     # print(get_codepage())
     # print(get_file_ext('c:\\123\123123.23'))
     # print(safe_fname('dfgdшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшггггггггггггггггггггггггггггшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшшfg\/dfg.tb'))
-    t=r"""рш еруку
+    t1=r"""рш еруку
 
 ## Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.
 
@@ -1256,6 +1257,6 @@ Semoga bermanfaat dan menginspirasi.
 | Меланома |  Различные участки кожи, может метастазировать в другие органы |  1. Типы роста: радиальный, вертикальный. <br> 2.  <br> 3. Состоит из злокачественных меланоцитов. <br> 4. <br> 5. Метастазирует лимфогенным и гематогенным путем. |'''
 
 
-    print(bot_markdown_to_html(t2))
+    print(bot_markdown_to_html(t1))
 
     pass

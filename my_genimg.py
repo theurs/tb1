@@ -1353,7 +1353,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
             if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
                 my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
 
-        return list(set(result))
+        return result
 
 
 def test_hkey(key: str):

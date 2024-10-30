@@ -113,7 +113,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     try:
         images = bing_img.gen_images(prompt, user_id)
         if type(images) == list:
-            return images
+            return list(set(images))
     except Exception as error_bing_img:
         my_log.log_bing_img(f'my_genimg:bing: {error_bing_img}')
     return []
@@ -1353,7 +1353,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
             if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
                 my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
 
-        return result
+        return list(set(result))
 
 
 def test_hkey(key: str):

@@ -350,6 +350,7 @@ def bot_markdown_to_html(text: str) -> str:
     # а зачем собственно? text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
 
     # хз откуда это
+    text = text.replace('&#x27;', "'")
     text = text.replace('   #x27;', "'")
     text = text.replace('#x27;', "'")
 
@@ -1262,11 +1263,13 @@ Semoga bermanfaat dan menginspirasi.
 | Голубой | Дерма |  Синеватый или голубовато-серый цвет из-за расположения меланина в глубоких слоях дермы. |
 | Диспластический | Различные участки кожи |  Неправильная форма, неравномерная окраска, нечеткие границы. |
 | Меланома |  <10 Различные участки кожи, может метастазировать в другие органы |  1. Типы роста: радиальный, вертикальный. <br> 2.  <br> 3. Состоит из злокачественных меланоцитов. <br> 4. <br> 5. Метастазирует лимфогенным и гематогенным путем. |
-
-
 '''
 
+    t3 = '''The component doesn't need to know the specific structure of the store; it only needs the functions to access and modify the state.
+Remember to adjust the type of `useDispatch` to match your application's `AppDispatch` type.
+This is a clean and efficient way to create a reusable component that interacts with Redux without hardcoding store dependencies.
+'''
 
-    print(bot_markdown_to_html(t2))
+    print(bot_markdown_to_html(t3))
 
     pass

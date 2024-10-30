@@ -349,6 +349,9 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
     # а зачем собственно? text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
 
+    # хз откуда это
+    text = text.replace('   #x27;', "'")
+    text = text.replace('#x27;', "'")
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:

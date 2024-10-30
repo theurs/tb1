@@ -312,18 +312,21 @@ def img2txt(data_: bytes,
             ) -> str:
     '''Convert image to text.
     '''
-    try:
-        data = io.BytesIO(data_)
-        img = PIL.Image.open(data)
-        q = [prompt, img]
-        res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills)
-        if chat_id:
-            my_db.add_msg(chat_id, model)
-        return res
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'my_gemini:img2txt: {error}\n\n{traceback_error}')
-        return ''
+    for _ in range(4):
+        try:
+            data = io.BytesIO(data_)
+            img = PIL.Image.open(data)
+            q = [prompt, img]
+            res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills)
+            if chat_id:
+                my_db.add_msg(chat_id, model)
+            return res
+        except Exception as error:
+            traceback_error = traceback.format_exc()
+            my_log.log_gemini(f'my_gemini:img2txt: {error}\n\n{traceback_error}')
+        time.sleep(2)
+    my_log.log_gemini(f'my_gemini:img2txt 4 tries done and no result')
+    return ''
 
 
 def ai(q: str,

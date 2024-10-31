@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import traceback
 import platform as platform_module
 from typing import Union, Optional
 
@@ -1027,23 +1028,27 @@ def truncate_text(text: str, max_lines: int = 10, max_chars: int = 200) -> str:
     Returns:
         The truncated text.
     """
+    try:
+        truncated_by_chars = False
+        if len(text) > max_chars:
+            text = text[:max_chars]
+            truncated_by_chars = True  # Flag to indicate character truncation
 
-    truncated_by_chars = False
-    if len(text) > max_chars:
-        text = text[:max_chars]
-        truncated_by_chars = True  # Flag to indicate character truncation
+        lines = text.splitlines()
+        truncated_lines = lines[:max_lines]
 
-    lines = text.splitlines()
-    truncated_lines = lines[:max_lines]
+        if truncated_by_chars and len(lines) > max_lines:  # Add ellipsis back if lines were truncated
+            truncated_text = "\n".join(truncated_lines) + "..."
+        elif truncated_by_chars : # Add ellipsis if chars were truncated but lines were not
+            truncated_text = "\n".join(truncated_lines) + "..." if len("\n".join(truncated_lines)) < max_chars else "\n".join(truncated_lines)
+        else:
+            truncated_text = "\n".join(truncated_lines)
 
-    if truncated_by_chars and len(lines) > max_lines:  # Add ellipsis back if lines were truncated
-        truncated_text = "\n".join(truncated_lines) + "..."
-    elif truncated_by_chars : # Add ellipsis if chars were truncated but lines were not
-        truncated_text = "\n".join(truncated_lines) + "..." if len("\n".join(truncated_lines)) < max_chars else "\n".join(truncated_lines)
-    else:
-        truncated_text = "\n".join(truncated_lines)
-
-    return truncated_text
+        return truncated_text
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'utils:truncate_text {error}\n{text}\n{max_lines} {max_chars}\n\n{traceback_error}')
+        return text
 
 
 if __name__ == '__main__':

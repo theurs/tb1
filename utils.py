@@ -370,6 +370,8 @@ def bot_markdown_to_html(text: str) -> str:
 
     text = replace_code_lang(text)
 
+    text = text.replace('<pre><code class="language-plaintext">\n<pre><code>', '<pre><code class="language-plaintext">')
+
     # убрать 3 и более пустые сроки подряд (только после блоков кода или любых тегов)
     # text = re.sub(r"^\s*$", r"\n", text, flags=re.MULTILINE)
     # text = re.sub(r'>\n{4,}', '>\n\n\n', text)
@@ -1268,6 +1270,20 @@ Semoga bermanfaat dan menginspirasi.
     t3 = '''The component doesn't need to know the specific structure of the store; it only needs the functions to access and modify the state.
 Remember to adjust the type of `useDispatch` to match your application's `AppDispatch` type.
 This is a clean and efficient way to create a reusable component that interacts with Redux without hardcoding store dependencies.
+
+```
+| Показания к применению | Лекарственные средства |
+|---|---|
+| 1) Лечение свежего инфаркта миокарда (первые 5 ч) | Алтеплаза, Стрептокиназа, Ацетилсалициловая кислота |
+| 2) Лечение острой тромбоэмболии легочной артерии | Алтеплаза, Стрептокиназа, Гепарин, Надропарин кальция |
+| 3) Лечение внутрисосудистого тромбоза | Гепарин, Надропарин кальция, Тромбин |
+| 4) Лечение варикозного расширения вен нижних конечностей | Гепариновая мазь, Этамзилат |
+| 5) Лечение кровотечений внутренних органов (маточных, желудочных, геморрагических) | Этамзилат, Аминокапроновая кислота |
+| 6) Остановка капиллярных кровотечений | Этамзилат, Гепариновая мазь |
+| 7) Профилактика инфаркта миокарда | Ацетилсалициловая кислота |
+```
+
+**Пояснения:**
 '''
 
     print(bot_markdown_to_html(t3))

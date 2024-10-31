@@ -1014,6 +1014,38 @@ def resize_image(image_bytes: bytes, max_size: int = 10 * 1024 * 1024) -> bytes:
       quality -= 5
 
 
+def truncate_text(text: str, max_lines: int = 10, max_chars: int = 200) -> str:
+    """Truncates text to a specified maximum number of lines and total characters.
+
+    Handles the ellipsis correctly when truncating lines after character truncation.
+
+    Args:
+        text: The input text to truncate.
+        max_lines: The maximum allowed number of lines. Defaults to 10.
+        max_chars: The maximum allowed number of characters. Defaults to 200.
+
+    Returns:
+        The truncated text.
+    """
+
+    truncated_by_chars = False
+    if len(text) > max_chars:
+        text = text[:max_chars]
+        truncated_by_chars = True  # Flag to indicate character truncation
+
+    lines = text.splitlines()
+    truncated_lines = lines[:max_lines]
+
+    if truncated_by_chars and len(lines) > max_lines:  # Add ellipsis back if lines were truncated
+        truncated_text = "\n".join(truncated_lines) + "..."
+    elif truncated_by_chars : # Add ellipsis if chars were truncated but lines were not
+        truncated_text = "\n".join(truncated_lines) + "..." if len("\n".join(truncated_lines)) < max_chars else "\n".join(truncated_lines)
+    else:
+        truncated_text = "\n".join(truncated_lines)
+
+    return truncated_text
+
+
 if __name__ == '__main__':
     pass
 

@@ -46,6 +46,7 @@ import my_telegraph
 import my_openrouter
 import my_openrouter_free
 import my_pandoc
+import my_sambanova
 import my_shadowjourney
 import my_stat
 import my_stt
@@ -446,94 +447,43 @@ def img2txt(text, lang: str,
         data = text
     else:
         data = utils.download_image_as_bytes(text)
-    json_query = f'''
-Using this JSON schema:
-  image_transcription = {{"detailed_description": str, "extracted_formatted_text": str, "image_generation_prompt": str}}
-Return a `image_transcription`
-'''
-    detailed_description = ''
-    extracted_formatted_text = ''
-    image_generation_prompt = ''
+
     original_query = query or tr('Describe in detail what you see in the picture. If there is text, write it out in a separate block. If there is very little text, then write a prompt to generate this image.', lang)
 
     if not query:
         query = tr('Describe the image, what do you see here? Extract all text and show it preserving text formatting. Write a prompt to generate the same image - use markdown code with syntax highlighting ```prompt\n/img your prompt in english```', lang)
         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
-        use_json = False
     else:
-        use_json = False
         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)        
 
     if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
-    text_ = ''
     text = ''
 
     try:
         if not model:
             model = cfg.img2_txt_model
-        if use_json:
-            text_ = ''
-            text_ = my_gemini.img2txt(data, query, json_output=True, model=model, temp=temperature, chat_id=chat_id_full)
+        text = ''
 
-            # если не ответил джемини то попробовать glm
-            if not text_:
-                text_ = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
+        # сначала попробовать с помощью джемини
+        text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
 
-            # если не ответил джемини то попробовать groq (llama-3.2-90b-vision-preview)
-            if not text_:
-                text_ = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, json_output=True, chat_id=chat_id_full)
+        # если не ответил джемини то попробовать glm
+        if not text:
+            text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
 
-            # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
-            if not text_:
-                text_ = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
+        # если не ответил glm то попробовать groq (llama-3.2-90b-vision-preview)
+        if not text:
+            text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, chat_id=chat_id_full)
 
-            if text_:
-                d = utils.string_to_dict(text_)
-                if d:
-                    try:
-                        try:
-                            detailed_description = d['detailed_description']
-                        except:
-                            detailed_description = ''
-                        try:
-                            extracted_formatted_text = d['extracted_formatted_text']
-                        except:
-                            extracted_formatted_text = ''
-                        try:
-                            image_generation_prompt = d['image_generation_prompt']
-                        except:
-                            image_generation_prompt = ''
-                        if detailed_description:
-                            text = text + detailed_description + '\n\n'
-                        if extracted_formatted_text:
-                            text = text + '\n```text\n' + extracted_formatted_text + '\n```\n\n'
-                        if image_generation_prompt:
-                            if (extracted_formatted_text and len(extracted_formatted_text) < 30) or not extracted_formatted_text:
-                                text = text + f'\n```\n/img {image_generation_prompt}\n```'
-                        if not text.strip():
-                            text = text_
-                    except Exception as error:
-                        my_log.log2(f'tb:img2txt: {error}\n\n{text_}')
-                        text = text_
-                else:
-                    text = text_
-        else:
-            text = ''
-            text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
+        # если не ответил groq llama то попробовать sambanova 'Llama-3.2-90B-Vision-Instruct'
+        if not text:
+            text = my_sambanova.img2txt(data, query, model='Llama-3.2-90B-Vision-Instruct', temperature=temperature, chat_id=chat_id_full)
 
-            # если не ответил джемини то попробовать glm
-            if not text:
-                text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
-
-            # если не ответил джемини то попробовать groq (llama-3.2-90b-vision-preview)
-            if not text:
-                text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, chat_id=chat_id_full)
-
-            # если не ответил джемини то попробовать openrouter_free mistralai/pixtral-12b:free
-            if not text:
-                text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
+        # если не ответил самбанова то попробовать openrouter_free mistralai/pixtral-12b:free
+        if not text:
+            text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
 
     except Exception as img_from_link_error:
         my_log.log2(f'tb:img2txt: {img_from_link_error}')

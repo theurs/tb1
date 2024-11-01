@@ -460,6 +460,8 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
     def strip_tags(text: str) -> str:
         text = text.replace('&lt;', '<')
         text = text.replace('&gt;', '>')
+        text = text.replace('&quot;', '"')
+        text = text.replace('&#x27;', "'")
         text = text.replace('<b>', '   ')
         text = text.replace('<i>', '   ')
         text = text.replace('</b>', '    ')
@@ -534,7 +536,7 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
     # Заменяем каждую найденную таблицу
     text = table_pattern.sub(lambda m: process_table(m.group(0)), text)
 
-    text = re.sub(r'(?<=\|)(.*?)(?=\|)', lambda match: match.group(1).replace('<', '&lt;').replace('>', '&gt;'), text)
+    text = re.sub(r'(?<=\|)(.*?)(?=\|)', lambda match: match.group(1).replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;'), text)
 
     return text
 
@@ -1289,7 +1291,6 @@ Semoga bermanfaat dan menginspirasi.
 Remember to adjust the type of `useDispatch` to match your application's `AppDispatch` type.
 This is a clean and efficient way to create a reusable component that interacts with Redux without hardcoding store dependencies.
 
-```
 | Показания к применению | Лекарственные средства |
 |---|---|
 | 1) Лечение свежего инфаркта миокарда (первые 5 ч) | Алтеплаза, Стрептокиназа, Ацетилсалициловая кислота |
@@ -1298,13 +1299,12 @@ This is a clean and efficient way to create a reusable component that interacts 
 | 4) Лечение варикозного расширения вен нижних конечностей | Гепариновая мазь, Этамзилат |
 | 5) Лечение кровотечений внутренних органов (маточных, желудочных, геморрагических) | Этамзилат, Аминокапроновая кислота |
 | 6) Остановка капиллярных кровотечений | Этамзилат, Гепариновая мазь |
-| 7) Профилактика инфаркта миокарда | Ацетилсалициловая кислота |
-```
+| 7) Профилактика "инфаркта" миокарда | Ацетилсалициловая кислота |
 
 **Пояснения:**
 '''
 
-    # print(bot_markdown_to_html(t3))
-    print(truncate_text(t3))
+    print(bot_markdown_to_html(t3))
+    # print(truncate_text(t3))
 
     pass

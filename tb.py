@@ -464,16 +464,6 @@ Return a `image_transcription`
         use_json = False
         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)        
 
-#         use_json = True
-#         query = tr(f'''Answer always in [{lang}] language! If the image contains only text, extract the text while preserving the formatting.
-
-# If the image presents a problem or exercise (similar to a school assignment), provide the complete text of the problem and a very detailed and illustrative solution.
-
-# In other cases, describe what you see in the image, write a detailed prompt for generating such an image in English, and if any text is present on the image, display the detected text.''', lang) + json_query
-#     else:
-#         use_json = False
-#         query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
-
     if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 

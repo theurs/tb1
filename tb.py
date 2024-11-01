@@ -1087,13 +1087,6 @@ def authorized_log(message: telebot.types.Message) -> bool:
     return True
 
 
-# def check_blocks(chat_id_full: str) -> bool:
-#     """в каких чатах выключены автопереводы"""
-#     if not my_db.get_user_property(chat_id_full, 'auto_translations'):
-#         my_db.set_user_property(chat_id_full, 'auto_translations', 0)
-#     return False if my_db.get_user_property(chat_id_full, 'auto_translations') == 1 else True
-
-
 def bot_reply_tr(message: telebot.types.Message,
               msg: str,
               parse_mode: str = None,
@@ -1883,8 +1876,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
 
 
-
-
 # Обработчик запросов перед оплатой
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def handle_pre_checkout_query(pre_checkout_query):
@@ -1915,8 +1906,6 @@ def handle_successful_payment(message):
 @bot.message_handler(commands=['paysupport'])
 def handle_pay_support(message):
     bot_reply_tr(message, 'Use /report command for contact human')
-
-
 
 
 @bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)
@@ -2419,8 +2408,6 @@ def handle_photo(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
-
-
     # catch groups of images up to 10
     if chat_id_full not in MESSAGE_QUEUE_IMG:
         MESSAGE_QUEUE_IMG[chat_id_full] = [message,]
@@ -2467,13 +2454,8 @@ def handle_photo(message: telebot.types.Message):
         else:
             state = ''
 
-        # # выключены ли автопереводы
-        # if check_blocks(get_topic_id(message)):
-        #     if not is_private:
-        #         if state == 'translate':
-        #             return
         bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-        if not is_private:
+        if not is_private and not state == 'describe':
             if not message.caption or not message.caption.startswith('?') or \
                 not message.caption.startswith(f'@{_bot_name}') or \
                     not message.caption.startswith(bot_name):

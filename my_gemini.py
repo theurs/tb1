@@ -133,20 +133,8 @@ def chat(query: str,
         if not model:
             model = cfg.gemini_flash_model
 
-        # remove empty answers (function calls)
-        # try:
-        #     mem = [x for x in mem if x.parts[0].text]
-        # except Exception as error_mem:
-        #     my_log.log_gemini(f'chat: {error_mem} {str(mem)[-1000:]}')
-
         if system == '':
             system = None
-
-        # if chat_id:
-        #     bio = my_db.get_user_property(chat_id, 'persistant_memory') or 'Empty'
-        #     system = f'user_id: {chat_id}\n\nUser profile: {bio}\n\n{str(system)}'
-        # else:
-        #     system = f'user_id: None User profile: none, do not try to update it'
 
         system = f'user_id: {chat_id}\n\n{str(system)}'
 
@@ -173,46 +161,26 @@ def chat(query: str,
             if json_output:
                 GENERATION_CONFIG = GenerationConfig(
                     temperature = temperature,
-                    # top_p: typing.Optional[float] = None,
-                    # top_k: typing.Optional[int] = None,
-                    # candidate_count: typing.Optional[int] = None,
                     max_output_tokens = max_tokens,
-                    # stop_sequences: typing.Optional[typing.List[str]] = None,
-                    # presence_penalty: typing.Optional[float] = None,
-                    # frequency_penalty: typing.Optional[float] = None,
-                    # response_mime_type: typing.Optional[str] = None,
                     response_mime_type = "application/json",
                 )
             else:
                 GENERATION_CONFIG = GenerationConfig(
                     temperature = temperature,
-                    # top_p: typing.Optional[float] = None,
-                    # top_k: typing.Optional[int] = None,
-                    # candidate_count: typing.Optional[int] = None,
                     max_output_tokens = max_tokens,
-                    # stop_sequences: typing.Optional[typing.List[str]] = None,
-                    # presence_penalty: typing.Optional[float] = None,
-                    # frequency_penalty: typing.Optional[float] = None,
-                    # response_mime_type: typing.Optional[str] = None,
                 )
-
 
             # use_skills = False
             if use_skills and '-8b' not in model:
                 SKILLS = [
                     # "code_execution", # не работает одновременно с другими функциями
-
                     # query_wikipedia, # есть проблемы с поиском, википедия выдает варианты а гемма2 далеко не всегда справляется в выбором
-
                     search_google,
                     download_text_from_url,
-
                     # update_user_profile,
-
                     calc,
                     get_weather,
                     get_currency_rates,
-
                     # get_cryptocurrency_rates, # broken, why?
                     ]
                 if chat_id:
@@ -251,11 +219,7 @@ def chat(query: str,
                                     request_options=request_options,
                                     )
             except Exception as error:
-                # my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)}\n{query}\n{mem}')
                 my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
-                # if 'Resource has been exhausted (e.g. check quota)' in str(error):
-                #     ALL_KEYS = [x for x in ALL_KEYS if x != key]
-                #     my_log.log_gemini(f'Suspend key {key}, active left keys: {len(ALL_KEYS)}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
                    'reason: "API_KEY_INVALID"' in str(error):
                     remove_key(key)
@@ -270,18 +234,6 @@ def chat(query: str,
                 result = result.strip()
                 if 'print(default_api.' in result[:100]:
                     return ''
-                # if result.startswith('[Info to help you answer. You are a telegram chatbot named') and \
-                #    'do not address the user by name and no emoji unless it is required.]' in result:
-                #     result = result[result.find(']') + 1:]
-
-                # if 'gemini-1.5-pro' in model: model_ = 'gemini15_pro'
-                # if 'gemini-1.5-pro-exp' in model: model_ = 'gemini-1.5-pro-exp-0801'
-                # if 'gemini-1.5-flash' in model: model_ = 'gemini15_flash'
-                # if 'gemini-1.5-flash-8b' in model: model_ = 'gemini15_flash-8b'
-                # if 'gemini-1.5-flash-8b-exp' in model: model_ = 'gemini15_flash-8b-exp'
-                # if 'gemini-1.0-pro' in model: model_ = 'gemini10_pro'
-                # if not model: model_ = 'gemini15_flash'
-                # my_db.add_msg(chat_id, model_)
                 my_db.add_msg(chat_id, model)
                 if chat_id:
                     mem = chat.history[-MAX_CHAT_LINES*2:]

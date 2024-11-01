@@ -1020,32 +1020,12 @@ def resize_image(image_bytes: bytes, max_size: int = 10 * 1024 * 1024) -> bytes:
 
 
 def truncate_text(text: str, max_lines: int = 10, max_chars: int = 200) -> str:
-    """Truncates text to a specified maximum number of lines and total characters.
-
-    Handles the ellipsis correctly when truncating lines after character truncation.
-
-    Args:
-        text: The input text to truncate.
-        max_lines: The maximum allowed number of lines. Defaults to 10.
-        max_chars: The maximum allowed number of characters. Defaults to 200.
-
-    Returns:
-        The truncated text.
-    """
     try:
-        truncated_by_chars = False
-        if len(text) > max_chars:
-            text = text[:max_chars]
-            truncated_by_chars = True
-
-        lines = text.splitlines()
-        truncated_lines = lines[:max_lines]
-
-        truncated_text = "\n".join(truncated_lines)
-        if truncated_by_chars:
-            truncated_text += '...'
-
-        return truncated_text
+        text = html.escape(text)
+        if len(text) < max_chars and text.count('\n') < max_lines:
+            return text
+        text = '<blockquote expandable>' + text + '</blockquote>'
+        return text
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'utils:truncate_text {error}\n{text}\n{max_lines} {max_chars}\n\n{traceback_error}')

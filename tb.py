@@ -2058,10 +2058,10 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
     msg += '\n\n' + image_info(image, lang)
     # Append the last prompt to the message, if available.
     if user_prompt:
-        msg += '\n\n' + tr('Repeat my last request', lang) + ' - ' + utils.truncate_text(user_prompt)
+        msg += '\n\n' + tr('Repeat my last request', lang) + ':\n\n' + utils.truncate_text(user_prompt)
 
     # Send the message to the user with the appropriate keyboard.
-    bot_reply(message, msg, disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
+    bot_reply(message, msg, parse_mode = 'HTML', disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
 
 
 def image_info(image_bytes: bytes, lang: str = "ru") -> str:

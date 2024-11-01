@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import base64
 import json
 import random
 import requests
@@ -80,11 +81,11 @@ def ai(prompt: str = '',
                 result = response.json()['choices'][0]['message']['content'].strip()
                 break
             except Exception as error:
-                my_log.log_sambanova(f'Failed to parse response: {error}\n\n{str(response)}')
+                my_log.log_sambanova(f'Failed to parse response: {error}\n\n{str(response)[:2000]}')
                 result = ''
                 time.sleep(2)
         else:
-            my_log.log_sambanova(f'Bad response.status_code\n\n{str(response[:2000])}')
+            my_log.log_sambanova(f'Bad response.status_code\n\n{str(response)[:2000]}')
             time.sleep(2)
 
     return result
@@ -158,11 +159,107 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
     return None
 
 
+def img2txt(
+    image_data: bytes,
+    prompt: str = 'Describe picture',
+    model = 'Llama-3.2-90B-Vision-Instruct',
+    temperature: float = 1,
+    max_tokens: int = 2000,
+    timeout: int = 120,
+    chat_id: str = '',
+    ) -> str:
+    """
+    Describes an image using the specified model and parameters.
+
+    Args:
+        image_data: The image data as bytes.
+        prompt: The prompt to guide the description. Defaults to 'Describe picture'.
+        model: The model to use for generating the description. Defaults to 'mistralai/pixtral-12b:free'.
+        temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
+        max_tokens: The maximum number of tokens to generate. Defaults to 2000.
+        timeout: The timeout for the request in seconds. Defaults to 120.
+
+    Returns:
+        A string containing the description of the image, or an empty string if an error occurs.
+    """
+
+    if not hasattr(cfg, 'SAMBANOVA_KEYS'):
+        return ''
+
+    if isinstance(image_data, str):
+        with open(image_data, 'rb') as f:
+            image_data = f.read()
+
+    if not model:
+        model = 'Llama-3.2-90B-Vision-Instruct'
+
+    if not prompt:
+        prompt = 'Describe picture'
+        return ''
+
+    if 'llama' in model and temperature > 0:
+        temperature = temperature / 2
+
+    base64_image = base64.b64encode(image_data).decode()
+
+    result = ''
+
+    for _ in range(3):
+        response = requests.post(
+            url="https://api.sambanova.ai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {random.choice(cfg.SAMBANOVA_KEYS)}",
+            },
+            data=json.dumps({
+
+                "model": model,
+                "temperature": temperature,
+                "messages": [
+                    {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                    }
+                ],
+                "max_tokens": max_tokens
+
+            }),
+            timeout=timeout,
+        )
+
+        status = response.status_code
+        if status == 200:
+            try:
+                result = response.json()['choices'][0]['message']['content'].strip()
+                break
+            except Exception as error:
+                my_log.log_sambanova(f'Failed to parse response: {error}\n\n{str(response)}')
+                result = ''
+                time.sleep(2)
+        else:
+            my_log.log_sambanova(f'Bad response.status_code\n\n{str(response)[:2000]}')
+            time.sleep(2)
+    if chat_id:
+        my_db.add_msg(chat_id, model)
+    return result
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
-    print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами'))
+    # print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами', model = 'Llama-3.2-90B-Vision-Instruct'))
     # print(translate('напиши 100 слов самой жуткой лести, пиши большими буквами', to_lang='en'))
+    print(img2txt('d:/downloads/2.jpg', 'извлеки весь текст, сохрани форматирование текста', model='Llama-3.2-90B-Vision-Instruct'))
 
     my_db.close()

@@ -107,7 +107,7 @@ def ai(prompt: str = '',
                 result = ''
                 time.sleep(2)
         else:
-            my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response[:2000])}')
+            my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response)[:2000]}')
             time.sleep(2)
 
     return result
@@ -380,7 +380,7 @@ def img2txt(
                 result = ''
                 time.sleep(2)
         else:
-            my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response[:2000])}')
+            my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response)[:2000]}')
             time.sleep(2)
     if chat_id:
         my_db.add_msg(chat_id, model)
@@ -472,7 +472,7 @@ def img2txt(
 #                 result = ''
 #                 time.sleep(2)
 #         else:
-#             my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response[:2000])}')
+#             my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response)[:2000]}')
 #             time.sleep(2)
 
 #     return result

@@ -4071,7 +4071,7 @@ def image_bing_gen(message: telebot.types.Message):
     image_gen(message)
 
 
-@bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art'], func=authorized)
+@bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):
     """Generates a picture from a description"""

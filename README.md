@@ -203,6 +203,9 @@ gemini_pro_model = 'gemini-1.5-pro' # gemini-1.5-pro, gemini-1.5-pro-exp, gemini
 # default locale, язык на который переводятся все сообщения
 DEFAULT_LANGUAGE = 'ru'
 
+# default text to speech engine 'whisper' 'gemini', 'google', 'assembly.ai'
+# DEFAULT_STT_ENGINE = 'whisper'
+
 # список админов, кому можно использовать команды /restart и вкл-выкл автоответы в чатах
 admins = [xxx,]
 

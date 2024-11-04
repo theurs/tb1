@@ -171,6 +171,7 @@ def init(backup: bool = True):
             auto_leave_chat INTEGER,
             auto_translations INTEGER,
             tts_gender TEXT,
+            speech_to_text_engine TEXT,
             suggest_enabled INTEGER,
             chat_enabled INTEGER,
             original_mode INTEGER,

@@ -2,7 +2,7 @@
 # pip install -U google-generativeai
 # pip install assemblyai
 
-import hashlib
+import cachetools.func
 import os
 import random
 import subprocess
@@ -25,9 +25,8 @@ import utils
 # locks for chat_ids
 LOCKS = {}
 
-# [(crc32, text recognized),...]
-STT_CACHE = []
-CACHE_SIZE = 100
+
+DEFAULT_STT_ENGINE = cfg.DEFAULT_STT_ENGINE if hasattr(cfg, 'DEFAULT_STT_ENGINE') else 'whisper' # 'gemini', 'google', 'assembly.ai'
 
 
 def audio_duration(audio_file: str) -> int:
@@ -67,6 +66,7 @@ def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
     return tmp_wav_file
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 def stt_google(audio_file: str, language: str = 'ru') -> str:
     """
     Speech-to-text using Google's speech recognition API.
@@ -106,18 +106,11 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
     Returns:
         str: The recognized speech as text.
     """
+    speech_to_text_engine = my_db.get_user_property(chat_id, 'speech_to_text_engine') or DEFAULT_STT_ENGINE
     if chat_id not in LOCKS:
         LOCKS[chat_id] = threading.Lock()
     with LOCKS[chat_id]:
         text = ''
-        with open(input_file, 'rb') as f:
-            data_from_file = f.read()
-        data = hashlib.sha256(data_from_file).hexdigest()
-        global STT_CACHE
-        for x in STT_CACHE:
-            if x[0] == data:
-                text = x[1]
-                return text
 
         dur = audio_duration(input_file)
         input_file2 = convert_to_ogg_with_ffmpeg(input_file)
@@ -125,6 +118,30 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
         done_flag = False
 
         try:
+            # try first shot from config
+            if speech_to_text_engine == 'whisper':
+                text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
+                if text and not done_flag:
+                    done_flag = True
+                    my_db.add_msg(chat_id, 'TTS whisper-large-v3')
+            elif speech_to_text_engine == 'gemini':
+                try: # gemini
+                    text = stt_genai(input_file2, lang)
+                    if text and not done_flag:
+                        done_flag = True
+                        my_db.add_msg(chat_id, cfg.gemini_flash_model)
+                except Exception as error:
+                    my_log.log2(f'my_stt:stt:genai:{error}')
+            elif speech_to_text_engine == 'google':
+                text = my_transcribe.stt_google_pydub_v2(input_file2, lang = lang)
+                if text:
+                    my_db.add_msg(chat_id, 'TTS google-free')
+            elif speech_to_text_engine == 'assembly.ai':
+                text = assemblyai(input_file2, lang)
+                if text and not done_flag:
+                    done_flag = True
+                    my_db.add_msg(chat_id, 'TTS assembly.ai')
+
             if not text and dur < 60:
                 text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo')
                 if text and not done_flag:
@@ -168,24 +185,21 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
 
             if not text:
                 text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
-            if text and not done_flag:
-                done_flag = True
-                my_db.add_msg(chat_id, 'TTS whisper-large-v3')
+                if text and not done_flag:
+                    done_flag = True
+                    my_db.add_msg(chat_id, 'TTS whisper-large-v3')
 
             if not text:
                 text = assemblyai(input_file2, lang)
-            if text and not done_flag:
-                done_flag = True
-                my_db.add_msg(chat_id, 'TTS assembly.ai')
+                if text and not done_flag:
+                    done_flag = True
+                    my_db.add_msg(chat_id, 'TTS assembly.ai')
 
         finally:
             utils.remove_file(input_file2)
 
         if text and len(text) > 1:
-            text_ = text
-            STT_CACHE.append([data, text_])
-            STT_CACHE = STT_CACHE[-CACHE_SIZE:]
-            return text_
+            return text
 
     return ''
 
@@ -205,7 +219,7 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language:
             my_log.log2(f'my_stt:stt_genai_worker: Error in FFMPEG: {out_}')
 
         text = ''
-        # text = my_groq.stt(f'{fname}_{n}.ogg', language)
+
         if not text:
             text = my_transcribe.transcribe_genai(f'{fname}_{n}.ogg', language=language)
 
@@ -216,6 +230,7 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language:
         utils.remove_file(f'{fname}_{n}.ogg')
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 def stt_genai(audio_file: str, language: str = 'ru') -> str:
     """
     Converts the given audio file to text using the Gemini API.
@@ -228,12 +243,7 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
     """
     prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps."
     duration = audio_duration(audio_file)
-    # if duration <= 10*60:
-    #     text = my_groq.stt(audio_file, language)
-    #     if not text:
-    #         text = my_transcribe.transcribe_genai(audio_file, prompt, language)
-    #     return text
-    # else:
+
     part_size = 10 * 60 # размер куска несколько минут
     treshold = 5 # захватывать +- несколько секунд в каждом куске
     output_name = utils.get_tmp_fname()
@@ -275,6 +285,7 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
     return result
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 def assemblyai(audio_file: str, language: str = 'ru'):
     '''Converts the given audio file to text using the AssemblyAI API.'''
     try:

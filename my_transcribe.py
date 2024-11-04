@@ -253,10 +253,6 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
                     your_file = genai.upload_file(audio_file)
                     genai.configure(api_key=key) # здесь может быть рейс кондишн?
                 model = genai.GenerativeModel(cfg.gemini_flash_model)
-                # tokens_count = model.count_tokens([your_file])
-                # if tokens_count.total_tokens > 7800:
-                #     response = ''
-                #     break
                 response = model.generate_content([prompt, your_file],
                                                   safety_settings={
                     HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
@@ -622,6 +618,7 @@ def find_split_segments(audio_file: str, max_size: int = 50) -> list:
     return find_cut_positions(silences, max_size, duration__)
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 def stt_google_pydub_v2(audio_file_path: str, lang: str = 'ru') -> str:
     """
     Распознает текст из аудио файла.

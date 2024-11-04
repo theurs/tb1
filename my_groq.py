@@ -524,7 +524,7 @@ def remove_dimatorzok(text: str) -> str:
     return text.strip()
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 def stt(data: bytes = None,
         lang: str = '',
         key_: str = '',

@@ -1451,22 +1451,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button4, button7)
         markup.row(button5, button6)
         markup.row(button7)
-        # if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') and hasattr(cfg, 'JAMBA_KEYS'):
-        #     button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
-        #     button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini 🚴‍♀️', callback_data='select_jamba')
-        #     markup.row(button7, button8)
-        # else:
-        #     if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS'):
-        #         button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b', callback_data='select_llama405')
-        #         markup.row(button7)
-        #     if hasattr(cfg, 'JAMBA_KEYS'):
-        #         button8 = telebot.types.InlineKeyboardButton('Jamba 1.5 mini', callback_data='select_jamba')
-        #         markup.row(button8)
-        # button9 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash 8b 🚴‍♀️', callback_data='select_gemini8')
-        # markup.row(button9)
-        # if hasattr(cfg, 'GPT4OMINI_KEY'):
-        #     button7 = telebot.types.InlineKeyboardButton('GPT 4o mini', callback_data='select_gpt4omini')
-        #     markup.row(button7)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -1475,18 +1459,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton(tr('☑️Только голос', lang), callback_data='voice_only_mode_enable')
         markup.row(button1, button2)
 
-        # if not my_db.get_user_property(chat_id_full, 'auto_translations'):
-            # my_db.set_user_property(chat_id_full, 'auto_translations', 0)
-
-        # if my_db.get_user_property(chat_id_full, 'auto_translations') == 1:
-        #     button1 = telebot.types.InlineKeyboardButton(tr(f'✅Авто переводы', lang), callback_data='autotranslate_disable')
-        # else:
-        #     button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Авто переводы', lang), callback_data='autotranslate_enable')
+        speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+        button1 = telebot.types.InlineKeyboardButton(tr(f'🎤Speech-to-text:', lang) + ' ' + speech_to_text_engine, callback_data='switch_speech_to_text')
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
         else:
             button2 = telebot.types.InlineKeyboardButton(tr(f'✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
-        # markup.row(button1, button2)
+        markup.row(button1)
         markup.row(button2)
 
         if my_db.get_user_property(chat_id_full, 'suggest_enabled'):
@@ -1858,14 +1837,19 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'transcribe_only', True)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        # elif call.data == 'autotranslate_disable' and is_admin_member(call):
-        #     my_db.set_user_property(chat_id_full, 'auto_translations', 0)
-        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        # elif call.data == 'autotranslate_enable' and is_admin_member(call):
-        #     my_db.set_user_property(chat_id_full, 'auto_translations', 1)
-        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        elif call.data == 'switch_speech_to_text' and is_admin_member(call):
+            speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+            if speech_to_text_engine == 'whisper':
+                speech_to_text_engine = 'gemini'
+            elif speech_to_text_engine == 'gemini':
+                speech_to_text_engine = 'google'
+            elif speech_to_text_engine == 'google':
+                speech_to_text_engine = 'assembly.ai'
+            elif speech_to_text_engine == 'assembly.ai':
+                speech_to_text_engine = 'whisper'
+            my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'disable_chat_kbd' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'disabled_kbd', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 

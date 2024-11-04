@@ -1021,7 +1021,7 @@ def resize_image(image_bytes: bytes, max_size: int = 10 * 1024 * 1024) -> bytes:
       quality -= 5
 
 
-def truncate_text(text: str, max_lines: int = 10, max_chars: int = 200) -> str:
+def truncate_text(text: str, max_lines: int = 10, max_chars: int = 300) -> str:
     try:
         text = html.escape(text)
         if len(text) < max_chars and text.count('\n') < max_lines:

@@ -26,7 +26,7 @@ import utils
 LOCKS = {}
 
 
-DEFAULT_STT_ENGINE = cfg.DEFAULT_STT_ENGINE if hasattr(cfg, 'DEFAULT_STT_ENGINE') else 'whisper' # 'gemini', 'google', 'assembly.ai'
+DEFAULT_STT_ENGINE = cfg.DEFAULT_STT_ENGINE if hasattr(cfg, 'DEFAULT_STT_ENGINE') else 'google' # 'whisper' 'gemini', 'google', 'assembly.ai'
 
 
 def audio_duration(audio_file: str) -> int:

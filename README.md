@@ -317,7 +317,8 @@ KANDINSKI_API = [
 ]
 
 # https://yandex.cloud/ru/docs/iam/operations/iam-token/create#api_1
-YND_OAUTH = ['xxx', 'yyy']
+# yandex - жулики, загнали меня в минуса на своих "бесплатных" картинках
+# YND_OAUTH = ['xxx', 'yyy']
 
 
 # https://console.groq.com/keys

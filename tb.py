@@ -1440,8 +1440,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro 🚀', callback_data='select_gemini15_pro')
         else:
             button2 = telebot.types.InlineKeyboardButton('🔒Gemini 1.5 Pro 🚀', callback_data='select_gemini15_pro')
-        # button3 = telebot.types.InlineKeyboardButton('GPT-4o 🚀', callback_data='select_gpt4o')
-        # button3 = telebot.types.InlineKeyboardButton('Gemma 2 9b 🚴‍♀️', callback_data='select_gemma2-9b')
         button4 = telebot.types.InlineKeyboardButton('Llama-3.2 90b 🚗', callback_data='select_llama370')
         button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
         button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
@@ -1450,7 +1448,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1, button2)
         markup.row(button4, button7)
         markup.row(button5, button6)
-        markup.row(button7)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

@@ -1444,10 +1444,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
         button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
         button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
-        button7 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚗', callback_data='select_glm4plus')
+        button8 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚗', callback_data='select_glm4plus')
         markup.row(button1, button2)
         markup.row(button4, button7)
         markup.row(button5, button6)
+        markup.row(button8)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

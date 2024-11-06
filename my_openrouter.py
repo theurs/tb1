@@ -122,7 +122,7 @@ def ai(prompt: str = '',
 
     URL = my_db.get_user_property(user_id, 'base_api_url') or BASE_URL
 
-    if 'bothub.chat' in URL:
+    if 'bothub.chat' in URL or 'api.x.ai' in URL:
         client = OpenAI(
             api_key = key,
             base_url = URL,
@@ -139,8 +139,7 @@ def ai(prompt: str = '',
             url = URL,
             headers={
                 "Authorization": f"Bearer {key}",
-                "HTTP-Referer": f"{YOUR_SITE_URL}", # Optional, for including your app on openrouter.ai rankings.
-                "X-Title": f"{YOUR_APP_NAME}", # Optional. Shows in rankings on openrouter.ai.
+
             },
             data=json.dumps({
                 "model": model, # Optional
@@ -150,8 +149,7 @@ def ai(prompt: str = '',
             }),
             timeout = timeout,
         )
-
-    if 'bothub' in URL:
+    if 'bothub' in URL or 'api.x.ai' in URL:
         try:
             text = response.choices[0].message.content
         except TypeError:

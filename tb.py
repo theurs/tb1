@@ -2764,6 +2764,11 @@ def openrouter(message: telebot.types.Message):
                 bot_reply_tr(message, 'Base API URL changed!')
                 my_db.set_user_property(chat_id_full, 'base_api_url', key)
                 return
+            else: # treat as a key
+                my_openrouter.KEYS[chat_id_full] = key
+                bot_reply_tr(message, 'Key added successfully!')
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+                return
         else:
             msg = tr('You can use your own key from https://openrouter.ai/keys or https://bothub.chat/profile/for-developers to access all AI supported.', lang)
             if chat_id_full in my_openrouter.KEYS and my_openrouter.KEYS[chat_id_full]:

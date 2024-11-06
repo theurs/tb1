@@ -905,7 +905,8 @@ def string_to_dict(input_string: str):
             return decoded_object
     except Exception as error:
         my_log.log2(f'utils:string_to_dict: {error}')
-    my_log.log2(f'utils:string_to_dict: {input_string}')
+    if input_string:
+        my_log.log2(f'utils:string_to_dict: {input_string}')
     return None
 
 

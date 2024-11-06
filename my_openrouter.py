@@ -7,6 +7,7 @@ import threading
 import traceback
 
 import langcodes
+from openai import OpenAI
 from sqlitedict import SqliteDict
 
 import cfg
@@ -32,6 +33,10 @@ LOCKS = {}
 MAX_REQUEST = 1000000
 MAX_SUM_REQUEST = 1000000
 MAX_REQUEST_GEMMA2_9B = 12000
+
+
+BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+BASE_URL_BH = 'https://bothub.chat/api/v2/openai/v1'
 
 
 # {user_id:bool} в каких чатах добавлять разблокировку цензуры
@@ -82,13 +87,6 @@ def ai(prompt: str = '',
     if not prompt and not mem:
         return 0, ''
 
-    # if not model:
-    #     # model = 'gpt-3.5-turbo'
-    #     model = 'google/gemma-2-9b-it:free'
-    #     # model = 'openchat-7b:free'
-    #     # model = 'mistral-7b-instruct:free'
-    #     # model = 'llama-3-8b-instruct:free'
-
     if hasattr(cfg, 'OPEN_ROUTER_KEY') and cfg.OPEN_ROUTER_KEY and user_id == 'test':
         key = cfg.OPEN_ROUTER_KEY
     elif user_id not in KEYS or not KEYS[user_id]:
@@ -122,28 +120,61 @@ def ai(prompt: str = '',
     YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
     YOUR_APP_NAME = 'kun4sun_bot'
 
-    response = requests.post(
-        url="https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {key}",
-            "HTTP-Referer": f"{YOUR_SITE_URL}", # Optional, for including your app on openrouter.ai rankings.
-            "X-Title": f"{YOUR_APP_NAME}", # Optional. Shows in rankings on openrouter.ai.
-        },
-        data=json.dumps({
-            "model": model, # Optional
-            "messages": mem_,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-        }),
-        timeout = timeout,
-    )
+    URL = my_db.get_user_property(user_id, 'base_api_url') or BASE_URL
 
-    status = response.status_code
-    if status == 200:
+    if 'bothub.chat' in URL:
+        client = OpenAI(
+            api_key = key,
+            base_url = URL,
+            )
+        response = client.chat.completions.create(
+            messages = mem_,
+            model = model,
+            max_tokens = max_tokens,
+            temperature = temperature,
+            timeout = timeout,
+            )
+    else:
+        response = requests.post(
+            url = URL,
+            headers={
+                "Authorization": f"Bearer {key}",
+                "HTTP-Referer": f"{YOUR_SITE_URL}", # Optional, for including your app on openrouter.ai rankings.
+                "X-Title": f"{YOUR_APP_NAME}", # Optional. Shows in rankings on openrouter.ai.
+            },
+            data=json.dumps({
+                "model": model, # Optional
+                "messages": mem_,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            }),
+            timeout = timeout,
+        )
+
+    if 'bothub' in URL:
         try:
-            text = response.json()['choices'][0]['message']['content'].strip()
-        except Exception as error:
-            my_log.log_openrouter(f'Failed to parse response: {error}\n\n{str(response)}')
+            text = response.choices[0].message.content
+        except TypeError:
+            try:
+                text = str(response.model_extra) or ''
+            except:
+                text = 'UNKNOWN ERROR'
+        return 200, text
+    else:
+        status = response.status_code
+        if status == 200:
+            try:
+                text = response.json()['choices'][0]['message']['content'].strip()
+            except Exception as error:
+                my_log.log_openrouter(f'Failed to parse response: {error}\n\n{str(response)}')
+                if model == 'google/gemini-pro-1.5-exp':
+                    model = 'google/gemini-flash-1.5-exp'
+                    return ai(prompt, mem, user_id, system, model, temperature, max_tokens, timeout)
+                if model == 'nousresearch/hermes-3-llama-3.1-405b:free':
+                    model == 'meta-llama/llama-3.2-11b-vision-instruct:free'
+                    return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
+                text = ''
+        else:
             if model == 'google/gemini-pro-1.5-exp':
                 model = 'google/gemini-flash-1.5-exp'
                 return ai(prompt, mem, user_id, system, model, temperature, max_tokens, timeout)
@@ -151,15 +182,7 @@ def ai(prompt: str = '',
                 model == 'meta-llama/llama-3.2-11b-vision-instruct:free'
                 return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
             text = ''
-    else:
-        if model == 'google/gemini-pro-1.5-exp':
-            model = 'google/gemini-flash-1.5-exp'
-            return ai(prompt, mem, user_id, system, model, temperature, max_tokens, timeout)
-        if model == 'nousresearch/hermes-3-llama-3.1-405b:free':
-            model == 'meta-llama/llama-3.2-11b-vision-instruct:free'
-            return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
-        text = ''
-    return status, text
+        return status, text
 
 
 def update_mem(query: str, resp: str, chat_id: str):
@@ -440,9 +463,9 @@ if __name__ == '__main__':
     # print(len(r), r[:1000])
 
 
-    # a = ai('напиши 10 цифр словами от 0 до 9, в одну строку через запятую', user_id='test', temperature=0.1, model = 'openai/gpt-4o-mini')
+    a = ai('напиши 10 цифр словами от 0 до 9, в одну строку через запятую', user_id='[1651196] [0]', temperature=0.1, model = 'gemini-flash-1.5-exp')
     # b = ai('напиши 10 цифр словами от 0 до 9, в одну строку через запятую', user_id='test', temperature=0.1, model = 'google/gemini-flash-1.5')
     # print(a, b)
 
-    chat_cli(model = 'meta-llama/llama-3.1-8b-instruct:free')
+    # chat_cli(model = 'meta-llama/llama-3.1-8b-instruct:free')
     my_db.close()

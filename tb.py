@@ -2735,7 +2735,7 @@ def maxtokens(message: telebot.types.Message):
     bot_reply_tr(message, f'Usage: /maxtokens maxtokens 10-8000', disable_web_page_preview=True)
 
 
-@bot.message_handler(commands=['openrouter',], func=authorized_owner)
+@bot.message_handler(commands=['openrouter', 'bothub'], func=authorized_owner)
 @async_run
 def openrouter(message: telebot.types.Message):
     """Юзеры могут добавить свои ключи для openrouter.ai и пользоваться платным сервисом через моего бота"""
@@ -2751,27 +2751,37 @@ def openrouter(message: telebot.types.Message):
         if chat_id_full not in my_openrouter.PARAMS:
             my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
         if key:
-            if key.startswith('sk-or-v1-') and len(key) == 73:
+            if (key.startswith('sk-or-v1-') and len(key) == 73) or (len(key) == 212):
                 my_openrouter.KEYS[chat_id_full] = key
                 bot_reply_tr(message, 'Key added successfully!')
+                if len(key) == 212: # bothub
+                    my_db.set_user_property(chat_id_full, 'base_api_url', my_openrouter.BASE_URL_BH)
+                elif (key.startswith('sk-or-v1-') and len(key) == 73):
+                    my_db.set_user_property(chat_id_full, 'base_api_url', my_openrouter.BASE_URL)
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
                 return
+            elif key.startswith('https://'): # change base api url
+                bot_reply_tr(message, 'Base API URL changed!')
+                my_db.set_user_property(chat_id_full, 'base_api_url', key)
+                return
         else:
-            msg = tr('You can use your own key from https://openrouter.ai/keys to access all AI supported.', lang)
+            msg = tr('You can use your own key from https://openrouter.ai/keys or https://bothub.chat/profile/for-developers to access all AI supported.', lang)
             if chat_id_full in my_openrouter.KEYS and my_openrouter.KEYS[chat_id_full]:
                 key = my_openrouter.KEYS[chat_id_full]
             if key:
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
-                msg = f'{tr("Your key:", lang)} [{key[:12]}...]'
+                your_url = my_db.get_user_property(chat_id_full, 'base_api_url') or my_openrouter.BASE_URL
+                msg = f'{tr("Your base api url:", lang)} [{your_url}]\n'
+                msg += f'{tr("Your key:", lang)} [{key[:12]}...]'
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
             msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
-            msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/docs#models
+            msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/docs#models or https://bothub.chat/models
 /temp <temperature> - 0.1 ... 2.0
 /maxtokens <max_tokens> - maximum response size, see model details
 /maxhistlines <maxhistlines> - how many lines in history
 /maxhistchars <maxhistchars> - how many chars in history
 
-Usage: /openrouter <api key>
+Usage: /openrouter <api key> or <api base url> (https://openrouter.ai/api/v1/chat/completions and https://bothub.chat/api/v2/openai/v1 was tested)
 ''', lang)
             bot_reply(message, msg, disable_web_page_preview=True)
     except Exception as error:
@@ -5312,6 +5322,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'llama370': 'Llama 3.2 90b',
             'openrouter_llama405': 'Llama 3.1 405b',
             'openrouter': 'openrouter.ai',
+            'bothub': 'bothub.chat',
             'glm4plus': 'GLM 4 PLUS',
             'jamba': 'Jamba 1.5 mini',
             'gpt4o': 'GPT 4o',
@@ -5321,6 +5332,9 @@ def id_cmd_handler(message: telebot.types.Message):
             'gpt35': 'GPT 3.5',
             'gpt-4o-mini-ddg': 'GPT 4o mini',
         }
+        if user_model == 'openrouter':
+            if 'bothub' in (my_db.get_user_property(chat_id_full, 'base_api_url') or ''):
+                user_model = 'bothub'
         if user_model in models.keys():
             user_model = f'<b>{models[user_model]}</b>'
 

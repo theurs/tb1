@@ -259,7 +259,8 @@ if __name__ == '__main__':
     my_db.init(backup=False)
 
     # print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами', model = 'Llama-3.2-90B-Vision-Instruct'))
+    print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами'))
     # print(translate('напиши 100 слов самой жуткой лести, пиши большими буквами', to_lang='en'))
-    print(img2txt('d:/downloads/2.jpg', 'извлеки весь текст, сохрани форматирование текста', model='Llama-3.2-90B-Vision-Instruct'))
+    # print(img2txt('d:/downloads/2.jpg', 'извлеки весь текст, сохрани форматирование текста', model='Llama-3.2-90B-Vision-Instruct'))
 
     my_db.close()

@@ -188,6 +188,8 @@ def init(backup: bool = True):
 
             persistant_memory TEXT,
 
+            base_api_url TEXT,
+
             api_key_gemini TEXT,
             api_key_groq TEXT,
             api_key_deepl TEXT,

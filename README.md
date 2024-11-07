@@ -90,6 +90,8 @@
 
 /set_chat_mode user_id_as_int new_mode - поменять режим чата юзеру
 
+/set_stt_mode user_id_as_int new_mode - помениять юзеру голосовой движок whisper, gemini, google, assembly.ai
+
 /reset_gemini2 - очистить историю чата Gemini Pro в другом чате Usage: /reset_gemini2 <chat_id_full!>
 
 ========================================

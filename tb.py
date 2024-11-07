@@ -3161,6 +3161,24 @@ def change_mode(message: telebot.types.Message):
         bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
 
 
+@bot.message_handler(commands=['set_stt_mode'], func=authorized_admin)
+@async_run
+def set_stt_mode(message: telebot.types.Message):
+    """mandatory switch user from one stt engine to another"""
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    try:
+        _user = f'[{message.text.split(maxsplit=3)[1].strip()}] [0]'
+        _mode = message.text.split(maxsplit=3)[2].strip()
+        my_db.set_user_property(_user, 'speech_to_text_engine', _mode)
+        msg = f'{tr("Changed: ", lang)} {_user} -> {_mode}.'
+        bot_reply(message, msg)
+    except:
+        msg = f"{tr('Example usage: /set_stt_mode user_id_as_int new_mode', lang)} whisper, gemini, google, assembly.ai"
+        bot_reply(message, msg, parse_mode='HTML')
+
+
 @bot.message_handler(commands=['set_chat_mode'], func=authorized_admin)
 @async_run
 def set_chat_mode(message: telebot.types.Message):

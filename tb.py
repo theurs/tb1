@@ -5814,10 +5814,6 @@ def do_task(message, custom_prompt: str = ''):
         message.from_user.id in cfg.admins or\
         (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
 
-    # если у юзера нет апи ключа для джемини то переключаем на дешевый флеш
-    # if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15' and not have_keys and is_private:
-    #     chat_mode_ = 'gemini'
-
     if is_private:
         if not have_keys:
             total_messages__ = my_db.count_msgs(chat_id_full, 'all', 1000000000)
@@ -5826,6 +5822,12 @@ def do_task(message, custom_prompt: str = ''):
                 if message.chat.type == 'private':
                     msg = tr('This bot uses API keys to unlock more powerful AI features. You can obtain a free key at https://ai.google.dev/ and provide it to the bot using the command /keys xxxxxxx. Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
                     bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+
+                    # понижать модель джемини тем у кого нет ключей
+                    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15':
+                        my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+                        chat_mode_ = 'gemini'
+
                     # если больше 1000 сообщений уже и нет ключей то нафиг
                     # if total_messages__ > 1000:
                     #     return

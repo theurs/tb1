@@ -193,7 +193,11 @@ def chat(query: str,
 
                 model_ = genai.GenerativeModel(
                     model,
-                    tools=SKILLS,
+                    tools = SKILLS,
+                    # tools={"google_search_retrieval": {
+                    #             "dynamic_retrieval_config": {
+                    #             "mode": "unspecified",
+                    #             "dynamic_threshold": 0.3}}},
                     generation_config = GENERATION_CONFIG,
                     safety_settings=SAFETY_SETTINGS,
                     system_instruction = system,
@@ -206,7 +210,6 @@ def chat(query: str,
                     safety_settings=SAFETY_SETTINGS,
                     system_instruction = system,
                 )
-
 
             # request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
             request_options = RequestOptions(timeout=TIMEOUT)

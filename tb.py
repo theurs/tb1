@@ -1466,11 +1466,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1)
         markup.row(button2)
 
-        if my_db.get_user_property(chat_id_full, 'suggest_enabled'):
-            button1 = telebot.types.InlineKeyboardButton(tr(f'✅Show image suggestions', lang), callback_data='suggest_image_prompts_disable')
-        else:
-            button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Show image suggestions', lang), callback_data='suggest_image_prompts_enable')
-        markup.row(button1)
+        # if my_db.get_user_property(chat_id_full, 'suggest_enabled'):
+        #     button1 = telebot.types.InlineKeyboardButton(tr(f'✅Show image suggestions', lang), callback_data='suggest_image_prompts_disable')
+        # else:
+        #     button1 = telebot.types.InlineKeyboardButton(tr(f'☑️Show image suggestions', lang), callback_data='suggest_image_prompts_enable')
+        # markup.row(button1)
 
         if my_db.get_user_property(chat_id_full, 'transcribe_only'):
             button2 = telebot.types.InlineKeyboardButton(tr(f'✅Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
@@ -1626,20 +1626,20 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 detected_lang = lang or "de"
             message.text = f'/tts {detected_lang} {message.text or message.caption or ""}'
             tts(message)
-        elif call.data.startswith('imagecmd_'):
-            if my_db.get_user_property(user_full_id, 'blocked_bing'):
-                return
-            hash_ = call.data[9:]
-            prompt = my_db.get_from_im_suggests(hash_)
-            message.text = f'/image {prompt}'
-            image_gen(message)
-        elif call.data.startswith('imagecmd2_'):
-            if my_db.get_user_property(user_full_id, 'blocked_bing'):
-                return
-            hash_ = call.data[10:]
-            prompt = my_db.get_from_im_suggests(hash_)
-            message.text = f'/image2 {prompt}'
-            image2_gen(message)
+        # elif call.data.startswith('imagecmd_'):
+        #     if my_db.get_user_property(user_full_id, 'blocked_bing'):
+        #         return
+        #     hash_ = call.data[9:]
+        #     prompt = my_db.get_from_im_suggests(hash_)
+        #     message.text = f'/image {prompt}'
+        #     image_gen(message)
+        # elif call.data.startswith('imagecmd2_'):
+        #     if my_db.get_user_property(user_full_id, 'blocked_bing'):
+        #         return
+        #     hash_ = call.data[10:]
+        #     prompt = my_db.get_from_im_suggests(hash_)
+        #     message.text = f'/image2 {prompt}'
+        #     image2_gen(message)
         elif call.data.startswith('select_lang-'):
             l = call.data[12:]
             message.text = f'/lang {l}'
@@ -1815,14 +1815,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'voice_only_mode', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'suggest_image_prompts_enable'  and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'suggest_enabled', True)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'suggest_image_prompts_disable' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'suggest_enabled', False)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'suggest_image_prompts_enable'  and is_admin_member(call):
+        #     my_db.set_user_property(chat_id_full, 'suggest_enabled', True)
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        # elif call.data == 'suggest_image_prompts_disable' and is_admin_member(call):
+        #     my_db.set_user_property(chat_id_full, 'suggest_enabled', False)
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+        #                           text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'voice_only_mode_enable'  and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'voice_only_mode', True)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
@@ -4261,42 +4261,42 @@ def image_gen(message: telebot.types.Message):
                                     error_traceback = traceback.format_exc()
                                     my_log.log2(f'tb:image:add_media_bytes: {add_media_error}\n\n{error_traceback}')
 
-                        if medias and my_db.get_user_property(chat_id_full, 'suggest_enabled'):
-                            # 1 запрос на генерацию предложений
-                            suggest_query = tr("""Suggest a wide range options for a request to a neural network that
-generates images according to the description, show 5 options.
+#                         if medias and my_db.get_user_property(chat_id_full, 'suggest_enabled'):
+#                             # 1 запрос на генерацию предложений
+#                             suggest_query = tr("""Suggest a wide range options for a request to a neural network that
+# generates images according to the description, show 5 options.
 
-the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt + """
+# the original prompt:""", lang, save_cache=False) + '\n\n\n' + prompt + """
 
 
-Using this JSON schema:
-  suggestions = {"option1": str, "option2": str, "option3": str, "option4": str, "option5": str}
-Return a `suggestions`
+# Using this JSON schema:
+#   suggestions = {"option1": str, "option2": str, "option3": str, "option4": str, "option5": str}
+# Return a `suggestions`
 
-"""
-                            if NSFW_FLAG:
-                                suggest = my_gemini.chat(suggest_query, temperature=0.7, insert_mem=my_gemini.MEM_UNCENSORED, json_output=True)
-                                if not suggest:
-                                    suggest = my_groq.ai(suggest_query, temperature=0.5, mem_=my_groq.MEM_UNCENSORED, json_output=True)
-                            else:
-                                suggest = my_gemini.chat(suggest_query, temperature=0.7, json_output=True)
-                                if not suggest:
-                                    suggest = my_groq.ai(suggest_query, temperature=0.5, json_output=True)
-                            try:
-                                suggest = utils.string_to_dict(suggest)
-                                if 'suggestions' in suggest:
-                                    suggest = suggest['suggestions']
-                                suggest = [
-                                    utils.bot_markdown_to_html(suggest['option1']).strip(),
-                                    utils.bot_markdown_to_html(suggest['option2']).strip(),
-                                    utils.bot_markdown_to_html(suggest['option3']).strip(),
-                                    utils.bot_markdown_to_html(suggest['option4']).strip(),
-                                    utils.bot_markdown_to_html(suggest['option5']).strip(),                                    
-                                    ]
-                            except Exception as sug_exp:
-                                my_log.log2(f'tb:image:generate_suggest: {sug_exp} {suggest}')
-                        else:
-                            suggest = ''
+# """
+#                             if NSFW_FLAG:
+#                                 suggest = my_gemini.chat(suggest_query, temperature=0.7, insert_mem=my_gemini.MEM_UNCENSORED, json_output=True)
+#                                 if not suggest:
+#                                     suggest = my_groq.ai(suggest_query, temperature=0.5, mem_=my_groq.MEM_UNCENSORED, json_output=True)
+#                             else:
+#                                 suggest = my_gemini.chat(suggest_query, temperature=0.7, json_output=True)
+#                                 if not suggest:
+#                                     suggest = my_groq.ai(suggest_query, temperature=0.5, json_output=True)
+#                             try:
+#                                 suggest = utils.string_to_dict(suggest)
+#                                 if 'suggestions' in suggest:
+#                                     suggest = suggest['suggestions']
+#                                 suggest = [
+#                                     utils.bot_markdown_to_html(suggest['option1']).strip(),
+#                                     utils.bot_markdown_to_html(suggest['option2']).strip(),
+#                                     utils.bot_markdown_to_html(suggest['option3']).strip(),
+#                                     utils.bot_markdown_to_html(suggest['option4']).strip(),
+#                                     utils.bot_markdown_to_html(suggest['option5']).strip(),                                    
+#                                     ]
+#                             except Exception as sug_exp:
+#                                 my_log.log2(f'tb:image:generate_suggest: {sug_exp} {suggest}')
+#                         else:
+#                             suggest = ''
 
                         if len(medias) > 0:
                             with SEND_IMG_LOCK:
@@ -4336,47 +4336,47 @@ Return a `suggestions`
                                     except Exception as error2:
                                         my_log.log2(f'tb:image:send to pics_group: {error2}')
 
-                                if suggest:
-                                    try:
-                                        suggest_hashes = [utils.nice_hash(x, 12) for x in suggest]
-                                        markup  = telebot.types.InlineKeyboardMarkup()
-                                        for s, h in zip(suggest, suggest_hashes):
-                                            my_db.set_im_suggests(h, utils.html.unescape(s))
+                                # if suggest:
+                                #     try:
+                                #         suggest_hashes = [utils.nice_hash(x, 12) for x in suggest]
+                                #         markup  = telebot.types.InlineKeyboardMarkup()
+                                #         for s, h in zip(suggest, suggest_hashes):
+                                #             my_db.set_im_suggests(h, utils.html.unescape(s))
 
-                                        if NSFW_FLAG:
-                                            b1 = telebot.types.InlineKeyboardButton(text = '1️⃣', callback_data = f'imagecmd2_{suggest_hashes[0]}')
-                                            b2 = telebot.types.InlineKeyboardButton(text = '2️⃣', callback_data = f'imagecmd2_{suggest_hashes[1]}')
-                                            b3 = telebot.types.InlineKeyboardButton(text = '3️⃣', callback_data = f'imagecmd2_{suggest_hashes[2]}')
-                                            b4 = telebot.types.InlineKeyboardButton(text = '4️⃣', callback_data = f'imagecmd2_{suggest_hashes[3]}')
-                                            b5 = telebot.types.InlineKeyboardButton(text = '5️⃣', callback_data = f'imagecmd2_{suggest_hashes[4]}')
-                                            b6 = telebot.types.InlineKeyboardButton(text = '🙈', callback_data = f'erase_answer')
-                                        else:
-                                            b1 = telebot.types.InlineKeyboardButton(text = '1️⃣', callback_data = f'imagecmd_{suggest_hashes[0]}')
-                                            b2 = telebot.types.InlineKeyboardButton(text = '2️⃣', callback_data = f'imagecmd_{suggest_hashes[1]}')
-                                            b3 = telebot.types.InlineKeyboardButton(text = '3️⃣', callback_data = f'imagecmd_{suggest_hashes[2]}')
-                                            b4 = telebot.types.InlineKeyboardButton(text = '4️⃣', callback_data = f'imagecmd_{suggest_hashes[3]}')
-                                            b5 = telebot.types.InlineKeyboardButton(text = '5️⃣', callback_data = f'imagecmd_{suggest_hashes[4]}')
-                                            b6 = telebot.types.InlineKeyboardButton(text = '🙈', callback_data = f'erase_answer')
+                                #         if NSFW_FLAG:
+                                #             b1 = telebot.types.InlineKeyboardButton(text = '1️⃣', callback_data = f'imagecmd2_{suggest_hashes[0]}')
+                                #             b2 = telebot.types.InlineKeyboardButton(text = '2️⃣', callback_data = f'imagecmd2_{suggest_hashes[1]}')
+                                #             b3 = telebot.types.InlineKeyboardButton(text = '3️⃣', callback_data = f'imagecmd2_{suggest_hashes[2]}')
+                                #             b4 = telebot.types.InlineKeyboardButton(text = '4️⃣', callback_data = f'imagecmd2_{suggest_hashes[3]}')
+                                #             b5 = telebot.types.InlineKeyboardButton(text = '5️⃣', callback_data = f'imagecmd2_{suggest_hashes[4]}')
+                                #             b6 = telebot.types.InlineKeyboardButton(text = '🙈', callback_data = f'erase_answer')
+                                #         else:
+                                #             b1 = telebot.types.InlineKeyboardButton(text = '1️⃣', callback_data = f'imagecmd_{suggest_hashes[0]}')
+                                #             b2 = telebot.types.InlineKeyboardButton(text = '2️⃣', callback_data = f'imagecmd_{suggest_hashes[1]}')
+                                #             b3 = telebot.types.InlineKeyboardButton(text = '3️⃣', callback_data = f'imagecmd_{suggest_hashes[2]}')
+                                #             b4 = telebot.types.InlineKeyboardButton(text = '4️⃣', callback_data = f'imagecmd_{suggest_hashes[3]}')
+                                #             b5 = telebot.types.InlineKeyboardButton(text = '5️⃣', callback_data = f'imagecmd_{suggest_hashes[4]}')
+                                #             b6 = telebot.types.InlineKeyboardButton(text = '🙈', callback_data = f'erase_answer')
 
-                                        markup.add(b1, b2, b3, b4, b5, b6)
+                                #         markup.add(b1, b2, b3, b4, b5, b6)
 
-                                        suggest_msg = tr('Here are some more possible options for your request:', lang)
-                                        suggest_msg = f'<b>{suggest_msg}</b>\n\n'
-                                        n = 1
-                                        for s in suggest:
-                                            if n == 1: nn = '1️⃣'
-                                            if n == 2: nn = '2️⃣'
-                                            if n == 3: nn = '3️⃣'
-                                            if n == 4: nn = '4️⃣'
-                                            if n == 5: nn = '5️⃣'
-                                            if NSFW_FLAG:
-                                                suggest_msg += f'{nn} <code>/image2 {s}</code>\n\n'
-                                            else:
-                                                suggest_msg += f'{nn} <code>/image {s}</code>\n\n'
-                                            n += 1
-                                        bot_reply(message, suggest_msg, parse_mode = 'HTML', reply_markup=markup)
-                                    except Exception as error2:
-                                        my_log.log2(f'tb:image:send to suggest: {error2}')
+                                #         suggest_msg = tr('Here are some more possible options for your request:', lang)
+                                #         suggest_msg = f'<b>{suggest_msg}</b>\n\n'
+                                #         n = 1
+                                #         for s in suggest:
+                                #             if n == 1: nn = '1️⃣'
+                                #             if n == 2: nn = '2️⃣'
+                                #             if n == 3: nn = '3️⃣'
+                                #             if n == 4: nn = '4️⃣'
+                                #             if n == 5: nn = '5️⃣'
+                                #             if NSFW_FLAG:
+                                #                 suggest_msg += f'{nn} <code>/image2 {s}</code>\n\n'
+                                #             else:
+                                #                 suggest_msg += f'{nn} <code>/image {s}</code>\n\n'
+                                #             n += 1
+                                #         bot_reply(message, suggest_msg, parse_mode = 'HTML', reply_markup=markup)
+                                #     except Exception as error2:
+                                #         my_log.log2(f'tb:image:send to suggest: {error2}')
                                 add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
                                                     f'{tr("images was generated successfully", lang)}',
                                                     chat_id_full)

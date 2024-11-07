@@ -5828,16 +5828,9 @@ def do_task(message, custom_prompt: str = ''):
                         my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
                         chat_mode_ = 'gemini'
 
-                    # если больше 1000 сообщений уже и нет ключей то нафиг
-                    # if total_messages__ > 1000:
-                    #     return
-        # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
-        # на бесплатных ключах лимит - 50, 300 может получится за счет взаимопомощи
-        if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, cfg.gemini_pro_model, 60*60*24) > 300:
-            chat_mode_ = 'gemini'
-    else:
-        if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, cfg.gemini_pro_model, 60*60*24) > 300:
-            chat_mode_ = 'gemini'
+    # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
+    if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, cfg.gemini_pro_model, 60*60*24) > 300:
+        chat_mode_ = 'gemini'
 
     chat_modes = {
         '/gemma2':    'gemma2-9b',

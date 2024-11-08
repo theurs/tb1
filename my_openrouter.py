@@ -122,18 +122,22 @@ def ai(prompt: str = '',
 
     URL = my_db.get_user_property(user_id, 'base_api_url') or BASE_URL
 
-    if 'bothub.chat' in URL or 'api.x.ai' in URL:
-        client = OpenAI(
-            api_key = key,
-            base_url = URL,
-            )
-        response = client.chat.completions.create(
-            messages = mem_,
-            model = model,
-            max_tokens = max_tokens,
-            temperature = temperature,
-            timeout = timeout,
-            )
+    if not 'openrouter' in URL:
+        try:
+            client = OpenAI(
+                api_key = key,
+                base_url = URL,
+                )
+            response = client.chat.completions.create(
+                messages = mem_,
+                model = model,
+                max_tokens = max_tokens,
+                temperature = temperature,
+                timeout = timeout,
+                )
+        except Exception as error_other:
+            my_log.log_openrouter(f'{error_other}')
+            return 0, ''
     else:
         response = requests.post(
             url = URL,
@@ -149,7 +153,7 @@ def ai(prompt: str = '',
             }),
             timeout = timeout,
         )
-    if 'bothub' in URL or 'api.x.ai' in URL:
+    if not 'openrouter' in URL:
         try:
             text = response.choices[0].message.content
         except TypeError:

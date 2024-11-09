@@ -55,7 +55,7 @@ def ai(prompt: str = '',
     if not model:
         model = 'nousresearch/hermes-3-llama-3.1-405b:free'
 
-    if not model.endswith(':free'):
+    if not model.endswith(':free') and 'google/gemini-flash-1.5-exp' not in model:
         return ''
 
     if not prompt and not mem:

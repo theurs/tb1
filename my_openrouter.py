@@ -160,8 +160,12 @@ def ai(prompt: str = '',
     if not 'openrouter' in URL:
         try:
             text = response.choices[0].message.content
-            in_t = response.usage.prompt_tokens
-            out_t = response.usage.completion_tokens
+            try:
+                in_t = response.usage.prompt_tokens
+                out_t = response.usage.completion_tokens
+            except:
+                in_t = 0
+                out_t = 0
             PRICE[user_id] = (in_t, out_t)
         except TypeError:
             try:
@@ -174,11 +178,15 @@ def ai(prompt: str = '',
         response_str = response.content.decode('utf-8').strip()
         try:
             response_data = json.loads(response_str)  # Преобразуем строку JSON в словарь Python
-            in_t = response_data['usage']['prompt_tokens']
-            out_t = response_data['usage']['completion_tokens']
+            try:
+                in_t = response_data['usage']['prompt_tokens']
+                out_t = response_data['usage']['completion_tokens']
+            except:
+                in_t = 0
+                out_t = 0
+            PRICE[user_id] = (in_t, out_t)
         except (KeyError, json.JSONDecodeError) as error_ct:
-            in_t = 0
-            out_t = 0
+
             my_log.log_openrouter(f'ai:count tokens: {error_ct}')
 
         if status == 200:
@@ -202,7 +210,6 @@ def ai(prompt: str = '',
                 return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
             text = ''
 
-        PRICE[user_id] = (in_t, out_t)
         return status, text
 
 

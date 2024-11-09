@@ -189,6 +189,8 @@ def init(backup: bool = True):
             persistant_memory TEXT,
 
             base_api_url TEXT,
+            openrouter_in_price REAL,
+            openrouter_out_price REAL,
 
             api_key_gemini TEXT,
             api_key_groq TEXT,

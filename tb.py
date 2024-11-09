@@ -2748,6 +2748,44 @@ def maxtokens(message: telebot.types.Message):
     bot_reply_tr(message, f'Usage: /maxtokens maxtokens 10-8000', disable_web_page_preview=True)
 
 
+@bot.message_handler(commands=['model_price'], func=authorized_owner)
+@async_run
+def model_price(message: telebot.types.Message):
+    """Пользователи могут устанавливать значения in_price и out_price"""
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+
+    try:
+        prices_str = message.text.split(maxsplit=1)[1].strip()
+        prices = re.split(r'[ /]+', prices_str)
+
+        if len(prices) != 2:
+            raise ValueError("Invalid number of parameters.")
+
+        try:
+            in_price = float(prices[0])  # Преобразуем в float
+            out_price = float(prices[1])  # Преобразуем в float
+        except ValueError:
+            raise ValueError("Prices must be numeric.")
+
+        my_db.set_user_property(chat_id_full, 'openrouter_in_price', in_price)
+        my_db.set_user_property(chat_id_full, 'openrouter_out_price', out_price)
+
+        bot_reply_tr(message, f'Model prices changed.')
+        return
+
+    except IndexError:
+        pass
+    except ValueError as e:
+        bot_reply_tr(message, str(e))
+        return
+    except Exception as error:
+        error_tr = traceback.format_exc()
+        my_log.log2(f'tb:model_price:{error}\n\n{error_tr}')
+
+    bot_reply_tr(message, f'Usage:\n\n/model_price in_price/out_price\n\n/model_price in_price out_price\n\n/model_price 0 0 - do not show price', disable_web_page_preview=True)
+
+
 @bot.message_handler(commands=['openrouter', 'bothub'], func=authorized_owner)
 @async_run
 def openrouter(message: telebot.types.Message):
@@ -2790,7 +2828,8 @@ def openrouter(message: telebot.types.Message):
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
                 your_url = my_db.get_user_property(chat_id_full, 'base_api_url') or my_openrouter.BASE_URL
                 msg = f'{tr("Your base api url:", lang)} [{your_url}]\n'
-                msg += f'{tr("Your key:", lang)} [{key[:12]}...]'
+                msg += f'{tr("Your key:", lang)} [{key[:12]}...]\n'
+                msg += f'{tr("Model price:", lang)} in {my_db.get_user_property(chat_id_full, "openrouter_in_price") or 0}$ / out {my_db.get_user_property(chat_id_full, "openrouter_out_price") or 0}$ /model_price'
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
             msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
             msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/docs#models or https://bothub.chat/models

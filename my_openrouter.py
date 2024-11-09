@@ -5,6 +5,7 @@ import requests
 import time
 import threading
 import traceback
+from decimal import Decimal
 
 import langcodes
 from openai import OpenAI
@@ -117,6 +118,9 @@ def ai(prompt: str = '',
     if prompt:
         mem_ = mem_ + [{'role': 'user', 'content': prompt}]
 
+    price_in = Decimal(str((my_db.get_user_property(user_id, 'openrouter_in_price') or 0))) / 1000000
+    price_out =  Decimal(str((my_db.get_user_property(user_id, 'openrouter_out_price') or 0))) / 1000000
+
     YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
     YOUR_APP_NAME = 'kun4sun_bot'
 
@@ -156,6 +160,10 @@ def ai(prompt: str = '',
     if not 'openrouter' in URL:
         try:
             text = response.choices[0].message.content
+            in_t = response.usage.completion_tokens
+            out_t = response.usage.prompt_tokens
+            if price_in or price_out:
+                text += f'\n\n`[in ({in_t}) {in_t * price_in:.7f}$ + out ({out_t}) {out_t * price_out:.7f}$ = {((in_t * price_in) + (out_t * price_out)):.7f}$]`'
         except TypeError:
             try:
                 text = str(response.model_extra) or ''
@@ -164,6 +172,16 @@ def ai(prompt: str = '',
         return 200, text
     else:
         status = response.status_code
+        response_str = response.content.decode('utf-8').strip()
+        try:
+            response_data = json.loads(response_str)  # Преобразуем строку JSON в словарь Python
+            in_t = response_data['usage']['prompt_tokens']
+            out_t = response_data['usage']['completion_tokens']
+        except (KeyError, json.JSONDecodeError) as error_ct:
+            in_t = 0
+            out_t = 0
+            my_log.log_openrouter(f'ai:count tokens: {error_ct}')
+
         if status == 200:
             try:
                 text = response.json()['choices'][0]['message']['content'].strip()
@@ -184,6 +202,9 @@ def ai(prompt: str = '',
                 model == 'meta-llama/llama-3.2-11b-vision-instruct:free'
                 return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
             text = ''
+
+        if price_in or price_out:
+            text += f'\n\n`[in ({in_t}) {in_t * price_in:.7f}$ + out ({out_t}) {out_t * price_out:.7f}$ = {((in_t * price_in) + (out_t * price_out)):.7f}$]`'
         return status, text
 
 

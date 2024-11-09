@@ -15,6 +15,7 @@ import tempfile
 import traceback
 import threading
 import time
+from decimal import Decimal
 
 import cairosvg
 import langcodes
@@ -6324,6 +6325,20 @@ def do_task(message, custom_prompt: str = ''):
                         try:
                             style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_)
+                            if answer:
+                                if chat_id_full in my_openrouter.PRICE:
+                                    price_in = my_db.get_user_property(chat_id_full, 'openrouter_in_price')
+                                    price_out = my_db.get_user_property(chat_id_full, 'openrouter_out_price')
+                                    if price_in or price_out:
+                                        price_in = Decimal(str(price_in)) / 1000000
+                                        price_out = Decimal(str(price_out)) / 1000000
+                                        t_in = my_openrouter.PRICE[chat_id_full][0]
+                                        t_out = my_openrouter.PRICE[chat_id_full][1]
+                                        p_in = t_in * price_in
+                                        p_out = t_out * price_out
+                                        s = f'\n\n`[IN ({t_in}) {p_in:.7f} + OUT ({t_out}) {p_out:.7f} = {p_in+p_out:.7f}$]`'
+                                        answer += s
+                                    del my_openrouter.PRICE[chat_id_full]
                             WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 

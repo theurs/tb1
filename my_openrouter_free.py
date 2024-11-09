@@ -50,7 +50,7 @@ def ai(prompt: str = '',
        model = 'nousresearch/hermes-3-llama-3.1-405b:free',
        temperature: float = 1,
        max_tokens: int = 4000,
-       timeout: int = 300) -> str:
+       timeout: int = 120) -> str:
 
     if not model:
         model = 'nousresearch/hermes-3-llama-3.1-405b:free'
@@ -80,7 +80,11 @@ def ai(prompt: str = '',
 
     result = ''
 
+    start_time = time.time()
+
     for _ in range(3):
+        if time.time() - start_time > timeout:
+            return ''
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={

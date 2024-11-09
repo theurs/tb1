@@ -15,7 +15,7 @@ import tempfile
 import traceback
 import threading
 import time
-from decimal import Decimal
+from decimal import Decimal, getcontext
 
 import cairosvg
 import langcodes
@@ -6326,6 +6326,11 @@ def do_task(message, custom_prompt: str = ''):
                             style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_)
                             if answer:
+                                def float_to_string(num):
+                                    getcontext().prec = 8  # устанавливаем точность
+                                    num = Decimal(str(num))  # преобразуем в Decimal
+                                    num = num.quantize(Decimal('1e-7')) # округляем до 7 знаков
+                                    return str(num).rstrip('0').rstrip('.') #удаляем нули и точку
                                 if chat_id_full in my_openrouter.PRICE:
                                     price_in = my_db.get_user_property(chat_id_full, 'openrouter_in_price')
                                     price_out = my_db.get_user_property(chat_id_full, 'openrouter_out_price')
@@ -6336,7 +6341,7 @@ def do_task(message, custom_prompt: str = ''):
                                         t_out = my_openrouter.PRICE[chat_id_full][1]
                                         p_in = t_in * price_in
                                         p_out = t_out * price_out
-                                        s = f'\n\n`[IN ({t_in}) {p_in:.7f} + OUT ({t_out}) {p_out:.7f} = {p_in+p_out:.7f}$]`'
+                                        s = f'\n\n`[IN ({t_in}) {float_to_string(p_in)} + OUT ({t_out}) {float_to_string(p_out)} = {float_to_string(p_in+p_out)}$]`'
                                         answer += s
                                     del my_openrouter.PRICE[chat_id_full]
                             WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]

@@ -160,8 +160,8 @@ def ai(prompt: str = '',
     if not 'openrouter' in URL:
         try:
             text = response.choices[0].message.content
-            in_t = response.usage.completion_tokens
-            out_t = response.usage.prompt_tokens
+            in_t = response.usage.prompt_tokens
+            out_t = response.usage.completion_tokens
             PRICE[user_id] = (in_t, out_t)
         except TypeError:
             try:

@@ -6340,9 +6340,11 @@ def do_task(message, custom_prompt: str = ''):
                                     chat_id_full,
                                     temperature=my_db.get_user_property(chat_id_full, 'temperature'),
                                     system=style_,
-                                    model = 'meta-llama/llama-3.2-11b-vision-instruct:free',
+                                    # model = 'meta-llama/llama-3.2-11b-vision-instruct:free',
+                                    model = 'google/gemini-flash-1.5-exp',
                                 )
-                                WHO_ANSWERED[chat_id_full] = 'meta-llama/llama-3.2-11b-vision-instruct:free'
+                                # WHO_ANSWERED[chat_id_full] = 'meta-llama/llama-3.2-11b-vision-instruct:free'
+                                WHO_ANSWERED[chat_id_full] = 'google/gemini-flash-1.5-exp'
                                 WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
                                 if not answer:
                                     answer = 'Llama 405b ' + tr('did not answered, try to /reset and start again.', lang)
@@ -6354,6 +6356,8 @@ def do_task(message, custom_prompt: str = ''):
 
                             if 'meta-llama/llama-3.2-11b-vision-instruct:free' in WHO_ANSWERED[chat_id_full]:
                                 my_log.log_echo(message, f'[meta-llama/llama-3.2-11b-vision-instruct:free] {answer}')
+                            elif 'google/gemini-flash-1.5-exp' in in WHO_ANSWERED[chat_id_full]:
+                                my_log.log_echo(message, f'[google/gemini-flash-1.5-exp] {answer}')
                             else:
                                 my_log.log_echo(message, f'[llama405 nousresearch/hermes-3-llama-3.1-405b:free] {answer}')
 

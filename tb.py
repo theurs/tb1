@@ -6356,7 +6356,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             if 'meta-llama/llama-3.2-11b-vision-instruct:free' in WHO_ANSWERED[chat_id_full]:
                                 my_log.log_echo(message, f'[meta-llama/llama-3.2-11b-vision-instruct:free] {answer}')
-                            elif 'google/gemini-flash-1.5-exp' in in WHO_ANSWERED[chat_id_full]:
+                            elif 'google/gemini-flash-1.5-exp' in WHO_ANSWERED[chat_id_full]:
                                 my_log.log_echo(message, f'[google/gemini-flash-1.5-exp] {answer}')
                             else:
                                 my_log.log_echo(message, f'[llama405 nousresearch/hermes-3-llama-3.1-405b:free] {answer}')

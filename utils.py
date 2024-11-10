@@ -446,99 +446,128 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
     :param max_cell_width: Максимальная ширина ячейки в символах
     :return: Текст с замененными таблицами
     """
-    text += '\n'
+    original_text = text
+    try:
+        text += '\n'
 
-    def is_valid_separator(line: str) -> bool:
-        if not line or not line.strip('| '):
-            return False
-        parts = line.strip().strip('|').split('|')
-        return all(part.strip().replace('-', '').replace(':', '') == '' for part in parts)
+        def is_valid_separator(line: str) -> bool:
+            if not line or not line.strip('| '):
+                return False
+            parts = line.strip().strip('|').split('|')
+            return all(part.strip().replace('-', '').replace(':', '') == '' for part in parts)
 
-    def is_valid_table_row(line: str) -> bool:
-        return line.strip().startswith('|') and line.strip().endswith('|')
+        def is_valid_table_row(line: str) -> bool:
+            return line.strip().startswith('|') and line.strip().endswith('|')
 
-    def strip_tags(text: str) -> str:
-        text = text.replace('&lt;', '<')
-        text = text.replace('&gt;', '>')
-        text = text.replace('&quot;', '"')
-        text = text.replace('&#x27;', "'")
-        text = text.replace('<b>', '   ')
-        text = text.replace('<i>', '   ')
-        text = text.replace('</b>', '    ')
-        text = text.replace('</i>', '    ')
-        text = text.replace('<br>', '    ')
+        def strip_tags(text: str) -> str:
+            text = text.replace('&lt;', '<')
+            text = text.replace('&gt;', '>')
+            text = text.replace('&quot;', '"')
+            text = text.replace('&#x27;', "'")
+            text = text.replace('<b>', '   ')
+            text = text.replace('<i>', '   ')
+            text = text.replace('</b>', '    ')
+            text = text.replace('</i>', '    ')
+            text = text.replace('<br>', '    ')
+            return text
+
+        def truncate_text(text: str, max_width: int) -> str:
+            text = strip_tags(text)
+            if len(text) <= max_width:
+                return text
+            return text[:max_width-3] + '...'
+
+        def wrap_long_text(text: str, max_width: int) -> str:
+            text = strip_tags(text)
+            if len(text) <= max_width:
+                return text
+            return '\n'.join(wrap(text, max_width))
+
+        def process_table(table_text: str) -> str:
+            lines = table_text.strip().split('\n')
+            x = PrettyTable()
+            x.header = True
+            x.hrules = 1
+
+            # Находим заголовок и разделитель
+            header_index = next((i for i, line in enumerate(lines) if is_valid_table_row(line)), None)
+            if header_index is None:
+                return table_text
+
+            separator_index = next((i for i in range(header_index + 1, len(lines)) if is_valid_separator(lines[i])), None)
+            if separator_index is None:
+                return table_text
+
+            # Обработка заголовка
+            header = [truncate_text(cell.strip(), max_cell_width) for cell in lines[header_index].strip('|').split('|') if cell.strip()]
+
+            def make_strings_unique(strings):
+                """
+                Проверяет список строк на наличие дубликатов и делает их уникальными.
+
+                Args:
+                    strings: Список строк.
+
+                Returns:
+                    Список строк без дубликатов.
+                """
+                seen = set()
+                result = []
+                for s in strings:
+                    original_s = s
+                    count = 1
+                    while s in seen:
+                        s = original_s + f"_{count}"
+                        count += 1
+                    seen.add(s)
+                    result.append(s)
+                return result
+
+            x.field_names = make_strings_unique(header)
+
+            # Настройка выравнивания на основе разделителя
+            alignments = []
+            for cell in lines[separator_index].strip('|').split('|'):
+                cell = cell.strip()
+                if cell.startswith(':') and cell.endswith(':'):
+                    alignments.append('c')
+                elif cell.endswith(':'):
+                    alignments.append('r')
+                else:
+                    alignments.append('l')
+            
+            for i, align in enumerate(alignments):
+                x.align[x.field_names[i]] = align
+
+            # Обработка данных
+            seen_rows = set()
+            for line in lines[separator_index + 1:]:
+                if is_valid_table_row(line) and not is_valid_separator(line):
+                    row = [wrap_long_text(cell.strip(), max_cell_width) for cell in line.strip('|').split('|') if cell.strip()]
+                    row += [''] * (len(header) - len(row))
+                    row = tuple(row[:len(header)])
+                    if row not in seen_rows:
+                        seen_rows.add(row)
+                        x.add_row(row)
+
+            # Установка максимальной ширины таблицы
+            x.max_width = max_width
+
+            return f'\n\n<pre><code>{x.get_string()}\n</code></pre>'
+
+        # Находим все таблицы в тексте
+        table_pattern = re.compile(r'(\n|^)\s*\|.*\|.*\n\s*\|[-:\s|]+\|\s*\n(\s*\|.*\|.*\n)*', re.MULTILINE)
+
+        # Заменяем каждую найденную таблицу
+        text = table_pattern.sub(lambda m: process_table(m.group(0)), text)
+
+        text = re.sub(r'(?<=\|)(.*?)(?=\|)', lambda match: match.group(1).replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;'), text)
+
         return text
-
-    def truncate_text(text: str, max_width: int) -> str:
-        text = strip_tags(text)
-        if len(text) <= max_width:
-            return text
-        return text[:max_width-3] + '...'
-
-    def wrap_long_text(text: str, max_width: int) -> str:
-        text = strip_tags(text)
-        if len(text) <= max_width:
-            return text
-        return '\n'.join(wrap(text, max_width))
-
-    def process_table(table_text: str) -> str:
-        lines = table_text.strip().split('\n')
-        x = PrettyTable()
-        x.header = True
-        x.hrules = 1
-
-        # Находим заголовок и разделитель
-        header_index = next((i for i, line in enumerate(lines) if is_valid_table_row(line)), None)
-        if header_index is None:
-            return table_text
-
-        separator_index = next((i for i in range(header_index + 1, len(lines)) if is_valid_separator(lines[i])), None)
-        if separator_index is None:
-            return table_text
-
-        # Обработка заголовка
-        header = [truncate_text(cell.strip(), max_cell_width) for cell in lines[header_index].strip('|').split('|') if cell.strip()]
-        x.field_names = header
-
-        # Настройка выравнивания на основе разделителя
-        alignments = []
-        for cell in lines[separator_index].strip('|').split('|'):
-            cell = cell.strip()
-            if cell.startswith(':') and cell.endswith(':'):
-                alignments.append('c')
-            elif cell.endswith(':'):
-                alignments.append('r')
-            else:
-                alignments.append('l')
-        
-        for i, align in enumerate(alignments):
-            x.align[x.field_names[i]] = align
-
-        # Обработка данных
-        seen_rows = set()
-        for line in lines[separator_index + 1:]:
-            if is_valid_table_row(line) and not is_valid_separator(line):
-                row = [wrap_long_text(cell.strip(), max_cell_width) for cell in line.strip('|').split('|') if cell.strip()]
-                row += [''] * (len(header) - len(row))
-                row = tuple(row[:len(header)])
-                if row not in seen_rows:
-                    seen_rows.add(row)
-                    x.add_row(row)
-
-        # Установка максимальной ширины таблицы
-        x.max_width = max_width
-
-        return f'\n\n<pre><code>{x.get_string()}\n</code></pre>'
-
-    # Находим все таблицы в тексте
-    table_pattern = re.compile(r'(\n|^)\s*\|.*\|.*\n\s*\|[-:\s|]+\|\s*\n(\s*\|.*\|.*\n)*', re.MULTILINE)
-
-    # Заменяем каждую найденную таблицу
-    text = table_pattern.sub(lambda m: process_table(m.group(0)), text)
-
-    text = re.sub(r'(?<=\|)(.*?)(?=\|)', lambda match: match.group(1).replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;'), text)
-
-    return text
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'utils:replace_tables {unknown}\n\n{traceback_error}\n\n{original_text}')
+        return original_text
 
 
 def split_html(text: str, max_length: int = 1500) -> list:

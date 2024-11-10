@@ -141,7 +141,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
         A tuple of two strings: (positive prompt, negative prompt) or None if an error occurred. 
     """
 
-    result = ai(prompt, temperature=1.5, json_output=True, chat_id=chat_id)
+    result = ai(prompt, temperature=1.5, json_output=True, chat_id=chat_id, model = 'Meta-Llama-3.1-70B-Instruct')
     result_dict = utils.string_to_dict(result)
     if result_dict:
         try:
@@ -258,8 +258,37 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
+
+    p = '''
+User want to create image with text to image generator.
+Repromt user's PROMPT for image generation.
+Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
+Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
+A negative prompt in image generation lets you specify what you DON'T want to see in the picture. It helps exclude unwanted objects, styles, colors, or other characteristics, giving you more control over the result and speeding up the generation process.
+
+Example:
+
+Prompt: "Cat in a wizard hat"
+
+Negative prompt: "sad, angry, blurry, cartoon"
+
+Result: The AI will generate an image of a cat in a wizard hat that looks realistic, rather joyful or neutral, not sad or angry, and the image will be sharp, not blurry.
+
+Start your prompt with word Generate.
+
+
+User's PROMPT: голубое небо
+
+Dialog history: 
+
+Using this JSON schema:
+  reprompt = {"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str}
+Return a `reprompt`
+'''
+
+    print(get_reprompt_for_image(p))
     # print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами', model = 'Llama-3.2-90B-Vision-Instruct'))
-    print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами'))
+    # print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами'))
     # print(translate('напиши 100 слов самой жуткой лести, пиши большими буквами', to_lang='en'))
     # print(img2txt('d:/downloads/2.jpg', 'извлеки весь текст, сохрани форматирование текста', model='Llama-3.2-90B-Vision-Instruct'))
 

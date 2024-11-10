@@ -1447,9 +1447,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
         button8 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚗', callback_data='select_glm4plus')
         markup.row(button1, button2)
-        markup.row(button4, button7)
+        markup.row(button4, button8)
         markup.row(button5, button6)
-        markup.row(button8)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

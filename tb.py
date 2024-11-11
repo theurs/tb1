@@ -2871,7 +2871,12 @@ def openrouter(message: telebot.types.Message):
 /maxhistlines <maxhistlines> - how many lines in history
 /maxhistchars <maxhistchars> - how many chars in history
 
-Usage: /openrouter <api key> or <api base url> (https://openrouter.ai/api/v1 and https://bothub.chat/api/v2/openai/v1 was tested)
+Usage: /openrouter <api key> or <api base url>
+https://openrouter.ai/api/v1
+https://bothub.chat/api/v2/openai/v1
+https://api.groq.com/openai/v1
+https://api.x.ai/v1
+was tested
 ''', lang)
             bot_reply(message, msg, disable_web_page_preview=True)
     except Exception as error:

@@ -48,7 +48,7 @@ import my_telegraph
 import my_openrouter
 import my_openrouter_free
 import my_pandoc
-# import my_sambanova
+import my_sambanova
 import my_shadowjourney
 import my_stat
 import my_stt
@@ -410,7 +410,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_openrouter.update_mem(query, resp, chat_id_full)
     elif 'openrouter_llama405' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        my_openrouter_free.update_mem(query, resp, chat_id_full)
+        my_sambanova.update_mem(query, resp, chat_id_full)
     elif 'glm4plus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_glm.update_mem(query, resp, chat_id_full)
     elif 'jamba' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -1450,6 +1450,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button1, button2)
         markup.row(button4, button8)
         markup.row(button5, button6)
+        if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
+            markup.row(button7)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -1777,7 +1779,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_openrouter.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с openrouter очищена.')
         elif call.data == 'openrouter_llama405_reset':
-            my_openrouter_free.reset(chat_id_full)
+            my_sambanova.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Llama 405b очищена.')
         elif call.data == 'glm4plus':
             my_glm.reset(chat_id_full)
@@ -3322,7 +3324,7 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         my_openrouter.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-        my_openrouter_free.force(chat_id_full, text)
+        my_sambanova.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
         my_glm.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
@@ -3381,7 +3383,7 @@ def undo_cmd(message: telebot.types.Message):
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         my_openrouter.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-        my_openrouter_free.undo(chat_id_full)
+        my_sambanova.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm3plus':
         my_glm.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
@@ -3420,7 +3422,7 @@ def reset_(message: telebot.types.Message, say: bool = True):
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         my_openrouter.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-        my_openrouter_free.reset(chat_id_full)
+        my_sambanova.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
         my_glm.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'jamba':
@@ -3626,7 +3628,7 @@ def send_debug_history(message: telebot.types.Message):
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         prompt = 'Llama 405b\n\n'
-        prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        prompt += my_sambanova.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
         prompt = 'GLM 4 PLUS\n\n'
@@ -4515,7 +4517,7 @@ def post_telegraph(message: telebot.types.Message):
     elif mode == 'jamba':
         text = my_jamba.get_last_mem(chat_id_full)
     elif mode == 'openrouter_llama405':
-        text = my_openrouter_free.get_last_mem(chat_id_full)
+        text = my_sambanova.get_last_mem(chat_id_full)
     elif mode == 'glm4plus':
         text = my_glm.get_last_mem(chat_id_full)
     elif mode in ('gpt-4o-mini-ddg', 'haiku',):
@@ -5360,7 +5362,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_gemini.reset(chat_id_full)
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
-            my_openrouter_free.reset(chat_id_full)
+            my_sambanova.reset(chat_id_full)
             my_glm.reset(chat_id_full)
             my_jamba.reset(chat_id_full)
             my_shadowjourney.reset(chat_id_full)
@@ -6413,50 +6415,30 @@ def do_task(message, custom_prompt: str = ''):
 
                 # если активирован режим общения с llama 405b
                 if chat_mode_ == 'openrouter_llama405':
-                    if len(msg) > my_openrouter_free.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Llama 405b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter_free.MAX_REQUEST}')
+                    if len(msg) > my_sambanova.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Llama 405b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_sambanova.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
                         try:
                             style_ = my_db.get_user_property(chat_id_full, 'role') or ''
-                            answer = my_openrouter_free.chat(
+                            answer = my_sambanova.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature'),
                                 system=style_,
-                                model = 'nousresearch/hermes-3-llama-3.1-405b:free',
+                                model = 'Meta-Llama-3.1-405B-Instruct',
                             )
 
-                            WHO_ANSWERED[chat_id_full] = 'llama405 nousresearch/hermes-3-llama-3.1-405b:free'
+                            WHO_ANSWERED[chat_id_full] = 'Meta-Llama-3.1-405B-Instruct'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            if not answer:
-                                answer = my_openrouter_free.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temperature=my_db.get_user_property(chat_id_full, 'temperature'),
-                                    system=style_,
-                                    # model = 'meta-llama/llama-3.2-11b-vision-instruct:free',
-                                    model = 'google/gemini-flash-1.5-exp',
-                                )
-                                # WHO_ANSWERED[chat_id_full] = 'meta-llama/llama-3.2-11b-vision-instruct:free'
-                                WHO_ANSWERED[chat_id_full] = 'google/gemini-flash-1.5-exp'
-                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                if not answer:
-                                    answer = 'Llama 405b ' + tr('did not answered, try to /reset and start again.', lang)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
-                            if 'meta-llama/llama-3.2-11b-vision-instruct:free' in WHO_ANSWERED[chat_id_full]:
-                                my_log.log_echo(message, f'[meta-llama/llama-3.2-11b-vision-instruct:free] {answer}')
-                            elif 'google/gemini-flash-1.5-exp' in WHO_ANSWERED[chat_id_full]:
-                                my_log.log_echo(message, f'[google/gemini-flash-1.5-exp] {answer}')
-                            else:
-                                my_log.log_echo(message, f'[llama405 nousresearch/hermes-3-llama-3.1-405b:free] {answer}')
+                            my_log.log_echo(message, f'[Meta-Llama-3.1-405B-Instruct] {answer}')
 
                             try:
                                 if command_in_answer(answer, message):

@@ -5,6 +5,7 @@ import requests
 import time
 import threading
 import traceback
+from typing import Dict, List, Optional
 
 import langcodes
 from openai import OpenAI
@@ -140,7 +141,7 @@ def ai(prompt: str = '',
                 timeout = timeout,
                 )
         except Exception as error_other:
-            my_log.log_openrouter(f'{error_other}')
+            my_log.log_openrouter(f'ai: {error_other}')
             return 0, ''
     else:
         response = requests.post(
@@ -193,7 +194,7 @@ def ai(prompt: str = '',
             try:
                 text = response.json()['choices'][0]['message']['content'].strip()
             except Exception as error:
-                my_log.log_openrouter(f'Failed to parse response: {error}\n\n{str(response)}')
+                my_log.log_openrouter(f'ai:Failed to parse response: {error}\n\n{str(response)}')
                 if model == 'google/gemini-pro-1.5-exp':
                     model = 'google/gemini-flash-1.5-exp'
                     return ai(prompt, mem, user_id, system, model, temperature, max_tokens, timeout)
@@ -228,7 +229,7 @@ def update_mem(query: str, resp: str, chat_id: str):
             i += 1
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_openrouter(f'my_openrouter:update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
+        my_log.log_openrouter(f'update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
 
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
 
@@ -295,7 +296,7 @@ def force(chat_id: str, text: str):
                 my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob([text]))
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_openrouter(f'Failed to force message in chat {chat_id}: {error}\n\n{error_traceback}')
+        my_log.log_openrouter(f'force: Failed to force message in chat {chat_id}: {error}\n\n{error_traceback}')
 
 
 def undo(chat_id: str):
@@ -324,7 +325,7 @@ def undo(chat_id: str):
             my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_openrouter(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
+        my_log.log_openrouter(f'undo:Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
 
 
 def reset(chat_id: str):
@@ -387,7 +388,7 @@ def get_mem_as_string(chat_id: str) -> str:
         return result 
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_openrouter(f'my_openrouter:get_mem_as_string: {error}\n\n{error_traceback}')
+        my_log.log_openrouter(f'get_mem_as_string: {error}\n\n{error_traceback}')
         return ''
 
 
@@ -473,6 +474,84 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
         return ''
 
 
+def list_models(user_id: str = "") -> Optional[List[str]]:
+    """
+    Retrieves a list of available models for a given user.
+
+    Args:
+        user_id: The ID of the user.
+
+    Returns:
+        A list of model IDs if successful, None if no API key is found, or an empty list if an error occurs.
+    """
+    key: Optional[str] = None
+
+    if hasattr(cfg, 'OPEN_ROUTER_KEY') and cfg.OPEN_ROUTER_KEY and user_id == 'test':
+        key = cfg.OPEN_ROUTER_KEY
+    elif user_id not in KEYS or not KEYS[user_id]:
+        return None  # Explicitly return None if no key is found
+    else:
+        key = KEYS[user_id]
+
+    url: str = my_db.get_user_property(user_id, 'base_api_url') or BASE_URL
+    if url.endswith('/chat/completions'):
+        url = url[:-17]
+
+    try:
+        client = OpenAI(
+            api_key=key,
+            base_url=url,
+        )
+        model_list = client.models.list()
+        result: List[str] = [x.id for x in model_list]  # Type hint for clarity
+        return result
+    except Exception as e:  # More specific exception handling is recommended in production
+        my_log.log_openrouter(f'list_models:{e}')
+        return []  # Return empty list on error
+
+
+def format_models_for_telegram(models: List[str]) -> str:
+    """
+    Categorizes, sorts, and formats a list of models for display in Telegram using Markdown.
+    Handles models with prefixes and numeric components for better organization.
+
+    Args:
+        models: A list of model names.
+
+    Returns:
+        A formatted string ready for Telegram.
+    """
+
+    categories: Dict[str, List[str]] = {}
+    for model in models:
+        parts = model.split('-')  # Splitting by '-' to account for prefixes. Customize if needed
+        prefix = parts[0] if parts else "Other" # Main category based on the prefix
+        if prefix not in categories:
+            categories[prefix] = []
+        categories[prefix].append(model)
+
+    output = ""
+    sorted_categories = sorted(categories.keys())
+
+    def _sort_key(model: str):
+        parts = []
+        for part in model.split('-'):
+            if part.isdigit():
+                parts.append(part.zfill(4))  # Pad with zeros to a fixed width (e.g., 4)
+            elif part.replace('.', '', 1).isdigit():
+                parts.append(part)  # floats are okay to be compared as strings
+            else:
+                parts.append(part)
+        return tuple(parts)
+
+    for category in sorted_categories:
+        output += f"**{category}:**\n"  # Bold category header
+        sorted_models = sorted(categories[category], key=lambda x: _sort_key(x)) # Sorting models intelligently
+        output += "\n".join([f"- `{model}`" for model in sorted_models]) + "\n\n"
+
+    return output
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
@@ -491,7 +570,7 @@ if __name__ == '__main__':
     # print(len(r), r[:1000])
 
 
-    a = ai('напиши 10 цифр словами от 0 до 9, в одну строку через запятую', user_id='[1651196] [0]', temperature=0.1, model = 'gemini-flash-1.5-exp')
+    # a = ai('напиши 10 цифр словами от 0 до 9, в одну строку через запятую', user_id='[1651196] [0]', temperature=0.1, model = 'gemini-flash-1.5-exp')
     # b = ai('напиши 10 цифр словами от 0 до 9, в одну строку через запятую', user_id='test', temperature=0.1, model = 'google/gemini-flash-1.5')
     # print(a, b)
 

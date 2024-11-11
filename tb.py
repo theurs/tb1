@@ -16,6 +16,7 @@ import traceback
 import threading
 import time
 from decimal import Decimal, getcontext
+from typing import List, Optional
 
 import cairosvg
 import langcodes
@@ -2786,6 +2787,37 @@ def model_price(message: telebot.types.Message):
     bot_reply_tr(message, f'Usage:\n\n/model_price in_price/out_price\n\n/model_price in_price out_price\n\n/model_price 0 0 - do not show price', disable_web_page_preview=True)
 
 
+@bot.message_handler(commands=['list_models'])
+@async_run
+def list_models_command(message: telebot.types.Message):
+    """
+    Handles the /list_models command, displaying available models to the user.
+    """
+    chat_id_full: str = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+
+    try:
+        with ShowAction(message, 'typing'):
+            available_models: Optional[List[str]] = my_openrouter.list_models(user_id=str(chat_id_full))
+
+            if available_models is None:
+                bot_reply_tr(message, "Error retrieving models. Check API key.")
+                return
+
+            if available_models:
+                formatted_models: str = my_openrouter.format_models_for_telegram(available_models)
+                msg: str = utils.bot_markdown_to_html(formatted_models)
+                bot_reply_tr(message, msg, parse_mode="HTML")
+
+            else:
+                bot_reply_tr(message, "No models found.")
+
+    except Exception as error:
+        error_tr: str = traceback.format_exc()
+        my_log.log2(f'tb:list_models:{error}\n\n{error_tr}')
+        bot_reply_tr(message, "An error occurred while processing the request.")
+
+
 @bot.message_handler(commands=['openrouter', 'bothub'], func=authorized_owner)
 @async_run
 def openrouter(message: telebot.types.Message):
@@ -2833,6 +2865,7 @@ def openrouter(message: telebot.types.Message):
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
             msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
             msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/docs#models or https://bothub.chat/models
+/list_models - show all models scanned
 /temp <temperature> - 0.1 ... 2.0
 /maxtokens <max_tokens> - maximum response size, see model details
 /maxhistlines <maxhistlines> - how many lines in history

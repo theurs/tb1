@@ -36,7 +36,7 @@ MAX_SUM_REQUEST = 1000000
 MAX_REQUEST_GEMMA2_9B = 12000
 
 
-BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+BASE_URL = "https://openrouter.ai/api/v1"
 BASE_URL_BH = 'https://bothub.chat/api/v2/openai/v1'
 
 
@@ -144,6 +144,8 @@ def ai(prompt: str = '',
             my_log.log_openrouter(f'ai: {error_other}')
             return 0, ''
     else:
+        if not URL.endswith('/chat/completions'):
+            URL += '/chat/completions'
         response = requests.post(
             url = URL,
             headers={

@@ -6,8 +6,10 @@ import random
 import requests
 import time
 import traceback
+from typing import Union
 
 import langcodes
+import openai
 
 import cfg
 import my_db
@@ -18,77 +20,133 @@ import utils
 # free limit
 MAX_REQUEST = 4096
 
+BASE_URL = 'https://api.sambanova.ai/v1'
+
 
 def ai(prompt: str = '',
        system: str = '',
-       model = '',
-       temperature: float = 1,
+       model: str = '',
+       temperature: float = 1.0,
        timeout: int = 120,
        json_output: bool = False,
-       chat_id: str = '',
-       ) -> str:
+       chat_id: str = 'test',
+       ) -> Union[str, dict]: # Indicate that the function can return a dictionary
 
     if not hasattr(cfg, 'SAMBANOVA_KEYS'):
         return ''
 
     if not model:
-        model = 'Meta-Llama-3.1-405B-Instruct' # 'Meta-Llama-3.1-70B-Instruct', 'Meta-Llama-3.1-8B-Instruct'
+        model = 'Llama-3.2-90B-Vision-Instruct' # 'Meta-Llama-3.1-70B-Instruct', 'Meta-Llama-3.1-8B-Instruct', 'Meta-Llama-3.1-405B-Instruct'
 
     if not temperature:
         temperature = 0.1
-    if 'llama' in model.lower() and temperature > 0:
-        temperature = temperature / 2
 
-    mem_ = []
+    messages = []
     if system:
-        mem_ = [{'role': 'system', 'content': system}] + mem_
+        messages.append({"role": "system", "content": system})
     if prompt:
-        mem_ = mem_ + [{'role': 'user', 'content': prompt}]
-
-    request_size = int(len(system) + len(prompt))
-    max_tokens = MAX_REQUEST - request_size
-    if max_tokens < 100:
-        return ''
-
-    if json_output:
-        json_object = 'json_object'
-    else:
-        json_object = 'text'
-
-    result = ''
+        messages.append({"role": "user", "content": prompt})
 
     for _ in range(3):
-        response = requests.post(
-            url="https://api.sambanova.ai/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {random.choice(cfg.SAMBANOVA_KEYS)}",
-            },
-            data=json.dumps({
-                "model": model, # Optional
-                "messages": mem_,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "response_format": {"type": json_object},
-            }),
-            timeout = timeout,
-        )
-
-        status = response.status_code
-        if status == 200:
-            if chat_id:
-                my_db.add_msg(chat_id, model)
+        try:
+            client = openai.OpenAI(
+                api_key = random.choice(cfg.SAMBANOVA_KEYS),
+                base_url = BASE_URL,
+            )
+            response = client.chat.completions.create(
+                model = model,
+                messages = messages,
+                temperature = temperature,
+                max_tokens = MAX_REQUEST - len(json.dumps(messages)),  # Adjust max_tokens based on message size
+                timeout = timeout,
+            )
             try:
-                result = response.json()['choices'][0]['message']['content'].strip()
-                break
+                text = response.choices[0].message.content.strip()
             except Exception as error:
-                my_log.log_sambanova(f'Failed to parse response: {error}\n\n{str(response)[:2000]}')
-                result = ''
+                my_log.log_sambanova(f'ai:Failed to parse response: {error}\n\n{str(response)}')
+                text = ''
+            if text:
+                my_db.add_msg(chat_id, model)
+                break  # Exit loop if successful
+            else:
                 time.sleep(2)
-        else:
-            my_log.log_sambanova(f'Bad response.status_code\n\n{str(response)[:2000]}')
+        except Exception as e:
+            print(f"Unexpected error: {e}")
             time.sleep(2)
 
-    return result
+    return text
+
+
+# def ai(prompt: str = '',
+#        system: str = '',
+#        model = '',
+#        temperature: float = 1,
+#        timeout: int = 120,
+#        json_output: bool = False,
+#        chat_id: str = '',
+#        ) -> str:
+
+#     if not hasattr(cfg, 'SAMBANOVA_KEYS'):
+#         return ''
+
+#     if not model:
+#         model = 'Meta-Llama-3.1-405B-Instruct' # 'Meta-Llama-3.1-70B-Instruct', 'Meta-Llama-3.1-8B-Instruct'
+
+#     if not temperature:
+#         temperature = 0.1
+#     if 'llama' in model.lower() and temperature > 0:
+#         temperature = temperature / 2
+
+#     mem_ = []
+#     if system:
+#         mem_ = [{'role': 'system', 'content': system}] + mem_
+#     if prompt:
+#         mem_ = mem_ + [{'role': 'user', 'content': prompt}]
+
+#     request_size = int(len(system) + len(prompt))
+#     max_tokens = MAX_REQUEST - request_size
+#     if max_tokens < 100:
+#         return ''
+
+#     if json_output:
+#         json_object = 'json_object'
+#     else:
+#         json_object = 'text'
+
+#     result = ''
+
+#     for _ in range(3):
+#         response = requests.post(
+#             url="https://api.sambanova.ai/v1/chat/completions",
+#             headers={
+#                 "Authorization": f"Bearer {random.choice(cfg.SAMBANOVA_KEYS)}",
+#             },
+#             data=json.dumps({
+#                 "model": model, # Optional
+#                 "messages": mem_,
+#                 "max_tokens": max_tokens,
+#                 "temperature": temperature,
+#                 "response_format": {"type": json_object},
+#             }),
+#             timeout = timeout,
+#         )
+
+#         status = response.status_code
+#         if status == 200:
+#             if chat_id:
+#                 my_db.add_msg(chat_id, model)
+#             try:
+#                 result = response.json()['choices'][0]['message']['content'].strip()
+#                 break
+#             except Exception as error:
+#                 my_log.log_sambanova(f'Failed to parse response: {error}\n\n{str(response)[:2000]}')
+#                 result = ''
+#                 time.sleep(2)
+#         else:
+#             my_log.log_sambanova(f'Bad response.status_code\n\n{str(response)[:2000]}')
+#             time.sleep(2)
+
+#     return result
 
 
 def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', model: str = '') -> str:
@@ -258,7 +316,6 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
-
     p = '''
 User want to create image with text to image generator.
 Repromt user's PROMPT for image generation.
@@ -286,8 +343,8 @@ Using this JSON schema:
 Return a `reprompt`
 '''
 
-    print(get_reprompt_for_image(p))
-    # print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами', model = 'Llama-3.2-90B-Vision-Instruct'))
+    # print(get_reprompt_for_image(p))
+    print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами'))
     # print(ai('напиши 100 слов самой жуткой лести', 'пиши большими буквами'))
     # print(translate('напиши 100 слов самой жуткой лести, пиши большими буквами', to_lang='en'))
     # print(img2txt('d:/downloads/2.jpg', 'извлеки весь текст, сохрани форматирование текста', model='Llama-3.2-90B-Vision-Instruct'))

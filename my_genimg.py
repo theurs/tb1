@@ -29,7 +29,7 @@ import my_groq
 import my_log
 import my_prodia
 import my_runware_ai
-import my_sambanova
+# import my_sambanova
 import my_trans
 import utils
 
@@ -1208,10 +1208,11 @@ Return a `reprompt`
 
         negative = ''
         reprompt = ''
+        r = ''
 
-        r = my_sambanova.get_reprompt_for_image(query, chat_id)
-        if r == 'FAILED': # предположительно запрещенный промпт, но это не точно Ж(
-            return '',''
+        # r = my_sambanova.get_reprompt_for_image(query, chat_id)
+        # if r == 'FAILED': # предположительно запрещенный промпт, но это не точно Ж(
+        #     return '',''
 
         if not r:
             r = my_gemini.get_reprompt_for_image(query, chat_id)

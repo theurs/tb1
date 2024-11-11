@@ -48,7 +48,7 @@ import my_telegraph
 import my_openrouter
 import my_openrouter_free
 import my_pandoc
-import my_sambanova
+# import my_sambanova
 import my_shadowjourney
 import my_stat
 import my_stt
@@ -479,9 +479,9 @@ def img2txt(text, lang: str,
         if not text:
             text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, chat_id=chat_id_full)
 
-        # если не ответил groq llama то попробовать sambanova 'Llama-3.2-90B-Vision-Instruct'
-        if not text:
-            text = my_sambanova.img2txt(data, query, model='Llama-3.2-90B-Vision-Instruct', temperature=temperature, chat_id=chat_id_full)
+        # # если не ответил groq llama то попробовать sambanova 'Llama-3.2-90B-Vision-Instruct'
+        # if not text:
+        #     text = my_sambanova.img2txt(data, query, model='Llama-3.2-90B-Vision-Instruct', temperature=temperature, chat_id=chat_id_full)
 
         # если не ответил самбанова то попробовать openrouter_free mistralai/pixtral-12b:free
         if not text:
@@ -2872,11 +2872,12 @@ def openrouter(message: telebot.types.Message):
 /maxhistchars <maxhistchars> - how many chars in history
 
 Usage: /openrouter <api key> or <api base url>
-https://openrouter.ai/api/v1
-https://bothub.chat/api/v2/openai/v1
-https://api.groq.com/openai/v1
-https://api.x.ai/v1
-was tested
+https://openrouter.ai/api/v1 (ok)
+https://bothub.chat/api/v2/openai/v1 (ok)
+https://api.groq.com/openai/v1 (ok)
+https://api.x.ai/v1 (ok)
+https://api.sambanova.ai/v1 (list_model not works)
+
 ''', lang)
             bot_reply(message, msg, disable_web_page_preview=True)
     except Exception as error:

@@ -465,7 +465,11 @@ def img2txt(text, lang: str,
 
     try:
         if not model:
-            model = cfg.img2_txt_model
+            if check_vip_user_gemini(chat_id_full):
+                model = cfg.gemini_pro_model
+            else:
+                model = cfg.img2_txt_model
+                
         text = ''
 
         # сначала попробовать с помощью джемини
@@ -4023,6 +4027,13 @@ def check_vip_user(chat_id_full: str) -> bool:
             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
             user_id in cfg.admins or \
             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
+    return have_keys
+
+
+def check_vip_user_gemini(chat_id_full: str) -> bool:
+    '''проверяет есть ли у юзера ключи от gemini'''
+    user_id = int(chat_id_full.split(' ')[0].replace('[', '').replace(']', ''))
+    have_keys = chat_id_full in my_gemini.USER_KEYS or user_id in cfg.admins
     return have_keys
 
 

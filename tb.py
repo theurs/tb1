@@ -4260,40 +4260,40 @@ def image_gen(message: telebot.types.Message):
                     prompt = prompt[1]
                     COMMAND_MODE[chat_id_full] = ''
 
-                    # если новый юзер пытается рисовать сиськи то идет нафиг сразу
-                    if not my_db.get_user_property(chat_id_full, 'image_generated_counter'):
-                        prompt_lower = prompt.lower()
-                        with open('image_bad_words.txt.dat', 'r', encoding='utf-8') as f:
-                            bad_words = [x.strip().lower() for x in f.read().split() if x.strip() and not x.strip().startswith('#')]
-                        for x in bad_words:
-                            if x in prompt_lower:
+                    # # если новый юзер пытается рисовать сиськи то идет нафиг сразу
+                    # if not my_db.get_user_property(chat_id_full, 'image_generated_counter'):
+                    #     prompt_lower = prompt.lower()
+                    #     with open('image_bad_words.txt.dat', 'r', encoding='utf-8') as f:
+                    #         bad_words = [x.strip().lower() for x in f.read().split() if x.strip() and not x.strip().startswith('#')]
+                    #     for x in bad_words:
+                    #         if x in prompt_lower:
 
-                                if hasattr(cfg, 'LOGS_BAD_IMGS_GROUP'):
-                                    bot.send_message(
-                                        cfg.LOGS_GROUP,
-                                        f'{message.from_user.id}\n\n{prompt}',
-                                        disable_web_page_preview=True,
-                                        disable_notification=True,
-                                        message_thread_id=cfg.LOGS_BAD_IMGS_GROUP,
-                                        )
-                                my_db.set_user_property(chat_id_full, 'blocked_bing', True)
-                                return
-                    # если не новый юзер пытается рисовать что то не то то посылать репорты
-                    if hasattr(cfg, 'LOGS_BAD_IMGS_GROUP'):
-                        prompt_lower = prompt.lower()
-                        with open('image_bad_words.txt.dat', 'r', encoding='utf-8') as f:
-                            bad_words = [x.strip().lower() for x in f.read().split() if x.strip() and not x.strip().startswith('#')]
-                        for x in bad_words:
-                            if x in prompt_lower:
+                    #             if hasattr(cfg, 'LOGS_BAD_IMGS_GROUP'):
+                    #                 bot.send_message(
+                    #                     cfg.LOGS_GROUP,
+                    #                     f'{message.from_user.id}\n\n{prompt}',
+                    #                     disable_web_page_preview=True,
+                    #                     disable_notification=True,
+                    #                     message_thread_id=cfg.LOGS_BAD_IMGS_GROUP,
+                    #                     )
+                    #             my_db.set_user_property(chat_id_full, 'blocked_bing', True)
+                    #             return
+                    # # если не новый юзер пытается рисовать что то не то то посылать репорты
+                    # if hasattr(cfg, 'LOGS_BAD_IMGS_GROUP'):
+                    #     prompt_lower = prompt.lower()
+                    #     with open('image_bad_words.txt.dat', 'r', encoding='utf-8') as f:
+                    #         bad_words = [x.strip().lower() for x in f.read().split() if x.strip() and not x.strip().startswith('#')]
+                    #     for x in bad_words:
+                    #         if x in prompt_lower:
 
-                                bot.send_message(
-                                    cfg.LOGS_GROUP,
-                                    f'{message.from_user.id}\n\n{prompt}',
-                                    disable_web_page_preview=True,
-                                    disable_notification=True,
-                                    message_thread_id=cfg.LOGS_BAD_IMGS_GROUP,
-                                    )
-                                break
+                    #             bot.send_message(
+                    #                 cfg.LOGS_GROUP,
+                    #                 f'{message.from_user.id}\n\n{prompt}',
+                    #                 disable_web_page_preview=True,
+                    #                 disable_notification=True,
+                    #                 message_thread_id=cfg.LOGS_BAD_IMGS_GROUP,
+                    #                 )
+                    #             break
 
 
                     # get chat history for content

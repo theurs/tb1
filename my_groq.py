@@ -802,49 +802,11 @@ def load_users_keys():
                 ALL_KEYS.append(key)
 
 
-def test_image_prompt(text: str, user_id: str) -> bool:
-    """
-    Tests if an image prompt is safe based on harm categories.
-
-    Args:
-        text: The image prompt string.
-
-    Returns:
-        True if the prompt is safe, False otherwise.
-    """
-
-    query = f'''
-Determine whether this drawing request (PROMPT) is safe.
-Using this JSON schema:
-  translation = {{"HARM_CATEGORY_HATE_SPEECH": bool, "HARM_CATEGORY_HARASSMENT": bool, "HARM_CATEGORY_SEXUALLY_EXPLICIT": bool, "HARM_CATEGORY_DANGEROUS_CONTENT": bool}}
-Return a `translation`
-
-PROMPT:
-
-{text}
-'''
-
-    result = ai(query, temperature=0.1, json_output = True)
-    my_db.add_msg(user_id, DEFAULT_MODEL)
-
-    if not result:
-        return True
-
-    result = utils.string_to_dict(result)
-
-    if 'HARM_CATEGORY_SEXUALLY_EXPLICIT' in result:
-        if result['HARM_CATEGORY_SEXUALLY_EXPLICIT']:
-            return False
-
-    return True
-
-
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     load_users_keys()
 
-    # print(test_image_prompt('Грациозная антропоморфная черная лисица с пронзительными фиолетовыми глазами сидит на возвышении, окруженном мягким сиянием. В ее лапках — волшебный шар, излучающий мистический свет. На фоне — темное звездное небо и разноцветная фиолетовая туманность, создающие атмосферу волшебства и тайны. Хвост лисицы мягко изгибается, добавляя ей изящества. Стиль: Мистический, фурри-арт волшебный, ночной, милый, фантастический. Черный (лисица), фиолетовый (глаза, туманность), разнообразные цвета туманности, белый, голубой (звезды), мягкий свет от шара.'))
 
     # print(img2txt('d:/downloads/4.jpg', prompt = 'Извлеки весь текст, сохрани исходное форматирование', model='llama-3.2-90b-vision-preview'))
 

@@ -850,51 +850,23 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
                   )
     result_dict = utils.string_to_dict(result)
     if result_dict:
-        try:
-            return result_dict['reprompt'], result_dict['negative_reprompt']
-        except:
-            try:
-                return result_dict['reprompt'], result_dict['negative_prompt']
-            except:
-                pass
+        reprompt = ''
+        negative_prompt = ''
+        moderation_sexual = False
+        if 'reprompt' in result_dict:
+            reprompt = result_dict['reprompt']
+        if 'negative_reprompt' in result_dict:
+            negative_prompt = result_dict['negative_prompt']
+        if 'negative_prompt' in result_dict:
+            negative_prompt = result_dict['negative_prompt']
+        if 'moderation_sexual' in result_dict:
+            moderation_sexual = result_dict['moderation_sexual']
+            if moderation_sexual:
+                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: prompt')
+            
+        if reprompt and negative_prompt:
+            return reprompt, negative_prompt, moderation_sexual
     return None
-
-
-def test_image_prompt(text: str, user_id: str) -> bool:
-    """
-    Tests if an image prompt is safe based on harm categories.
-
-    Args:
-        text: The image prompt string.
-
-    Returns:
-        True if the prompt is safe, False otherwise.
-    """
-
-    query = f'''
-Determine whether this drawing request (PROMPT) is safe.
-Using this JSON schema:
-  translation = {{"HARM_CATEGORY_HATE_SPEECH": bool, "HARM_CATEGORY_HARASSMENT": bool, "HARM_CATEGORY_SEXUALLY_EXPLICIT": bool, "HARM_CATEGORY_DANGEROUS_CONTENT": bool}}
-Return a `translation`
-
-PROMPT:
-
-{text}
-'''
-
-    result = chat(query, temperature=0.1, model=cfg.gemini_flash_model, json_output = True)
-    my_db.add_msg(user_id, cfg.gemini_flash_model)
-
-    if not result:
-        return True
-
-    result = utils.string_to_dict(result)
-
-    if 'HARM_CATEGORY_SEXUALLY_EXPLICIT' in result:
-        if result['HARM_CATEGORY_SEXUALLY_EXPLICIT']:
-            return False
-
-    return True
 
 
 def imagen(prompt: str = "Fuzzy bunnies in my kitchen"):
@@ -939,8 +911,6 @@ if __name__ == '__main__':
     # update_mem('1+2', '3', '[1651196] [0]')
 
     # print(utils.string_to_dict("""{"detailed_description": "На изображении представлена картинка, разделённая на две части, обе из которых выполнены в розовом цвете. На каждой части представлен текст, написанный белым шрифтом. \n\nВ левой части указана дата 3.09.2024 и фраза \"День раскрытия своей истинной сути и создания отношений.\" Ниже приведён список тем, связанных с саморазвитием и отношениями: желания, цели, осознанность, энергия, эмоции, отношения, семья, духовность, любовь, партнёрство, сотрудничество, взаимопонимание. \n\nВ правой части представлен текст, призывающий следовать своим истинным желаниям, раскрывать свои качества, способности и таланты, а также выстраивать отношения с любовью и принятием, включая личные и деловые. Также текст призывает стремиться к пониманию и сотрудничеству.", "extracted_formatted_text": "3.09.2024 - день раскрытия\nсвоей истинной сути и\nсоздания отношений.\nЖелания, цели, осознанность,\nэнергия, эмоции, отношения,\nсемья, духовность, любовь,\nпартнёрство, сотрудничество,\nвзаимопонимание.\n\nСледуйте своим истинным\nжеланиям, раскрывайте свои\nкачества, способности и\нталанты. С любовью и\nпринятием выстраивайте\nотношения - личные и\nделовые. Стремитесь к\nпониманию и сотрудничеству.", "image_generation_prompt": "Create a pink background with two columns of white text. On the left, include the date '3.09.2024' and the phrase 'Day of revealing your true essence and creating relationships'. Below that, list personal development and relationship themes, such as desires, goals, awareness, energy, emotions, relationships, family, spirituality, love, partnership, cooperation, understanding. On the right, write text encouraging people to follow their true desires, reveal their qualities, abilities, and talents. Emphasize building relationships with love and acceptance, including personal and business relationships. End with a call to strive for understanding and cooperation."} """))
-
-    # print(test_image_prompt('Грациозная антропоморфная черная лисица с пронзительными фиолетовыми глазами сидит на возвышении, окруженном мягким сиянием. В ее лапках — волшебный шар, излучающий мистический свет. На фоне — темное звездное небо и разноцветная фиолетовая туманность, создающие атмосферу волшебства и тайны. Хвост лисицы мягко изгибается, добавляя ей изящества. Стиль: Мистический, фурри-арт волшебный, ночной, милый, фантастический. Черный (лисица), фиолетовый (глаза, туманность), разнообразные цвета туманности, белый, голубой (звезды), мягкий свет от шара.'))
 
     # как юзать прокси
     # как отправить в чат аудиофайл

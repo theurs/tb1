@@ -1202,7 +1202,7 @@ User's PROMPT: {prompt}
 Dialog history: {conversation_history}
 
 Using this JSON schema:
-  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str}}
+  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str, "moderation_sexual": bool}}
 Return a `reprompt`
 '''
 
@@ -1217,7 +1217,9 @@ Return a `reprompt`
         if not r:
             r = my_gemini.get_reprompt_for_image(query, chat_id)
         if r:
-            reprompt, negative = r
+            reprompt, negative, moderation_sex = r
+            if moderation_sex:
+                return 'MODERATION', None
         if not reprompt:
             r = my_groq.get_reprompt_for_image(query, chat_id)
             if r:
@@ -1272,6 +1274,8 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
         return []
 
     reprompt, _ = get_reprompt(prompt, conversation_history)
+    if reprompt == 'MODERATION':
+        return []
 
     if reprompt:
         result = bing(reprompt, user_id=user_id)
@@ -1303,6 +1307,8 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         reprompt = ''
         if use_bing:
             reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
+            if reprompt == 'MODERATION':
+                return []
 
         if reprompt:
             prompt = reprompt
@@ -1443,6 +1449,8 @@ def gen_one_image(prompt: str,
     reprompt = ''
 
     reprompt, negative = get_reprompt(prompt, '', user_id)
+    if reprompt == 'MODERATION':
+        return None
 
     if reprompt:
         prompt = reprompt
@@ -1504,11 +1512,13 @@ if __name__ == '__main__':
 
     # gen_images('an apple with gold bug')
 
-    d = gen_one_image(
-        'Generate a stunning, minimalist artwork featuring a stylized alligator in the sea, executed with a flowing and abstract design language. The alligator should be rendered in sleek, continuous lines with a focus on thinner, more refined strokes, giving the piece a sense of elegance and poise. The background of the artwork should remain pure white to emphasize the clean lines and minimalist aesthetic of the black line art, creating a sense of visual balance and harmony.',
-        'test',
-        'flux-RealismLora',
-        )
-    if d:
-        with open('d:/downloads/1.jpg', 'wb') as f:
-            f.write(d)
+    # d = gen_one_image(
+    #     'Generate a stunning, minimalist artwork featuring a stylized alligator in the sea, executed with a flowing and abstract design language. The alligator should be rendered in sleek, continuous lines with a focus on thinner, more refined strokes, giving the piece a sense of elegance and poise. The background of the artwork should remain pure white to emphasize the clean lines and minimalist aesthetic of the black line art, creating a sense of visual balance and harmony.',
+    #     'test',
+    #     'flux-RealismLora',
+    #     )
+    # if d:
+    #     with open('d:/downloads/1.jpg', 'wb') as f:
+    #         f.write(d)
+
+    # print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))

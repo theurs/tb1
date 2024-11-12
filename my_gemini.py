@@ -856,7 +856,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
         if 'reprompt' in result_dict:
             reprompt = result_dict['reprompt']
         if 'negative_reprompt' in result_dict:
-            negative_prompt = result_dict['negative_prompt']
+            negative_prompt = result_dict['negative_reprompt']
         if 'negative_prompt' in result_dict:
             negative_prompt = result_dict['negative_prompt']
         if 'moderation_sexual' in result_dict:

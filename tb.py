@@ -1881,7 +1881,11 @@ def handle_successful_payment(message):
     currency = message.successful_payment.currency
 
     # Отправка подтверждающего сообщения о покупке
-    bot.send_message(message.chat.id, "✅ Донат принят.")
+    try:
+        bot_reply_tr(message, "✅ Донат принят.")
+    except Exception as error:
+        my_log.log_donate(f'tb:handle_successful_payment: {error}\n\n{str(message)}')
+        bot.send_message(message.chat.id, "✅ Донат принят.")
 
     # Сохранение информации о платеже в базе данных
     # save_payment(user_id, payment_id, amount, currency)

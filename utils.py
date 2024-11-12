@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
-import ast
 import concurrent.futures
 import datetime
 import functools
 import hashlib
 import io
-import json
 import html
 import os
 import pathlib
@@ -17,17 +15,15 @@ import regex
 import requests
 import string
 import subprocess
-import sys
 import tempfile
 import threading
 import traceback
 import platform as platform_module
-from typing import Union, Optional
+from typing import Union
 
 import json_repair
 import PIL
-import prettytable
-import telebot
+
 from pylatexenc.latex2text import LatexNodes2Text
 from pillow_heif import register_heif_opener
 from prettytable import PrettyTable

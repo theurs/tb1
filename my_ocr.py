@@ -152,7 +152,7 @@ def get_text_from_pdf(data: bytes, lang: str = 'rus+eng') -> str:
         return ''
 
     # Use concurrent futures for parallel OCR processing
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers = 2) as executor:
         # Limit to 50 images for OCR processing, if longer, process only the first 50
         future_to_image = {executor.submit(ocr_image, idx, im, lang): idx for idx, im in images[:50]}
         results = []

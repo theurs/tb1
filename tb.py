@@ -4909,9 +4909,17 @@ def ask_file2(message: telebot.types.Message):
 @bot.message_handler(commands=['ask', 'а'], func=authorized)
 @async_run
 def ask_file(message: telebot.types.Message):
-    '''ответ по сохраненному файлу'''
+    '''ответ по сохраненному файлу, админ может запросить файл другого пользователя'''
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+
+    try:
+        command_parts = message.text.split()
+        if len(command_parts) == 2 and command_parts[1].isdigit() and message.from_user.id in cfg.admins:
+            # Админ запрашивает файл другого пользователя
+            chat_id_full = f'[{command_parts[1]}] [0]'
+    except IndexError:
+        pass
 
     try:
         query = message.text.split(maxsplit=1)[1].strip()

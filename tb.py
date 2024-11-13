@@ -2780,7 +2780,10 @@ def model_price(message: telebot.types.Message):
         except ValueError:
             raise ValueError("Prices must be numeric.")
 
-        currency = parts[2] if len(parts) == 3 else "$"  # Значение по умолчанию
+        if len(parts) == 3:
+            currency = parts[2]
+        else:
+            currency = my_db.get_user_property(chat_id_full, 'openrouter_currency') or '$'
 
         my_db.set_user_property(chat_id_full, 'openrouter_in_price', in_price)
         my_db.set_user_property(chat_id_full, 'openrouter_out_price', out_price)

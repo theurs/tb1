@@ -23,6 +23,7 @@ from typing import Union
 
 import json_repair
 import PIL
+import telebot
 
 from pylatexenc.latex2text import LatexNodes2Text
 from pillow_heif import register_heif_opener

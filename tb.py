@@ -492,7 +492,8 @@ def img2txt(text, lang: str,
             text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
 
     except Exception as img_from_link_error:
-        my_log.log2(f'tb:img2txt: {img_from_link_error}')
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:img2txt: {img_from_link_error}\n\n{traceback_error}')
 
     if text:
         add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)

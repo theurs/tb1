@@ -191,6 +191,7 @@ def init(backup: bool = True):
             base_api_url TEXT,
             openrouter_in_price REAL,
             openrouter_out_price REAL,
+            openrouter_currency TEXT,
 
             api_key_gemini TEXT,
             api_key_groq TEXT,

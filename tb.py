@@ -2762,25 +2762,29 @@ def maxtokens(message: telebot.types.Message):
 @bot.message_handler(commands=['model_price'], func=authorized_owner)
 @async_run
 def model_price(message: telebot.types.Message):
-    """Пользователи могут устанавливать значения in_price и out_price"""
+    """Пользователи могут устанавливать значения in_price и out_price,
+       а также необязательный параметр currency."""
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
 
     try:
         prices_str = message.text.split(maxsplit=1)[1].strip()
-        prices = re.split(r'[ /]+', prices_str)
+        parts = prices_str.split()
 
-        if len(prices) != 2:
+        if len(parts) < 2 or len(parts) > 3:
             raise ValueError("Invalid number of parameters.")
 
         try:
-            in_price = float(prices[0])  # Преобразуем в float
-            out_price = float(prices[1])  # Преобразуем в float
+            in_price = float(parts[0])
+            out_price = float(parts[1])
         except ValueError:
             raise ValueError("Prices must be numeric.")
 
+        currency = parts[2] if len(parts) == 3 else "$"  # Значение по умолчанию
+
         my_db.set_user_property(chat_id_full, 'openrouter_in_price', in_price)
         my_db.set_user_property(chat_id_full, 'openrouter_out_price', out_price)
+        my_db.set_user_property(chat_id_full, 'openrouter_currency', currency) # сохраняем валюту
 
         bot_reply_tr(message, f'Model prices changed.')
         return
@@ -2794,7 +2798,13 @@ def model_price(message: telebot.types.Message):
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:model_price:{error}\n\n{error_tr}')
 
-    bot_reply_tr(message, f'Usage:\n\n/model_price in_price/out_price\n\n/model_price in_price out_price\n\n/model_price 0 0 - do not show price', disable_web_page_preview=True)
+    bot_reply_tr(
+        message,
+        f'Usage:\n\n'
+        f'/model_price in_price out_price [currency string ($|R|etc)]\n\n'
+        f'/model_price in_price/out_price [currency]\n\n'
+        f'/model_price 0 0 - do not show price'
+    )
 
 
 @bot.message_handler(commands=['list_models'])
@@ -2871,7 +2881,8 @@ def openrouter(message: telebot.types.Message):
                 your_url = my_db.get_user_property(chat_id_full, 'base_api_url') or my_openrouter.BASE_URL
                 msg = f'{tr("Your base api url:", lang)} [{your_url}]\n'
                 msg += f'{tr("Your key:", lang)} [{key[:12]}...]\n'
-                msg += f'{tr("Model price:", lang)} in {my_db.get_user_property(chat_id_full, "openrouter_in_price") or 0}$ / out {my_db.get_user_property(chat_id_full, "openrouter_out_price") or 0}$ /model_price'
+                currency = my_db.get_user_property(chat_id_full, 'openrouter_currency') or '$'
+                msg += f'{tr("Model price:", lang)} in {my_db.get_user_property(chat_id_full, "openrouter_in_price") or 0}{currency} / out {my_db.get_user_property(chat_id_full, "openrouter_out_price") or 0}{currency} /model_price'
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
             msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
             msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/docs#models or https://bothub.chat/models

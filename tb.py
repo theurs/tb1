@@ -6419,7 +6419,8 @@ def do_task(message, custom_prompt: str = ''):
                                         t_out = my_openrouter.PRICE[chat_id_full][1]
                                         p_in = t_in * price_in
                                         p_out = t_out * price_out
-                                        s = f'\n\n`[IN ({t_in}) {float_to_string(p_in)} + OUT ({t_out}) {float_to_string(p_out)} = {float_to_string(p_in+p_out)}$]`'
+                                        currency = my_db.get_user_property(chat_id_full, 'openrouter_currency') or '$'
+                                        s = f'\n\n`[IN ({t_in}) {float_to_string(p_in)} + OUT ({t_out}) {float_to_string(p_out)} = {float_to_string(p_in+p_out)} {currency}}]`'
                                         answer += s
                                     del my_openrouter.PRICE[chat_id_full]
                             WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]

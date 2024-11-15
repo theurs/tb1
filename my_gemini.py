@@ -228,8 +228,8 @@ def chat(query: str,
                     remove_key(key)
                 if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error) or 'User location is not supported for the API use.' in str(error):
                     return ''
-                if '400 Unable to submit request because it has an empty text parameter.' in str(error):
-                    my_log.log_gemini(f'my_gemini:chat: {str(mem)}')
+                # if '400 Unable to submit request because it has an empty text parameter.' in str(error):
+                #     my_log.log_gemini(f'my_gemini:chat: {str(mem)}')
                 time.sleep(2)
                 continue
 
@@ -328,6 +328,7 @@ def transform_mem2(mem):
             u = protos.Content(role=x['role'], parts=[protos.Part(text=text)])
             mem_.append(u)
         else:
+            my_log.log_gemini(f'transform_mem2:debug: {type(x)} {str(x)}')
             mem_.append(x)
     return mem_
 

@@ -328,7 +328,9 @@ def transform_mem2(mem):
             u = protos.Content(role=x['role'], parts=[protos.Part(text=text)])
             mem_.append(u)
         else:
-            my_log.log_gemini(f'transform_mem2:debug: {type(x)} {str(x)}')
+            # my_log.log_gemini(f'transform_mem2:debug: {type(x)} {str(x)}')
+            if not x.parts[0].text.strip():
+                x.parts[0].text == '...'
             mem_.append(x)
     return mem_
 

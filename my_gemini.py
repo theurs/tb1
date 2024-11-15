@@ -322,7 +322,10 @@ def transform_mem2(mem):
     mem_ = []
     for x in mem:
         if isinstance(x, dict):
-            u = protos.Content(role=x['role'], parts=[protos.Part(text=x['parts'][0]['text'])])
+            text = x['parts'][0]['text']
+            if not text.strip():
+                text = '...'
+            u = protos.Content(role=x['role'], parts=[protos.Part(text=text)])
             mem_.append(u)
         else:
             mem_.append(x)

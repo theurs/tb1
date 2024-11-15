@@ -2373,6 +2373,19 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
             file = bot.download_file(file_info.file_path)
             fp = io.BytesIO(file)
             image = fp.read()
+        elif message.sticker:
+            file_id = message.sticker.thumb.file_id
+            try:
+                file_info = bot.get_file(file_id)
+            except telebot.apihelper.ApiTelegramException as error:
+                if 'file is too big' in str(error):
+                    bot_reply_tr(message, 'Too big file.')
+                    return
+                else:
+                    raise error
+            file = bot.download_file(file_info.file_path)
+            fp = io.BytesIO(file)
+            image = fp.read()
 
         return utils.heic2jpg(image)
     except Exception as error:
@@ -2393,7 +2406,7 @@ def download_image_from_messages(MESSAGES: list) -> list:
     return images
 
 
-@bot.message_handler(content_types = ['photo'], func=authorized)
+@bot.message_handler(content_types = ['photo', 'sticker'], func=authorized)
 @async_run
 def handle_photo(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография

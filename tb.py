@@ -4932,10 +4932,13 @@ def ask_file(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     try:
-        command_parts = message.text.split()
-        if len(command_parts) == 2 and command_parts[1].isdigit() and message.from_user.id in cfg.admins:
+        command_parts = message.text.split(maxsplit=2)
+        if len(command_parts) > 1 and command_parts[1].isdigit() and message.from_user.id in cfg.admins:
             # Админ запрашивает файл другого пользователя
             chat_id_full = f'[{command_parts[1]}] [0]'
+            message.text = command_parts[0] + ' '
+            if len(command_parts) == 3:
+                message.text += command_parts[2]
     except IndexError:
         pass
 

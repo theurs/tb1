@@ -5893,7 +5893,7 @@ def do_task(message, custom_prompt: str = ''):
     original_message_text = message.text
     message.text = my_log.restore_message_text(message.text, message.entities)
     if message.forward_date:
-        message.text = f'{message.forward_sender_name or "Noname"}: {message.text}'
+        message.text = f'forward sender name {message.forward_sender_name or "Noname"}: {message.text}'
     message.text += '\n\n'
 
     from_user_id = f'[{message.from_user.id}] [0]'

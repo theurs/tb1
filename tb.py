@@ -5892,6 +5892,8 @@ def do_task(message, custom_prompt: str = ''):
 
     original_message_text = message.text
     message.text = my_log.restore_message_text(message.text, message.entities)
+    if message.forward_date:
+        message.text = f'{message.forward_sender_name or "Noname"}: {message.text}\n\n'
 
     from_user_id = f'[{message.from_user.id}] [0]'
     if my_db.get_user_property(from_user_id, 'blocked'):

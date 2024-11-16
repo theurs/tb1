@@ -1223,7 +1223,10 @@ Return a `reprompt`
         if not reprompt:
             r = my_groq.get_reprompt_for_image(query, chat_id)
             if r:
-                reprompt, negative = r
+                reprompt, negative, moderation_sex = r
+                if moderation_sex:
+                    return 'MODERATION', None
+
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')

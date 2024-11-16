@@ -777,15 +777,26 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
 
     result = ai(prompt, temperature=1.5, json_output=True, model_='')
     my_db.add_msg(chat_id, DEFAULT_MODEL)
+
     result_dict = utils.string_to_dict(result)
+
     if result_dict:
-        try:
-            return result_dict['reprompt'], result_dict['negative_reprompt']
-        except:
-            try:
-                return result_dict['reprompt'], result_dict['negative_prompt']
-            except:
-                pass
+        reprompt = ''
+        negative_prompt = ''
+        moderation_sexual = False
+        if 'reprompt' in result_dict:
+            reprompt = result_dict['reprompt']
+        if 'negative_reprompt' in result_dict:
+            negative_prompt = result_dict['negative_reprompt']
+        if 'negative_prompt' in result_dict:
+            negative_prompt = result_dict['negative_prompt']
+        if 'moderation_sexual' in result_dict:
+            moderation_sexual = result_dict['moderation_sexual']
+            if moderation_sexual:
+                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+            
+        if reprompt and negative_prompt:
+            return reprompt, negative_prompt, moderation_sexual
     return None
 
 

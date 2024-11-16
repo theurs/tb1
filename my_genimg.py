@@ -15,7 +15,6 @@ from multiprocessing.pool import ThreadPool
 from io import BytesIO
 
 import gradio_client
-import langdetect
 import PIL
 import requests
 from sqlitedict import SqliteDict
@@ -29,8 +28,6 @@ import my_groq
 import my_log
 import my_prodia
 import my_runware_ai
-# import my_sambanova
-import my_trans
 import utils
 
 
@@ -1210,10 +1207,6 @@ Return a `reprompt`
         reprompt = ''
         r = ''
 
-        # r = my_sambanova.get_reprompt_for_image(query, chat_id)
-        # if r == 'FAILED': # предположительно запрещенный промпт, но это не точно Ж(
-        #     return '',''
-
         if not r:
             r = my_gemini.get_reprompt_for_image(query, chat_id)
         if r:
@@ -1233,43 +1226,6 @@ Return a `reprompt`
     my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}\n\nNegative: {negative}')
 
     return reprompt, negative
-
-
-def get_reprompt_nsfw(prompt: str) -> str:
-    """
-    Function to get a reprompt for image generation based on user's prompt and conversation history.
-    Parameters:
-    - prompt: a string containing the user's prompt
-    - conversation_history: a string containing the conversation history
-    Returns:
-    - a string representing the reprompt for image generation
-    """
-    reprompt = prompt
-
-    try:
-        detected_lang = langdetect.detect(prompt)
-    except Exception as error:
-        if 'No features in text' not in str(error):
-            my_log.log2(f'my_genimg:get_reprompt_nsfw: error: {error}')
-        detected_lang = 'unknown'
-
-    # пробуем с помощью ИИ
-    prompt_translated = my_gemini.reprompt_image(prompt, censored = False, pervert=True)
-    if not prompt_translated:
-        prompt_translated = my_groq.reprompt_image(prompt, censored = False, pervert=True)
-    if prompt != prompt_translated:
-        my_log.log_reprompts(f'get_reprompt_nsfw:\n\n{prompt}\n\n{prompt_translated}')
-        return prompt_translated
-
-    # используем гугл транслятор если ИИ не справился
-    if detected_lang != 'en':
-        prompt_translated = my_trans.translate_text2(prompt, 'en')
-        if prompt_translated:
-            reprompt = prompt_translated
-
-    my_log.log_reprompts(f'get_reprompt_nsfw:\n\n{prompt}\n\n{reprompt}')
-
-    return reprompt
 
 
 def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: str ='') -> list:
@@ -1471,57 +1427,7 @@ def gen_one_image(prompt: str,
 
 if __name__ == '__main__':
     load_users_keys()
+    my_groq.load_users_keys()
 
-    # open('2.jpg', 'wb').write(upscale(open('1.jpg', 'rb').read()))
+    print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))
 
-#     imgs = PixArtSigma('''Generate a detailed and intricate image of a golden katana in the Japanese style. The katana should be elaborately decorated with intricate engravings and a luxurious golden
-# finish. The background should be a minimalist Japanese-style setting, with cherry blossoms and a traditional Japanese house in the distance.''')
-    # open('_PixArtSigma.png', 'wb').write(imgs[0])
-
-    # imgs = SDXL_Lightning('an apple made of gold')
-    # open('_sdxl-lightning.png', 'wb').write(imgs[0])
-
-    # imgs = playground25('an apple made of gold')
-    # open('_playground25.png', 'wb').write(imgs[0])
-
-    # imgs = stable_cascade('an apple made of gold')
-    # open('_stable_cascade.png', 'wb').write(imgs[0])
-
-    # imgs = cosxl('an apple made of gold')
-    # open('_cosxl.png', 'wb').write(imgs[0])
-
-    # imgs = Kolors('an big apple made of gold and pepper')
-    # open('_Kolors.png', 'wb').write(imgs[0])
-
-    # imgs = AuraFlow('an big apple made of gold and pepper')
-    # open('_AuraFlow.png', 'wb').write(imgs[0])
-
-    # imgs = FLUX1('an big apple made of gold and pepper')
-    # open('_Flux1.png', 'wb').write(imgs[0])
-
-
-
-    # n = 1
-    # for x in Hyper_SDXL('an apple made of gold'):
-    #     open(f'_Hyper_SDXL_{n}.png', 'wb').write(x)
-    #     n += 1
-
-    # n = 1
-    # for x in huggin_face_api('mans with big hands', 'ugly, blurry, bad anatomy, poorly drawn, out of frame, disfigured, deformed'):
-    #     open(f'_huggin_face_api {n}.png', 'wb').write(x)
-    #     n += 1
-
-    # print(runware('fireballs'))
-
-    # gen_images('an apple with gold bug')
-
-    # d = gen_one_image(
-    #     'Generate a stunning, minimalist artwork featuring a stylized alligator in the sea, executed with a flowing and abstract design language. The alligator should be rendered in sleek, continuous lines with a focus on thinner, more refined strokes, giving the piece a sense of elegance and poise. The background of the artwork should remain pure white to emphasize the clean lines and minimalist aesthetic of the black line art, creating a sense of visual balance and harmony.',
-    #     'test',
-    #     'flux-RealismLora',
-    #     )
-    # if d:
-    #     with open('d:/downloads/1.jpg', 'wb') as f:
-    #         f.write(d)
-
-    # print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))

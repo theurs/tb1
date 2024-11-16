@@ -828,8 +828,7 @@ if __name__ == '__main__':
     # reset('test')
     # chat_cli(model='llama-3.2-90b-text-preview')
 
-    print(stt('d:\\downloads\\1.ogg', 'en'))
-
+    # print(stt('d:\\downloads\\1.ogg', 'en'))
 
     # with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()

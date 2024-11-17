@@ -72,6 +72,7 @@ def ai(
     if prompt:
         messages.append({"role": "user", "content": prompt})
 
+    text = ''
     for _ in range(3):
         try:
             client = openai.OpenAI(

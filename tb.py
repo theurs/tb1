@@ -2914,7 +2914,7 @@ https://openrouter.ai/api/v1 (ok)
 https://bothub.chat/api/v2/openai/v1 (ok)
 https://api.groq.com/openai/v1 (ok)
 https://api.x.ai/v1 (ok)
-https://api.sambanova.ai/v1 (/list_model doesn't not works)
+https://api.sambanova.ai/v1 (/list_model doesn't works)
 
 ''', lang)
             bot_reply(message, msg, disable_web_page_preview=True)

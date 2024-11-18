@@ -2973,7 +2973,7 @@ def translation_gui(message: telebot.types.Message):
                         new_translation = my_gemini.translate(original, to_lang = lang, help = help)
                     if not new_translation:
                         new_translation = my_groq.translate(original, to_lang = lang, help = help)
-                        my_db.add_msg(chat_id_full, 'llama-3.2-90b-text-preview')
+                        my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)
                     if new_translation:
                         my_db.update_translation(original, lang, help, new_translation)
 
@@ -4996,7 +4996,7 @@ def ask_file(message: telebot.types.Message):
             result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = cfg.gemini_flash_model)
             # result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-pro')
             if not result:
-                result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000, model_ = 'llama-3.2-90b-text-preview')
+                result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000)
             if not result:
                 result = my_groq.ai(q[:my_groq.MAX_REQUEST_GEMMA2_9B], model_ = 'gemma2-9b-it', temperature=1, max_tokens_ = 4000)
 
@@ -6142,7 +6142,7 @@ def do_task(message, custom_prompt: str = ''):
                             with ShowAction(message, 'typing'):
                                 # response, text__ = my_gemini.check_phone_number(number)
                                 response, text__ = my_groq.check_phone_number(number)
-                                my_db.add_msg(chat_id_full, 'llama-3.2-90b-text-preview')
+                                my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)
                         if response:
                             my_db.set_user_property(chat_id_full, 'saved_file_name', f'User googled phone number: {message.text}.txt')
                             my_db.set_user_property(chat_id_full, 'saved_file', text__)
@@ -6341,15 +6341,15 @@ def do_task(message, custom_prompt: str = ''):
                                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full, l = 5)
                                 if style_:
-                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
+                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, temperature=0.6)
                                 else:
-                                    answer = my_groq.ai(message.text, mem_ = mem__, model_ = 'llama-3.2-90b-text-preview',temperature=0.6)
+                                    answer = my_groq.ai(message.text, mem_ = mem__, temperature=0.6)
                                 if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
                                     my_groq.undo(chat_id_full)
                                     message.text = f'/image {message.text}'
                                     image_gen(message)
                                     return
-                                my_db.add_msg(chat_id_full, 'llama-3.2-90b-text-preview')
+                                my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -6399,7 +6399,7 @@ def do_task(message, custom_prompt: str = ''):
                                 chat_id_full,
                                 style = style_,
                                 temperature = my_db.get_user_property(chat_id_full, 'temperature'),
-                                model = 'llama-3.2-90b-text-preview',
+                                model = my_groq.DEFAULT_MODEL,
                             #   model = 'llama-3.2-90b-vision-preview',
                                 )
                             if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:

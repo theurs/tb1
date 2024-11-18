@@ -34,7 +34,7 @@ USER_KEYS_LOCK = threading.Lock()
 
 
 # for ai func
-DEFAULT_MODEL = 'llama-3.2-90b-text-preview'
+DEFAULT_MODEL = 'llama-3.2-90b-vision-preview'
 
 
 # блокировка чатов что бы не испортить историю 
@@ -826,7 +826,7 @@ if __name__ == '__main__':
     # print(translate('Привет как дела!', to_lang='en', model = '', censored=False))
 
     # reset('test')
-    # chat_cli(model='llama-3.2-90b-text-preview')
+    # chat_cli()
 
     # print(stt('d:\\downloads\\1.ogg', 'en'))
 

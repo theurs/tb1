@@ -476,6 +476,8 @@ def img2txt(text, lang: str,
         text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
         if not text and model == cfg.gemini_pro_model:
             text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full)
+        elif not text and model == cfg.gemini_flash_model:
+            text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
 
         # если не ответил джемини то попробовать glm
         if not text:
@@ -6289,8 +6291,20 @@ def do_task(message, custom_prompt: str = ''):
                                 model = gmodel,
                                 system = hidden_text,
                                 use_skills=True)
+
                             if not answer and gmodel == cfg.gemini_pro_model:
                                 gmodel = cfg.gemini_pro_model_fallback
+                                answer = my_gemini.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    my_db.get_user_property(chat_id_full, 'temperature'),
+                                    model = gmodel,
+                                    system = hidden_text,
+                                    use_skills=True)
+                                WHO_ANSWERED[chat_id_full] = gmodel
+
+                            if not answer and gmodel == cfg.gemini_flash_model:
+                                gmodel = cfg.gemini_flash_model_fallback
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,

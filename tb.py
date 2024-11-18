@@ -1456,11 +1456,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
         button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
         button8 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚗', callback_data='select_glm4plus')
+        button9 = telebot.types.InlineKeyboardButton('Gemini exp 1114 🚀', callback_data='select_gemini-exp')
         markup.row(button1, button2)
         markup.row(button4, button8)
         markup.row(button5, button6)
         if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
-            markup.row(button7)
+            markup.row(button7, button9)
+        else:
+            markup.row(button9)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -1763,17 +1766,20 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o mini.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt4omini')
         elif call.data == 'select_gemini15_flash':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash.', lang))
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
         elif call.data == 'select_gemini8':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Flash 8b.', lang))
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_light_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini8')
+        elif call.data == 'select_gemini-exp':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
         elif call.data == 'select_gemini15_pro':
             have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
                 user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
                     or message.from_user.id in cfg.admins
             if have_keys:
-                bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Google Gemini 1.5 Pro.', lang))
+                bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
             else:
                 bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))
@@ -5491,9 +5497,10 @@ def id_cmd_handler(message: telebot.types.Message):
         else:
             user_model = my_db.get_user_property(group_id_full, 'chat_mode') if my_db.get_user_property(group_id_full, 'chat_mode') else cfg.chat_mode_default
         models = {
-            'gemini': 'Gemini 1.5 Flash',
-            'gemini15': 'Gemini 1.5 Pro',
-            'gemini8': 'Gemini 1.5 Flash 8b',
+            'gemini': cfg.gemini_flash_model,
+            'gemini15': cfg.gemini_pro_model,
+            'gemini8': cfg.gemini_flash_light_model,
+            'gemini-exp': cfg.gemini_exp_model,
             'llama370': 'Llama 3.2 90b',
             'openrouter_llama405': 'Llama 3.1 405b',
             'openrouter': 'openrouter.ai',
@@ -6245,6 +6252,8 @@ def do_task(message, custom_prompt: str = ''):
                     gmodel = cfg.gemini_pro_model
                 elif chat_mode_ == 'gemini8':
                     gmodel = cfg.gemini_flash_light_model
+                elif chat_mode_ == 'gemini-exp':
+                    gmodel = cfg.gemini_exp_model
 
                 WHO_ANSWERED[chat_id_full] = chat_mode_
                 if chat_mode_.startswith('gemini'):

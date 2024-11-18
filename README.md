@@ -202,6 +202,7 @@ gemini_flash_model = 'gemini-1.5-flash' # gemini-1.5-flash, gemini-1.5-flash-exp
 gemini_flash_light_model = 'gemini-1.5-flash-8b-exp-0827' # 'gemini-1.5-flash-8b, ...
 gemini_pro_model_fallback = 'gemini-1.5-pro' # gemini-1.5-pro, gemini-1.5-pro-exp, gemini-1.5-pro-latest, ...
 gemini_pro_model = 'gemini-exp-1114'
+gemini_exp_model = 'gemini-exp-1114'
 
 
 # default locale, язык на который переводятся все сообщения

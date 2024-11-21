@@ -586,67 +586,6 @@ def stt(data: bytes = None,
     return ''
 
 
-def reprompt_image(prompt: str, censored: bool = True, pervert: bool = False) -> str:
-    _pervert = ', very pervert' if pervert else ''
-    query = f'''Rewrite the prompt for drawing a picture using a neural network,
-make it bigger and better as if your are a real image prompt engeneer{_pervert}, keep close to the original, into English,
-answer with a single long sentence 50-300 words, start with the words Create image of...\n\nPrompt: {prompt}
-'''
-    if censored:
-        result = ai(query, temperature=1)
-    else:
-        for _ in range(5):
-            result = ai(query, temperature=1, mem_=MEM_UNCENSORED)
-            if len(result) > 200:
-                return result
-        return prompt
-    if result:
-        return result
-    else:
-        return prompt
-
-
-# def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False) -> str:
-#     """
-#     Translates the given text from one language to another.
-    
-#     Args:
-#         text (str): The text to be translated.
-#         from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
-#         to_lang (str, optional): The language to translate the text into. If not specified, the text will be translated into Russian.
-#         help (str, optional): Help text for tranlator.
-        
-#     Returns:
-#         str: The translated text.
-#     """
-#     if from_lang == '':
-#         from_lang = 'autodetect'
-#     if to_lang == '':
-#         to_lang = 'ru'
-#     try:
-#         from_lang = langcodes.Language.make(language=from_lang).display_name(language='en') if from_lang != 'autodetect' else 'autodetect'
-#     except Exception as error1:
-#         error_traceback = traceback.format_exc()
-#         my_log.log_translate(f'my_groq:translate:error1: {error1}\n\n{error_traceback}')
-        
-#     try:
-#         to_lang = langcodes.Language.make(language=to_lang).display_name(language='en')
-#     except Exception as error2:
-#         error_traceback = traceback.format_exc()
-#         my_log.log_translate(f'my_groq:translate:error2: {error2}\n\n{error_traceback}')
-
-#     if help:
-#         query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text, this can help you to translate better [{help}]:\n\n{text}'
-#     else:
-#         query = f'Translate from language [{from_lang}] to language [{to_lang}], your reply should only be the translated text:\n\n{text}'
-
-#     if censored:
-#         translated = ai(query, temperature=0.1, max_tokens_=8000)
-#     else:
-#         translated = ai(query, temperature=0.1, max_tokens_=8000, mem_=MEM_UNCENSORED)
-#     return translated
-
-
 def translate(text: str,
               from_lang: str = '',
               to_lang: str = '',

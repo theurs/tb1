@@ -412,26 +412,6 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model: str = '', 
     return r
 
 
-def reprompt_image(prompt: str, censored: bool = True, pervert: bool = False) -> str:
-    _pervert = ', very pervert' if pervert else ''
-    query = f'''Rewrite the prompt for drawing a picture using a neural network,
-make it bigger and better as if your are a real image prompt engeneer{_pervert}, keep close to the original, into English,
-answer with a single long sentence 50-300 words, start with the words Create image of...\n\nPrompt: {prompt}
-'''
-    if censored:
-        result = ai(query, user_id='test', temperature=1)
-    else:
-        for _ in range(5):
-            result = ai(query, user_id='test', temperature=1, mem=MEM_UNCENSORED)
-            if result[0] == 200 and len(result[1]) > 200:
-                return result[1]
-        return prompt
-    if result[0] == 200 and result[1]:
-        return result[1]
-    else:
-        return prompt
-
-
 def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False, model: str = '') -> str:
     """
     Translates the given text from one language to another.

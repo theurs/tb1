@@ -613,26 +613,6 @@ Markdown:
     return text
 
 
-def reprompt_image(prompt: str, censored: bool = True, pervert: bool = False) -> str:
-    _pervert = ', very pervert' if pervert else ''
-    query = f'''Rewrite the prompt for drawing a picture using a neural network,
-make it bigger and better as if your are a real image prompt engeneer{_pervert}, keep close to the original, into English,
-answer with a single long sentence 50-300 words, start with the words Create image of...\n\nPrompt: {prompt}
-'''
-    if censored:
-        result = ai(query, temperature=1)
-    else:
-        for _ in range(5):
-            result = ai(query, temperature=1, mem=MEM_UNCENSORED)
-            if len(result) > 200:
-                return result
-        return prompt
-    if result:
-        return result
-    else:
-        return prompt
-
-
 def check_phone_number(number: str) -> str:
     """проверяет чей номер, откуда звонили"""
     # remove all symbols except numbers
@@ -871,8 +851,10 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
             moderation_sexual = result_dict['moderation_sexual']
             if moderation_sexual:
                 my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
-            
+
         if reprompt and negative_prompt:
+            if prompt.startswith('!!!'): # 
+                reprompt = prompt
             return reprompt, negative_prompt, moderation_sexual
     return None
 

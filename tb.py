@@ -4296,11 +4296,11 @@ def image_gen(message: telebot.types.Message):
 /bing {tr('an apple with Bing only', lang)}
 {draw_text} {tr('an apple', lang)}
 
-Use !!! marker in the beginning to avoid reprompting.
+{tr('Use !!! marker in the beginning to avoid reprompting.', lang)}
 
-Use /bing command for Bing only.
+{tr('Use /bing command for Bing only.', lang)}
 
-Use /hf and /hff command for HuggingFace only.
+{tr('Use /hf and /hff command for HuggingFace only.', lang)}
 
 {tr('Write what to draw, what it looks like.', lang)}
     """

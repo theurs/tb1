@@ -830,6 +830,8 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
         A tuple of two strings: (positive prompt, negative prompt) or None if an error occurred. 
     """
 
+    prompt = prompt.strip()
+
     result = chat(prompt,
                   temperature=1.5,
                   json_output=True,

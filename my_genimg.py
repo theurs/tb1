@@ -1230,7 +1230,10 @@ Return a `reprompt`
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
-    my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}\n\nNegative: {negative}')
+    if dont_translate:
+        my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{prompt}\n\nNegative: {negative}')
+    else:
+        my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}\n\nNegative: {negative}')
 
     if dont_translate:
         return prompt, negative

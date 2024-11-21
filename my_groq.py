@@ -733,7 +733,11 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
             moderation_sexual = result_dict['moderation_sexual']
             if moderation_sexual:
                 my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
-            
+
+        if reprompt and negative_prompt:
+            if prompt.startswith('!!!'): # 
+                reprompt = prompt[3:]
+
         if reprompt and negative_prompt:
             return reprompt, negative_prompt, moderation_sexual
     return None

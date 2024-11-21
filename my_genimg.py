@@ -1176,6 +1176,13 @@ def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '')
         conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
         conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
 
+        prompt = prompt.strip()
+        if prompt.startswith('!!!'):
+            prompt = prompt[3:]
+            dont_translate = True
+        else:
+            dont_translate = False
+
         query = f'''
 User want to create image with text to image generator.
 Repromt user's PROMPT for image generation.
@@ -1224,6 +1231,9 @@ Return a `reprompt`
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
     my_log.log_reprompts(f'get_reprompt:\n\n{prompt}\n\n{reprompt}\n\nNegative: {negative}')
+
+    if dont_translate:
+        return prompt, negative
 
     return reprompt, negative
 

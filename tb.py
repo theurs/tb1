@@ -4293,10 +4293,9 @@ def image_gen(message: telebot.types.Message):
 /image {tr('an apple', lang)}
 /img {tr('an apple', lang)}
 /i {tr('an apple', lang)}
-/bing {tr('an apple with Bing only', lang)}
 {draw_text} {tr('an apple', lang)}
 
-{tr('Use !!! marker in the beginning to avoid reprompting.', lang)}
+{tr('Use !!! marker in the beginning to avoid translation and use the text as it is.', lang)}
 
 {tr('Use /bing command for Bing only.', lang)}
 

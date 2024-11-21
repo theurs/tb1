@@ -854,7 +854,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
 
         if reprompt and negative_prompt:
             if prompt.startswith('!!!'): # 
-                reprompt = prompt
+                reprompt = prompt[3:]
             return reprompt, negative_prompt, moderation_sexual
     return None
 

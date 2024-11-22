@@ -254,9 +254,6 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r"^(\s*)-\s", r"\1– ", text, flags=re.MULTILINE)
 
     # 1,2,3,4 # в начале строки меняем всю строку на жирный текст
-    # text = re.sub(r"^(?:\.\s)?#(?:#{2,})\s(.*)$", r"<b>▏\1</b>", text, flags=re.MULTILINE)  # 3+ hashes
-    # text = re.sub(r"^(?:\.\s)?##\s(.*)$", r"<b>▌ \1</b>", text, flags=re.MULTILINE)  # 2 hashes
-    # text = re.sub(r"^(?:\.\s)?#\s(.*)$", r"<b>█ \1</b>", text, flags=re.MULTILINE)  # 1 hash
     text = re.sub(r"^(?:\.\s)?#(?:#{0,})\s(.*)$", r"<b>\1</b>", text, flags=re.MULTILINE)  # 1+ hashes
 
     # цитаты начинаются с &gt; их надо заменить на <blockquote></blockquote>
@@ -375,14 +372,12 @@ def bot_markdown_to_html(text: str) -> str:
     text = text.replace('<pre><code class="language-plaintext">\n<pre><code>', '<pre><code class="language-plaintext">')
 
     # убрать 3 и более пустые сроки подряд (только после блоков кода или любых тегов)
-    # text = re.sub(r"^\s*$", r"\n", text, flags=re.MULTILINE)
-    # text = re.sub(r'>\n{4,}', '>\n\n\n', text)
     def replace_newlines(match):
         return '\n\n'
     text = re.sub(r"(?<!<pre>)(?<!<code>)\n{3,}(?!</code>)(?!</pre>)", replace_newlines, text, flags=re.DOTALL)
-    # text = re.sub(r">\n{2,}", ">\n", text)
-    # text = re.sub(r"code>\n{2,}", "code>\n", text)
     text = re.sub(r"pre>\n{2,}", "pre>\n", text)
+
+    text = text.replace('\n</code></pre>\n</code>', '\n</code></pre>')
 
     return text
 

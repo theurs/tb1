@@ -145,10 +145,11 @@ def chat(query: str,
 
         random.shuffle(keys)
         keys = keys[:4]
-        badkeys = ['3166979107466835308',]
+        badkeys = ['3166979107466835308', '-5957742548924824986']
         for key in keys[:]:
             if hash(key) in badkeys:
                 keys.remove(key)
+                remove_key(key)
 
         time_start = time.time()
         for key in keys:

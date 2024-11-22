@@ -6903,6 +6903,7 @@ def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
             pass
+            my_db.fix_tts_model_used()
 
             # # удалить таблицу
             # try:
@@ -6912,21 +6913,21 @@ def one_time_shot():
             #     my_log.log2(f'tb:one_time_shot: {error}')
 
 
-            queries = [
-                # '''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
-                # '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
-                # '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
-                # '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
-                # '''ALTER TABLE users ADD COLUMN telegram_stars INTEGER;''',
-                # '''ALTER TABLE users ADD COLUMN telegram_stars INTEGER;''',
-                '''UPDATE users SET persistant_memory = '';''',
-                       ]
-            for q in queries:
-                try:
-                    my_db.CUR.execute(q)
-                    my_db.CON.commit()
-                except Exception as error:
-                    my_log.log2(f'tb:one_time_shot: {error}')
+            # queries = [
+            #     '''ALTER TABLE users ADD COLUMN persistant_memory TEXT;''',
+            #     '''ALTER TABLE users ADD COLUMN api_key_gemini TEXT;''',
+            #     '''ALTER TABLE users ADD COLUMN api_key_groq TEXT;''',
+            #     '''ALTER TABLE users ADD COLUMN api_key_deepl TEXT;''',
+            #     '''ALTER TABLE users ADD COLUMN telegram_stars INTEGER;''',
+            #     '''ALTER TABLE users ADD COLUMN telegram_stars INTEGER;''',
+            #     '''UPDATE users SET persistant_memory = '';''',
+            #            ]
+            # for q in queries:
+            #     try:
+            #         my_db.CUR.execute(q)
+            #         my_db.CON.commit()
+            #     except Exception as error:
+            #         my_log.log2(f'tb:one_time_shot: {error}')
 
 
             # # запоминаем время последнего обращения к боту

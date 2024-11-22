@@ -946,10 +946,21 @@ def find_users_with_many_messages() -> List[str]:
             return []
 
 
+def fix_tts_model_used():
+    '''Исправить записи в базе с неправильным model_used'''
+    with LOCK:
+        try:
+            CUR.execute("UPDATE msg_counter SET model_used = REPLACE(model_used, 'TTS ', 'STT ') WHERE model_used LIKE 'TTS %'")
+            CON.commit()
+        except Exception as error:
+            my_log.log2(f'my_db:fix_tts_model_used {error}')
+
+
 if __name__ == '__main__':
     pass
     init(backup=False)
 
-    print(find_users_with_many_messages())
+    # print(find_users_with_many_messages())
+    fix_tts_model_used()
 
     close()

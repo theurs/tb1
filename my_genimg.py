@@ -435,113 +435,6 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, 
     return []
 
 
-def get_ynd_iam_token(oauth_tokens):
-  """
-  Get Yandex IAM token using OAuth tokens.
-
-  Parameters:
-    oauth_tokens (list): List of OAuth tokens.
-
-  Returns:
-    str: Yandex IAM token if successful, None otherwise.
-  """
-  url = "https://iam.api.cloud.yandex.net/iam/v1/tokens"
-  headers = {"Content-Type": "application/json"}
-  for oauth_token in oauth_tokens:
-    data = {"yandexPassportOauthToken": oauth_token}
-
-    response = requests.post(url, headers=headers, json=data, timeout=10)
-
-    if response.status_code == 200:
-        return response.json()['iamToken']
-    else:
-        my_log.log2(f'my_genimg:get_ynd_iam_token: {response.status_code} {oauth_token}')
-    return None
-
-
-def yandex_cloud_generate_image_async(iam_token: str, prompt: str, seed=None, timeout: int = 60):
-    """
-    A function to asynchronously generate an image using the Yandex Cloud API.
-
-    Parameters:
-    - iam_token (str): The IAM token for authentication.
-    - prompt (str): The text prompt for image generation.
-    - seed (int, optional): The seed for random generation. Defaults to None.
-    - timeout (int, optional): The timeout for the API request. Defaults to 120.
-
-    Returns:
-    - list: list of images as bytes.
-    """
-    try:
-        url = "https://llm.api.cloud.yandex.net:443/foundationModels/v1/imageGenerationAsync"
-        headers = {"Authorization": f"Bearer {iam_token}"}
-        data = {
-            "model_uri": "art://b1gcvk4tetlvtrjkktek/yandex-art/latest",
-            "messages": [{"text": prompt, "weight": 1}],
-            "generation_options": {"mime_type": "image/jpeg"}
-        }
-
-        if seed:
-            data["generation_options"]["seed"] = seed
-        else:
-            data["generation_options"]["seed"] = random.randint(0, 2**64 - 1)
-
-        response = requests.post(url, headers=headers, json=data, timeout=20)
-
-        if response.status_code == 200:
-            url = f" https://llm.api.cloud.yandex.net:443/operations/{response.json()['id']}"
-            time.sleep(30)
-            while timeout > 0:
-                try:
-                    response = requests.get(url, headers=headers, timeout=20)
-                    if response.status_code == 200:
-                        if hasattr(response, 'text'):
-                            response = response.json()
-                            if response['done']:
-                                return response['response']['image']
-                except Exception as error2:
-                    error_traceback2 = traceback.format_exc()
-                    if 'Read timed out.' in str(error2) or 'Read timed out.' in str(error_traceback2):
-                        pass
-                    else:
-                        my_log.log_huggin_face_api(f'my_genimg:yandex_cloud_generate_image_async: {error2}\n\n{error_traceback2}')
-                time.sleep(20)
-                timeout -= 20
-        else:
-            print(f"Ошибка: {response.status_code}")
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log_huggin_face_api(f'my_genimg:yandex_cloud_generate_image_async: {error}\n\n{error_traceback}')
-    return []
-
-
-def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
-    """
-    Function to generate images using Yandex Cloud API. 
-    Takes a prompt string and an amount of images to generate. 
-    Returns a list of generated images as bytes.
-    """
-    try:
-        if not hasattr(cfg, 'YND_OAUTH') or not cfg.YND_OAUTH:
-            return []
-        iam_tokens = cfg.YND_OAUTH[:]
-        random.shuffle(iam_tokens)
-        iam_token = get_ynd_iam_token(iam_tokens)
-        results = []
-        prompt = 'High detail, high quality. ' + prompt
-        for _ in range(amount):
-            result = yandex_cloud_generate_image_async(iam_token, prompt)
-            if result:
-                data = base64.b64decode(result)
-                WHO_AUTOR[hash(data)] = 'shedevrum.ai (yandex cloud)'
-                results.append(data)
-        return results
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log_huggin_face_api(f'my_genimg:yandex_cloud: {error}\n\nPrompt: {prompt}\nAmount: {amount}\n{error_traceback}')
-        return []
-
-
 def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> tuple[str, str] | None:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
@@ -675,17 +568,12 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
 
-        async_result5 = pool.apply_async(yandex_cloud, (prompt,))
-        async_result6 = pool.apply_async(yandex_cloud, (prompt,))
-
         async_result9 = pool.apply_async(glm, (prompt, negative))
 
         result = (async_result1.get() or []) + \
                  (async_result2.get() or []) + \
                  (async_result3.get() or []) + \
                  (async_result4.get() or []) + \
-                 (async_result5.get() or []) + \
-                 (async_result6.get() or []) + \
                  (async_result9.get() or [])
 
         return result

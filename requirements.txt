@@ -54,7 +54,6 @@ SpeechRecognition
 sqlitedict
 starlette
 telegraph
-#trafilatura==1.6.1
 trafilatura
 
 # требует установки vc++ tools

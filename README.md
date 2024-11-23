@@ -321,11 +321,6 @@ KANDINSKI_API = [
     ('api key', 'secret key'),
 ]
 
-# https://yandex.cloud/ru/docs/iam/operations/iam-token/create#api_1
-# yandex - жулики, загнали меня в минуса на своих "бесплатных" картинках
-# YND_OAUTH = ['xxx', 'yyy']
-
-
 # https://console.groq.com/keys
 GROQ_API_KEY = [
     'gsk_xxx',

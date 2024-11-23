@@ -409,8 +409,11 @@ def get_time_in_timezone(timezone_str: str) -> str:
     try:
         timezone = pytz.timezone(timezone_str)
         now = datetime.datetime.now(timezone)
+        time_str = now.strftime("%Y-%m-%d %H:%M:%S")
+        my_log.log_gemini_skills(f'get_time_in_timezone: time={time_str}')
         return now.strftime("%Y-%m-%d %H:%M:%S")
-    except pytz.exceptions.UnknownTimeZoneError:
+    except Exception as error:
+        my_log.log_gemini_skills(f'get_time_in_timezone: Invalid timezone {timezone_str}\n{error}')
         return f"Error: Invalid timezone '{timezone_str}'"
 
 

@@ -5980,6 +5980,17 @@ def do_task(message, custom_prompt: str = ''):
                                     use_skills=True)
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
+                            if not answer and gmodel == cfg.gemini_exp_model:
+                                gmodel = cfg.gemini_exp_model_fallback
+                                answer = my_gemini.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    my_db.get_user_property(chat_id_full, 'temperature'),
+                                    model = gmodel,
+                                    system = hidden_text,
+                                    use_skills=True)
+                                WHO_ANSWERED[chat_id_full] = gmodel
+
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
                             if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):

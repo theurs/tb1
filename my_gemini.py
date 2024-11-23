@@ -22,7 +22,7 @@ import my_db
 import my_log
 import my_sum
 import utils
-from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, get_cryptocurrency_rates, run_script, query_wikipedia
+from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, get_cryptocurrency_rates, run_script, query_wikipedia, get_time_in_timezone
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -179,6 +179,7 @@ def chat(query: str,
                     download_text_from_url,
                     # update_user_profile,
                     calc,
+                    get_time_in_timezone,
                     get_weather,
                     get_currency_rates,
                     # get_cryptocurrency_rates, # broken, why?

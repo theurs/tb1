@@ -9,6 +9,7 @@ import numbers
 import numpy
 import numpy as np
 import os
+import pytz
 import random
 import re
 import requests
@@ -395,16 +396,36 @@ def query_wikipedia(query: str, lang: str = 'ru', search: bool = True) -> str:
         return resp
 
 
+def get_time_in_timezone(timezone_str: str) -> str:
+    """
+    Returns the current time in the specified timezone.
+
+    Args:
+        timezone_str: A string representing the timezone (e.g., "Europe/Moscow", "America/New_York").
+
+    Returns:
+        A string with the current time in "YYYY-MM-DD HH:MM:SS" format, or an error message if the timezone is invalid.
+    """
+    try:
+        timezone = pytz.timezone(timezone_str)
+        now = datetime.datetime.now(timezone)
+        return now.strftime("%Y-%m-%d %H:%M:%S")
+    except pytz.exceptions.UnknownTimeZoneError:
+        return f"Error: Invalid timezone '{timezone_str}'"
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     my_groq.load_users_keys()
+    moscow_time = get_time_in_timezone("Europe/Moscow")
+    print(f"Time in Moscow: {moscow_time}")
 
     # print(calc("(datetime.date(2025, 6, 1) - datetime.date.today()).days"))
     # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
     # print(calc('[str(i) for i in range(5000, 100000) if "2" in str(i) and "9" in str(i)][0:5]'))
     # print(calc("sum(int(digit) for digit in str(1420000000))"))
-    print(calc("[str(i) + str(j) + str(k) + str(l) + str(m) for i in range(9, 0, -1) for j in range(i - 1, 0, -1) for k in range(j - 1, 0, -1) for l in range(k - 1, 0, -1) for m in range(l - 1, 0, -1) if i + j + k + l + m == 26 and 0 not in (i, j, k, l, m) and 8 not in (i, j, k, l, m)]"))
+    # print(calc("[str(i) + str(j) + str(k) + str(l) + str(m) for i in range(9, 0, -1) for j in range(i - 1, 0, -1) for k in range(j - 1, 0, -1) for l in range(k - 1, 0, -1) for m in range(l - 1, 0, -1) if i + j + k + l + m == 26 and 0 not in (i, j, k, l, m) and 8 not in (i, j, k, l, m)]"))
 
     # text='''ls -l'''
     # print(run_script('test.sh', text))

@@ -1391,7 +1391,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
         button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
         button8 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚗', callback_data='select_glm4plus')
-        button9 = telebot.types.InlineKeyboardButton('Gemini exp 1114 🚀', callback_data='select_gemini-exp')
+        button9 = telebot.types.InlineKeyboardButton('Gemini exp 1121 🚀', callback_data='select_gemini-exp')
+        button10 = telebot.types.InlineKeyboardButton('Gemini learnlm-1.5-pro-experimental 🚀', callback_data='select_gemini-learn')
         markup.row(button1, button2)
         markup.row(button4, button8)
         markup.row(button5, button6)
@@ -1399,6 +1400,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             markup.row(button7, button9)
         else:
             markup.row(button9)
+        markup.row(button10)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -1659,6 +1661,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_gemini-exp':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
+        elif call.data == 'select_gemini-learn':
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
         elif call.data == 'select_gemini15_pro':
             have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
                 user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
@@ -5159,6 +5164,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini15': cfg.gemini_pro_model,
             'gemini8': cfg.gemini_flash_light_model,
             'gemini-exp': cfg.gemini_exp_model,
+            'gemini-learn': cfg.gemini_learn_model,
             'llama370': 'Llama 3.2 90b',
             'openrouter_llama405': 'Llama 3.1 405b',
             'openrouter': 'openrouter.ai',
@@ -5903,6 +5909,8 @@ def do_task(message, custom_prompt: str = ''):
                     gmodel = cfg.gemini_flash_light_model
                 elif chat_mode_ == 'gemini-exp':
                     gmodel = cfg.gemini_exp_model
+                elif chat_mode_ == 'gemini-learn':
+                    gmodel = cfg.gemini_learn_model
 
                 WHO_ANSWERED[chat_id_full] = chat_mode_
                 if chat_mode_.startswith('gemini'):

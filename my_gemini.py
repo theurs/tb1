@@ -907,7 +907,7 @@ if __name__ == '__main__':
 
     # imagen()
 
-    # list_models()
+    list_models()
     # chat_cli()
     # chat_cli(model=cfg.gemini_flash_model)
 

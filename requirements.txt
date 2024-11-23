@@ -21,9 +21,6 @@ google
 google-generativeai
 groq
 
-# свежая версия выжирает цпу на сервере, а с этой не работают новые модные модельки
-gradio_client==0.14.0
-
 gTTS
 langdetect
 langcodes[data]
@@ -38,7 +35,6 @@ pendulum
 Pillow
 pillow-heif
 prettytable
-prodiapy
 pyarrow
 pyenchant
 pydub
@@ -54,7 +50,6 @@ pytelegrambotapi==4.16.1
 pytesseract
 python-Levenshtein
 python-pptx
-runware
 SpeechRecognition
 sqlitedict
 starlette

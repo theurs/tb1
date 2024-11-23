@@ -1198,11 +1198,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='cancel_command')
         markup.add(button1)
         return markup
-    elif kbd == 'fast_image':
-        markup = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(tr("Next image", lang), callback_data='fast_image_next')
-        markup.add(button1)
-        return markup
 
     elif kbd == 'select_lang':
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
@@ -1640,21 +1635,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             if translated and translated != message.text:
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
                                       reply_markup=get_keyboard('chat', message))
-        elif call.data == 'fast_image_next':
-            reprompt = message.caption
-            data = my_genimg.runware(reprompt, number=1, big = True)[0]
-            if data:
-                hash_ = hash(data)
-                if hash_ in my_genimg.WHO_AUTOR:
-                    del my_genimg.WHO_AUTOR[hash_]
-                cid = message.chat.id
-                mid = message.id
-                image = telebot.types.InputMediaPhoto(data, caption=reprompt)
-                bot.edit_message_media(media = image,
-                                       chat_id=cid,
-                                       message_id=mid,
-                                       reply_markup=get_keyboard('fast_image', message),
-                                       )
         elif call.data == 'select_llama370':
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.2 90b Groq.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')

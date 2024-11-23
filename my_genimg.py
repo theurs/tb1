@@ -14,7 +14,6 @@ import traceback
 from multiprocessing.pool import ThreadPool
 from io import BytesIO
 
-import gradio_client
 import PIL
 import requests
 from sqlitedict import SqliteDict
@@ -26,8 +25,6 @@ import my_gemini
 import my_glm
 import my_groq
 import my_log
-import my_prodia
-import my_runware_ai
 import utils
 
 
@@ -154,10 +151,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             API_URL = [x.strip() for x in API_URL if x.strip() and not x.strip().startswith('#')]
         else:
             API_URL = [
-            # 'playgroundai/playground-v2.5-1024px-aesthetic',
             "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
-            # 'AP123/SDXL-Lightning',
-            # "multimodalart/stable-cascade",
             "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
             "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
             "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
@@ -169,70 +163,11 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
             "https://api-inference.huggingface.co/models/fluently/Fluently-XL-v4",
             "https://api-inference.huggingface.co/models/Corcelio/openvision",
 
-            # "multimodalart/cosxl",
-            # 'PixArt-alpha/PixArt-Sigma',
-            # 'ByteDance/Hyper-SDXL-1Step-T2I',
         ]
 
     payload = json.dumps({"inputs": prompt, "negative_prompt": negative_prompt,})
 
     def request_img(prompt, url, p):
-        if 'PixArt-Sigma' in url:
-            try:
-                return PixArtSigma(prompt, url, negative_prompt=negative_prompt)
-            except:
-                return []
-        if 'Hyper-SDXL' in url:
-            try:
-                return Hyper_SDXL(prompt, url, negative_prompt=negative_prompt)
-            except:
-                return []
-        if 'cosxl' in url:
-            try:
-                return cosxl(prompt, url, negative_prompt=negative_prompt)
-            except:
-                return []
-        if 'stable-cascade' in url:
-            try:
-                return stable_cascade(prompt, url, negative_prompt=negative_prompt)
-            except:
-                return []
-        if 'playgroundai/playground-v2.5-1024px-aesthetic' in url:
-            try:
-                return playground25(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:playgroundai/playground-v2.5-1024px-aesthetic: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'AP123/SDXL-Lightning' in url:
-            try:
-                return SDXL_Lightning(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:AP123/SDXL-Lightning: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'Stable-Diffusion-3' in url:
-            try:
-                return stable_diffusion_3_medium(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'gokaygokay/Kolors' in url:
-            try:
-                return Kolors(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'multimodalart/AuraFlow' in url:
-            try:
-                return AuraFlow(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
-        if 'FLUX.1-schnell' in url or 'FLUX.1-schnell' in url:
-            try:
-                return FLUX1(prompt, url, negative_prompt=negative_prompt)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\nPrompt: {prompt}\nURL: {url}')
-                return []
 
         n = 1
         result = []
@@ -379,61 +314,6 @@ def huggin_face_api_one_image(
     return b''
 
 
-def PixArtSigma(prompt: str, url: str = 'PixArt-alpha/PixArt-Sigma', negative_prompt: str = "") -> bytes:
-    """
-    url = "PixArt-alpha/PixArt-Sigma" only?
-    """
-    try:
-        client = gradio_client.Client(url)
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-    result = None
-    try:
-        result = client.predict(
-                prompt=prompt,
-                negative_prompt=negative_prompt,
-                style="(No style)",
-                use_negative_prompt=bool(negative_prompt),
-                num_imgs=1,
-                seed=0,
-                width=1024,
-                height=1024,
-                schedule="DPM-Solver",
-                dpms_guidance_scale=4.5,
-                sas_guidance_scale=3,
-                dpms_inference_steps=14,
-                sas_inference_steps=25,
-                randomize_seed=True,
-                api_name="/run"
-        )
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        # else:
-        #     my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    fname = result[0][0]['image']
-    base_path = os.path.dirname(fname)
-    if fname:
-        try:
-            data = None
-            with open(fname, 'rb') as f:
-                data = f.read()
-            try:
-                utils.remove_file(fname)
-                os.rmdir(base_path)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
-            if data:
-                WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                return [data,]
-        except Exception as error:
-            my_log.log_huggin_face_api(f'my_genimg:PixArt-alpha/PixArt-Sigma: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return []
-
-
 def size_of_image(data: bytes):
     """
     Calculate the size of an image from the given byte data.
@@ -446,145 +326,6 @@ def size_of_image(data: bytes):
     """
     img = PIL.Image.open(io.BytesIO(data))
     return img.size
-
-
-def SDXL_Lightning(prompt: str, url: str = 'AP123/SDXL-Lightning', negative_prompt: str = "") -> bytes:
-    """
-    url = "AP123/SDXL-Lightning" only?
-    """
-    try:
-        client = gradio_client.Client("AP123/SDXL-Lightning")
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-    result = None
-    try:
-        result = client.predict(
-            prompt,
-            "8-Step",	# Literal['1-Step', '2-Step', '4-Step', '8-Step']  in 'Select inference steps' Dropdown component
-            api_name="/generate_image"
-        )
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    fname = result
-    base_path = os.path.dirname(fname)
-    if fname:
-        try:
-            data = None
-            with open(fname, 'rb') as f:
-                data = f.read()
-            try:
-                utils.remove_file(fname)
-                os.rmdir(base_path)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
-            imgsize = size_of_image(data)
-            if data and imgsize == (1024, 1024):
-                WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                return [data,]
-        except Exception as error:
-            my_log.log_huggin_face_api(f'my_genimg:SDXL_Lightning: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return []
-
-
-def playground25(prompt: str, url: str = "https://playgroundai-playground-v2-5.hf.space/", negative_prompt: str = "") -> bytes:
-    """
-    url = "playgroundai/playground-v2.5-1024px-aesthetic" only?
-    """
-    try:
-        client = gradio_client.Client("https://playgroundai-playground-v2-5.hf.space/")
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-    result = None
-    try:
-        result = client.predict(
-            prompt,	# str  in 'Prompt' Textbox component
-            negative_prompt,	# str  in 'Negative prompt' Textbox component
-            bool(negative_prompt),	# bool  in 'Use negative prompt' Checkbox component
-            random.randint(0, 2147483647),	    # float (numeric value between 0 and 2147483647) in 'Seed' Slider component
-            1024,	# float (numeric value between 256 and 1536) in 'Width' Slider component
-            1024,	# float (numeric value between 256 and 1536) in 'Height' Slider component
-            3,	# float (numeric value between 0.1 and 20) in 'Guidance Scale' Slider component
-            True,	# bool  in 'Randomize seed' Checkbox component
-            api_name="/run"
-        )
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    fname = result[0][0]['image']
-    base_path = os.path.dirname(fname)
-    if fname:
-        try:
-            data = None
-            with open(fname, 'rb') as f:
-                data = f.read()
-            try:
-                utils.remove_file(fname)
-                os.rmdir(base_path)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
-            if data:
-                WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                return [data,]
-        except Exception as error:
-            my_log.log_huggin_face_api(f'my_genimg:playground25: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return []
-
-
-def stable_cascade(prompt: str, url: str = "multimodalart/stable-cascade", negative_prompt: str = "") -> bytes:
-    """
-    url = "multimodalart/stable-cascade" only?
-    """
-    try:
-        client = gradio_client.Client(url)
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    result = None
-    try:
-        result = client.predict(
-            prompt,	# str  in 'Prompt' Textbox component
-            negative_prompt,	# str  in 'Negative prompt' Textbox component
-            0,	# float (numeric value between 0 and 2147483647) in 'Seed' Slider component
-            1024,	# float (numeric value between 1024 and 1536) in 'Width' Slider component
-            1024,	# float (numeric value between 1024 and 1536) in 'Height' Slider component
-            10,	# float (numeric value between 10 and 30) in 'Prior Inference Steps' Slider component
-            0,	# float (numeric value between 0 and 20) in 'Prior Guidance Scale' Slider component
-            4,	# float (numeric value between 4 and 12) in 'Decoder Inference Steps' Slider component
-            0,	# float (numeric value between 0 and 0) in 'Decoder Guidance Scale' Slider component
-            1,	# float (numeric value between 1 and 2) in 'Number of Images' Slider component
-            api_name="/run"
-        )
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    fname = result
-    base_path = os.path.dirname(fname)
-    if fname:
-        try:
-            data = None
-            with open(fname, 'rb') as f:
-                data = f.read()
-            try:
-                utils.remove_file(fname)
-                os.rmdir(base_path)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
-            if data:
-                WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                return [data,]
-        except Exception as error:
-            my_log.log_huggin_face_api(f'my_genimg:stable_cascade: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return []
 
 
 def glm(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
@@ -614,35 +355,6 @@ def glm(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negati
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'glm: {error}\n\n{error_traceback}')
-
-    return []
-
-
-def prodia(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
-    """
-    Generates images based on a prompt using the PRODIA API.
-
-    Args:
-        prompt (str): The prompt for generating the images.
-        width (int, optional): The width of the images. Defaults to 1024.
-        height (int, optional): The height of the images. Defaults to 1024.
-        num (int, optional): The number of images to generate. Defaults to 1.
-
-    Returns:
-        list: A list of generated images in bytes format.
-    """
-    try:
-        image = my_prodia.gen_image(prompt, negative_prompt)
-        results = []
-        if image:
-            data = image
-            WHO_AUTOR[hash(data)] = 'prodia.com sdxl'
-            results.append(data)
-            return results
-
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log_huggin_face_api(f'my_genimg:prodia: {error}\n\n{error_traceback}')
 
     return []
 
@@ -830,339 +542,6 @@ def yandex_cloud(prompt: str = 'An australian cat', amount: int = 1):
         return []
 
 
-def cosxl(prompt: str, url: str = "multimodalart/cosxl", negative_prompt: str = "") -> list:
-    """
-    url = "multimodalart/cosxl" only?
-    """
-    try:
-        client = gradio_client.Client(url)
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:cosxl: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    result = None
-    try:
-        result = client.predict(prompt, "", 7, api_name="/run_normal")
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:cosxl: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    fname = result
-    base_path = os.path.dirname(fname)
-    if fname:
-        try:
-            data = None
-            with open(fname, 'rb') as f:
-                data = f.read()
-            try:
-                utils.remove_file(fname)
-                os.rmdir(base_path)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:cosxl: {error}\n\nPrompt: {prompt}\nURL: {url}')
-            if data:
-                WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                return [data,]
-        except Exception as error:
-            my_log.log_huggin_face_api(f'my_genimg:cosxl: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return []
-
-
-def Hyper_SDXL(prompt: str, url: str = "ByteDance/Hyper-SDXL-1Step-T2I", number: int = 1, negative_prompt: str = "") -> list:
-    """
-    url = "ByteDance/Hyper-SDXL-1Step-T2I" only?
-    """
-    try:
-        client = gradio_client.Client(url)
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    result = None
-    try:
-        result = result = client.predict(
-            num_images=number,
-            height=1024,
-            width=1024,
-            prompt=prompt,
-            seed=0,
-            api_name="/process_image"
-        )
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    images = []
-    for fname in result:
-        try:
-            fname = fname['image']
-        except:
-            continue
-        base_path = os.path.dirname(fname)
-        if fname:
-            try:
-                data = None
-                with open(fname, 'rb') as f:
-                    data = f.read()
-                try:
-                    utils.remove_file(fname)
-                    os.rmdir(base_path)
-                except Exception as error:
-                    my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
-                if data:
-                    WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                    images.append(data)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:Hyper_SDXL: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return images
-
-
-def stable_diffusion_3_medium(prompt: str, url: str = "markmagic/Stable-Diffusion-3-FREE", number: int = 1, negative_prompt: str = "") -> list:
-    """
-    url = "markmagic/Stable-Diffusion-3-FREE" only?
-    """
-    try:
-        client = gradio_client.Client(url)
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    result = None
-    try:
-        result = result = client.predict(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            use_negative_prompt=bool(negative_prompt),
-            seed=0,
-            width=1024,
-            height=1024,
-            guidance_scale=7,
-            randomize_seed=True,
-            num_inference_steps=30,
-            NUM_IMAGES_PER_PROMPT=number,
-            api_name="/run"
-        )
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    images = []
-    for fname in result:
-        try:
-            fname = fname['image']
-        except:
-            continue
-        base_path = os.path.dirname(fname)
-        if fname:
-            try:
-                data = None
-                with open(fname, 'rb') as f:
-                    data = f.read()
-                try:
-                    utils.remove_file(fname)
-                    os.rmdir(base_path)
-                except Exception as error:
-                    my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\n\nPrompt: {prompt}\nURL: {url}')
-                if data:
-                    WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                    images.append(data)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:stable_diffusion_3_medium: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return images
-
-
-def Kolors(prompt: str, url: str = "gokaygokay/Kolors", number: int = 1, negative_prompt: str = "") -> list:
-    """
-    url = "gokaygokay/Kolors" only?
-    """
-    try:
-        client = gradio_client.Client(url)
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    result = None
-    try:
-        result = client.predict(
-		prompt=prompt,
-		negative_prompt=negative_prompt,
-        # use_negative_prompt=bool(negative_prompt),
-		height=1024,
-		width=1024,
-		num_inference_steps=20,
-		guidance_scale=5,
-		num_images_per_prompt=number,
-		use_random_seed=True,
-		seed=0,
-		api_name="/predict"
-        )
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    images = []
-    for fname in result[0]:
-        try:
-            fname = fname['image']
-        except:
-            continue
-        base_path = os.path.dirname(fname)
-        if fname:
-            try:
-                data = None
-                with open(fname, 'rb') as f:
-                    data = f.read()
-                try:
-                    utils.remove_file(fname)
-                    os.rmdir(base_path)
-                except Exception as error:
-                    my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\n\nPrompt: {prompt}\nURL: {url}')
-                if data:
-                    WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                    images.append(data)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:Kolors: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return images
-
-
-def AuraFlow(prompt: str, url: str = "multimodalart/AuraFlow", number: int = 1, negative_prompt: str = "") -> list:
-    """
-    url = "multimodalart/AuraFlow" only?
-    """
-    try:
-        client = gradio_client.Client(url)
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    result = None
-    try:
-        result = client.predict(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            seed=0,
-            randomize_seed=True,
-            width=1024,
-            height=1024,
-            guidance_scale=5,
-            num_inference_steps=28,
-            api_name="/infer"
-        )
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    images = []
-    for fname in result[0]:
-        try:
-            fname = fname['image']
-        except:
-            continue
-        base_path = os.path.dirname(fname)
-        if fname:
-            try:
-                data = None
-                with open(fname, 'rb') as f:
-                    data = f.read()
-                try:
-                    utils.remove_file(fname)
-                    os.rmdir(base_path)
-                except Exception as error:
-                    my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\n\nPrompt: {prompt}\nURL: {url}')
-                if data:
-                    WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                    images.append(data)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:AuraFlow: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return images
-
-
-def FLUX1(prompt: str, url: str = "black-forest-labs/FLUX.1-schnell", number: int = 1, negative_prompt: str = "") -> list:
-    """
-    url = "black-forest-labs/FLUX.1-schnell" or "ChristianHappy/FLUX.1-schnell" only?
-    """
-    try:
-        client = gradio_client.Client(url)
-    except Exception as error:
-        my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    result = None
-    try:
-        result = client.predict(
-            prompt=prompt,
-            # negative_prompt=negative_prompt,
-            seed=0,
-            randomize_seed=True,
-            width=1024,
-            height=1024,
-            num_inference_steps=4,
-            api_name="/infer"
-        )
-    except Exception as error:
-        if 'No GPU is currently available for you after 60s' not in str(error) and 'You have exceeded your GPU quota' not in str(error):
-            my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\n\nPrompt: {prompt}\nURL: {url}')
-        return []
-
-    images = []
-    try:
-        fname = result[0]
-        base_path = os.path.dirname(fname)
-    except:
-        fname = ''
-    if fname:
-        try:
-            data = None
-            with open(fname, 'rb') as f:
-                data = f.read()
-            try:
-                utils.remove_file(fname)
-                os.rmdir(base_path)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\n\nPrompt: {prompt}\nURL: {url}')
-            if data:
-                WHO_AUTOR[hash(data)] = url.split('/')[-1]
-                images.append(data)
-        except Exception as error:
-            my_log.log_huggin_face_api(f'my_genimg:FLUX1: {error}\n\nPrompt: {prompt}\nURL: {url}')
-    return images
-
-
-def runware(prompt: str, number: int = 2, negative_prompt: str = "", cache: bool = False, big: bool = False) -> list:
-    """
-        runware.ai
-    """
-    try:
-        h = 1024
-        w = 1024
-        if big:
-            h = 2048
-            w = 2048
-        images = my_runware_ai.generate_images(prompt,
-                                               number_results=number,
-                                               negative_prompt=negative_prompt,
-                                               use_cache=cache,
-                                               height=h,
-                                               width=w,
-                                               )
-
-        results = []
-        images = [x for x in utils.download_image_as_bytes(images)]
-        for data in images:
-            if data:
-                WHO_AUTOR[hash(data)] = 'runware.ai'
-                results.append(data)
-        return results
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log_huggin_face_api(f'my_genimg:runware: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
-        return []
-
-
 def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> tuple[str, str] | None:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
@@ -1299,10 +678,6 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         async_result5 = pool.apply_async(yandex_cloud, (prompt,))
         async_result6 = pool.apply_async(yandex_cloud, (prompt,))
 
-        async_result7 = pool.apply_async(runware, (prompt, 2, negative))
-
-        async_result8 = pool.apply_async(prodia, (prompt, negative))
-
         async_result9 = pool.apply_async(glm, (prompt, negative))
 
         result = (async_result1.get() or []) + \
@@ -1311,26 +686,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
                  (async_result4.get() or []) + \
                  (async_result5.get() or []) + \
                  (async_result6.get() or []) + \
-                 (async_result7.get() or []) + \
-                 (async_result8.get() or []) + \
                  (async_result9.get() or [])
-
-
-        # пытаемся почистить /tmp от временных файлов которые создает stable-cascade?
-        # может удалить то что рисуют параллельные запросы и второй бот?
-        try:
-            for f in glob.glob('/tmp/*'):
-                if len(f) == 45:
-                    try:
-                        os.rmdir(f)
-                    except Exception as unknown:
-                        if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
-                            my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{f}')
-            shutil.rmtree('/tmp/gradio')
-        except Exception as unknown:
-            error_traceback = traceback.format_exc()
-            if 'Directory not empty' not in str(unknown) and "No such file or directory: '/tmp/gradio'" not in str(unknown):
-                my_log.log2(f'my_genimg:rmdir:gen_images: {unknown}\n\n{error_traceback}')
 
         return result
 

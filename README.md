@@ -153,8 +153,6 @@
    ```
    cd tb1
 
-   Тут надо будет закоментировать строчку с gradio в requirements.txt, а после установки вручную установить нужную версию. Или не возвращать. С более свежей версией у меня на сервере памяти не хватает.
-
    pip install -r requirements.txt
    ```
    
@@ -387,23 +385,12 @@ OPEN_ROUTER_FREE_KEYS = [
 # CRYPTOCOMPARE_KEY = 'xxx'
 
 
-# https://runware.ai/ (parse key from fastflux.ai)
-# RUNWARE_KEYS = ['xxx','yyy']
-
-
 # https://cloud.sambanova.ai/apis llama 8-405
 # free 10 запросов в секунду для 405b, 20 для 70b
 #SAMBANOVA_KEYS = [
 #    'xxx', 'yyy'
 #]
 
-
-# https://app.prodia.com
-# 1000 free images per key
-#PRODIA_KEYS = [
-#    'xxx',
-#    'yyy',
-#]
 
 # https://bigmodel.cn/ 100kk tokens per account for free?
 #GLM4_KEYS = [

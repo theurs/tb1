@@ -33,7 +33,6 @@ LOCKS = {}
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 1000000
 MAX_SUM_REQUEST = 1000000
-MAX_REQUEST_GEMMA2_9B = 12000
 
 
 BASE_URL = "https://openrouter.ai/api/v1"

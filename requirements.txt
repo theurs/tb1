@@ -1,6 +1,3 @@
-#>=2.13.0
-ai21
-
 assemblyai
 # attrs==23.1.0
 bingart

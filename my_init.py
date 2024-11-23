@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
 import pickle
-import time
 
 import cfg
 import my_gemini
 import my_groq
 import my_db
 import my_ddg
-import my_shadowjourney
 import my_trans
 
 
@@ -111,14 +109,6 @@ def generate_start_msg():
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
         msg = ''
-
-        # for _ in range(2):
-        #     if not msg:
-        #         msg = my_shadowjourney.translate(start_msg, to_lang = x)
-        #     else:
-        #         break
-        #     if not msg:
-        #         time.sleep(60)
 
         if not msg:
             msg = my_trans.translate_deepl(start_msg, to_lang=x)
@@ -247,7 +237,7 @@ Translated text:
 
 {translated}
 '''
-    res = my_groq.ai(q, temperature = 0, max_tokens_ = 10, model_='gemma2-9b-it')
+    res = my_groq.ai(q, temperature = 0, max_tokens_ = 10)
     result = True if 'yes' in res.lower() else False
     return result
 

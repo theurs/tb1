@@ -332,7 +332,6 @@ def get_new_wikipedia_query(options: list, query: str) -> str:
         q += f'Option {n}: None of them\n'
 
         answer = my_groq.ai(q,
-                            model_ = 'gemma2-9b-it',
                             system = 'answer supershot, your answer should contain only number of option',
                             max_tokens_ = 10,
                             temperature = 0,

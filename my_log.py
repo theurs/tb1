@@ -142,16 +142,6 @@ def log_ddg(text: str) -> None:
     log2(text[:2000], 'ddg')
 
 
-def log_jamba(text: str) -> None:
-    """для логов jamba"""
-    log2(text[:2000], 'jamba')
-
-
-def log_shadowjourney(text: str) -> None:
-    """для логов shadowjourney"""
-    log2(text[:2000], 'shadowjourney')
-
-
 def log_keys(text: str) -> None:
     """для логов новых ключей"""
     log2(text, 'keys')
@@ -175,12 +165,6 @@ def log_glm(text: str) -> None:
 def log_sambanova(text: str) -> None:
     """для логов openrouter sambanova"""
     log2(text[:2000], 'sambanova')
-
-
-def log_gpt4omini(text: str) -> None:
-    """для логов gpt4omini"""
-    log2(text[:2000], 'gpt4omini')
-
 
 
 def log_groq(text: str) -> None:

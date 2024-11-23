@@ -97,7 +97,6 @@ def chat(query: str,
                                gemini-1.5-pro,
                                gemini-1.5-pro-latest,
                                gemini-pro
-                               gemma-2-27b-it
         system (str, optional): The system instruction to use for generating the response. Defaults to ''.
         max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 8000. Range: [10,8000]
         insert_mem: (list, optional): The history of the chat. Defaults to None.

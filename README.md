@@ -43,7 +43,7 @@
 
 /openrouter - выбрать openrouter.ai поставщик разнообразных платных ИИ (тут же поддерживается и bothub.chat)
 
-/gemma (gemma2 9b) /haiku /gpt (4o mini ddg) /llama (llama 3 70b) /flash (gemini1.5flash) /pro (gemini1.5pro) - обращение напрямую к этим моделям без изменения настроек
+/haiku /gpt (4o mini ddg) /llama (llama 3 70b) /flash (gemini1.5flash) /pro (gemini1.5pro) - обращение напрямую к этим моделям без изменения настроек
 
 ### Команды для администратора
 
@@ -193,8 +193,8 @@ bot_name = "Бот"
 default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
-# 'gemini', 'gemini15', 'gemini8', 'llama370', 'openrouter', 'gpt4o', 'gpt4omini', 'gemma2-9b', 'haiku',
-# 'gpt-4o-mini-ddg', 'openrouter_llama405', 'jamba', 'glm4plus'
+# 'gemini', 'gemini15', 'gemini8', 'llama370', 'openrouter', 'haiku',
+# 'gpt-4o-mini-ddg', 'openrouter_llama405', 'glm4plus'
 chat_mode_default = 'gemini15'
 img2_txt_model = 'gemini-1.5-flash' # gemini-1.5-flash-exp-0827, gemini-1.5-flash-latest, gemini-1.5-flash-pro, ...
 gemini_flash_model_fallback = 'gemini-1.5-flash-latest'
@@ -386,19 +386,9 @@ OPEN_ROUTER_FREE_KEYS = [
 # https://www.cryptocompare.com/
 # CRYPTOCOMPARE_KEY = 'xxx'
 
-# for gpt 4o mini
-# GPT4OMINI_URL = 'https://openrouter.ai/api/v1/chat/completions'
-# GPT4OMINI_KEY = 'xxx'
 
 # https://runware.ai/ (parse key from fastflux.ai)
 # RUNWARE_KEYS = ['xxx','yyy']
-
-
-# https://ai21.com/
-#JAMBA_KEYS = [
-#    'key1',
-#    'key2',
-#]
 
 
 # https://cloud.sambanova.ai/apis llama 8-405

@@ -201,8 +201,6 @@ def init(backup: bool = True):
             dialog_gemini BLOB,
             dialog_groq BLOB,
             dialog_openrouter BLOB,
-            dialog_shadow BLOB,
-            dialog_gpt4omini BLOB,
             dialog_glm BLOB
         """
 
@@ -240,8 +238,6 @@ def init(backup: bool = True):
         CUR.execute("""UPDATE users SET dialog_gemini = NULL,
                     dialog_groq = NULL,
                     dialog_openrouter = NULL,
-                    dialog_shadow = NULL,
-                    dialog_gpt4omini = NULL,
                     persistant_memory = NULL
                     WHERE last_time_access < ?
                     """, (time.time() - keep_messages_seconds,))

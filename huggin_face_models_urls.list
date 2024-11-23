@@ -57,6 +57,6 @@ https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-lar
 https://api-inference.huggingface.co/models/Shakker-Labs/SD3.5-LoRA-Linear-Red-Light
 
 https://api-inference.huggingface.co/models/shuttleai/shuttle-3-diffusion
-https://api-inference.huggingface.co/models/InstantX/SD3.5-Large-IP-Adapter
-https://api-inference.huggingface.co/models/aixonlab/flux.1-lumiere-alpha
+# https://api-inference.huggingface.co/models/InstantX/SD3.5-Large-IP-Adapter
+# https://api-inference.huggingface.co/models/aixonlab/flux.1-lumiere-alpha
 https://api-inference.huggingface.co/models/strangerzonehf/Flux-Super-Realism-LoRA

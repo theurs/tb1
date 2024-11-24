@@ -2394,7 +2394,7 @@ def handle_photo(message: telebot.types.Message):
             with ShowAction(message, 'typing'):
                 image = download_image_from_message(message)
                 query = tr('The user wants to find something on Google, but he sent a picture as a query. Try to understand what he wanted to find and write one sentence that should be used in Google to search to fillfull his intention. Write just one sentence and I will submit it to Google, no extra words please.', lang)
-                google_query = img2txt(image, lang, query)
+                google_query = img2txt(image, lang, chat_id_full, query)
             if google_query:
                 message.text = f'/google {google_query}'
                 bot_reply(message, tr('Googling:', lang) + f' {google_query}')

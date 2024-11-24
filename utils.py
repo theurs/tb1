@@ -8,6 +8,7 @@ import io
 import html
 import os
 import pathlib
+import pickle
 import pytz
 import random
 import re
@@ -19,7 +20,7 @@ import tempfile
 import threading
 import traceback
 import platform as platform_module
-from typing import Union
+from typing import Any, Union
 
 import json_repair
 import PIL
@@ -710,6 +711,28 @@ def download_image_as_bytes(url_or_urls):
         return None
 
 
+def fast_hash(data: Any) -> str:
+    """
+    Calculates the SHA256 hash of any Python data.
+
+    This function efficiently handles various data types, including bytes, strings, lists, dictionaries, etc.
+    For byte data, it directly calculates the hash. For other data types, it first serializes the data using pickle
+    and then calculates the hash.
+
+    Args:
+        data: The data to hash. Can be of any type.
+
+    Returns:
+        The hexadecimal representation of the SHA256 hash.
+    """
+    if isinstance(data, bytes):
+        hashed = hashlib.sha256(data).hexdigest()
+    else:
+        pickled_data = pickle.dumps(data)
+        hashed = hashlib.sha256(pickled_data).hexdigest()
+    return hashed
+
+
 def nice_hash(s: str, l: int = 12) -> str:
     """
     Generate a nice hash of the given string.
@@ -1326,7 +1349,9 @@ This is a clean and efficient way to create a reusable component that interacts 
 **Пояснения:**
 '''
 
-    print(bot_markdown_to_html(t3))
+    # print(bot_markdown_to_html(t3))
     # print(truncate_text(t3))
+
+    print(fast_hash(t3))
 
     pass

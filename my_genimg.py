@@ -224,7 +224,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
                 # resize small images, upscale
                 upscaled = upscale(response.content)
                 result.append(upscaled)
-                WHO_AUTOR[hash(upscaled)] = url.split('/')[-1]
+                WHO_AUTOR[utils.fast_hash(upscaled)] = url.split('/')[-1]
                 return result
 
             if 'is currently loading","estimated_time":' in str(resp_text) or \
@@ -348,7 +348,7 @@ def glm(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negati
             if images:
                 for image in images:
                     data = utils.download_image_as_bytes(image)
-                    WHO_AUTOR[hash(data)] = 'bigmodel.cn cogView-3-plus'
+                    WHO_AUTOR[utils.fast_hash(data)] = 'bigmodel.cn cogView-3-plus'
                     results.append(data)
                 return results
 
@@ -422,7 +422,7 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, 
             results = []
             for image in images:
                 data = base64.b64decode(image)
-                WHO_AUTOR[hash(data)] = 'fusionbrain.ai'
+                WHO_AUTOR[utils.fast_hash(data)] = 'fusionbrain.ai'
                 results.append(data)
             return results
         else:

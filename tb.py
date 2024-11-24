@@ -4143,12 +4143,12 @@ def image_gen(message: telebot.types.Message):
                                 caption_ = f'{bot_addr} bing.com\n\n' + caption_
                                 my_db.add_msg(chat_id_full, 'img ' + 'bing.com')
                             elif isinstance(i, bytes):
-                                if hash(i) in my_genimg.WHO_AUTOR:
+                                if utils.fast_hash(i) in my_genimg.WHO_AUTOR:
                                     nn_ = '\n\n'
-                                    author = my_genimg.WHO_AUTOR[hash(i)]
+                                    author = my_genimg.WHO_AUTOR[utils.fast_hash(i)]
                                     caption_ = f"{bot_addr} {author}{nn_}{caption_}"
                                     my_db.add_msg(chat_id_full, 'img ' + author)
-                                    del my_genimg.WHO_AUTOR[hash(i)]
+                                    del my_genimg.WHO_AUTOR[utils.fast_hash(i)]
                                 else:
                                     caption_ = f'{bot_addr} error'
                                 d = i

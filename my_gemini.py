@@ -144,9 +144,9 @@ def chat(query: str,
 
         random.shuffle(keys)
         keys = keys[:4]
-        badkeys = ['3166979107466835308', '-5957742548924824986']
+        badkeys = ['b3470eb3b2055346b76f2ce3b11aadf2f6fdccf5703ad853b4a5b0cf46f1cf16',]
         for key in keys[:]:
-            if hash(key) in badkeys:
+            if utils.fast_hash(key) in badkeys:
                 keys.remove(key)
                 remove_key(key)
 
@@ -866,9 +866,9 @@ def imagen(prompt: str = "Fuzzy bunnies in my kitchen"):
     keys = cfg.gemini_keys[:] + ALL_KEYS
     random.shuffle(keys)
     keys = keys[:4]
-    badkeys = ['3166979107466835308',]
+    badkeys = ['b3470eb3b2055346b76f2ce3b11aadf2f6fdccf5703ad853b4a5b0cf46f1cf16',]
     for key in keys[:]:
-        if hash(key) in badkeys:
+        if utils.fast_hash(key) in badkeys:
             keys.remove(key)
 
     for key in keys:

@@ -8,6 +8,7 @@ from sqlitedict import SqliteDict
 from telegraph import Telegraph
 
 import my_log
+import utils
 
 
 # {userid: token,}
@@ -29,7 +30,7 @@ def post(text: str, user_id: str) -> str:
                 return None
 
         response = telegraph.create_page(
-            f'kun4sun_bot - {str(hash(user_id))[:-8]}',
+            f'kun4sun_bot - {str(utils.fast_hash(user_id))[:-8]}',
             html_content=text,
         )
         return response['url']

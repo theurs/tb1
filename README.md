@@ -135,7 +135,7 @@
     sudo apt install tesseract-ocr tesseract-ocr-eng \
     tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd
     ```
-4. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin enchant-2 ffmpeg pandoc python3-venv sox`
+4. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin enchant-2 ffmpeg pandoc python3-venv sox zbar-tools`
    yt-dlp надо установить отдельно, т.к. в репах нет актуальной свежей версии, а она нужна для скачивания тиктоков и музыки с ютуба. Если надо то сохранить куки в файл yt_cookies.txt.
 
 5. Клонируйте репозиторий с помощью команды:

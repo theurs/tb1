@@ -19,8 +19,11 @@ import utils
 def download_ogg(url: str) -> str:
     '''Downloads audio from a youtube URL, saves it to a temporary file in OGG format, and returns the path to the OGG file.'''
     tmp_file = utils.get_tmp_fname()
-    subprocess.run(['yt-dlp', '-x', '--audio-format', 'vorbis', '-o', tmp_file, url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    # subprocess.run(['yt-dlp', '-x', '--audio-format', 'vorbis', '-o', tmp_file, url])
+    # if yt_cookies.txt file exists, use it
+    if os.path.exists('yt_cookies.txt'):
+        subprocess.run(['yt-dlp', '--cookies', 'yt_cookies.txt', '-x', '--audio-format', 'vorbis', '-o', tmp_file, url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        subprocess.run(['yt-dlp', '-x', '--audio-format', 'vorbis', '-o', tmp_file, url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return tmp_file + '.ogg'
 
 
@@ -140,14 +143,26 @@ def download_audio(url: str) -> str | None:
     output_template = os.path.join(tmp_dir, r"123.%(ext)s")
 
     try:
-        subprocess.run([
-            'yt-dlp',
-            '-f', 'bestaudio[abr<=128]/bestaudio',
-            '-o', output_template,
-            # '--noplaylist',
-            # '--quiet',
-            url
-        ], check=True)
+        if os.path.exists('yt_cookies.txt'):
+            subprocess.run([
+                'yt-dlp',
+                '--cookies',
+                'yt_cookies.txt',
+                '-f', 'bestaudio[abr<=128]/bestaudio',
+                '-o', output_template,
+                # '--noplaylist',
+                # '--quiet',
+                url
+            ], check=True)
+        else:
+            subprocess.run([
+                'yt-dlp',
+                '-f', 'bestaudio[abr<=128]/bestaudio',
+                '-o', output_template,
+                # '--noplaylist',
+                # '--quiet',
+                url
+            ], check=True)
     except  subprocess.CalledProcessError:
         return None
 

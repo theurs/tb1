@@ -48,7 +48,10 @@ def get_subs_from_rutube(url: str) -> str:
     tmpname = utils.get_tmp_fname()
     result = ''
     try:
-        cmd = f'yt-dlp -x -S "+size,+br" "{url}" -o {tmpname}'
+        if os.path.exists('yt_cookies.txt'):
+            cmd = f'yt-dlp --cookies yt_cookies.txt -x -S "+size,+br" "{url}" -o {tmpname}'
+        else:
+            cmd = f'yt-dlp -x -S "+size,+br" "{url}" -o {tmpname}'
         try:
             output = subprocess.check_output(cmd, shell=True, timeout=3000, stderr = subprocess.STDOUT)
         except subprocess.CalledProcessError as error:
@@ -82,7 +85,10 @@ def get_subs_from_dzen_video(url: str) -> str:
     '''Downloads subtitles from dzen video url, converts them to text and returns the text. 
     Returns None if no subtitles found.'''
     list_of_subs = []
-    cmd = f'yt-dlp -q --skip-download --list-subs "{url}"'
+    if os.path.exists('yt_cookies.txt'):
+        cmd = f'yt-dlp --cookies yt_cookies.txt -q --skip-download --list-subs "{url}"'
+    else:
+        cmd = f'yt-dlp -q --skip-download --list-subs "{url}"'
     try:
         output = subprocess.check_output(cmd, shell=True, timeout=300, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as error:
@@ -100,7 +106,10 @@ def get_subs_from_dzen_video(url: str) -> str:
 
     if list_of_subs:
         tmpname = utils.get_tmp_fname()
-        cmd = f'yt-dlp -q --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}" "{url}" -o "{tmpname}"'
+        if os.path.exists('yt_cookies.txt'):
+            cmd = f'yt-dlp --cookies yt_cookies.txt --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}" "{url}" -o "{tmpname}"'
+        else:
+            cmd = f'yt-dlp -q --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}" "{url}" -o "{tmpname}"'
         subprocess.call(cmd, shell=True)
         ext = f'.{list_of_subs[0][0]}.{list_of_subs[0][1].split(",")[0]}'
         ext = ext.replace(' ', '')

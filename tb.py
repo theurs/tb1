@@ -50,6 +50,7 @@ import my_sambanova
 import my_stat
 import my_stt
 import my_sum
+import my_qrcode
 import my_trans
 import my_transcribe
 import my_tts
@@ -1171,12 +1172,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2_2 = telebot.types.InlineKeyboardButton(tr("Translate all text from image", lang), callback_data='image_prompt_text_tr')
         button3 = telebot.types.InlineKeyboardButton(tr("Create image generation prompt", lang), callback_data='image_prompt_generate')
         button4 = telebot.types.InlineKeyboardButton(tr("Solve the problem shown in the image", lang), callback_data='image_prompt_solve')
+        button4_2 = telebot.types.InlineKeyboardButton(tr("Read QRCODE", lang), callback_data='image_prompt_qrcode')
         button6 = telebot.types.InlineKeyboardButton(tr("Cancel", lang), callback_data='erase_answer')
         if chat_id_full in UNCAPTIONED_PROMPTS:
             button5 = telebot.types.InlineKeyboardButton(tr("Repeat my last request", lang), callback_data='image_prompt_repeat_last')
-            markup.add(button1, button2, button2_2, button3, button4, button5, button6)
+            markup.add(button1, button2, button2_2, button3, button4, button4_2, button5, button6)
         else:
-            markup.add(button1, button2, button2_2, button3, button4, button6)
+            markup.add(button1, button2, button2_2, button3, button4, button4_2, button6)
         return markup
 
     elif kbd == 'download_saved_text':
@@ -1505,6 +1507,17 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_SOLVE, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_pro_model, temp = 0.1)
+
+        elif call.data == 'image_prompt_qrcode':
+            COMMAND_MODE[chat_id_full] = ''
+            if chat_id_full in UNCAPTIONED_IMAGES:
+                img = UNCAPTIONED_IMAGES[chat_id_full][1]
+                text = my_qrcode.get_text(img)
+                if text:
+                    bot_reply(message, text)
+                    add_to_bots_mem(tr('user asked to get the text from an qrcode image', lang), text, chat_id_full)
+                    return
+            bot_reply_tr(message, 'No image found or text not found')
 
         elif call.data == 'image_prompt_repeat_last':
             COMMAND_MODE[chat_id_full] = ''
@@ -1892,6 +1905,33 @@ def handle_voice(message: telebot.types.Message):
                         echo_all(message)
 
 
+def image_info(image_bytes: bytes, lang: str = "ru") -> str:
+    """Extracts information from an image and formats it as a string.
+
+    Args:
+        image_bytes: The image data as bytes.
+        lang: The language code for output labels. Defaults to 'ru'.
+
+    Returns:
+        A string containing image information. If an error occurs during 
+        processing, returns an error message.
+    """
+    try:
+        image = PIL.Image.open(io.BytesIO(image_bytes))
+
+        # Translate labels using the provided language.
+        size_label = tr("Size", lang)
+
+        info_str = ''
+        info_str += f"{size_label}: {image.width}x{image.height}\n"
+
+        return info_str.strip()
+
+    except Exception as e:
+        error_message = tr("Error", lang)
+        return f"{error_message}: {e}"
+
+
 def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Message):
     '''The user sent an image without a caption.  Ask the user what to do with it,
     save the image, and display a keyboard with options.
@@ -1937,33 +1977,6 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
     bot_reply(message, msg, parse_mode = 'HTML', disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
 
 
-def image_info(image_bytes: bytes, lang: str = "ru") -> str:
-    """Extracts information from an image and formats it as a string.
-
-    Args:
-        image_bytes: The image data as bytes.
-        lang: The language code for output labels. Defaults to 'ru'.
-
-    Returns:
-        A string containing image information. If an error occurs during 
-        processing, returns an error message.
-    """
-    try:
-        image = PIL.Image.open(io.BytesIO(image_bytes))
-
-        # Translate labels using the provided language.
-        size_label = tr("Size", lang)
-
-        info_str = ''
-        info_str += f"{size_label}: {image.width}x{image.height}\n"
-
-        return info_str.strip()
-
-    except Exception as e:
-        error_message = tr("Error", lang)
-        return f"{error_message}: {e}"
-
-
 def process_image_stage_2(image_prompt: str,
                           chat_id_full: str,
                           lang: str,
@@ -1987,6 +2000,7 @@ def process_image_stage_2(image_prompt: str,
             tr(my_init.PROMPT_COPY_TEXT_TR, lang),
             tr(my_init.PROMPT_REPROMPT, lang),
             tr(my_init.PROMPT_SOLVE, lang),
+            tr(my_init.PROMPT_QRCODE, lang),
         )
 
         # Save the user's prompt if it's not one of the default prompts.

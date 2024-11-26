@@ -1176,9 +1176,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button6 = telebot.types.InlineKeyboardButton(tr("Cancel", lang), callback_data='erase_answer')
         if chat_id_full in UNCAPTIONED_PROMPTS:
             button5 = telebot.types.InlineKeyboardButton(tr("Repeat my last request", lang), callback_data='image_prompt_repeat_last')
-            markup.add(button1, button2, button2_2, button3, button4, button4_2, button5, button6)
+            if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
+                markup.add(button1, button2, button2_2, button3, button4, button4_2, button5, button6)
+            else:
+                markup.add(button1, button2, button2_2, button3, button4, button5, button6)
         else:
-            markup.add(button1, button2, button2_2, button3, button4, button4_2, button6)
+            if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
+                markup.add(button1, button2, button2_2, button3, button4, button4_2, button6)
+            else:
+                markup.add(button1, button2, button2_2, button3, button4, button6)
         return markup
 
     elif kbd == 'download_saved_text':

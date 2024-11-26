@@ -43,7 +43,7 @@ distro==1.9.0
 dnspython==2.6.1
 docstring-inheritance==2.1.2
 duckduckgo_search==6.2.6
-edge-tts==6.1.9
+edge-tts==6.1.15
 email_validator==2.2.0
 et-xmlfile==1.1.0
 exceptiongroup==1.2.0
@@ -72,7 +72,7 @@ google-auth==2.29.0
 google-auth-httplib2==0.2.0
 google-generativeai==0.8.2
 googleapis-common-protos==1.63.0
-gradio_client==0.14.0
+gradio_client==1.4.0
 greenlet==3.0.3
 groq==0.11.0
 grpcio==1.64.0
@@ -144,6 +144,7 @@ plumbum==1.8.3
 ply==3.11
 prettytable==3.9.0
 primp==0.5.5
+prodiapy==5.1.6
 prompt-toolkit==3.0.43
 proto-plus==1.23.0
 protobuf==4.25.3
@@ -159,6 +160,7 @@ pydantic_core==2.16.2
 pydub==0.25.1
 pyenchant==3.2.2
 Pygments==2.17.2
+PyJWT==2.8.0
 pylatexenc==2.10
 PyMuPDF==1.24.5
 PyMuPDFb==1.24.3
@@ -243,4 +245,6 @@ yandex-speech==0.4
 yarl==1.9.4
 youtube-search==2.1.2
 youtube-transcript-api==0.6.2
+zenlogger==0.0.2
+zhipuai==2.1.5.20230904
 zipp==3.19.2

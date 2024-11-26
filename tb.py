@@ -461,8 +461,17 @@ def img2txt(text, lang: str,
 
         text = ''
 
+        # попробовать с помощью openrouter
+        # кто по умолчанию отвечает
+        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+        chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+        if chat_mode == 'openrouter':
+            text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
+
         # сначала попробовать с помощью джемини
-        text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
+        if not text:
+            text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
         if not text and model == cfg.gemini_pro_model:
             text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full)
         elif not text and model == cfg.gemini_flash_model:

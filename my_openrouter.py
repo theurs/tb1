@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import base64
 import json
 import requests
 import time
@@ -531,6 +532,136 @@ def format_models_for_telegram(models: List[str]) -> str:
         output += "\n".join([f"- `{model}`" for model in sorted_models]) + "\n\n"
 
     return output
+
+
+def img2txt(
+    image_data: bytes,
+    prompt: str = 'Describe picture',
+    model = '',
+    temperature: float = 1,
+    max_tokens: int = 4000,
+    timeout: int = 120,
+    chat_id: str = '',
+    ) -> str:
+    """
+    Describes an image using the specified model and parameters.
+
+    Args:
+        image_data: The image data as bytes.
+        prompt: The prompt to guide the description. Defaults to 'Describe picture'.
+        model: The model to use for generating the description.
+        temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
+        max_tokens: The maximum number of tokens to generate. Defaults to 4000.
+        timeout: The timeout for the request in seconds. Defaults to 120.
+
+    Returns:
+        A string containing the description of the image, or an empty string if an error occurs.
+    """
+    
+    key = KEYS[chat_id]
+
+
+    if chat_id not in PARAMS:
+        PARAMS[chat_id] = PARAMS_DEFAULT
+
+    model_, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[chat_id]
+
+    if 'llama' in model_ and temperature > 0:
+        temperature = temperature / 2
+
+    URL = my_db.get_user_property(chat_id, 'base_api_url') or BASE_URL
+
+    img_b64_str = base64.b64encode(image_data).decode('utf-8')
+    img_type = 'image/png'
+
+    mem = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{img_type};base64,{img_b64_str}"},
+                },
+            ],
+        }
+    ]
+
+    if not 'openrouter' in URL:
+        try:
+            client = OpenAI(
+                api_key = key,
+                base_url = URL,
+                )
+            response = client.chat.completions.create(
+                messages = mem,
+                model = model_,
+                max_tokens = max_tokens,
+                temperature = temperature,
+                timeout = timeout,
+                )
+        except Exception as error_other:
+            my_log.log_openrouter(f'ai: {error_other}')
+            return ''
+    else:
+        if not URL.endswith('/chat/completions'):
+            URL += '/chat/completions'
+        response = requests.post(
+            url = URL,
+            headers={
+                "Authorization": f"Bearer {key}",
+
+            },
+            data=json.dumps({
+                "model": model_, # Optional
+                "messages": mem,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            }),
+            timeout = timeout,
+        )
+    if not 'openrouter' in URL:
+        try:
+            text = response.choices[0].message.content
+            try:
+                in_t = response.usage.prompt_tokens
+                out_t = response.usage.completion_tokens
+            except:
+                in_t = 0
+                out_t = 0
+            PRICE[chat_id] = (in_t, out_t)
+        except TypeError:
+            try:
+                text = str(response.model_extra) or ''
+            except:
+                text = 'UNKNOWN ERROR'
+        return text
+    else:
+        status = response.status_code
+        response_str = response.content.decode('utf-8').strip()
+        try:
+            response_data = json.loads(response_str)  # Преобразуем строку JSON в словарь Python
+            try:
+                in_t = response_data['usage']['prompt_tokens']
+                out_t = response_data['usage']['completion_tokens']
+            except:
+                in_t = 0
+                out_t = 0
+            PRICE[chat_id] = (in_t, out_t)
+        except (KeyError, json.JSONDecodeError) as error_ct:
+
+            my_log.log_openrouter(f'ai:count tokens: {error_ct}')
+
+        if status == 200:
+            try:
+                text = response.json()['choices'][0]['message']['content'].strip()
+            except Exception as error:
+                my_log.log_openrouter(f'img2txt:Failed to parse response: {error}\n\n{str(response)}')
+                text = ''
+        else:
+            text = ''
+
+        return text
 
 
 if __name__ == '__main__':

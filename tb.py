@@ -4122,8 +4122,11 @@ def image_gen(message: telebot.types.Message):
                 prompt = message.text.split(maxsplit = 1)
 
                 if len(prompt) > 1:
-                    prompt = prompt[1]
+                    prompt = prompt[1].strip()
                     COMMAND_MODE[chat_id_full] = ''
+
+                    if prompt == tr('Продолжай', lang):
+                        return
 
                     # get chat history for content
                     conversation_history = ''
@@ -5954,6 +5957,11 @@ def do_task(message, custom_prompt: str = ''):
 
 
                 def command_in_answer(answer: str, message: telebot.types.Message) -> bool:
+                    try:
+                        answer = utils.html.unescape(answer)
+                    except Exception as error:
+                        my_log.log2(f'tb:command_in_answer: {error}\n{answer}')
+
                     if answer.startswith('```'):
                         answer = answer[3:]
                     if answer.startswith(('/img ','/tts ','/google ','/trans ', '/sum ', '/reset')):
@@ -5972,7 +5980,14 @@ def do_task(message, custom_prompt: str = ''):
                         elif cmd == '/reset':
                             reset_(message)
                         return True
+
+                    if answer.startswith(('{"was_translated": "true"', '{&quot;was_translated&quot;: &quot;true&quot;,')):
+                        message.text = f'/img {message.text}'
+                        image_gen(message)
+                        return True
+
                     return False
+
 
                 # если активирован режим общения с Gemini
                 if chat_mode_.startswith('gemini'):

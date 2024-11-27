@@ -45,7 +45,7 @@ SAFETY_SETTINGS = {
 }
 
 # таймаут в запросе к джемини
-TIMEOUT = 180
+TIMEOUT = 120
 
 LOCKS = {}
 CHATS = {}

@@ -472,6 +472,8 @@ def img2txt(text, lang: str,
             text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
         elif chat_mode == 'gemini-learn':
             text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full)
+        elif chat_mode == 'gemini':
+            text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
 
         # сначала попробовать с помощью джемини
         if not text:

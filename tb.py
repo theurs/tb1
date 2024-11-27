@@ -6210,7 +6210,6 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
 
-
                 # если активирован режим общения с llama 405b
                 if chat_mode_ == 'openrouter_llama405':
                     if len(msg) > my_sambanova.MAX_REQUEST:
@@ -6252,7 +6251,6 @@ def do_task(message, custom_prompt: str = ''):
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:openrouter_llama405 {error3}\n{error_traceback}')
                         return
-
 
 
                 # если активирован режим общения с glm4plus

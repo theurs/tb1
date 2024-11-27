@@ -149,6 +149,7 @@ def ai(prompt: str = '',
     for _ in range(3):
         try:
             client = ZhipuAI(api_key=random.choice(cfg.GLM4_KEYS))
+            response = ''
             response = client.chat.completions.create(
                 model = model, # glm-4-flash (free?), glm-4-plus, glm-4, glm-4v-plus
                 messages = mem_,

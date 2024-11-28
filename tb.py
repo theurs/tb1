@@ -395,6 +395,10 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         resp: The bot's response.
         chat_id_full: The full chat ID.
     """
+    query = query.strip()
+    resp = resp.strip()
+    if not query or not resp:
+        return
     # Checks if there is a chat mode for the given chat, if not, sets the default value.
     if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)

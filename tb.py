@@ -1700,7 +1700,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
         elif call.data == 'select_gemini-learn':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_learn_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
         elif call.data == 'select_gemini15_pro':
             have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\

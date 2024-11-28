@@ -4009,7 +4009,7 @@ def huggingface_image_gen(message: telebot.types.Message):
                                 my_log.log2(f'tb:huggingface_image_gen:send to pics_group: {error2}')
                         update_user_image_counter(chat_id_full, len(medias))
                         add_to_bots_mem(f'{tr("User used /hf command to generate images", lang)} "{prompt}"',
-                                        f'{tr("Images was generated successfully", lang)}',
+                                        f'/hf {model} {prompt}',
                                         chat_id_full)
                     else:
                         bot_reply_tr(message, tr("Image generation failed.", lang))
@@ -4236,7 +4236,7 @@ def image_gen(message: telebot.types.Message):
                                         my_log.log2(f'tb:image:send to pics_group: {error2}')
 
                                 add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
-                                                    f'{tr("images was generated successfully", lang)}',
+                                                    f'/img {prompt}',
                                                     chat_id_full)
                                 have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
                                             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
@@ -6045,11 +6045,7 @@ def do_task(message, custom_prompt: str = ''):
                             # передаем эстафету следующему претенденту (ламе)
                             if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):
                                 answer = ''
-                            if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
-                                my_gemini.undo(chat_id_full)
-                                message.text = f'/image {message.text}'
-                                image_gen(message)
-                                return
+
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = gmodel
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
@@ -6062,11 +6058,6 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, temperature=0.6)
                                 else:
                                     answer = my_groq.ai(message.text, mem_ = mem__, temperature=0.6)
-                                if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
-                                    my_groq.undo(chat_id_full)
-                                    message.text = f'/image {message.text}'
-                                    image_gen(message)
-                                    return
                                 my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)
                                 flag_gpt_help = True
                                 if not answer:
@@ -6120,11 +6111,6 @@ def do_task(message, custom_prompt: str = ''):
                                 model = my_groq.DEFAULT_MODEL,
                             #   model = 'llama-3.2-90b-vision-preview',
                                 )
-                            if fuzz.ratio(answer, tr("images was generated successfully", lang)) > 80:
-                                my_groq.undo(chat_id_full)
-                                message.text = f'/image {message.text}'
-                                image_gen(message)
-                                return
 
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = 'groq-llama390'

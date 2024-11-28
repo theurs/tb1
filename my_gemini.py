@@ -77,7 +77,8 @@ def chat(query: str,
          insert_mem = None,
          key__: str = '',
          use_skills: bool = False,
-         json_output: bool = False) -> str:
+         json_output: bool = False,
+         do_not_update_history=False) -> str:
     '''Chat with AI model.
     Args:
         query (str): The query to be used for generating the response.
@@ -241,7 +242,7 @@ def chat(query: str,
                 if 'print(default_api.' in result[:100]:
                     return ''
                 my_db.add_msg(chat_id, model)
-                if chat_id:
+                if chat_id and do_not_update_history is False:
                     mem = chat.history[-MAX_CHAT_LINES*2:]
                     while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
                         mem = mem[2:]
@@ -835,7 +836,8 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
                   temperature=1.5,
                   json_output=True,
                   model=cfg.gemini_flash_model,
-                  chat_id=chat_id
+                  chat_id=chat_id,
+                  do_not_update_history=True
                   )
     result_dict = utils.string_to_dict(result)
     if result_dict:

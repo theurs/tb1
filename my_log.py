@@ -115,6 +115,11 @@ def log_reprompts(text: str) -> None:
     log2(text, 'reprompts')
 
 
+def log_reports(text: str) -> None:
+    """для логов сообщений от юзеров к админу"""
+    log2(text, 'reports')
+
+
 def log_layout_switcher(orig: str, translated: str):
     """для логов автоисправления раскладки"""
     t = orig + '\n->\n' + translated

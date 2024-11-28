@@ -1417,11 +1417,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
         button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
         button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
-        button8 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚗', callback_data='select_glm4plus')
+        # button8 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚗', callback_data='select_glm4plus')
         button9 = telebot.types.InlineKeyboardButton('Gemini exp 1121 🚀', callback_data='select_gemini-exp')
         button10 = telebot.types.InlineKeyboardButton('Gemini LearnLM 1.5 Pro Experimental 🚀', callback_data='select_gemini-learn')
         markup.row(button1, button2)
-        markup.row(button4, button8)
+        markup.row(button4)
         markup.row(button5, button6)
         if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
             markup.row(button7, button9)
@@ -4239,8 +4239,13 @@ def image_gen(message: telebot.types.Message):
                                     except Exception as error2:
                                         my_log.log2(f'tb:image:send to pics_group: {error2}')
 
-                                add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
-                                                    f'/img {prompt}',
+                                if BING_FLAG:
+                                    IMG = '/bing'
+                                else:
+                                    IMG = '/img'
+                                MSG = tr(f"user used {IMG} command to generate", lang)
+                                add_to_bots_mem(f'{MSG} {prompt}',
+                                                    f'{IMG} {prompt}',
                                                     chat_id_full)
                                 have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
                                             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
@@ -4255,7 +4260,12 @@ def image_gen(message: telebot.types.Message):
                             bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
 
                             my_log.log_echo(message, '[image gen error] ')
-                            add_to_bots_mem(f'{tr("user used /img command to generate", lang)} "{prompt}"',
+                            if BING_FLAG:
+                                IMG = '/bing'
+                            else:
+                                IMG = '/img'
+                            MSG = tr(f"user used {IMG} command to generate", lang)
+                            add_to_bots_mem(f'{MSG} {prompt}',
                                                     f'{tr("bot did not want or could not draw this", lang)}',
                                                     chat_id_full)
 
@@ -5101,6 +5111,7 @@ def report_cmd_handler(message: telebot.types.Message):
             args = ''
         if args:
             msg = f'[Report from user {message.from_user.id}] {args}'
+            my_log.log_reports(msg)
             bot.send_message(cfg.admins[0], msg, disable_notification=True)
             bot_reply_tr(message, 'Message sent.')
         else:
@@ -5906,7 +5917,7 @@ def do_task(message, custom_prompt: str = ''):
                 hidden_text = (
                     f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
                     f'you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, '
-                    f'user have telegram commands (/img - image generator, /tts - text to speech, /reset - clear chat context, '
+                    f'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /reset - clear chat context, '
                     f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
@@ -5919,7 +5930,7 @@ def do_task(message, custom_prompt: str = ''):
                 hidden_text = (
                     f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
                     f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, '
-                    f'user have telegram commands (/img - image generator, /tts - text to speech, /reset - clear chat context, '
+                    f'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /reset - clear chat context, '
                     f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '

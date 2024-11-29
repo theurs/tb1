@@ -287,6 +287,8 @@ def img2txt(
     Returns:
         A string containing the description of the image, or an empty string if an error occurs.
     """
+    if not hasattr(cfg, 'GLM4_KEYS') or len(cfg.GLM4_KEYS) < 1:
+        return ''
 
     if isinstance(image_data, str):
         with open(image_data, 'rb') as f:
@@ -349,6 +351,8 @@ def txt2img(prompt: str, amount: int = 1, model: str = DEFAULT_PIC_MODEL, user_i
         A list of image URLs, or an empty list if an error occurred.
     """
     try:
+        if not hasattr(cfg, 'GLM4_KEYS') or len(cfg.GLM4_KEYS) < 1:
+            return []
         client = ZhipuAI(api_key=random.choice(cfg.GLM4_KEYS))  # Initialize ZhipuAI client with a randomly selected API key.
 
         response = client.images.generations(

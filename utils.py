@@ -324,6 +324,7 @@ def bot_markdown_to_html(text: str) -> str:
     matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
     for match in matches:
         new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
+        new_match = html.escape(new_match)
         text = text.replace(f'$${match}$$', new_match)
         text = text.replace(f'${match}$', new_match)
         text = text.replace(f'\[{match}\]', new_match)

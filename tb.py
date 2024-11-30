@@ -11,6 +11,7 @@ import os
 import pickle
 import re
 import subprocess
+import sys
 import tempfile
 import traceback
 import threading
@@ -2293,6 +2294,10 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
             fp = io.BytesIO(file)
             image = fp.read()
 
+        h,w = utils.get_image_size(image)
+        if w > 5000 or w > 5000:
+            my_log.log2(f'tb:download_image_from_message: too big image {h}x{w}')
+            return b''
         return utils.heic2jpg(image)
     except Exception as error:
         traceback_error = traceback.format_exc()
@@ -2379,7 +2384,15 @@ def handle_photo(message: telebot.types.Message):
             if len(MESSAGES) > 1:
                 with ShowAction(message, 'typing'):
                     images = [download_image_from_message(msg) for msg in MESSAGES]
-                    result_image_as_bytes = utils.make_collage(images)
+                    if sys.getsizeof(images) > 10 * 1024 *1024:
+                        bot_reply_tr(message, 'Too big files.')
+                        return
+                    try:
+                        result_image_as_bytes = utils.make_collage(images)
+                    except Exception as make_collage_error:
+                        my_log.log2(f'tb:handle_photo: {make_collage_error}')
+                        bot_reply_tr(message, 'Too big files.')
+                        return
                     if len(result_image_as_bytes) > 10 * 1024 *1024:
                         result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
                     try:

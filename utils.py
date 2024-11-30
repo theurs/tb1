@@ -333,7 +333,8 @@ def bot_markdown_to_html(text: str) -> str:
         # Здесь должна быть реализация преобразования LaTeX в текст
         # В данном примере просто возвращаем формулу без изменений
         r = LatexNodes2Text().latex_to_text(latex_formula).strip()
-        return r
+        rr = html.escape(r)
+        return rr
 
     def replace_function_lt1(match):
         latex_code = match.group(2) if match.group(2) is not None else match.group(3) if match.group(3) is not None else match.group(4)
@@ -353,10 +354,6 @@ def bot_markdown_to_html(text: str) -> str:
     text = text.replace('&#x27;', "'")
     text = text.replace('   #x27;', "'")
     text = text.replace('#x27;', "'")
-
-    # снова экранируем хтмл символы, после конвертера маркдауна могут появится символы <> например
-    # делаем это до возвращения блоков кода
-    text = html.escape(text)
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:

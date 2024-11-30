@@ -226,8 +226,9 @@ def log_parser_error2(text: str) -> None:
     if not os.path.exists('parser_errors'):
         os.makedirs('parser_errors')
 
-    with open(f'parser_errors/{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.txt', 'w') as f:
-        f.write(text)
+    if text.strip():
+        with open(f'parser_errors/{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.txt', 'w') as f:
+            f.write(text)
 
 
 def log_translate(text: str) -> None:

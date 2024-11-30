@@ -354,6 +354,10 @@ def bot_markdown_to_html(text: str) -> str:
     text = text.replace('   #x27;', "'")
     text = text.replace('#x27;', "'")
 
+    # снова экранируем хтмл символы, после конвертера маркдауна могут появится символы <> например
+    # делаем это до возвращения блоков кода
+    text = html.escape(text)
+
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
         # new_match = html.escape(match)

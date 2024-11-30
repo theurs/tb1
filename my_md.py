@@ -97,6 +97,10 @@ This is `inline code`
     # export Markdown to Telegram MarkdownV2 style.
 
 
+def md2mdv2(markdown_text: str) -> str:
+    return telegramify_markdown.markdownify(markdown_text)
+
+
 if __name__ == '__main__':
     pass
     test1()

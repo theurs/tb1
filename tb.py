@@ -5578,6 +5578,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                     if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
                         error_traceback = traceback.format_exc()
                         my_log.log_parser_error(f'{str(error)}\n\n{error_traceback}\n\n{DEBUG_MD_TO_HTML.get(resp, "")}\n=====================================================\n{resp}')
+                        my_log.log_parser_error2(DEBUG_MD_TO_HTML.get(resp, ""))
                     else:
                         my_log.log2(f'tb:reply_to_long_message: {error}')
                         my_log.log2(chunk)

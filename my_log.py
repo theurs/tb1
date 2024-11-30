@@ -217,6 +217,19 @@ def log_parser_error(text: str) -> None:
     log2(text, 'parser_error')
 
 
+def log_parser_error2(text: str) -> None:
+    """для дебага ошибок md->html конвертера,
+    сохраняем отдельно файлы для удобства последующей проверки
+    сохраним только тексты которые не прошли через фильтр телеграма
+    """
+    # check path ./parser_errors exists
+    if not os.path.exists('parser_errors'):
+        os.makedirs('parser_errors')
+
+    with open(f'parser_errors/{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.txt', 'w') as f:
+        f.write(text)
+
+
 def log_translate(text: str) -> None:
     """для дебага ошибок автоперевода с помощью ai"""
     log2(text, 'translate')
@@ -478,9 +491,11 @@ if __name__ == '__main__':
     pass
 
     # Пример использования функции:
-    example_text = "Пример текста на русском, а также китайский: 中文 以及 日本語。"
-    example_text += 'مرحبا بالعالم! 🌍'
-    example_text += 'ሰላም አለም! 🪐🎉🎊✨🎈'
-    transliterated_text = transliterate(example_text)
-    print(transliterated_text)
+    # example_text = "Пример текста на русском, а также китайский: 中文 以及 日本語。"
+    # example_text += 'مرحبا بالعالم! 🌍'
+    # example_text += 'ሰላም አለም! 🪐🎉🎊✨🎈'
+    # transliterated_text = transliterate(example_text)
+    # print(transliterated_text)
+ 
+    log_parser_error2('test')
  

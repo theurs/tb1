@@ -293,9 +293,33 @@ def bot_markdown_to_html(text: str) -> str:
     # заменить двойные и тройные пробелы в тексте (только те что между буквами и знаками препинания)
     text = re.sub(r"(?<=\S) {2,}(?=\S)", " ", text)
 
-    # 2 * в <b></b>
-    text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
+
+
+    # First handle _*text*_ pattern (italic-bold combined)
+    text = re.sub(r"(?<!\w)_\*([^\n\s].*?[^\n\s])\*_(?!\w)", r"<i><b>\1</b></i>", text)
+
+    # Handle **_text_** pattern (bold-italic combined)
+    text = re.sub(r"\*\*_(.+?)_\*\*", r"<b><i>\1</i></b>", text)
+
+    # Handle _**text**_ pattern (italic-bold combined)
+    text = re.sub(r"_\*\*(.+?)\*\*_", r"<i><b>\1</b></i>", text)
+
+    # Handle *_text_* pattern (bold-italic combined)
+    text = re.sub(r"\*_(.+?)_\*", r"<i><b>\1</b></i>", text)
+
+    # Handle standalone bold (**text**)
+    text = re.sub(r'\*\*([^*]+?)\*\*', r'<b>\1</b>', text)
     text = re.sub(r'^\*\*(.*?)\*\*$', r'<b>\1</b>', text, flags=re.MULTILINE | re.DOTALL)
+
+    # Handle standalone italics (_text_ or *text*)
+    text = re.sub(r"(?<!\w)_([^\n\s_*][^\n*_]*[^\n\s_*])_(?!\w)", r"<i>\1</i>", text)
+    text = re.sub(r"(?<!\w)\*(?!\s)([^\n*]+?)(?<!\s)\*(?!\w)", r"<i>\1</i>", text)
+
+
+
+    # # 2 * в <b></b>
+    # text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
+    # text = re.sub(r'^\*\*(.*?)\*\*$', r'<b>\1</b>', text, flags=re.MULTILINE | re.DOTALL)
 
     # 2 _ в <i></i>
     text = re.sub('\_\_(.+?)\_\_', '<i>\\1</i>', text)
@@ -304,11 +328,11 @@ def bot_markdown_to_html(text: str) -> str:
     # Замена _*текст*_ на <i>текст</i>
     text = re.sub(r"(?<!\w)_\*([^\n\s].*?[^\n\s])\*_(?!\w)", r"<i>\1</i>", text)
 
-    # 1 _ в <i></i>
-    text = re.sub(r"(?<!\w)_([^\n\s_*][^\n*_]*[^\n\s_*])_(?!\w)", r"<i>\1</i>", text)
+    # # 1 _ в <i></i>
+    # text = re.sub(r"(?<!\w)_([^\n\s_*][^\n*_]*[^\n\s_*])_(?!\w)", r"<i>\1</i>", text)
 
-    # Замена *текст* на <i>текст</i>
-    text = re.sub(r"(?<!\w)\*(?!\s)([^\n*]+?)(?<!\s)\*(?!\w)", r"<i>\1</i>", text)
+    # # Замена *текст* на <i>текст</i>
+    # text = re.sub(r"(?<!\w)\*(?!\s)([^\n*]+?)(?<!\s)\*(?!\w)", r"<i>\1</i>", text)
 
     # Замена ~~текст~~ на <s>текст</s>
     text = re.sub(r"(?<!\w)~~(?!\s)([^\n*]+?)(?<!\s)~~(?!\w)", r"<s>\1</s>", text)
@@ -1351,9 +1375,15 @@ This is a clean and efficient way to create a reusable component that interacts 
 **Пояснения:**
 '''
 
-    # print(bot_markdown_to_html(t3))
+    t4 = '''
+
+'''
+
+    print(bot_markdown_to_html(t4))
     # print(truncate_text(t3))
 
-    print(fast_hash(t3))
+    # print(fast_hash(t3))
+
+    # print(bot_markdown_to_html('At our recent business **1 *meeting***, we delved into a load of **2 *market*** data to revamp our **3 *marketing*** strategy.'))
 
     pass

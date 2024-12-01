@@ -180,6 +180,11 @@ LOG_GROUP_DAEMON_ENABLED = True
 NEW_KEYBOARD = SqliteDict('db/new_keyboard_installed.db', autocommit=True)
 
 
+# запоминаем группы файлов (для правильного приема групп текстовых файлов)
+# {user_id: message_group_id}
+FILE_GROUPS = {}
+
+
 # {user_id:(date, image),} keep up to UNCAPTIONED_IMAGES_MAX images
 UNCAPTIONED_IMAGES_MAX = 50
 UNCAPTIONED_IMAGES = SqliteDict('db/user_images.db', autocommit = True)
@@ -2192,8 +2197,16 @@ def handle_document(message: telebot.types.Message):
                     if text.strip():
                         # если это группа файлов, то прибавляем этот файл к группе
                         if message.media_group_id:
+
+                            if (chat_id_full in FILE_GROUPS and FILE_GROUPS[chat_id_full] != message.media_group_id) or chat_id_full not in FILE_GROUPS:
+                                # drop old text
+                                prev_text = ''
+                            else:
+                                prev_text = my_db.get_user_property(chat_id_full, 'saved_file')
+                            FILE_GROUPS[chat_id_full] = message.media_group_id
+
                             my_db.set_user_property(chat_id_full, 'saved_file_name', 'group of files')
-                            prev_text = my_db.get_user_property(chat_id_full, 'saved_file')
+
                             text = f'{prev_text}\n\n{message.document.file_name if hasattr(message, "document") else "noname.txt"}:\n{text}'
                             if len(text) > my_gemini.MAX_SUM_REQUEST:
                                 text = text[-my_gemini.MAX_SUM_REQUEST:]

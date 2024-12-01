@@ -2113,6 +2113,7 @@ def handle_document(message: telebot.types.Message):
 
     with lock:
         with semaphore_talks:
+            # if message.media_group_id
             # если прислали текстовый файл или pdf
             # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
             if is_private and \
@@ -2189,23 +2190,33 @@ def handle_document(message: telebot.types.Message):
                             except:
                                 pass
                     if text.strip():
-                        caption = message.caption or ''
-                        caption = caption.strip()
-                        summary = my_sum.summ_text(text, 'text', lang, caption)
-                        my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')
-                        my_db.set_user_property(chat_id_full, 'saved_file', text)
-                        summary_html = utils.bot_markdown_to_html(summary)
-                        bot_reply(message, summary_html, parse_mode='HTML',
-                                            disable_web_page_preview = True,
-                                            reply_markup=get_keyboard('translate', message))
-                        bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
+                        # если это группа файлов, то прибавляем этот файл к группе
+                        if message.media_group_id:
+                            my_db.set_user_property(chat_id_full, 'saved_file_name', 'group of files')
+                            prev_text = my_db.get_user_property(chat_id_full, 'saved_file')
+                            text = f'{prev_text}\n\n{message.document.file_name if hasattr(message, "document") else "noname.txt"}:\n{text}'
+                            if len(text) > my_gemini.MAX_SUM_REQUEST:
+                                text = text[-my_gemini.MAX_SUM_REQUEST:]
+                            my_db.set_user_property(chat_id_full, 'saved_file', text.strip())
+                            bot_reply(message, tr('The file has been added to the group of files', lang) + ': ' + message.document.file_name if hasattr(message, 'document') else 'noname.txt')
+                        else:
+                            caption = message.caption or ''
+                            caption = caption.strip()
+                            summary = my_sum.summ_text(text, 'text', lang, caption)
+                            my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')
+                            my_db.set_user_property(chat_id_full, 'saved_file', text)
+                            summary_html = utils.bot_markdown_to_html(summary)
+                            bot_reply(message, summary_html, parse_mode='HTML',
+                                                disable_web_page_preview = True,
+                                                reply_markup=get_keyboard('translate', message))
+                            bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
 
-                        caption_ = tr("юзер попросил ответить по содержанию файла", lang)
-                        if caption:
-                            caption_ += ', ' + caption
-                        add_to_bots_mem(caption_,
-                                            f'{tr("бот посмотрел файл и ответил:", lang)} {summary}',
-                                            chat_id_full)
+                            caption_ = tr("юзер попросил ответить по содержанию файла", lang)
+                            if caption:
+                                caption_ += ', ' + caption
+                            add_to_bots_mem(caption_,
+                                                f'{tr("бот посмотрел файл и ответил:", lang)} {summary}',
+                                                chat_id_full)
                     else:
                         bot_reply_tr(message, 'Не удалось получить никакого текста из документа.')
                     return

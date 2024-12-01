@@ -52,7 +52,6 @@ bot = telebot.TeleBot(cfg.token)
 def send_welcome(message):
     bot.reply_to(message, "Привет! Я простой чат-бот. Напиши мне что-нибудь.")
     answer = '''
-Зрозумів, сейчас згенерую для вас слона! $$\includegraphics[width=0.5\textwidth]{elephant.png}$$ Ось він, величний і могутній! Сподіваюся, вам сподобається.
 '''
     # print(len(answer))
     answer = utils.bot_markdown_to_html(answer)

@@ -344,15 +344,77 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r"<b><i>(.+?)</b></i>", r"<b><i>\1</i></b>", text)
     text = re.sub(r"<i><b>(.+?)</i></b>", r"<i><b>\1</b></i>", text)
 
-    # tex в unicode
-    matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
+
+    # # tex в unicode
+    # matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
+    # for match in matches:
+    #     new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
+    #     new_match = html.escape(new_match)
+    #     text = text.replace(f'$${match}$$', new_match)
+    #     text = text.replace(f'${match}$', new_match)
+    #     text = text.replace(f'\[{match}\]', new_match)
+    #     text = text.replace(f'\({match}\)', new_match)
+
+
+
+    def is_valid_latex(text: str) -> bool:
+        """
+        Проверяет, является ли текст валидным LaTeX выражением
+        """
+        # Базовая проверка на наличие LaTeX команд или математических символов
+        latex_indicators = [
+            '\\', '_', '^', '{', '}',  # базовые LaTeX команды
+            '\\frac', '\\sqrt', '\\sum', '\\int',  # математические операторы
+            '\\alpha', '\\beta', '\\gamma',  # греческие буквы
+            '\\mathbf', '\\mathrm', '\\text'  # форм
+        ]
+        # Проверяем наличие хотя бы одного индикатора LaTeX
+        return any(indicator in text for indicator in latex_indicators)
+
+
+    # Обработка LaTeX выражений
+    # 1. Сначала ищем выражения в $$ ... $$
+    matches = re.findall(r'\$\$(.*?)\$\$', text, flags=re.DOTALL)
     for match in matches:
-        new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
-        new_match = html.escape(new_match)
-        text = text.replace(f'$${match}$$', new_match)
-        text = text.replace(f'${match}$', new_match)
-        text = text.replace(f'\[{match}\]', new_match)
-        text = text.replace(f'\({match}\)', new_match)
+        if is_valid_latex(match):  # добавим проверку на валидность LaTeX
+            try:
+                new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
+                new_match = html.escape(new_match)
+                text = text.replace(f'$${match}$$', new_match)
+            except:
+                # Если возникла ошибка при конвертации, оставляем как есть
+                continue
+
+    # 2. Затем ищем выражения в $ ... $
+    matches = re.findall(r'(?<!\$)\$(?!\$)(.*?)(?<!\$)\$(?!\$)', text, flags=re.DOTALL)
+    for match in matches:
+        if is_valid_latex(match):
+            try:
+                new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
+                new_match = html.escape(new_match)
+                text = text.replace(f'${match}$', new_match)
+            except:
+                continue
+
+    # 3. Обработка \[ ... \] и \( ... \)
+    matches = re.findall(r'\\\[(.*?)\\\]|\\\((.*?)\\\)', text, flags=re.DOTALL)
+    for match_tuple in matches:
+        match = match_tuple[0] if match_tuple[0] else match_tuple[1]
+        if is_valid_latex(match):
+            try:
+                new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
+                new_match = html.escape(new_match)
+                if match_tuple[0]:
+                    text = text.replace(f'\\[{match}\\]', new_match)
+                else:
+                    text = text.replace(f'\\({match}\\)', new_match)
+            except:
+                continue
+
+
+
+
+
 
     def latex_to_text(latex_formula):
         # Здесь должна быть реализация преобразования LaTeX в текст
@@ -1376,10 +1438,13 @@ This is a clean and efficient way to create a reusable component that interacts 
 '''
 
     t4 = '''
+**Неделя  1:  Подготовка  и  быстрые  заработки  (Цель:  150$)**
 
+*   **День  1-2:  Подготовка  (0$)**
+    *   Создание  аккаунтов  в  социальных  сетях  (если  нет)  и  оформление  страниц  для  привлечения  внимания.
 '''
 
-    print(bot_markdown_to_html(t4))
+    print(bot_markdown_to_html(t1))
     # print(truncate_text(t3))
 
     # print(fast_hash(t3))

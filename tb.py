@@ -2198,7 +2198,7 @@ def handle_document(message: telebot.types.Message):
                             if len(text) > my_gemini.MAX_SUM_REQUEST:
                                 text = text[-my_gemini.MAX_SUM_REQUEST:]
                             my_db.set_user_property(chat_id_full, 'saved_file', text.strip())
-                            bot_reply(message, tr('The file has been added to the group of files', lang) + ': ' + message.document.file_name if hasattr(message, 'document') else 'noname.txt')
+                            bot_reply(message, tr('The file has been added to the group of files, use /ask to query it', lang) + ': ' + message.document.file_name if hasattr(message, 'document') else 'noname.txt')
                         else:
                             caption = message.caption or ''
                             caption = caption.strip()

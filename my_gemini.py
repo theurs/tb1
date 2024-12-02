@@ -171,7 +171,7 @@ def chat(query: str,
                     max_output_tokens = max_tokens,
                 )
 
-            # use_skills = False
+            use_skills = False
             if use_skills and '-8b' not in model:
                 SKILLS = [
                     # "code_execution", # не работает одновременно с другими функциями

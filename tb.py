@@ -2116,6 +2116,9 @@ def handle_document(message: telebot.types.Message):
                    'application/x-perl',
                    )
 
+    if not message.document.mime_type:
+        message.document.mime_type = 'application/xml'
+
     with lock:
         with semaphore_talks:
             # if message.media_group_id

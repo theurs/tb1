@@ -8,6 +8,7 @@ from duckduckgo_search import DDGS
 import telebot
 
 import cfg
+import my_md
 import utils
 
 
@@ -65,49 +66,48 @@ The relationship between α and β is important: decreasing α (making the test 
 
 Selecting the appropriate statistical test is crucial for valid hypothesis testing. The choice depends on several factors:
 
-* **Type of Data:** Categorical (nominal, ordinal) or continuous (interval, ratio).
-* **Number of Groups:** One, two, or more.
-* **Research Question:** Comparing means, proportions, or examining relationships.
-* **Assumptions of the Test:**  Many tests assume certain characteristics of the data, such as normality (data follows a normal distribution) and independence of observations. Violating these assumptions can lead to inaccurate results.
+## Реализовать распознавание голосовых команд пользователя с помощью библиотеки Vosk и ресурса https://speechpad.ru/.
 
-Commonly used tests include:
+.  ## Для этого необходимо настроить библиотеку Vosk и подключиться к ресурсу https://speechpad.ru/. Затем необходимо создать функцию, которая будет принимать на вход аудиоданные и возвращать распознанный текст.
+[hi](https://example.com/123(123))
+[hi](https://example.com/123123)
 
-* **t-tests:** Comparing means of one or two groups.
-* **Chi-square tests:** Analyzing relationships between categorical variables.
-* **Analysis of Variance (ANOVA):**  Comparing means of three or more groups.
-* **Correlation and Regression:**  Examining relationships between continuous variables.
+**Шаг 3:**
+. ### 135 выберите библиотеку Vosk
 
-Choosing the wrong test can lead to invalid conclusions, so careful consideration of these factors is essential.
+привет  я   медвед    ва
 
-**VI. Examples and Applications of Hypothesis Tests**
+1. [a(x<sub>i</sub>) = j]: Это значит, что алгоритм определил, к какому кластеру (j) относится объект (x<sub>i</sub>).
 
-* **Comparing Drug Effectiveness:** A pharmaceutical company wants to test if a new drug is more effective than a standard drug. They conduct a randomized controlled trial and compare the average recovery times between the two groups using a t-test.
-* **Evaluating a Marketing Campaign:** A marketing team wants to see if a new campaign increased brand awareness. They survey customers before and after the campaign and compare the proportions of customers who recognize the brand using a chi-square test.
-* **Testing for Gender Bias in Hiring:** A human resources department wants to determine if there is gender bias in hiring practices. They compare the hiring rates of male and female applicants using a chi-square test.
+W(j) = Σ<sub>j=1</sub><sup>k</sup> Σ<sub>i=1</sub><sup>n</sup> [d(c<sub>j</sub>, x<sub>i</sub>)]<sup>2</sup>Π[a(x<sub>i</sub>) = j] → min;
 
-These examples illustrate the wide applicability of hypothesis testing across different fields.
+Ну __вот и наклонный__ текст.
 
-**VII. Common Misinterpretations**
 
-* **The p-value is *not* the probability that the null hypothesis is true.**  It is the probability of observing the obtained data (or more extreme data) *if* the null hypothesis were true.
-* **Statistical significance does *not* necessarily equate to practical significance.** A very small p-value might indicate a statistically significant difference, but the magnitude of the difference might be too small to be meaningful in practice.
-* **Failing to reject the null hypothesis does *not* prove that the null hypothesis is true.** It simply means that there was not enough evidence to reject it based on the available data.
+```python
+# Обработчик текстовых сообщений
+@bot.message_handler(func=lambda message: True)
+def echo_all(message):
+    query = message.text
+    chat_id = str(message.chat.id)
+    response = chat(query, chat_id)
+    if response:
+        answer = utils.bot_markdown_to_html(response)
+        # bot.reply_to(message, answer)
+```
 
-**VIII. Conclusion**
 
-Hypothesis testing is a powerful tool for making inferences about populations based on sample data. By following a structured process and carefully considering the type of data, research question, and potential errors, researchers can use hypothesis testing to draw meaningful conclusions. Correct interpretation of results, avoiding common misinterpretations, is crucial for drawing accurate inferences and making informed decisions.
-
-**IX. References**
-
-* Include a list of reputable sources used in researching and writing the paper. Follow a consistent citation style (APA, MLA, Chicago, etc.). Examples of sources could include statistics textbooks, peer-reviewed journal articles, and credible online resources. List specific references used rather than generic examples.
-
-This expanded response provides a more comprehensive discussion of the key aspects of hypothesis testing. Remember that using specific examples relevant to your field of study will strengthen your term paper. Always consult appropriate statistical resources for guidance and ensure that you correctly cite any sources used.
 '''
 
-    answer = utils.bot_markdown_to_html(answer)
-
-    for chunk in utils.split_html(answer, 3800):
-        bot.reply_to(message, chunk, parse_mode='HTML')
+    # answer = utils.bot_markdown_to_html(answer)
+    # answer = my_md.split_md(answer)
+    answer = my_md.md2html(answer)
+    
+    bot.reply_to(message, answer, parse_mode='HTML')
+    # for chunk in utils.split_html(answer, 3800):
+        # bot.reply_to(message, chunk, parse_mode='HTML')
+    # for chunk in answer:
+        # bot.reply_to(message, chunk, parse_mode='MarkdownV2')
 
 
 # Обработчик текстовых сообщений
@@ -118,7 +118,7 @@ def echo_all(message):
     response = chat(query, chat_id)
     if response:
         answer = utils.bot_markdown_to_html(response)
-        bot.reply_to(message, answer, parse_mode='MarkdownV2')
+        # bot.reply_to(message, answer)
 
 
 # Запуск бота

@@ -1728,38 +1728,38 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
                                       reply_markup=get_keyboard('chat', message))
         elif call.data == 'select_llama370':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.2 90b Groq.', lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.2 90b Groq.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
         elif call.data == 'select_llama405':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter_llama405')
         elif call.data == 'select_glm4plus':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GLM 4 PLUS.', lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GLM 4 PLUS.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'glm4plus')
         elif call.data == 'select_haiku':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claude 3 Haiku from DuckDuckGo.', lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claude 3 Haiku from DuckDuckGo.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'haiku')
         elif call.data == 'select_gpt-4o-mini-ddg':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o mini from DuckDuckGo.', lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o mini from DuckDuckGo.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o-mini-ddg')
         elif call.data == 'select_gemini15_flash':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_model, lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
         elif call.data == 'select_gemini8':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_light_model, lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_light_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini8')
         elif call.data == 'select_gemini-exp':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
         elif call.data == 'select_gemini-learn':
-            bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_learn_model, lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_learn_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
         elif call.data == 'select_gemini15_pro':
             have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
                 user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
                     or message.from_user.id in cfg.admins
             if have_keys:
-                bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
             else:
                 bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))

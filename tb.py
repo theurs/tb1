@@ -1480,6 +1480,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             markup.row(button4)
         markup.row(button9, button10)
 
+        if chat_mode == 'openrouter':
+            msg = '✅ OpenRouter'
+        else:
+            msg = 'OpenRouter'
+        button11 = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
+        if chat_id_full in my_openrouter.KEYS:
+            markup.row(button11)
+
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
             button2 = telebot.types.InlineKeyboardButton(tr('✅Только голос', lang), callback_data='voice_only_mode_disable')
@@ -1762,6 +1770,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
             else:
                 bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))
+        elif call.data == 'select_openrouter':
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: openrouter', lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
         elif call.data == 'groq-llama370_reset':
             my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Groq llama 3.2 90b очищена.')

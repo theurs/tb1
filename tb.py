@@ -1436,7 +1436,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             msg = 'Llama-3.2 90b'
         button4 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
 
-        if chat_mode == 'llama405':
+        if chat_mode == 'openrouter_llama405':
             msg = '✅ Llama-3.1 405b'
         else:
             msg = 'Llama-3.1 405b'

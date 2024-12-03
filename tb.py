@@ -2141,6 +2141,7 @@ def handle_document(message: telebot.types.Message):
 
     pandoc_support = ('application/vnd.ms-excel',
         'application/vnd.oasis.opendocument.spreadsheet',
+        'application/vnd.oasis.opendocument.text',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/octet-stream',
         'application/epub+zip',

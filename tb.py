@@ -1410,22 +1410,68 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         # кто по умолчанию
         if not my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+        chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
         markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
         have_gemini_keys = check_vip_user(chat_id_full)
-        button1 = telebot.types.InlineKeyboardButton('Gemini 1.5 Flash 🚗', callback_data='select_gemini15_flash')
-        if have_gemini_keys:
-            button2 = telebot.types.InlineKeyboardButton('Gemini 1.5 Pro 🚀', callback_data='select_gemini15_pro')
+        if chat_mode == 'gemini':
+            msg = '✅ Gemini 1.5 Flash 🚗'
         else:
-            button2 = telebot.types.InlineKeyboardButton('🔒Gemini 1.5 Pro 🚀', callback_data='select_gemini15_pro')
-        button4 = telebot.types.InlineKeyboardButton('Llama-3.2 90b 🚗', callback_data='select_llama370')
-        button7 = telebot.types.InlineKeyboardButton('Llama-3.1 405b 🚀', callback_data='select_llama405')
-        button5 = telebot.types.InlineKeyboardButton('GPT 4o mini 🚗', callback_data='select_gpt-4o-mini-ddg')
-        button6 = telebot.types.InlineKeyboardButton('Haiku 🚗', callback_data='select_haiku')
-        # button8 = telebot.types.InlineKeyboardButton('GLM 4 PLUS 🚗', callback_data='select_glm4plus')
-        button9 = telebot.types.InlineKeyboardButton('Gemini exp 1121 🚀', callback_data='select_gemini-exp')
-        button10 = telebot.types.InlineKeyboardButton('Gemini LearnLM 1.5 Pro Experimental 🚀', callback_data='select_gemini-learn')
+            msg = 'Gemini 1.5 Flash 🚗'
+        button1 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_flash')
+        
+        if chat_mode == 'gemini15':
+            msg = '✅ Gemini 1.5 Pro 🚀'
+        else:
+            msg = 'Gemini 1.5 Pro 🚀'
+        if have_gemini_keys:
+            button2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_pro')
+        else:
+            button2 = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini15_pro')
+
+        if chat_mode == 'llama370':
+            msg = '✅ Llama-3.2 90b 🚗'
+        else:
+            msg = 'Llama-3.2 90b 🚗'
+        button4 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
+
+        if chat_mode == 'llama405':
+            msg = '✅ Llama-3.1 405b 🚀'
+        else:
+            msg = 'Llama-3.1 405b 🚀'
+        button7 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama405')
+
+        if chat_mode == 'gpt-4o-mini-ddg':
+            msg = '✅ GPT 4o mini 🚗'
+        else:
+            msg = 'GPT 4o mini 🚗'
+        button5 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o-mini-ddg')
+
+        if chat_mode == 'haiku':
+            msg = '✅ Haiku 🚗'
+        else:
+            msg = 'Haiku 🚗'
+        button6 = telebot.types.InlineKeyboardButton(msg, callback_data='select_haiku')
+
+        # if chat_mode == 'glm4plus':
+        #     msg = '✅ GLM 4 PLUS 🚗'
+        # else:
+        #     msg = 'GLM 4 PLUS 🚗'
+        # button8 = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
+
+        if chat_mode == 'gemini-exp':
+            msg = '✅ Gemini exp 1121 🚀'
+        else:
+            msg = 'Gemini exp 1121 🚀'
+        button9 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
+
+        if chat_mode == 'gemini-learn':
+            msg = '✅ Gemini LearnLM 1.5 Pro Experimental 🚀'
+        else:
+            msg = 'Gemini LearnLM 1.5 Pro Experimental 🚀'
+        button10 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
+
         markup.row(button1, button2)
         markup.row(button4)
         markup.row(button5, button6)
@@ -1785,6 +1831,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
         elif call.data == 'enable_chat_kbd' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'disabled_kbd', True)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+        if call.data.startswith('select_'):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                   text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
 

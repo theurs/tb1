@@ -250,6 +250,9 @@ def bot_markdown_to_html(text: str) -> str:
         list_of_code_blocks2.append([match, random_string])
         text = text.replace(f'`{match}`', random_string)
 
+    # меняем латекс выражения
+    text = replace_latex(text)
+
     # переделываем списки на более красивые
     text = re.sub(r"^(\s*)\*\s", r"\1• ", text, flags=re.MULTILINE)
     text = re.sub(r"^(\s*)-\s", r"\1– ", text, flags=re.MULTILINE)
@@ -355,8 +358,47 @@ def bot_markdown_to_html(text: str) -> str:
     #     text = text.replace(f'\[{match}\]', new_match)
     #     text = text.replace(f'\({match}\)', new_match)
 
+    # меняем маркдаун ссылки на хтмл
+    text = re.sub('''\[(.*?)\]\((https?://\S+)\)''', r'<a href="\2">\1</a>', text)
+
+    # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
+    # а зачем собственно? text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
+
+    # хз откуда это
+    text = text.replace('&#x27;', "'")
+    text = text.replace('   #x27;', "'")
+    text = text.replace('#x27;', "'")
+
+    # меняем обратно хеши на блоки кода
+    for match, random_string in list_of_code_blocks2:
+        # new_match = html.escape(match)
+        new_match = match
+        text = text.replace(random_string, f'<code>{new_match}</code>')
+
+    # меняем обратно хеши на блоки кода
+    for match, random_string in list_of_code_blocks:
+        new_match = match
+        text = text.replace(random_string, f'<code>{new_match}</code>')
+
+    # меняем таблицы до возвращения кода
+    text = replace_tables(text)
+
+    text = replace_code_lang(text)
+
+    text = text.replace('<pre><code class="language-plaintext">\n<pre><code>', '<pre><code class="language-plaintext">')
+
+    # убрать 3 и более пустые сроки подряд (только после блоков кода или любых тегов)
+    def replace_newlines(match):
+        return '\n\n'
+    text = re.sub(r"(?<!<pre>)(?<!<code>)\n{3,}(?!</code>)(?!</pre>)", replace_newlines, text, flags=re.DOTALL)
+    text = re.sub(r"pre>\n{2,}", "pre>\n", text)
+
+    text = text.replace('\n</code></pre>\n</code>', '\n</code></pre>')
+
+    return text
 
 
+def replace_latex(text: str) -> str:
     def is_valid_latex(text: str) -> bool:
         """
         Проверяет, является ли текст валидным LaTeX выражением
@@ -411,11 +453,6 @@ def bot_markdown_to_html(text: str) -> str:
             except:
                 continue
 
-
-
-
-
-
     def latex_to_text(latex_formula):
         # Здесь должна быть реализация преобразования LaTeX в текст
         # В данном примере просто возвращаем формулу без изменений
@@ -429,44 +466,6 @@ def bot_markdown_to_html(text: str) -> str:
 
     pattern = r"\\begin\{(.*?)\}(.*?)\\end\{\1\}|\\\[(.*?)\\\]|\\begin(.*?)\\end"
     text = re.sub(pattern, replace_function_lt1, text, flags=re.DOTALL)
-
-
-    # меняем маркдаун ссылки на хтмл
-    text = re.sub('''\[(.*?)\]\((https?://\S+)\)''', r'<a href="\2">\1</a>', text)
-
-    # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
-    # а зачем собственно? text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
-
-    # хз откуда это
-    text = text.replace('&#x27;', "'")
-    text = text.replace('   #x27;', "'")
-    text = text.replace('#x27;', "'")
-
-    # меняем обратно хеши на блоки кода
-    for match, random_string in list_of_code_blocks2:
-        # new_match = html.escape(match)
-        new_match = match
-        text = text.replace(random_string, f'<code>{new_match}</code>')
-
-    # меняем обратно хеши на блоки кода
-    for match, random_string in list_of_code_blocks:
-        new_match = match
-        text = text.replace(random_string, f'<code>{new_match}</code>')
-
-    # меняем таблицы до возвращения кода
-    text = replace_tables(text)
-
-    text = replace_code_lang(text)
-
-    text = text.replace('<pre><code class="language-plaintext">\n<pre><code>', '<pre><code class="language-plaintext">')
-
-    # убрать 3 и более пустые сроки подряд (только после блоков кода или любых тегов)
-    def replace_newlines(match):
-        return '\n\n'
-    text = re.sub(r"(?<!<pre>)(?<!<code>)\n{3,}(?!</code>)(?!</pre>)", replace_newlines, text, flags=re.DOTALL)
-    text = re.sub(r"pre>\n{2,}", "pre>\n", text)
-
-    text = text.replace('\n</code></pre>\n</code>', '\n</code></pre>')
 
     return text
 

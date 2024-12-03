@@ -713,7 +713,7 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
 
 def split_html(text: str, max_length: int = 1500) -> list:
     """
-    Splits HTML text into chunks with a maximum length, respecting code blocks, 
+    Splits HTML text into chunks with a maximum length, respecting code blocks,
     bold, italic, blockquote, and expandable blockquote tags.
     """
     tags = {
@@ -722,51 +722,53 @@ def split_html(text: str, max_length: int = 1500) -> list:
         "<b>": ("</b>", 3),
         "<i>": ("</i>", 4),
         "<blockquote>": ("</blockquote>", 5),
-        "<expandable_blockquote>": ("</blockquote>", 6), # Закрывающий тег как у blockquote
+        "<expandable_blockquote>": ("</blockquote>", 6),
     }
 
     chunks = []
     chunk = ''
-    current_tag = None
+    current_tag = {}
     in_tag_mode = False
 
     for line in text.split('\n'):
         for tag, (closing_tag, tag_id) in tags.items():
             if line.startswith(tag) and closing_tag not in line:
-                if in_tag_mode: # Уже внутри тега, добавляем закрывающий тег
-                    chunk += current_tag[0] + "\n"
+                if in_tag_mode and current_tag:
+                    chunk += current_tag['closing_tag'] + "\n"
                 in_tag_mode = True
-                current_tag = (closing_tag, tag_id)
+                current_tag = {'closing_tag': closing_tag, 'tag_id': tag_id}
                 chunk += line + '\n'
-                break  # Переходим к следующей строке после обработки тега
-            elif closing_tag in line and in_tag_mode and current_tag[1] == tag_id :
+                break
+            elif closing_tag in line and in_tag_mode and current_tag and current_tag['tag_id'] == tag_id:
                 in_tag_mode = False
-                current_tag = None
+                current_tag = {}
                 chunk += line + '\n'
                 break
 
-        else: #  не блок тега
-           if len(chunk) + len(line) + 20 > max_length:
-               if in_tag_mode:
-                   chunk += current_tag[0] + "\n"
-                   chunks.append(chunk)
-                   chunk = tag + '\n'  # Новая часть начинается с открывающего тега
-                   in_tag_mode = False
-                   current_tag = None
-
-               elif not in_tag_mode: # Делим обычный текст
+        else:  # Если не нашли открывающий или закрывающий тег
+            if len(chunk) + len(line) + 20 > max_length:
+                if in_tag_mode and current_tag:
+                    chunk += current_tag['closing_tag'] + "\n"
+                    chunks.append(chunk)
+                    chunk = tag + '\n'  # Новая часть начинается с открывающего тега
+                    in_tag_mode = False
+                    current_tag = {}
+                elif not in_tag_mode:
                     chunks.append(chunk)
                     chunk = ''
-           
-           if not in_tag_mode or (in_tag_mode and current_tag and current_tag[1] not in (1, 2, 5, 6)): # Добавляем строку, если не в многострочном режиме
-                chunk += line + '\n'
 
+            if not in_tag_mode or (in_tag_mode and current_tag and current_tag.get('tag_id') not in (1, 2, 5, 6)):
+                chunk += line + '\n'
+                
+    if in_tag_mode and current_tag:
+        chunk += current_tag['closing_tag'] + "\n"
     chunks.append(chunk)
+
 
     chunks2 = []
     for chunk in chunks:
         if len(chunk) > max_length:
-            chunks2 += split_text(chunk, max_length) # split_text для обработки текста вне тегов, должна быть определена
+            chunks2 += split_text(chunk, max_length)  # split_text - функция для разбиения обычного текста (должна быть определена)
         else:
             chunks2.append(chunk)
     return chunks2

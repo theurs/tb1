@@ -642,7 +642,67 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
         # Заменяем каждую найденную таблицу
         text = table_pattern.sub(lambda m: process_table(m.group(0)), text)
 
+
+        # экранируем запрещенные символы кроме хтмл тегов
+        TAG_MAP = {
+            "<b>": "40bd001563085fc35165329ea1ff5c5ecbdbbeef",
+            "</b>": "c591326762260728871710537179fabf75973234",
+            "<strong>": "ef0b585e265b5287aa6d26a6860e0cd846623679",
+            "</strong>": "e882cf5c82a930662f17c188c70ade885c55c607",
+            "<i>": "497603a6c32112169ae39a79072c07e863ae3f7a",
+            "</i>": "0784921025d4c05de5069cc93610c754a4088015",
+            "<em>": "d1a25e1cb6b3d667b567323119f126f845c971df",
+            "</em>": "851e149d4a4313c6016e73f719c269076790ab23",
+            "<code>": "c1166919418e7c62a16b86662710541583068278",
+            "</code>": "b7e364fd74d46f698c0f164988c382957c220c7c",
+            "<s>": "03c7c0ace395d80182db07ae2c30f0341a739b1b",
+            "</s>": "86029812940d86d63c5899ee5227cf94639408a7",
+            "<strike>": "f0e25c74b67881c84327dc916c8c919f062c9003",
+            "</strike>": "935f70051f605261d9f93948a5c3382f3a843596",
+            "<del>": "8527a891e224136950ff32ca212b45bc93f69972",
+            "</del>": "a992a007a4e77704231c285601a97cca4a70b768",
+            "<pre>": "932162e70462a0f5d1a7599592ed51c41c4f8eb7",
+            "</pre>": "e9e6f7c1fe77261334b414ae017288814903b225",
+            "<u>": "764689e6705f61c6e7494bfa62688414325d8155",
+            "</u>": "8a048b284925205d3187f8b04625a702150a936f",
+        }
+
+        REVERSE_TAG_MAP = {
+            "40bd001563085fc35165329ea1ff5c5ecbdbbeef": "<b>",
+            "c591326762260728871710537179fabf75973234": "</b>",
+            "ef0b585e265b5287aa6d26a6860e0cd846623679": "<strong>",
+            "e882cf5c82a930662f17c188c70ade885c55c607": "</strong>",
+            "497603a6c32112169ae39a79072c07e863ae3f7a": "<i>",
+            "0784921025d4c05de5069cc93610c754a4088015": "</i>",
+            "d1a25e1cb6b3d667b567323119f126f845c971df": "<em>",
+            "851e149d4a4313c6016e73f719c269076790ab23": "</em>",
+            "c1166919418e7c62a16b86662710541583068278": "<code>",
+            "b7e364fd74d46f698c0f164988c382957c220c7c": "</code>",
+            "03c7c0ace395d80182db07ae2c30f0341a739b1b": "<s>",
+            "86029812940d86d63c5899ee5227cf94639408a7": "</s>",
+            "f0e25c74b67881c84327dc916c8c919f062c9003": "<strike>",
+            "935f70051f605261d9f93948a5c3382f3a843596": "</strike>",
+            "8527a891e224136950ff32ca212b45bc93f69972": "<del>",
+            "a992a007a4e77704231c285601a97cca4a70b768": "</del>",
+            "932162e70462a0f5d1a7599592ed51c41c4f8eb7": "<pre>",
+            "e9e6f7c1fe77261334b414ae017288814903b225": "</pre>",
+            "764689e6705f61c6e7494bfa62688414325d8155": "<u>",
+            "8a048b284925205d3187f8b04625a702150a936f": "</u>",
+        }
+
+        def replace_tags_with_hashes(text):
+            for tag, tag_hash in TAG_MAP.items():
+                text = text.replace(tag, tag_hash)
+            return text
+
+        def replace_hashes_with_tags(text):
+            for tag_hash, tag in REVERSE_TAG_MAP.items():
+                text = text.replace(tag_hash, tag)
+            return text
+
+        text = replace_tags_with_hashes(text)
         text = re.sub(r'(?<=\|)(.*?)(?=\|)', lambda match: match.group(1).replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;'), text)
+        text = replace_hashes_with_tags(text)
 
         return text
     except Exception as unknown:
@@ -653,71 +713,132 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
 
 def split_html(text: str, max_length: int = 1500) -> list:
     """
-    Splits HTML text into chunks with a maximum length, respecting code blocks, bold, and italic tags.
-
-    Args:
-        text: The HTML text to split.
-        max_length: The maximum length of each chunk.
-
-    Returns:
-        A list of HTML chunks.
+    Splits HTML text into chunks with a maximum length, respecting code blocks, 
+    bold, italic, blockquote, and expandable blockquote tags.
     """
-    code_tag = ''
-    in_code_mode = 0
+    tags = {
+        "<pre><code": ("</code></pre>", 1),
+        "<code>": ("</code>", 2),
+        "<b>": ("</b>", 3),
+        "<i>": ("</i>", 4),
+        "<blockquote>": ("</blockquote>", 5),
+        "<expandable_blockquote>": ("</blockquote>", 6), # Закрывающий тег как у blockquote
+    }
 
     chunks = []
     chunk = ''
+    current_tag = None
+    in_tag_mode = False
 
     for line in text.split('\n'):
-        if line.startswith('<pre><code') and line.find('</code></pre>') == -1:
-            in_code_mode = 1
-            code_tag = line[:line.find('>', 10) + 1]
-        elif line.startswith('<code>') and line.find('</code>') == -1:
-            in_code_mode = 2
-            code_tag = '<code>'
-        elif line.startswith('<b>') and line.find('</b>') == -1:
-            in_code_mode = 3
-            code_tag = '<b>'
-        elif line.startswith('<i>') and line.find('</i>') == -1:
-            in_code_mode = 4
-            code_tag = '<i>'
-        elif line == '</code></pre>' or line == '</code>' or line == '</b>' or line == '</i>':
-            code_tag = ''
-            in_code_mode = 0
-        else:
-            if len(chunk) + len(line) + 20 > max_length:
-                if in_code_mode == 1:
-                    chunk += '</code></pre>\n'
-                    chunks.append(chunk)
-                    chunk = code_tag
-                elif in_code_mode == 2:
-                    chunk += '</code>\n'
-                    chunks.append(chunk)
-                    chunk = code_tag
-                elif in_code_mode == 3:
-                    chunk += '</b>\n'
-                    chunks.append(chunk)
-                    chunk = code_tag
-                elif in_code_mode == 4:
-                    chunk += '</i>\n'
-                    chunks.append(chunk)
-                    chunk = code_tag
-                elif in_code_mode == 0:
+        for tag, (closing_tag, tag_id) in tags.items():
+            if line.startswith(tag) and closing_tag not in line:
+                if in_tag_mode: # Уже внутри тега, добавляем закрывающий тег
+                    chunk += current_tag[0] + "\n"
+                in_tag_mode = True
+                current_tag = (closing_tag, tag_id)
+                chunk += line + '\n'
+                break  # Переходим к следующей строке после обработки тега
+            elif closing_tag in line and in_tag_mode and current_tag[1] == tag_id :
+                in_tag_mode = False
+                current_tag = None
+                chunk += line + '\n'
+                break
+
+        else: #  не блок тега
+           if len(chunk) + len(line) + 20 > max_length:
+               if in_tag_mode:
+                   chunk += current_tag[0] + "\n"
+                   chunks.append(chunk)
+                   chunk = tag + '\n'  # Новая часть начинается с открывающего тега
+                   in_tag_mode = False
+                   current_tag = None
+
+               elif not in_tag_mode: # Делим обычный текст
                     chunks.append(chunk)
                     chunk = ''
-
-        chunk += line + '\n'
+           
+           if not in_tag_mode or (in_tag_mode and current_tag and current_tag[1] not in (1, 2, 5, 6)): # Добавляем строку, если не в многострочном режиме
+                chunk += line + '\n'
 
     chunks.append(chunk)
 
     chunks2 = []
     for chunk in chunks:
         if len(chunk) > max_length:
-            chunks2 += split_text(chunk, max_length)
+            chunks2 += split_text(chunk, max_length) # split_text для обработки текста вне тегов, должна быть определена
         else:
             chunks2.append(chunk)
-
     return chunks2
+
+
+# def split_html(text: str, max_length: int = 1500) -> list:
+#     """
+#     Splits HTML text into chunks with a maximum length, respecting code blocks, bold, and italic tags.
+
+#     Args:
+#         text: The HTML text to split.
+#         max_length: The maximum length of each chunk.
+
+#     Returns:
+#         A list of HTML chunks.
+#     """
+#     code_tag = ''
+#     in_code_mode = 0
+
+#     chunks = []
+#     chunk = ''
+
+#     for line in text.split('\n'):
+#         if line.startswith('<pre><code') and line.find('</code></pre>') == -1:
+#             in_code_mode = 1
+#             code_tag = line[:line.find('>', 10) + 1]
+#         elif line.startswith('<code>') and line.find('</code>') == -1:
+#             in_code_mode = 2
+#             code_tag = '<code>'
+#         elif line.startswith('<b>') and line.find('</b>') == -1:
+#             in_code_mode = 3
+#             code_tag = '<b>'
+#         elif line.startswith('<i>') and line.find('</i>') == -1:
+#             in_code_mode = 4
+#             code_tag = '<i>'
+#         elif line == '</code></pre>' or line == '</code>' or line == '</b>' or line == '</i>':
+#             code_tag = ''
+#             in_code_mode = 0
+#         else:
+#             if len(chunk) + len(line) + 20 > max_length:
+#                 if in_code_mode == 1:
+#                     chunk += '</code></pre>\n'
+#                     chunks.append(chunk)
+#                     chunk = code_tag
+#                 elif in_code_mode == 2:
+#                     chunk += '</code>\n'
+#                     chunks.append(chunk)
+#                     chunk = code_tag
+#                 elif in_code_mode == 3:
+#                     chunk += '</b>\n'
+#                     chunks.append(chunk)
+#                     chunk = code_tag
+#                 elif in_code_mode == 4:
+#                     chunk += '</i>\n'
+#                     chunks.append(chunk)
+#                     chunk = code_tag
+#                 elif in_code_mode == 0:
+#                     chunks.append(chunk)
+#                     chunk = ''
+
+#         chunk += line + '\n'
+
+#     chunks.append(chunk)
+
+#     chunks2 = []
+#     for chunk in chunks:
+#         if len(chunk) > max_length:
+#             chunks2 += split_text(chunk, max_length)
+#         else:
+#             chunks2.append(chunk)
+
+#     return chunks2
 
 
 def get_tmp_fname() -> str:
@@ -1438,13 +1559,17 @@ This is a clean and efficient way to create a reusable component that interacts 
 '''
 
     t4 = '''
-**Неделя  1:  Подготовка  и  быстрые  заработки  (Цель:  150$)**
 
-*   **День  1-2:  Подготовка  (0$)**
-    *   Создание  аккаунтов  в  социальных  сетях  (если  нет)  и  оформление  страниц  для  привлечения  внимания.
+**3. D(X|Y=1) = 0.69** (34/49)  Вычисление через E[X^2|Y=1]  - (E[X|Y=1])^2  дает тот же результат.
+
+**4. D(Y|X=4) = 0.25**
+
+**5. Cov(X, Y) = 0.015 ≈ 0.02** (Округление до сотых, как и в исходном задании). Важно помнить, что ковариация очень мала, что указывает на слабую линейную зависимость между X и Y.
+
+
 '''
 
-    print(bot_markdown_to_html(t1))
+    print(bot_markdown_to_html(t4))
     # print(truncate_text(t3))
 
     # print(fast_hash(t3))

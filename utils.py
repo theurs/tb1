@@ -550,6 +550,8 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
             text = text.replace('</b>', '    ')
             text = text.replace('</i>', '    ')
             text = text.replace('<br>', '    ')
+            text = text.replace('<code>',  '      ')
+            text = text.replace('</code>', '       ')
             return text
 
         def truncate_text(text: str, max_width: int) -> str:

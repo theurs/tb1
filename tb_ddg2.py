@@ -53,17 +53,38 @@ bot = telebot.TeleBot(cfg.token)
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
 
-    for f in glob.glob('C:/Users/user/Downloads/*.txt'):
-        with open(f, 'r', encoding='utf-8') as file:
-            answer = file.read()
-            answer = utils.bot_markdown_to_html(answer)
-            answer = utils.split_html(answer, 3800)
-            for chunk in answer:
-                try:
-                    bot.reply_to(message, chunk, parse_mode='HTML')
-                except Exception as error:
-                    bot.reply_to(message, str(error))
-                    bot.reply_to(message, chunk)
+    # for f in glob.glob('C:/Users/user/Downloads/*.txt'):
+    #     with open(f, 'r', encoding='utf-8') as file:
+    #         answer = file.read()
+    #         answer = utils.bot_markdown_to_html(answer)
+    #         answer = utils.split_html(answer, 3800)
+    #         for chunk in answer:
+    #             try:
+    #                 bot.reply_to(message, chunk, parse_mode='HTML')
+    #             except Exception as error:
+    #                 bot.reply_to(message, str(error))
+    #                 bot.reply_to(message, chunk)
+
+    t = '''
+* **Системная организация:** Модули позволяют создавать более структурированные и масштабируемые приложения, особенно полезно в больших проектах.
+
+
+**Ключевые различия:**
+
+| Feature        | Packages                               | Modules                                      |
+|----------------|----------------------------------------|----------------------------------------------|
+| **Уровень**    | Проект                                  | Система                                       |
+| **Описание**   | Группировка связанных классов и интерфейсов | Независимые и самодостаточные единицы кода     |
+| **Конфигурация** | Нет специального файла конфигурации       | `module-info.java`                           |
+| **Доступность** | Управляется модификаторами доступа       | Управляется директивами `exports` и `requires` |
+| **Java версия** | Java 1 и выше                           | Java 9 и выше                               |
+
+
+Вкратце: пакеты — это способ организации кода внутри проекта, а модули — это способ организации кода на уровне всей системы, позволяющий создавать более крупные и сложные проекты, состоящие из независимых компонентов.  Модули являются более современным и мощным механизмом организации кода, появившимся в Java 9.  Пакеты остаются важной частью организации кода и используются даже в модульных проектах.
+'''
+
+    answer = utils.bot_markdown_to_html(t)
+    bot.reply_to(message, answer, parse_mode='HTML')
 
 
 # Обработчик текстовых сообщений

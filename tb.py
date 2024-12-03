@@ -1416,60 +1416,60 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
 
         have_gemini_keys = check_vip_user(chat_id_full)
         if chat_mode == 'gemini':
-            msg = '✅ Gemini 1.5 Flash 🚗'
+            msg = '✅ Gemini 1.5 Flash'
         else:
-            msg = 'Gemini 1.5 Flash 🚗'
+            msg = 'Gemini 1.5 Flash'
         button1 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_flash')
         
         if chat_mode == 'gemini15':
-            msg = '✅ Gemini 1.5 Pro 🚀'
+            msg = '✅ Gemini 1.5 Pro'
         else:
-            msg = 'Gemini 1.5 Pro 🚀'
+            msg = 'Gemini 1.5 Pro'
         if have_gemini_keys:
             button2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_pro')
         else:
             button2 = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini15_pro')
 
         if chat_mode == 'llama370':
-            msg = '✅ Llama-3.2 90b 🚗'
+            msg = '✅ Llama-3.2 90b'
         else:
-            msg = 'Llama-3.2 90b 🚗'
+            msg = 'Llama-3.2 90b'
         button4 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
 
         if chat_mode == 'llama405':
-            msg = '✅ Llama-3.1 405b 🚀'
+            msg = '✅ Llama-3.1 405b'
         else:
-            msg = 'Llama-3.1 405b 🚀'
+            msg = 'Llama-3.1 405b'
         button7 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama405')
 
         if chat_mode == 'gpt-4o-mini-ddg':
-            msg = '✅ GPT 4o mini 🚗'
+            msg = '✅ GPT 4o mini'
         else:
-            msg = 'GPT 4o mini 🚗'
+            msg = 'GPT 4o mini'
         button5 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o-mini-ddg')
 
         if chat_mode == 'haiku':
-            msg = '✅ Haiku 🚗'
+            msg = '✅ Haiku'
         else:
-            msg = 'Haiku 🚗'
+            msg = 'Haiku'
         button6 = telebot.types.InlineKeyboardButton(msg, callback_data='select_haiku')
 
         # if chat_mode == 'glm4plus':
-        #     msg = '✅ GLM 4 PLUS 🚗'
+        #     msg = '✅ GLM 4 PLUS'
         # else:
-        #     msg = 'GLM 4 PLUS 🚗'
+        #     msg = 'GLM 4 PLUS'
         # button8 = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
 
         if chat_mode == 'gemini-exp':
-            msg = '✅ Gemini exp 1121 🚀'
+            msg = '✅ Gemini exp 1121'
         else:
-            msg = 'Gemini exp 1121 🚀'
+            msg = 'Gemini exp 1121'
         button9 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
 
         if chat_mode == 'gemini-learn':
-            msg = '✅ Gemini LearnLM 1.5 Pro Experimental 🚀'
+            msg = '✅ Gemini LearnLM 1.5 Pro Experimental'
         else:
-            msg = 'Gemini LearnLM 1.5 Pro Experimental 🚀'
+            msg = 'Gemini LearnLM 1.5 Pro Experimental'
         button10 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
 
         markup.row(button1, button2)

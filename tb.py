@@ -1461,25 +1461,24 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         # button8 = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
 
         if chat_mode == 'gemini-exp':
-            msg = '✅ Gemini exp 1121'
+            msg = '✅ Gemini exp'
         else:
-            msg = 'Gemini exp 1121'
+            msg = 'Gemini exp'
         button9 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
 
         if chat_mode == 'gemini-learn':
-            msg = '✅ Gemini LearnLM 1.5 Pro Experimental'
+            msg = '✅ Gemini LearnLM'
         else:
-            msg = 'Gemini LearnLM 1.5 Pro Experimental'
+            msg = 'Gemini LearnLM'
         button10 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
 
         markup.row(button1, button2)
-        markup.row(button4)
         markup.row(button5, button6)
         if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
-            markup.row(button7, button9)
+            markup.row(button4, button7)
         else:
-            markup.row(button9)
-        markup.row(button10)
+            markup.row(button4)
+        markup.row(button9, button10)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

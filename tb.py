@@ -1590,7 +1590,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'image_prompt_solve':
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_SOLVE, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_pro_model, temp = 0.1)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_exp_model, temp = 0.1)
 
         elif call.data == 'image_prompt_qrcode':
             COMMAND_MODE[chat_id_full] = ''
@@ -6012,37 +6012,13 @@ def do_task(message, custom_prompt: str = ''):
 
             formatted_date = utils.get_full_time()
 
-
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                hidden_text = (
-                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
-                    f'you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, '
-                    f'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /reset - clear chat context, '
-                    f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
-                    f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
-                    f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
-                    f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    f'no emoji unless it is required. '
-                    f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
-                )
-
+                hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date)
             else:
-                hidden_text = (
-                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
-                    f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, '
-                    f'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /reset - clear chat context, '
-                    f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
-                    f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
-                    f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    f'no emoji unless it is required. '
-                    f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
-                )
+                hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date)
 
-
-            hidden_text_for_llama370 = tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required.', lang)
-
-
+            hidden_text_for_llama370 = my_init.get_hidden_prompt_for_llama(tr, lang)
 
             omode = my_db.get_user_property(chat_id_full, 'original_mode') or False
             if omode:

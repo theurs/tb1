@@ -105,6 +105,41 @@ start_msg_file = 'msg_hello.dat'
 help_msg_file = 'msg_help.dat'
 
 
+def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date):
+    hidden_text = (
+                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
+                    f'you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, '
+                    f'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /reset - clear chat context, '
+                    f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
+                    f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
+                    f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
+                    f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
+                    f'no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation. '
+                    f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
+                )
+
+    return hidden_text
+
+
+def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date):
+    hidden_text = (
+                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
+                    f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, '
+                    f'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /reset - clear chat context, '
+                    f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
+                    f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
+                    f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
+                    f'no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation. '
+                    f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
+                )
+
+    return hidden_text
+
+
+def get_hidden_prompt_for_llama(tr, lang):
+    return tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation.', lang)
+
+
 def generate_start_msg():
     msgs = {}
     for x in supported_langs_trans:

@@ -482,7 +482,7 @@ def get_last_mem(chat_id: str) -> str:
         return last.parts[0].text
 
 
-def get_mem_as_string(chat_id: str) -> str:
+def get_mem_as_string(chat_id: str, md: bool = False) -> str:
     """
     Returns the chat history as a string for the given ID.
 
@@ -494,12 +494,6 @@ def get_mem_as_string(chat_id: str) -> str:
     """
     mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
     mem = transform_mem2(mem)
-
-    # remove empty answers (function calls)
-    # try:
-    #     mem = [x for x in mem if x.parts[0].text]
-    # except Exception as error_mem:
-    #     my_log.log_gemini(f'get_mem_as_string: {error_mem} {str(mem)[-1000:]}')
 
     result = ''
     for x in mem:
@@ -513,9 +507,15 @@ def get_mem_as_string(chat_id: str) -> str:
         if text.startswith('[Info to help you answer'):
             end = text.find(']') + 1
             text = text[end:].strip()
-        result += f'{role}: {text}\n'
+        if md:
+            result += f'{role}:\n\n{text}\n\n'
+        else:
+            result += f'{role}: {text}\n'
         if role == '𝐁𝐎𝐓':
-            result += '\n'
+            if md:
+                result += '\n\n'
+            else:
+                result += '\n'
     return result
 
 

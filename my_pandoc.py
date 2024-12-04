@@ -110,6 +110,26 @@ def convert_djvu2pdf(input_file: str) -> str:
     return output_file
 
 
+def convert_text_to_docx(text: str) -> bytes:
+    '''convert text to docx file'''
+    output_file = utils.get_tmp_fname() + '.docx'
+    subprocess.run(['pandoc', '-f', 'markdown', '-t', 'docx', '-o', output_file, '-'], input=text.encode('utf-8'), stdout=subprocess.PIPE)
+    with open(output_file, 'rb') as f:
+        data = f.read()
+    utils.remove_file(output_file)
+    return data
+
+
+def convert_text_to_odt(text: str) -> bytes:
+    '''convert text to odt file'''
+    output_file = utils.get_tmp_fname() + '.odt'
+    subprocess.run(['pandoc', '-f', 'markdown', '-t', 'odt', '-o', output_file, '-'], input=text.encode('utf-8'), stdout=subprocess.PIPE)
+    with open(output_file, 'rb') as f:
+        data = f.read()
+    utils.remove_file(output_file)
+    return data
+
+
 if __name__ == '__main__':
     # result = fb2_to_text(open('1.pdf', 'rb').read(), '.pdf')
     # print(result)

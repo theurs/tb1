@@ -3577,6 +3577,54 @@ def change_style2(message: telebot.types.Message):
     bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
 
 
+@bot.message_handler(commands=['save'], func=authorized_owner)
+@async_run
+def save_history(message: telebot.types.Message):
+    """
+    Сохранить переписку в формате .docx и .odt
+    Используя конвертер маркдауна pandoc
+    pandoc -f markdown -t odt 1.md -o output.odt
+    """
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+
+    try:
+        if message.from_user.id in cfg.admins:
+            arg = message.text.split(maxsplit=1)[1].strip()
+            if arg:
+                if '[' not in arg:
+                    arg = f'[{arg}] [0]'
+                chat_id_full = arg
+    except IndexError:
+        pass
+
+    prompt = ''
+    if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        prompt = my_gemini.get_mem_as_string(chat_id_full, md = True) or ''
+    if 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        prompt = my_groq.get_mem_as_string(chat_id_full, md = True) or ''
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+        prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
+        prompt = my_sambanova.get_mem_as_string(chat_id_full, md = True) or ''
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
+        prompt = my_glm.get_mem_as_string(chat_id_full, md = True) or ''
+    if 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        prompt = my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
+    if 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        prompt += my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
+
+    if prompt:
+        m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_docx(prompt), message_thread_id=message.message_thread_id,
+                              caption='resp.docx', visible_file_name = 'resp.docx', reply_markup=get_keyboard('hide', message))
+        log_message(m)
+        m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_odt(prompt), message_thread_id=message.message_thread_id,
+                              caption='resp.odt', visible_file_name = 'resp.odt', reply_markup=get_keyboard('hide', message))
+        log_message(m)
+    else:
+        bot_reply_tr(message, 'Memory is empty, nothing to save.')
+
+
 @bot.message_handler(commands=['mem'], func=authorized_owner)
 @async_run
 def send_debug_history(message: telebot.types.Message):

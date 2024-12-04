@@ -245,7 +245,7 @@ def get_last_mem(chat_id: str) -> str:
         return ''
 
 
-def get_mem_as_string(chat_id: str) -> str:
+def get_mem_as_string(chat_id: str, md: bool = False) -> str:
     """
     Returns the chat history as a string for the given ID.
 
@@ -267,9 +267,15 @@ def get_mem_as_string(chat_id: str) -> str:
             if text.startswith('[Info to help you answer'):
                 end = text.find(']') + 1
                 text = text[end:].strip()
-            result += f'{role}: {text}\n'
+            if md:
+                result += f'{role}:\n\n{text}\n\n'
+            else:
+                result += f'{role}: {text}\n'
             if role == '𝐁𝐎𝐓':
-                result += '\n'
+                if md:
+                    result += '\n\n'
+                else:
+                    result += '\n'
         return result 
     except Exception as error:
         error_traceback = traceback.format_exc()

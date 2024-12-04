@@ -20,7 +20,7 @@ from collections import OrderedDict
 from cachetools import LRUCache
 
 import my_log
-from utils import async_run remove_file
+from utils import async_run, remove_file
 
 
 LOCK = threading.Lock()
@@ -90,7 +90,7 @@ def backup_db():
         # if exists db/main.db.gz move to db/main.db.gz.1 and copy
         if os.path.exists('db/main.db.gz'):
             if os.path.exists('db/main.db.gz.1'):
-                utils.remove_file('db/main.db.gz.1')
+                remove_file('db/main.db.gz.1')
             os.rename('db/main.db.gz', 'db/main.db.gz.1')
         with open('db/main.db', 'rb') as f_in, gzip.open('db/main.db.gz', 'wb', compresslevel=1) as f_out:
             shutil.copyfileobj(f_in, f_out)

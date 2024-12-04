@@ -171,8 +171,8 @@ def chat(query: str,
                     max_output_tokens = max_tokens,
                 )
 
-            use_skills = False
-            if use_skills and '-8b' not in model:
+            # use_skills = False
+            if use_skills and '-8b' not in model and 'exp' not in model and 'learn' not in model:
                 SKILLS = [
                     # "code_execution", # не работает одновременно с другими функциями
                     # query_wikipedia, # есть проблемы с поиском, википедия выдает варианты а гемма2 далеко не всегда справляется в выбором

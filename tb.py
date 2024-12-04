@@ -6023,7 +6023,7 @@ def do_task(message, custom_prompt: str = ''):
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
                     f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    f'no emoji unless it is required. '
+                    f'no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation.'
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 
@@ -6035,7 +6035,7 @@ def do_task(message, custom_prompt: str = ''):
                     f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    f'no emoji unless it is required. '
+                    f'no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation.'
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 

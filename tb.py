@@ -2688,6 +2688,15 @@ def original_mode(message: telebot.types.Message):
         bot_reply_tr(message, 'Original mode enabled. Bot will not be informed about place, names, roles etc. It will work same as original chatbot.')
 
 
+@bot.message_handler(commands=['gmodels','gmodel','gm'], func=authorized_admin)
+@async_run
+def gmodel(message: telebot.types.Message):
+    """Показывает модели доступные в gemini"""
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+    bot_reply(message, my_gemini.list_models())
+
+
 @bot.message_handler(commands=['model',], func=authorized_owner)
 @async_run
 def model(message: telebot.types.Message):

@@ -816,10 +816,20 @@ def test_new_key(key: str) -> bool:
 
 
 def list_models():
+    '''
+    Lists all available models.
+    '''
     genai.configure(api_key = cfg.gemini_keys[0])
+    result = []
     for model in genai.list_models():
         # pprint.pprint(model)
-        print(f'{model.name}: {model.display_name} | in {model.input_token_limit} out {model.output_token_limit}\n{model.description}\n')
+        # result += f'{model.name}: {model.display_name} | in {model.input_token_limit} out {model.output_token_limit}\n{model.description}\n\n'
+        if not model.name.startswith(('models/chat', 'models/text', 'models/embedding', 'models/aqa')):
+            result += [model.name,]
+    # sort results
+    result = sorted(result)
+        
+    return '\n'.join(result)
 
 
 def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | None:
@@ -910,7 +920,7 @@ if __name__ == '__main__':
 
     # imagen()
 
-    list_models()
+    print(list_models())
     # chat_cli()
     # chat_cli(model=cfg.gemini_flash_model)
 

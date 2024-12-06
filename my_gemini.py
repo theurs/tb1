@@ -818,7 +818,8 @@ def test_new_key(key: str) -> bool:
 def list_models():
     genai.configure(api_key = cfg.gemini_keys[0])
     for model in genai.list_models():
-        pprint.pprint(model)
+        # pprint.pprint(model)
+        print(f'{model.name}: {model.display_name} | in {model.input_token_limit} out {model.output_token_limit}\n{model.description}\n')
 
 
 def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | None:

@@ -42,6 +42,7 @@ import my_gemini
 import my_glm
 import my_groq
 import my_log
+import my_md
 import my_ocr
 import my_telegraph
 import my_openrouter
@@ -492,13 +493,6 @@ def img2txt(text, lang: str,
             text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full)
         elif not text and model == cfg.gemini_flash_model:
             text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
-
-
-        # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
-        # передаем эстафету следующему претенденту
-        if len(text) > 2000 and my_transcribe.detect_repetitiveness_with_tail(text):
-            text = ''
-
 
         # если не ответил джемини то попробовать glm
         if not text:
@@ -1981,9 +1975,12 @@ def handle_voice(message: telebot.types.Message):
                         # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
                         pass
                     else:
-                        bot_reply(message, utils.bot_markdown_to_html(text),
-                                parse_mode='HTML',
+                        bot_reply(message, my_md.md2md(text),
+                                parse_mode='MarkdownV2',
                                 reply_markup=get_keyboard('translate', message))
+                        # bot_reply(message, utils.bot_markdown_to_html(text),
+                        #         parse_mode='HTML',
+                        #         reply_markup=get_keyboard('translate', message))
                 else:
                     if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                         message.text = f'/tts {lang or "de"} ' + tr('Не удалось распознать текст', lang)
@@ -2117,7 +2114,8 @@ def process_image_stage_2(image_prompt: str,
             )
             # Send the processed text to the user.
             if text:
-                bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
+                # bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
+                bot_reply(message, my_md.md2md(text), disable_web_page_preview=True, parse_mode='MarkdownV2')
             else:
                 # Send an error message if the image processing fails.
                 bot_reply_tr(message, "I'm sorry, I wasn't able to process that image or understand your request.")
@@ -2239,10 +2237,12 @@ def handle_document(message: telebot.types.Message):
                                 return
                             text = img2txt(image, lang, chat_id_full, message.caption)
                             if text:
-                                text = utils.bot_markdown_to_html(text)
-                                # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                                bot_reply(message, text, parse_mode='HTML',
+                                text = my_md.md2md(text)
+                                bot_reply(message, text, parse_mode='MarkdownV2',
                                                     reply_markup=get_keyboard('translate', message))
+                                # text = utils.bot_markdown_to_html(text)
+                                # bot_reply(message, text, parse_mode='HTML',
+                                #                     reply_markup=get_keyboard('translate', message))
                             else:
                                 bot_reply_tr(message, 'Sorry, I could not answer your question.')
                             return
@@ -2288,8 +2288,12 @@ def handle_document(message: telebot.types.Message):
                             summary = my_sum.summ_text(text, 'text', lang, caption)
                             my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')
                             my_db.set_user_property(chat_id_full, 'saved_file', text)
-                            summary_html = utils.bot_markdown_to_html(summary)
-                            bot_reply(message, summary_html, parse_mode='HTML',
+                            # summary_html = utils.bot_markdown_to_html(summary)
+                            # bot_reply(message, summary_html, parse_mode='HTML',
+                            #                     disable_web_page_preview = True,
+                            #                     reply_markup=get_keyboard('translate', message))
+                            summary_html = my_md.md2md(summary)
+                            bot_reply(message, summary_html, parse_mode='MarkdownV2',
                                                 disable_web_page_preview = True,
                                                 reply_markup=get_keyboard('translate', message))
                             bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
@@ -2519,9 +2523,12 @@ def handle_photo(message: telebot.types.Message):
                         return
                     text = img2txt(result_image_as_bytes, lang, chat_id_full, message.caption)
                     if text:
-                        text = utils.bot_markdown_to_html(text)
-                        # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                        bot_reply(message, text, parse_mode='HTML',
+                        # text = utils.bot_markdown_to_html(text)
+                        # bot_reply(message, text, parse_mode='HTML',
+                        #                     reply_markup=get_keyboard('translate', message),
+                        #                     disable_web_page_preview=True)
+                        text = my_md.md2md(text)
+                        bot_reply(message, text, parse_mode='MarkdownV2',
                                             reply_markup=get_keyboard('translate', message),
                                             disable_web_page_preview=True)
                     else:
@@ -2567,9 +2574,12 @@ def handle_photo(message: telebot.types.Message):
                             return
                         text = img2txt(image, lang, chat_id_full, message.caption)
                         if text:
-                            text = utils.bot_markdown_to_html(text)
-                            # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                            bot_reply(message, text, parse_mode='HTML',
+                            # text = utils.bot_markdown_to_html(text)
+                            # bot_reply(message, text, parse_mode='HTML',
+                            #                     reply_markup=get_keyboard('translate', message),
+                            #                     disable_web_page_preview=True)
+                            text = my_md.md2md(text)
+                            bot_reply(message, text, parse_mode='MarkdownV2',
                                                 reply_markup=get_keyboard('translate', message),
                                                 disable_web_page_preview=True)
                         else:
@@ -2856,9 +2866,10 @@ def list_models_command(message: telebot.types.Message):
 
             if available_models:
                 formatted_models: str = my_openrouter.format_models_for_telegram(available_models)
-                msg: str = utils.bot_markdown_to_html(formatted_models)
-                bot_reply(message, msg, parse_mode="HTML")
-
+                # msg: str = utils.bot_markdown_to_html(formatted_models)
+                # bot_reply(message, msg, parse_mode="HTML")
+                msg: str = my_md.md2md(formatted_models)
+                bot_reply(message, msg, parse_mode="MarkdownV2")
             else:
                 bot_reply_tr(message, "No models found.")
 
@@ -3879,8 +3890,12 @@ def tts(message: telebot.types.Message, caption = None):
                 text = my_sum.get_text_from_youtube(url, lang)
                 text = my_gemini.rebuild_subtitles(text, lang)
                 if text:
-                    text = utils.bot_markdown_to_html(text)
-                    bot_reply(message, text, parse_mode='HTML',
+                    # text = utils.bot_markdown_to_html(text)
+                    # bot_reply(message, text, parse_mode='HTML',
+                    #           reply_markup=get_keyboard('translate', message),
+                    #           disable_web_page_preview=True)
+                    text = my_md.md2md(text)
+                    bot_reply(message, text, parse_mode='MarkdownV2',
                               reply_markup=get_keyboard('translate', message),
                               disable_web_page_preview=True)
             else:
@@ -4013,10 +4028,14 @@ def google(message: telebot.types.Message):
                 my_db.set_user_property(chat_id_full, 'saved_file_name', 'google: ' + q + '.txt')
                 my_db.set_user_property(chat_id_full, 'saved_file', text)
             try:
-                rr = utils.bot_markdown_to_html(r)
+                # rr = utils.bot_markdown_to_html(r)
+                rr = my_md.md2md(r)
                 hash = utils.nice_hash(q, 16)
                 SEARCH_PICS[hash] = q
-                bot_reply(message, rr, parse_mode = 'HTML',
+                # bot_reply(message, rr, parse_mode = 'HTML',
+                #                 disable_web_page_preview = True,
+                #                 reply_markup=get_keyboard(f'search_pics_{hash}', message), allow_voice=True)
+                bot_reply(message, rr, parse_mode = 'MarkdownV2',
                                 disable_web_page_preview = True,
                                 reply_markup=get_keyboard(f'search_pics_{hash}', message), allow_voice=True)
             except Exception as error2:
@@ -4453,7 +4472,6 @@ def post_telegraph(message: telebot.types.Message):
         text = my_ddg.get_last_mem(chat_id_full)
     if text:
         html = ''
-        # html = my_gemini.md2html(text)
         if not html:
             html = utils.bot_markdown_to_html(text)
         html = html.strip().replace('\n', '<br />')
@@ -4574,13 +4592,13 @@ def shell_command(message: telebot.types.Message):
                 msg += f'{n} - {x}\n'
                 n += 1
             msg_ = f'```Commands:\n{msg}```'
-            msg_ = utils.bot_markdown_to_html(msg_)
-            bot_reply(message, msg_, parse_mode='HTML')
+            # msg_ = utils.bot_markdown_to_html(msg_)
+            # bot_reply(message, msg_, parse_mode='HTML')
+            msg_ = my_md.md2md(msg_)
+            bot_reply(message, msg_, parse_mode='MarkdownV2')
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:shell_command {error}\n\n{traceback_error}')
-
-
 
 
 @bot.message_handler(commands=['blockadd3'], func=authorized_admin)
@@ -4874,8 +4892,10 @@ def ask_file(message: telebot.types.Message):
                 result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000)
 
             if result:
-                answer = utils.bot_markdown_to_html(result)
-                bot_reply(message, answer, parse_mode='HTML', reply_markup=get_keyboard('translate', message))
+                # answer = utils.bot_markdown_to_html(result)
+                # bot_reply(message, answer, parse_mode='HTML', reply_markup=get_keyboard('translate', message))
+                answer = my_md.md2md(result)
+                bot_reply(message, answer, parse_mode='MarkdownV2', reply_markup=get_keyboard('translate', message))
                 add_to_bots_mem(tr("The user asked to answer the question based on the saved text:", lang) + ' ' + my_db.get_user_property(chat_id_full, 'saved_file_name')+'\n'+query,
                                 result, chat_id_full)
             else:
@@ -4929,10 +4949,14 @@ def summ_text(message: telebot.types.Message):
                                 my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
                                 text = my_sum.summ_url(url, lang = lang, deep = False, download_only=True)
                                 my_db.set_user_property(chat_id_full, 'saved_file', text)
-                                rr = utils.bot_markdown_to_html(r)
+                                # rr = utils.bot_markdown_to_html(r)
+                                rr = my_md.md2md(r)
                                 ask = tr('Use /ask command to query this file. Example /ask generate a short version of part 1.', lang)
+                                # bot_reply(message, rr + '\n' + ask, disable_web_page_preview = True,
+                                #                     parse_mode='HTML',
+                                #                     reply_markup=get_keyboard('translate', message))
                                 bot_reply(message, rr + '\n' + ask, disable_web_page_preview = True,
-                                                    parse_mode='HTML',
+                                                    parse_mode='MarkdownV2',
                                                     reply_markup=get_keyboard('translate', message))
                                 add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
                                                     f'{tr("бот прочитал и ответил:", lang)} {r}',
@@ -4954,9 +4978,13 @@ def summ_text(message: telebot.types.Message):
                                 bot_reply_tr(message, md2tgmd.escape('Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`'), parse_mode='MarkdownV2')
                                 return
                             if res:
-                                rr = utils.bot_markdown_to_html(res)
+                                # rr = utils.bot_markdown_to_html(res)
+                                rr = my_md.md2md(res)
                                 ask = tr('Use /ask command to query this file. Example /ask generate a short version of part 1.', lang)
-                                bot_reply(message, rr + '\n' + ask, parse_mode='HTML',
+                                # bot_reply(message, rr + '\n' + ask, parse_mode='HTML',
+                                #                     disable_web_page_preview = True,
+                                #                     reply_markup=get_keyboard('translate', message))
+                                bot_reply(message, rr + '\n' + ask, parse_mode='MarkdownV2',
                                                     disable_web_page_preview = True,
                                                     reply_markup=get_keyboard('translate', message))
                                 my_db.set_sum_cache(url_id, res)
@@ -5214,8 +5242,10 @@ def send_welcome_help(message: telebot.types.Message):
     if lang not in HELP_MSG:
         my_log.log2(f'tb:send_welcome_help Unknown language: {lang}')
 
-    help = utils.bot_markdown_to_html(help)
-    bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
+    # help = utils.bot_markdown_to_html(help)
+    # bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
+    help = my_md.md2md(help)
+    bot_reply(message, help, parse_mode='MarkdownV2', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['free', 'help_1'], func = authorized_log)
@@ -5248,8 +5278,10 @@ The keys have usage limits, but if you use them together and there are enough ke
 Voice recognition, drawing, etc. also all work on free services in one way or another.
 """
     help = tr(help, lang)
-    help = utils.bot_markdown_to_html(help)
-    bot_reply(message, help, disable_web_page_preview=True, parse_mode='HTML')
+    # help = utils.bot_markdown_to_html(help)
+    # bot_reply(message, help, disable_web_page_preview=True, parse_mode='HTML')
+    help = my_md.md2md(help)
+    bot_reply(message, help, disable_web_page_preview=True, parse_mode='MarkdownV2')
 
 
 @bot.message_handler(commands=['report'], func = authorized_log)
@@ -5709,6 +5741,8 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
     if len(resp) < 45000:
         if parse_mode == 'HTML':
             chunks = utils.split_html(resp, 3800)
+        elif parse_mode == 'MarkdownV2':
+            chunks = my_md.chunk_markdown(resp, 3500)
         else:
             chunks = utils.split_text(resp, 3800)
         counter = len(chunks)
@@ -6011,8 +6045,10 @@ def do_task(message, custom_prompt: str = ''):
                             my_db.set_user_property(chat_id_full, 'saved_file_name', f'User googled phone number: {message.text}.txt')
                             my_db.set_user_property(chat_id_full, 'saved_file', text__)
                             CACHE_CHECK_PHONE[number] = (response, text__)
-                            response = utils.bot_markdown_to_html(response)
-                            bot_reply(message, response, parse_mode='HTML', not_log=True)
+                            # response = utils.bot_markdown_to_html(response)
+                            # bot_reply(message, response, parse_mode='HTML', not_log=True)
+                            response = my_md.md2md(response)
+                            bot_reply(message, response, parse_mode='MarkdownV2', not_log=True)
                             my_log.log_echo(message, '[gemini] ' + response)
                             return
 
@@ -6213,7 +6249,8 @@ def do_task(message, custom_prompt: str = ''):
                                 my_gemini.update_mem(message.text, answer, chat_id_full)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
+                                # answer_ = utils.bot_markdown_to_html(answer)
+                                answer_ = my_md.md2md(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
@@ -6225,7 +6262,9 @@ def do_task(message, custom_prompt: str = ''):
                             try:
                                 if command_in_answer(answer, message):
                                     return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                # bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                #                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                                bot_reply(message, answer, parse_mode='MarkdownV2', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
@@ -6267,7 +6306,8 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = 'Groq llama 3.2 90b ' + tr('did not answered, try to /reset and start again', lang)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
+                                # answer_ = utils.bot_markdown_to_html(answer)
+                                answer_ = my_md.md2md(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
@@ -6275,7 +6315,9 @@ def do_task(message, custom_prompt: str = ''):
                             try:
                                 if command_in_answer(answer, message):
                                     return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                # bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                #                         reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                                bot_reply(message, answer, parse_mode='MarkdownV2', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
@@ -6322,7 +6364,8 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = 'Openrouter ' + tr('did not answered, try to /reset and start again. Check your balance https://openrouter.ai/credits', lang)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
+                                # answer_ = utils.bot_markdown_to_html(answer)
+                                answer_ = my_md.md2md(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
@@ -6330,7 +6373,9 @@ def do_task(message, custom_prompt: str = ''):
                             try:
                                 if command_in_answer(answer, message):
                                     return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                # bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                #                         reply_markup=get_keyboard('openrouter_chat', message), not_log=True, allow_voice = True)
+                                bot_reply(message, answer, parse_mode='MarkdownV2', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('openrouter_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
@@ -6364,7 +6409,8 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
+                                # answer_ = utils.bot_markdown_to_html(answer)
+                                answer_ = my_md.md2md(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
@@ -6373,7 +6419,9 @@ def do_task(message, custom_prompt: str = ''):
                             try:
                                 if command_in_answer(answer, message):
                                     return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                # bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                #                         reply_markup=get_keyboard('openrouter_llama405_chat', message), not_log=True, allow_voice = True)
+                                bot_reply(message, answer, parse_mode='MarkdownV2', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('openrouter_llama405_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
@@ -6409,7 +6457,8 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = 'GLM 4 PLUS ' + tr('did not answered, try to /reset and start again.', lang)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
+                                # answer_ = utils.bot_markdown_to_html(answer)
+                                answer_ = my_md.md2md(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
@@ -6418,7 +6467,9 @@ def do_task(message, custom_prompt: str = ''):
                             try:
                                 if command_in_answer(answer, message):
                                     return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                # bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                #                         reply_markup=get_keyboard('glm4plus_chat', message), not_log=True, allow_voice = True)
+                                bot_reply(message, answer, parse_mode='MarkdownV2', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('glm4plus_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
@@ -6451,7 +6502,8 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
+                                # answer_ = utils.bot_markdown_to_html(answer)
+                                answer_ = my_md.md2md(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
@@ -6459,7 +6511,9 @@ def do_task(message, custom_prompt: str = ''):
                             try:
                                 if command_in_answer(answer, message):
                                     return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                # bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                #                         reply_markup=get_keyboard('haiku_chat', message), not_log=True, allow_voice = True)
+                                bot_reply(message, answer, parse_mode='MarkdownV2', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('haiku_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
@@ -6493,7 +6547,8 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
+                                # answer_ = utils.bot_markdown_to_html(answer)
+                                answer_ = my_md.md2md(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
@@ -6501,7 +6556,9 @@ def do_task(message, custom_prompt: str = ''):
                             try:
                                 if command_in_answer(answer, message):
                                     return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                # bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                #                         reply_markup=get_keyboard('gpt-4o-mini-ddg_chat', message), not_log=True, allow_voice = True)
+                                bot_reply(message, answer, parse_mode='MarkdownV2', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('gpt-4o-mini-ddg_chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')

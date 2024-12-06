@@ -53,6 +53,7 @@ python-pptx
 SpeechRecognition
 sqlitedict
 starlette
+telegramify-markdown
 telegraph
 trafilatura
 

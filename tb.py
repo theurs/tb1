@@ -418,6 +418,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_openrouter.update_mem(query, resp, chat_id_full)
     elif 'openrouter_llama405' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_sambanova.update_mem(query, resp, chat_id_full)
+    elif 'qwen70' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_sambanova.update_mem(query, resp, chat_id_full)
     elif 'glm4plus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_glm.update_mem(query, resp, chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -1356,6 +1358,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2, button3, button4)
         return markup
 
+    elif kbd == 'qwen70_chat':
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='qwen70_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'glm4plus_chat':
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
@@ -1469,6 +1483,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             msg = 'Llama-3.1 405b'
         button7 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama405')
 
+        if chat_mode == 'qwen70':
+            msg = '✅ Qwen2.5-72B-Instruct'
+        else:
+            msg = 'Qwen2.5-72B-Instruct'
+        button7_2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwen70')
+
         if chat_mode == 'gpt-4o-mini-ddg':
             msg = '✅ GPT 4o mini'
         else:
@@ -1503,6 +1523,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button5, button6)
         if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
             markup.row(button4, button7)
+            markup.row(button7_2)
         else:
             markup.row(button4)
         markup.row(button9, button10)
@@ -1767,6 +1788,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_llama405':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter_llama405')
+        elif call.data == 'select_qwen70':
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Qwen2.5-72B-Instruct.', lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen70')
         elif call.data == 'select_glm4plus':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GLM 4 PLUS.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'glm4plus')
@@ -1809,6 +1833,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'openrouter_llama405_reset':
             my_sambanova.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Llama 405b очищена.')
+        elif call.data == 'qwen70_reset':
+            my_sambanova.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с Qwen2.5-72B-Instruct очищена.')
         elif call.data == 'glm4plus':
             my_glm.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с GLM 4 PLUS очищена.')
@@ -3363,6 +3390,8 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
         my_openrouter.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         my_sambanova.force(chat_id_full, text)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
+        my_sambanova.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
         my_glm.force(chat_id_full, text)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3411,6 +3440,8 @@ def undo_cmd(message: telebot.types.Message):
         my_openrouter.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         my_sambanova.undo(chat_id_full)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
+        my_sambanova.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm3plus':
         my_glm.undo(chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3441,6 +3472,8 @@ def reset_(message: telebot.types.Message, say: bool = True):
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         my_openrouter.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
+        my_sambanova.reset(chat_id_full)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
         my_sambanova.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
         my_glm.reset(chat_id_full)
@@ -3635,6 +3668,8 @@ def save_history(message: telebot.types.Message):
         prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         prompt = my_sambanova.get_mem_as_string(chat_id_full, md = True) or ''
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
+        prompt = my_sambanova.get_mem_as_string(chat_id_full, md = True) or ''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
         prompt = my_glm.get_mem_as_string(chat_id_full, md = True) or ''
     if 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3687,6 +3722,10 @@ def send_debug_history(message: telebot.types.Message):
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         prompt = 'Llama 405b\n\n'
+        prompt += my_sambanova.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
+        prompt = 'Qwen2.5-72B-Instruct\n\n'
         prompt += my_sambanova.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
@@ -4467,6 +4506,8 @@ def post_telegraph(message: telebot.types.Message):
     elif mode in ('llama370',):
         text = my_groq.get_last_mem(chat_id_full)
     elif mode == 'openrouter_llama405':
+        text = my_sambanova.get_last_mem(chat_id_full)
+    elif mode == 'qwen70':
         text = my_sambanova.get_last_mem(chat_id_full)
     elif mode == 'glm4plus':
         text = my_glm.get_last_mem(chat_id_full)
@@ -5396,6 +5437,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini-learn': cfg.gemini_learn_model,
             'llama370': 'Llama 3.3 70b',
             'openrouter_llama405': 'Llama 3.1 405b',
+            'qwen70': 'Qwen2.5-72B-Instruct',
             'openrouter': 'openrouter.ai',
             'bothub': 'bothub.chat',
             'glm4plus': 'GLM 4 PLUS',
@@ -6403,6 +6445,49 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:openrouter_llama405 {error3}\n{error_traceback}')
+                        return
+
+
+                # если активирован режим общения с Qwen2.5-72B-Instruct
+                if chat_mode_ == 'qwen70':
+                    if len(msg) > my_sambanova.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Qwen2.5-72B-Instruct, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_sambanova.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
+                            answer = my_sambanova.chat(
+                                message.text,
+                                chat_id_full,
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature'),
+                                system=style_,
+                                model = 'Qwen2.5-72B-Instruct',
+                            )
+
+                            WHO_ANSWERED[chat_id_full] = 'Qwen2.5-72B-Instruct'
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            my_log.log_echo(message, f'[Qwen2.5-72B-Instruct] {answer}')
+
+                            try:
+                                if command_in_answer(answer, message):
+                                    return
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('qwen70_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('qwen70_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:qwen70 {error3}\n{error_traceback}')
                         return
 
 

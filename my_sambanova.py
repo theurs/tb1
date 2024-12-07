@@ -64,7 +64,8 @@ def ai(
         temperature = temperature/2
 
     if not model:
-        model = 'Meta-Llama-3.1-405B-Instruct' # 'Meta-Llama-3.1-70B-Instruct', 'Meta-Llama-3.1-8B-Instruct', 'Meta-Llama-3.1-405B-Instruct'
+        # 'Meta-Llama-3.1-70B-Instruct', 'Meta-Llama-3.1-8B-Instruct', 'Meta-Llama-3.1-405B-Instruct' 'Qwen2.5-72B-Instruct'
+        model = 'Meta-Llama-3.1-405B-Instruct'
 
     messages = mem or []
     if system:

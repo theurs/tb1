@@ -2654,7 +2654,7 @@ def config(message: telebot.types.Message):
         bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
         MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {bot_name} /name
 
-<b>{tr('Bot style(role):', lang)}</b> {my_db.get_user_property(chat_id_full, 'role') if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)} /style
+<b>{tr('Bot style(role):', lang)}</b> {utils.html.escape(my_db.get_user_property(chat_id_full, 'role')) if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)} /style
 
 <b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
 

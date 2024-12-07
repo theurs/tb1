@@ -1,9 +1,9 @@
 https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2
 
-https://api-inference.huggingface.co/models/digiplay/Juggernaut_final
-https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10
+# https://api-inference.huggingface.co/models/digiplay/Juggernaut_final
+# https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10
 https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1
-https://api-inference.huggingface.co/models/UnfilteredAI/NSFW-gen-v2
+# https://api-inference.huggingface.co/models/UnfilteredAI/NSFW-gen-v2
 https://api-inference.huggingface.co/models/Corcelio/mobius
 https://api-inference.huggingface.co/models/sd-community/sdxl-flash
 https://api-inference.huggingface.co/models/fluently/Fluently-XL-v4

@@ -461,6 +461,7 @@ def img2txt(text, lang: str,
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     text = ''
+    time_to_answer_start = time.time()
 
     try:
         if not model:
@@ -478,20 +479,34 @@ def img2txt(text, lang: str,
         chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
         if chat_mode == 'openrouter':
             text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = 'openrouter'
         elif chat_mode == 'gemini-exp':
             text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = cfg.gemini_exp_model
         elif chat_mode == 'gemini-learn':
             text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = cfg.gemini_learn_model
         elif chat_mode == 'gemini':
             text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = cfg.gemini_flash_model
 
         # сначала попробовать с помощью джемини
         if not text:
             text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = model
         if not text and model == cfg.gemini_pro_model:
             text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = cfg.gemini_pro_model_fallback
         elif not text and model == cfg.gemini_flash_model:
             text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = cfg.gemini_flash_model_fallback
 
 
         # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
@@ -503,10 +518,14 @@ def img2txt(text, lang: str,
         # если не ответил джемини то попробовать glm
         if not text:
             text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = 'glm4plus'
 
         # если не ответил glm то попробовать groq (llama-3.2-90b-vision-preview)
         if not text:
             text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = 'llama-3.2-90b-vision-preview'
 
         # # если не ответил groq llama то попробовать sambanova 'Llama-3.2-90B-Vision-Instruct'
         # if not text:
@@ -515,6 +534,8 @@ def img2txt(text, lang: str,
         # если не ответил самбанова то попробовать openrouter_free mistralai/pixtral-12b:free
         if not text:
             text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
+            if text:
+                WHO_ANSWERED[chat_id_full] = 'mistralai/pixtral-12b:free'
 
     except Exception as img_from_link_error:
         traceback_error = traceback.format_exc()
@@ -522,6 +543,9 @@ def img2txt(text, lang: str,
 
     if text:
         add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
+
+    if chat_id_full in WHO_ANSWERED:
+        WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
     return text
 

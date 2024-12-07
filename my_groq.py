@@ -34,7 +34,8 @@ USER_KEYS_LOCK = threading.Lock()
 
 
 # for ai func
-DEFAULT_MODEL = 'llama-3.2-90b-vision-preview'
+# DEFAULT_MODEL = 'llama-3.2-90b-vision-preview'
+DEFAULT_MODEL = 'llama-3.3-70b-versatile'
 
 
 # блокировка чатов что бы не испортить историю 
@@ -284,6 +285,14 @@ def ai(prompt: str = '',
                 else:
                     return ''
                 return ai(prompt, system, mem_, temperature*2, model__, max_tokens_, key_, timeout)
+            elif not resp and 'llama-3.3' in model_:
+                if model_ == 'llama-3.3-70b-versatile':
+                    model__ = 'llama-3.3-70b-specdec'
+                elif model_ == 'llama-3.3-70b-specdec':
+                    model__ = 'llama-3.2-90b-vision-preview'
+                else:
+                    return ''
+                return ai(prompt, system, mem_, temperature*2, model__, max_tokens_, key_, timeout)
             if resp:
                 return resp
         return ''
@@ -405,13 +414,9 @@ def force(chat_id: str, text: str):
             LOCKS[chat_id] = lock
         with lock:
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
-            if mem:
-                # update last bot answer
-                if len(mem) > 1:
-                    mem[-1]['content'] = text 
-                    my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob(mem))
-            else:
-                my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob([text])) # first message in history, assume it was bot
+            if mem and len(mem) > 1:
+                mem[-1]['content'] = text 
+                my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_groq(f'Failed to force message in chat {chat_id}: {error}\n\n{error_traceback}')

@@ -182,13 +182,9 @@ def force(chat_id: str, text: str):
             LOCKS[chat_id] = lock
         with lock:
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
-            if mem:
-                # update last bot answer
-                if len(mem) > 1:
-                    mem[-1]['content'] = text
-                    my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem))
-            else:
-                my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob([text]))
+            if mem and len(mem) > 1:
+                mem[-1]['content'] = text
+                my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_openrouter_free(f'Failed to force message in chat {chat_id}: {error}\n\n{error_traceback}')

@@ -527,10 +527,6 @@ def img2txt(text, lang: str,
             if text:
                 WHO_ANSWERED[chat_id_full] = 'llama-3.2-90b-vision-preview'
 
-        # # если не ответил groq llama то попробовать sambanova 'Llama-3.2-90B-Vision-Instruct'
-        # if not text:
-        #     text = my_sambanova.img2txt(data, query, model='Llama-3.2-90B-Vision-Instruct', temperature=temperature, chat_id=chat_id_full)
-
         # если не ответил самбанова то попробовать openrouter_free mistralai/pixtral-12b:free
         if not text:
             text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
@@ -1462,9 +1458,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             button2 = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini15_pro')
 
         if chat_mode == 'llama370':
-            msg = '✅ Llama-3.2 90b'
+            msg = '✅ Llama-3.3 70b'
         else:
-            msg = 'Llama-3.2 90b'
+            msg = 'Llama-3.3 70b'
         button4 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
 
         if chat_mode == 'openrouter_llama405':
@@ -1766,7 +1762,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
                                       reply_markup=get_keyboard('chat', message))
         elif call.data == 'select_llama370':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.2 90b Groq.', lang))
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.3 70b Groq.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
         elif call.data == 'select_llama405':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
@@ -1806,7 +1802,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
         elif call.data == 'groq-llama370_reset':
             my_groq.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Groq llama 3.2 90b очищена.')
+            bot_reply_tr(message, 'История диалога с Groq llama 3.3 70b очищена.')
         elif call.data == 'openrouter_reset':
             my_openrouter.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с openrouter очищена.')
@@ -1993,14 +1989,6 @@ def handle_voice(message: telebot.types.Message):
                 text = text.strip()
                 # Отправляем распознанный текст
                 if text:
-                    # # если текст длинный то попытаться его причесать, разбить на абзацы исправить ошибки
-                    # if len(text) > 800:
-                    #     prompt = tr('Исправь ошибки распознавания речи в этой транскрипции, разбей на абзацы, покажи только исправленный текст без комментариев', lang)
-                    #     new_text = my_gemini.retranscribe(text, prompt)
-                    #     if not new_text:
-                    #         new_text = my_groq.retranscribe(text, prompt)
-                    #     if new_text:
-                    #         text = new_text
                     if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                         # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
                         pass
@@ -3690,7 +3678,7 @@ def send_debug_history(message: telebot.types.Message):
         prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        prompt = 'Groq llama 3.2 90b\n\n'
+        prompt = 'Groq llama 3.3 70b\n\n'
         prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
@@ -5406,7 +5394,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini8': cfg.gemini_flash_light_model,
             'gemini-exp': cfg.gemini_exp_model,
             'gemini-learn': cfg.gemini_learn_model,
-            'llama370': 'Llama 3.2 90b',
+            'llama370': 'Llama 3.3 70b',
             'openrouter_llama405': 'Llama 3.1 405b',
             'openrouter': 'openrouter.ai',
             'bothub': 'bothub.chat',
@@ -6251,8 +6239,8 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = answer_
 
                             if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + llama3-90 {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[{gmodel} + llama3-90] {answer}')
+                                WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + llama3.3-70b {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                my_log.log_echo(message, f'[{gmodel} + llama3.3-70b] {answer}')
                             else:
                                 my_log.log_echo(message, f'[{gmodel}] {answer}')
                             try:
@@ -6271,10 +6259,10 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
 
-                # если активирован режим общения с groq llama 3.2 90b
+                # если активирован режим общения с groq llama 3.3 70b
                 if chat_mode_ == 'llama370':
                     if len(msg) > my_groq.MAX_REQUEST_LLAMA31:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3.2 90b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_LLAMA31}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3.3 70b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_LLAMA31}')
                         return
 
                     with ShowAction(message, action):
@@ -6289,22 +6277,21 @@ def do_task(message, custom_prompt: str = ''):
                                 style = style_,
                                 temperature = my_db.get_user_property(chat_id_full, 'temperature'),
                                 model = my_groq.DEFAULT_MODEL,
-                            #   model = 'llama-3.2-90b-vision-preview',
                                 )
 
                             if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'groq-llama390'
+                                WHO_ANSWERED[chat_id_full] = 'groq-llama3.3-70'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:
-                                answer = 'Groq llama 3.2 90b ' + tr('did not answered, try to /reset and start again', lang)
+                                answer = 'Groq llama 3.3 70b ' + tr('did not answered, try to /reset and start again', lang)
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
-                            my_log.log_echo(message, f'[groq-llama390] {answer}')
+                            my_log.log_echo(message, f'[groq-llama3.3-70] {answer}')
                             try:
                                 if command_in_answer(answer, message):
                                     return

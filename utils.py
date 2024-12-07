@@ -320,22 +320,12 @@ def bot_markdown_to_html(text: str) -> str:
 
 
 
-    # # 2 * в <b></b>
-    # text = re.sub('\*\*(.+?)\*\*', '<b>\\1</b>', text)
-    # text = re.sub(r'^\*\*(.*?)\*\*$', r'<b>\1</b>', text, flags=re.MULTILINE | re.DOTALL)
-
     # 2 _ в <i></i>
     text = re.sub('\_\_(.+?)\_\_', '<i>\\1</i>', text)
     text = re.sub(r'^\_\_(.*?)\_\_$', r'<i>\1</i>', text, flags=re.MULTILINE | re.DOTALL)
 
     # Замена _*текст*_ на <i>текст</i>
     text = re.sub(r"(?<!\w)_\*([^\n\s].*?[^\n\s])\*_(?!\w)", r"<i>\1</i>", text)
-
-    # # 1 _ в <i></i>
-    # text = re.sub(r"(?<!\w)_([^\n\s_*][^\n*_]*[^\n\s_*])_(?!\w)", r"<i>\1</i>", text)
-
-    # # Замена *текст* на <i>текст</i>
-    # text = re.sub(r"(?<!\w)\*(?!\s)([^\n*]+?)(?<!\s)\*(?!\w)", r"<i>\1</i>", text)
 
     # Замена ~~текст~~ на <s>текст</s>
     text = re.sub(r"(?<!\w)~~(?!\s)([^\n*]+?)(?<!\s)~~(?!\w)", r"<s>\1</s>", text)
@@ -347,16 +337,6 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r"<b><i>(.+?)</b></i>", r"<b><i>\1</i></b>", text)
     text = re.sub(r"<i><b>(.+?)</i></b>", r"<i><b>\1</b></i>", text)
 
-
-    # # tex в unicode
-    # matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
-    # for match in matches:
-    #     new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
-    #     new_match = html.escape(new_match)
-    #     text = text.replace(f'$${match}$$', new_match)
-    #     text = text.replace(f'${match}$', new_match)
-    #     text = text.replace(f'\[{match}\]', new_match)
-    #     text = text.replace(f'\({match}\)', new_match)
 
     # меняем маркдаун ссылки на хтмл
     text = re.sub('''\[(.*?)\]\((https?://\S+)\)''', r'<a href="\2">\1</a>', text)
@@ -405,7 +385,7 @@ def replace_latex(text: str) -> str:
         """
         # Базовая проверка на наличие LaTeX команд или математических символов
         latex_indicators = [
-            '\\', '_', '^', '{', '}',  # базовые LaTeX команды
+            '\\', '_', '^', '{', '}', '=',  # базовые LaTeX команды
             '\\frac', '\\sqrt', '\\sum', '\\int',  # математические операторы
             '\\alpha', '\\beta', '\\gamma',  # греческие буквы
             '\\mathbf', '\\mathrm', '\\text'  # форм
@@ -428,7 +408,8 @@ def replace_latex(text: str) -> str:
                 continue
 
     # 2. Затем ищем выражения в $ ... $
-    matches = re.findall(r'(?<!\$)\$(?!\$)(.*?)(?<!\$)\$(?!\$)', text, flags=re.DOTALL)
+    # matches = re.findall(r'(?<!\$)\$(?!\$)(.*?)(?<!\$)\$(?!\$)', text, flags=re.DOTALL)
+    matches = re.findall(r'(?<!\$)\$(?!$)(.*?)(?<!\$)\$(?!$)', text, flags=re.DOTALL)
     for match in matches:
         if is_valid_latex(match):
             try:
@@ -1582,6 +1563,17 @@ This is a clean and efficient way to create a reusable component that interacts 
 
 **5. Cov(X, Y) = 0.015 ≈ 0.02** (Округление до сотых, как и в исходном задании). Важно помнить, что ковариация очень мала, что указывает на слабую линейную зависимость между X и Y.
 
+n(n+1)/2 = 63
+
+$n(n+1) = 126$
+
+n^2 + n - 126 = 0
+
+Это квадратное уравнение. Можно решить его через дискриминант, но проще заметить, что 126 = 9 × 14. Поэтому можно разложить уравнение на множители:
+
+$(n-11)(n+12) = 0$
+
+Корни уравнения: $n_1 = 11$ и $$n_2 = -12$$. Так как высота пирамиды не может быть отрицательной, то единственный подходящий корень — $n = 11$.
 
 '''
 

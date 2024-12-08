@@ -1523,7 +1523,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.row(button5, button6)
         if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
             markup.row(button4, button7)
-            markup.row(button7_2)
         else:
             markup.row(button4)
         markup.row(button9, button10)
@@ -1534,7 +1533,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             msg = 'OpenRouter'
         button11 = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
         if chat_id_full in my_openrouter.KEYS:
-            markup.row(button11)
+            markup.row(button11, button7_2)
+        else:
+            markup.row(button7_2)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

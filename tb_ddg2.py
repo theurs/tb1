@@ -494,7 +494,7 @@ def echo_all(message):
     response = chat(query, chat_id)
     if response:
         answer = utils.bot_markdown_to_html(response)
-        # bot.reply_to(message, answer)
+        bot.reply_to(message, answer, parse_mode='HTML')
 
 
 # Запуск бота

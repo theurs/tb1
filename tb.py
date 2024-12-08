@@ -2972,7 +2972,7 @@ def openrouter(message: telebot.types.Message):
 /maxhistchars <maxhistchars> - how many chars in history
 
 Usage: /openrouter <api key> or <api base url>
-/openrouter https://openrouter.ai/api/v1/chat/completions (ok)
+/openrouter https://openrouter.ai/api/v1 (ok)
 https://bothub.chat/api/v2/openai/v1 (ok)
 https://api.groq.com/openai/v1 (ok)
 https://api.x.ai/v1 (ok)

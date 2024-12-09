@@ -6162,6 +6162,8 @@ def do_task(message, custom_prompt: str = ''):
                     gmodel = cfg.gemini_learn_model
 
                 WHO_ANSWERED[chat_id_full] = chat_mode_
+                if chat_mode_ == 'llama370':
+                    WHO_ANSWERED[chat_id_full] = 'groq llama 3.3 70b'
                 if chat_mode_.startswith('gemini'):
                     WHO_ANSWERED[chat_id_full] = gmodel
                 time_to_answer_start = time.time()
@@ -6323,7 +6325,7 @@ def do_task(message, custom_prompt: str = ''):
                                 )
 
                             if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'groq-llama3.3-70'
+                                WHO_ANSWERED[chat_id_full] = 'groq-llama3.3-70b'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:

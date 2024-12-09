@@ -3043,7 +3043,7 @@ def translation_gui(message: telebot.types.Message):
         my_log.log2(f'tb:tgui:{error}\n\n{traceback_error}')
 
 
-@bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_log)
+@bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_owner)
 @async_run
 def users_keys_for_gemini(message: telebot.types.Message):
     """Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл"""

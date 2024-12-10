@@ -3553,6 +3553,8 @@ def set_bing_cookies(message: telebot.types.Message):
         cookies = [x for x in cookies if not x.startswith('-')]
         n = 0
 
+        if cookies:
+            bing_img.COOKIE.clear()
         for cookie in cookies:
             if len(cookie) < 200:
                 continue

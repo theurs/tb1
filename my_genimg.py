@@ -450,6 +450,12 @@ def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '')
         if prompt.startswith('!!!'):
             prompt = prompt[3:]
             dont_translate = True
+        elif prompt.startswith('!!'):
+            prompt = prompt[2:]
+            dont_translate = True
+        elif prompt.startswith('!'):
+            prompt = prompt[1:]
+            dont_translate = True
         else:
             dont_translate = False
 

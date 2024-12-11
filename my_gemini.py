@@ -172,7 +172,7 @@ def chat(query: str,
                 )
 
             # use_skills = False
-            if use_skills and '-8b' not in model and 'exp' not in model and 'learn' not in model:
+            if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model:
                 SKILLS = [
                     # "code_execution", # не работает одновременно с другими функциями
                     # query_wikipedia, # есть проблемы с поиском, википедия выдает варианты а гемма2 далеко не всегда справляется в выбором

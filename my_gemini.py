@@ -189,7 +189,7 @@ def chat(query: str,
                     ]
                 if chat_id:
                     if chat_id != 'test':
-                        _user_id = int(chat_id.split(' ')[0].replace('[','').replace(']',''))
+                        _user_id = utils.extract_user_id(chat_id)
                     else:
                         _user_id = 0
                     if _user_id in cfg.admins or _user_id == 0:

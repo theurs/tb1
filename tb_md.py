@@ -3276,7 +3276,7 @@ def change_mode(message: telebot.types.Message):
 
 """
 
-        _user_id = int(chat_id_full.split(' ')[0].replace('[','').replace(']',''))
+        _user_id = utils.extract_user_id(chat_id_full)
         if _user_id in cfg.admins:
             msg += '`/style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску`'
         bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')

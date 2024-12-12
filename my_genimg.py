@@ -6,6 +6,7 @@ import io
 import json
 import os
 import random
+import re
 import time
 import threading
 import traceback
@@ -447,17 +448,8 @@ def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '')
         conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
 
         prompt = prompt.strip()
-        if prompt.startswith('!!!'):
-            prompt = prompt[3:]
-            dont_translate = True
-        elif prompt.startswith('!!'):
-            prompt = prompt[2:]
-            dont_translate = True
-        elif prompt.startswith('!'):
-            prompt = prompt[1:]
-            dont_translate = True
-        else:
-            dont_translate = False
+        dont_translate = prompt.startswith('!')
+        prompt = re.sub(r'^!+', '', prompt).strip()
 
         query = f'''
 User want to create image with text to image generator.

@@ -22,7 +22,7 @@ import my_db
 import my_log
 import my_sum
 import utils
-from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, get_cryptocurrency_rates, run_script, query_wikipedia, get_time_in_timezone
+from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, calc_admin, get_cryptocurrency_rates, run_script, query_wikipedia, get_time_in_timezone
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -172,6 +172,8 @@ def chat(query: str,
                 )
 
             # use_skills = False
+            calc_tool = calc if utils.extract_user_id(chat_id) not in cfg.admins else calc_admin
+
             if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model:
                 SKILLS = [
                     # "code_execution", # не работает одновременно с другими функциями
@@ -179,7 +181,7 @@ def chat(query: str,
                     search_google,
                     download_text_from_url,
                     # update_user_profile,
-                    calc,
+                    calc_tool,
                     get_time_in_timezone,
                     get_weather,
                     get_currency_rates,

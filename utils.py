@@ -1285,6 +1285,26 @@ def truncate_text(text: str, max_lines: int = 10, max_chars: int = 300) -> str:
         return text
 
 
+def extract_user_id(user_id_string: str) -> int:
+    """
+    Extracts the user ID (the first number) from a string like 'user_id = '[2534346] [0]'' using regular expressions.
+
+    Args:
+        user_id_string: The input string containing the user ID.
+
+    Returns:
+        The extracted user ID as an integer.
+        Returns 0 if the input string is not in the expected format or does not contain a valid number.
+    """
+    match = re.search(r'\[(-?\d+)\]', user_id_string)
+    if match:
+        try:
+            return int(match.group(1))
+        except ValueError:
+            return 0
+    return 0
+
+
 if __name__ == '__main__':
     pass
 

@@ -237,6 +237,29 @@ def calc(expression: str) -> str:
         return f'Error: {error}'
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
+def calc_admin(expression: str) -> str:
+    '''Calculate expression with pythons eval(). Use it for all calculations.
+    Available modules: decimal, math, numbers, numpy, random, datetime.
+
+    return str(eval(expression))
+    Examples: calc("56487*8731") -> '493187997'
+              calc("pow(10, 2)") -> '100'
+              calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
+              calc("decimal.Decimal('0.234234')*2") -> '0.468468'
+              calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
+    '''
+    my_log.log_gemini_skills(f'Admin calc: {expression}')
+
+    try:
+        expression_ = expression.replace('math.factorial', 'my_factorial')
+        r = str(eval(expression_))
+        my_log.log_gemini_skills(f'Admin calc result: {r}')
+        return r
+    except Exception as error:
+        return f'Error: {error}'
+
+
 def my_factorial(n: int) -> int:
     '''Calculate factorial of n.
     return int(math.factorial(n))

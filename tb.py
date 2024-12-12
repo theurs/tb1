@@ -1461,7 +1461,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         else:
             msg = 'Gemini 2.0 Flash'
         button1 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_flash')
-        
+
         if chat_mode == 'gemini15':
             msg = '✅ Gemini 1.5 Pro'
         else:

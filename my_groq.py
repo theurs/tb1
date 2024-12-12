@@ -36,6 +36,7 @@ USER_KEYS_LOCK = threading.Lock()
 # for ai func
 # DEFAULT_MODEL = 'llama-3.2-90b-vision-preview'
 DEFAULT_MODEL = 'llama-3.3-70b-versatile'
+FALLBACK_MODEL = 'llama-3.2-90b-vision-preview'
 
 
 # блокировка чатов что бы не испортить историю 
@@ -669,7 +670,10 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_M
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    return ai(query, temperature=temperature, model_ = model)
+    r = ai(query, temperature=temperature, model_ = model)
+    if not r and model == DEFAULT_MODEL:
+        r = ai(query, temperature=temperature, model_ = DEFAULT_MODEL_FALLBACK)
+    return r
 
 
 def check_phone_number(number: str) -> str:

@@ -662,7 +662,10 @@ def sum_big_text(text:str, query: str, temperature: float = 1) -> str:
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    return ai(query, temperature=temperature, model=cfg.gemini_flash_model)
+    r = ai(query, temperature=temperature, model=cfg.gemini_flash_model)
+    if not r:
+        r = ai(query, temperature=temperature, model=cfg.gemini_flash_model_fallback)
+    return r
 
 
 def detect_lang(text: str) -> str:

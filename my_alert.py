@@ -5,6 +5,7 @@ import time
 
 import cfg
 import my_db
+import utils
 
 
 def get_targets(DDOS_BLOCKED_USERS, chat_id_full):
@@ -12,13 +13,8 @@ def get_targets(DDOS_BLOCKED_USERS, chat_id_full):
     all_users = list(set(my_db.get_all_users_ids()))
     for x in all_users:
         chat_id = x
-        x = x.replace('[','').replace(']','')
-        try:
-            chat = int(x.split()[0])
-        except:
-            print(x)
-            continue
-
+        chat = utils.extract_user_id(x)
+ 
         # посылать только админам, для проверки    
         # if chat not in cfg.admins:
         #     continue

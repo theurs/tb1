@@ -4103,7 +4103,7 @@ def get_user_image_counter(chat_id_full: str) -> int:
 
 def check_vip_user(chat_id_full: str) -> bool:
     '''проверяет есть ли у юзера ключи или звезды'''
-    user_id = int(chat_id_full.split(' ')[0].replace('[', '').replace(']', ''))
+    user_id = utils.extract_user_id(chat_id_full)
     have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
             user_id in cfg.admins or \
@@ -4114,7 +4114,7 @@ def check_vip_user(chat_id_full: str) -> bool:
 def check_vip_user_gemini(chat_id_full: str) -> bool:
     '''проверяет есть ли у юзера ключи от gemini'''
     try:
-        user_id = int(chat_id_full.split(' ')[0].replace('[', '').replace(']', ''))
+        user_id = utils.extract_user_id(chat_id_full)
         have_keys = chat_id_full in my_gemini.USER_KEYS or user_id in cfg.admins
         return have_keys
     except Exception as error:

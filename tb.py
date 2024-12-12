@@ -4333,7 +4333,7 @@ def image_gen(message: telebot.types.Message):
 /i {tr('an apple', lang)}
 {draw_text} {tr('an apple', lang)}
 
-{tr('Use !!! marker in the beginning to avoid translation and use the text as it is.', lang)}
+{tr('Use ! marker in the beginning to avoid translation and use the text as it is.', lang)}
 
 {tr('Use /bing command for Bing only.', lang)}
 

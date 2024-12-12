@@ -922,14 +922,16 @@ if __name__ == '__main__':
 
     # imagen()
 
-    print(list_models())
+    # print(list_models())
     # chat_cli()
     # chat_cli(model=cfg.gemini_flash_model)
 
-    # with open('d:\\downloads\\1.txt','r') as f:
-        # text = f.read()
+    with open('C:/Users/user/Downloads/3.txt','r', encoding='utf-8') as f:
+        text = f.read()
 
-    # print(ai('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы\n\n'+text, mem=MEM_UNCENSORED))
+    # print(ai('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы\n\n'+text))
+    q = 'Что это?\n\n'+text
+    print(ai(q[:100000]))
 
 
     # print(translate('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы', to_lang='en', help='не меняй кейс символов и форматирование'))

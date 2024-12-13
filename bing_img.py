@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# если не доступно в стране то можно попробовать добавить это в hosts
+# 50.7.85.220 copilot.microsoft.com
+# 50.7.85.220 sydney.bing.com
+# 50.7.85.220 edgeservices.bing.com
+# 50.7.85.220 www.bing.com
 
 
 import random

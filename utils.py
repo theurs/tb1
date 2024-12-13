@@ -695,78 +695,188 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
 
 def split_html(text: str, max_length: int = 1500) -> list:
     """
-    Splits HTML text into chunks with a maximum length, respecting code blocks, blockquotes,
-    expandable blockquotes, bold, and italic tags.
-    Args:
-        text: The HTML text to split.
-        max_length: The maximum length of each chunk.
-    Returns:
-        A list of HTML chunks.
+    Разбивает HTML-подобный текст на части, не превышающие max_length символов.
+
+    Учитывает вложенность тегов и корректно переносит их между частями.
     """
-    tag = ''
-    mode = 0
-    chunks = []
-    chunk = ''
-    
-    # Mode mapping for different tags
-    TAG_MODES = {
-        '<pre><code': (1, lambda l: l[:l.find('>', 10) + 1], '</code></pre>'),
-        '<code>': (2, lambda l: '<code>', '</code>'),
-        '<b>': (3, lambda l: '<b>', '</b>'),
-        '<i>': (4, lambda l: '<i>', '</i>'),
-        '<blockquote>': (5, lambda l: '<blockquote>', '</blockquote>'),
-        '<expandable_blockquote>': (6, lambda l: '<expandable_blockquote>', '</blockquote>')
+
+    tags = {
+        "b": "</b>",
+        "i": "</i>",
+        "code": "</code>",
+        "pre": "</pre>",
+        "blockquote": "</blockquote>",
+        "expandable_blockquote": "</expandable_blockquote>",
     }
-    
-    for line in text.split('\n'):
-        found_tag = False
-        # Check for opening tags
-        for start_tag, (tag_mode, tag_extractor, end_tag) in TAG_MODES.items():
-            if line.startswith(start_tag) and end_tag not in line:
-                mode = tag_mode
-                tag = tag_extractor(line)
-                found_tag = True
+    opening_tags = {f"<{tag}>" for tag in tags}
+    closing_tags = {tag for tag in tags.values()}
+
+    result = []
+    current_chunk = ""
+    open_tags_stack = []
+
+    lines = text.splitlines(keepends=True)
+    for line in lines:
+        line_stripped = line.strip()
+
+        # Обработка открывающих тегов
+        for tag in opening_tags:
+            if line_stripped.startswith(tag):
+                tag_name = tag[1:-1]
+
+                # Проверяем, закрыт ли тег в этой же строке
+                if tags[tag_name] not in line:
+                    open_tags_stack.append(tag_name)
+
+                # Обработка случая <pre><code class="">
+                if tag_name == "pre" and '<code class="' in line:
+                    open_tags_stack.append("code")
+
                 break
+
+        # Обработка закрывающих тегов
+        for closing_tag in closing_tags:
+            if closing_tag in line:
+                tag_name = closing_tag[2:-1]
+
+                remove_index = -1
+                for i in reversed(range(len(open_tags_stack))):
+                    if open_tags_stack[i] == tag_name:
+                        remove_index = i
+                        break
+                if remove_index != -1:
+                    open_tags_stack.pop(remove_index)
+
+        # Добавление строки к текущему чанку
+        if len(current_chunk) + len(line) > max_length:
+            # Чанк переполнен, нужно его завершить и начать новый
+
+            # 1. Закрываем теги в текущем чанке
+            for tag_name in reversed(open_tags_stack):
+                current_chunk += tags[tag_name]
+
+            # 2. Добавляем текущий чанк в результат
+            result.append(current_chunk)
+
+            # 3. Начинаем новый чанк
+            current_chunk = ""
+
+            # 4. Открываем теги в новом чанке
+            for tag_name in open_tags_stack:
+                current_chunk += f"<{tag_name}>"
+
+        current_chunk += line
+
+    # Добавление последнего чанка
+    if current_chunk:
+        result.append(current_chunk)
+
+    result2 = post_process_split_html(result)
+
+    return result2
+
+
+def post_process_split_html(chunks: list) -> list:
+    """
+    Выполняет постобработку списка чанков, полученного из split_html.
+
+    Добавляет недостающие закрывающие теги </b> в конец чанка и
+    недостающие открывающие теги <b> в начало следующего чанка.
+
+    Работает только для тегов <b> и </b>, предполагая, что все они правильно закрыты в пределах всего текста.
+    """
+    processed_chunks = []
+
+    for i, chunk in enumerate(chunks):
+        # 1. Считаем количество открытых и закрытых тегов <b> в текущем чанке
+        open_count = chunk.count("<b>")
+        close_count = chunk.count("</b>")
+
+        # 2. Добавляем недостающие теги
+        if open_count > close_count:
+            chunk += "</b>"
+        elif open_count < close_count:
+            chunk = "<b>" + chunk
+
+        processed_chunks.append(chunk)
         
-        if found_tag:
-            chunk += line + '\n'
-            continue
+    return processed_chunks
+
+
+# def split_html(text: str, max_length: int = 1500) -> list:
+#     """
+#     Splits HTML text into chunks with a maximum length, respecting code blocks, blockquotes,
+#     expandable blockquotes, bold, and italic tags.
+#     Args:
+#         text: The HTML text to split.
+#         max_length: The maximum length of each chunk.
+#     Returns:
+#         A list of HTML chunks.
+#     """
+#     tag = ''
+#     mode = 0
+#     chunks = []
+#     chunk = ''
+    
+#     # Mode mapping for different tags
+#     TAG_MODES = {
+#         '<pre><code': (1, lambda l: l[:l.find('>', 10) + 1], '</code></pre>'),
+#         '<code>': (2, lambda l: '<code>', '</code>'),
+#         '<b>': (3, lambda l: '<b>', '</b>'),
+#         '<i>': (4, lambda l: '<i>', '</i>'),
+#         '<blockquote>': (5, lambda l: '<blockquote>', '</blockquote>'),
+#         '<expandable_blockquote>': (6, lambda l: '<expandable_blockquote>', '</blockquote>')
+#     }
+    
+#     for line in text.split('\n'):
+#         found_tag = False
+#         # Check for opening tags
+#         for start_tag, (tag_mode, tag_extractor, end_tag) in TAG_MODES.items():
+#             if line.startswith(start_tag) and end_tag not in line:
+#                 mode = tag_mode
+#                 tag = tag_extractor(line)
+#                 found_tag = True
+#                 break
+        
+#         if found_tag:
+#             chunk += line + '\n'
+#             continue
             
-        # Check for closing tags
-        is_closing_tag = any(line == end_tag for _, (_, _, end_tag) in TAG_MODES.items())
-        if is_closing_tag:
-            tag = ''
-            mode = 0
-            chunk += line + '\n'
-            continue
+#         # Check for closing tags
+#         is_closing_tag = any(line == end_tag for _, (_, _, end_tag) in TAG_MODES.items())
+#         if is_closing_tag:
+#             tag = ''
+#             mode = 0
+#             chunk += line + '\n'
+#             continue
             
-        # Handle chunk splitting when size limit is reached
-        if len(chunk) + len(line) + 20 > max_length:
-            if mode != 0:
-                # Get the appropriate closing tag for the current mode
-                closing_tag = next(end_tag for _, (m, _, end_tag) in TAG_MODES.items() 
-                                if m == mode)
-                chunk += closing_tag + '\n'
-                chunks.append(chunk)
-                chunk = tag
-            else:
-                chunks.append(chunk)
-                chunk = ''
+#         # Handle chunk splitting when size limit is reached
+#         if len(chunk) + len(line) + 20 > max_length:
+#             if mode != 0:
+#                 # Get the appropriate closing tag for the current mode
+#                 closing_tag = next(end_tag for _, (m, _, end_tag) in TAG_MODES.items() 
+#                                 if m == mode)
+#                 chunk += closing_tag + '\n'
+#                 chunks.append(chunk)
+#                 chunk = tag
+#             else:
+#                 chunks.append(chunk)
+#                 chunk = ''
                 
-        chunk += line + '\n'
+#         chunk += line + '\n'
     
-    # Add the final chunk
-    chunks.append(chunk)
+#     # Add the final chunk
+#     chunks.append(chunk)
     
-    # Handle chunks that are still too long
-    chunks2 = []
-    for chunk in chunks:
-        if len(chunk) > max_length:
-            chunks2 += split_text(chunk, max_length)
-        else:
-            chunks2.append(chunk)
+#     # Handle chunks that are still too long
+#     chunks2 = []
+#     for chunk in chunks:
+#         if len(chunk) > max_length:
+#             chunks2 += split_text(chunk, max_length)
+#         else:
+#             chunks2.append(chunk)
     
-    return chunks2
+#     return chunks2
 
 
 # def split_html(text: str, max_length: int = 1500) -> list:

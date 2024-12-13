@@ -295,7 +295,7 @@ Answer in [{lang}] language.
 The structure of the answer should be similar to the following:
 Show a block with the brief summary of the text in 2 sentences, which satisfies most people.
 Show a block with a detail summary of the content of the text in your own words, 50-2000 words.
-Markdown for links is mandatory.
+Short human readable links.
 
 Text:
 '''
@@ -306,7 +306,7 @@ Answer in [{lang}] language.
 
 The structure of the answer should be similar to the following:
 Show a block with the brief summary of the text in 5 sentences, which satisfies most people.
-Markdown for links is mandatory.
+Short human readable links.
 
 Text:
 '''

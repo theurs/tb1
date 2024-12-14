@@ -349,6 +349,9 @@ def bot_markdown_to_html(text: str) -> str:
     text = text.replace('   #x27;', "'")
     text = text.replace('#x27;', "'")
 
+    # меняем таблицы до возвращения кода
+    text = replace_tables(text)
+
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
         # new_match = html.escape(match)
@@ -359,9 +362,6 @@ def bot_markdown_to_html(text: str) -> str:
     for match, random_string in list_of_code_blocks:
         new_match = match
         text = text.replace(random_string, f'<code>{new_match}</code>')
-
-    # меняем таблицы до возвращения кода
-    text = replace_tables(text)
 
     text = replace_code_lang(text)
 

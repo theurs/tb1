@@ -852,6 +852,8 @@ def log_message(message: telebot.types.Message):
         if isinstance(message, telebot.types.Message):
             chat_full_id = get_topic_id(message)
             chat_name = utils.get_username_for_log(message)
+            # if utils.extract_user_id(chat_full_id) in DDOS_BLOCKED_USERS.keys():
+            #     return
 
             if chat_full_id in WHO_ANSWERED:
                 log_message_add('new',
@@ -881,6 +883,8 @@ def log_message(message: telebot.types.Message):
                 return
 
             chat_full_id = get_topic_id(message[0])
+            # if utils.extract_user_id(chat_full_id) in DDOS_BLOCKED_USERS.keys():
+            #     return
             chat_name = utils.get_username_for_log(message[0])
             m_ids = [x.message_id for x in message]
 

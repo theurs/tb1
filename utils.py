@@ -788,6 +788,9 @@ def post_process_split_html(chunks: list) -> list:
     
     Если в чанке начало = <pre><code><pre><code то это вероятно ошибка конвертера
     надо удалить <pre><code> и в предыдущем чанке удалить с конца </code></pre> если оно там есть
+
+    Если в начале чанка </code></pre> а в конце предыдущего только перенос строки то надо переместить </code></pre>
+    в первый чанк
     """
     processed_chunks = []
 
@@ -815,6 +818,15 @@ def post_process_split_html(chunks: list) -> list:
                 if prev_chunk.endswith("</code></pre>"):
                     processed_chunks[i-1] = prev_chunk[:-13]
 
+    for i in range(len(chunks)):
+        chunk = processed_chunks[i]
+        if chunk.startswith("</code></pre>"):
+            if i > 0:
+                chunk = chunk[13:]
+                processed_chunks[i] = chunk
+                prev_chunk = processed_chunks[i-1]
+                if prev_chunk.endswith('\n'):
+                    processed_chunks[i-1] = prev_chunk + "</code></pre>"
         
     return processed_chunks
 

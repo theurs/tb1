@@ -827,7 +827,27 @@ def post_process_split_html(chunks: list) -> list:
                 prev_chunk = processed_chunks[i-1]
                 if prev_chunk.endswith('\n'):
                     processed_chunks[i-1] = prev_chunk + "</code></pre>"
-        
+
+
+    # def remove_consecutive_b_tags(text: str) -> str:
+    #     """
+    #     Удаляет из текста последовательности двух идущих подряд тегов <b>,
+    #     между которыми нет закрывающего тега </b>. И наоборот.
+
+    #     Args:
+    #         text: Исходный текст.
+
+    #     Returns:
+    #         Текст с удаленными последовательностями тегов.
+    #     """
+    #     pattern: str = r"<b>(?:(?!<\/b>).)*<b>"
+    #     new_text: str = re.sub(pattern, "", text)
+    #     pattern: str = r"</b>(?:(?!<b>).)*</b>"
+    #     new_text: str = re.sub(pattern, "", new_text)
+    #     return new_text
+
+    # processed_chunks = [remove_consecutive_b_tags(chunk) for chunk in processed_chunks]
+
     return processed_chunks
 
 

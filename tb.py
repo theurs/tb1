@@ -3177,11 +3177,35 @@ def addkeys(message: telebot.types.Message):
 @bot.message_handler(commands=['donate', 'star', 'stars'], func=authorized_owner)
 @async_run
 def donate(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
     if hasattr(cfg, 'DONATION_STRING'):
         help = cfg.DONATION_STRING
     else:
         help = '<None>'
+    help += '\n\n' + tr('Your stars:', lang) + f' {my_db.get_user_property(chat_id_full, "telegram_stars")}'
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup = get_keyboard('donate_stars', message))
+
+
+@bot.message_handler(commands=['sdonate', 'sstar', 'sstars'], func=authorized_admin)
+@async_run
+def sdonate(message: telebot.types.Message):
+    '''админ может добавить звезды пользователю
+    использование - sdonate <id> <количество>'''
+    try:
+        args = message.text.split()
+    except:
+        args = []
+
+    if len(args) == 3:
+        chat_id_full = f'[{args[1]}] [0]'
+        stars = int(args[2])
+        user_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+        my_db.set_user_property(chat_id_full, 'telegram_stars', user_stars + stars)
+        my_log.log_donate(f'sdonate {chat_id_full} {stars}')
+        bot_reply_tr(message, 'Added successfully!')
+    else:
+        bot_reply_tr(message, 'Usage: /sdonate id_as_int amount of fake stars')
 
 
 @bot.message_handler(commands=['ytb'], func=authorized_owner)
@@ -4323,6 +4347,12 @@ def image_gen(message: telebot.types.Message):
         else:
             lock = threading.Lock()
             IMG_GEN_LOCKS[chat_id_full] = lock
+
+
+        # проверка на подписку
+        if not check_donate(message, chat_id_full, my_db.count_msgs(chat_id_full, 'all', 1000000000), lang):
+            return
+
 
         with lock:
 
@@ -5834,6 +5864,38 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         del DEBUG_MD_TO_HTML[resp]
 
 
+def check_donate(message: telebot.types.Message, chat_id_full: str, total_messages__: int, lang: str) -> bool:
+    '''если общее количество сообщений превышает лимит то надо проверить подписку
+        и если не подписан то предложить подписаться
+    '''
+    try:
+        # если админ или это в группе происходит то пропустить
+        if message.from_user.id in cfg.admins or chat_id_full.startswith('[-'):
+            return True
+        MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
+        DONATE_PRICE = cfg.DONATE_PRICE if hasattr(cfg, 'DONATE_PRICE') else 50
+        if total_messages__ > MAX_TOTAL_MESSAGES:
+            last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
+            if time.time() - last_donate_time > 60*60*24*30:
+                stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+                if stars >= DONATE_PRICE:
+                    my_db.set_user_property(chat_id_full, 'last_donate_time', int(time.time()))
+                    my_db.set_user_property(chat_id_full, 'telegram_stars', stars - DONATE_PRICE)
+                    my_log.log_donate_consumption(f'{chat_id_full} -{DONATE_PRICE} stars')
+                    msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
+                    msg += '\n\n' + tr('You have enough stars for a month of free access. Thank you for your support!', lang)
+                    bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+                else:
+                    msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
+                    msg += '\n\n' + tr('You have not enough stars for a month of free access. Thank you for your support!', lang)
+                    bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+                    return False
+    except Exception as unexpected_error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'tb:check_donate: {chat_id_full} {total_messages__}\n\n{unexpected_error}\n\n{error_traceback}')
+    return True
+
+
 @bot.message_handler(func=authorized)
 def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
     thread = threading.Thread(target=do_task, args=(message, custom_prompt))
@@ -5914,9 +5976,9 @@ def do_task(message, custom_prompt: str = ''):
         message.from_user.id in cfg.admins or\
         (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
 
+    total_messages__ = my_db.count_msgs(chat_id_full, 'all', 1000000000)
     if is_private:
         if not have_keys:
-            total_messages__ = my_db.count_msgs(chat_id_full, 'all', 1000000000)
             # каждые 50 сообщение напоминать о ключах
             if total_messages__ > 1 and total_messages__ % 50 == 0:
                 if message.chat.type == 'private':
@@ -5931,6 +5993,12 @@ def do_task(message, custom_prompt: str = ''):
     # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
     if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, cfg.gemini_pro_model, 60*60*24) > 300:
         chat_mode_ = 'gemini'
+
+
+    # проверка на подписку
+    if not check_donate(message, chat_id_full, total_messages__, lang):
+        return
+
 
     chat_modes = {
         '/haiku':     'haiku',

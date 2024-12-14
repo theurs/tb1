@@ -164,6 +164,7 @@ def init(backup: bool = True):
             first_meet REAL,
             last_time_access REAL,
             telegram_stars INTEGER,
+            last_donate_time REAL,
 
             image_generated_counter INTEGER,
 

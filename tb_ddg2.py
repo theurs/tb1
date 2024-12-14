@@ -68,6 +68,22 @@ def send_welcome(message):
                     bot.reply_to(message, chunk)
             time.sleep(2)
 
+    for f in glob.glob('C:/Users/user/Downloads/*.log'):
+        with open(f, 'r', encoding='utf-8') as file:
+            answer = file.read() # уже html
+            # answer = utils.bot_markdown_to_html(answer)
+            with open('C:/Users/user/Downloads/111.dat', 'w', encoding='utf-8') as f:
+                f.write(answer)
+            answer2 = utils.split_html(answer, 3800)
+            for chunk in answer2:
+                try:
+                    bot.reply_to(message, chunk, parse_mode='HTML')
+                except Exception as error:
+                    bot.reply_to(message, str(error))
+                    bot.reply_to(message, chunk)
+            time.sleep(2)
+
+
 #     t = r""" 
 # # Title
 # ## Subtitle

@@ -785,6 +785,9 @@ def post_process_split_html(chunks: list) -> list:
     недостающие открывающие теги <b> в начало следующего чанка.
 
     Работает только для тегов <b> и </b>, предполагая, что все они правильно закрыты в пределах всего текста.
+    
+    Если в чанке начало = <pre><code><pre><code то это вероятно ошибка конвертера
+    надо удалить <pre><code> и в предыдущем чанке удалить с конца </code></pre> если оно там есть
     """
     processed_chunks = []
 
@@ -800,6 +803,18 @@ def post_process_split_html(chunks: list) -> list:
             chunk = "<b>" + chunk
 
         processed_chunks.append(chunk)
+
+
+    for i in range(len(chunks)):
+        chunk = processed_chunks[i]
+        if chunk.startswith("<pre><code><pre><code"):
+            if i > 0:
+                chunk = chunk[11:]
+                processed_chunks[i] = chunk
+                prev_chunk = processed_chunks[i-1]
+                if prev_chunk.endswith("</code></pre>"):
+                    processed_chunks[i-1] = prev_chunk[:-13]
+
         
     return processed_chunks
 

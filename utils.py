@@ -828,25 +828,21 @@ def post_process_split_html(chunks: list) -> list:
                 if prev_chunk.endswith('\n'):
                     processed_chunks[i-1] = prev_chunk + "</code></pre>"
 
+        # заканчивается на </code>\n</code>
+        if chunk.endswith("</code>\n</code>"):
+            chunk = chunk[:-7]
+            processed_chunks[i] = chunk
 
-    # def remove_consecutive_b_tags(text: str) -> str:
-    #     """
-    #     Удаляет из текста последовательности двух идущих подряд тегов <b>,
-    #     между которыми нет закрывающего тега </b>. И наоборот.
+        # начинается на 2 <code>
+        pattern = r'^\s*<code>\s*<code>'
+        if re.search(pattern, chunk):
+            chunk = chunk[7:]
+            processed_chunks[i] = chunk
 
-    #     Args:
-    #         text: Исходный текст.
-
-    #     Returns:
-    #         Текст с удаленными последовательностями тегов.
-    #     """
-    #     pattern: str = r"<b>(?:(?!<\/b>).)*<b>"
-    #     new_text: str = re.sub(pattern, "", text)
-    #     pattern: str = r"</b>(?:(?!<b>).)*</b>"
-    #     new_text: str = re.sub(pattern, "", new_text)
-    #     return new_text
-
-    # processed_chunks = [remove_consecutive_b_tags(chunk) for chunk in processed_chunks]
+        # найти и удалить повторяющиеся <b> 2 идущих подряд
+        chunk = re.sub(r"<b>((?:(?!</b>).)*?)<b>", r"\1<b>", chunk)
+        chunk = re.sub(r"</b>((?:(?!<b>).)*?)</b>", r"\1</b>", chunk)
+        processed_chunks[i] = chunk
 
     return processed_chunks
 
@@ -1435,7 +1431,7 @@ def truncate_text(text: str, max_lines: int = 10, max_chars: int = 300) -> str:
         text = html.escape(text)
         if len(text) < max_chars and text.count('\n') < max_lines:
             return text
-        text = '<blockquote expandable>' + text + '</blockquote>'
+        text = '<blockquote expandable>' + text[:3500] + '</blockquote>'
         return text
     except Exception as error:
         traceback_error = traceback.format_exc()

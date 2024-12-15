@@ -747,7 +747,7 @@ def split_html(text: str, max_length: int = 1500) -> list:
         "code": "</code>",
         "pre": "</pre>",
         "blockquote": "</blockquote>",
-        "expandable_blockquote": "</expandable_blockquote>",
+        "blockquote expandable": "</blockquote>",
     }
     opening_tags = {f"<{tag}>" for tag in tags}
     closing_tags = {tag for tag in tags.values()}
@@ -836,13 +836,15 @@ def post_process_split_html(chunks: list) -> list:
         # ["<code>", "</code>"],    # эти ломают
         # ["<pre>", "</pre>"],      # эти ломают
         ["<blockquote>", "</blockquote>"],
-        ["<expandable_blockquote>", "</expandable_blockquote>"],
+        # ["<blockquote expandable>", "</blockquote>"],
     ]
     for TAG in TAGS:
         processed_chunks = []
         for i, chunk in enumerate(chunks):
             # 1. Считаем количество открытых и закрытых тегов <b> в текущем чанке
             open_count = chunk.count(TAG[0])
+            if TAG[0] == '<blockquote>':
+                open_count += chunk.count('<blockquote expandable>')
             close_count = chunk.count(TAG[1])
             # 2. Добавляем недостающие теги
             if open_count > close_count:
@@ -914,7 +916,7 @@ def post_process_split_html(chunks: list) -> list:
 #         '<b>': (3, lambda l: '<b>', '</b>'),
 #         '<i>': (4, lambda l: '<i>', '</i>'),
 #         '<blockquote>': (5, lambda l: '<blockquote>', '</blockquote>'),
-#         '<expandable_blockquote>': (6, lambda l: '<expandable_blockquote>', '</blockquote>')
+#         '<blockquote expandable>': (6, lambda l: '<blockquote expandable>', '</blockquote>')
 #     }
     
 #     for line in text.split('\n'):

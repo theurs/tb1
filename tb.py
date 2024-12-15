@@ -2095,7 +2095,7 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
         user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - UNCAPTIONED_IMAGES_MAX]]
         # Delete the oldest images.
         for user_id in user_ids_to_delete:
-            UNCAPTIONED_IMAGES.pop(user_id, None) 
+            UNCAPTIONED_IMAGES.pop(user_id, None)
 
     # Set the command mode for the chat to 'image_prompt'.
     COMMAND_MODE[chat_id_full] = 'image_prompt'

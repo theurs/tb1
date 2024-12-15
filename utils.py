@@ -839,7 +839,7 @@ def post_process_split_html(chunks: list) -> list:
             chunk = chunk[7:]
             processed_chunks[i] = chunk
 
-        # найти и удалить повторяющиеся <b> 2 идущих подряд
+        # найти и удалить повторяющиеся <b> и </b> 2 идущих подряд
         chunk = re.sub(r"<b>((?:(?!</b>).)*?)<b>", r"\1<b>", chunk)
         chunk = re.sub(r"</b>((?:(?!<b>).)*?)</b>", r"\1</b>", chunk)
         processed_chunks[i] = chunk

@@ -254,6 +254,8 @@ def chat(query: str,
                 result = result.strip()
                 if 'print(default_api.' in result[:100]:
                     return ''
+                # флеш 2.0 иногда такие тексты выдает, куча пробелов
+                result = re.sub(r" {10000,}", " ", result)
                 my_db.add_msg(chat_id, model)
                 if chat_id and do_not_update_history is False:
                     mem = chat.history[-MAX_CHAT_LINES*2:]

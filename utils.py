@@ -256,6 +256,12 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем латекс выражения
     text = replace_latex(text)
 
+    # сохраняем 3 звезды что бы их не испортил конвертер списков
+    def replace_3_stars(match):
+        indent = match.group(0).split('*')[0] # Получаем все пробелы в начале
+        return indent + '• • •'
+    text = re.sub(r"^\s*\*\s*\*\s*\*\s*$", replace_3_stars, text, flags=re.MULTILINE)
+
     # переделываем списки на более красивые
     text = re.sub(r"^(\s*)\*\s", r"\1• ", text, flags=re.MULTILINE)
     text = re.sub(r"^(\s*)-\s", r"\1– ", text, flags=re.MULTILINE)
@@ -354,6 +360,12 @@ def bot_markdown_to_html(text: str) -> str:
 
     # меняем таблицы до возвращения кода
     text = replace_tables(text)
+
+    # возвращаем 3 звезды
+    def replace_3_stars2(match):
+        indent = match.group(0).split('•')[0] # Получаем все пробелы в начале
+        return indent + '* * *'
+    text = re.sub(r"^\s*•\s*•\s*•\s*$", replace_3_stars2, text, flags=re.MULTILINE)
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
@@ -1787,15 +1799,18 @@ This is a clean and efficient way to create a reusable component that interacts 
 n(n+1)/2 = 63
 
 $n(n+1) = 126$
-
+ * *
+ * * * **
+ ***
 n^2 + n - 126 = 0
-
+     * * *  
 Это квадратное уравнение. Можно решить его через дискриминант, но проще заметить, что 126 = 9 × 14. Поэтому можно разложить уравнение на множители:
-
+ * * *
 $(n-11)(n+12) = 0$
 
+* * *
 Корни уравнения: $n_1 = 11$ и $$n_2 = -12$$. Так как высота пирамиды не может быть отрицательной, то единственный подходящий корень — $n = 11$.
-
+ *  *   * 
 '''
 
     print(bot_markdown_to_html(t4))

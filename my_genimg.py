@@ -548,7 +548,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         if use_bing:
             reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
             if reprompt == 'MODERATION':
-                return []
+                return ['moderation',]
 
         if reprompt:
             prompt = reprompt

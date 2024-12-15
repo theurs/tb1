@@ -5498,24 +5498,15 @@ def id_cmd_handler(message: telebot.types.Message):
 
         first_meet = my_db.get_user_property(chat_id_full, 'first_meet') or 0
         first_meet_dt = pendulum.from_timestamp(first_meet)
-        if lang in ('ar', 'uk', 'so'):
-            first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale='en')
-        else:
-            first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale=lang)
+        first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale='en')
         now = pendulum.now()
         diff = now - first_meet_dt
-        if lang in ('ar', 'uk', 'so'):
-            delta_time_str = diff.in_words(locale='en')    
-        else:
-            delta_time_str = diff.in_words(locale=lang)
+        delta_time_str = diff.in_words(locale='en')    
 
         msg = ''
         if message.from_user.id in cfg.admins:
             msg += f'Uptime: {get_uptime()}\n\n'
         msg += f'''{tr("ID пользователя:", lang)} {user_id}
-
-{tr("Дата встречи:", lang)} {first_meet_str}
-{delta_time_str}
 
 {tr("Количество сообщений/изображений:", lang)} {total_msgs}/{totals_pics}
 

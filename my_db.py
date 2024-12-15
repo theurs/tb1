@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-
+import cachetools.func
 import datetime
 import gzip
 import hashlib
@@ -335,6 +335,25 @@ def count_msgs(user_id: str, model: str, access_time: float):
                     SELECT COUNT(*) FROM msg_counter
                     WHERE user_id = ? AND model_used = ? AND access_time > ?
                 ''', (user_id, model, access_time))
+            return CUR.fetchone()[0]
+        except Exception as error:
+            my_log.log2(f'my_db:count {error}')
+            return 0
+
+
+# задержка в 5 минут будет с таким кешем
+# а это ломает логику при проверке на каждые 50 сообщений
+# и делать отдельную функцию с кешем нет смысла
+# @cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
+def count_msgs_total_user(user_id: str) -> int:
+    '''Count the number of all messages sent by a user.
+    '''
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT COUNT(*) FROM msg_counter
+                WHERE user_id = ?
+            ''', (user_id,))
             return CUR.fetchone()[0]
         except Exception as error:
             my_log.log2(f'my_db:count {error}')

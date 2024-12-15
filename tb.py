@@ -4350,7 +4350,7 @@ def image_gen(message: telebot.types.Message):
 
 
         # проверка на подписку
-        if not check_donate(message, chat_id_full, my_db.count_msgs(chat_id_full, 'all', 1000000000), lang):
+        if not check_donate(message, chat_id_full, lang):
             return
 
 
@@ -5810,10 +5810,20 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
     preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
 
     if len(resp) < 45000:
+        # if len(resp) > 3800:
+        #     if parse_mode == 'HTML':
+        #         chunks = utils.split_html(resp, 3800)
+        #     else:
+        #         chunks = utils.split_text(resp, 3800)
+        # else:
+        #     chunks = [resp,]
+        # верхний вариант возможно не ок, в нем для хтмла не отработает функция исправляющая косяки маркдаун конвертера
         if parse_mode == 'HTML':
             chunks = utils.split_html(resp, 3800)
         else:
             chunks = utils.split_text(resp, 3800)
+
+
         counter = len(chunks)
         for chunk in chunks:
             if not chunk.strip():
@@ -5867,7 +5877,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
         del DEBUG_MD_TO_HTML[resp]
 
 
-def check_donate(message: telebot.types.Message, chat_id_full: str, total_messages__: int, lang: str) -> bool:
+def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -> bool:
     '''если общее количество сообщений превышает лимит то надо проверить подписку
         и если не подписан то предложить подписаться
     '''
@@ -5875,6 +5885,7 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, total_messag
         # если админ или это в группе происходит то пропустить
         if message.from_user.id in cfg.admins or chat_id_full.startswith('[-'):
             return True
+        total_messages__ = my_db.count_msgs_total_user(chat_id_full)
         MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
         DONATE_PRICE = cfg.DONATE_PRICE if hasattr(cfg, 'DONATE_PRICE') else 50
         if total_messages__ > MAX_TOTAL_MESSAGES:
@@ -5979,7 +5990,7 @@ def do_task(message, custom_prompt: str = ''):
         message.from_user.id in cfg.admins or\
         (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
 
-    total_messages__ = my_db.count_msgs(chat_id_full, 'all', 1000000000)
+    total_messages__ = my_db.count_msgs_total_user(chat_id_full)
     if is_private:
         if not have_keys:
             # каждые 50 сообщение напоминать о ключах
@@ -5999,7 +6010,7 @@ def do_task(message, custom_prompt: str = ''):
 
 
     # проверка на подписку
-    if not check_donate(message, chat_id_full, total_messages__, lang):
+    if not check_donate(message, chat_id_full, lang):
         return
 
 

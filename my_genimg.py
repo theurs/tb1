@@ -515,7 +515,7 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
 
     reprompt, _ = get_reprompt(prompt, conversation_history)
     if reprompt == 'MODERATION':
-        return []
+        return ['moderation',]
 
     if reprompt:
         result = bing(reprompt, user_id=user_id)

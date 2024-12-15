@@ -4411,6 +4411,9 @@ def image_gen(message: telebot.types.Message):
                                 break
                         for i in images:
                             if isinstance(i, str):
+                                if i.startswith('moderation') and not has_good_images:
+                                    bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+                                    return
                                 if i.startswith('error1_') and has_good_images:
                                     continue
                                 if 'error1_being_reviewed_prompt' in i:

@@ -898,6 +898,22 @@ def post_process_split_html(chunks: list) -> list:
             chunk = chunk[7:]
             processed_chunks[i] = chunk
 
+        # начинается на 2 </code>
+        if re.match(r"^\s*</code>", chunk):
+             chunk = re.sub(r"^\s*</code>", "", chunk)
+             processed_chunks[i] = chunk
+             if i > 0:
+                prev_chunk = processed_chunks[i-1].strip()
+                if not prev_chunk.endswith("</code>"):
+                    processed_chunks[i-1] += "</code>"
+
+        # если в самом конце есть </code>
+        # то надо проверить нет ли еще одного </code> перед ним
+        if chunk.endswith("</code>"):
+            if not bool(re.search(r'</code>(?!.*<code>).*</code>\s*$', chunk)):
+                chunk = chunk[:-7]
+                processed_chunks[i] = chunk
+
         # найти и удалить повторяющиеся <b> и </b> 2 идущих подряд
         chunk = re.sub(r"<b>((?:(?!</b>).)*?)<b>", r"\1<b>", chunk)
         chunk = re.sub(r"</b>((?:(?!<b>).)*?)</b>", r"\1</b>", chunk)

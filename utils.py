@@ -214,6 +214,9 @@ def bot_markdown_to_html(text: str) -> str:
     # экранируем весь текст для html
     text = html.escape(text)
 
+    # надо заранее найти в таблицах блоки кода (однострочного `кода`) и заменить ` на пробелы
+    text = clear_tables(text)
+
     # заменяем странный способ обозначения кода когда идет 0-6 пробелов в начале потом ` или `` или ``` и название языка
     pattern = r"^ {0,6}`{1,3}(\w+)\n(.*?)\n  {0,6}`{1,3}$"
     # replacement = r"```\1\n\2\n```"
@@ -378,6 +381,43 @@ def bot_markdown_to_html(text: str) -> str:
     return text
 
 
+def clear_tables(text: str) -> str:
+    '''надо найти в маркдаун таблицах блоки кода (однострочного `кода`) и заменить ` на пробелы
+    признаки таблицы - 2 и более идущих подряд строки которые начинаются и заканчиваются на | и количество | в них совпадает
+    '''
+    lines = text.splitlines()
+    in_table = False
+    table_lines = []
+    result = []
+
+    for line in lines:
+        if line.startswith("|") and line.endswith("|") and line.count("|") > 1:
+            if not in_table:
+                table_lines = []  # Start a new table
+                in_table = True
+            table_lines.append(line)
+
+        else:
+            if in_table:
+                # Process the table lines
+                processed_table_lines = []
+                for table_line in table_lines:
+                    processed_table_lines.append(table_line.replace("`", " "))
+                result.extend(processed_table_lines)
+                table_lines = []
+                in_table = False
+
+            result.append(line)
+
+    if in_table:  # If the text ends inside a table block
+      processed_table_lines = []
+      for table_line in table_lines:
+          processed_table_lines.append(table_line.replace("`", " "))
+      result.extend(processed_table_lines)
+
+    return "\n".join(result)
+
+
 def replace_latex(text: str) -> str:
     def is_valid_latex(text: str) -> bool:
         """
@@ -507,7 +547,6 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
     :param max_cell_width: Максимальная ширина ячейки в символах
     :return: Текст с замененными таблицами
     """
-    return text
     original_text = text
     try:
         text += '\n'
@@ -782,32 +821,37 @@ def post_process_split_html(chunks: list) -> list:
     """
     Выполняет постобработку списка чанков, полученного из split_html.
 
-    Добавляет недостающие закрывающие теги </b> в конец чанка и
-    недостающие открывающие теги <b> в начало следующего чанка.
-
-    Работает только для тегов <b> и </b>, предполагая, что все они правильно закрыты в пределах всего текста.
-    
+    Добавляет недостающие закрывающие теги в конец чанка и
+    недостающие открывающие теги в начало следующего чанка.
+   
     Если в чанке начало = <pre><code><pre><code то это вероятно ошибка конвертера
     надо удалить <pre><code> и в предыдущем чанке удалить с конца </code></pre> если оно там есть
 
     Если в начале чанка </code></pre> а в конце предыдущего только перенос строки то надо переместить </code></pre>
     в первый чанк
     """
-    processed_chunks = []
+    TAGS = [
+        ["<b>", "</b>"],
+        ["<i>", "</i>"],
+        # ["<code>", "</code>"],    # эти ломают
+        # ["<pre>", "</pre>"],      # эти ломают
+        ["<blockquote>", "</blockquote>"],
+        ["<expandable_blockquote>", "</expandable_blockquote>"],
+    ]
+    for TAG in TAGS:
+        processed_chunks = []
+        for i, chunk in enumerate(chunks):
+            # 1. Считаем количество открытых и закрытых тегов <b> в текущем чанке
+            open_count = chunk.count(TAG[0])
+            close_count = chunk.count(TAG[1])
+            # 2. Добавляем недостающие теги
+            if open_count > close_count:
+                chunk += TAG[1]
+            elif open_count < close_count:
+                chunk = TAG[0] + chunk
 
-    for i, chunk in enumerate(chunks):
-        # 1. Считаем количество открытых и закрытых тегов <b> в текущем чанке
-        open_count = chunk.count("<b>")
-        close_count = chunk.count("</b>")
-
-        # 2. Добавляем недостающие теги
-        if open_count > close_count:
-            chunk += "</b>"
-        elif open_count < close_count:
-            chunk = "<b>" + chunk
-
-        processed_chunks.append(chunk)
-
+            processed_chunks.append(chunk)
+        chunks = processed_chunks
 
     for i in range(len(chunks)):
         chunk = processed_chunks[i]

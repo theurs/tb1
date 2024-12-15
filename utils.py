@@ -507,6 +507,7 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
     :param max_cell_width: Максимальная ширина ячейки в символах
     :return: Текст с замененными таблицами
     """
+    return text
     original_text = text
     try:
         text += '\n'

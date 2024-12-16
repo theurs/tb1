@@ -906,7 +906,7 @@ def post_process_split_html(chunks: list) -> list:
     chunks = [clean_mismatched_tags(chunk) for chunk in chunks]
 
     # удалить пустые чанки
-    chunks = [chunk for chunk in chunks if chunk.strip()]
+    chunks = [chunk for chunk in chunks if chunk.strip() and chunk.strip() != '</code>']
 
     TAGS = [
         ["<b>", "</b>"],
@@ -973,17 +973,40 @@ def post_process_split_html(chunks: list) -> list:
                 if not prev_chunk.endswith("</code>"):
                     processed_chunks[i-1] += "</code>"
 
-        # если в самом конце есть </code>
-        # то надо проверить нет ли еще одного </code> перед ним
+        # если в самом конце есть </code> то просто уберем его, а дальше его добавят снова если нужно
         if chunk.endswith("</code>"):
-            if not bool(re.search(r'</code>(?!.*<code>).*</code>\s*$', chunk)):
-                chunk = chunk[:-7]
-                processed_chunks[i] = chunk
+            chunk = chunk[:-7]
+            processed_chunks[i] = chunk
 
         # найти и удалить повторяющиеся <b> и </b> 2 идущих подряд
         chunk = re.sub(r"<b>((?:(?!</b>).)*?)<b>", r"\1<b>", chunk)
         chunk = re.sub(r"</b>((?:(?!<b>).)*?)</b>", r"\1</b>", chunk)
         processed_chunks[i] = chunk
+
+        # ищем незакрытый тег <code> в чанке
+        def has_unclosed_code_tag(text: str) -> bool:
+            """
+            Checks if a string has an unclosed `<code>` tag.
+
+            Args:
+                text: The string to check.
+
+            Returns:
+                True if the string has an unclosed `<code>` tag, False otherwise.
+            """
+            closing_tag_pos = text.rfind("</code>")
+            opening_tag_pos = text.rfind("<code>")
+
+            if closing_tag_pos == -1 and opening_tag_pos != -1:
+                return True
+            elif closing_tag_pos < opening_tag_pos:
+                return True
+            else:
+                return False
+
+        if has_unclosed_code_tag(chunk):
+            chunk = chunk + "</code>"
+            processed_chunks[i] = chunk
 
     return processed_chunks
 

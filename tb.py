@@ -3147,7 +3147,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
                     bot_reply_tr(message, 'Added keys successfully!')
                     return
 
-        msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n\nhttps://huggingface.co/settings/tokens\n\nhttps://www.deepl.com'
+        msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\nHowto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\nInstruction: https://github.com/theurs/tb1/tree/master/pics/groq\n\nhttps://huggingface.co/settings/tokens\nInstruction: https://github.com/theurs/tb1/tree/master/pics/hf\n\nhttps://www.deepl.com'
         bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
 
         # показать юзеру его ключи
@@ -4330,17 +4330,17 @@ def image_gen(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
     try:
-        # если уже есть 10000 картинок и нет ключей то давай до свидания
-        have_keys_10000 = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-                    chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
-                    message.from_user.id in cfg.admins or \
-                    (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
-                    (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 10000
-        if not have_keys_10000:
-            msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
-            msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
-            bot_reply(message, msg2, disable_web_page_preview = True)
-            return
+        # # если уже есть 10000 картинок и нет ключей то давай до свидания
+        # have_keys_10000 = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
+        #             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
+        #             message.from_user.id in cfg.admins or \
+        #             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
+        #             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 10000
+        # if not have_keys_10000:
+        #     msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
+        #     msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
+        #     bot_reply(message, msg2, disable_web_page_preview = True)
+        #     return
 
         # не использовать бинг для рисования запрещенки, он за это банит
         NSFW_FLAG = False
@@ -4522,15 +4522,15 @@ def image_gen(message: telebot.types.Message):
                                 add_to_bots_mem(f'{MSG} {prompt}',
                                                     f'{IMG} {prompt}',
                                                     chat_id_full)
-                                have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-                                            chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
-                                            message.from_user.id in cfg.admins or \
-                                            (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
-                                            (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 5000
-                                if not have_keys:
-                                    msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
-                                    msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
-                                    bot_reply(message, msg2, disable_web_page_preview = True)
+                                # have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
+                                #             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
+                                #             message.from_user.id in cfg.admins or \
+                                #             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
+                                #             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 5000
+                                # if not have_keys:
+                                #     msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
+                                #     msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
+                                #     bot_reply(message, msg2, disable_web_page_preview = True)
                         else:
                             bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
 

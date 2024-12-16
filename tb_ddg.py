@@ -187,4 +187,4 @@ def echo_all(message):
 
 
 # Запуск бота
-bot.polling()
+bot.infinity_polling(timeout=90, long_polling_timeout=90)

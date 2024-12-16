@@ -842,6 +842,62 @@ def post_process_split_html(chunks: list) -> list:
     Если в начале чанка </code></pre> а в конце предыдущего только перенос строки то надо переместить </code></pre>
     в первый чанк
     """
+    def clean_mismatched_tags(text):
+        """
+        Removes only mismatched HTML tags while keeping properly matched ones.
+        
+        Args:
+            text (str): Input text with HTML tags
+            
+        Returns:
+            str: Text with only mismatched tags removed
+        """
+        # Keep track of tag regions to remove
+        regions_to_remove = []
+        # Keep track of opening tags with their positions
+        tag_stack = []
+        
+        i = 0
+        while i < len(text):
+            if text[i:i+3] == '<b>' or text[i:i+3] == '<i>':
+                tag_stack.append((i, text[i+1]))
+                i += 3
+            elif text[i:i+4] == '</b>' or text[i:i+4] == '</i>':
+                close_tag = text[i+2]
+                if tag_stack:
+                    last_pos, last_tag = tag_stack[-1]
+                    if last_tag == close_tag:
+                        # Matching tags - keep them
+                        tag_stack.pop()
+                    else:
+                        # Mismatched tags - mark for removal
+                        regions_to_remove.append((last_pos, last_pos + 3))  # opening tag
+                        regions_to_remove.append((i, i + 4))  # closing tag
+                        tag_stack.pop()
+                else:
+                    # Closing tag without opening - remove it
+                    regions_to_remove.append((i, i + 4))
+                i += 4
+            else:
+                i += 1
+        
+        # Add any remaining unclosed tags to removal list
+        for pos, _ in tag_stack:
+            regions_to_remove.append((pos, pos + 3))
+        
+        # Sort regions to remove in reverse order
+        regions_to_remove.sort(reverse=True)
+        
+        # Create result by removing marked regions
+        result = list(text)
+        for start, end in regions_to_remove:
+            del result[start:end]
+        
+        return ''.join(result)
+
+    # удаляем перекрестившиеся теги <b> <i> </b> </i>
+    chunks = [clean_mismatched_tags(chunk) for chunk in chunks]
+
     TAGS = [
         ["<b>", "</b>"],
         ["<i>", "</i>"],

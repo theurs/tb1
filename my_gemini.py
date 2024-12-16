@@ -165,7 +165,7 @@ def chat(query: str,
         time_start = time.time()
         for key in keys:
             if time.time() > time_start + (TIMEOUT-1):
-                my_log.log_gemini(f'my_gemini:chat: stop after timeout {round(time.time() - time_start, 2)}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                my_log.log_gemini(f'my_gemini:chat: stop after timeout {round(time.time() - time_start, 2)}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 return ''
 
             genai.configure(api_key = key)

@@ -1534,6 +1534,26 @@ def extract_user_id(user_id_string: str) -> int:
     return 0
 
 
+def format_timestamp(timestamp: float) -> str:
+    """
+    Преобразует timestamp в человекочитаемый формат,
+    где месяц написан словами.
+
+    Args:
+        timestamp: Timestamp (число секунд с начала эпохи).
+
+    Returns:
+        Строка с датой и временем в формате 'День Месяц Год Час:Минута:Секунда'.
+    """
+    datetime_object = datetime.datetime.fromtimestamp(timestamp)
+    month_name = datetime_object.strftime('%B')
+    day = datetime_object.strftime('%d')
+    year = datetime_object.strftime('%Y')
+    time_str = datetime_object.strftime('%H:%M:%S')
+    
+    return f"{day} {month_name} {year} {time_str}"
+
+
 if __name__ == '__main__':
     pass
 

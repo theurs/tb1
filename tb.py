@@ -5522,6 +5522,8 @@ def id_cmd_handler(message: telebot.types.Message):
         diff = now - first_meet_dt
         delta_time_str = diff.in_words(locale='en')    
 
+        subscription_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
+
         msg = ''
         if message.from_user.id in cfg.admins:
             msg += f'Uptime: {get_uptime()}\n\n'
@@ -5534,6 +5536,10 @@ def id_cmd_handler(message: telebot.types.Message):
 {tr("Выбранный язык:", lang)} {reported_language}
 
 {tr("Выбранная чат модель:", lang)} {user_model}'''
+
+        if subscription_time:
+            msg += f'\n\n{tr("Подписка:", lang)} {utils.format_timestamp(subscription_time)}'
+
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             msg += f' <b>{open_router_model}</b>'
 

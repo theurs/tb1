@@ -5909,7 +5909,7 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                 if time.time() - last_donate_time > 60*60*24*30:
                     stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
                     if stars >= DONATE_PRICE:
-                        my_db.set_user_property(chat_id_full, 'last_donate_time', int(time.time()))
+                        my_db.set_user_property(chat_id_full, 'last_donate_time', time.time())
                         my_db.set_user_property(chat_id_full, 'telegram_stars', stars - DONATE_PRICE)
                         my_log.log_donate_consumption(f'{chat_id_full} -{DONATE_PRICE} stars')
                         msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)

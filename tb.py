@@ -5901,6 +5901,12 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
             # если админ или это в группе происходит то пропустить
             if message.from_user.id in cfg.admins or chat_id_full.startswith('[-'):
                 return True
+
+            # юзеры у которых есть 3 ключа не требуют подписки
+            have_keys = chat_id_full in my_gemini.USER_KEYS and chat_id_full in my_groq.USER_KEYS and chat_id_full in my_genimg.USER_KEYS
+            if have_keys:
+                return True
+
             total_messages__ = my_db.count_msgs_total_user(chat_id_full)
             MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
             DONATE_PRICE = cfg.DONATE_PRICE if hasattr(cfg, 'DONATE_PRICE') else 50

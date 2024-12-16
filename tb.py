@@ -5919,6 +5919,7 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                         msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
                         msg += '\n\n' + tr('You have not enough stars for a month of free access.', lang)
                         bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+                        my_log.log_donate_consumption_fail(f'{chat_id_full} user nave not enough stars {stars}')
                         return False
         except Exception as unexpected_error:
             error_traceback = traceback.format_exc()

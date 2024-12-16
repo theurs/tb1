@@ -134,6 +134,10 @@ def log_donate_consumption(text: str) -> None:
     """для логов о потреблении донатов"""
     log2(text, 'donate_consumption')
 
+def log_donate_consumption_fail(text: str) -> None:
+    """для логов о потреблении донатов, когда не хватило"""
+    log2(text, 'donate_consumption_fail')
+
 def log_gemini(text: str) -> None:
     """для логов gemini"""
     a = [

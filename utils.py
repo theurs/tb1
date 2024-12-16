@@ -809,7 +809,11 @@ def split_html(text: str, max_length: int = 1500) -> list:
                 current_chunk += tags[tag_name]
 
             # 2. Добавляем текущий чанк в результат
-            result.append(current_chunk)
+            if len(current_chunk) > max_length:
+                for x in split_text(current_chunk, max_length):
+                    result.append(x)
+            else:
+                result.append(current_chunk)
 
             # 3. Начинаем новый чанк
             current_chunk = ""
@@ -822,6 +826,9 @@ def split_html(text: str, max_length: int = 1500) -> list:
 
     # Добавление последнего чанка
     if current_chunk:
+        if len(current_chunk) > max_length:
+            for x in split_text(current_chunk, max_length):
+                result.append(x)
         result.append(current_chunk)
 
     result2 = post_process_split_html(result)
@@ -897,6 +904,9 @@ def post_process_split_html(chunks: list) -> list:
 
     # удаляем перекрестившиеся теги <b> <i> </b> </i>
     chunks = [clean_mismatched_tags(chunk) for chunk in chunks]
+
+    # удалить пустые чанки
+    chunks = [chunk for chunk in chunks if chunk.strip()]
 
     TAGS = [
         ["<b>", "</b>"],

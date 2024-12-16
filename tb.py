@@ -5897,6 +5897,10 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
     '''если общее количество сообщений превышает лимит то надо проверить подписку
         и если не подписан то предложить подписаться
     '''
+    # если ожидается нестандартная сумма то пропустить
+    if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'enter_start_amount':
+        return True
+
     if message.from_user.id in CHECK_DONATE_LOCKS:
         lock = CHECK_DONATE_LOCKS[message.from_user.id]
     else:

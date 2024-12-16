@@ -3199,7 +3199,7 @@ def donate(message: telebot.types.Message):
         help = cfg.DONATION_STRING
     else:
         help = '<None>'
-    help += '\n\n' + tr('Your stars:', lang) + f' {my_db.get_user_property(chat_id_full, "telegram_stars")}'
+    help += '\n\n' + tr('Your stars:', lang) + f' {my_db.get_user_property(chat_id_full, "telegram_stars") or 0}'
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup = get_keyboard('donate_stars', message))
 
 

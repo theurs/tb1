@@ -25,6 +25,7 @@ from typing import Any, Union
 import json_repair
 import PIL
 import telebot
+from bs4 import BeautifulSoup
 
 from pylatexenc.latex2text import LatexNodes2Text
 from pillow_heif import register_heif_opener
@@ -839,174 +840,28 @@ def split_html(text: str, max_length: int = 1500) -> list:
 def post_process_split_html(chunks: list) -> list:
     """
     Выполняет постобработку списка чанков, полученного из split_html.
-
-    Добавляет недостающие закрывающие теги в конец чанка и
-    недостающие открывающие теги в начало следующего чанка.
-   
-    Если в чанке начало = <pre><code><pre><code то это вероятно ошибка конвертера
-    надо удалить <pre><code> и в предыдущем чанке удалить с конца </code></pre> если оно там есть
-
-    Если в начале чанка </code></pre> а в конце предыдущего только перенос строки то надо переместить </code></pre>
-    в первый чанк
+    Исправляет поломанные теги, и убирает пусты чанки
     """
-    def clean_mismatched_tags(text):
-        """
-        Removes only mismatched HTML tags while keeping properly matched ones.
-        
-        Args:
-            text (str): Input text with HTML tags
-            
-        Returns:
-            str: Text with only mismatched tags removed
-        """
-        # Keep track of tag regions to remove
-        regions_to_remove = []
-        # Keep track of opening tags with their positions
-        tag_stack = []
-        
-        i = 0
-        while i < len(text):
-            if text[i:i+3] == '<b>' or text[i:i+3] == '<i>':
-                tag_stack.append((i, text[i+1]))
-                i += 3
-            elif text[i:i+4] == '</b>' or text[i:i+4] == '</i>':
-                close_tag = text[i+2]
-                if tag_stack:
-                    last_pos, last_tag = tag_stack[-1]
-                    if last_tag == close_tag:
-                        # Matching tags - keep them
-                        tag_stack.pop()
-                    else:
-                        # Mismatched tags - mark for removal
-                        regions_to_remove.append((last_pos, last_pos + 3))  # opening tag
-                        regions_to_remove.append((i, i + 4))  # closing tag
-                        tag_stack.pop()
-                else:
-                    # Closing tag without opening - remove it
-                    regions_to_remove.append((i, i + 4))
-                i += 4
-            else:
-                i += 1
-        
-        # Add any remaining unclosed tags to removal list
-        for pos, _ in tag_stack:
-            regions_to_remove.append((pos, pos + 3))
-        
-        # Sort regions to remove in reverse order
-        regions_to_remove.sort(reverse=True)
-        
-        # Create result by removing marked regions
-        result = list(text)
-        for start, end in regions_to_remove:
-            del result[start:end]
-        
-        return ''.join(result)
 
-    # удаляем перекрестившиеся теги <b> <i> </b> </i>
-    chunks = [clean_mismatched_tags(chunk) for chunk in chunks]
+    def fix_html_tags(text: str) -> str:
+        """
+        Fixes HTML tag errors in the text using BeautifulSoup.
+
+        Args:
+            text: The input text containing HTML tags.
+
+        Returns:
+            The text with fixed HTML tags.
+        """
+        soup = BeautifulSoup(text, 'html.parser')
+        return str(soup)
+
+    processed_chunks = []
+    for chunk in chunks:
+        processed_chunks.append(fix_html_tags(chunk))
 
     # удалить пустые чанки
-    chunks = [chunk for chunk in chunks if chunk.strip() and chunk.strip() != '</code>']
-
-    TAGS = [
-        ["<b>", "</b>"],
-        ["<i>", "</i>"],
-        # ["<code>", "</code>"],    # эти ломают
-        # ["<pre>", "</pre>"],      # эти ломают
-        ["<blockquote>", "</blockquote>"],
-        # ["<blockquote expandable>", "</blockquote>"],
-    ]
-    for TAG in TAGS:
-        processed_chunks = []
-        for i, chunk in enumerate(chunks):
-            # 1. Считаем количество открытых и закрытых тегов <b> в текущем чанке
-            open_count = chunk.count(TAG[0])
-            if TAG[0] == '<blockquote>':
-                open_count += chunk.count('<blockquote expandable>')
-            close_count = chunk.count(TAG[1])
-            # 2. Добавляем недостающие теги
-            if open_count > close_count:
-                chunk += TAG[1]
-            elif open_count < close_count:
-                chunk = TAG[0] + chunk
-
-            processed_chunks.append(chunk)
-        chunks = processed_chunks
-
-    for i in range(len(chunks)):
-        chunk = processed_chunks[i]
-        if chunk.startswith("<pre><code><pre><code"):
-            if i > 0:
-                chunk = chunk[11:]
-                processed_chunks[i] = chunk
-                prev_chunk = processed_chunks[i-1]
-                if prev_chunk.endswith("</code></pre>"):
-                    processed_chunks[i-1] = prev_chunk[:-13]
-
-    for i in range(len(chunks)):
-        chunk = processed_chunks[i]
-        if chunk.startswith("</code></pre>"):
-            if i > 0:
-                chunk = chunk[13:]
-                processed_chunks[i] = chunk
-                prev_chunk = processed_chunks[i-1]
-                if prev_chunk.endswith('\n'):
-                    processed_chunks[i-1] = prev_chunk + "</code></pre>"
-
-        # заканчивается на </code>\n</code>
-        if chunk.endswith("</code>\n</code>"):
-            chunk = chunk[:-7]
-            processed_chunks[i] = chunk
-
-        # начинается на 2 <code>
-        pattern = r'^\s*<code>\s*<code>'
-        if re.search(pattern, chunk):
-            chunk = chunk[7:]
-            processed_chunks[i] = chunk
-
-        # начинается на 2 </code>
-        if re.match(r"^\s*</code>", chunk):
-             chunk = re.sub(r"^\s*</code>", "", chunk)
-             processed_chunks[i] = chunk
-             if i > 0:
-                prev_chunk = processed_chunks[i-1].strip()
-                if not prev_chunk.endswith("</code>"):
-                    processed_chunks[i-1] += "</code>"
-
-        # если в самом конце есть </code> то просто уберем его, а дальше его добавят снова если нужно
-        if chunk.endswith("</code>"):
-            chunk = chunk[:-7]
-            processed_chunks[i] = chunk
-
-        # найти и удалить повторяющиеся <b> и </b> 2 идущих подряд
-        chunk = re.sub(r"<b>((?:(?!</b>).)*?)<b>", r"\1<b>", chunk)
-        chunk = re.sub(r"</b>((?:(?!<b>).)*?)</b>", r"\1</b>", chunk)
-        processed_chunks[i] = chunk
-
-        # ищем незакрытый тег <code> в чанке
-        def has_unclosed_code_tag(text: str) -> bool:
-            """
-            Checks if a string has an unclosed `<code>` tag.
-
-            Args:
-                text: The string to check.
-
-            Returns:
-                True if the string has an unclosed `<code>` tag, False otherwise.
-            """
-            closing_tag_pos = text.rfind("</code>")
-            opening_tag_pos = text.rfind("<code>")
-
-            if closing_tag_pos == -1 and opening_tag_pos != -1:
-                return True
-            elif closing_tag_pos < opening_tag_pos:
-                return True
-            else:
-                return False
-
-        if has_unclosed_code_tag(chunk):
-            chunk = chunk + "</code>"
-            processed_chunks[i] = chunk
+    processed_chunks = [chunk for chunk in processed_chunks if chunk.strip() and chunk.strip() != '</code>']
 
     return processed_chunks
 

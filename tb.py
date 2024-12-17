@@ -186,7 +186,7 @@ FILE_GROUPS = {}
 
 
 # {user_id:(date, image),} keep up to UNCAPTIONED_IMAGES_MAX images
-UNCAPTIONED_IMAGES_MAX = 50
+UNCAPTIONED_IMAGES_MAX = 100
 UNCAPTIONED_IMAGES = SqliteDict('db/user_images.db', autocommit = True)
 # {user_id: image_prompt}
 UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)

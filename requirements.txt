@@ -1,5 +1,6 @@
 assemblyai
 # attrs==23.1.0
+beautifulsoup4
 bingart
 cairosvg
 chardet

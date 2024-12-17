@@ -1,27 +1,51 @@
-# sudo apt install zbar-tools
-# example: zbarimg -q --raw 1.png
+#!/usr/bin/env python3
+# pip install -U opencv-python
 
-
-import subprocess
+import cachetools.func
+import cv2
+import numpy as np
 
 import my_log
-import utils
 
 
-def get_text(data: bytes) -> str:
+@cachetools.func.ttl_cache(maxsize=10, ttl=60)
+def get_text(image_bytes: bytes):
+    """
+    Extracts text from a QR code in an image using OpenCV.
+
+    Args:
+        image_bytes: The image as bytes.
+
+    Returns:
+        The decoded text from the QR code, or None if no QR code is found.
+    """
     try:
-        tmp_file_name = utils.get_tmp_fname()
-        with open(tmp_file_name, 'wb') as f:
-            f.write(data)
-        proc = subprocess.run(['zbarimg', '-q', '--raw', tmp_file_name], stdout=subprocess.PIPE)
-        text = proc.stdout.decode('utf-8', errors='replace').strip()
-        utils.remove_file(tmp_file_name)
-        return text
-    except Exception as unknown_error:
-        my_log.log2(f'my_qrcode:get_text: {unknown_error}')
+        # Convert bytes to numpy array
+        nparr = np.frombuffer(image_bytes, np.uint8)
+
+        # Decode the image using OpenCV
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        # Initialize the QRCode detector
+        qr_detector = cv2.QRCodeDetector()
+
+        # Detect and decode the QR code
+        decoded_text, points, _ = qr_detector.detectAndDecode(img)
+
+        if points is not None:
+            return decoded_text
+        else:
+            return ''
+
+    except Exception as e:
+        my_log.log2(f'qr_reader:get_text_from_qr_image error: {e}')
         return ''
 
 
 if __name__ == '__main__':
     pass
-    print(get_text(open('1.png', 'rb').read()))
+    with open('C:/Users/user/Downloads/2.jpg', 'rb') as f:
+        data = f.read()
+    text = get_text(data)
+    print(text)
+

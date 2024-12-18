@@ -1515,6 +1515,23 @@ def extract_large_ids(text: str, min_digits: int = 5) -> List[str]:
     return [f'[{match[1]}] [0]' for match in matches]
 
 
+def extract_retry_seconds(text: str) -> int:
+    """
+    Extracts the number of seconds after the "retry after" phrase from a text.
+
+    Args:
+        text: The input text containing the "retry after" phrase.
+
+    Returns:
+        The number of seconds as an integer, or None if not found.
+    """
+    pattern = r"retry after (\d+)"
+    match = re.search(pattern, text)
+    if match:
+        return int(match.group(1))
+    return 0
+
+
 if __name__ == '__main__':
     pass
 
@@ -1810,11 +1827,15 @@ $(n-11)(n+12) = 0$
  *  *   * 
 '''
 
-    print(bot_markdown_to_html(t4))
+    # print(bot_markdown_to_html(t4))
     # print(truncate_text(t3))
 
     # print(fast_hash(t3))
 
     # print(bot_markdown_to_html('At our recent business **1 *meeting***, we delved into a load of **2 *market*** data to revamp our **3 *marketing*** strategy.'))
+
+
+    print(extract_retry_seconds('tb:image:send: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10'))
+
 
     pass

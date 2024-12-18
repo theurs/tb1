@@ -4527,7 +4527,20 @@ def image_gen(message: telebot.types.Message):
                                 chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
 
                                 for x in chunks:
-                                    msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
+                                    try:
+                                        msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
+                                    except Exception as error:
+                                        # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+                                        seconds = utils.extract_retry_seconds(str(error))
+                                        if seconds:
+                                            time.sleep(seconds + 1)
+                                            try:
+                                                msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
+                                            except Exception as error2:
+                                                my_log.log2(f'tb:image:send_media_group: {error2}')
+                                                continue
+
+
                                     log_message(msgs_ids)
                                 update_user_image_counter(chat_id_full, len(medias))
 
@@ -4553,7 +4566,19 @@ def image_gen(message: telebot.types.Message):
                                                             link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
                                         for x in chunks:
-                                            bot.send_media_group(pics_group, x)
+                                            try:
+                                                bot.send_media_group(pics_group, x)
+                                            except Exception as error:
+                                                # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+                                                seconds = utils.extract_retry_seconds(str(error))
+                                                if seconds:
+                                                    time.sleep(seconds + 1)
+                                                    try:
+                                                        bot.send_media_group(pics_group, x)
+                                                    except Exception as error2:
+                                                        my_log.log2(f'tb:image:send_media_group_pics_group: {error2}')
+                                                        continue
+
                                     except Exception as error2:
                                         my_log.log2(f'tb:image:send to pics_group: {error2}')
 

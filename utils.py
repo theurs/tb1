@@ -20,7 +20,7 @@ import tempfile
 import threading
 import traceback
 import platform as platform_module
-from typing import Any, Union
+from typing import Any, Union, List
 
 import json_repair
 import PIL
@@ -1496,6 +1496,22 @@ def format_timestamp(timestamp: float) -> str:
     time_str = datetime_object.strftime('%H:%M:%S')
     
     return f"{day} {month_name} {year} {time_str}"
+
+
+def extract_large_ids(text: str, min_digits: int = 5) -> List[str]:
+    """
+    Extracts IDs (large numbers with a minimum number of digits) from a text string.
+
+    Args:
+        text: The input text containing IDs.
+        min_digits: Minimum number of digits for a number to be considered as an ID
+
+    Returns:
+        A list of extracted IDs as strings.
+    """
+    pattern = r'(^|\D)(\d{' + str(min_digits) + r',})(\D|$)'
+    matches = re.findall(pattern, text)
+    return [f'[{match[1]}] [0]' for match in matches]
 
 
 if __name__ == '__main__':

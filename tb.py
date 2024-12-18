@@ -4711,16 +4711,12 @@ def block_user_add3(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    user_id = message.text[10:].strip()
-    try:
-        user_id_int = int(user_id)
-        if user_id_int:
-            user_id = f'[{user_id_int}] [0]'
-    except ValueError:
-        pass
-    if user_id:
-        my_db.set_user_property(user_id, 'blocked_totally', True)
-        bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
+    user_ids = utils.extract_large_ids(message.text)
+
+    if user_ids:
+        for user_id in user_ids:
+            my_db.set_user_property(user_id, 'blocked_totally', True)
+            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockadd3 <[user id] [group id]>')
 
@@ -4733,19 +4729,15 @@ def block_user_del3(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    user_id = message.text[10:].strip()
-    try:
-        user_id_int = int(user_id)
-        if user_id_int:
-            user_id = f'[{user_id_int}] [0]'
-    except ValueError:
-        pass
-    if user_id:
-        if my_db.get_user_property(user_id, 'blocked_totally'):
-            my_db.delete_user_property(user_id, 'blocked_totally')
-            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
-        else:
-            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
+    user_ids = utils.extract_large_ids(message.text)
+
+    if user_ids:
+        for user_id in user_ids:
+            if my_db.get_user_property(user_id, 'blocked_totally'):
+                my_db.delete_user_property(user_id, 'blocked_totally')
+                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
+            else:
+                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockdel3 <[user id] [group id]>')
 
@@ -4766,18 +4758,12 @@ def block_user_add2(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    user_id = message.text[10:].strip()
+    user_ids = utils.extract_large_ids(message.text)
 
-    try:
-        user_id_int = int(user_id)
-        if user_id_int:
-            user_id = f'[{user_id_int}] [0]'
-    except ValueError:
-        pass
-
-    if user_id:
-        my_db.set_user_property(user_id, 'blocked_bing', True)
-        bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
+    if user_ids:
+        for user_id in user_ids:
+            my_db.set_user_property(user_id, 'blocked_bing', True)
+            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockadd2 <[user id] [group id]>')
 
@@ -4790,19 +4776,15 @@ def block_user_del2(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    user_id = message.text[10:].strip()
-    try:
-        user_id_int = int(user_id)
-        if user_id_int:
-            user_id = f'[{user_id_int}] [0]'
-    except ValueError:
-        pass
-    if user_id:
-        if my_db.get_user_property(user_id, 'blocked_bing'):
-            my_db.delete_user_property(user_id, 'blocked_bing')
-            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
-        else:
-            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
+    user_ids = utils.extract_large_ids(message.text)
+
+    if user_ids:
+        for user_id in user_ids:
+            if my_db.get_user_property(user_id, 'blocked_bing'):
+                my_db.delete_user_property(user_id, 'blocked_bing')
+                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
+            else:
+                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockdel2 <[user id] [group id]>')
 
@@ -4823,16 +4805,12 @@ def block_user_add(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    user_id = message.text[10:].strip()
-    try:
-        user_id_int = int(user_id)
-        if user_id_int:
-            user_id = f'[{user_id_int}] [0]'
-    except ValueError:
-        pass
-    if user_id:
-        my_db.set_user_property(user_id, 'blocked', True)
-        bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
+    user_ids = utils.extract_large_ids(message.text)
+
+    if user_ids:
+        for user_id in user_ids:
+            my_db.set_user_property(user_id, 'blocked', True)
+            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockadd <[user id] [group id]>')
 
@@ -4845,19 +4823,15 @@ def block_user_del(message: telebot.types.Message):
     chat_full_id = get_topic_id(message)
     lang = get_lang(chat_full_id, message)
 
-    user_id = message.text[10:].strip()
-    try:
-        user_id_int = int(user_id)
-        if user_id_int:
-            user_id = f'[{user_id_int}] [0]'
-    except ValueError:
-        pass
-    if user_id:
-        if my_db.get_user_property(user_id, 'blocked'):
-            my_db.delete_user_property(user_id, 'blocked')
-            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
-        else:
-            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
+    user_ids = utils.extract_large_ids(message.text)
+
+    if user_ids:
+        for user_id in user_ids:
+            if my_db.get_user_property(user_id, 'blocked'):
+                my_db.delete_user_property(user_id, 'blocked')
+                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
+            else:
+                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockdel <[user id] [group id]>')
 

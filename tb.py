@@ -4213,6 +4213,10 @@ def huggingface_image_gen(message: telebot.types.Message):
         bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw', disable_web_page_preview=True)        
         return
 
+    # проверка на подписку
+    if not check_donate(message, chat_id_full, lang):
+        return
+
     # Check if the user has provided a prompt and model.
     try:
         parts = message.text.split(maxsplit=2)  # Split into command, prompt, and optional model
@@ -4323,6 +4327,39 @@ def image_bing_gen(message: telebot.types.Message):
     image_gen(message)
 
 
+@bot.message_handler(commands=['bing10', 'Bing10'], func=authorized)
+@async_run
+def image_bing_gen10(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+    if stars < 100:
+        bot_reply_tr(message, 'Надо иметь 100 звезд в запасе что бы использовать такую команду.')
+        return
+    if my_db.get_user_property(chat_id_full, 'blocked_bing'):
+        bot_reply_tr(message, 'Bing вас забанил.')
+        time.sleep(2)
+        return
+    message.text += '[{(BING10)}]'
+    image_gen(message)
+
+
+@bot.message_handler(commands=['bing20', 'Bing20'], func=authorized)
+@async_run
+def image_bing_gen20(message: telebot.types.Message):
+    chat_id_full = get_topic_id(message)
+    chat_id_full = get_topic_id(message)
+    stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+    if stars < 200:
+        bot_reply_tr(message, 'Надо иметь 200 звезд в запасе что бы использовать такую команду.')
+        return
+    if my_db.get_user_property(chat_id_full, 'blocked_bing'):
+        bot_reply_tr(message, 'Bing вас забанил.')
+        time.sleep(2)
+        return
+    message.text += '[{(BING20)}]'
+    image_gen(message)
+
+
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):
@@ -4357,10 +4394,16 @@ def image_gen(message: telebot.types.Message):
             return
 
         # рисовать только бингом, команда /bing
-        BING_FLAG = False
+        BING_FLAG = 0
         if message.text.endswith('[{(BING)}]'):
             message.text = message.text[:-10]
-            BING_FLAG = True
+            BING_FLAG = 1
+        elif message.text.endswith('[{(BING10)}]'):
+            message.text = message.text[:-12]
+            BING_FLAG = 10
+        elif message.text.endswith('[{(BING20)}]'):
+            message.text = message.text[:-12]
+            BING_FLAG = 20
 
         if chat_id_full in IMG_GEN_LOCKS:
             lock = IMG_GEN_LOCKS[chat_id_full]
@@ -4389,7 +4432,7 @@ def image_gen(message: telebot.types.Message):
 
 {tr('Use ! marker in the beginning to avoid translation and use the text as it is.', lang)}
 
-{tr('Use /bing command for Bing only.', lang)}
+{tr('Use /bing command for Bing only. /bing10 /bing20 for x10/x20.', lang)}
 
 {tr('Use /hf and /hff command for HuggingFace only.', lang)}
 
@@ -4419,7 +4462,7 @@ def image_gen(message: telebot.types.Message):
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
                         else:
                             if BING_FLAG:
-                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history)
+                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)
                             else:
                                 images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
 
@@ -4714,9 +4757,18 @@ def block_user_add3(message: telebot.types.Message):
     user_ids = utils.extract_large_ids(message.text)
 
     if user_ids:
+        msg = ''
         for user_id in user_ids:
-            my_db.set_user_property(user_id, 'blocked_totally', True)
-            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
+            if my_db.get_user_property(user_id, 'first_meet'):
+                my_db.set_user_property(user_id, 'blocked_totally', True)
+                msg += f'✅ {tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}\n'
+            else:
+                msg += f'❌ {tr("Пользователь", lang)} {user_id} {tr("не найден в базе", lang)}\n'
+            
+        if msg:
+            bot_reply(message, msg)
+        else:
+            bot_reply_tr(message, 'Нет таких юзеров')
     else:
         bot_reply_tr(message, 'Usage: /blockadd3 <[user id] [group id]>')
 
@@ -4732,12 +4784,17 @@ def block_user_del3(message: telebot.types.Message):
     user_ids = utils.extract_large_ids(message.text)
 
     if user_ids:
+        msg = ''
         for user_id in user_ids:
             if my_db.get_user_property(user_id, 'blocked_totally'):
                 my_db.delete_user_property(user_id, 'blocked_totally')
-                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
+                msg += f'✅ {tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}\n'
             else:
-                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
+                msg += f'❌ {tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}\n'
+        if msg:
+            bot_reply(message, msg)
+        else:
+            bot_reply(message, f'{tr("Нет таких пользователей", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockdel3 <[user id] [group id]>')
 
@@ -4761,9 +4818,18 @@ def block_user_add2(message: telebot.types.Message):
     user_ids = utils.extract_large_ids(message.text)
 
     if user_ids:
+        msg = ''
         for user_id in user_ids:
-            my_db.set_user_property(user_id, 'blocked_bing', True)
-            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
+            if my_db.get_user_property(user_id, 'first_meet'):
+                my_db.set_user_property(user_id, 'blocked_bing', True)
+                msg += f'✅ {tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}\n'
+            else:
+                msg += f'❌ {tr("Пользователь", lang)} {user_id} {tr("не найден в базе", lang)}\n'
+            
+        if msg:
+            bot_reply(message, msg)
+        else:
+            bot_reply_tr(message, 'Нет таких юзеров')
     else:
         bot_reply_tr(message, 'Usage: /blockadd2 <[user id] [group id]>')
 
@@ -4779,12 +4845,17 @@ def block_user_del2(message: telebot.types.Message):
     user_ids = utils.extract_large_ids(message.text)
 
     if user_ids:
+        msg = ''
         for user_id in user_ids:
             if my_db.get_user_property(user_id, 'blocked_bing'):
                 my_db.delete_user_property(user_id, 'blocked_bing')
-                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
+                msg += f'✅ {tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}\n'
             else:
-                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
+                msg += f'❌ {tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}\n'
+        if msg:
+            bot_reply(message, msg)
+        else:
+            bot_reply(message, f'{tr("Нет таких пользователей", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockdel2 <[user id] [group id]>')
 
@@ -4808,9 +4879,18 @@ def block_user_add(message: telebot.types.Message):
     user_ids = utils.extract_large_ids(message.text)
 
     if user_ids:
+        msg = ''
         for user_id in user_ids:
-            my_db.set_user_property(user_id, 'blocked', True)
-            bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}')
+            if my_db.get_user_property(user_id, 'first_meet'):
+                my_db.set_user_property(user_id, 'blocked', True)
+                msg += f'✅ {tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)}\n'
+            else:
+                msg += f'❌ {tr("Пользователь", lang)} {user_id} {tr("не найден в базе", lang)}\n'
+            
+        if msg:
+            bot_reply(message, msg)
+        else:
+            bot_reply_tr(message, 'Нет таких юзеров')
     else:
         bot_reply_tr(message, 'Usage: /blockadd <[user id] [group id]>')
 
@@ -4826,12 +4906,17 @@ def block_user_del(message: telebot.types.Message):
     user_ids = utils.extract_large_ids(message.text)
 
     if user_ids:
+        msg = ''
         for user_id in user_ids:
             if my_db.get_user_property(user_id, 'blocked'):
                 my_db.delete_user_property(user_id, 'blocked')
-                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}')
+                msg += f'✅ {tr("Пользователь", lang)} {user_id} {tr("удален из стоп-листа", lang)}\n'
             else:
-                bot_reply(message, f'{tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}')
+                msg += f'❌ {tr("Пользователь", lang)} {user_id} {tr("не найден в стоп-листе", lang)}\n'
+        if msg:
+            bot_reply(message, msg)
+        else:
+            bot_reply(message, f'{tr("Нет таких пользователей", lang)}')
     else:
         bot_reply_tr(message, 'Usage: /blockdel <[user id] [group id]>')
 

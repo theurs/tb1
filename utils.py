@@ -1500,16 +1500,17 @@ def format_timestamp(timestamp: float) -> str:
 
 def extract_large_ids(text: str, min_digits: int = 5) -> List[str]:
     """
-    Extracts IDs (large numbers with a minimum number of digits) from a text string.
+    Extracts IDs (large numbers with a minimum number of digits) from a text string,
+    including negative numbers.
 
     Args:
         text: The input text containing IDs.
         min_digits: Minimum number of digits for a number to be considered as an ID
 
     Returns:
-        A list of extracted IDs as strings.
+        A list of extracted IDs as strings, including the square brackets and [0] part.
     """
-    pattern = r'(^|\D)(\d{' + str(min_digits) + r',})(\D|$)'
+    pattern = r'(\D|^)(-?\d{' + str(min_digits) + r',})(\D|$)'
     matches = re.findall(pattern, text)
     return [f'[{match[1]}] [0]' for match in matches]
 

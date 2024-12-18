@@ -5613,7 +5613,7 @@ def id_cmd_handler(message: telebot.types.Message):
             msg += f'Uptime: {get_uptime()}\n\n'
         msg += f'''{tr("ID пользователя:", lang)} {user_id}
 
-{tr("Количество сообщений/изображений:", lang)} {total_msgs}/{totals_pics}
+{tr("Количество сообщений/изображений:", lang)} {total_msgs-totals_pics}/{totals_pics}
 
 {tr("ID группы:", lang)} {group_id_full}
 

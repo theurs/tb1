@@ -237,14 +237,12 @@ def chat(query: str,
                                     request_options=request_options,
                                     )
             except Exception as error:
-                my_log.log_gemini(f'my_gemini:chat: {error}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                my_log.log_gemini(f'my_gemini:chat: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
                    'reason: "API_KEY_INVALID"' in str(error):
                     remove_key(key)
                 if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error) or 'User location is not supported for the API use.' in str(error):
                     return ''
-                # if '400 Unable to submit request because it has an empty text parameter.' in str(error):
-                #     my_log.log_gemini(f'my_gemini:chat: {str(mem)}')
                 time.sleep(2)
                 continue
 
@@ -267,11 +265,11 @@ def chat(query: str,
             else:
                 return ''
 
-        my_log.log_gemini(f'my_gemini:chat:no results after 4 tries, query: {query}')
+        my_log.log_gemini(f'my_gemini:chat:no results after 4 tries, query: {query}\n{model}')
         return ''
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}')
+        my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}\n{model}')
         return ''
 
 

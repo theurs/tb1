@@ -226,13 +226,13 @@ if __name__ == '__main__':
     my_db.init(backup=False)
 
     usage_data = get_model_usage_for_days(90)  # Get data for the past 90 days
-    with open('d:/downloads/1.png', 'wb') as f:
+    with open('C:/Users/user/Downloads/1.png', 'wb') as f:
         f.write(visualize_usage(usage_data, mode='llm'))
 
-    with open('d:/downloads/2.png', 'wb') as f:
+    with open('C:/Users/user/Downloads/2.png', 'wb') as f:
         f.write(visualize_usage(usage_data, mode='img'))
 
-    with open('d:/downloads/3.png', 'wb') as f:
+    with open('C:/Users/user/Downloads/3.png', 'wb') as f:
         f.write(draw_user_activity(90))
 
     my_db.close()

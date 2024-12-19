@@ -671,7 +671,7 @@ if __name__ == '__main__':
     my_db.init(backup=False)
 
     # reset('test')
-    # with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:
+    # with open('C:/Users/user/Downloads/1.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()
     # r = ai(f'сделай хороший перевод на английский этого текста:\n\n{text[:60000]}',
     #          user_id='test',
@@ -679,7 +679,7 @@ if __name__ == '__main__':
     #          max_tokens=16000,
     #          timeout=600)
     # r = r[1]
-    # with open('d:/downloads/2.txt', 'w', encoding='utf-8') as f:
+    # with open('C:/Users/user/Downloads/2.txt', 'w', encoding='utf-8') as f:
     #     f.write(r)
     # print(len(r), r[:1000])
 

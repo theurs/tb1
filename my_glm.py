@@ -382,9 +382,9 @@ if __name__ == '__main__':
     # reset('test')
     # chat_cli()
 
-    # print(img2txt('d:/downloads/1.jpg', 'извлеки весь текст с картинки, сохрани форматирование'))
-    # print(img2txt('d:/downloads/2.jpg', 'реши все задачи, ответ по-русски'))
-    # print(img2txt('d:/downloads/3.png', 'какой ответ и почему, по-русски'))
+    # print(img2txt('C:/Users/user/Downloads/1.jpg', 'извлеки весь текст с картинки, сохрани форматирование'))
+    # print(img2txt('C:/Users/user/Downloads/2.jpg', 'реши все задачи, ответ по-русски'))
+    # print(img2txt('C:/Users/user/Downloads/3.png', 'какой ответ и почему, по-русски'))
 
     # print(txt2img('реалистичное лицо крупным планом - удивленная гермиона грейнджер', amount=4))    
 

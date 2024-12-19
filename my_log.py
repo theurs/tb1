@@ -174,6 +174,11 @@ def log_glm(text: str) -> None:
     log2(text[:2000], 'glm')
 
 
+def log_mistral(text: str) -> None:
+    """для логов openrouter mistral"""
+    log2(text[:2000], 'mistral')
+
+
 def log_sambanova(text: str) -> None:
     """для логов openrouter sambanova"""
     log2(text[:2000], 'sambanova')

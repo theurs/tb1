@@ -69,7 +69,7 @@ def ai(
 
     messages = mem or []
     if system:
-        messages.append({"role": "system", "content": system})
+        messages.insert(0, {"role": "system", "content": system})
     if prompt:
         messages.append({"role": "user", "content": prompt})
 

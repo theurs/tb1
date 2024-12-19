@@ -672,7 +672,7 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_M
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
     r = ai(query, temperature=temperature, model_ = model)
     if not r and model == DEFAULT_MODEL:
-        r = ai(query, temperature=temperature, model_ = DEFAULT_MODEL_FALLBACK)
+        r = ai(query, temperature=temperature, model_ = FALLBACK_MODEL)
     return r
 
 
@@ -714,7 +714,6 @@ def retranscribe(text: str, prompt: str = '') -> str:
         query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
     result = ai(query, temperature=0.1, model_='llama-3.1-70b-versatile', mem_=MEM_UNCENSORED, max_tokens_=4000)
     return result
-
 
 
 def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | None:
@@ -772,7 +771,7 @@ if __name__ == '__main__':
     load_users_keys()
 
 
-    # print(img2txt('d:/downloads/4.jpg', prompt = 'Извлеки весь текст, сохрани исходное форматирование', model='llama-3.2-90b-vision-preview'))
+    # print(img2txt('C:/Users/user/Downloads/4.jpg', prompt = 'Извлеки весь текст, сохрани исходное форматирование', model='llama-3.2-90b-vision-preview'))
 
     # my_db.init(backup=False)
 
@@ -783,7 +782,7 @@ if __name__ == '__main__':
 
     # print(stt('d:\\downloads\\1.ogg', 'en'))
 
-    # with open('d:/downloads/1.txt', 'r', encoding='utf-8') as f:
+    # with open('C:/Users/user/Downloads/1.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()
 
     # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))

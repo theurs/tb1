@@ -485,7 +485,7 @@ if __name__ == '__main__':
     # reset('test')
     # chat_cli()
 
-    print(img2txt('d:/downloads/1.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-3.2-11b-vision-instruct:free'))
-    # print(voice2txt('d:/downloads/1.ogg'))
+    print(img2txt('C:/Users/user/Downloads/1.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-3.2-11b-vision-instruct:free'))
+    # print(voice2txt('C:/Users/user/Downloads/1.ogg'))
 
     my_db.close()

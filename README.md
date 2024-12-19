@@ -202,7 +202,7 @@ default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
 # 'gemini', 'gemini15', 'gemini8', 'gemini-exp', 'gemini-learn', 'llama370', 'openrouter', 'haiku',
-# 'gpt-4o-mini-ddg', 'openrouter_llama405', 'glm4plus', 'qwen70'
+# 'gpt-4o-mini-ddg', 'openrouter_llama405', 'glm4plus', 'qwen70', 'mistral', 'pixtral'
 chat_mode_default = 'gemini15'
 img2_txt_model = 'gemini-1.5-flash' # gemini-1.5-flash-exp-0827, gemini-1.5-flash-latest, gemini-1.5-flash-pro, ...
 gemini_flash_model_fallback = 'gemini-1.5-flash-latest'

@@ -3217,7 +3217,12 @@ def users_keys_for_gemini(message: telebot.types.Message):
                     bot_reply_tr(message, 'Added keys successfully!')
                     return
 
-        msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys. Get it at https://ai.google.dev/ \n\n1️⃣ Howto video:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/\n\nhttps://console.groq.com/keys\n2️⃣ Instruction: https://github.com/theurs/tb1/tree/master/pics/groq\n\nhttps://huggingface.co/settings/tokens\n3️⃣ Instruction: https://github.com/theurs/tb1/tree/master/pics/hf'
+        msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys.\n\n', lang)+'\n\n'+\
+                 '0️⃣ Free VPN: https://www.vpnjantit.com/\n\n'+\
+                 '1️⃣ https://www.youtube.com/watch?v=6aj5a7qGcb4\nhttps://ai.google.dev/\n\n'+\
+                 '2️⃣ https://github.com/theurs/tb1/tree/master/pics/groq\nhttps://console.groq.com/keys\n\n'+\
+                 '3️⃣ https://github.com/theurs/tb1/tree/master/pics/hf\nhttps://huggingface.co/settings/tokens'
+
         bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
 
         # показать юзеру его ключи

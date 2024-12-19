@@ -408,6 +408,13 @@ OPEN_ROUTER_FREE_KEYS = [
 #GLM_IMAGES = False
 
 
+# https://console.mistral.ai/api-keys/
+MISTRALAI_KEYS = [
+    'xxx1',
+    'xxx2',
+]
+
+
 # string for /donate command html parsing
 # DONATION_STRING = '<a href = "https://www.donationalerts.com/r/xxx">DonationAlerts</a>'
 

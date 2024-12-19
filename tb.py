@@ -5597,14 +5597,22 @@ def id_cmd_handler(message: telebot.types.Message):
         telegram_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
 
         total_msgs = my_db.get_total_msg_user(chat_id_full)
-        totals_pics = my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0
+        # totals_pics = my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0
+        totals_pics = my_db.get_pics_msg_user(chat_id_full)
 
         first_meet = my_db.get_user_property(chat_id_full, 'first_meet') or 0
         first_meet_dt = pendulum.from_timestamp(first_meet)
-        first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale='en')
+        try:
+            first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale=lang)
+        except:
+            first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale='en')
         now = pendulum.now()
         diff = now - first_meet_dt
-        delta_time_str = diff.in_words(locale='en')    
+        
+        try:
+            delta_time_str = diff.in_words(locale=lang)
+        except:
+            delta_time_str = diff.in_words(locale='en')
 
         subscription_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
 
@@ -5613,11 +5621,14 @@ def id_cmd_handler(message: telebot.types.Message):
             msg += f'Uptime: {get_uptime()}\n\n'
         msg += f'''{tr("ID пользователя:", lang)} {user_id}
 
+{tr("Дата встречи:", lang)} {first_meet_str}
+{delta_time_str}
+
 {tr("Количество сообщений/изображений:", lang)} {total_msgs-totals_pics}/{totals_pics}
 
 {tr("ID группы:", lang)} {group_id_full}
 
-{tr("Выбранный язык:", lang)} {reported_language}
+{tr("Язык телеграма/пользователя:", lang)} {reported_language}/{lang}
 
 {tr("Выбранная чат модель:", lang)} {user_model}'''
 

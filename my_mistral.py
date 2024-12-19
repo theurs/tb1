@@ -9,8 +9,8 @@ import cfg
 
 
 api_key = cfg.mistral_ai[0]
-# model = "mistral-large-latest"
-model = 'open-mistral-nemo'
+model = "mistral-large-latest"
+# model = 'open-mistral-nemo'
 
 client = Mistral(api_key=api_key)
 

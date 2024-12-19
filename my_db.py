@@ -418,6 +418,18 @@ def get_total_msg_user(user_id) -> int:
             return 0
 
 
+def get_pics_msg_user(user_id) -> int:
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT COUNT(id) FROM msg_counter WHERE user_id = ? AND model_used LIKE 'img %'
+            ''', (user_id,))
+            return CUR.fetchone()[0]
+        except Exception as error:
+            my_log.log2(f'my_db:get_total_msg_user {error}')
+            return 0
+
+
 def get_total_msg_users_in_days(days: int) -> int:
     access_time = time.time() - days * 24 * 60 * 60
     with LOCK:

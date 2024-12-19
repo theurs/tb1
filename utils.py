@@ -743,7 +743,7 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
         return text
     except Exception as unknown:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'utils:replace_tables {unknown}\n\n{traceback_error}\n\n{original_text}')
+        # my_log.log2(f'utils:replace_tables {unknown}\n\n{traceback_error}\n\n{original_text}')
         return original_text
 
 

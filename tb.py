@@ -475,12 +475,6 @@ def img2txt(text, lang: str,
     time_to_answer_start = time.time()
 
     try:
-        if not model:
-            if check_vip_user_gemini(chat_id_full):
-                model = cfg.gemini_pro_model
-            else:
-                model = cfg.img2_txt_model
-
         text = ''
 
         # попробовать с помощью openrouter
@@ -510,6 +504,12 @@ def img2txt(text, lang: str,
                 text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
+
+        if not model and not text:
+            if check_vip_user_gemini(chat_id_full):
+                model = cfg.gemini_pro_model
+            else:
+                model = cfg.img2_txt_model
 
         # сначала попробовать с помощью джемини
         if not text:

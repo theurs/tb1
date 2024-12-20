@@ -4539,7 +4539,7 @@ def image_gen(message: telebot.types.Message):
 
 {tr('Use ! marker in the beginning to avoid translation and use the text as it is.', lang)}
 
-{tr('Use /bing command for Bing only. /bing10 /bing20 for x10/x20.', lang)}
+{tr('Use /bing command for Bing only. /bing10 /bing20 repeat the command 10/20 times.', lang)}
 
 {tr('Use /hf and /hff command for HuggingFace only.', lang)}
 

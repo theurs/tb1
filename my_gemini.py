@@ -932,6 +932,8 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
+    # print(test_new_key('xxx'))
+
     # chat('привет', chat_id='[1651196] [0]')
     # update_mem('1+2', '3', '[1651196] [0]')
 

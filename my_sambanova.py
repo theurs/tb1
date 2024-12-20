@@ -60,6 +60,8 @@ def ai(
     if not hasattr(cfg, 'SAMBANOVA_KEYS'):
         return ''
 
+    if not temperature:
+        temperature = 1
     if temperature > 0:
         temperature = temperature/2
 

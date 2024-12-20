@@ -3996,7 +3996,7 @@ def set_new_temperature(message: telebot.types.Message):
 `/temperature 1.5`
 `/temperature 2`
 
-{tr('Сейчас температура', lang)} = {my_db.get_user_property(chat_id_full, 'temperature')}
+{tr('Сейчас температура', lang)} = {my_db.get_user_property(chat_id_full, 'temperature') or 1}
 """
         bot_reply(message, md2tgmd.escape(help), parse_mode='MarkdownV2')
         return
@@ -4647,8 +4647,11 @@ def image_gen(message: telebot.types.Message):
                                                 my_log.log2(f'tb:image:send_media_group: {error2}')
                                                 continue
 
+                                    try:
+                                        log_message(msgs_ids)
+                                    except UnboundLocalError:
+                                        pass
 
-                                    log_message(msgs_ids)
                                 update_user_image_counter(chat_id_full, len(medias))
 
                                 log_msg = '[Send images] '
@@ -6531,6 +6534,8 @@ def do_task(message, custom_prompt: str = ''):
 
                     return False
 
+                if not my_db.get_user_property(chat_id_full, 'temperature'):
+                    my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
                 # если активирован режим общения с Gemini
                 if chat_mode_.startswith('gemini'):
@@ -6540,13 +6545,10 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            if not my_db.get_user_property(chat_id_full, 'temperature'):
-                                my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
-
                             answer = my_gemini.chat(
                                 message.text,
                                 chat_id_full,
-                                my_db.get_user_property(chat_id_full, 'temperature'),
+                                my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 model = gmodel,
                                 system = hidden_text,
                                 use_skills=True)
@@ -6556,7 +6558,7 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,
-                                    my_db.get_user_property(chat_id_full, 'temperature'),
+                                    my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                     model = gmodel,
                                     system = hidden_text,
                                     use_skills=True)
@@ -6567,7 +6569,7 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,
-                                    my_db.get_user_property(chat_id_full, 'temperature'),
+                                    my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                     model = gmodel,
                                     system = hidden_text,
                                     use_skills=True)
@@ -6578,7 +6580,7 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,
-                                    my_db.get_user_property(chat_id_full, 'temperature'),
+                                    my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                     model = gmodel,
                                     system = hidden_text,
                                     use_skills=True)
@@ -6642,15 +6644,12 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            if not my_db.get_user_property(chat_id_full, 'temperature'):
-                                my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
-
                             style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                             answer = my_groq.chat(
                                 message.text,
                                 chat_id_full,
                                 style = style_,
-                                temperature = my_db.get_user_property(chat_id_full, 'temperature'),
+                                temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 model = my_groq.DEFAULT_MODEL,
                                 )
 
@@ -6750,7 +6749,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = my_sambanova.chat(
                                 message.text,
                                 chat_id_full,
-                                temperature=my_db.get_user_property(chat_id_full, 'temperature'),
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=style_,
                                 model = 'Meta-Llama-3.1-405B-Instruct',
                             )
@@ -6793,7 +6792,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = my_sambanova.chat(
                                 message.text,
                                 chat_id_full,
-                                temperature=my_db.get_user_property(chat_id_full, 'temperature'),
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=style_,
                                 model = 'Qwen2.5-72B-Instruct',
                             )
@@ -6837,7 +6836,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = my_mistral.chat(
                                 message.text,
                                 chat_id_full,
-                                temperature=my_db.get_user_property(chat_id_full, 'temperature'),
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=style_,
                                 model = my_mistral.DEFAULT_MODEL,
                             )
@@ -6879,7 +6878,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = my_mistral.chat(
                                 message.text,
                                 chat_id_full,
-                                temperature=my_db.get_user_property(chat_id_full, 'temperature'),
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=style_,
                                 model = my_mistral.VISION_MODEL,
                             )
@@ -6921,7 +6920,7 @@ def do_task(message, custom_prompt: str = ''):
                             answer = my_glm.chat(
                                 message.text,
                                 chat_id_full,
-                                temperature=my_db.get_user_property(chat_id_full, 'temperature'),
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
                                 model = my_glm.DEFAULT_MODEL,
                             )

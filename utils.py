@@ -138,6 +138,9 @@ def bot_markdown_to_tts(text: str) -> str:
     return text
 
 
+# гребаный маркдаун ###################################################################
+
+
 def bot_markdown_to_html(text: str) -> str:
     # переделывает маркдаун от чатботов в хтмл для телеграма
     # сначала делается полное экранирование
@@ -367,6 +370,31 @@ def bot_markdown_to_html(text: str) -> str:
         indent = match.group(0).split('•')[0] # Получаем все пробелы в начале
         return indent + '* * *'
     text = re.sub(r"^\s*•\s*•\s*•\s*$", replace_3_stars2, text, flags=re.MULTILINE)
+
+
+    def replace_asterisk_with_digits(text: str) -> str:
+        """
+        Заменяет символ \* на * в строках, где есть цифры.
+
+        Args:
+            text: Исходный текст.
+
+        Returns:
+            Текст с выполненными заменами.
+        """
+        lines = text.split('\n')
+        modified_lines = []
+        for line in lines:
+            if any(char.isdigit() for char in line):
+                modified_line = re.sub(r'\\\*', '*', line)
+                modified_line = re.sub(r'\\\[', '[', modified_line)
+            else:
+                modified_line = line
+            modified_lines.append(modified_line)
+        return '\n'.join(modified_lines)
+
+    text = replace_asterisk_with_digits(text)
+
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
@@ -866,149 +894,7 @@ def post_process_split_html(chunks: list) -> list:
     return processed_chunks
 
 
-# def split_html(text: str, max_length: int = 1500) -> list:
-#     """
-#     Splits HTML text into chunks with a maximum length, respecting code blocks, blockquotes,
-#     expandable blockquotes, bold, and italic tags.
-#     Args:
-#         text: The HTML text to split.
-#         max_length: The maximum length of each chunk.
-#     Returns:
-#         A list of HTML chunks.
-#     """
-#     tag = ''
-#     mode = 0
-#     chunks = []
-#     chunk = ''
-    
-#     # Mode mapping for different tags
-#     TAG_MODES = {
-#         '<pre><code': (1, lambda l: l[:l.find('>', 10) + 1], '</code></pre>'),
-#         '<code>': (2, lambda l: '<code>', '</code>'),
-#         '<b>': (3, lambda l: '<b>', '</b>'),
-#         '<i>': (4, lambda l: '<i>', '</i>'),
-#         '<blockquote>': (5, lambda l: '<blockquote>', '</blockquote>'),
-#         '<blockquote expandable>': (6, lambda l: '<blockquote expandable>', '</blockquote>')
-#     }
-    
-#     for line in text.split('\n'):
-#         found_tag = False
-#         # Check for opening tags
-#         for start_tag, (tag_mode, tag_extractor, end_tag) in TAG_MODES.items():
-#             if line.startswith(start_tag) and end_tag not in line:
-#                 mode = tag_mode
-#                 tag = tag_extractor(line)
-#                 found_tag = True
-#                 break
-        
-#         if found_tag:
-#             chunk += line + '\n'
-#             continue
-            
-#         # Check for closing tags
-#         is_closing_tag = any(line == end_tag for _, (_, _, end_tag) in TAG_MODES.items())
-#         if is_closing_tag:
-#             tag = ''
-#             mode = 0
-#             chunk += line + '\n'
-#             continue
-            
-#         # Handle chunk splitting when size limit is reached
-#         if len(chunk) + len(line) + 20 > max_length:
-#             if mode != 0:
-#                 # Get the appropriate closing tag for the current mode
-#                 closing_tag = next(end_tag for _, (m, _, end_tag) in TAG_MODES.items() 
-#                                 if m == mode)
-#                 chunk += closing_tag + '\n'
-#                 chunks.append(chunk)
-#                 chunk = tag
-#             else:
-#                 chunks.append(chunk)
-#                 chunk = ''
-                
-#         chunk += line + '\n'
-    
-#     # Add the final chunk
-#     chunks.append(chunk)
-    
-#     # Handle chunks that are still too long
-#     chunks2 = []
-#     for chunk in chunks:
-#         if len(chunk) > max_length:
-#             chunks2 += split_text(chunk, max_length)
-#         else:
-#             chunks2.append(chunk)
-    
-#     return chunks2
-
-
-# def split_html(text: str, max_length: int = 1500) -> list:
-#     """
-#     Splits HTML text into chunks with a maximum length, respecting code blocks, bold, and italic tags.
-
-#     Args:
-#         text: The HTML text to split.
-#         max_length: The maximum length of each chunk.
-
-#     Returns:
-#         A list of HTML chunks.
-#     """
-#     code_tag = ''
-#     in_code_mode = 0
-
-#     chunks = []
-#     chunk = ''
-
-#     for line in text.split('\n'):
-#         if line.startswith('<pre><code') and line.find('</code></pre>') == -1:
-#             in_code_mode = 1
-#             code_tag = line[:line.find('>', 10) + 1]
-#         elif line.startswith('<code>') and line.find('</code>') == -1:
-#             in_code_mode = 2
-#             code_tag = '<code>'
-#         elif line.startswith('<b>') and line.find('</b>') == -1:
-#             in_code_mode = 3
-#             code_tag = '<b>'
-#         elif line.startswith('<i>') and line.find('</i>') == -1:
-#             in_code_mode = 4
-#             code_tag = '<i>'
-#         elif line == '</code></pre>' or line == '</code>' or line == '</b>' or line == '</i>':
-#             code_tag = ''
-#             in_code_mode = 0
-#         else:
-#             if len(chunk) + len(line) + 20 > max_length:
-#                 if in_code_mode == 1:
-#                     chunk += '</code></pre>\n'
-#                     chunks.append(chunk)
-#                     chunk = code_tag
-#                 elif in_code_mode == 2:
-#                     chunk += '</code>\n'
-#                     chunks.append(chunk)
-#                     chunk = code_tag
-#                 elif in_code_mode == 3:
-#                     chunk += '</b>\n'
-#                     chunks.append(chunk)
-#                     chunk = code_tag
-#                 elif in_code_mode == 4:
-#                     chunk += '</i>\n'
-#                     chunks.append(chunk)
-#                     chunk = code_tag
-#                 elif in_code_mode == 0:
-#                     chunks.append(chunk)
-#                     chunk = ''
-
-#         chunk += line + '\n'
-
-#     chunks.append(chunk)
-
-#     chunks2 = []
-#     for chunk in chunks:
-#         if len(chunk) > max_length:
-#             chunks2 += split_text(chunk, max_length)
-#         else:
-#             chunks2.append(chunk)
-
-#     return chunks2
+#######################################################################################
 
 
 def get_tmp_fname() -> str:

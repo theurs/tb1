@@ -4707,7 +4707,7 @@ def image_gen(message: telebot.types.Message):
                                 #     msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
                                 #     bot_reply(message, msg2, disable_web_page_preview = True)
                         else:
-                            bot_reply_tr(message, 'Could not draw anything. Maybe there is no mood, or maybe you need to give another description.')
+                            bot_reply_tr(message, 'Could not draw anything.')
 
                             my_log.log_echo(message, '[image gen error] ')
                             if BING_FLAG:

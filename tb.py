@@ -2695,7 +2695,11 @@ def handle_photo(message: telebot.types.Message):
                         if not message.caption:
                             proccess_image(chat_id_full, image, message)
                             return
-                        text = img2txt(image, lang, chat_id_full, message.caption)
+                        # грязный хак, для решения задач надо использовать мощную модель
+                        if 'реши' in message.caption.lower() or 'solve' in message.caption.lower():
+                            text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.gemini_exp_model)
+                        else:
+                            text = img2txt(image, lang, chat_id_full, message.caption)
                         if text:
                             text = utils.bot_markdown_to_html(text)
                             # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)

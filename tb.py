@@ -489,26 +489,27 @@ def img2txt(text, lang: str,
             my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
         chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
-        if chat_mode == 'openrouter':
-            text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
-            if text:
-                WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
-        elif chat_mode == 'gemini-exp':
-            text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
-            if text:
-                WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
-        elif chat_mode == 'gemini-learn':
-            text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full)
-            if text:
-                WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
-        elif chat_mode == 'gemini':
-            text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
-            if text:
-                WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
-        elif chat_mode == 'pixtral':
-            text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
-            if text:
-                WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
+        if not model:
+            if chat_mode == 'openrouter':
+                text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
+            elif chat_mode == 'gemini-exp':
+                text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
+            elif chat_mode == 'gemini-learn':
+                text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
+            elif chat_mode == 'gemini':
+                text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
+            elif chat_mode == 'pixtral':
+                text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
 
         # сначала попробовать с помощью джемини
         if not text:

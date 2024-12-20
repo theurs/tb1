@@ -4440,7 +4440,7 @@ def image_bing_gen10(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
     if stars < 100:
-        bot_reply_tr(message, 'Надо иметь 100 звезд в запасе что бы использовать такую команду.')
+        bot_reply_tr(message, 'You need to have 100 stars in reserve to use this command.')
         return
     if my_db.get_user_property(chat_id_full, 'blocked_bing'):
         bot_reply_tr(message, 'Bing вас забанил.')
@@ -4457,7 +4457,7 @@ def image_bing_gen20(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
     if stars < 200:
-        bot_reply_tr(message, 'Надо иметь 200 звезд в запасе что бы использовать такую команду.')
+        bot_reply_tr(message, 'You need to have 200 stars in reserve to use this command.')
         return
     if my_db.get_user_property(chat_id_full, 'blocked_bing'):
         bot_reply_tr(message, 'Bing вас забанил.')

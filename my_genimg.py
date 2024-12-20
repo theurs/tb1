@@ -518,7 +518,11 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
 
     reprompt, _ = get_reprompt(prompt, conversation_history)
     if reprompt == 'MODERATION':
-        return ['moderation',]
+        if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(user_id) in cfg.ALLOW_PASS_NSFW_FILTER:
+            prompt = re.sub(r'^!+', '', prompt).strip()
+            reprompt = prompt
+        else:
+            return ['moderation',]
 
     if reprompt:
         result = []

@@ -387,13 +387,11 @@ def bot_markdown_to_html(text: str) -> str:
         lines = text.split('\n')
         modified_lines = []
         for line in lines:
-            if any(char.isdigit() or char in {']',} for char in line):
+            if any(char.isdigit() for char in line):
                 modified_line = re.sub(r'\\\*', '*', line)
                 modified_line = re.sub(r'\\\[', '[', modified_line)
             else:
                 modified_line = line
-            # заменить \_ на _ если есть прилегающие буквы
-            modified_line = re.sub(r"(?<=\w)\\_|\\_(?=\w)|(?<=\w)\\_(?=\w)", "_", text)
             modified_lines.append(modified_line)
         return '\n'.join(modified_lines)
 

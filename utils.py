@@ -350,6 +350,8 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r"<b><i>(.+?)</b></i>", r"<b><i>\1</i></b>", text)
     text = re.sub(r"<i><b>(.+?)</i></b>", r"<i><b>\1</b></i>", text)
 
+    # Удаление парных знаков $ в пределах одной строки
+    text = re.sub(r'\$(\S[^\$\n]*?\S)\$', r'\1', text)
 
     # меняем маркдаун ссылки на хтмл
     text = re.sub('''\[(.*?)\]\((https?://\S+)\)''', r'<a href="\2">\1</a>', text)

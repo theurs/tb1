@@ -392,6 +392,8 @@ def bot_markdown_to_html(text: str) -> str:
                 modified_line = re.sub(r'\\\[', '[', modified_line)
             else:
                 modified_line = line
+            # Заменяем экранированный символ '_' если прилегает к буквам
+            modified_line = re.sub(r"(?<=\w)\\_|\\_(?=\w)|(?<=\w)\\_(?=\w)", "_", modified_line)
             modified_lines.append(modified_line)
         return '\n'.join(modified_lines)
 

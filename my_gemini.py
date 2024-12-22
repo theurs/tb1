@@ -251,7 +251,7 @@ def chat(query: str,
             # # вырезать первое предложение из текста если это думающая модель
             # try:
             #     if 'gemini-2.0-flash-thinking' in model:
-            #         result = result.split('\n')[1].strip()
+            #         result = result.split('\n', maxsplit=1)[1].strip()
             # except Exception as error_remove_first_sentence:
             #     my_log.log_gemini(f'my_gemini:chat: {error_remove_first_sentence}\nне удалось отрезать первое предложение из текста: {resp}')
 

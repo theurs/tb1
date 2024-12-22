@@ -11,6 +11,7 @@
 # 50.7.85.220 o.pki.goog
 
 
+import ast
 import cachetools.func
 import io
 import PIL
@@ -248,16 +249,8 @@ def chat(query: str,
 
             result = resp.text.strip()
 
-            # # вырезать первое предложение из текста если это думающая модель
-            # try:
-            #     if 'gemini-2.0-flash-thinking' in model:
-            #         result = result.split('\n', maxsplit=1)[1].strip()
-            # except Exception as error_remove_first_sentence:
-            #     my_log.log_gemini(f'my_gemini:chat: {error_remove_first_sentence}\nне удалось отрезать первое предложение из текста: {resp}')
-
-
             if result:
-                result = result.strip()
+                result = result
                 if 'print(default_api.' in result[:100]:
                     return ''
 
@@ -271,6 +264,11 @@ def chat(query: str,
 
                 my_db.add_msg(chat_id, model)
                 if chat_id and do_not_update_history is False:
+                    if 'gemini-2.0-flash-thinking' in model:
+                        try:
+                            result = chat.history[-1].parts[1].text
+                        except:
+                            pass
                     mem = chat.history[-MAX_CHAT_LINES*2:]
                     while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
                         mem = mem[2:]
@@ -482,9 +480,15 @@ def get_mem_for_llama(chat_id: str, l: int = 3):
     for x in mem:
         role = x.role
         try:
-            text = x.parts[0].text.split(']: ', maxsplit=1)[1]
+            if len(x.parts) == 1:
+                text = x.parts[0].text.split(']: ', maxsplit=1)[1]
+            else:
+                text = x.parts[1].text.split(']: ', maxsplit=1)[1]
         except IndexError:
-            text = x.parts[0].text
+            if len(x.parts) == 1:
+                text = x.parts[0].text
+            else:
+                text = x.parts[1].text
         if role == 'user':
             res_mem += [{'role': 'user', 'content': text}]
         else:
@@ -507,7 +511,10 @@ def get_last_mem(chat_id: str) -> str:
     mem = transform_mem2(mem)
     last = mem[-1]
     if last:
-        return last.parts[0].text
+        if len(last.parts) == 1:
+            return last.parts[0].text
+        else:
+            return last.parts[1].text
 
 
 def get_mem_as_string(chat_id: str, md: bool = False) -> str:
@@ -529,9 +536,15 @@ def get_mem_as_string(chat_id: str, md: bool = False) -> str:
         if role == 'user': role = '𝐔𝐒𝐄𝐑'
         if role == 'model': role = '𝐁𝐎𝐓'
         try:
-            text = x.parts[0].text.split(']: ', maxsplit=1)[1]
+            if len(x.parts) == 1:
+                text = x.parts[0].text.split(']: ', maxsplit=1)[1]
+            else:
+                text = x.parts[1].text.split(']: ', maxsplit=1)[1]
         except IndexError:
-            text = x.parts[0].text
+            if len(x.parts) == 1:
+                text = x.parts[0].text
+            else:
+                text = x.parts[1].text
         if text.startswith('[Info to help you answer'):
             end = text.find(']') + 1
             text = text[end:].strip()
@@ -954,7 +967,7 @@ if __name__ == '__main__':
     # imagen()
 
     # print(list_models())
-    chat_cli()
+    chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
     # chat_cli(model=cfg.gemini_flash_model)
 
     # with open('C:/Users/user/Downloads/3.txt','r', encoding='utf-8') as f:

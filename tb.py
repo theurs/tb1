@@ -6636,17 +6636,6 @@ def do_task(message, custom_prompt: str = ''):
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
-                                # надо первое предложение сделать сворачиваемой цитатой если это думающая модель
-                                if answer_ and 'gemini-2.0-flash-thinking' in gmodel and 'gemini' in WHO_ANSWERED[chat_id_full]:
-                                    try:
-                                        first_line = answer_.split('\n')[0].strip()
-                                        first_line = f"<blockquote expandable>{first_line}</blockquote>"
-                                        text = answer_.split('\n', maxsplit=1)[1].strip()
-                                    except:
-                                        first_line = ''
-                                        text = answer_
-                                    answer_ = first_line + '\n' + text
-                                    answer_ = answer_.strip()
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 

@@ -5703,7 +5703,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini8': cfg.gemini_flash_light_model,
             'gemini-exp': cfg.gemini_exp_model,
             'gemini-learn': cfg.gemini_learn_model,
-            'gemini_2_flash_thinking': cfg.gemini_2_flash_thinking_model,
+            'gemini_2_flash_thinking': cfg.gemini_2_flash_thinking_exp_model,
             'llama370': 'Llama 3.3 70b',
             'openrouter_llama405': 'Llama 3.1 405b',
             'qwen70': 'Qwen2.5-72B-Instruct',
@@ -6505,7 +6505,7 @@ def do_task(message, custom_prompt: str = ''):
                 elif chat_mode_ == 'gemini-learn':
                     gmodel = cfg.gemini_learn_model
                 elif chat_mode_ == 'gemini_2_flash_thinking':
-                    gmodel = cfg.gemini_2_flash_thinking_model
+                    gmodel = cfg.gemini_2_flash_thinking_exp_model
 
                 WHO_ANSWERED[chat_id_full] = chat_mode_
                 if chat_mode_ == 'llama370':
@@ -6599,8 +6599,8 @@ def do_task(message, custom_prompt: str = ''):
                                     use_skills=True)
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
-                            if not answer and gmodel == cfg.gemini_2_flash_thinking_model:
-                                gmodel = cfg.gemini_2_flash_thinking_model_fallback
+                            if not answer and gmodel == cfg.gemini_2_flash_thinking_exp_model:
+                                gmodel = cfg.gemini_2_flash_thinking_exp_model_fallback
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,

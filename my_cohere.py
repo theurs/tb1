@@ -160,5 +160,4 @@ if __name__ == '__main__':
 
     with open('C:/Users/user/Downloads/2.txt', 'r', encoding='utf-8') as f:
         text = f.read()
-
     print(sum_big_text(text, 'сделай подробный пересказ по тексту'))

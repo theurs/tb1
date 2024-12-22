@@ -269,7 +269,7 @@ def chat(query: str,
                 if chat_id and do_not_update_history is False:
                     if 'thinking' in model:
                         try:
-                            result = chat.history[-1].parts[1].text
+                            result = chat.history[-1].parts[-1].text
                         except:
                             pass
                     mem = chat.history[-MAX_CHAT_LINES*2:]
@@ -427,7 +427,10 @@ def force(chat_id: str, text: str, model: str = ''):
                 if len(mem[-1].parts) == 1:
                     mem[-1].parts[0].text = text
                 else:
-                    mem[-1].parts[1].text = text
+                    for p in mem[-1].parts:
+                        if p.text != mem[-1].parts[-1].text:
+                            p.text = ''
+                    mem[-1].parts[-1].text = text
                 if 'thinking' in model:
                     my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
                 else:
@@ -521,12 +524,12 @@ def get_mem_for_llama(chat_id: str, l: int = 3, model: str = ''):
             if len(x.parts) == 1:
                 text = x.parts[0].text.split(']: ', maxsplit=1)[1]
             else:
-                text = x.parts[1].text.split(']: ', maxsplit=1)[1]
+                text = x.parts[-1].text.split(']: ', maxsplit=1)[1]
         except IndexError:
             if len(x.parts) == 1:
                 text = x.parts[0].text
             else:
-                text = x.parts[1].text
+                text = x.parts[-1].text
         if role == 'user':
             res_mem += [{'role': 'user', 'content': text}]
         else:
@@ -557,7 +560,7 @@ def get_last_mem(chat_id: str, model: str = '') -> str:
         if len(last.parts) == 1:
             return last.parts[0].text
         else:
-            return last.parts[1].text
+            return last.parts[-1].text
 
 
 def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
@@ -588,12 +591,16 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
             if len(x.parts) == 1:
                 text = x.parts[0].text.split(']: ', maxsplit=1)[1]
             else:
-                text = x.parts[1].text.split(']: ', maxsplit=1)[1]
+                text = ''
+                for p in x.parts:
+                    text += p.text + '\n\n'
+                text = text.strip()
+                # text = text.split(']: ', maxsplit=1)[1]
         except IndexError:
             if len(x.parts) == 1:
                 text = x.parts[0].text
             else:
-                text = x.parts[1].text
+                text = x.parts[-1].text
         if text.startswith('[Info to help you answer'):
             end = text.find(']') + 1
             text = text[end:].strip()

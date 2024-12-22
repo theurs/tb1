@@ -5831,6 +5831,17 @@ def reload_module(message: telebot.types.Message):
         module_name = message.text.split(' ', 1)[1].strip()
         module = importlib.import_module(module_name)
         importlib.reload(module)
+
+        # реинициализация модуля
+        if module_name == 'my_gemini':
+            my_gemini.load_users_keys()
+        elif module_name == 'my_groq':
+            my_groq.load_users_keys()
+        elif module_name == 'my_genimg':
+            my_genimg.load_users_keys()
+        elif module_name == 'my_trans':
+            my_trans.load_users_keys()
+
         bot_reply_tr(message, f"Модуль '{module_name}' успешно перезагружен.")
     except Exception as e:
         my_log.log2(f"Ошибка при перезагрузке модуля: {e}")

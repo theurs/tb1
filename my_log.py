@@ -183,6 +183,9 @@ def log_sambanova(text: str) -> None:
     """для логов openrouter sambanova"""
     log2(text[:2000], 'sambanova')
 
+def log_cohere(text: str) -> None:
+    """для логов cohere"""
+    log2(text[:2000], 'cohere')
 
 def log_groq(text: str) -> None:
     """для логов groq"""

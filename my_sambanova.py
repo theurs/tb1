@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import base64
 import random
+import requests
 import time
 import threading
 import traceback
@@ -282,10 +284,52 @@ def get_mem_as_string(chat_id: str, md: bool = False) -> str:
         return ''
 
 
+# def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '') -> str:
+
+#     if isinstance(input_file, str):
+#         with open(input_file, 'rb') as f:
+#             data = f.read()
+#     else:
+#         data = input_file
+
+#     base64_audio = base64.b64encode(data).decode('utf-8')
+
+#     headers = {
+#         "Content-Type": "application/json",
+#         "Authorization": f"Bearer {random.choice(cfg.SAMBANOVA_KEYS)}"
+#     }
+
+#     data = {
+#         "messages": [
+#             {"role":"assistant","content":"You are a helpful assistant"},
+#             {"role":"user","content":[
+#                 {"type":"text","text":"Transcribe the audio"},
+#                 {"type":"audio_content","audio_content":{"content":base64_audio}},
+#                 ]
+#              }
+#             ],
+#         "model": 'Qwen2-Audio-7B-Instruct',
+#         "max_tokens": 1600,
+#         "temperature": 0.01,
+#         "stream": False,
+#     }
+
+#     response = requests.post(
+#         "https://api.sambanova.ai/v1/audio/reasoning",
+#         headers=headers,
+#         json=data
+#     )
+
+#     return response.json()
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
     chat_cli()
+
+    # r = stt('C:/Users/user/Downloads/1.ogg')
+    # print(r)
 
     my_db.close()

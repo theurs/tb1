@@ -1522,6 +1522,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         else:
             button2 = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini15_pro')
 
+        if chat_mode == 'gemini_2_flash_thinking':
+            msg = '✅ Gemini 2.0 Flash Thinking'
+        else:
+            msg = 'Gemini 2.0 Flash Thinking'
+        button1_2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_2_flash_thinking')
+
         if chat_mode == 'llama370':
             msg = '✅ Llama-3.3 70b'
         else:
@@ -1583,6 +1589,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button13 = telebot.types.InlineKeyboardButton(msg, callback_data='select_pixtral')
 
         markup.row(button1, button2)
+        markup.row(button1_2)
         markup.row(button5, button6)
 
         if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):
@@ -1877,6 +1884,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_gemini15_flash':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+        elif call.data == 'select_gemini_2_flash_thinking':
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_2_flash_thinking_model, lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini_2_flash_thinking')
         elif call.data == 'select_gemini8':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_light_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini8')
@@ -5693,6 +5703,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini8': cfg.gemini_flash_light_model,
             'gemini-exp': cfg.gemini_exp_model,
             'gemini-learn': cfg.gemini_learn_model,
+            'gemini_2_flash_thinking': cfg.gemini_2_flash_thinking_model,
             'llama370': 'Llama 3.3 70b',
             'openrouter_llama405': 'Llama 3.1 405b',
             'qwen70': 'Qwen2.5-72B-Instruct',
@@ -6493,6 +6504,8 @@ def do_task(message, custom_prompt: str = ''):
                     gmodel = cfg.gemini_exp_model
                 elif chat_mode_ == 'gemini-learn':
                     gmodel = cfg.gemini_learn_model
+                elif chat_mode_ == 'gemini_2_flash_thinking':
+                    gmodel = cfg.gemini_2_flash_thinking_model
 
                 WHO_ANSWERED[chat_id_full] = chat_mode_
                 if chat_mode_ == 'llama370':
@@ -6577,6 +6590,17 @@ def do_task(message, custom_prompt: str = ''):
 
                             if not answer and gmodel == cfg.gemini_exp_model:
                                 gmodel = cfg.gemini_exp_model_fallback
+                                answer = my_gemini.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    model = gmodel,
+                                    system = hidden_text,
+                                    use_skills=True)
+                                WHO_ANSWERED[chat_id_full] = gmodel
+
+                            if not answer and gmodel == cfg.gemini_2_flash_thinking_model:
+                                gmodel = cfg.gemini_2_flash_thinking_model_fallback
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,

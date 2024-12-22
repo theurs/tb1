@@ -6641,7 +6641,7 @@ def do_task(message, custom_prompt: str = ''):
                                     try:
                                         first_line = answer_.split('\n')[0].strip()
                                         first_line = f"<blockquote expandable>{first_line}</blockquote>"
-                                        text = answer_.split('\n' maxsplit=1)[1].strip()
+                                        text = answer_.split('\n', maxsplit=1)[1].strip()
                                     except:
                                         first_line = ''
                                         text = answer_

@@ -46,6 +46,9 @@ WHO_AUTOR = {}
 # {userid:lock}
 LOCKS = {}
 
+# попробовать заблокировать параллельные вызовы бинга
+BING_LOCK = threading.Lock()
+
 
 def load_users_keys():
     """
@@ -104,7 +107,8 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     if moderation_flag or prompt.strip() == '':
         return []
     try:
-        images = bing_img.gen_images(prompt, user_id)
+        with BING_LOCK:
+            images = bing_img.gen_images(prompt, user_id)
         if type(images) == list:
             return list(set(images))
     except Exception as error_bing_img:

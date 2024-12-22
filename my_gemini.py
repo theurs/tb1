@@ -132,8 +132,14 @@ def chat(query: str,
         if max_tokens > 8000:
             max_tokens = 8000
 
+        if not model:
+            model = cfg.gemini_flash_model
+
         if chat_id:
-            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+            if 'thinking' in model:
+                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
+            else:
+                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
         else:
             mem = []
 
@@ -141,9 +147,6 @@ def chat(query: str,
             mem = insert_mem
 
         mem = transform_mem2(mem)
-
-        if not model:
-            model = cfg.gemini_flash_model
 
         if system == '':
             system = None
@@ -186,7 +189,7 @@ def chat(query: str,
             # use_skills = False
             calc_tool = calc if utils.extract_user_id(chat_id) not in cfg.admins else calc_admin
 
-            if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'gemini-2.0-flash-thinking' not in model:
+            if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
                 SKILLS = [
                     # "code_execution", # не работает одновременно с другими функциями
                     # query_wikipedia, # есть проблемы с поиском, википедия выдает варианты а гемма2 далеко не всегда справляется в выбором
@@ -264,7 +267,7 @@ def chat(query: str,
 
                 my_db.add_msg(chat_id, model)
                 if chat_id and do_not_update_history is False:
-                    if 'gemini-2.0-flash-thinking' in model:
+                    if 'thinking' in model:
                         try:
                             result = chat.history[-1].parts[1].text
                         except:
@@ -272,7 +275,10 @@ def chat(query: str,
                     mem = chat.history[-MAX_CHAT_LINES*2:]
                     while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
                         mem = mem[2:]
-                    my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+                    if 'thinking' in model:
+                        my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
+                    else:
+                        my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
 
                 return result
             else:
@@ -363,7 +369,7 @@ def transform_mem2(mem):
     return mem_
 
 
-def update_mem(query: str, resp: str, mem):
+def update_mem(query: str, resp: str, mem, model: str = ''):
     """
     Update the memory with the given query and response.
 
@@ -371,6 +377,7 @@ def update_mem(query: str, resp: str, mem):
         query (str): The input query.
         resp (str): The response to the query.
         mem: The memory object to update, if str than mem is a chat_id
+        model (str): The model name.
 
     Returns:
         list: The updated memory object.
@@ -378,7 +385,10 @@ def update_mem(query: str, resp: str, mem):
     chat_id = ''
     if isinstance(mem, str): # if mem - chat_id
         chat_id = mem
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+        if 'thinking' in model:
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
+        else:
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
         mem = transform_mem2(mem)
 
     u = protos.Content(role='user', parts=[protos.Part(text=query)])
@@ -391,11 +401,14 @@ def update_mem(query: str, resp: str, mem):
         mem = mem[2:]
 
     if chat_id:
-        my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+        if 'thinking' in model:
+            my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
+        else:
+            my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
     return mem
 
 
-def force(chat_id: str, text: str):
+def force(chat_id: str, text: str, model: str = ''):
     '''update last bot answer with given text'''
     try:
         if chat_id in LOCKS:
@@ -404,23 +417,33 @@ def force(chat_id: str, text: str):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+            if 'thinking' in model:
+                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
+            else:
+                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
             mem = transform_mem2(mem)
             # remove last bot answer and append new
             if len(mem) > 1:
-                mem[-1].parts[0].text = text
-                my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+                if len(mem[-1].parts) == 1:
+                    mem[-1].parts[0].text = text
+                else:
+                    mem[-1].parts[1].text = text
+                if 'thinking' in model:
+                    my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
+                else:
+                    my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'Failed to force text in chat {chat_id}: {error}\n\n{error_traceback}\n\n{text}')
 
     
-def undo(chat_id: str):
+def undo(chat_id: str, model: str = ''):
     """
     Undo the last two lines of chat history for a given chat ID.
 
     Args:
         chat_id (str): The ID of the chat.
+        model (str): The model name.
 
     Raises:
         Exception: If there is an error while undoing the chat history.
@@ -435,37 +458,48 @@ def undo(chat_id: str):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+            if 'thinking' in model:
+                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
+            else:
+                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
             mem = transform_mem2(mem)
             # remove 2 last lines from mem
             mem = mem[:-2]
-            my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+            if 'thinking' in model:
+                my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
+            else:
+                my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
 
 
-def reset(chat_id: str):
+def reset(chat_id: str, model: str = ''):
     """
     Resets the chat history for the given ID.
 
     Parameters:
         chat_id (str): The ID of the chat to reset.
+        model (str): The model name.
 
     Returns:
         None
     """
     mem = []
-    my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+    if 'thinking' in model:
+        my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
+    else:
+        my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
 
 
-def get_mem_for_llama(chat_id: str, l: int = 3):
+def get_mem_for_llama(chat_id: str, l: int = 3, model: str = ''):
     """
     Retrieves the recent chat history for a given chat_id. For using with llama.
 
     Parameters:
         chat_id (str): The unique identifier for the chat session.
         l (int, optional): The number of lines to retrieve. Defaults to 3.
+        model (str, optional): The name of the model.
 
     Returns:
         list: The recent chat history as a list of dictionaries with role and content.
@@ -473,7 +507,11 @@ def get_mem_for_llama(chat_id: str, l: int = 3):
     res_mem = []
     l = l*2
 
-    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    if 'thinking' in model:
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
+    else:
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+
     mem = transform_mem2(mem)
     mem = mem[-l:]
 
@@ -497,17 +535,22 @@ def get_mem_for_llama(chat_id: str, l: int = 3):
     return res_mem
 
 
-def get_last_mem(chat_id: str) -> str:
+def get_last_mem(chat_id: str, model: str = '') -> str:
     """
     Returns the last answer for the given ID.
 
     Parameters:
         chat_id (str): The ID of the chat to get the history for.
+        model (str, optional): The name of the model.
 
     Returns:
         str:
     """
-    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    if 'thinking' in model:
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
+    else:
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+
     mem = transform_mem2(mem)
     last = mem[-1]
     if last:
@@ -517,17 +560,23 @@ def get_last_mem(chat_id: str) -> str:
             return last.parts[1].text
 
 
-def get_mem_as_string(chat_id: str, md: bool = False) -> str:
+def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     """
     Returns the chat history as a string for the given ID.
 
     Parameters:
         chat_id (str): The ID of the chat to get the history for.
+        md (bool, optional): Whether to format the output as Markdown. Defaults to False.
+        model (str, optional): The name of the model.
 
     Returns:
         str: The chat history as a string.
     """
-    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    if 'thinking' in model:
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
+    else:
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+
     mem = transform_mem2(mem)
 
     result = ''

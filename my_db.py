@@ -206,6 +206,7 @@ def init(backup: bool = True):
             api_key_huggingface TEXT,
 
             dialog_gemini BLOB,
+            dialog_gemini_thinking BLOB,
             dialog_groq BLOB,
             dialog_openrouter BLOB,
             dialog_glm BLOB

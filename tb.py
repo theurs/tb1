@@ -416,7 +416,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
 
     # Updates the memory of the selected bot based on the chat mode.
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        my_gemini.update_mem(query, resp, chat_id_full)
+        my_gemini.update_mem(query, resp, chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
     elif 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_groq.update_mem(query, resp, chat_id_full)
     elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -1936,7 +1936,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_ddg.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с haiku очищена.')
         elif call.data == 'gemini_reset':
-            my_gemini.reset(chat_id_full)
+            my_gemini.reset(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
             bot_reply_tr(message, 'История диалога с Gemini очищена.')
         elif call.data == 'tts_female' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'male')
@@ -3521,7 +3521,7 @@ def disable_chat_mode(message: telebot.types.Message):
 def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.Message):
     '''изменяет последний ответ от бота на text'''
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        my_gemini.force(chat_id_full, text)
+        my_gemini.force(chat_id_full, text, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama370':
         my_groq.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
@@ -3575,7 +3575,7 @@ def undo_cmd(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     COMMAND_MODE[chat_id_full] = ''
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        my_gemini.undo(chat_id_full)
+        my_gemini.undo(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama370':
         my_groq.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
@@ -3612,7 +3612,7 @@ def reset_(message: telebot.types.Message, say: bool = True):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        my_gemini.reset(chat_id_full)
+        my_gemini.reset(chat_id_full, my_db.get_user_property(chat_id_full, 'chat_mode'))
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama370':
         my_groq.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
@@ -3813,7 +3813,7 @@ def save_history(message: telebot.types.Message):
 
     prompt = ''
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        prompt = my_gemini.get_mem_as_string(chat_id_full, md = True) or ''
+        prompt = my_gemini.get_mem_as_string(chat_id_full, md = True, model = my_db.get_user_property(chat_id_full, 'chat_mode')) or ''
     if 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = my_groq.get_mem_as_string(chat_id_full, md = True) or ''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
@@ -3865,8 +3865,8 @@ def send_debug_history(message: telebot.types.Message):
         pass
 
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        prompt = 'Gemini\n\n'
-        prompt += my_gemini.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        prompt = 'Gemini ' + my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
+        prompt += my_gemini.get_mem_as_string(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode')) or tr('Empty', lang)
         bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
     if 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Groq llama 3.3 70b\n\n'
@@ -5627,7 +5627,7 @@ def purge_cmd_handler(message: telebot.types.Message):
                     if data[2] == chat_id_full:
                         del LOG_GROUP_MESSAGES[k]
 
-            my_gemini.reset(chat_id_full)
+            my_gemini.reset(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
             my_sambanova.reset(chat_id_full)
@@ -6622,7 +6622,7 @@ def do_task(message, custom_prompt: str = ''):
                             flag_gpt_help = False
                             if not answer:
                                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                                mem__ = my_gemini.get_mem_for_llama(chat_id_full, l = 5)
+                                mem__ = my_gemini.get_mem_for_llama(chat_id_full, l = 5, model = gmodel)
                                 if style_:
                                     answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, temperature=0.6)
                                 else:
@@ -6632,7 +6632,7 @@ def do_task(message, custom_prompt: str = ''):
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
                                     # return
-                                my_gemini.update_mem(message.text, answer, chat_id_full)
+                                my_gemini.update_mem(message.text, answer, chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)

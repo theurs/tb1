@@ -6636,7 +6636,6 @@ def do_task(message, custom_prompt: str = ''):
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
-
                                 # надо первое предложение сделать сворачиваемой цитатой если это думающая модель
                                 if answer_ and 'gemini-2.0-flash-thinking' in gmodel and 'gemini' in WHO_ANSWERED[chat_id_full]:
                                     try:
@@ -6648,10 +6647,8 @@ def do_task(message, custom_prompt: str = ''):
                                         text = answer_
                                     answer_ = first_line + '\n' + text
                                     answer_ = answer_.strip()
-
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
-                                
 
                             if flag_gpt_help:
                                 WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + llama3.3-70b {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'

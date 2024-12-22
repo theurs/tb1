@@ -279,6 +279,12 @@ def chat(query: str,
                         my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
                     else:
                         my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+                else:
+                    if 'thinking' in model:
+                        try:
+                            result = chat.history[-1].parts[-1].text
+                        except:
+                            pass
 
                 return result
             else:

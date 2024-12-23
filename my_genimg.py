@@ -532,10 +532,11 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
         prompt = re.sub(r'^!+', '', prompt).strip()
         result = []
         for _ in range(iterations):
-            if len(prompt) > 150: # не переводить если промт достаточно большой (подробный)
-                result += bing(prompt, user_id=user_id)
-            else:
-                result += bing(reprompt, user_id=user_id)
+            # if len(prompt) > 150: # не переводить если промт достаточно большой (подробный)
+            #     result += bing(prompt, user_id=user_id)
+            # else:
+            #     result += bing(reprompt, user_id=user_id)
+            result += bing(reprompt, user_id=user_id)
         return result
     return []
 

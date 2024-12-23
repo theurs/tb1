@@ -270,9 +270,9 @@ def chat(query: str,
                     if 'thinking' in model:
                         try:
                             result = chat.history[-1].parts[-1].text
-                        except:
-                            pass
-                    mem = chat.history[-MAX_CHAT_LINES*2:]
+                        except Exception as error:
+                            traceback_error = traceback.format_exc()
+                            my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}\nresult: {result}\nchat history: {str(chat.history)}')                    mem = chat.history[-MAX_CHAT_LINES*2:]
                     while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
                         mem = mem[2:]
                     if 'thinking' in model:
@@ -283,8 +283,10 @@ def chat(query: str,
                     if 'thinking' in model:
                         try:
                             result = chat.history[-1].parts[-1].text
-                        except:
-                            pass
+                        except Exception as error:
+                            traceback_error = traceback.format_exc()
+                            my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}\nresult: {result}\nchat history: {str(chat.history)}')
+                            
 
                 return result
             else:

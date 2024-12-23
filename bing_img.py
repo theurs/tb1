@@ -35,7 +35,7 @@ COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 
 # storage of requests that Bing rejected, they cannot be repeated
 # BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
-# BAD_IMAGES_PROMPT = {}
+BAD_IMAGES_PROMPT = {}
 
 
 def get_images_v2(prompt: str,
@@ -56,8 +56,8 @@ def get_images_v2(prompt: str,
             try:
                 results = bing_art.generate_images(prompt)
             except Exception as error:
-                # if 'Your prompt has been rejected' in str(error):
-                #     BAD_IMAGES_PROMPT[prompt] = True
+                if 'Your prompt has been rejected' in str(error):
+                    BAD_IMAGES_PROMPT[prompt] = True
                 my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
             finally:
                 bing_art.close_session()
@@ -90,9 +90,9 @@ def gen_images(query: str, user_id: str = ''):
     with USER_LOCKS[user_id]:
         # print(user_id, USER_LOCKS[user_id]._value)
     # with BIG_LOCK:
-        # if query in BAD_IMAGES_PROMPT:
-        #     my_log.log_bing_img(f'get_images: {query} is in BAD_IMAGES_PROMPT')
-        #     return ['error1_Bad images',]
+        if query in BAD_IMAGES_PROMPT:
+            my_log.log_bing_img(f'get_images: {query} is in BAD_IMAGES_PROMPT')
+            return ['error1_Bad images',]
 
         # сортируем куки по количеству обращений к ним
         cookies = [x for x in COOKIE.items()]
@@ -117,7 +117,7 @@ def gen_images(query: str, user_id: str = ''):
                                 my_log.log_bing_img(f'get_images: {error} Cookie: {cookie} Proxy: {proxy}')
                                 return []
                             if str(error).startswith('error1'):
-                                # BAD_IMAGES_PROMPT[query] = True
+                                BAD_IMAGES_PROMPT[query] = True
                                 return [str(error),]
                             else:
                                 my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {proxy}')
@@ -130,7 +130,7 @@ def gen_images(query: str, user_id: str = ''):
                             my_log.log_bing_img(f'get_images: {error} Cookie: {cookie}')
                             return []
                         if str(error).startswith('error1'):
-                            # BAD_IMAGES_PROMPT[query] = True
+                            BAD_IMAGES_PROMPT[query] = True
                             return []
                         else:
                             my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')

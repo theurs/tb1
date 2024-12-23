@@ -1,3 +1,5 @@
+# https://github.com/DedInc/bingart
+
 import random
 import requests
 import re

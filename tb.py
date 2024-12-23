@@ -488,26 +488,26 @@ def img2txt(text, lang: str,
                 text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
-            elif chat_mode == 'gemini-exp':
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
-            elif chat_mode == 'gemini-learn':
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
-            elif chat_mode == 'gemini':
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
-            elif chat_mode == 'gemini_2_flash_thinking':
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_2_flash_thinking_exp_model, temp=temperature, chat_id=chat_id_full)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_2_flash_thinking_exp_model
-            elif chat_mode == 'pixtral':
-                text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
+            # elif chat_mode == 'gemini-exp':
+            #     text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
+            #     if text:
+            #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
+            # elif chat_mode == 'gemini-learn':
+            #     text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full)
+            #     if text:
+            #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
+            # elif chat_mode == 'gemini':
+            #     text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
+            #     if text:
+            #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
+            # elif chat_mode == 'gemini_2_flash_thinking':
+            #     text = my_gemini.img2txt(data, query, model=cfg.gemini_2_flash_thinking_exp_model, temp=temperature, chat_id=chat_id_full)
+            #     if text:
+            #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_2_flash_thinking_exp_model
+            # elif chat_mode == 'pixtral':
+            #     text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
+            #     if text:
+            #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
 
         if not model and not text:
             if check_vip_user_gemini(chat_id_full):
@@ -520,11 +520,13 @@ def img2txt(text, lang: str,
             text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
             if text:
                 WHO_ANSWERED[chat_id_full] = 'img2txt_' + model
+
         if not text and model == cfg.gemini_pro_model:
             text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full)
             if text:
                 WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
-        elif not text and model == cfg.gemini_flash_model:
+
+        elif not text:
             text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
             if text:
                 WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model_fallback

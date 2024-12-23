@@ -526,7 +526,7 @@ def img2txt(text, lang: str,
             if text:
                 WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
 
-        elif not text:
+        if not text:
             text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
             if text:
                 WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model_fallback

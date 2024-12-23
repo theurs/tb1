@@ -360,7 +360,7 @@ def img2txt(
                 my_db.add_msg(chat_id, model)
             break
         except Exception as error:
-            my_log.log_glm(f'img2txt: Failed to parse response: {error}\n\n{str(response)}')
+            my_log.log_glm(f'img2txt: Failed to parse response: {error}')
             result = ''
             time.sleep(2)
 

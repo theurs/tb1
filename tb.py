@@ -1528,10 +1528,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             msg = '✅ Gemini 1.5 Pro'
         else:
             msg = 'Gemini 1.5 Pro'
-        if have_gemini_keys:
-            button2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_pro')
-        else:
-            button2 = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini15_pro')
+        # if have_gemini_keys:
+        #     button2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_pro')
+        # else:
+        #     button2 = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini15_pro')
+        button2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_pro')
 
         if chat_mode == 'gemini_2_flash_thinking':
             msg = '✅ Gemini 2.0 Flash Thinking'
@@ -1909,14 +1910,17 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_learn_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
         elif call.data == 'select_gemini15_pro':
-            have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
-                user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
-                    or message.from_user.id in cfg.admins
-            if have_keys:
-                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
-            else:
-                bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))
+            # have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
+            #     user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
+            #         or message.from_user.id in cfg.admins
+            # if have_keys:
+            #     # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
+            #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
+            # else:
+            #     bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))
+
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
         elif call.data == 'select_openrouter':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: openrouter', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')

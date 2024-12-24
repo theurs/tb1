@@ -27,7 +27,6 @@ LOCK = threading.Lock()
 
 CON = None
 CUR = None
-COM_COUNTER = 0
 DAEMON_RUN = True
 DAEMON_TIME = 30
 
@@ -100,14 +99,11 @@ def backup_db():
 
 @async_run
 def sync_daemon():
-    global COM_COUNTER
     while DAEMON_RUN:
         time.sleep(DAEMON_TIME)
         try:
             with LOCK:
-                if COM_COUNTER > 0:
-                    CON.commit()
-                    COM_COUNTER = 0
+                CON.commit()
         except Exception as error:
             my_log.log2(f'my_db:sync_daemon {error}')
 
@@ -293,7 +289,6 @@ def close():
 @async_run
 def add_msg(user_id: str, model_used: str, timestamp: float = None):
     '''add msg counter record to db'''
-    global COM_COUNTER
     with LOCK:
         try:
             access_time = timestamp if timestamp else time.time()
@@ -310,7 +305,6 @@ def add_msg(user_id: str, model_used: str, timestamp: float = None):
                     INSERT INTO msg_counter (user_id, access_time, model_used)
                     VALUES (?, ?, ?)
                 ''', (user_id, access_time, model_used))
-                COM_COUNTER += 1
 
         except Exception as error:
             my_log.log2(f'my_db:add {error}')
@@ -560,7 +554,6 @@ def get_translation(text: str, lang: str, help: str) -> str:
 
 def update_translation(text: str, lang: str, help: str, translation: str):
     '''Update or insert translation in cache'''
-    global COM_COUNTER
     with LOCK:
         try:
             CUR.execute('''
@@ -578,7 +571,6 @@ def update_translation(text: str, lang: str, help: str, translation: str):
                     INSERT INTO translations (original, lang, help, translation)
                     VALUES (?, ?, ?, ?)
                 ''', (text, lang, help, translation))
-            COM_COUNTER += 1
         except Exception as error:
             my_log.log2(f'my_db:update_translation {error}')
 
@@ -587,7 +579,6 @@ def update_translations(values: list):
     '''Update many translations in cache
     values - list of tuples (text, lang, help, translation)
     '''
-    global COM_COUNTER
     drop_all_translations()
     with LOCK:
         try:
@@ -596,7 +587,6 @@ def update_translations(values: list):
                 INSERT INTO translations (original, lang, help, translation)
                 VALUES (?, ?, ?, ?)
             ''', values)
-            COM_COUNTER += len(values)
         except Exception as error:
             my_log.log2(f'my_db:update_translations {error}')
 
@@ -756,7 +746,6 @@ def get_user_all_bad_totally_ids():
 
 def delete_user_property(user_id: str, property: str):
     '''Delete user`s property value'''
-    global COM_COUNTER
     cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
     if cache_key in USERS_CACHE.cache:
         USERS_CACHE.delete(cache_key)
@@ -780,7 +769,6 @@ def delete_user_property(user_id: str, property: str):
                         SET {property} = NULL
                         WHERE id = ?
                     ''', (user_id,))
-                    COM_COUNTER += 1
             else:
                 my_log.log2(f'my_db:delete_property - User {user_id} not found')
         except Exception as error:
@@ -789,7 +777,6 @@ def delete_user_property(user_id: str, property: str):
 
 def set_user_property(user_id: str, property: str, value):
     '''Set user`s property'''
-    global COM_COUNTER
     cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
     USERS_CACHE.set(cache_key, value)
     with LOCK:
@@ -813,7 +800,6 @@ def set_user_property(user_id: str, property: str, value):
                     INSERT INTO users (id, {property}, first_meet)
                     VALUES (?, ?, ?)
                 ''', (user_id, value, first_meet))
-            COM_COUNTER += 1
         except Exception as error:
             my_log.log2(f'my_db:set_user_property {error}')
 
@@ -834,7 +820,6 @@ def get_all_users_ids():
 
 def set_sum_cache(url, text):
     '''Set sum cache'''
-    global COM_COUNTER
     with LOCK:
         try:
             # проверяем есть ли в таблице sum такая запись
@@ -861,7 +846,6 @@ def set_sum_cache(url, text):
                 DELETE FROM sum
                 WHERE date < ?
             ''', (time.time() - 60*60*24*30,))
-            COM_COUNTER += 1
         except Exception as error:
             my_log.log2(f'my_db:set_sum_cache {error}')
 
@@ -897,7 +881,6 @@ def delete_from_sum(url_id: str):
 
 def set_im_suggests(hash, prompt):
     '''Set im_suggests'''
-    global COM_COUNTER
     with LOCK:
         try:
             # проверяем есть ли в таблице im_suggests такая запись
@@ -924,7 +907,6 @@ def set_im_suggests(hash, prompt):
                 DELETE FROM im_suggests
                 WHERE date < ?
             ''', (time.time() - 60*60*24*30,))
-            COM_COUNTER += 1
         except Exception as error:
             my_log.log2(f'my_db:set_im_suggests {error}')
 

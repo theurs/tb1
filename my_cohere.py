@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # pip install -U cohere
+# hosts: 50.7.85.220 api.cohere.com
 
 import random
 import threading

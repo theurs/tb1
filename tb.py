@@ -6968,6 +6968,7 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task:mistral {error3}\n{error_traceback}')
                         return
 
+
                 # если активирован режим общения с Pixtral Large
                 if chat_mode_ == 'pixtral':
                     if len(msg) > my_mistral.MAX_REQUEST:

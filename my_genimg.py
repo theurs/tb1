@@ -478,7 +478,7 @@ User's PROMPT: {prompt}
 Dialog history: {conversation_history}
 
 Using this JSON schema:
-  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str, "moderation_sexual": bool}}
+  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str, "moderation_sexual": bool, "moderation_hate": bool}}
 Return a `reprompt`
 '''
 
@@ -489,8 +489,8 @@ Return a `reprompt`
         if not r:
             r = my_gemini.get_reprompt_for_image(query, chat_id)
         if r:
-            reprompt, negative, moderation_sex = r
-            if moderation_sex:
+            reprompt, negative, moderation_sex, moderation_hate = r
+            if moderation_sex or moderation_hate:
                 return 'MODERATION', None
         if not reprompt:
             r = my_groq.get_reprompt_for_image(query, chat_id)

@@ -954,7 +954,7 @@ def list_models():
     return '\n'.join(result)
 
 
-def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | None:
+def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bool, bool] | None:
     """
     Generates a detailed prompt for image generation based on user query and conversation history.
 
@@ -962,7 +962,8 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
         prompt: User's query for image generation.
 
     Returns:
-        A tuple of two strings: (positive prompt, negative prompt) or None if an error occurred. 
+        A tuple of four elements: (positive prompt, negative prompt, moderation_sexual, moderation_hate)
+        or None if an error occurred.
     """
 
     result = chat(prompt,
@@ -977,6 +978,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
         reprompt = ''
         negative_prompt = ''
         moderation_sexual = False
+        moderation_hate = False
         if 'reprompt' in result_dict:
             reprompt = result_dict['reprompt']
         if 'negative_reprompt' in result_dict:
@@ -987,9 +989,13 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
             moderation_sexual = result_dict['moderation_sexual']
             if moderation_sexual:
                 my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+        if 'moderation_hate' in result_dict:
+            moderation_sexual = result_dict['moderation_hate']
+            if moderation_hate:
+                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
 
         if reprompt and negative_prompt:
-            return reprompt, negative_prompt, moderation_sexual
+            return reprompt, negative_prompt, moderation_sexual, moderation_hate
     return None
 
 

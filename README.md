@@ -202,7 +202,7 @@ default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
 # 'gemini', 'gemini15', 'gemini8', 'gemini-exp', 'gemini-learn', 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'haiku',
-# 'gpt-4o-mini-ddg', 'openrouter_llama405', 'glm4plus', 'qwen70', 'mistral', 'pixtral'
+# 'gpt-4o-mini-ddg', 'openrouter_llama405', 'glm4plus', 'qwen70', 'mistral', 'pixtral', 'commandrplus'
 chat_mode_default = 'gemini15'
 
 img2_txt_model = 'gemini-1.5-flash'
@@ -429,6 +429,12 @@ OPEN_ROUTER_FREE_KEYS = [
 MISTRALAI_KEYS = [
     'xxx1',
     'xxx2',
+]
+
+# https://dashboard.cohere.com/api-keys (1000 per month, 20 per minute?)
+COHERE_AI_KEYS = [
+    'xxx',
+    'yyy',
 ]
 
 

@@ -8,6 +8,7 @@ import googlesearch
 
 import cfg
 import my_log
+import my_cohere
 import my_gemini
 import my_ddg
 import my_groq
@@ -65,9 +66,17 @@ Search results:
 {text[:my_gemini.MAX_SUM_REQUEST]}
 '''
     r = ''
-    r =  my_gemini.ai(q[:100000], model=cfg.gemini_flash_model, temperature=1)
-    if r:
-        r += '\n\n--\n[Gemini Flash]'
+
+    if not r:
+        r =  my_gemini.ai(q[:100000], model=cfg.gemini_flash_model, temperature=1)
+        if r:
+            r += '\n\n--\n[Gemini Flash]'
+
+    if not r:
+        r = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST])
+        if r:
+            r += '\n\n--\n[Command R+]'
+
     if not r:
         r = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], max_tokens_ = 4000)
         if r:

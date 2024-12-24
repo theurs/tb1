@@ -5,6 +5,7 @@ bingart
 cairosvg
 chardet
 cachetools
+cohere
 cryptocompare
 deepl
 duckduckgo_search[lxml]

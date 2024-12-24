@@ -26,6 +26,7 @@ import my_db
 import my_log
 import my_gemini
 import my_groq
+import my_cohere
 import my_stt
 import my_transcribe
 import utils
@@ -326,8 +327,19 @@ Text:
             if r:
                 result = f'{r}\n\n--\nGemini Flash [{len(text[:my_gemini.MAX_SUM_REQUEST])}]'
         except Exception as error:
-            print(f'my_sum:summ_text_worker:gpt: {error}')
-            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
+            print(f'my_sum:summ_text_worker:gemini: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:gemini: {error}')
+
+    if not result:
+        try:
+            if query:
+                qq = query
+            r = my_cohere.sum_big_text(text[:my_cohere.MAX_SUM_REQUEST], qq).strip()
+            if r:
+                result = f'{r}\n\n--\nCommand R+ [{len(text[:my_cohere.MAX_SUM_REQUEST])}]'
+        except Exception as error:
+            print(f'my_sum:summ_text_worker:cohere: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:cohere: {error}')
 
     if not result:
         try:
@@ -337,8 +349,8 @@ Text:
             if r != '':
                 result = f'{r}\n\n--\nLlama 3.2 90b [Groq] [{len(text[:my_groq.MAX_SUM_REQUEST])}]'
         except Exception as error:
-            print(f'my_sum:summ_text_worker:gpt: {error}')
-            my_log.log2(f'my_sum:summ_text_worker:gpt: {error}')
+            print(f'my_sum:summ_text_worker:llama: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:llama: {error}')
 
     return result
 

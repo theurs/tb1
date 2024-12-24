@@ -35,6 +35,7 @@ import md2tgmd
 import my_alert
 import my_init
 import my_genimg
+import my_cohere
 import my_db
 import my_ddg
 import my_google
@@ -427,6 +428,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_mistral.update_mem(query, resp, chat_id_full)
     elif 'pixtral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_mistral.update_mem(query, resp, chat_id_full)
+    elif 'commandrplus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        my_cohere.update_mem(query, resp, chat_id_full)
     elif 'qwen70' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_sambanova.update_mem(query, resp, chat_id_full)
     elif 'glm4plus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -557,13 +560,13 @@ def img2txt(text, lang: str,
                 WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
 
 
-        # если не ответил Pixtral Large то попробовать groq (llama-3.2-90b-vision-preview)
+        # если не ответил pixtral то попробовать groq (llama-3.2-90b-vision-preview)
         if not text:
             text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, chat_id=chat_id_full)
             if text:
                 WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'llama-3.2-90b-vision-preview'
 
-        # если не ответил самбанова то попробовать openrouter_free mistralai/pixtral-12b:free
+        # если не ответила llama то попробовать openrouter_free mistralai/pixtral-12b:free
         if not text:
             text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
             if text:
@@ -1432,6 +1435,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         markup.add(button0, button1, button2, button3, button4)
         return markup
 
+    elif kbd == 'commandrplus_chat':
+        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+            return None
+        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='commandrplus_reset')
+        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+        markup.add(button0, button1, button2, button3, button4)
+        return markup
+
     elif kbd == 'glm4plus_chat':
         if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
             return None
@@ -1600,8 +1615,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             msg = 'Pixtral'
         button13 = telebot.types.InlineKeyboardButton(msg, callback_data='select_pixtral')
 
+        if chat_mode == 'commandrplus':
+            msg = '✅ Command R+'
+        else:
+            msg = 'Command R+'
+        button14 = telebot.types.InlineKeyboardButton(msg, callback_data='select_commandrplus')
+
         markup.row(button1, button2)
-        markup.row(button1_2)
+        markup.row(button1_2, button14)
         markup.row(button5, button6)
 
         if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):
@@ -1882,6 +1903,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_pixtral':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Pixtral Large.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'pixtral')
+        elif call.data == 'select_commandrplus':
+            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Command R+.', lang))
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'commandrplus')
         elif call.data == 'select_qwen70':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Qwen2.5-72B-Instruct.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen70')
@@ -1939,6 +1963,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'pixtral_reset':
             my_mistral.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Pixtral Large очищена.')
+        elif call.data == 'commandrplus_reset':
+            my_cohere.reset(chat_id_full)
+            bot_reply_tr(message, 'История диалога с Command R+ очищена.')
         elif call.data == 'qwen70_reset':
             my_sambanova.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Qwen2.5-72B-Instruct очищена.')
@@ -3549,6 +3576,8 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
         my_mistral.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
         my_mistral.force(chat_id_full, text)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
+        my_cohere.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
         my_sambanova.force(chat_id_full, text)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
@@ -3605,6 +3634,8 @@ def undo_cmd(message: telebot.types.Message):
         my_mistral.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
         my_mistral.undo(chat_id_full)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
+        my_cohere.undo(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm3plus':
         my_glm.undo(chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3642,6 +3673,8 @@ def reset_(message: telebot.types.Message, say: bool = True):
         my_mistral.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
         my_mistral.reset(chat_id_full)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
+        my_cohere.reset(chat_id_full)
     elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
         my_glm.reset(chat_id_full)
     elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3843,6 +3876,8 @@ def save_history(message: telebot.types.Message):
         prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
         prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
+    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
+        prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
     if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
         prompt = my_glm.get_mem_as_string(chat_id_full, md = True) or ''
     if 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -3884,43 +3919,40 @@ def send_debug_history(message: telebot.types.Message):
     if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Gemini ' + my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
         prompt += my_gemini.get_mem_as_string(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode')) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+    elif 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = 'Groq llama 3.3 70b\n\n'
         prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
         prompt = 'Openrouter\n\n'
         prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
         prompt = 'Llama 405b\n\n'
         prompt += my_sambanova.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
         prompt = 'Qwen2.5-72B-Instruct\n\n'
         prompt += my_sambanova.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
         prompt = 'Mistral Large\n\n'
         prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
         prompt = 'Pixtral Large\n\n'
         prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
+        prompt = 'Commandr R+\n\n'
+        prompt += my_cohere.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+    elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
         prompt = 'GLM 4 PLUS\n\n'
         prompt += my_glm.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+    elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = tr('DuckDuckGo haiku do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
         prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
-    if 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+    elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
         prompt = tr('DuckDuckGo GPT 4o mini do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
         prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
+    else:
+        my_log.log2(f'tb:mem: unknown mode {my_db.get_user_property(chat_id_full, "chat_mode")}')
+        return
+    bot_reply(message, prompt, parse_mode = '', disable_web_page_preview = True, reply_markup=get_keyboard('mem', message))
 
 
 @bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin)
@@ -4778,6 +4810,8 @@ def post_telegraph(message: telebot.types.Message):
         text = my_mistral.get_last_mem(chat_id_full)
     elif mode == 'pixtral':
         text = my_mistral.get_last_mem(chat_id_full)
+    elif mode == 'commandrplus':
+        text = my_cohere.get_last_mem(chat_id_full)
     elif mode == 'glm4plus':
         text = my_glm.get_last_mem(chat_id_full)
     elif mode in ('gpt-4o-mini-ddg', 'haiku',):
@@ -5211,6 +5245,8 @@ def ask_file(message: telebot.types.Message):
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
     '''
             result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = cfg.gemini_flash_model)
+            if not result:
+                result = my_cohere.ai(q[:my_gemini.MAX_SUM_REQUEST])
             # result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-pro')
             if not result:
                 result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000)
@@ -5650,6 +5686,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_openrouter.reset(chat_id_full)
             my_sambanova.reset(chat_id_full)
             my_mistral.reset(chat_id_full)
+            my_cohere.reset(chat_id_full)
             my_glm.reset(chat_id_full)
             my_ddg.reset(chat_id_full)
 
@@ -5727,6 +5764,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'qwen70': 'Qwen2.5-72B-Instruct',
             'mistral': my_mistral.DEFAULT_MODEL,
             'pixtral': my_mistral.VISION_MODEL,
+            'commandrplus': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
             'bothub': 'bothub.chat',
             'glm4plus': 'GLM 4 PLUS',
@@ -6161,7 +6199,7 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
     with lock:
         try:
             # если админ или это в группе происходит то пропустить
-            if message.from_user.id in cfg.admins or chat_id_full.startswith('[-'):
+            if message.from_user.id in cfg.admins or chat_id_full.startswith('[-') or message.from_user.id == BOT_ID:
                 return True
 
             # юзеры у которых есть 3 ключа не требуют подписки
@@ -6876,7 +6914,6 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
 
-
                 # если активирован режим общения с Mistral Large
                 if chat_mode_ == 'mistral':
                     if len(msg) > my_mistral.MAX_REQUEST:
@@ -6959,6 +6996,49 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:pixtral {error3}\n{error_traceback}')
+                        return
+
+
+                # если активирован режим общения с Command R+
+                if chat_mode_ == 'commandrplus':
+                    if len(msg) > my_cohere.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Command R+, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_cohere.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
+                            answer = my_cohere.chat(
+                                message.text,
+                                chat_id_full,
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                system=style_,
+                                model = my_cohere.DEFAULT_MODEL,
+                            )
+
+                            WHO_ANSWERED[chat_id_full] = 'Command R+'
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            my_log.log_echo(message, f'[Command R+] {answer}')
+
+                            try:
+                                if command_in_answer(answer, message):
+                                    return
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('commandrplus_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('commandrplus_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:commandrplus {error3}\n{error_traceback}')
                         return
 
 

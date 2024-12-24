@@ -62,7 +62,7 @@ CHATS = {}
 MAX_CHAT_LINES = 20
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
     MAX_CHAT_LINES = cfg.GEMINI_MAX_CHAT_LINES
-MAX_CHAT_MEM_BYTES = 35000
+MAX_CHAT_MEM_CHARS = 20000*3 # 20000 токенов по 3 символа на токен. +8000 токенов на ответ остается 4000 токенов на системный промпт и прочее
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 20000
 MAX_SUM_REQUEST = 250000
@@ -273,7 +273,9 @@ def chat(query: str,
                             my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}\nresult: {result}\nchat history: {str(chat.history)}')
 
                     mem = chat.history[-MAX_CHAT_LINES*2:]
-                    while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
+
+                    # print(count_chars(mem))
+                    while count_chars(mem) > MAX_CHAT_MEM_CHARS:
                         mem = mem[2:]
                     if 'thinking' in model:
                         my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
@@ -344,11 +346,11 @@ def ai(q: str,
 
 
 def chat_cli(user_id: str = 'test', model: str = ''):
-    reset(user_id)
+    reset(user_id, model)
     while 1:
         q = input('>')
         if q == 'mem':
-            print(get_mem_as_string('test'))
+            print(get_mem_as_string(user_id, model = model))
             continue
         if '.jpg' in q or '.png' in q or '.webp' in q:
             img = PIL.Image.open(open(q, 'rb'))
@@ -404,7 +406,7 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
     mem.append(b)
 
     mem = mem[-MAX_CHAT_LINES*2:]
-    while sys.getsizeof(mem) > MAX_CHAT_MEM_BYTES:
+    while count_chars(mem) > MAX_CHAT_MEM_CHARS:
         mem = mem[2:]
 
     if chat_id:
@@ -622,6 +624,17 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
                 result += '\n'
     return result
 
+
+def count_chars(mem) -> int:
+    '''считает количество символов в чате'''
+    mem = transform_mem2(mem)
+
+    total = 0
+    for x in mem:
+        for i in x.parts:
+            total += len(i.text)
+    return total
+    
 
 def translate(text: str,
               from_lang: str = '',
@@ -1030,8 +1043,8 @@ if __name__ == '__main__':
     # imagen()
 
     # print(list_models())
-    chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
-    # chat_cli(model=cfg.gemini_flash_model)
+    # chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
+    chat_cli(model=cfg.gemini_flash_model)
 
     # with open('C:/Users/user/Downloads/3.txt','r', encoding='utf-8') as f:
     #     text = f.read()

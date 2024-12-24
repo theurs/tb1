@@ -6853,6 +6853,10 @@ def do_task(message, custom_prompt: str = ''):
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
+                            answer = answer.strip()
+                            if not answer:
+                                answer = tr('Llama 405b did not answered, try to /reset and start again.', lang)
+
                             my_log.log_echo(message, f'[Meta-Llama-3.1-405B-Instruct] {answer}')
 
                             try:
@@ -6895,6 +6899,10 @@ def do_task(message, custom_prompt: str = ''):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
+
+                            answer = answer.strip()
+                            if not answer:
+                                answer = tr('Qwen2.5-72B-Instruct did not answered, try to /reset and start again.', lang)
 
                             my_log.log_echo(message, f'[Qwen2.5-72B-Instruct] {answer}')
 
@@ -6939,6 +6947,10 @@ def do_task(message, custom_prompt: str = ''):
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
+                            answer = answer.strip()
+                            if not answer:
+                                answer = tr('Mistral Large did not answered, try to /reset and start again.', lang)
+
                             my_log.log_echo(message, f'[Mistral Large] {answer}')
 
                             try:
@@ -6980,6 +6992,10 @@ def do_task(message, custom_prompt: str = ''):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
+
+                            answer = answer.strip()
+                            if not answer:
+                                answer = tr('Pixtral Large did not answered, try to /reset and start again.', lang)
 
                             my_log.log_echo(message, f'[Pixtral Large] {answer}')
 
@@ -7024,13 +7040,18 @@ def do_task(message, custom_prompt: str = ''):
                                 DEBUG_MD_TO_HTML[answer_] = answer
                                 answer = answer_
 
+                            answer = answer.strip()
+                            if not answer:
+                                answer = tr('Command R+ did not answered, try to /reset and start again.', lang)
+
                             my_log.log_echo(message, f'[Command R+] {answer}')
 
                             try:
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('commandrplus_chat', message), not_log=True, allow_voice = True)
+                                          reply_markup=get_keyboard('commandrplus_chat', message), not_log=True, allow_voice = True)
+                                
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')

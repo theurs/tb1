@@ -1550,9 +1550,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
         button2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_pro')
 
         if chat_mode == 'gemini_2_flash_thinking':
-            msg = '✅ Gemini 2.0 Flash Thinking'
+            msg = '✅ Gemini Flash Thinking'
         else:
-            msg = 'Gemini 2.0 Flash Thinking'
+            msg = 'Gemini Flash Thinking'
         button1_2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_2_flash_thinking')
 
         if chat_mode == 'llama370':

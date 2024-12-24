@@ -64,7 +64,7 @@ CHATS = {}
 MAX_CHAT_LINES = 20
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
     MAX_CHAT_LINES = cfg.GEMINI_MAX_CHAT_LINES
-MAX_CHAT_MEM_BYTES = 40000
+MAX_CHAT_MEM_BYTES = 38000
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 20000
 MAX_SUM_REQUEST = 250000

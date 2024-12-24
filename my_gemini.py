@@ -990,7 +990,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
             if moderation_sexual:
                 my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
         if 'moderation_hate' in result_dict:
-            moderation_sexual = result_dict['moderation_hate']
+            moderation_hate = result_dict['moderation_hate']
             if moderation_hate:
                 my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
 

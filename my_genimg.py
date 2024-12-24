@@ -495,8 +495,8 @@ Return a `reprompt`
         if not reprompt:
             r = my_groq.get_reprompt_for_image(query, chat_id)
             if r:
-                reprompt, negative, moderation_sex = r
-                if moderation_sex:
+                reprompt, negative, moderation_sex, moderation_hate = r
+                if moderation_sex or moderation_hate:
                     return 'MODERATION', None
 
     except Exception as error:

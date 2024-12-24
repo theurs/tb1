@@ -716,7 +716,7 @@ def retranscribe(text: str, prompt: str = '') -> str:
     return result
 
 
-def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | None:
+def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bool, bool] | None:
     """
     Generates a detailed prompt for image generation based on user query and conversation history.
 
@@ -746,9 +746,13 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str] | 
             moderation_sexual = result_dict['moderation_sexual']
             if moderation_sexual:
                 my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+        if 'moderation_hate' in result_dict:
+            moderation_hate = result_dict['moderation_hate']
+            if moderation_hate:
+                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
 
         if reprompt and negative_prompt:
-            return reprompt, negative_prompt, moderation_sexual
+            return reprompt, negative_prompt, moderation_sexual, moderation_hate
     return None
 
 

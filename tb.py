@@ -5197,7 +5197,13 @@ def ask_file(message: telebot.types.Message):
         command_parts = message.text.split(maxsplit=2)
         if len(command_parts) > 1 and command_parts[1].isdigit() and message.from_user.id in cfg.admins:
             # Админ запрашивает файл другого пользователя
-            chat_id_full = f'[{command_parts[1]}] [0]'
+            chat_id_full_target = f'[{command_parts[1]}] [0]'
+            fname_target = my_db.get_user_property(chat_id_full_target, 'saved_file_name').strip()
+            ftext_target = my_db.get_user_property(chat_id_full_target, 'saved_file').strip()
+            if fname_target and ftext_target:
+                # save to chat_id_full
+                my_db.set_user_property(chat_id_full, 'saved_file_name', fname_target)
+                my_db.set_user_property(chat_id_full, 'saved_file', ftext_target)
             message.text = command_parts[0] + ' '
             if len(command_parts) == 3:
                 message.text += command_parts[2]

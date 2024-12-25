@@ -1621,8 +1621,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             msg = 'Command R+'
         button14 = telebot.types.InlineKeyboardButton(msg, callback_data='select_commandrplus')
 
-        markup.row(button1, button2)
-        markup.row(button1_2, button14)
+        markup.row(button1_2, button1)
+        markup.row(button2, button14)
         markup.row(button5, button6)
 
         if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):

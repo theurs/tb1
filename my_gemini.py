@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# если недоступно в этой стране то можно попробовать добавить эот в hosts файл
+# если недоступно в этой стране то можно попробовать добавить это в hosts файл
 # 50.7.85.220 gemini.google.com
 # 50.7.85.220 aistudio.google.com
 # 50.7.85.220 generativelanguage.googleapis.com
@@ -9,8 +9,6 @@
 
 # 50.7.85.220 labs.google
 # 50.7.85.220 o.pki.goog
-#
-# другая версия библиотеки? надо переделывать? https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/getting-started/intro_gemini_2_0_flash.ipynb
 
 
 import cachetools.func

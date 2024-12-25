@@ -21,6 +21,7 @@ fuzzywuzzy
 iso639-lang
 google
 google-generativeai
+# google-genai
 groq
 
 gTTS

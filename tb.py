@@ -1225,13 +1225,11 @@ def bot_reply(message: telebot.types.Message,
         my_log.log2(f'tb:bot_reply: {unknown}')
 
 
-def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', payload = None) -> telebot.types.InlineKeyboardMarkup:
+def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> telebot.types.InlineKeyboardMarkup:
     """создает и возвращает клавиатуру по текстовому описанию
     'chat' - клавиатура для чата
     'mem' - клавиатура для команды mem, с кнопками Забудь и Скрой
     'hide' - клавиатура с одной кнопкой Скрой
-    ...
-    payload - данные для клавиатуры
     """
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)

@@ -83,6 +83,33 @@ gen_config = GenerateContentConfig(
 
 
 
+code_execution_tool = Tool(code_execution={})
+
+response = client.models.generate_content(
+    model=MODEL_ID,
+    contents="Вычислите 30-е число Фибоначчи. Затем найдите ближайший к нему палиндром. Краткий ответ.",
+    config=GenerateContentConfig(
+        tools=[code_execution_tool],
+        temperature=0,
+    ),
+)
+print(response.candidates[0].content.parts[-1].text)
+# for part in response.candidates[0].content.parts:
+#     if part.executable_code:
+#         print("Язык:", part.executable_code.language)
+#         print(f"""
+# ```
+# {part.executable_code.code}
+# ```
+# """
+#             )
+
+#     if part.code_execution_result:
+#         print("\nРезультат:", part.code_execution_result.outcome)
+#         print(f"{part.code_execution_result.output}")
+
+
+
 # def get_current_weather(location: str) -> str:
 #     """Example method. Returns the current weather.
 
@@ -101,7 +128,7 @@ gen_config = GenerateContentConfig(
 #         temperature=0,
 #     ),
 # )
-# print(response.text)
+# print(response.candidates[0].content.parts[-1].text)
 
 
 

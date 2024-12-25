@@ -149,6 +149,10 @@ def log_gemini(text: str) -> None:
         return
     log2(text[:2000], 'gemini')
 
+def log_gemini2(text: str) -> None:
+    """для логов gemini2"""
+    log2(text[:2000], 'gemini2')
+
 def log_ddg(text: str) -> None:
     """для логов ddg"""
     log2(text[:2000], 'ddg')

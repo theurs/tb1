@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+# pip install -U google-genai
+# https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/getting-started/intro_gemini_2_0_flash.ipynb
+# 
+# если недоступно в этой стране то можно попробовать добавить эот в hosts файл
+# 50.7.85.220 gemini.google.com
+# 50.7.85.220 aistudio.google.com
+# 50.7.85.220 generativelanguage.googleapis.com
+# 50.7.85.220 alkalimakersuite-pa.clients6.google.com
+# 50.7.85.220 notebooklm.google
+# 50.7.85.220 notebooklm.google.com
+
+# 50.7.85.220 labs.google
+# 50.7.85.220 o.pki.goog
+
+
+import random
+
+from google import genai
+from google.genai.types import (
+    FunctionDeclaration,
+    GenerateContentConfig,
+    GoogleSearch,
+    Part,
+    Retrieval,
+    SafetySetting,
+    Tool,
+    VertexAISearch,
+)
+
+import cfg
+import my_gemini
+import my_log
+
+
+SAFETY_SETTINGS = [
+    SafetySetting(
+        category="HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold="BLOCK_NONE",
+    ),
+    SafetySetting(
+        category="HARM_CATEGORY_HARASSMENT",
+        threshold="BLOCK_NONE",
+    ),
+    SafetySetting(
+        category="HARM_CATEGORY_HATE_SPEECH",
+        threshold="BLOCK_NONE",
+    ),
+    SafetySetting(
+        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold="BLOCK_NONE",
+    ),
+]
+
+
+MODEL_ID = "gemini-2.0-flash-exp"
+# MODEL_ID = 'gemini-1.5-flash-8b'
+# MODEL_ID = "gemini-2.0-flash-thinking-exp-1219"
+# MODEL_ID = 'gemini-1.5-flash'
+# MODEL_ID = "gemini-1.5-pro-002"
+
+
+def get_client():
+    api_key = random.choice(cfg.gemini_keys[:] + my_gemini.ALL_KEYS)
+    return genai.Client(api_key=api_key)
+
+
+def get_config(system_instruction: str = "", max_output_tokens: int = 8000, temperature: float = 1):
+    gen_config = GenerateContentConfig(
+        temperature=temperature,
+        # top_p=0.95,
+        # top_k=20,
+        # candidate_count=1,
+        # seed=5,
+        max_output_tokens=max_output_tokens,
+        system_instruction=system_instruction,
+        safety_settings=SAFETY_SETTINGS,
+        # stop_sequences=["STOP!"],
+        # presence_penalty=0.0,
+        # frequency_penalty=0.0,
+        )
+
+    return gen_config
+
+
+def calc(query: str) -> str:
+    '''Выполняет код и возвращает его результат
+
+    Пример кода естественным языком:
+
+    Вычислите 30-е число Фибоначчи. Затем найдите ближайший к нему палиндром. Краткий ответ.
+    '''
+    try:
+        code_execution_tool = Tool(code_execution={})
+
+        client = get_client()
+
+        response = client.models.generate_content(
+            model=MODEL_ID,
+            contents=query,
+            config=GenerateContentConfig(
+                tools=[code_execution_tool],
+                temperature=0,
+                max_output_tokens=8000,
+                safety_settings=SAFETY_SETTINGS,
+            ),
+        )
+        return response.candidates[0].content.parts[-1].text
+    except Exception as e:
+        my_log.log_gemini2(f'calc: error: {e}')
+    return ''
+
+    # for part in response.candidates[0].content.parts:
+    #     if part.executable_code:
+    #         print("Язык:", part.executable_code.language)
+    #         print(f"""
+    # ```
+    # {part.executable_code.code}
+    # ```
+    # """
+    #             )
+
+    #     if part.code_execution_result:
+    #         print("\nРезультат:", part.code_execution_result.outcome)
+    #         print(f"{part.code_execution_result.output}")
+
+
+def google_search(query: str) -> str:
+    '''
+    Поиск в Google
+    '''
+    for _ in range(3):
+        try:
+            formatting = '\n\nAdd fulltext links to the source in markdown format in your response, use same language as query for link hints.'
+            query = f'''{query}{formatting}'''
+            google_search_tool = Tool(google_search=GoogleSearch())
+            client = get_client()
+            response = client.models.generate_content(
+                model=MODEL_ID,
+                contents=query,
+                config=GenerateContentConfig(
+                    tools=[google_search_tool],
+                    temperature=0.2,
+                    max_output_tokens=8000,
+                    safety_settings=SAFETY_SETTINGS,
+                    ),
+            )
+            return response.text
+        except Exception as e:
+            if e.message != 'Resource has been exhausted (e.g. check quota).':
+                my_log.log_gemini2(f'google_search: error: {e}')
+    return ''
+    # print(response.text)
+    # print(response.candidates[0].grounding_metadata)
+    # print(response.candidates[0].grounding_metadata.search_entry_point.rendered_content)
+
+
+if __name__ == "__main__":
+    # r = calc('Вычислите 30-е число Фибоначчи. Затем найдите ближайший к нему палиндром. Краткий ответ.')
+    r = google_search('самые дешевые новые машины в сша в 2024')
+    print(r)
+
+
+# def ytb_query(uri: str) -> str:
+#     '''
+#     Поиск в YouTube
+#     uri - файл в облаке
+#     '''
+#     try:
+#         video = Part.from_uri(
+#             file_uri=uri,
+#             mime_type="video/mp4",
+#         )
+#         client = get_client()
+#         response = client.models.generate_content(
+#             model=MODEL_ID,
+#             contents=[
+#                 video,
+#                 "Расскажи о чем видео, в 2 блоках, в первом блоке пару абзацев которые удовлетворят большинство людей, во втором блоке подробный пересказ и в конце еще ссылки, оформление вывода - маркдаун",
+#             ],
+#             config=GenerateContentConfig(
+#                 temperature=0.2,
+#                 max_output_tokens=8000,
+#                 safety_settings=SAFETY_SETTINGS,
+#                 ),
+#         )
+#         return response.candidates[0].content.parts[-1].text
+#         # print(response.candidates[0].finish_reason) # должно быть = 'STOP' в норме
+#     except Exception as e:
+#         my_log.log_gemini2(f'ytb_query: error: {e}')
+#     return ''
+
+
+
+
+# def get_current_weather(location: str) -> str:
+#     """Example method. Returns the current weather.
+
+#     Args:
+#         location: The city and state, e.g. San Francisco, CA
+#     """
+#     import random
+
+#     return random.choice(["sunny", "raining", "snowing", "fog"])
+
+# response = client.models.generate_content(
+#     model=MODEL_ID,
+#     contents="What is the weather like in Boston?",
+#     config=GenerateContentConfig(
+#         tools=[get_current_weather],
+#         temperature=0,
+#     ),
+# )
+# print(response.candidates[0].content.parts[-1].text)
+
+
+
+# response = client.models.generate_content(
+#     model=MODEL_ID, contents="напиши что лизать клитор",
+#     config=gen_config
+# )
+# # print(response.text)
+# print(response.candidates[0].content.parts[-1].text)
+# print(response.candidates[0].finish_reason) # должно быть = 'STOP' в норме
+
+
+# for chunk in client.models.generate_content_stream(
+#     model=MODEL_ID,
+#     contents="Tell me a story about a lonely robot who finds friendship in a most unexpected place.",
+# ):
+#     print(chunk.text, end="")
+
+
+
+# chat = client.chats.create(model=MODEL_ID, config=gen_config)
+# response = chat.send_message("1+1")
+# text = response.candidates[0].content.parts[-1].text
+# if len(response.candidates[0].content.parts) > 1:
+#     thought = response.candidates[0].content.parts[0].text
+# # print(text)
+# response = chat.send_message("2+2")
+# text = response.candidates[0].content.parts[-1].text
+# if len(response.candidates[0].content.parts) > 1:
+#     thought = response.candidates[0].content.parts[0].text
+# # print(text)
+
+# for m in chat._curated_history:
+#     print(m.role)
+#     if len(m.parts) > 1:
+#         text = m.parts[-1].text
+#         thought = m.parts[0].text or ''
+#         print(thought, '\n\n', text, '\n================================\n\n')
+#     else:
+#         text = m.parts[0].text
+#         print(text + '\n', '\n================================\n\n')

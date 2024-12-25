@@ -1536,7 +1536,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             msg = '✅ Gemini 2.0 Flash'
         else:
             msg = 'Gemini 2.0 Flash'
-        button1 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_flash')
+        button_gemini_flash20 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_flash')
 
         if chat_mode == 'gemini15':
             msg = '✅ Gemini 1.5 Pro'
@@ -1544,105 +1544,106 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '', paylo
             msg = 'Gemini 1.5 Pro'
         # have_gemini_keys = check_vip_user(chat_id_full)
         # if have_gemini_keys:
-        #     button2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_pro')
+        #     button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
         # else:
-        #     button2 = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini15_pro')
-        button2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini15_pro')
+        #     button_gemini_pro = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini_pro')
+        button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
 
         if chat_mode == 'gemini_2_flash_thinking':
             msg = '✅ Gemini Flash Thinking'
         else:
             msg = 'Gemini Flash Thinking'
-        button1_2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_2_flash_thinking')
+        button_gemini_flash_thinking = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_2_flash_thinking')
 
         if chat_mode == 'llama370':
             msg = '✅ Llama-3.3 70b'
         else:
             msg = 'Llama-3.3 70b'
-        button4 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
+        button_llama3_70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
 
         if chat_mode == 'openrouter_llama405':
             msg = '✅ Llama-3.1 405b'
         else:
             msg = 'Llama-3.1 405b'
-        button7 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama405')
+        button_llama3_405b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama405')
 
         if chat_mode == 'qwen70':
             msg = '✅ Qwen2.5-72B-Instruct'
         else:
             msg = 'Qwen2.5-72B-Instruct'
-        button7_2 = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwen70')
+        button_qwen2_72b = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwen70')
 
         if chat_mode == 'gpt-4o-mini-ddg':
             msg = '✅ GPT 4o mini'
         else:
             msg = 'GPT 4o mini'
-        button5 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o-mini-ddg')
+        button_gpt4o_mini = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o-mini-ddg')
 
         if chat_mode == 'haiku':
             msg = '✅ Haiku'
         else:
             msg = 'Haiku'
-        button6 = telebot.types.InlineKeyboardButton(msg, callback_data='select_haiku')
+        button_haiku = telebot.types.InlineKeyboardButton(msg, callback_data='select_haiku')
 
         # if chat_mode == 'glm4plus':
         #     msg = '✅ GLM 4 PLUS'
         # else:
         #     msg = 'GLM 4 PLUS'
-        # button8 = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
+        # button_glm4plus = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
 
         if chat_mode == 'gemini-exp':
             msg = '✅ Gemini exp'
         else:
             msg = 'Gemini exp'
-        button9 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
+        button_gemini_exp = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
 
         if chat_mode == 'gemini-learn':
             msg = '✅ Gemini LearnLM'
         else:
             msg = 'Gemini LearnLM'
-        button10 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
+        button_gemini_learnlm = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
 
         if chat_mode == 'mistral':
             msg = '✅ Mistral'
         else:
             msg = 'Mistral'
-        button12 = telebot.types.InlineKeyboardButton(msg, callback_data='select_mistral')
+        button_mistral = telebot.types.InlineKeyboardButton(msg, callback_data='select_mistral')
 
         if chat_mode == 'pixtral':
             msg = '✅ Pixtral'
         else:
             msg = 'Pixtral'
-        button13 = telebot.types.InlineKeyboardButton(msg, callback_data='select_pixtral')
+        button_pixtral = telebot.types.InlineKeyboardButton(msg, callback_data='select_pixtral')
 
         if chat_mode == 'commandrplus':
             msg = '✅ Command R+'
         else:
             msg = 'Command R+'
-        button14 = telebot.types.InlineKeyboardButton(msg, callback_data='select_commandrplus')
+        button_commandrplus = telebot.types.InlineKeyboardButton(msg, callback_data='select_commandrplus')
 
-        markup.row(button1_2, button1)
-        markup.row(button2, button14)
-        markup.row(button5, button6)
+        markup.row(button_gemini_flash_thinking, button_gemini_flash20)
+        markup.row(button_gemini_pro, button_commandrplus)
+        markup.row(button_gpt4o_mini, button_haiku)
+
 
         if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):
-            markup.row(button12, button13)
+            markup.row(button_mistral, button_pixtral)
 
         if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
-            markup.row(button4, button7)
+            markup.row(button_llama3_70b, button_llama3_405b)
         else:
-            markup.row(button4)
-        markup.row(button9, button10)
+            markup.row(button_llama3_70b)
+        markup.row(button_gemini_exp, button_gemini_learnlm)
 
         if chat_mode == 'openrouter':
             msg = '✅ OpenRouter'
         else:
             msg = 'OpenRouter'
-        button11 = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
+        button_openrouter = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
         if chat_id_full in my_openrouter.KEYS:
-            markup.row(button11, button7_2)
+            markup.row(button_openrouter, button_qwen2_72b)
         else:
-            markup.row(button7_2)
+            markup.row(button_qwen2_72b)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -1918,7 +1919,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_gpt-4o-mini-ddg':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o mini from DuckDuckGo.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o-mini-ddg')
-        elif call.data == 'select_gemini15_flash':
+        elif call.data == 'select_gemini_flash':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
         elif call.data == 'select_gemini_2_flash_thinking':
@@ -1933,7 +1934,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_gemini-learn':
             # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_learn_model, lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
-        elif call.data == 'select_gemini15_pro':
+        elif call.data == 'select_gemini_pro':
             # have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
             #     user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
             #         or message.from_user.id in cfg.admins

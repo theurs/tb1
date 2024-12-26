@@ -119,16 +119,16 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
 
         try:
             # first try google if short
-            if dur < 30:
-                # быстро и хорошо распознает но до 1 минуты всего
-                # и часто глотает последнее слово
-                try:
-                    text = stt_google(input_file2, lang)
-                    if text and not done_flag:
-                        done_flag = True
-                        my_db.add_msg(chat_id, 'STT google-free')
-                except Exception as unknown_error:
-                    my_log.log2(str(unknown_error))
+            # if dur < 30:
+            #     # быстро и хорошо распознает но до 1 минуты всего
+            #     # и часто глотает последнее слово
+            #     try:
+            #         text = stt_google(input_file2, lang)
+            #         if text and not done_flag:
+            #             done_flag = True
+            #             my_db.add_msg(chat_id, 'STT google-free')
+            #     except Exception as unknown_error:
+            #         my_log.log2(str(unknown_error))
             
             if not text:
                 # try first shot from config
@@ -145,10 +145,10 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                             my_db.add_msg(chat_id, cfg.gemini_flash_model)
                     except Exception as error:
                         my_log.log2(f'my_stt:stt:genai:{error}')
-                elif speech_to_text_engine == 'google':
-                    text = my_transcribe.stt_google_pydub_v2(input_file2, lang = lang)
-                    if text:
-                        my_db.add_msg(chat_id, 'STT google-free')
+                # elif speech_to_text_engine == 'google':
+                #     text = my_transcribe.stt_google_pydub_v2(input_file2, lang = lang)
+                #     if text:
+                #         my_db.add_msg(chat_id, 'STT google-free')
                 elif speech_to_text_engine == 'assembly.ai':
                     text = assemblyai(input_file2, lang)
                     if text and not done_flag:
@@ -161,16 +161,16 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                     done_flag = True
                     my_db.add_msg(chat_id, 'STT whisper-large-v3-turbo')
 
-            if not text and dur < 55:
-                # быстро и хорошо распознает но до 1 минуты всего
-                # и часто глотает последнее слово
-                try: # пробуем через гугл
-                    text = stt_google(input_file2, lang)
-                    if text and not done_flag:
-                        done_flag = True
-                        my_db.add_msg(chat_id, 'STT google-free')
-                except Exception as unknown_error:
-                    my_log.log2(str(unknown_error))
+            # if not text and dur < 55:
+            #     # быстро и хорошо распознает но до 1 минуты всего
+            #     # и часто глотает последнее слово
+            #     try: # пробуем через гугл
+            #         text = stt_google(input_file2, lang)
+            #         if text and not done_flag:
+            #             done_flag = True
+            #             my_db.add_msg(chat_id, 'STT google-free')
+            #     except Exception as unknown_error:
+            #         my_log.log2(str(unknown_error))
 
             if not text:
                 try: # gemini

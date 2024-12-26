@@ -582,7 +582,7 @@ def stt(data: bytes = None,
         transcription = client.audio.transcriptions.create(
             file=("123.mp3", data),
             model = model,
-            language=lang,
+            # language=lang,
             prompt=prompt,
             timeout=120,
             )

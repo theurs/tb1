@@ -58,7 +58,7 @@ PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the i
 PROMPT_COPY_TEXT = 'Copy all the text from this image, save it as is - do not translate. Maintain the original formatting (except for line breaks, which should be corrected).'
 PROMPT_COPY_TEXT_TR = 'Copy all the text from this image, translate to my language. Maintain the original formatting (except for line breaks, which should be corrected).'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. 50-300 words. Format your response as follows:'
-PROMPT_SOLVE = 'Solve all problems presented in the image. Show your step-by-step solution and clearly indicate the final answer. Use Unicode characters for mathematical notation to ensure accurate representation, dont use symbols like <0xE1><0x83><0xAE><0xE0><0xBF><0xA0>.'
+PROMPT_SOLVE = 'Solve all problems presented in the image. Show your step-by-step solution and clearly indicate the final answer. Use Unicode characters for mathematical notation to ensure accurate representation, dont use symbols like <0xE1><0x83><0xAE><0xE0><0xBF><0xA0> and markdown in the math expressions.'
 PROMPT_QRCODE = 'Read QRCODE.'
 
 
@@ -114,7 +114,7 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, fo
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
                     f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    f'no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation, dont use symbols like <0xE1><0x83><0xAE><0xE0><0xBF><0xA0>. '
+                    f'no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation, dont use symbols like <0xE1><0x83><0xAE><0xE0><0xBF><0xA0> and markdown in the math expressions. '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 
@@ -129,7 +129,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted
                     f'/trans - translate, /sum - summarize, /google - search, you can answer voice messages, '
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
                     f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    f'no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation, dont use symbols like <0xE1><0x83><0xAE><0xE0><0xBF><0xA0>. '
+                    f'no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation, dont use symbols like <0xE1><0x83><0xAE><0xE0><0xBF><0xA0> and markdown in the math expressions. '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 
@@ -137,7 +137,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted
 
 
 def get_hidden_prompt_for_llama(tr, lang):
-    return tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation, dont use symbols like <0xE1><0x83><0xAE><0xE0><0xBF><0xA0>.', lang)
+    return tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required. Use Unicode characters for mathematical notation to ensure accurate representation, dont use symbols like <0xE1><0x83><0xAE><0xE0><0xBF><0xA0> and markdown in the math expressions.', lang)
 
 
 def generate_start_msg():

@@ -4,6 +4,7 @@ import cachetools.func
 import asyncio
 import io
 import glob
+import re
 import tempfile
 import traceback
 
@@ -203,8 +204,7 @@ def tts_google(text: str, lang: str = 'ru', rate: str = '+0%') -> bytes:
     Returns:
         bytes: The generated audio as a bytes object.
     """
-    if lang == 'en2':
-        lang = 'en'
+    lang = re.sub(r'\d', '', lang)
     mp3_fp = io.BytesIO()
     result = gtts.gTTS(text, lang=lang)
     result.write_to_fp(mp3_fp)

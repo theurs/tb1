@@ -468,9 +468,8 @@ def img2txt(text, lang: str,
 
     if not query:
         query = tr('Describe the image, what do you see here? Extract all text and show it preserving text formatting. Write a prompt to generate the same image - use markdown code with syntax highlighting ```prompt\n/img your prompt in english```', lang)
-        query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)
-    else:
-        query = query + '\n\n' + tr(f'Answer in "{lang}" language, if not asked other.', lang)        
+    if 'markdown' not in query.lower() and 'latex' not in query.lower():
+        query = query + '\n\n' + my_init.get_img2txt_prompt(tr, lang)
 
     if not my_db.get_user_property(chat_id_full, 'chat_mode'):
         my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)

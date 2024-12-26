@@ -40,6 +40,7 @@ import my_db
 import my_ddg
 import my_google
 import my_gemini
+import my_gemini2
 import my_glm
 import my_groq
 import my_log
@@ -3358,6 +3359,37 @@ def sdonate(message: telebot.types.Message):
         bot_reply_tr(message, 'Usage: /sdonate id_as_int amount of fake stars')
 
 
+@bot.message_handler(commands=['calc', 'math'], func=authorized_owner)
+@async_run
+def calc_gemini(message: telebot.types.Message):
+    """
+    Calculate math expression with google gemini code execution tool
+    """
+    args = message.text.split(maxsplit=1)
+    if len(args) == 2:
+        arg = args[1]
+    else:
+        bot_reply_tr(message, 'Usage: /calc <expression>')
+        return
+
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+
+    with ShowAction(message, "typing"):
+        answer, underground = my_gemini2.calc(arg, chat_id_full)
+
+        if answer:
+            a = utils.bot_markdown_to_html(answer)
+            if underground:
+                u = utils.bot_markdown_to_html(underground)
+                bot_reply(message, u, parse_mode='HTML', disable_web_page_preview=True)
+                bot_reply(message, a, parse_mode='HTML', disable_web_page_preview=True)
+            else:
+                bot_reply(message, a, parse_mode='HTML', disable_web_page_preview=True)
+        else:
+            bot_reply_tr(message, 'Calculation failed.')
+
+
 @bot.message_handler(commands=['ytb'], func=authorized_owner)
 @async_run
 def download_ytb_audio(message: telebot.types.Message):
@@ -4287,7 +4319,7 @@ def google(message: telebot.types.Message):
         with ShowAction(message, 'typing'):
             with semaphore_talks:
                 COMMAND_MODE[chat_id_full] = ''
-                r, text = my_google.search_v3(q, lang)
+                r, text = my_google.search_v3(q, lang, chat_id_full)
                 if not r.strip():
                     bot_reply_tr(message, 'Search failed.')
                     return

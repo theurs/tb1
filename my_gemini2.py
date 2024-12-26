@@ -15,6 +15,7 @@
 
 
 import random
+import traceback
 
 from google import genai
 from google.genai.types import (
@@ -29,6 +30,7 @@ from google.genai.types import (
 )
 
 import cfg
+import my_db
 import my_gemini
 import my_log
 
@@ -83,7 +85,7 @@ def get_config(system_instruction: str = "", max_output_tokens: int = 8000, temp
     return gen_config
 
 
-def calc(query: str) -> str:
+def calc(query: str, chat_id: str = '') -> str:
     '''Выполняет код и возвращает его результат
 
     Пример кода естественным языком:
@@ -91,47 +93,51 @@ def calc(query: str) -> str:
     Вычислите 30-е число Фибоначчи. Затем найдите ближайший к нему палиндром. Краткий ответ.
     '''
     try:
+        formatting = '\n\nResponse on language of the question.'
+        query = f'''{query}{formatting}'''
         code_execution_tool = Tool(code_execution={})
 
-        client = get_client()
+        for _ in range(4):
+            client = get_client()
 
-        response = client.models.generate_content(
-            model=MODEL_ID,
-            contents=query,
-            config=GenerateContentConfig(
-                tools=[code_execution_tool],
-                temperature=0,
-                max_output_tokens=8000,
-                safety_settings=SAFETY_SETTINGS,
-            ),
-        )
-        return response.candidates[0].content.parts[-1].text
-    except Exception as e:
-        my_log.log_gemini2(f'calc: error: {e}')
+            response = client.models.generate_content(
+                model=MODEL_ID,
+                contents=query,
+                config=GenerateContentConfig(
+                    tools=[code_execution_tool],
+                    temperature=0,
+                    max_output_tokens=8000,
+                    safety_settings=SAFETY_SETTINGS,
+                ),
+            )
+
+            underground = ''
+            if response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if part.executable_code:
+                        language = part.executable_code.language.lower()
+                        code = part.executable_code.code
+                        underground += f'```{language}\n{code}```\n'
+
+                    if part.code_execution_result and part.code_execution_result.output:
+                        underground += f'```{part.code_execution_result.output}```\n'
+
+            if chat_id:
+                my_db.add_msg(chat_id, MODEL_ID)
+            return response.candidates[0].content.parts[-1].text, underground
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini2(f'calc: error: {error}\n{traceback_error}')
     return ''
 
-    # for part in response.candidates[0].content.parts:
-    #     if part.executable_code:
-    #         print("Язык:", part.executable_code.language)
-    #         print(f"""
-    # ```
-    # {part.executable_code.code}
-    # ```
-    # """
-    #             )
 
-    #     if part.code_execution_result:
-    #         print("\nРезультат:", part.code_execution_result.outcome)
-    #         print(f"{part.code_execution_result.output}")
-
-
-def google_search(query: str) -> str:
+def google_search(query: str, chat_id: str = '') -> str:
     '''
     Поиск в Google
     '''
-    for _ in range(3):
+    for _ in range(4):
         try:
-            formatting = '\n\nAdd fulltext links to the source in markdown format in your response, use same language as query for link hints.'
+            formatting = '\n\nResponse on language of the question.'
             query = f'''{query}{formatting}'''
             google_search_tool = Tool(google_search=GoogleSearch())
             client = get_client()
@@ -145,10 +151,27 @@ def google_search(query: str) -> str:
                     safety_settings=SAFETY_SETTINGS,
                     ),
             )
+            if chat_id:
+                my_db.add_msg(chat_id, MODEL_ID)
+            links = []
+            import pprint
+            pprint.pprint(response)
+            if response.candidates[0].grounding_metadata.grounding_chunks:
+                for part in response.candidates[0].grounding_metadata.grounding_chunks:
+                    title = part.web.title
+                    url = part.web.uri
+                    link = f'[{title}]({url})'
+                    links.append(link)
+
+            if links:
+                links = '\n'.join(links)
+                return f'{response.candidates[0].content.parts[-1].text}\n\n{links}'
+
             return response.text
-        except Exception as e:
-            if e.message != 'Resource has been exhausted (e.g. check quota).':
-                my_log.log_gemini2(f'google_search: error: {e}')
+        except Exception as error:
+            traceback_error = traceback.format_exc()
+            if error.message != 'Resource has been exhausted (e.g. check quota).':
+                my_log.log_gemini2(f'google_search: error: {error}]\n{traceback_error}')
     return ''
     # print(response.text)
     # print(response.candidates[0].grounding_metadata)
@@ -156,8 +179,8 @@ def google_search(query: str) -> str:
 
 
 if __name__ == "__main__":
-    # r = calc('Вычислите 30-е число Фибоначчи. Затем найдите ближайший к нему палиндром. Краткий ответ.')
-    r = google_search('самые дешевые новые машины в сша в 2024')
+    r = calc('какое 28ое числов в знаке пи после запятой')
+    # r = google_search('самые дешевые новые машины в сша в 2024')
     print(r)
 
 

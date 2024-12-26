@@ -20,8 +20,11 @@ fake_useragent
 fuzzywuzzy
 iso639-lang
 google
+
 google-generativeai
-# google-genai
+# это другая версия
+google-genai
+
 groq
 
 gTTS

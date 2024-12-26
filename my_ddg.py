@@ -142,9 +142,9 @@ def reset(chat_id: str):
 def chat_new_connection():
     '''Connect with proxy and return object'''
     if hasattr(cfg, 'DDG_PROXY'):
-        return DDGS(proxy=random.choice(cfg.DDG_PROXY), timeout=120)
+        return DDGS(proxy=random.choice(cfg.DDG_PROXY), timeout=30)
     else:
-        return DDGS(timeout=120)
+        return DDGS(timeout=30)
 
 
 def chat(query: str,
@@ -375,7 +375,7 @@ def chat_cli():
     """
     A function that provides a command-line interface for interacting with the DDG (DuckDuckGo) chatbot.
 
-    This function creates an instance of the DDGS class with a timeout of 120 seconds.
+    This function creates an instance of the DDGS class with a timeout of 30 seconds.
     It then enters a loop where it prompts the user to input a query and sends
     it to the chatbot using the `chat` method of the DDGS instance.
     The response from the chatbot is then printed to the console.
@@ -441,7 +441,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 if __name__ == '__main__':
     # my_db.init(backup=False)
     pass
-    q = 'hi ' * 2000
-    print(chat(q, 'test', model = 'gpt-4o-mini'))
-    # chat_cli()
+    # q = 'hi ' * 2000
+    # print(chat(q, 'test', model = 'gpt-4o-mini'))
+    chat_cli()
     # my_db.close()

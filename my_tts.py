@@ -4,7 +4,6 @@ import cachetools.func
 import asyncio
 import io
 import glob
-import os
 import tempfile
 import traceback
 
@@ -248,7 +247,9 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         lang = voice
 
         if gender == 'google_female':
-            return tts_google(text, lang)
+            result = tts_google(text, lang)
+            if result:
+                return result
 
         voice = get_voice(voice, gender)
         # if not voice:
@@ -278,13 +279,26 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         # Возвращаем байтовый поток с аудио
         data = data.getvalue()
 
-        return data
+        if data:
+            return data
+        else:
+            result = tts_google(text, lang)
+            if result:
+                return result
     except edge_tts.exceptions.NoAudioReceived:
-        return None
+        result = tts_google(text, lang)
+        if result:
+            return result
+        else:
+            return None
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_tts:tts: {error}\n\n{error_traceback}')
-        return None
+        result = tts_google(text, lang)
+        if result:
+            return result
+        else:
+            return None
 
 
 def detect_lang_carefully(text: str) -> str:

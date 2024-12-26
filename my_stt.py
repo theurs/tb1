@@ -16,6 +16,7 @@ from pydub import AudioSegment
 
 import cfg
 import my_db
+import my_deepgram
 import my_groq
 import my_transcribe
 import my_log
@@ -137,6 +138,11 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                     if text and not done_flag:
                         done_flag = True
                         my_db.add_msg(chat_id, 'STT whisper-large-v3')
+                elif speech_to_text_engine == 'deepgram_nova2':
+                    text = my_deepgram.stt(input_file2, lang, prompt)
+                    if text and not done_flag:
+                        done_flag = True
+                        my_db.add_msg(chat_id, 'STT nova2')
                 elif speech_to_text_engine == 'gemini':
                     try: # gemini
                         text = stt_genai(input_file2, lang)
@@ -201,6 +207,12 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                 if text and not done_flag:
                     done_flag = True
                     my_db.add_msg(chat_id, 'STT whisper-large-v3')
+
+            if not text:
+                text = my_deepgram.stt(input_file2, lang, prompt)
+                if text and not done_flag:
+                    done_flag = True
+                    my_db.add_msg(chat_id, 'STT nova2')
 
             if not text:
                 text = assemblyai(input_file2, lang)

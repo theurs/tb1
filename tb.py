@@ -2017,6 +2017,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif speech_to_text_engine == 'google':
                 speech_to_text_engine = 'assembly.ai'
             elif speech_to_text_engine == 'assembly.ai':
+                speech_to_text_engine = 'deepgram_nova2'
+            elif speech_to_text_engine == 'deepgram_nova2':
+                speech_to_text_engine = 'whisper'
+            else: # в базе записно что то другое, то что было раньше а теперь нет
                 speech_to_text_engine = 'whisper'
             my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,

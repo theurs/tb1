@@ -177,6 +177,9 @@ def log_glm(text: str) -> None:
     """для логов glm"""
     log2(text[:2000], 'glm')
 
+def log_deepgram(text: str) -> None:
+    """для логов deepgram"""
+    log2(text[:2000], 'deepgram')
 
 def log_mistral(text: str) -> None:
     """для логов openrouter mistral"""

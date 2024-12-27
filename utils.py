@@ -1428,6 +1428,27 @@ def extract_retry_seconds(text: str) -> int:
     return 0
 
 
+def remove_repeated_characters(text: str, min_repetitions: int = 1000, sub_count: int = 10) -> str:
+    """
+    Removes repeated occurrences of any character in a string.
+
+    Args:
+        text: The input string.
+        min_repetitions: The minimum number of consecutive repetitions to consider for removal.
+
+    Returns:
+        The string with repeated character sequences removed.
+    """
+    # Construct the regular expression pattern.
+    # (.) matches any character (except newline).
+    # \\1 refers to the captured group (the first matched character).
+    # {min_repetitions,} matches min_repetitions or more repetitions of the captured character.
+    pattern: str = r"(.)\1{" + str(min_repetitions - 1) + ",}"
+    # Replace the matched repeated sequences with the single character.
+    result: str = re.sub(pattern, r"\1" * sub_count, text)
+    return result
+
+
 if __name__ == '__main__':
     pass
 

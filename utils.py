@@ -1428,7 +1428,7 @@ def extract_retry_seconds(text: str) -> int:
     return 0
 
 
-def shorten_all_repeats(text: str, min_repetitions: int = 300, max_keep: int = 10) -> str:
+def shorten_all_repeats(text: str, min_repetitions: int = 200, max_keep: int = 10) -> str:
     """
     Detects and shortens all sequences of repeating characters throughout the text.
 
@@ -1445,11 +1445,37 @@ def shorten_all_repeats(text: str, min_repetitions: int = 300, max_keep: int = 1
         return repeated_unit * max_keep
 
     pattern: str = r"(.+?)\1{" + str(min_repetitions - 1) + ",}"
-    return re.sub(pattern, replace_repeat, text)
+    return re.sub(pattern, replace_repeat, text, flags=re.DOTALL)
 
 
 if __name__ == '__main__':
     pass
+
+
+    t = '''
+hkshdg
+
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |dfg
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+| Пограничный |
+
+    '''
+    print(shorten_all_repeats(t, 10, 2))
 
     # print(bot_markdown_to_tts("Привет, мир! Hello, world! 123 こんにちは 你好 В этом примере регулярноwor😘😗☺️😚😙🥲😋😛😜🤪😝🤑🤗🤭🫢🫣🤫🤔🫡🤐🤨😐😑😶🫥😶‍🌫️😏😒🙄😬😮‍💨🤥🫨😌😔ldе выражение r'[^\p{L}\p{N}\p{P}]' находит все символы, которые не являются буквами, цифрами или знаками препинания, и заменяет их на пустую строку. Класс символов \p{L} соответствует всем буквам, \p{N} — всем цифрам, а \p{P} — всем знакам препинания."))
 
@@ -1751,7 +1777,7 @@ $(n-11)(n+12) = 0$
     # print(bot_markdown_to_html('At our recent business **1 *meeting***, we delved into a load of **2 *market*** data to revamp our **3 *marketing*** strategy.'))
 
 
-    print(extract_retry_seconds('tb:image:send: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10'))
+    # print(extract_retry_seconds('tb:image:send: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10'))
 
 
     pass

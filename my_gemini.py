@@ -248,52 +248,40 @@ def chat(query: str,
                 time.sleep(2)
                 continue
 
-            result = resp.text.strip()
+            try:
+                result = chat.history[-1].parts[-1].text
+            except Exception as error3:
+                my_log.log_gemini(f'my_gemini:chat: {error3}\nresult: {result}\nchat history: {str(chat.history)}')
+                result = resp.text
 
-            # флеш 2.0 иногда такие тексты выдает, куча пробелов, и возможно другие тоже
-            result = utils.shorten_all_repeats(result)
-
+            # пытается вызвать функцию неправильно
             if result:
                 if 'print(default_api.' in result[:100]:
                     return ''
 
-                # # флеш 2.0 иногда такие тексты выдает, куча пробелов
-                # # result = re.sub(r" {10000,}", " ", result)
-                # if re.search(r" {10000,}", result):
-                #     continue
-                # # и еще иногда в конце делает очень много -
-                # if re.search(r"-{300,}$", result):
-                #     continue
+            # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
+            # куча пробелов, и возможно другие тоже. укарачиваем
+            result_ = utils.shorten_all_repeats(result)
+            if len(result_)+100 < len(result): # удалось сильно уменьшить
+                result = result_
+                try:
+                    result = chat.history[-1].parts[-1].text = result
+                except Exception as error4:
+                    my_log.log_gemini(f'my_gemini:chat: {error4}\nresult: {result}\nchat history: {str(chat.history)}')
 
+            result = result.strip()
+
+            if result:
                 my_db.add_msg(chat_id, model)
                 if chat_id and do_not_update_history is False:
-                    if 'thinking' in model:
-                        try:
-                            result = chat.history[-1].parts[-1].text
-                        except Exception as error:
-                            traceback_error = traceback.format_exc()
-                            my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}\nresult: {result}\nchat history: {str(chat.history)}')
-
                     mem = chat.history[-MAX_CHAT_LINES*2:]
-
-                    # print(count_chars(mem))
                     while count_chars(mem) > MAX_CHAT_MEM_CHARS:
                         mem = mem[2:]
                     if 'thinking' in model:
                         my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
                     else:
                         my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
-                else:
-                    if 'thinking' in model:
-                        try:
-                            result = chat.history[-1].parts[-1].text
-                        except Exception as error:
-                            traceback_error = traceback.format_exc()
-                            my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}\nresult: {result}\nchat history: {str(chat.history)}')
-                            
                 return result
-            else:
-                return ''
 
         my_log.log_gemini(f'my_gemini:chat:no results after 4 tries, query: {query}\n{model}')
         return ''

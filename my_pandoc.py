@@ -68,11 +68,17 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
         utils.remove_file(input_file)
         return text
     elif book_type in ('xlsx', 'ods', 'xls'):
-        df = pd.DataFrame(pd.read_excel(io.BytesIO(data)))
-        buffer = io.StringIO()
-        df.to_csv(buffer)
+        xls = pd.ExcelFile(io.BytesIO(data))
+        result = ''
+        for sheet in xls.sheet_names:
+            csv = xls.parse(sheet_name=sheet).to_csv(index=False)
+            result += f'\n\n{sheet}\n\n{csv}\n\n'
+        # df = pd.DataFrame(pd.read_excel(io.BytesIO(data)))
+        # buffer = io.StringIO()
+        # df.to_csv(buffer)
         utils.remove_file(input_file)
-        return buffer.getvalue()
+        # return buffer.getvalue()
+        return result
     elif 'fb2' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
     else:
@@ -131,6 +137,9 @@ def convert_text_to_odt(text: str) -> bytes:
 
 
 if __name__ == '__main__':
+    pass
+    # result = fb2_to_text(open('c:/Users/user/Downloads/1.xlsx', 'rb').read(), '.xlsx')
     # result = fb2_to_text(open('1.pdf', 'rb').read(), '.pdf')
     # print(result)
-    print(convert_djvu2pdf('/home/ubuntu/tmp/2.djvu'))
+    # print(convert_djvu2pdf('/home/ubuntu/tmp/2.djvu'))
+

@@ -6635,11 +6635,13 @@ def do_task(message, custom_prompt: str = ''):
 
                     if answer.startswith('```'):
                         answer = answer[3:]
-                    if answer.startswith(('/img ','/tts ','/google ','/trans ', '/sum ', '/reset')):
+                    if answer.startswith(('/img ', '/bing', '/tts ', '/google ', '/trans ', '/sum ', '/reset')):
                         cmd = answer.split(maxsplit=1)[0]
                         message.text = answer
                         if cmd == '/img':
                             image_gen(message)
+                        if cmd == '/bing':
+                            image_bing_gen(message)
                         elif cmd == '/tts':
                             tts(message)
                         elif cmd == '/google':

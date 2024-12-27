@@ -104,6 +104,7 @@ def upscale(image_bytes: bytes) -> bytes:
 
 def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
+    prompt = prompt[:650] # нельзя больше 700?
     if moderation_flag or prompt.strip() == '':
         return []
     try:

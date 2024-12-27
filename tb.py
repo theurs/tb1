@@ -2475,7 +2475,7 @@ def handle_document(message: telebot.types.Message):
                             bot_reply(message, summary_html, parse_mode='HTML',
                                                 disable_web_page_preview = True,
                                                 reply_markup=get_keyboard('translate', message))
-                            bot_reply_tr(message, 'Use /ask command to query this file. Example /ask generate a short version of part 1.')
+                            bot_reply_tr(message, 'Use /ask command to query or delete this file. Example /ask generate a short version of part 1.')
 
                             caption_ = tr("юзер попросил ответить по содержанию файла", lang)
                             if caption:
@@ -5357,7 +5357,7 @@ def summ_text(message: telebot.types.Message):
                                 text = my_sum.summ_url(url, lang = lang, deep = False, download_only=True)
                                 my_db.set_user_property(chat_id_full, 'saved_file', text)
                                 rr = utils.bot_markdown_to_html(r)
-                                ask = tr('Use /ask command to query this file. Example /ask generate a short version of part 1.', lang)
+                                ask = tr('Use /ask command to query or delete this file. Example /ask generate a short version of part 1.', lang)
                                 bot_reply(message, rr + '\n' + ask, disable_web_page_preview = True,
                                                     parse_mode='HTML',
                                                     reply_markup=get_keyboard('translate', message))
@@ -5382,7 +5382,7 @@ def summ_text(message: telebot.types.Message):
                                 return
                             if res:
                                 rr = utils.bot_markdown_to_html(res)
-                                ask = tr('Use /ask command to query this file. Example /ask generate a short version of part 1.', lang)
+                                ask = tr('Use /ask command to query or delete this file. Example /ask generate a short version of part 1.', lang)
                                 bot_reply(message, rr + '\n' + ask, parse_mode='HTML',
                                                     disable_web_page_preview = True,
                                                     reply_markup=get_keyboard('translate', message))

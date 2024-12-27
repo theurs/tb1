@@ -88,11 +88,9 @@ def gen_images(query: str, user_id: str = ''):
         USER_LOCKS[user_id] = threading.Semaphore(3)
 
     with USER_LOCKS[user_id]:
-        # print(user_id, USER_LOCKS[user_id]._value)
-    # with BIG_LOCK:
-        if query in BAD_IMAGES_PROMPT:
-            my_log.log_bing_img(f'get_images: {query} is in BAD_IMAGES_PROMPT')
-            return ['error1_Bad images',]
+        # if query in BAD_IMAGES_PROMPT:
+        #     my_log.log_bing_img(f'get_images: {query} is in BAD_IMAGES_PROMPT')
+        #     return ['error1_Bad images',]
 
         # сортируем куки по количеству обращений к ним
         cookies = [x for x in COOKIE.items()]

@@ -40,7 +40,7 @@ import my_db
 import my_ddg
 import my_google
 import my_gemini
-import my_gemini2
+import my_gemini_google
 import my_glm
 import my_groq
 import my_log
@@ -3379,7 +3379,7 @@ def calc_gemini(message: telebot.types.Message):
     COMMAND_MODE[chat_id_full] = ''
 
     with ShowAction(message, "typing"):
-        answer, underground = my_gemini2.calc(arg, chat_id_full)
+        answer, underground = my_gemini_google.calc(arg, chat_id_full)
 
         if answer:
             a = utils.bot_markdown_to_html(answer)

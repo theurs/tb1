@@ -10,7 +10,7 @@ import cfg
 import my_log
 import my_cohere
 import my_gemini
-import my_gemini2
+import my_gemini_google
 import my_ddg
 import my_groq
 import my_sum
@@ -20,7 +20,7 @@ import utils
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def search_v3(query: str, lang: str = 'ru', max_search: int = 10, download_only = False, chat_id: str = ''):
     # сначала пробуем спросить в гугле
-    google_response = my_gemini2.google_search(query, chat_id)
+    google_response = my_gemini_google.google_search(query, chat_id)
     if google_response:
         if download_only:
             return google_response

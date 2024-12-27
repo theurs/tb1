@@ -127,7 +127,7 @@ def calc(query: str, chat_id: str = '') -> str:
             return response.candidates[0].content.parts[-1].text, underground
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini2(f'calc: error: {error}\n{traceback_error}')
+        my_log.log_gemini_google(f'calc: error: {error}\n{traceback_error}')
     return ''
 
 
@@ -154,8 +154,8 @@ def google_search(query: str, chat_id: str = '') -> str:
             if chat_id:
                 my_db.add_msg(chat_id, MODEL_ID)
             links = []
-            import pprint
-            pprint.pprint(response)
+            # import pprint
+            # pprint.pprint(response)
             if response.candidates[0].grounding_metadata.grounding_chunks:
                 for part in response.candidates[0].grounding_metadata.grounding_chunks:
                     title = part.web.title
@@ -171,7 +171,7 @@ def google_search(query: str, chat_id: str = '') -> str:
         except Exception as error:
             traceback_error = traceback.format_exc()
             if error.message != 'Resource has been exhausted (e.g. check quota).':
-                my_log.log_gemini2(f'google_search: error: {error}]\n{traceback_error}')
+                my_log.log_gemini_google(f'google_search: error: {error}]\n{traceback_error}')
     return ''
     # print(response.text)
     # print(response.candidates[0].grounding_metadata)
@@ -210,7 +210,7 @@ if __name__ == "__main__":
 #         return response.candidates[0].content.parts[-1].text
 #         # print(response.candidates[0].finish_reason) # должно быть = 'STOP' в норме
 #     except Exception as e:
-#         my_log.log_gemini2(f'ytb_query: error: {e}')
+#         my_log.log_gemini_google(f'ytb_query: error: {e}')
 #     return ''
 
 

@@ -1428,25 +1428,24 @@ def extract_retry_seconds(text: str) -> int:
     return 0
 
 
-def remove_repeated_characters(text: str, min_repetitions: int = 1000, sub_count: int = 10) -> str:
+def shorten_all_repeats(text: str, min_repetitions: int = 300, max_keep: int = 10) -> str:
     """
-    Removes repeated occurrences of any character in a string.
+    Detects and shortens all sequences of repeating characters throughout the text.
 
     Args:
         text: The input string.
-        min_repetitions: The minimum number of consecutive repetitions to consider for removal.
+        min_repetitions: The minimum number of repetitions to consider for shortening.
+        max_keep: The maximum number of repetitions to keep.
 
     Returns:
-        The string with repeated character sequences removed.
+        The string with all repeated character sequences shortened.
     """
-    # Construct the regular expression pattern.
-    # (.) matches any character (except newline).
-    # \\1 refers to the captured group (the first matched character).
-    # {min_repetitions,} matches min_repetitions or more repetitions of the captured character.
-    pattern: str = r"(.)\1{" + str(min_repetitions - 1) + ",}"
-    # Replace the matched repeated sequences with the single character.
-    result: str = re.sub(pattern, r"\1" * sub_count, text)
-    return result
+    def replace_repeat(match):
+        repeated_unit: str = match.group(1)
+        return repeated_unit * max_keep
+
+    pattern: str = r"(.+?)\1{" + str(min_repetitions - 1) + ",}"
+    return re.sub(pattern, replace_repeat, text)
 
 
 if __name__ == '__main__':

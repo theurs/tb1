@@ -251,7 +251,7 @@ def chat(query: str,
             result = resp.text.strip()
 
             # флеш 2.0 иногда такие тексты выдает, куча пробелов, и возможно другие тоже
-            result = utils.remove_repeated_characters(result, 1000, 10)
+            result = utils.shorten_all_repeats(result)
 
             if result:
                 if 'print(default_api.' in result[:100]:

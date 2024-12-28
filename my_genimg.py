@@ -554,6 +554,10 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
         result = []
 
         max_threads = len([x for x in bing_img.COOKIE.keys()])
+        if max_threads > 4:
+            max_threads = max_threads - 2 # leave 2 threads for other tasks
+        else:
+            max_threads = 1
 
         containers = {}
 

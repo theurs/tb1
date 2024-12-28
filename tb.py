@@ -19,7 +19,6 @@ import time
 from decimal import Decimal, getcontext
 from typing import List, Optional
 
-import cairosvg
 import langcodes
 import pendulum
 import PIL
@@ -61,6 +60,13 @@ import my_tts
 import my_ytb
 import utils
 from utils import async_run
+
+try:
+    import cairosvg
+except Exception as error:
+    # no library called "cairo" was found
+    # cannot load library 'C:\Program Files\Tesseract-OCR\libcairo-2.dll': error 0x7f
+    my_log.log2(f'Error importing cairosvg: {error}')
 
 
 START_TIME = time.time()

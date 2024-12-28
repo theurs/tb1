@@ -10,8 +10,10 @@ import re
 import time
 import threading
 import traceback
-from multiprocessing.pool import ThreadPool
 from io import BytesIO
+from multiprocessing.pool import ThreadPool
+import multiprocessing
+from typing import List
 
 import PIL
 import requests
@@ -515,31 +517,53 @@ Return a `reprompt`
     return reprompt, negative
 
 
-def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: str ='', iterations: int = 1) -> list:
+def generate_bing_image_thread(args: tuple) -> List[str]:
+    """
+    Generates an image using the bing function.
+
+    Args:
+        args (tuple): A tuple containing the reprompt and user_id.
+
+    Returns:
+        List[str]: A list containing the generated image URLs.
+    """
+    reprompt, user_id = args
+    return bing(reprompt, user_id=user_id)
+
+
+def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: str ='', iterations: int = 1, num_processes: int = 4) -> List[str]:
+    """
+    Generates images using the bing function in parallel using multiprocessing.
+
+    Args:
+        prompt (str): The initial prompt for image generation.
+        user_id (str, optional): The user ID. Defaults to ''.
+        conversation_history (str, optional): The conversation history. Defaults to ''.
+        iterations (int, optional): The number of images to generate. Defaults to 1.
+        num_processes (int, optional): The number of parallel processes to use. Defaults to 4.
+
+    Returns:
+        List[str]: A list containing the generated image URLs.
+    """
     if iterations == 0:
         iterations = 1
 
-    if prompt.strip() == '':
+    if not prompt.strip():
         return []
 
     reprompt, _ = get_reprompt(prompt, conversation_history)
     if reprompt == 'MODERATION':
         if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(user_id) in cfg.ALLOW_PASS_NSFW_FILTER:
-            prompt = re.sub(r'^!+', '', prompt).strip()
-            reprompt = prompt
+            reprompt = re.sub(r'^!+', '', prompt).strip()
         else:
             return ['moderation',]
 
     if reprompt:
-        prompt = re.sub(r'^!+', '', prompt).strip()
-        result = []
-        for _ in range(iterations):
-            # if len(prompt) > 150: # не переводить если промт достаточно большой (подробный)
-            #     result += bing(prompt, user_id=user_id)
-            # else:
-            #     result += bing(reprompt, user_id=user_id)
-            result += bing(reprompt, user_id=user_id)
-        return result
+        reprompt = re.sub(r'^!+', '', prompt).strip()
+        tasks = [(reprompt, user_id)] * iterations
+        with multiprocessing.Pool(processes=num_processes) as pool:
+            results = pool.map(generate_bing_image_thread, tasks)
+        return [item for sublist in results for item in sublist]  # Flatten the list of lists
     return []
 
 

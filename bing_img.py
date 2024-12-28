@@ -5,6 +5,7 @@
 # 50.7.85.220 edgeservices.bing.com
 # 50.7.85.220 www.bing.com
 
+import random
 
 from sqlitedict import SqliteDict
 from re_edge_gpt import ImageGen
@@ -65,6 +66,7 @@ def gen_images(query: str, user_id: str = ''):
 
     # используем только первую куку (одну)
     cookies = [x for x in COOKIE.items()]
+    random.shuffle(cookies)
 
     if not cookies:
         # my_log.log_bing_img(f'get_images: {query} no cookies')

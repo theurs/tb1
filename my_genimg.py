@@ -104,11 +104,11 @@ def upscale(image_bytes: bytes) -> bytes:
 
 def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """
-    Рисует бингом, не больше 1 потока и 15 секунд пауза между запросами
+    Рисует бингом, не больше 1 потока и 20 секунд пауза между запросами
     Ограничение на размер промпта 950, хз почему
 
 
-    1 кука, пауза между запросами на рисование 15 секунд
+    1 кука, пауза между запросами на рисование 20 секунд
 
     Одновременно используй только 1 аккаунт.
     Когда с ним проблемы, то переключайся на другой и меняй IP.
@@ -125,7 +125,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     try:
         with BING_LOCK:
             images = bing_img.gen_images(prompt, user_id)
-            time.sleep(15)
+            time.sleep(20)
         if type(images) == list:
             return list(set(images))
     except Exception as error_bing_img:

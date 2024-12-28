@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 
 import cfg
 
-TIMEOUT = 120
+TIMEOUT = 40
 
 class AuthCookieError(Exception):
     pass

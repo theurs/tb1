@@ -1,7 +1,7 @@
 assemblyai
 # attrs==23.1.0
 beautifulsoup4
-bingart
+# bingart
 cairosvg
 chardet
 cachetools
@@ -59,6 +59,9 @@ pytelegrambotapi==4.16.1
 pytesseract
 python-Levenshtein
 python-pptx
+
+re_edge_gpt
+
 SpeechRecognition
 sqlitedict
 starlette

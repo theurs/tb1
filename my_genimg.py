@@ -103,14 +103,29 @@ def upscale(image_bytes: bytes) -> bytes:
 
 
 def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
-    """рисует 4 картинки с помощью далли и возвращает сколько смог нарисовать"""
-    # prompt = prompt[:650] # нельзя больше 700?
+    """
+    Рисует бингом, не больше 1 потока и 15 секунд пауза между запросами
+    Ограничение на размер промпта 950, хз почему
+
+
+    1 кука, пауза между запросами на рисование 15 секунд
+
+    Одновременно используй только 1 аккаунт.
+    Когда с ним проблемы, то переключайся на другой и меняй IP.
+    Куки обновляй с той же страны, что и прокси, например США.
+
+    У меня так работает.
+    Два прокси США, которые меняются с каждым переключением аккаунта.
+    Раз в месяц я их меняю на новые.
+
+    """
+    prompt = prompt[:950] # нельзя больше 950?
     if moderation_flag or prompt.strip() == '':
         return []
     try:
-        # with BING_LOCK:
-        #     images = bing_img.gen_images(prompt, user_id)
-        images = bing_img.gen_images(prompt, user_id)
+        with BING_LOCK:
+            images = bing_img.gen_images(prompt, user_id)
+            time.sleep(15)
         if type(images) == list:
             return list(set(images))
     except Exception as error_bing_img:

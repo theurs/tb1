@@ -4722,11 +4722,7 @@ def image_gen(message: telebot.types.Message):
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
                         else:
                             if BING_FLAG:
-                                for x in range(2):
-                                    images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)
-                                    if images:
-                                        break
-                                    time.sleep(5)
+                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)
                             else:
                                 images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
 

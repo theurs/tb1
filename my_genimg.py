@@ -108,9 +108,9 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     if moderation_flag or prompt.strip() == '':
         return []
     try:
-        with BING_LOCK:
-            images = bing_img.gen_images(prompt, user_id)
-        # images = bing_img.gen_images(prompt, user_id)
+        # with BING_LOCK:
+        #     images = bing_img.gen_images(prompt, user_id)
+        images = bing_img.gen_images(prompt, user_id)
         if type(images) == list:
             return list(set(images))
     except Exception as error_bing_img:

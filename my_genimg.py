@@ -12,8 +12,6 @@ import threading
 import traceback
 from io import BytesIO
 from multiprocessing.pool import ThreadPool
-import multiprocessing
-from typing import List
 
 import PIL
 import requests

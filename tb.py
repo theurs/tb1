@@ -4608,7 +4608,7 @@ def image_gen(message: telebot.types.Message):
         BING_FLAG = 0
         if message.text.endswith('[{(BING)}]'):
             message.text = message.text[:-10]
-            BING_FLAG = 1
+            BING_FLAG = 2
         elif message.text.endswith('[{(BING10)}]'):
             message.text = message.text[:-12]
             BING_FLAG = 10

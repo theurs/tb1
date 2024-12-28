@@ -515,6 +515,25 @@ Return a `reprompt`
     return reprompt, negative
 
 
+
+
+@utils.async_run
+def bing_get_one_round(reprompt: str, user_id: str, container):
+    '''fill containers with results (0-4 images)'''
+    r = bing(reprompt, user_id=user_id)
+    if r:
+        container += r
+    else:
+        container += ['none',]
+
+
+def count_running_bing_threads() -> list[str]:
+    """Возвращает количество запущенных потоков bing."""
+    thread_list = threading.enumerate()
+    thread_names = [thread.name for thread in thread_list if 'bing_get_one_round' in thread.name]
+    return len(thread_names)
+
+
 def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: str ='', iterations: int = 1) -> list:
     if iterations == 0:
         iterations = 1
@@ -533,10 +552,29 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
     if reprompt:
         prompt = re.sub(r'^!+', '', prompt).strip()
         result = []
-        for _ in range(iterations):
-            result += bing(reprompt, user_id=user_id)
+
+        max_threads = len([x for x in bing_img.COOKIE.keys()])
+
+        containers = {}
+
+        for i in range(iterations):
+            containers[i] = []
+            bing_get_one_round(reprompt, user_id, containers[i])
+            while count_running_bing_threads() >= max_threads:
+                time.sleep(1)
+
+        while True:
+            time.sleep(1)
+            ready_containers = sum(1 for value_list in containers.values() if value_list)
+            if ready_containers == iterations:
+                break
+
+        result = [s for value_list in containers.values() for s in value_list if s != 'none']
+
         return result
     return []
+
+
 
 
 def gen_images(prompt: str, moderation_flag: bool = False,
@@ -698,5 +736,6 @@ if __name__ == '__main__':
     load_users_keys()
     my_groq.load_users_keys()
 
-    print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))
+    # print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))
 
+    print(gen_images_bing_only('golden apple', iterations=2))

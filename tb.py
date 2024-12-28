@@ -4649,9 +4649,9 @@ def image_gen(message: telebot.types.Message):
         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
             NSFW_FLAG = True
 
-        if NSFW_FLAG:
-            bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw', disable_web_page_preview=True)
-            return
+        # if NSFW_FLAG:
+        #     bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw', disable_web_page_preview=True)
+        #     return
 
         # рисовать только бингом, команда /bing
         BING_FLAG = 0

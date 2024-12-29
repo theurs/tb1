@@ -35,6 +35,7 @@ bot = telebot.TeleBot(cfg.token_gemini_lite)
 
 SYSTEMS = SqliteDict('db/gemini_light_systems.db', autocommit=True)
 USERS = SqliteDict('db/gemini_light_users.db', autocommit=True)
+TEMPERATURES = SqliteDict('db/gemini_light_temperatures.db', autocommit=True)
 TRANSLATIONS = SqliteDict('db/gemini_light_translations.db', autocommit=True)
 
 MESSAGE_QUEUE_IMG = {}
@@ -616,6 +617,61 @@ def change_mode(message: telebot.types.Message):
         bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
 
 
+@bot.message_handler(commands=['temp', 'temperature'], func=authorized)
+@async_run
+def change_temperature(message: telebot.types.Message) -> None:
+    """
+    Handles the 'temperature' command from the bot. Allows the user to change
+    the temperature value between 0 and 2.
+
+    Parameters:
+        message (telebot.types.Message): The message object received from the user.
+
+    Returns:
+        None
+    """
+    chat_id_full: int = message.chat.id
+    lang: str = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
+
+    # Split the message text to get the argument
+    arg: List[str] = message.text.split(maxsplit=1)[1:]
+
+    if arg:
+        try:
+            # Attempt to convert the argument to a float
+            temperature: float = float(arg[0])
+            
+            # Check if the temperature is within the valid range
+            if 0 <= temperature <= 2:
+                # Round the temperature to one decimal place
+                temperature = round(temperature, 2)
+                
+                # Save the new temperature for the chat
+                TEMPERATURES[chat_id_full] = temperature
+                
+                # Prepare the response message
+                msg: str = f"{tr(f'New temperature set:', lang)} {temperature}"
+            else:
+                # If the temperature is out of range, send an error message
+                msg: str = tr('Temperature must be between 0 and 2', lang)
+        except ValueError:
+            # If the argument cannot be converted to a float, send an error message
+            msg: str = tr('Invalid temperature value. Please use a number between 0 and 2', lang)
+    else:
+        # If no argument is provided, display the current temperature and usage instructions
+        current_temp: float = TEMPERATURES.get(chat_id_full, 1.0)
+        msg: str = f"""{tr('Current temperature', lang)}: {current_temp}
+
+{tr('Usage', lang)}:
+/temperature <temperature>
+
+{tr('Temperature must be a number between 0 and 2', lang)}.
+"""
+
+    # Send the response message
+    bot_reply(message, msg)
+
+
 @bot.message_handler(commands=['tts'], func=authorized)
 @async_run
 def tts(message: telebot.types.Message, caption = None):
@@ -1064,10 +1120,184 @@ def del_user(message: telebot.types.Message) -> None:
         bot_reply(message, tr('Usage: /del <user_id>', lang))
 
 
+@bot.message_handler(commands=['list'], func=authorized_admin)
+@async_run
+def list_users(message: telebot.types.Message) -> None:
+    """
+    Выводит список пользователей из USERS в столбик с отступом.
+
+    Args:
+        message: Объект сообщения Telegram.
+    """
+    # Проверяем, есть ли пользователи в USERS
+    if USERS:
+        # Формируем строку со списком пользователей
+        users_list: str = '\n    '.join(map(str, sorted(USERS.keys())))
+        # Добавляем заголовок и отступ перед списком
+        formatted_list: str = f'Users:\n    {users_list}'
+        # Отправляем сообщение со списком пользователей
+        bot_reply_tr(message, formatted_list)
+    else:
+        # Отправляем сообщение, если список пользователей пуст
+        bot_reply_tr(message, 'No users in database')
+
+
+@bot.message_handler(commands=['init'], func=authorized_admin)
+@async_run
+def set_default_commands(message: telebot.types.Message):
+    """
+    Reads a file containing a list of commands and their descriptions,
+    and sets the default commands for the bot.
+    """
+    """
+    Reads a file containing a list of commands and their descriptions,
+    and sets the default commands for the bot.
+    """
+
+    def get_seconds(s):
+        match = re.search(r"after\s+(?P<seconds>\d+)", s)
+        if match:
+            return int(match.group("seconds"))
+        else:
+            return 0
+
+    bot_reply_tr(message, "Localization will take a long time, do not repeat this command.")
+
+    most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr','hi',
+                       'hu', 'id', 'in', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro',
+                       'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'ur', 'vi', 'zh']
+    # most_used_langs = [x for x in my_init.supported_langs_trans if len(x) == 2]
+
+    msg_commands = ''
+    for lang in most_used_langs:
+        commands = []
+        with open('commands_gemini_lite.txt', encoding='utf-8') as file:
+            for line in file:
+                try:
+                    command, description = line[1:].strip().split(' - ', 1)
+                    if command and description:
+                        description = tr(description, lang)
+                        my_log.log2(f'tb:init:command {lang} {description}')
+                        commands.append(telebot.types.BotCommand(command, description))
+                except Exception as error:
+                    my_log.log2(f'Failed to read default commands for language {lang}: {error}')
+        result = False
+        try:
+            l1 = [x.description for x in bot.get_my_commands(language_code=lang)]
+            l2 = [x.description for x in commands]
+            if l1 != l2:
+                result = bot.set_my_commands(commands, language_code=lang)
+            else:
+                result = True
+        except Exception as error_set_command:
+            my_log.log2(f'Failed to set default commands for language {lang}: {error_set_command} ')
+            time.sleep(get_seconds(str(error_set_command)))
+            try:
+                if l1 != l2:
+                    result = bot.set_my_commands(commands, language_code=lang)
+                else:
+                    result = True
+            except Exception as error_set_command2:
+                my_log.log2(f'Failed to set default commands for language {lang}: {error_set_command2}')
+        if result:
+            result = '✅'
+        else:
+            result = '❌'
+
+        msg = f'{result} Default commands set [{lang}]'
+        msg_commands += msg + '\n'
+    bot_reply(message, msg_commands)
+
+    new_bot_name = cfg.lite_gemini_bot_name.strip()
+    new_description = cfg.lite_gemini_bot_description.strip()
+    new_short_description = cfg.lite_gemini_bot_short_description.strip()
+
+    msg_bot_names = ''
+    for lang in most_used_langs:
+        result = False
+        try:
+            if bot.get_my_name(language_code=lang).name != tr(new_bot_name, lang):
+                result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+                my_log.log2(f'tb:init:name {lang} {tr(new_bot_name, lang)}')
+            else:
+                result = True
+        except Exception as error_set_name:
+            my_log.log2(f"Failed to set bot's name: {tr(new_bot_name, lang)}" + '\n\n' + str(error_set_name))
+            time.sleep(get_seconds(str(error_set_name)))
+            try:
+                if bot.get_my_name(language_code=lang).name != tr(new_bot_name, lang):
+                    result = bot.set_my_name(tr(new_bot_name, lang), language_code=lang)
+                    my_log.log2(f'tb:init::name {lang} {tr(new_bot_name, lang)}')
+                else:
+                    result = True
+            except Exception as error_set_name2:
+                my_log.log2(f"Failed to set bot's name: {tr(new_bot_name, lang)}" + '\n\n' + str(error_set_name2))
+        if result:
+            msg_bot_names += "✅ Bot's name set for language " + lang + f' [{tr(new_bot_name, lang)}]\n'
+        else:
+            msg_bot_names += "❌ Bot's name set for language " + lang + f' [{tr(new_bot_name, lang)}]\n'
+    bot_reply(message, msg_bot_names)
+
+    msg_descriptions = ''
+    for lang in most_used_langs:
+        result = False
+        try:
+            if bot.get_my_description(language_code=lang).description != tr(new_description, lang):
+                result = bot.set_my_description(tr(new_description, lang), language_code=lang)
+                my_log.log2(f'tb:init:desc {lang} {tr(new_description, lang)}')
+            else:
+                result = True
+        except Exception as error_set_description:
+            my_log.log2(f"Failed to set bot's description {lang}: {tr(new_description, lang)}" + '\n\n' + str(error_set_description))
+            time.sleep(get_seconds(str(error_set_description)))
+            try:
+                if bot.get_my_description(language_code=lang).description != tr(new_description, lang):
+                    result = bot.set_my_description(tr(new_description, lang), language_code=lang)
+                    my_log.log2(f'tb:init::desc {lang} {tr(new_description, lang)}')
+                else:
+                    result = True
+            except Exception as error_set_description2:
+                my_log.log2(f"Failed to set bot's description {lang}: {tr(new_description, lang)}" + '\n\n' + str(error_set_description2))
+                msg_descriptions += "❌ New bot's description set for language " + lang + '\n'
+                continue
+        if result:
+            msg_descriptions += "✅ New bot's description set for language " + lang + '\n'
+        else:
+            msg_descriptions += "❌ New bot's description set for language " + lang + '\n'
+    bot_reply(message, msg_descriptions)
+
+    msg_descriptions = ''
+    for lang in most_used_langs:
+        result = False
+        try:
+            if bot.get_my_short_description(language_code=lang).short_description != tr(new_short_description, lang):
+                result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
+                my_log.log2(f'tb:init:short_desc {lang} {tr(new_short_description, lang)}')
+            else:
+                result = True
+        except Exception as error_set_short_description:
+            my_log.log2(f"Failed to set bot's short description: {tr(new_short_description, lang)}" + '\n\n' + str(error_set_short_description))
+            time.sleep(get_seconds(str(error_set_short_description)))
+            try:
+                if bot.get_my_short_description(language_code=lang).short_description != tr(new_short_description, lang):
+                    result = bot.set_my_short_description(tr(new_short_description, lang), language_code=lang)
+                    my_log.log2(f'tb:init::short_desc {lang} {tr(new_short_description, lang)}')
+                else:
+                    result = True
+            except Exception as error_set_short_description2:
+                my_log.log2(f"Failed to set bot's short description: {tr(new_short_description, lang)}" + '\n\n' + str(error_set_short_description2))
+                msg_descriptions += "❌ New bot's short description set for language " + lang + '\n'
+                continue
+        if result:
+            msg_descriptions += "✅ New bot's short description set for language " + lang + '\n'
+        else:
+            msg_descriptions += "❌ New bot's short description set for language " + lang + '\n'
+    bot_reply(message, msg_descriptions)
+    bot_reply_tr(message, 'Init finished.')
+
+
 # Обработчик текстовых сообщений (асинхронный)
 @bot.message_handler(func=authorized)
-
-
 @async_run
 def echo_all(message: telebot.types.Message):
     try:
@@ -1102,7 +1332,13 @@ def echo_all(message: telebot.types.Message):
         chat_id = str(message.chat.id)
         with ShowAction(message, 'typing'):
             system = SYSTEMS.get(chat_id, '')
-            response = my_gemini_light.chat(query, chat_id, system = system, use_skills=True)
+            temp = TEMPERATURES.get(chat_id, 1)
+            response = my_gemini_light.chat(
+                query,
+                chat_id,
+                system = system,
+                use_skills=True,
+                temperature=temp)
             html = utils.bot_markdown_to_html(response)
             bot_reply(
                 message,

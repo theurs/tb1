@@ -16,8 +16,9 @@ import tempfile
 import traceback
 import threading
 import time
+from flask import Flask, request, jsonify
 from decimal import Decimal, getcontext
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import langcodes
 import pendulum
@@ -7399,6 +7400,47 @@ def one_time_shot():
         my_log.log2(f'tb:one_time_shot: {error}\n{traceback_error}')
 
 
+FLASK_APP = Flask(__name__)
+
+
+@FLASK_APP.route('/bing', methods=['POST'])
+def bing_api_post() -> Dict[str, Any]:
+    """
+    API endpoint for generating images using Bing.
+
+    :return: A JSON response containing a list of URLs or an error message.
+    """
+    try:
+        # Get JSON data from the request
+        data: Dict[str, Any] = request.get_json()
+
+        # Extract the prompt from the JSON data
+        prompt: str = data.get('prompt', '')
+
+        if not prompt:
+            return jsonify({"error": "Prompt is required"}), 400
+
+        # Generate images using Bing API
+        image_urls: List[str] = my_genimg.gen_images_bing_only(prompt)
+        # image_urls: List[str] = ['url1', 'url2', 'url3', 'url4']
+
+        if not image_urls:
+            return jsonify({"error": "No images generated"}), 404
+
+        return jsonify({"urls": image_urls}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@async_run
+def run_flask(addr: str ='0.0.0.0', port: int = 58796):
+    try:
+        FLASK_APP.run(debug=True, use_reloader=False, host=addr, port = port)
+    except Exception as error:
+        my_log.log2(f'tb:run_flask: {error}')
+
+
 def main():
     """
     Runs the main function, which sets default commands and starts polling the bot.
@@ -7417,6 +7459,9 @@ def main():
     one_time_shot()
 
     log_group_daemon()
+
+    if hasattr(cfg, 'BING_API') and cfg.BING_API:
+        run_flask()
 
     # Remove webhook, it fails sometimes the set if there is a previous webhook
     bot.remove_webhook()

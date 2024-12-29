@@ -14,6 +14,9 @@ deepl
 duckduckgo_search[lxml]
 edge_tts
 fastapi
+
+Flask
+
 geopy
 
 json_repair

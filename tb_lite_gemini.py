@@ -8,6 +8,7 @@ import sys
 import time
 import tempfile
 import threading
+import traceback
 
 import telebot
 from sqlitedict import SqliteDict
@@ -832,6 +833,7 @@ def image_gen(message: telebot.types.Message):
             bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2')
     except Exception as error_unknown:
         print(error_unknown)
+        print(traceback.format_exc())
 
 
 # Обработчик текстовых сообщений (асинхронный)

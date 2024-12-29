@@ -12,11 +12,13 @@ import threading
 import telebot
 from sqlitedict import SqliteDict
 
+import bing_api_client
 import cfg
 import my_gemini_light
 import my_groq
 import my_db
 import md2tgmd
+import my_genimg
 import my_init
 import my_transcribe
 import my_tts
@@ -755,6 +757,80 @@ def handle_photo(message: telebot.types.Message):
                 bot_reply_tr(message, 'Sorry, I could not answer your question.')
         return
     except Exception as error:
+        pass
+
+
+
+@bot.message_handler(commands=['bing','Bing','image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
+@async_run
+def image_gen(message: telebot.types.Message):
+    """Generates a picture from a description"""
+    chat_id_full = message.chat.id
+    lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
+    try:
+        help = f"""/image {tr('Text description of the picture, what to draw.', lang)}
+
+/image {tr('an apple', lang)}
+/img {tr('an apple', lang)}
+/i {tr('an apple', lang)}
+
+{tr('Write what to draw, what it looks like.', lang)}
+"""
+        prompt = message.text.split(maxsplit = 1).strip()
+
+        if len(prompt) > 3:
+            prompt = prompt[1].strip()
+
+            if prompt == tr('Продолжай', lang):
+                return
+
+            # get chat history for content
+            conversation_history = ''
+            conversation_history = my_gemini_light.get_mem_as_string(chat_id_full) or ''
+
+            conversation_history = conversation_history[-8000:]
+            # как то он совсем плохо стал работать с историей, отключил пока что
+            conversation_history = ''
+
+            with ShowAction(message, 'upload_photo'):
+                #### без перевода но с модерацией!
+                reprompt, _ = my_genimg.get_reprompt(prompt, conversation_history)
+                if reprompt == 'MODERATION':
+                    bot_reply_tr(message, 'Your request contains potentially unacceptable content.')
+                    return
+
+                images = bing_api_client.gen_images(prompt)
+
+                medias = []
+
+                for i in images:
+                    if i.startswith('http'):
+                        medias.append(telebot.types.InputMediaPhoto(i))
+
+                if len(medias) > 0:
+                    try:
+                        msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                    except Exception as error:
+                        # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+                        seconds = utils.extract_retry_seconds(str(error))
+                        if seconds:
+                            time.sleep(seconds + 1)
+                            try:
+                                msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                            except Exception as error2:
+                                pass
+
+                        add_to_bots_mem(f'{tr(f"user used /img command to generate", lang)}: {prompt}',
+                                            f'/img {prompt}',
+                                            chat_id_full)
+                else:
+                    bot_reply_tr(message, 'Could not draw anything.')
+                    add_to_bots_mem(f'{tr(f"user used /img command to generate", lang)} {prompt}',
+                                            f'{tr("bot did not want or could not draw this", lang)}',
+                                            chat_id_full)
+        else:
+            bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2')
+    except Exception as error_unknown:
         pass
 
 

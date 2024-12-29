@@ -530,8 +530,6 @@ Return a `reprompt`
     return reprompt, negative
 
 
-
-
 @utils.async_run
 def bing_get_one_round(reprompt: str, user_id: str, container):
     '''fill containers with results (0-4 images)'''
@@ -593,8 +591,6 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
 
         return result
     return []
-
-
 
 
 def gen_images(prompt: str, moderation_flag: bool = False,

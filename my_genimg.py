@@ -614,9 +614,8 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         negative = ''
 
-        reprompt = ''
+        reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
         if use_bing:
-            reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
             if reprompt == 'MODERATION':
                 return ['moderation',]
 
@@ -767,4 +766,4 @@ if __name__ == '__main__':
 
     # print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))
 
-    print(gen_images_bing_only('golden apple', iterations=2))
+    print(gen_images('golden apple', use_bing=False))

@@ -9,6 +9,9 @@
 
 # 50.7.85.220 labs.google
 # 50.7.85.220 o.pki.goog
+# 
+# еще 1 такой адрес 94.131.119.85, его можно узнать командой типа nslookup ai.google.dev 83.220.169.155
+
 
 
 import cachetools.func

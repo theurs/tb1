@@ -6,6 +6,7 @@
 # 50.7.85.220 www.bing.com
 
 import random
+import time
 
 from sqlitedict import SqliteDict
 from re_edge_gpt import ImageGen
@@ -23,25 +24,47 @@ COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 BAD_IMAGES_PROMPT = {}
 
 
+def get_cookie():
+    # используем только первую куку (одну)
+    cookies = [x for x in COOKIE.items()]
+    random.shuffle(cookies)
+
+    if not cookies:
+        # my_log.log_bing_img(f'get_images: {query} no cookies')
+        raise Exception('no cookies')
+
+    cookie = cookies[0][0]
+
+    return cookie
+
+
 def get_images_v2(prompt: str,
-               u_cookie: str,
                proxy: str = None,
                timeout: int = 60,
                max_generate_time_sec: int = 60):
 
     results = []
 
-    sync_gen = ImageGen(auth_cookie=u_cookie, quiet=True)
     try:
+        c = get_cookie()
+        sync_gen = ImageGen(auth_cookie=c, quiet=True)
         results = sync_gen.get_images(prompt)
     except Exception as error:
+        my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
         if 'Bad images' in str(error):
             BAD_IMAGES_PROMPT[prompt] = True
-        my_log.log_bing_img(f'get_images_v2: {error} \n\n {u_cookie} \n\nPrompt: {prompt}')
+        elif 'Image create failed pls check cookie or old image still creating' in str(error):
+            time.sleep(10)
+            try:
+                cc = get_cookie()
+                sync_gen = ImageGen(auth_cookie=cc, quiet=True)
+                results = sync_gen.get_images(prompt)
+            except Exception as error2:
+                my_log.log_bing_img(f'get_images_v2: {error2} \n\n {cc} \n\nPrompt: {prompt}')
 
     if results:
         results = [x for x in results if '.bing.net/th/id/' in x]
-        my_log.log_bing_success(f'{u_cookie}\n{proxy}\n{prompt}\n{results}')
+        my_log.log_bing_success(f'{c}\n{proxy}\n{prompt}\n{results}')
 
     return results
 
@@ -64,40 +87,17 @@ def gen_images(query: str, user_id: str = ''):
         my_log.log_bing_img(f'get_images: {query} is in BAD_IMAGES_PROMPT')
         return ['error1_Bad images',]
 
-    # используем только первую куку (одну)
-    cookies = [x for x in COOKIE.items()]
-    random.shuffle(cookies)
-
-    if not cookies:
-        # my_log.log_bing_img(f'get_images: {query} no cookies')
-        return []
-
-    cookie = cookies[0][0]
 
     if hasattr(cfg, 'bing_proxy') and cfg.bing_proxy:
         try:
-            return get_images_v2(query, cookie, cfg.bing_proxy)
+            return get_images_v2(query, cfg.bing_proxy)
         except Exception as error:
-            if 'location' in str(error) or 'timeout' in str(error) or 'Out of generate time' in str(error):
-                my_log.log_bing_img(f'get_images: {error} Cookie: {cookie} Proxy: {cfg.bing_proxy}')
-                return []
-            if str(error).startswith('error1'):
-                BAD_IMAGES_PROMPT[query] = True
-                return [str(error),]
-            else:
-                my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}\n\nProxy: {cfg.bing_proxy}')
+            my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}\n\nProxy: {cfg.bing_proxy}')
     else:
         try:
-            return get_images_v2(query, cookie)
+            return get_images_v2(query)
         except Exception as error:
-            if 'location' in str(error) or 'timeout' in str(error) or 'Out of generate time' in str(error):
-                my_log.log_bing_img(f'get_images: {error} Cookie: {cookie}')
-                return []
-            if str(error).startswith('error1'):
-                BAD_IMAGES_PROMPT[query] = True
-                return []
-            else:
-                my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}\n\nCookie: {cookie}')
+            my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}')
 
     return []
 

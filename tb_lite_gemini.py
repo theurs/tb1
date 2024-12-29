@@ -1070,47 +1070,50 @@ def del_user(message: telebot.types.Message) -> None:
 
 @async_run
 def echo_all(message: telebot.types.Message):
+    try:
+        message.text = my_log.restore_message_text(message.text, message.entities)
+        if message.forward_date:
+            message.text = f'forward sender name {message.forward_sender_name or "Noname"}: {message.text}'
+        message.text += '\n\n'
 
-    message.text = my_log.restore_message_text(message.text, message.entities)
-    if message.forward_date:
-        message.text = f'forward sender name {message.forward_sender_name or "Noname"}: {message.text}'
-    message.text += '\n\n'
+        chat_id_full = message.chat.id
 
-    chat_id_full = message.chat.id
+        # catch too long messages
+        if chat_id_full not in MESSAGE_QUEUE:
+            MESSAGE_QUEUE[chat_id_full] = message.text
+            last_state = MESSAGE_QUEUE[chat_id_full]
+            n = 10
+            while n > 0:
+                n -= 1
+                time.sleep(0.1)
+                new_state = MESSAGE_QUEUE[chat_id_full]
+                if last_state != new_state:
+                    last_state = new_state
+                    n = 10
+            message.text = last_state
+            del MESSAGE_QUEUE[chat_id_full]
+        else:
+            MESSAGE_QUEUE[chat_id_full] += message.text + '\n\n'
+            return
 
-    # catch too long messages
-    if chat_id_full not in MESSAGE_QUEUE:
-        MESSAGE_QUEUE[chat_id_full] = message.text
-        last_state = MESSAGE_QUEUE[chat_id_full]
-        n = 10
-        while n > 0:
-            n -= 1
-            time.sleep(0.1)
-            new_state = MESSAGE_QUEUE[chat_id_full]
-            if last_state != new_state:
-                last_state = new_state
-                n = 10
-        message.text = last_state
-        del MESSAGE_QUEUE[chat_id_full]
-    else:
-        MESSAGE_QUEUE[chat_id_full] += message.text + '\n\n'
-        return
+        message.text = message.text.strip()
 
-    message.text = message.text.strip()
-
-    query = message.text
-    chat_id = str(message.chat.id)
-    with ShowAction(message, 'typing'):
-        system = SYSTEMS.get(chat_id, '')
-        response = my_gemini_light.chat(query, chat_id, system = system, use_skills=True)
-        html = utils.bot_markdown_to_html(response)
-        bot_reply(
-            message,
-            html,
-            parse_mode = 'HTML',
-            disable_web_page_preview = True,
-            reply_markup = get_keyboard('chat', message)
-            )
+        query = message.text
+        chat_id = str(message.chat.id)
+        with ShowAction(message, 'typing'):
+            system = SYSTEMS.get(chat_id, '')
+            response = my_gemini_light.chat(query, chat_id, system = system, use_skills=True)
+            html = utils.bot_markdown_to_html(response)
+            bot_reply(
+                message,
+                html,
+                parse_mode = 'HTML',
+                disable_web_page_preview = True,
+                reply_markup = get_keyboard('chat', message)
+                )
+    except Exception as error_unknown:
+        print(error_unknown)
+        print(traceback.format_exc())
 
 
 if __name__ == '__main__':

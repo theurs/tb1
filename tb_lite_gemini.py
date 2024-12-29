@@ -777,7 +777,7 @@ def image_gen(message: telebot.types.Message):
 
 {tr('Write what to draw, what it looks like.', lang)}
 """
-        prompt = message.text.split(maxsplit = 1).strip()
+        prompt = message.text.split(maxsplit = 1)
 
         if len(prompt) > 3:
             prompt = prompt[1].strip()

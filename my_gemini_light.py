@@ -278,7 +278,7 @@ def img2txt(data_: bytes,
             data = io.BytesIO(data_)
             img = PIL.Image.open(data)
             q = [prompt, img]
-            res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills)
+            res = chat(q, chat_id=chat_id, temperature=temp, model = model, json_output = json_output, use_skills=use_skills)
             return res
         except Exception as error:
             traceback_error = traceback.format_exc()

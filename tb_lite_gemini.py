@@ -454,8 +454,8 @@ def img2txt(text, lang: str,
     except Exception as img_from_link_error:
         print(f'tb:img2txt: {img_from_link_error}')
 
-    if text:
-        add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
+    # if text:
+        # add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
 
     return text
 

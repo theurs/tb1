@@ -31,7 +31,7 @@ def get_images_v2(prompt: str,
 
     results = []
 
-    sync_gen = ImageGen(auth_cookie=u_cookie)
+    sync_gen = ImageGen(auth_cookie=u_cookie, quiet=True)
     try:
         results = sync_gen.get_images(prompt)
     except Exception as error:

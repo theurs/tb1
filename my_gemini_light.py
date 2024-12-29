@@ -1,6 +1,32 @@
 #!/usr/bin/env python3
 
 
+########## SKILLS ##########
+import re
+import math
+import datetime
+import decimal
+import numbers
+import numpy
+import numpy as np
+import random
+import re
+import traceback
+from math import *
+from decimal import *
+from numbers import *
+
+# it will import word random and broke code
+# from random import *
+from random import betavariate, choice, choices, expovariate, gammavariate, gauss, getrandbits, getstate, lognormvariate, normalvariate, paretovariate, randbytes, randint, randrange, sample, seed, setstate, shuffle, triangular, uniform, vonmisesvariate, weibullvariate
+
+import my_sum
+import my_google
+########## SKILLS ##########
+
+
+
+
 import cachetools.func
 import io
 import PIL
@@ -20,7 +46,6 @@ import cfg
 import my_log
 
 import utils
-# from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, calc, get_time_in_timezone
 
 
 # {id: mem,}
@@ -95,6 +120,8 @@ def chat(query: str,
     try:
         global ALL_KEYS
 
+        chat_id = str(chat_id)
+
         query = query[:MAX_SUM_REQUEST]
         if temperature < 0:
             temperature = 0
@@ -139,7 +166,7 @@ def chat(query: str,
         time_start = time.time()
         for key in keys:
             if time.time() > time_start + (TIMEOUT-1):
-                my_log.log_gemini(f'my_gemini:chat: stop after timeout {round(time.time() - time_start, 2)}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                my_log.log_gemini_lite(f'my_gemini:chat: stop after timeout {round(time.time() - time_start, 2)}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 return ''
 
             genai.configure(api_key = key)
@@ -156,23 +183,28 @@ def chat(query: str,
                     max_output_tokens = max_tokens,
                 )
 
-            # SKILLS = [
-            #     search_google,
-            #     download_text_from_url,
-            #     calc,
-            #     get_time_in_timezone,
-            #     get_weather,
-            #     get_currency_rates,
-            #     ]
+            SKILLS = [
+                search_google,
+                download_text_from_url,
+                calc,
+                ]
 
-            model_ = genai.GenerativeModel(
-                model,
-                # tools = SKILLS,
-                generation_config = GENERATION_CONFIG,
-                safety_settings=SAFETY_SETTINGS,
-                system_instruction = system,
-            )
-
+            if use_skills:
+                model_ = genai.GenerativeModel(
+                    model,
+                    tools = SKILLS,
+                    generation_config = GENERATION_CONFIG,
+                    safety_settings=SAFETY_SETTINGS,
+                    system_instruction = system,
+                )
+            else:
+                model_ = genai.GenerativeModel(
+                    model,
+                    generation_config = GENERATION_CONFIG,
+                    safety_settings=SAFETY_SETTINGS,
+                    system_instruction = system,
+                )
+ 
             request_options = RequestOptions(timeout=TIMEOUT)
             chat = model_.start_chat(history=mem, enable_automatic_function_calling=True)
             try:
@@ -181,7 +213,7 @@ def chat(query: str,
                                     request_options=request_options,
                                     )
             except Exception as error:
-                my_log.log_gemini(f'my_gemini:chat: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                my_log.log_gemini_lite(f'my_gemini:chat: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
                    'reason: "API_KEY_INVALID"' in str(error):
                     ALL_KEYS.remove(key)
@@ -193,7 +225,7 @@ def chat(query: str,
             try:
                 result = chat.history[-1].parts[-1].text
             except Exception as error3:
-                my_log.log_gemini(f'my_gemini:chat: {error3}\nresult: {result}\nchat history: {str(chat.history)}')
+                my_log.log_gemini_lite(f'my_gemini:chat: {error3}\nresult: {result}\nchat history: {str(chat.history)}')
                 result = resp.text
 
             # пытается вызвать функцию неправильно
@@ -209,7 +241,7 @@ def chat(query: str,
                 try:
                     result = chat.history[-1].parts[-1].text = result
                 except Exception as error4:
-                    my_log.log_gemini(f'my_gemini:chat: {error4}\nresult: {result}\nchat history: {str(chat.history)}')
+                    my_log.log_gemini_lite(f'my_gemini:chat: {error4}\nresult: {result}\nchat history: {str(chat.history)}')
 
             result = result.strip()
 
@@ -221,11 +253,11 @@ def chat(query: str,
                     CHATS[chat_id] = mem
                 return result
 
-        my_log.log_gemini(f'my_gemini:chat:no results after 4 tries, query: {query}\n{model}')
+        my_log.log_gemini_lite(f'my_gemini:chat:no results after 4 tries, query: {query}\n{model}')
         return ''
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}\n{model}')
+        my_log.log_gemini_lite(f'my_gemini:chat: {error}\n\n{traceback_error}\n{model}')
         return ''
 
 
@@ -240,6 +272,7 @@ def img2txt(data_: bytes,
             ) -> str:
     '''Convert image to text.
     '''
+    chat_id = str(chat_id)
     for _ in range(4):
         try:
             data = io.BytesIO(data_)
@@ -249,9 +282,9 @@ def img2txt(data_: bytes,
             return res
         except Exception as error:
             traceback_error = traceback.format_exc()
-            my_log.log_gemini(f'my_gemini:img2txt: {error}\n\n{traceback_error}')
+            my_log.log_gemini_lite(f'my_gemini:img2txt: {error}\n\n{traceback_error}')
         time.sleep(2)
-    my_log.log_gemini(f'my_gemini:img2txt 4 tries done and no result')
+    my_log.log_gemini_lite(f'my_gemini:img2txt 4 tries done and no result')
     return ''
 
 
@@ -262,6 +295,7 @@ def ai(q: str,
        tokens_limit: int = 8000,
        chat_id: str = '',
        system: str = '') -> str:
+    chat_id = str(chat_id)
     return chat(q,
                 chat_id=chat_id,
                 temperature=temperature,
@@ -297,7 +331,7 @@ def transform_mem2(mem):
             u = protos.Content(role=x['role'], parts=[protos.Part(text=text)])
             mem_.append(u)
         else:
-            # my_log.log_gemini(f'transform_mem2:debug: {type(x)} {str(x)}')
+            # my_log.log_gemini_lite(f'transform_mem2:debug: {type(x)} {str(x)}')
             if not x.parts[0].text.strip():
                 x.parts[0].text == '...'
             mem_.append(x)
@@ -318,6 +352,8 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
         list: The updated memory object.
     """
     chat_id = ''
+    if isinstance(mem, int):
+        chat_id = str(mem)
     if isinstance(mem, str): # if mem - chat_id
         mem = CHATS[mem] if mem in CHATS else []
         mem = transform_mem2(mem)
@@ -339,6 +375,7 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
 def force(chat_id: str, text: str, model: str = ''):
     '''update last bot answer with given text'''
     try:
+        chat_id = str(chat_id)
         if chat_id in LOCKS:
             lock = LOCKS[chat_id]
         else:
@@ -359,7 +396,7 @@ def force(chat_id: str, text: str, model: str = ''):
                 CHATS[chat_id] = mem
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_gemini(f'Failed to force text in chat {chat_id}: {error}\n\n{error_traceback}\n\n{text}')
+        my_log.log_gemini_lite(f'Failed to force text in chat {chat_id}: {error}\n\n{error_traceback}\n\n{text}')
 
 
 def undo(chat_id: str, model: str = ''):
@@ -377,6 +414,7 @@ def undo(chat_id: str, model: str = ''):
         None
     """
     try:
+        chat_id = str(chat_id)
         if chat_id in LOCKS:
             lock = LOCKS[chat_id]
         else:
@@ -390,7 +428,7 @@ def undo(chat_id: str, model: str = ''):
             CHATS[chat_id] = mem
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_gemini(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
+        my_log.log_gemini_lite(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
 
 
 def reset(chat_id: str, model: str = ''):
@@ -404,6 +442,7 @@ def reset(chat_id: str, model: str = ''):
     Returns:
         None
     """
+    chat_id = str(chat_id)
     mem = []
     CHATS[chat_id] = mem
 
@@ -419,6 +458,7 @@ def get_last_mem(chat_id: str, model: str = '') -> str:
     Returns:
         str:
     """
+    chat_id = str(chat_id)
     mem = CHATS[chat_id] if chat_id in CHATS else []
 
     mem = transform_mem2(mem)
@@ -442,6 +482,7 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     Returns:
         str: The chat history as a string.
     """
+    chat_id = str(chat_id)
     mem = CHATS[chat_id] if chat_id in CHATS else []
 
     mem = transform_mem2(mem)
@@ -569,6 +610,108 @@ def sum_big_text(text:str, query: str, temperature: float = 1) -> str:
     if not r:
         r = ai(query, temperature=temperature, model=cfg.gemini_flash_model_fallback)
     return r
+
+
+########## SKILLS ##########
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
+def search_google(query: str, lang: str = 'ru') -> str:
+    """
+    Searches Google for the given query and returns the search results.
+
+    Args:
+        query: The search query string.
+        lang: The language for the search (defaults to 'ru').
+
+    Returns:
+        A string containing the search results.
+        In case of an error, returns a string 'ERROR' with the error description.
+    """
+    query = decode_string(query)
+    try:
+        r = my_google.search_v3(query, lang)[0]
+        return r
+    except Exception as error:
+        return f'ERROR {error}'
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
+def download_text_from_url(url: str, language: str = 'ru') -> str:
+    '''Download text from url if user asked to.
+    Accept web pages and youtube urls (it can read subtitles)
+    language code is 2 letters code, it is used for youtube subtitle download
+    '''
+    try:
+        result = my_sum.summ_url(url, download_only = True, lang = language)
+        return result[:MAX_REQUEST]
+    except Exception as error:
+        return f'ERROR {error}'
+
+
+def decode_string(s: str) -> str:
+    if isinstance(s, str) and s.count('\\') > 2:
+        try:
+            s = s.replace('\\\\', '\\')
+            s = str(bytes(s, "utf-8").decode("unicode_escape").encode("latin1").decode("utf-8"))
+            return s
+        except Exception as error:
+            return s
+    else:
+        return s
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
+def calc(expression: str) -> str:
+    '''Calculate expression with pythons eval(). Use it for all calculations.
+    Available modules: decimal, math, numbers, numpy, random, datetime.
+    Use only one letter variables.
+    Avoid text in math expressions.
+
+    return str(eval(expression))
+    Examples: calc("56487*8731") -> '493187997'
+              calc("pow(10, 2)") -> '100'
+              calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
+              calc("decimal.Decimal('0.234234')*2") -> '0.468468'
+              calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
+    '''
+    allowed_words = [
+        'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
+        'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
+        'round', 'pow', 'sum', 'min', 'max', 'divmod',
+        'for', 'not', 'in', 'and', 'if', 'or', 'next',
+        'digit',
+
+        'list','tuple','sorted','reverse','True','False',
+
+        'datetime', 'days', 'seconds', 'microseconds', 'milliseconds', 'minutes', 'hours', 'weeks',
+        ]
+    allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(datetime) + dir(datetime.date) + dir(numpy) if not x.startswith('_')]
+    allowed_words = sorted(list(set(allowed_words)))
+    # get all words from expression
+    words = re.findall(r'[^\d\W]+', expression)
+    for word in words:
+        if len(word) == 1:
+            continue
+        if word not in allowed_words:
+            return f'Error: Invalid expression. Forbidden word: {word}'
+    try:
+        expression_ = expression.replace('math.factorial', 'my_factorial')
+        r = str(eval(expression_))
+        return r
+    except Exception as error:
+        return f'Error: {error}'
+
+
+def my_factorial(n: int) -> int:
+    '''Calculate factorial of n.
+    return int(math.factorial(n))
+    '''
+    if n > 1500:
+        raise ValueError('factorial > 1500, too big number')
+    return math.factorial(n)
+
+########## SKILLS ##########
+
 
 
 if __name__ == '__main__':

@@ -158,6 +158,18 @@ def log_gemini_google(text: str) -> None:
     """для логов gemini_google"""
     log2(text[:2000], 'gemini_google')
 
+def log_gemini_lite(text: str) -> None:
+    """для логов gemini lite"""
+    a = [
+        '429 Resource has been exhausted (e.g. check quota)',
+        '503 The model is overloaded. Please try again later.',
+        'no results after 4 tries, query:',
+    ]
+    if any([x for x in a if x in text]):
+        return
+    log2(text[:2000], 'gemini_lite')
+
+
 def log_ddg(text: str) -> None:
     """для логов ddg"""
     log2(text[:2000], 'ddg')

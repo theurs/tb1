@@ -275,7 +275,8 @@ def chat(query: str,
             result = result.strip()
 
             if result:
-                my_db.add_msg(chat_id, model)
+                if chat_id:
+                    my_db.add_msg(chat_id, model)
                 if chat_id and do_not_update_history is False:
                     mem = chat.history[-MAX_CHAT_LINES*2:]
                     while count_chars(mem) > MAX_CHAT_MEM_CHARS:

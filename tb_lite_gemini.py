@@ -38,6 +38,7 @@ USERS = SqliteDict('db/gemini_light_users.db', autocommit=True)
 TRANSLATIONS = SqliteDict('db/gemini_light_translations.db', autocommit=True)
 
 MESSAGE_QUEUE_IMG = {}
+MESSAGE_QUEUE = {}
 
 # кеш для переводов в оперативной памяти
 TRANS_CACHE = my_db.SmartCache()
@@ -1069,10 +1070,33 @@ def del_user(message: telebot.types.Message) -> None:
 
 @async_run
 def echo_all(message: telebot.types.Message):
-    try:
-        message.text = my_log.restore_message_text(message.text, message.entities)
-    except Exception as error:
-        print(f'echo_all:restore_message_text {error}')
+
+    message.text = my_log.restore_message_text(message.text, message.entities)
+    if message.forward_date:
+        message.text = f'forward sender name {message.forward_sender_name or "Noname"}: {message.text}'
+    message.text += '\n\n'
+
+    chat_id_full = message.chat.id
+
+    # catch too long messages
+    if chat_id_full not in MESSAGE_QUEUE:
+        MESSAGE_QUEUE[chat_id_full] = message.text
+        last_state = MESSAGE_QUEUE[chat_id_full]
+        n = 10
+        while n > 0:
+            n -= 1
+            time.sleep(0.1)
+            new_state = MESSAGE_QUEUE[chat_id_full]
+            if last_state != new_state:
+                last_state = new_state
+                n = 10
+        message.text = last_state
+        del MESSAGE_QUEUE[chat_id_full]
+    else:
+        MESSAGE_QUEUE[chat_id_full] += message.text + '\n\n'
+        return
+
+    message.text = message.text.strip()
 
     query = message.text
     chat_id = str(message.chat.id)

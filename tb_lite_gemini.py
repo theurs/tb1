@@ -804,9 +804,12 @@ def image_gen(message: telebot.types.Message):
 
                 medias = []
 
+                bot_addr = f'https://t.me/{bot.get_me().username}'
+                caption = re.sub(r"(\s)\1+", r"\1\1", prompt)[:900]
+                caption = f'{bot_addr} bing.com\n\n' + caption
                 for i in images:
                     if i.startswith('http'):
-                        medias.append(telebot.types.InputMediaPhoto(i))
+                        medias.append(telebot.types.InputMediaPhoto(i, caption=caption))
 
                 if len(medias) > 0:
                     try:
@@ -824,6 +827,19 @@ def image_gen(message: telebot.types.Message):
                         add_to_bots_mem(f'{tr(f"user used /img command to generate", lang)}: {prompt}',
                                             f'/img {prompt}',
                                             chat_id_full)
+
+                    try:
+                        msgs_ids = bot.send_media_group(cfg.pics_group, medias, reply_to_message_id=message.message_id)
+                    except Exception as error:
+                        # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+                        seconds = utils.extract_retry_seconds(str(error))
+                        if seconds:
+                            time.sleep(seconds + 1)
+                            try:
+                                msgs_ids = bot.send_media_group(cfg.pics_group, medias, reply_to_message_id=message.message_id)
+                            except Exception as error2:
+                                print(error2)
+                        
                 else:
                     bot_reply_tr(message, 'Could not draw anything.')
                     add_to_bots_mem(f'{tr(f"user used /img command to generate", lang)} {prompt}',

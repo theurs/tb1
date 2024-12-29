@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-
+import concurrent.futures
 import hashlib
 import io
 import re
+import sys
 import time
 import tempfile
 import threading
@@ -17,6 +18,7 @@ import my_groq
 import my_db
 import md2tgmd
 import my_init
+import my_transcribe
 import my_tts
 import my_stt
 import utils
@@ -29,6 +31,8 @@ bot = telebot.TeleBot(cfg.token_gemini_lite)
 SYSTEMS = SqliteDict('db/gemini_light_systems.db', autocommit=True)
 USERS = SqliteDict('db/gemini_light_users.db', autocommit=True)
 TRANSLATIONS = SqliteDict('db/gemini_light_translations.db', autocommit=True)
+
+MESSAGE_QUEUE_IMG = {}
 
 # кеш для переводов в оперативной памяти
 TRANS_CACHE = my_db.SmartCache()
@@ -357,6 +361,88 @@ def bot_reply(message: telebot.types.Message,
         pass
 
 
+def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
+    """
+    Updates the memory of the selected bot based on the chat mode.
+
+    Args:
+        query: The user's query text.
+        resp: The bot's response.
+        chat_id_full: The full chat ID.
+    """
+    query = query.strip()
+    resp = resp.strip()
+    if not query or not resp:
+        return
+
+    # Updates the memory of the selected bot based on the chat mode.
+    my_gemini_light.update_mem(query, resp, str(chat_id_full))
+
+
+def img2txt(text, lang: str,
+            chat_id_full: str,
+            query: str = '',
+            model: str = '',
+            temperature: float = 1
+            ) -> str:
+    """
+    Generate the text description of an image.
+
+    Args:
+        text (str): The image file URL or downloaded data(bytes).
+        lang (str): The language code for the image description.
+        chat_id_full (str): The full chat ID.
+        model (str): gemini model
+
+    Returns:
+        str: The text description of the image.
+    """
+    if isinstance(text, bytes):
+        data = text
+    else:
+        data = utils.download_image_as_bytes(text)
+
+    original_query = query or tr('Describe in detail what you see in the picture. If there is text, write it out in a separate block. If there is very little text, then write a prompt to generate this image.', lang)
+
+    if not query:
+        query = tr('Describe the image, what do you see here? Extract all text and show it preserving text formatting. Write a prompt to generate the same image - use markdown code with syntax highlighting ```prompt\n/img your prompt in english```', lang)
+    if 'markdown' not in query.lower() and 'latex' not in query.lower():
+        query = query + '\n\n' + my_init.get_img2txt_prompt(tr, lang)
+
+    try:
+        text = ''
+
+        # сначала попробовать с помощью джемини
+        if not text and model:
+            text = my_gemini_light.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
+
+        if not text:
+            text = my_gemini_light.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
+
+        if not text:
+            text = my_gemini_light.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
+
+        # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
+        # передаем эстафету следующему претенденту
+        if len(text) > 2000 and my_transcribe.detect_repetitiveness_with_tail(text):
+            text = ''
+
+        if not text:
+            text = my_gemini_light.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
+
+        if not text:
+            text = my_gemini_light.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
+
+
+    except Exception as img_from_link_error:
+        pass
+
+    if text:
+        add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
+
+    return text
+
+
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
 def send_welcome(message: telebot.types.Message):
@@ -510,245 +596,172 @@ def handle_voice(message: telebot.types.Message):
             echo_all(message)
 
 
-# @bot.message_handler(content_types = ['photo', 'sticker'], func=authorized)
-# @async_run
-# def handle_photo(message: telebot.types.Message):
-#     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография
-#     + много текста в подписи, и пересланные сообщения в том числе"""
+def download_image_from_message(message: telebot.types.Message) -> bytes:
+    '''Download image from message'''
+    try:
+        if message.photo:
+            photo = message.photo[-1]
+            try:
+                file_info = bot.get_file(photo.file_id)
+            except telebot.apihelper.ApiTelegramException as error:
+                if 'file is too big' in str(error):
+                    bot_reply_tr(message, 'Too big file.')
+                    return
+                else:
+                    raise error
+            image = bot.download_file(file_info.file_path)
+        elif message.document:
+            file_id = message.document.file_id
+            try:
+                file_info = bot.get_file(file_id)
+            except telebot.apihelper.ApiTelegramException as error:
+                if 'file is too big' in str(error):
+                    bot_reply_tr(message, 'Too big file.')
+                    return
+                else:
+                    raise error
+            file = bot.download_file(file_info.file_path)
+            fp = io.BytesIO(file)
+            image = fp.read()
+        elif message.sticker:
+            file_id = message.sticker.thumb.file_id
+            try:
+                file_info = bot.get_file(file_id)
+            except telebot.apihelper.ApiTelegramException as error:
+                if 'file is too big' in str(error):
+                    bot_reply_tr(message, 'Too big file.')
+                    return
+                else:
+                    raise error
+            file = bot.download_file(file_info.file_path)
+            fp = io.BytesIO(file)
+            image = fp.read()
 
-#     chat_id_full = message.chat.id
-#     lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
-
-#     # catch groups of images up to 10
-#     if chat_id_full not in MESSAGE_QUEUE_IMG:
-#         MESSAGE_QUEUE_IMG[chat_id_full] = [message,]
-#         last_state = MESSAGE_QUEUE_IMG[chat_id_full]
-#         n = 10
-#         while n > 0:
-#             n -= 1
-#             time.sleep(0.1)
-#             new_state = MESSAGE_QUEUE_IMG[chat_id_full]
-#             if last_state != new_state:
-#                 last_state = new_state
-#                 n = 10
-#     else:
-#         MESSAGE_QUEUE_IMG[chat_id_full].append(message)
-#         return
-
-
-#     if len(MESSAGE_QUEUE_IMG[chat_id_full]) > 1:
-#         MESSAGES = MESSAGE_QUEUE_IMG[chat_id_full]
-#     else:
-#         MESSAGES = [message,]
-#     del MESSAGE_QUEUE_IMG[chat_id_full]
-
-
-#     try:
-#         is_private = message.chat.type == 'private'
-#         supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-#         if supch == 1:
-#             is_private = True
-
-#         msglower = message.caption.lower() if message.caption else ''
-
-#         # if (tr('что', lang) in msglower and len(msglower) < 30) or msglower == '':
-#         if msglower.startswith('?'):
-#             state = 'describe'
-#             message.caption = message.caption[1:]
-
-#         elif 'ocr' in msglower:
-#             state = 'ocr'
-#         elif is_private:
-#             # state = 'translate'
-#             # автопереводом никто не пользуется а вот описание по запросу популярно
-#             state = 'describe'
-#         else:
-#             state = ''
-
-#         bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-#         if not is_private and not state == 'describe':
-#             if not message.caption or not message.caption.startswith('?') or \
-#                 not message.caption.startswith(f'@{_bot_name}') or \
-#                     not message.caption.startswith(bot_name):
-#                 return
-
-#         if is_private:
-#             # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку
-#             if len(MESSAGES) > 1:
-#                 with ShowAction(message, 'typing'):
-#                     images = [download_image_from_message(msg) for msg in MESSAGES]
-#                     if sys.getsizeof(images) > 10 * 1024 *1024:
-#                         bot_reply_tr(message, 'Too big files.')
-#                         return
-#                     try:
-#                         result_image_as_bytes = utils.make_collage(images)
-#                     except Exception as make_collage_error:
-#                         my_log.log2(f'tb:handle_photo: {make_collage_error}')
-#                         bot_reply_tr(message, 'Too big files.')
-#                         return
-#                     if len(result_image_as_bytes) > 10 * 1024 *1024:
-#                         result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
-#                     try:
-#                         m = bot.send_photo( message.chat.id,
-#                                             result_image_as_bytes,
-#                                             disable_notification=True,
-#                                             reply_to_message_id=message.message_id,
-#                                             reply_markup=get_keyboard('hide', message))
-#                         log_message(m)
-#                     except Exception as send_img_error:
-#                         my_log.log2(f'tb:handle_photo: {send_img_error}')
-#                     width, height = utils.get_image_size(result_image_as_bytes)
-#                     if width >= 1280 or height >= 1280:
-#                         try:
-#                             m = bot.send_document(
-#                                 message.chat.id,
-#                                 result_image_as_bytes,
-#                                 # caption='images.jpg',
-#                                 visible_file_name='images.jpg',
-#                                 disable_notification=True,
-#                                 reply_to_message_id=message.message_id,
-#                                 reply_markup=get_keyboard('hide', message)
-#                                 )
-#                             log_message(m)
-#                         except Exception as send_doc_error:
-#                             my_log.log2(f'tb:handle_photo: {send_doc_error}')
-#                     my_log.log_echo(message, f'Made collage of {len(images)} images.')
-#                     if not message.caption:
-#                         proccess_image(chat_id_full, result_image_as_bytes, message)
-#                         return
-#                     text = img2txt(result_image_as_bytes, lang, chat_id_full, message.caption)
-#                     if text:
-#                         text = utils.bot_markdown_to_html(text)
-#                         # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-#                         bot_reply(message, text, parse_mode='HTML',
-#                                             reply_markup=get_keyboard('translate', message),
-#                                             disable_web_page_preview=True)
-#                     else:
-#                         bot_reply_tr(message, 'Sorry, I could not answer your question.')
-#                     return
+        h,w = utils.get_image_size(image)
+        if h > 5000 or w > 5000:
+            return b''
+        return utils.heic2jpg(image)
+    except Exception as error:
+        return b''
 
 
-#         if chat_id_full in IMG_LOCKS:
-#             lock = IMG_LOCKS[chat_id_full]
-#         else:
-#             lock = threading.Lock()
-#             IMG_LOCKS[chat_id_full] = lock
+def download_image_from_messages(MESSAGES: list) -> list:
+    '''Download images from message list'''
+    images = []
 
-#         # если юзер хочет найти что то по картинке
-#         if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'google':
-#             with ShowAction(message, 'typing'):
-#                 image = download_image_from_message(message)
-#                 query = tr('The user wants to find something on Google, but he sent a picture as a query. Try to understand what he wanted to find and write one sentence that should be used in Google to search to fillfull his intention. Write just one sentence and I will submit it to Google, no extra words please.', lang)
-#                 google_query = img2txt(image, lang, chat_id_full, query)
-#             if google_query:
-#                 message.text = f'/google {google_query}'
-#                 bot_reply(message, tr('Googling:', lang) + f' {google_query}')
-#                 google(message)
-#             else:
-#                 bot_reply_tr(message, 'No results.', lang)
-#             return
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        results = [executor.submit(download_image_from_message, message) for message in MESSAGES]
+        for f in concurrent.futures.as_completed(results):
+            images.append(f.result())
 
-#         with lock:
-#             with semaphore_talks:
-#                 # распознаем что на картинке с помощью гугл джемини
-#                 if state == 'describe':
-#                     with ShowAction(message, 'typing'):
-#                         image = download_image_from_message(message)
-#                         if len(image) > 10 * 1024 *1024:
-#                             image = utils.resize_image(image, 10 * 1024 *1024)
-#                         if not image:
-#                             my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
-#                             return
+    return images
 
-#                         image = utils.heic2jpg(image)
-#                         if not message.caption:
-#                             proccess_image(chat_id_full, image, message)
-#                             return
-#                         # грязный хак, для решения задач надо использовать мощную модель
-#                         if 'реши' in message.caption.lower() or 'solve' in message.caption.lower():
-#                             # text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.gemini_exp_model)
-#                             text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.gemini_2_flash_thinking_exp_model)
-#                         else:
-#                             text = img2txt(image, lang, chat_id_full, message.caption)
-#                         if text:
-#                             text = utils.bot_markdown_to_html(text)
-#                             # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-#                             bot_reply(message, text, parse_mode='HTML',
-#                                                 reply_markup=get_keyboard('translate', message),
-#                                                 disable_web_page_preview=True)
-#                         else:
-#                             bot_reply_tr(message, 'Sorry, I could not answer your question.')
-#                     return
-#                 elif state == 'ocr':
-#                     with ShowAction(message, 'typing'):
-#                         if message.photo:
-#                             photo = message.photo[-1]
-#                             try:
-#                                 file_info = bot.get_file(photo.file_id)
-#                             except telebot.apihelper.ApiTelegramException as error:
-#                                 if 'file is too big' in str(error):
-#                                     bot_reply_tr(message, 'Too big file.')
-#                                     return
-#                                 else:
-#                                     raise error
-#                             image = bot.download_file(file_info.file_path)
-#                         elif message.document:
-#                             # скачиваем документ в байтовый поток
-#                             file_id = message.document.file_id
-#                             try:
-#                                 file_info = bot.get_file(file_id)
-#                             except telebot.apihelper.ApiTelegramException as error:
-#                                 if 'file is too big' in str(error):
-#                                     bot_reply_tr(message, 'Too big file.')
-#                                     return
-#                                 else:
-#                                     raise error
-#                             file = bot.download_file(file_info.file_path)
-#                             fp = io.BytesIO(file)
-#                             image = fp.read()
-#                         else:
-#                             my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
-#                             return
 
-#                         image = utils.heic2jpg(image)
-#                         # распознаем текст на фотографии с помощью pytesseract
-#                         llang = get_ocr_language(message)
-#                         if message.caption.strip()[3:]:
-#                             llang = message.caption.strip()[3:].strip()
-#                         text = my_ocr.get_text_from_image(image, llang)
-#                         # отправляем распознанный текст пользователю
-#                         if text.strip() != '':
-#                             bot_reply(message, text, parse_mode='',
-#                                                 reply_markup=get_keyboard('translate', message),
-#                                                 disable_web_page_preview = True)
+@bot.message_handler(content_types = ['photo', 'sticker'], func=authorized)
+@async_run
+def handle_photo(message: telebot.types.Message):
+    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография
+    + много текста в подписи, и пересланные сообщения в том числе"""
 
-#                             text = text[:8000]
-#                             add_to_bots_mem(f'{tr("юзер попросил распознать текст с картинки", lang)}',
-#                                                 f'{tr("бот распознал текст и ответил:", lang)} {text}',
-#                                                 chat_id_full)
+    chat_id_full = message.chat.id
+    lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
 
-#                         else:
-#                             bot_reply_tr(message, '[OCR] no results')
-#                     return
-#                 elif state == 'translate':
-#                     # пересланные сообщения пытаемся перевести даже если в них картинка
-#                     # новости в телеграме часто делают как картинка + длинная подпись к ней
-#                     if message.forward_from_chat and message.caption:
-#                         # у фотографий нет текста но есть заголовок caption. его и будем переводить
-#                         with ShowAction(message, 'typing'):
-#                             text = my_trans.translate(message.caption)
-#                         if text:
-#                             bot_reply(message, text)
-#                         else:
-#                             my_log.log_echo(message, "Не удалось/понадобилось перевести.")
-#                         return
-#     except Exception as error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:handle_photo: {error}\n{traceback_error}')
+    # catch groups of images up to 10
+    if chat_id_full not in MESSAGE_QUEUE_IMG:
+        MESSAGE_QUEUE_IMG[chat_id_full] = [message,]
+        last_state = MESSAGE_QUEUE_IMG[chat_id_full]
+        n = 10
+        while n > 0:
+            n -= 1
+            time.sleep(0.1)
+            new_state = MESSAGE_QUEUE_IMG[chat_id_full]
+            if last_state != new_state:
+                last_state = new_state
+                n = 10
+    else:
+        MESSAGE_QUEUE_IMG[chat_id_full].append(message)
+        return
+
+    if len(MESSAGE_QUEUE_IMG[chat_id_full]) > 1:
+        MESSAGES = MESSAGE_QUEUE_IMG[chat_id_full]
+    else:
+        MESSAGES = [message,]
+    del MESSAGE_QUEUE_IMG[chat_id_full]
+
+    try:
+        # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку
+        if len(MESSAGES) > 1:
+            with ShowAction(message, 'typing'):
+                images = [download_image_from_message(msg) for msg in MESSAGES]
+                if sys.getsizeof(images) > 10 * 1024 *1024:
+                    bot_reply_tr(message, 'Too big files.')
+                    return
+                try:
+                    result_image_as_bytes = utils.make_collage(images)
+                except Exception as make_collage_error:
+                    bot_reply_tr(message, 'Too big files.')
+                    return
+                if len(result_image_as_bytes) > 10 * 1024 *1024:
+                    result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
+                try:
+                    m = bot.send_photo( message.chat.id,
+                                        result_image_as_bytes,
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message))
+                except Exception as send_img_error:
+                    pass
+                width, height = utils.get_image_size(result_image_as_bytes)
+                if width >= 1280 or height >= 1280:
+                    try:
+                        m = bot.send_document(
+                            message.chat.id,
+                            result_image_as_bytes,
+                            # caption='images.jpg',
+                            visible_file_name='images.jpg',
+                            disable_notification=True,
+                            reply_to_message_id=message.message_id,
+                            reply_markup=get_keyboard('hide', message)
+                            )
+                    except Exception as send_doc_error:
+                        pass
+
+                text = img2txt(result_image_as_bytes, lang, chat_id_full, message.caption)
+                if text:
+                    text = utils.bot_markdown_to_html(text)
+                    bot_reply(message, text, parse_mode='HTML',
+                                        disable_web_page_preview=True)
+                else:
+                    bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                return
+
+        # распознаем что на картинке с помощью гугл джемини
+        with ShowAction(message, 'typing'):
+            image = download_image_from_message(message)
+            if len(image) > 10 * 1024 *1024:
+                image = utils.resize_image(image, 10 * 1024 *1024)
+            if not image:
+                return
+
+            image = utils.heic2jpg(image)
+            text = img2txt(image, lang, chat_id_full, message.caption)
+
+            if text:
+                text = utils.bot_markdown_to_html(text)
+
+                bot_reply(message, text, parse_mode='HTML',
+                                    disable_web_page_preview=True)
+            else:
+                bot_reply_tr(message, 'Sorry, I could not answer your question.')
+        return
+    except Exception as error:
+        pass
 
 
 # Обработчик текстовых сообщений (асинхронный)
 @bot.message_handler(func=authorized)
+
+
 @async_run
 def echo_all(message: telebot.types.Message):
     query = message.text
@@ -766,6 +779,7 @@ def echo_all(message: telebot.types.Message):
             )
 
 
-my_groq.load_users_keys()
-# Запуск бота
-bot.infinity_polling(timeout=90, long_polling_timeout=90)
+if __name__ == '__main__':
+    my_groq.load_users_keys()
+    # Запуск бота
+    bot.infinity_polling(timeout=90, long_polling_timeout=90)

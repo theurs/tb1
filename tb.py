@@ -2622,7 +2622,7 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
             image = fp.read()
 
         h,w = utils.get_image_size(image)
-        if w > 5000 or w > 5000:
+        if h > 5000 or w > 5000:
             my_log.log2(f'tb:download_image_from_message: too big image {h}x{w}')
             return b''
         return utils.heic2jpg(image)

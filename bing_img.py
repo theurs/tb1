@@ -35,7 +35,7 @@ def get_images_v2(prompt: str,
     try:
         results = sync_gen.get_images(prompt)
     except Exception as error:
-        if 'Your prompt has been rejected' in str(error):
+        if 'Bad images' in str(error):
             BAD_IMAGES_PROMPT[prompt] = True
         my_log.log_bing_img(f'get_images_v2: {error} \n\n {u_cookie} \n\nPrompt: {prompt}')
 

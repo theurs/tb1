@@ -9,7 +9,6 @@ from duckduckgo_search import DDGS
 import telebot
 
 import cfg
-import my_md
 import utils
 
 

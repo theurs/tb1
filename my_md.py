@@ -2,12 +2,17 @@
 # pip install -U markdown2
 
 
-import markdown2
+import telegramify_markdown
+from telegramify_markdown import customize
 
 
-def md2html(text: str) -> str:
-    return markdown2.markdown(text)
-
+def md2md(text: str) -> str:
+    converted = telegramify_markdown.markdownify(
+        text,
+        max_line_length=None,  # If you want to change the max line length for links, images, set it to the desired value.
+        normalize_whitespace=False,
+        )
+    return converted
 
 
 if __name__ == '__main__':
@@ -30,5 +35,5 @@ if __name__ == '__main__':
 
 """
 
-    r = md2html(markdown_text)
+    r = md2md(markdown_text)
     print(r)

@@ -77,6 +77,11 @@ START_TIME = time.time()
 # устанавливаем рабочую папку = папке в которой скрипт лежит
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
+
+# API для доступа к функциям бота (бинг в основном)
+FLASK_APP = Flask(__name__)
+
+
 bot = telebot.TeleBot(cfg.token)
 # bot = telebot.TeleBot(cfg.token, skip_pending=True)
 
@@ -7400,9 +7405,6 @@ def one_time_shot():
         my_log.log2(f'tb:one_time_shot: {error}\n{traceback_error}')
 
 
-FLASK_APP = Flask(__name__)
-
-
 @FLASK_APP.route('/bing', methods=['POST'])
 def bing_api_post() -> Dict[str, Any]:
     """
@@ -7430,6 +7432,7 @@ def bing_api_post() -> Dict[str, Any]:
         return jsonify({"urls": image_urls}), 200
 
     except Exception as e:
+        my_log.log_bing_api(f'tb:bing_api_post: {e}')
         return jsonify({"error": str(e)}), 500
 
 
@@ -7438,7 +7441,7 @@ def run_flask(addr: str ='0.0.0.0', port: int = 58796):
     try:
         FLASK_APP.run(debug=True, use_reloader=False, host=addr, port = port)
     except Exception as error:
-        my_log.log2(f'tb:run_flask: {error}')
+        my_log.log_bing_api(f'tb:run_flask: {error}')
 
 
 def main():

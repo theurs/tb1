@@ -183,7 +183,7 @@ def echo_all(message):
         html = utils.bot_markdown_to_html(response)
         chunks = utils.split_html(html, 3800)
         for chunk in chunks:
-            bot.reply_to(message, chunk, parse_mode='HTML')
+            bot.reply_to(message, chunk, parse_mode='HTML', disable_web_page_preview=True)
 
 
 # Запуск бота

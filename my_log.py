@@ -110,6 +110,11 @@ def log2(text: str, fname: str = '') -> None:
         trancate_log_file(log_file_path)
 
 
+def log_bing_api(text: str) -> None:
+    """для логов bingapi"""
+    log2(text, 'bing_api')
+
+
 def log_reprompts(text: str) -> None:
     """для логов переводов промптов для рисования"""
     log2(text, 'reprompts')

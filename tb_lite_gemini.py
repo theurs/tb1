@@ -3,7 +3,9 @@
 
 import hashlib
 import io
+import re
 import time
+import tempfile
 import threading
 
 import telebot
@@ -11,8 +13,12 @@ from sqlitedict import SqliteDict
 
 import cfg
 import my_gemini_light
+import my_groq
 import my_db
+import md2tgmd
+import my_init
 import my_tts
+import my_stt
 import utils
 from utils import async_run
 
@@ -363,6 +369,147 @@ def show_id(message: telebot.types.Message):
     bot.reply_to(message, message.from_user.id)
 
 
+@bot.message_handler(commands=['tts'], func=authorized)
+@async_run
+def tts(message: telebot.types.Message, caption = None):
+    """ /tts [ru|en|uk|...] [+-XX%] <текст>
+        /tts <URL>
+    """
+
+    lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
+
+    pattern = r'/tts\s+((?P<lang>' + '|'.join(my_init.supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
+    match = re.match(pattern, message.text, re.DOTALL)
+    if match:
+        llang = match.group("lang") or ''
+        rate = match.group("rate") or '+0%'  # If rate is not specified, then by default '+0%'
+        text = match.group("text") or ''
+    else:
+        text = llang = rate = ''
+    if llang:
+        llang = llang.strip()
+    if llang == 'ua':
+        llang = 'uk'
+    if llang == 'eo':
+        llang = 'de'
+    rate = rate.strip()
+
+    if not llang:
+        llang = lang or 'de'
+        # # check if message have any letters
+        # if sum(1 for char in text if char.isalpha()) > 1:
+        #     # 'de' - universal multilang voice
+        #     llang = 'de'
+        # else: # no any letters in string, use default user language if any
+        #     llang = lang or 'de'
+
+    if not text or llang not in my_init.supported_langs_tts:
+        help = f"""{tr('Usage:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('text to speech', lang)}>|<URL>
+
++-XX% - {tr('acceleration with mandatory indication of direction + or -', lang)}
+
+/tts hello all
+/tts en hello, let me speak -  {tr('force english', lang)}
+/tts en +50% Hello at a speed of 1.5x - {tr('force english and speed', lang)}
+/tts en12 Tell me your name. - {tr('12th english voice - "en-KE-Chilemba" or "en-KE-Asilia"', lang)}
+
+{tr('''en, en2, de and fr voices are multilingual, you can use them to change voice for any language
+(/tts ru привет) and (/tts fr привет) will say hello in russian with 2 different voices''', lang)}
+
+{tr('Supported languages:', lang)} https://telegra.ph/Golosa-dlya-TTS-06-29
+
+{tr('Write what to say to get a voice message.', lang)}
+"""
+
+        bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2',
+                  reply_markup=get_keyboard('command_mode', message),
+                  disable_web_page_preview = True)
+        return
+
+    with ShowAction(message, 'record_audio'):
+        gender = 'female'
+
+        # Microsoft do not support Latin
+        if llang == 'la' and (gender=='female' or gender=='male'):
+            gender = 'google_female'
+            bot_reply_tr(message, "Microsoft TTS cannot pronounce text in Latin language, switching to Google TTS.")
+
+        if gender == 'google_female':
+            #remove numbers from llang
+            llang = re.sub(r'\d+', '', llang)
+        audio = my_tts.tts(text, llang, rate, gender=gender)
+        if not audio and llang != 'de':
+            audio = my_tts.tts(text, 'de', rate, gender=gender)
+        if audio:
+            m = bot.send_voice(message.chat.id, audio, caption=caption)
+        else:
+            bot_reply_tr(message, 'Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.')
+
+
+@bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)
+@async_run
+def handle_voice(message: telebot.types.Message):
+    """Автоматическое распознавание текст из голосовых сообщений и аудио файлов"""
+    chat_id_full = message.chat.id
+    lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
+
+    # Скачиваем аудиофайл во временный файл
+    try:
+        if message.voice:
+            file_info = bot.get_file(message.voice.file_id)
+        elif message.audio:
+            file_info = bot.get_file(message.audio.file_id)
+        elif message.video:
+            file_info = bot.get_file(message.video.file_id)
+        elif message.video_note:
+            file_info = bot.get_file(message.video_note.file_id)
+        elif message.document:
+            file_info = bot.get_file(message.document.file_id)
+        else:
+            bot_reply_tr(message, 'Unknown message type')
+    except telebot.apihelper.ApiTelegramException as error:
+        if 'file is too big' in str(error):
+            bot_reply_tr(message, 'Too big file.')
+            return
+        else:
+            raise error
+
+    # Создание временного файла
+    with tempfile.NamedTemporaryFile(delete=True) as temp_file:
+        file_path = temp_file.name + (utils.get_file_ext(file_info.file_path) or 'unknown')
+
+    downloaded_file = bot.download_file(file_info.file_path)
+    with open(file_path, 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+    # Распознаем текст из аудио
+    action = 'typing'
+    with ShowAction(message, action):
+        try:
+            prompt = ''
+            text = my_stt.stt(file_path, lang, chat_id_full, prompt)
+        except Exception as error_stt:
+            text = ''
+
+        utils.remove_file(file_path)
+
+        text = text.strip()
+        # Отправляем распознанный текст
+        if text:
+            bot_reply(message, utils.bot_markdown_to_html(text),
+                    parse_mode='HTML')
+        else:
+            bot_reply_tr(message, 'Failed to transcribe audio.')
+
+        # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
+        if text:
+            if message.caption:
+                message.text = f'{message.caption}\n\n{tr("Audio message transcribed:", lang)}\n\n{text}'
+            else:
+                message.text = text
+            echo_all(message)
+
+
 # @bot.message_handler(content_types = ['photo', 'sticker'], func=authorized)
 # @async_run
 # def handle_photo(message: telebot.types.Message):
@@ -619,5 +766,6 @@ def echo_all(message: telebot.types.Message):
             )
 
 
+my_groq.load_users_keys()
 # Запуск бота
 bot.infinity_polling(timeout=90, long_polling_timeout=90)

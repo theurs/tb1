@@ -779,7 +779,7 @@ def image_gen(message: telebot.types.Message):
 """
         prompt = message.text.split(maxsplit = 1)
 
-        if len(prompt) > 3:
+        if len(prompt) > 1:
             prompt = prompt[1].strip()
 
             if prompt == tr('Продолжай', lang):

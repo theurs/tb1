@@ -353,8 +353,9 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
     """
     chat_id = ''
     if isinstance(mem, int):
-        chat_id = str(mem)
+        mem = str(mem)
     if isinstance(mem, str): # if mem - chat_id
+        chat_id = mem
         mem = CHATS[mem] if mem in CHATS else []
         mem = transform_mem2(mem)
 

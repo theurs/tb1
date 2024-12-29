@@ -392,7 +392,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         return
 
     # Updates the memory of the selected bot based on the chat mode.
-    my_gemini_light.update_mem(query, resp, str(chat_id_full))
+    my_gemini_light.update_mem(query, resp, chat_id_full)
 
 
 def img2txt(text, lang: str,

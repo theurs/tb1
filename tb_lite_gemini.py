@@ -294,9 +294,9 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                             link_preview_options=preview, reply_markup=reply_markup)
             except Exception as error:
                 if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
-                    pass
+                    print(error)
                 else:
-                    pass
+                    print(error)
                 if parse_mode == 'HTML':
                     chunk = utils.html.unescape(chunk)
                     chunk = chunk.replace('<b>', '')
@@ -360,7 +360,7 @@ def bot_reply(message: telebot.types.Message,
                             reply_markup=reply_markup, allow_voice=allow_voice)
     except Exception as unknown:
         # my_log.log2(f'tb:bot_reply: {unknown}')
-        pass
+        print(f'tb:bot_reply: {unknown}')
 
 
 def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
@@ -437,7 +437,7 @@ def img2txt(text, lang: str,
 
 
     except Exception as img_from_link_error:
-        pass
+        print(f'tb:img2txt: {img_from_link_error}')
 
     if text:
         add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
@@ -818,7 +818,7 @@ def image_gen(message: telebot.types.Message):
                             try:
                                 msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
                             except Exception as error2:
-                                pass
+                                print(error2)
 
                         add_to_bots_mem(f'{tr(f"user used /img command to generate", lang)}: {prompt}',
                                             f'/img {prompt}',
@@ -831,7 +831,7 @@ def image_gen(message: telebot.types.Message):
         else:
             bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2')
     except Exception as error_unknown:
-        pass
+        print(error_unknown)
 
 
 # Обработчик текстовых сообщений (асинхронный)

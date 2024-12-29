@@ -602,7 +602,7 @@ def img2txt(text, lang: str,
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:img2txt: {img_from_link_error}\n\n{traceback_error}')
 
-    if text:
+    if text and 'gemini' not in chat_mode:
         add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
 
     if chat_id_full in WHO_ANSWERED:

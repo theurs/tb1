@@ -30,58 +30,58 @@ DAEMON_RUN = True
 DAEMON_TIME = 30
 
 
-# # Serialize and compress an object
-# def obj_to_blob(obj):
-#     if obj is None:
-#         return None
-#     else:
-#         try:
-#             return lzma.compress(pickle.dumps(obj))
-#         except Exception as error:
-#             my_log.log2(f'my_db:obj_to_blob {error}')
-#             return None
-
-
-# # De-serialize and decompress an object
-# def blob_to_obj(blob):
-#     if blob:
-#         try:
-#             return pickle.loads(lzma.decompress(blob))
-#         except Exception as error:
-#             my_log.log2(f'my_db:blob_to_obj {error}')
-#             return None
-#     else:
-#         return None
-
-
-# Serialize an object without compression
+# Serialize and compress an object
 def obj_to_blob(obj):
     if obj is None:
         return None
     else:
         try:
-            return pickle.dumps(obj)
+            return lzma.compress(pickle.dumps(obj))
         except Exception as error:
             my_log.log2(f'my_db:obj_to_blob {error}')
             return None
 
 
-# De-serialize an object, detecting and decompressing if necessary
+# De-serialize and decompress an object
 def blob_to_obj(blob):
     if blob:
         try:
-            # Try to decompress using lzma first
-            try:
-                decompressed_blob = lzma.decompress(blob)
-                return pickle.loads(decompressed_blob)
-            except lzma.LZMAError:
-                # If lzma decompression fails, try without decompression
-                return pickle.loads(blob)
+            return pickle.loads(lzma.decompress(blob))
         except Exception as error:
             my_log.log2(f'my_db:blob_to_obj {error}')
             return None
     else:
         return None
+
+
+# # Serialize an object without compression
+# def obj_to_blob(obj):
+#     if obj is None:
+#         return None
+#     else:
+#         try:
+#             return pickle.dumps(obj)
+#         except Exception as error:
+#             my_log.log2(f'my_db:obj_to_blob {error}')
+#             return None
+
+
+# # De-serialize an object, detecting and decompressing if necessary
+# def blob_to_obj(blob):
+#     if blob:
+#         try:
+#             # Try to decompress using lzma first
+#             try:
+#                 decompressed_blob = lzma.decompress(blob)
+#                 return pickle.loads(decompressed_blob)
+#             except lzma.LZMAError:
+#                 # If lzma decompression fails, try without decompression
+#                 return pickle.loads(blob)
+#         except Exception as error:
+#             my_log.log2(f'my_db:blob_to_obj {error}')
+#             return None
+#     else:
+#         return None
 
 
 class SmartCache:

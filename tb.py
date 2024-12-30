@@ -404,6 +404,8 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
 
     if not translated:
         translated = text
+        TRANS_CACHE.set(cache_key_hash, translated)
+        return text
 
     TRANS_CACHE.set(cache_key_hash, translated)
     if save_cache:

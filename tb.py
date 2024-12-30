@@ -363,8 +363,8 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
     Returns:
         The translated text.
     """
-    if lang == 'fa':
-        lang = 'en'
+    # if lang == 'fa':
+    #     lang = 'en'
     if lang == 'ua':
         lang = 'uk'
 
@@ -374,6 +374,9 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
     if translated:
         return translated
 
+    if not help:
+        help = 'its a gui message in telegram bot, keep it same format and average size to fit gui'
+
     translated = my_db.get_translation(text, lang, help)
     if translated:
         TRANS_CACHE.set(cache_key_hash, translated)
@@ -381,14 +384,22 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
 
     translated = ''
 
-    if help:
+    # if help:
+    #     translated = my_groq.translate(text, to_lang=lang, help=help)
+    #     if not translated:
+    #         # time.sleep(1)
+    #         # try again and another ai engine
+    #         translated = my_gemini.translate(text, to_lang=lang, help=help, censored=True)
+    #         if not translated:
+    #             my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
+
+    translated = my_gemini.translate(text, to_lang=lang, help=help, censored=True)
+    if not translated:
+        # time.sleep(1)
+        # try again and another ai engine
         translated = my_groq.translate(text, to_lang=lang, help=help)
         if not translated:
-            # time.sleep(1)
-            # try again and another ai engine
-            translated = my_gemini.translate(text, to_lang=lang, help=help)
-            if not translated:
-                my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
+            my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
 
     if not translated:
         translated = my_trans.translate_text2(text, lang)
@@ -3227,7 +3238,7 @@ def translation_gui(message: telebot.types.Message):
                     # translated = key[3]
 
                     if not new_translation:
-                        new_translation = my_gemini.translate(original, to_lang = lang, help = help)
+                        new_translation = my_gemini.translate(original, to_lang = lang, help = help, censored=True)
                     if not new_translation:
                         new_translation = my_groq.translate(original, to_lang = lang, help = help)
                         my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)

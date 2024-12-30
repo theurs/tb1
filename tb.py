@@ -7218,7 +7218,7 @@ def do_task(message, custom_prompt: str = ''):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                           reply_markup=get_keyboard('grok_chat', message), not_log=True, allow_voice = True)
-                                
+
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
@@ -7392,8 +7392,9 @@ def one_time_shot():
             pass
 
             queries = [
-                 '''ALTER TABLE users DROP COLUMN dialog_shadow;''',
-                 '''ALTER TABLE users DROP COLUMN dialog_gpt4omini;''',
+                #  '''ALTER TABLE users DROP COLUMN dialog_shadow;''',
+                #  '''ALTER TABLE users DROP COLUMN dialog_gpt4omini;''',
+                '''DELETE FROM translations;''',
                  ]
             for q in queries:
                 try:

@@ -2959,7 +2959,7 @@ def model(message: telebot.types.Message):
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:model:{error}\n\n{error_tr}')
-    bot_reply_tr(message, f'Usage: /model model_name see models at https://openrouter.ai/docs#models', disable_web_page_preview=True)
+    bot_reply_tr(message, f'Usage: /model model_name see models at https://openrouter.ai/models', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['maxhistlines',], func=authorized_owner)
@@ -3166,7 +3166,7 @@ def openrouter(message: telebot.types.Message):
                 msg += f'{tr("Model price:", lang)} in {my_db.get_user_property(chat_id_full, "openrouter_in_price") or 0}{currency} / out {my_db.get_user_property(chat_id_full, "openrouter_out_price") or 0}{currency} /model_price'
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
             msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
-            msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/docs#models or https://bothub.chat/models
+            msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/models or https://bothub.chat/models
 /list_models - show all models scanned
 /temp <temperature> - 0.1 ... 2.0
 /maxtokens <max_tokens> - maximum response size, see model details

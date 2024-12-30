@@ -3284,8 +3284,8 @@ def create_translations_for_all_languages():
         # Переводим на все поддерживаемые языки
         for target_lang in my_init.top_20_used_languages:
             try:
-                tr(original, target_lang, help=help_text, save_cache=True)
-                my_log.log_translate(f'Translated: {original} to {target_lang}')
+                translated = tr(original, target_lang, help=help_text, save_cache=True)
+                my_log.log_translate(f'{target_lang}\n\n{original}\n\n{translated}')
             except Exception as error:
                 my_log.log_translate(f'Failed to translate: {original} to {target_lang}. Error: {str(error)}')
 

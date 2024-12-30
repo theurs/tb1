@@ -368,14 +368,14 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
     if lang == 'ua':
         lang = 'uk'
 
+    if not help:
+        help = 'its a gui message in telegram bot, keep it same format and average size to fit gui'
+
     cache_key = (text, lang, help)
     cache_key_hash = hashlib.md5(str(cache_key).encode()).hexdigest()
     translated = TRANS_CACHE.get(cache_key_hash)
     if translated:
         return translated
-
-    if not help:
-        help = 'its a gui message in telegram bot, keep it same format and average size to fit gui'
 
     translated = my_db.get_translation(text, lang, help)
     if translated:

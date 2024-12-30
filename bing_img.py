@@ -52,8 +52,10 @@ def get_images_v2(prompt: str,
     except Exception as error:
         my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
         if 'Bad images' in str(error) or \
-            'Your prompt is being reviewed by Bing. Try to change any sensitive words and try again.' in str(error):
+            'Your prompt is being reviewed by Bing. Try to change any sensitive words and try again.' in str(error) or \
+            'Your prompt has been blocked by Bing. Try to change any bad words and try again' in str(error):
             BAD_IMAGES_PROMPT[prompt] = True
+            return [str(error),]
         elif 'Image create failed pls check cookie or old image still creating' in str(error):
             time.sleep(10)
             try:

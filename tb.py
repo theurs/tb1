@@ -4759,6 +4759,8 @@ def image_gen(message: telebot.types.Message):
                                     return
                                 if 'https://r.bing.com' in i:
                                     continue
+                                if not has_good_images and not i.startswith('https://'):
+                                    bot_reply_tr(message, i)
 
                             d = None
                             bot_addr = f'https://t.me/{_bot_name}'

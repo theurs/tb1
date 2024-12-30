@@ -1634,11 +1634,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             msg = 'Haiku'
         button_haiku = telebot.types.InlineKeyboardButton(msg, callback_data='select_haiku')
 
-        # if chat_mode == 'glm4plus':
-        #     msg = '✅ GLM 4 PLUS'
-        # else:
-        #     msg = 'GLM 4 PLUS'
-        # button_glm4plus = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
+        if chat_mode == 'glm4plus':
+            msg = '✅ GLM 4 PLUS'
+        else:
+            msg = 'GLM 4 PLUS'
+        button_glm4plus = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
 
         if chat_mode == 'gemini-exp':
             msg = '✅ Gemini exp'
@@ -1697,8 +1697,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
         markup.row(button_commandrplus, button_qwen2_72b)
 
-        if chat_id_full in my_openrouter.KEYS:
-            markup.row(button_openrouter)
+        if hasattr(cfg, 'GLM4_KEYS'):
+            if chat_id_full in my_openrouter.KEYS:
+                markup.row(button_glm4plus, button_openrouter)
+            else:
+                markup.row(button_glm4plus)
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -5914,7 +5917,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'grok': my_grok.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
             'bothub': 'bothub.chat',
-            'glm4plus': 'GLM 4 PLUS',
+            'glm4plus': my_glm.DEFAULT_MODEL,
             'haiku': 'Claude 3 Haiku',
             'gpt35': 'GPT 3.5',
             'gpt-4o-mini-ddg': 'GPT 4o mini',

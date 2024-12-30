@@ -102,8 +102,8 @@ def backup_db():
                     if not chunk:
                         break
                     compressor.write(chunk)
-
-                compressor.flush()
+                # Завершение сжатия
+                compressor.flush(zstandard.FLUSH_FRAME)  # Используем FLUSH_FRAME для корректного завершения
     except Exception as error:
         my_log.log2(f'my_db:compress_backup_db {error}')
 

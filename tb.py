@@ -3522,6 +3522,8 @@ def change_mode(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
+    COMMAND_MODE[chat_id_full] = ''
+
     DEFAULT_ROLES = [
         tr('отвечай коротко', lang),
         tr('отвечай максимально развернуто', lang),

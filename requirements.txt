@@ -83,3 +83,5 @@ webvtt-py
 wikipedia
 
 zhipuai
+
+zstandard

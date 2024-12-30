@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-import cachetools.func
+# import cachetools.func
 import datetime
-import gzip
 import hashlib
 import lzma
 import os
@@ -15,8 +14,8 @@ import sqlite3
 import sys
 from typing import List
 
+import zstandard
 from collections import OrderedDict
-
 from cachetools import LRUCache
 
 import my_log
@@ -31,23 +30,53 @@ DAEMON_RUN = True
 DAEMON_TIME = 30
 
 
-# Serialize and compress an object
+# # Serialize and compress an object
+# def obj_to_blob(obj):
+#     if obj is None:
+#         return None
+#     else:
+#         try:
+#             return lzma.compress(pickle.dumps(obj))
+#         except Exception as error:
+#             my_log.log2(f'my_db:obj_to_blob {error}')
+#             return None
+
+
+# # De-serialize and decompress an object
+# def blob_to_obj(blob):
+#     if blob:
+#         try:
+#             return pickle.loads(lzma.decompress(blob))
+#         except Exception as error:
+#             my_log.log2(f'my_db:blob_to_obj {error}')
+#             return None
+#     else:
+#         return None
+
+
+# Serialize an object without compression
 def obj_to_blob(obj):
     if obj is None:
         return None
     else:
         try:
-            return lzma.compress(pickle.dumps(obj))
+            return pickle.dumps(obj)
         except Exception as error:
             my_log.log2(f'my_db:obj_to_blob {error}')
             return None
 
 
-# De-serialize and decompress an object
+# De-serialize an object, detecting and decompressing if necessary
 def blob_to_obj(blob):
     if blob:
         try:
-            return pickle.loads(lzma.decompress(blob))
+            # Try to decompress using lzma first
+            try:
+                decompressed_blob = lzma.decompress(blob)
+                return pickle.loads(decompressed_blob)
+            except lzma.LZMAError:
+                # If lzma decompression fails, try without decompression
+                return pickle.loads(blob)
         except Exception as error:
             my_log.log2(f'my_db:blob_to_obj {error}')
             return None
@@ -84,15 +113,32 @@ class SmartCache:
 USERS_CACHE = SmartCache()
 
 
+# def backup_db():
+#     try:
+#         # if exists db/main.db.gz move to db/main.db.gz.1 and copy
+#         if os.path.exists('db/main.db.gz'):
+#             if os.path.exists('db/main.db.gz.1'):
+#                 remove_file('db/main.db.gz.1')
+#             os.rename('db/main.db.gz', 'db/main.db.gz.1')
+#         with open('db/main.db', 'rb') as f_in, gzip.open('db/main.db.gz', 'wb', compresslevel=1) as f_out:
+#             shutil.copyfileobj(f_in, f_out)
+#     except Exception as error:
+#         my_log.log2(f'my_db:compress_backup_db {error}')
+
+
 def backup_db():
     try:
-        # if exists db/main.db.gz move to db/main.db.gz.1 and copy
-        if os.path.exists('db/main.db.gz'):
-            if os.path.exists('db/main.db.gz.1'):
-                remove_file('db/main.db.gz.1')
-            os.rename('db/main.db.gz', 'db/main.db.gz.1')
-        with open('db/main.db', 'rb') as f_in, gzip.open('db/main.db.gz', 'wb', compresslevel=1) as f_out:
-            shutil.copyfileobj(f_in, f_out)
+        # if exists db/main.db.zst move to db/main.db.zst.1 and copy
+        if os.path.exists('db/main.db.zst'):
+            if os.path.exists('db/main.db.zst.1'):
+                remove_file('db/main.db.zst.1')
+            os.rename('db/main.db.zst', 'db/main.db.zst.1')
+        with open('db/main.db', 'rb') as f_in:
+            with open('db/main.db.zst', 'wb') as f_out:
+                # Use zstandard for compression
+                zstd_compressor = zstandard.ZstdCompressor(threads = -1, level = 3)
+                compressed_data = zstd_compressor.compress(f_in.read())
+                f_out.write(compressed_data)
     except Exception as error:
         my_log.log2(f'my_db:compress_backup_db {error}')
 
@@ -108,7 +154,7 @@ def sync_daemon():
             my_log.log2(f'my_db:sync_daemon {error}')
 
 
-def init(backup: bool = True):
+def init(backup: bool = True, vacuum: bool = False):
     '''init db'''
     global CON, CUR
     day_seconds = 60 * 60 * 24
@@ -264,7 +310,7 @@ def init(backup: bool = True):
             )
         ''')
 
-        if backup:
+        if vacuum:
             CON.commit()
             CUR.execute("VACUUM")
         CON.commit()
@@ -978,6 +1024,6 @@ if __name__ == '__main__':
     init(backup=False)
 
     # print(find_users_with_many_messages())
-    fix_tts_model_used()
+    # fix_tts_model_used()
 
     close()

@@ -95,7 +95,7 @@ def backup_db():
                 # Use zstandard for compression
                 zstd_compressor = zstandard.ZstdCompressor(threads=-1, level=3)
                 compressor = zstd_compressor.stream_writer(f_out)
-                chunk_size = 1024 * 1024  # 1 MB chunks
+                chunk_size = 1024 * 1024 * 10 # 10 MB chunks
 
                 while True:
                     chunk = f_in.read(chunk_size)

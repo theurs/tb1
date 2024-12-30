@@ -31,14 +31,18 @@ languages_ocr = ["afr", "amh", "ara", "asm", "aze", "aze_cyrl", "bel", "ben", "b
 
 
 supported_langs_trans = [
-        "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
-        "el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha",
-        "haw","he","hi","hmn","hr","ht","hu","hy","id","ig","is","it","iw","ja","jw",
-        "ka","kk","km","kn","ko","ku","ky","la","lb","lo","lt","lv","mg","mi","mk",
-        "ml","mn","mr","ms","mt","my","ne","nl","no","ny","or","pa","pl","ps","pt",
-        "ro","ru","rw","sd","si","sk","sl","sm","sn","so","sq","sr","st","su","sv",
-        "sw","ta","te","tg","th","tl","tr","ua","uk","ur","uz","vi","xh","yi","yo","zh",
-        "zh-TW","zu"]
+    "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
+    "el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha",
+    "haw","he","hi","hmn","hr","ht","hu","hy","id","ig","is","it","iw","ja","jw",
+    "ka","kk","km","kn","ko","ku","ky","la","lb","lo","lt","lv","mg","mi","mk",
+    "ml","mn","mr","ms","mt","my","ne","nl","no","ny","or","pa","pl","ps","pt",
+    "ro","ru","rw","sd","si","sk","sl","sm","sn","so","sq","sr","st","su","sv",
+    "sw","ta","te","tg","th","tl","tr","ua","uk","ur","uz","vi","xh","yi","yo","zh",
+    "zh-TW","zu"]
+
+top_20_used_languages = [
+    "en", "zh", "es", "hi", "ar", "fr", "bn", "ru", "pt", "id",
+    "de", "ja", "ko", "it", "tr", "vi", "fa", "pl", "uk", "ms"]
 
 supported_langs_tts = ['af', 'am', 'ar', 'ar2', 'ar3', 'ar4', 'ar5', 'ar6', 'ar7', 'ar8', 'ar9', 'ar10', 'ar11', 'ar12', 
                        'ar13', 'ar14', 'ar15', 'ar16', 'az', 'bg', 'bn', 'bn2', 'bs', 'ca', 'cs', 'cy', 'da', 'de', 

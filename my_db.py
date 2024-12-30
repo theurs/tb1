@@ -11,7 +11,7 @@ import threading
 import traceback
 import sqlite3
 import sys
-from typing import List
+from typing import List, Tuple
 
 import zstandard
 from collections import OrderedDict
@@ -640,6 +640,28 @@ def drop_all_translations():
             ''')
         except Exception as error:
             my_log.log2(f'my_db:drop_all_translations {error}')
+
+
+def get_unique_originals() -> List[Tuple[str, str]]:
+    """
+    Retrieves a list of unique original texts and their corresponding help texts
+    from the translations table.
+
+    Returns:
+        A list of tuples, where each tuple contains the unique original text
+        and its associated help text.
+    """
+    with LOCK:
+        try:
+            CUR.execute('''
+                SELECT DISTINCT original, help
+                FROM translations
+            ''')
+            results: List[Tuple[str, str]] = CUR.fetchall()
+            return results
+        except Exception as error:
+            my_log.log2(f'my_db:get_unique_originals {error}')
+            return []
 
 
 def vacuum():

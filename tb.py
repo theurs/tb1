@@ -3259,6 +3259,37 @@ def translation_gui(message: telebot.types.Message):
         my_log.log2(f'tb:tgui:{error}\n\n{traceback_error}')
 
 
+@bot.message_handler(commands=['create_all_translations'], func=authorized_admin)
+@async_run
+def create_all_translations(message: telebot.types.Message):
+    """Команда для создания переводов на все языки"""
+    try:
+        bot_reply_tr(message, 'Начинаю процесс создания переводов на все языки, это может занять много времени...')
+        create_translations_for_all_languages()
+        bot_reply_tr(message, 'Процесс создания переводов завершен.')
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:create_all_translations:{error}\n\n{traceback_error}')
+        bot_reply(message, 'Произошла ошибка при создании переводов.')
+
+
+def create_translations_for_all_languages():
+    """
+    Создает переводы на все языки для уникальных оригиналов.
+    """
+    # Получаем уникальные оригиналы и их подсказки из базы данных
+    unique_originals = my_db.get_unique_originals()
+    
+    for original, help_text in unique_originals:
+        # Переводим на все поддерживаемые языки
+        for target_lang in my_init.top_20_used_languages:
+            try:
+                tr(original, target_lang, help=help_text, save_cache=True)
+                my_log.log_translate(f'Translated: {original} to {target_lang}')
+            except Exception as error:
+                my_log.log_translate(f'Failed to translate: {original} to {target_lang}. Error: {str(error)}')
+
+
 @bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_owner)
 @async_run
 def users_keys_for_gemini(message: telebot.types.Message):

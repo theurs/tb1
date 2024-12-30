@@ -1282,6 +1282,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         markup.add(button1, button2)
         return markup
 
+    elif kbd == 'voicechat':
+        keyboard = telebot.types.ReplyKeyboardMarkup(
+            row_width=1,
+            resize_keyboard=True,
+            one_time_keyboard=True
+            )
+        webAppTest = telebot.types.WebAppInfo("https://theurs.github.io/test/dollar.html") #создаем webappinfo - формат хранения url
+        one_butt = telebot.types.KeyboardButton(text="Голосовой чат", web_app=webAppTest) #создаем кнопку типа webapp
+        keyboard.add(one_butt) #добавляем кнопки в клавиатуру
+        return keyboard #возвращаем клавиатуру
+
     elif kbd.startswith('pay_stars_'):
         amount = int(kbd.split('_')[-1])
         keyboard = telebot.types.InlineKeyboardMarkup()
@@ -4648,7 +4659,7 @@ def image_bing_gen10(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
     if stars < 100:
-        bot_reply_tr(message, 'You need to have 100 stars in reserve to use this command.')
+        bot_reply_tr(message, 'You need to have 100 /stars in reserve to use this command.')
         return
     if my_db.get_user_property(chat_id_full, 'blocked_bing'):
         bot_reply_tr(message, 'Bing вас забанил.')
@@ -4665,7 +4676,7 @@ def image_bing_gen20(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
     if stars < 200:
-        bot_reply_tr(message, 'You need to have 200 stars in reserve to use this command.')
+        bot_reply_tr(message, 'You need to have 200 /stars in reserve to use this command.')
         return
     if my_db.get_user_property(chat_id_full, 'blocked_bing'):
         bot_reply_tr(message, 'Bing вас забанил.')
@@ -5724,6 +5735,19 @@ def send_welcome_start(message: telebot.types.Message):
         language(message)
 
     # reset_(message, say = False)
+
+
+
+
+@bot.message_handler(commands=['voicechat'], func = authorized)
+@async_run
+def voice_chat(message: telebot.types.Message):
+    # запускаем голосовой чат в веб приложении
+    chat_id_full = get_topic_id(message)
+    COMMAND_MODE[chat_id_full] = ''
+    bot_reply_tr(message, 'Открыть голосовой чат', reply_markup=get_keyboard('voicechat', message))
+
+
 
 
 @bot.message_handler(commands=['help'], func = authorized_log)

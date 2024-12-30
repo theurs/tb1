@@ -4743,22 +4743,9 @@ def image_gen(message: telebot.types.Message):
                                 if i.startswith('moderation') and not has_good_images:
                                     bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
                                     return
-                                if i.startswith('error1_') and has_good_images:
-                                    continue
-                                if 'error1_being_reviewed_prompt' in i:
-                                    bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
-                                    return
-                                elif 'error1_blocked_prompt' in i:
-                                    bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                                    return
-                                elif 'error1_unsupported_lang' in i:
-                                    bot_reply_tr(message, 'Не понятный язык.')
-                                    return
                                 elif 'error1_Bad images' in i:
                                     bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
                                     return
-                                if 'https://r.bing.com' in i:
-                                    continue
                                 if not has_good_images and not i.startswith('https://'):
                                     bot_reply_tr(message, i)
                                     return

@@ -125,6 +125,8 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     try:
         with BING_LOCK:
             images = bing_img.gen_images(prompt, user_id)
+            if any([x for x in images if not x.startswith('https://')]):
+                return images
             time.sleep(20)
         if type(images) == list:
             return list(set(images))

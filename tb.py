@@ -7428,7 +7428,7 @@ def one_time_shot():
             queries = [
                 #  '''ALTER TABLE users DROP COLUMN dialog_shadow;''',
                 #  '''ALTER TABLE users DROP COLUMN dialog_gpt4omini;''',
-                '''DELETE FROM translations;''',
+                # '''DELETE FROM translations;''',
                  ]
             for q in queries:
                 try:

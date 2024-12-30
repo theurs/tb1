@@ -4761,7 +4761,7 @@ def image_gen(message: telebot.types.Message):
                                     continue
                                 if not has_good_images and not i.startswith('https://'):
                                     bot_reply_tr(message, i)
-
+                                    return
                             d = None
                             bot_addr = f'https://t.me/{_bot_name}'
                             caption_ = re.sub(r"(\s)\1+", r"\1\1", prompt)[:900]

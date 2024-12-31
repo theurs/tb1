@@ -3,7 +3,6 @@
 from flask import Flask, request, jsonify, Response
 
 import cfg
-
 import my_log
 
 from utils import async_run
@@ -66,6 +65,14 @@ def process_voice():
     except Exception as e:
         my_log.log_bing_api(f'tb:process_voice: {e}')
         return jsonify({"error": str(e)}), 500
+
+
+@FLASK_APP.route('/', methods=['GET'])
+def index():
+    """
+    Root endpoint, displays "OK" to indicate the server is running.
+    """
+    return "OK"
 
 
 @async_run

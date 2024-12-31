@@ -6387,6 +6387,12 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
             if message.from_user.id in cfg.admins or chat_id_full.startswith('[-') or message.from_user.id == BOT_ID:
                 return True
 
+            # если за сутки было меньше 10 запросов то пропустить
+            msgs24h = my_db.count_msgs_last_24h(chat_id_full)
+            max_per_day = cfg.MAX_FREE_PER_DAY if hasattr(cfg, 'MAX_FREE_PER_DAY') else 10
+            if msgs24h <= max_per_day:
+                return True
+
             # юзеры у которых есть 3 ключа не требуют подписки
             have_keys = chat_id_full in my_gemini.USER_KEYS and chat_id_full in my_groq.USER_KEYS and chat_id_full in my_genimg.USER_KEYS
             if have_keys:

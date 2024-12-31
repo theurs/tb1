@@ -366,6 +366,37 @@ def count_msgs_total_user(user_id: str) -> int:
             return 0
 
 
+def count_msgs_last_24h(user_id: str) -> int:
+    """
+    Counts the number of messages sent by a user in the last 24 hours.
+
+    Args:
+        user_id: The ID of the user.
+
+    Returns:
+        The number of messages sent by the user in the last 24 hours.
+    """
+    with LOCK:  # Assuming you have a lock defined for database access
+        try:
+            # Calculate the timestamp 24 hours ago
+            time_24h_ago = time.time() - 24 * 60 * 60
+
+            # Execute the SQL query to count messages
+            CUR.execute('''
+                SELECT COUNT(*) FROM msg_counter
+                WHERE user_id = ? AND access_time >= ?
+            ''', (user_id, time_24h_ago))
+
+            # Fetch and return the result
+            result = CUR.fetchone()[0]
+            return result
+
+        except sqlite3.Error as error:
+            # Handle any database errors
+            my_log.log2(f'my_db:count_msgs_last_24h {error}\nUser ID: {user_id}')
+            return 0
+
+
 def count_msgs_all():
     '''count all messages'''
     with LOCK:

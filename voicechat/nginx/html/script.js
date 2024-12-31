@@ -64,11 +64,21 @@ async function sendAudio() {
         }
 
         const responseBlob = await response.blob();
+        const responseArrayBuffer = await responseBlob.arrayBuffer()
+
+        // Проверка на пустой ответ
+        if (responseArrayBuffer.byteLength === 0) {
+            updateStatus("Сервер вернул пустой ответ.");
+            startRecording();
+            return;
+        }
+
         updateStatus("Получаю...");
-        await playAudio(await responseBlob.arrayBuffer(), () => {
+        await playAudio(responseArrayBuffer, () => {
             updateStatus("Отвечаю(голосом)");
             startRecording();
         });
+
     } catch (error) {
         if (error.name === 'TypeError' || error.message.includes('NetworkError')) {
             updateStatus("Ошибка сети: Проверьте подключение к интернету.");
@@ -81,6 +91,7 @@ async function sendAudio() {
         startRecording()
     }
 }
+
 
 // Function to detect silence
 function detectSilence() {
@@ -121,6 +132,7 @@ function detectSilence() {
 
     checkSilence();
 }
+
 
 async function playAudio(arrayBuffer, onAudioEnded) {
     //updateStatus("Playing audio...");

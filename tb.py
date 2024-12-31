@@ -7646,8 +7646,8 @@ def main():
     log_group_daemon()
 
     if hasattr(cfg, 'BING_API') and cfg.BING_API:
-        # run_flask(addr='127.0.0.1', port=58796)
-        run_flask(addr='0.0.0.0', port=58796)
+        run_flask(addr='127.0.0.1', port=58796)
+        # run_flask(addr='0.0.0.0', port=58796)
 
     # Remove webhook, it fails sometimes the set if there is a previous webhook
     bot.remove_webhook()

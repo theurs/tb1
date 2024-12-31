@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import base64
 import chardet
 import concurrent.futures
 import datetime
@@ -7499,7 +7500,7 @@ def bing_api_post() -> Dict[str, Any]:
         my_log.log_bing_api(f'tb:bing_api_post: {e}')
         return jsonify({"error": str(e)}), 500
 
-import base64
+
 @FLASK_APP.route('/images', methods=['POST'])
 def images_api_post() -> Dict[str, Any]:
     """

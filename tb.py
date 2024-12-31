@@ -7489,7 +7489,6 @@ def one_time_shot():
 
 
 @FLASK_APP.route('/bing', methods=['POST'])
-@async_run
 def bing_api_post() -> Dict[str, Any]:
     """
     API endpoint for generating images using Bing.
@@ -7521,7 +7520,6 @@ def bing_api_post() -> Dict[str, Any]:
 
 
 @FLASK_APP.route('/images', methods=['POST'])
-@async_run
 def images_api_post() -> Dict[str, Any]:
     """
     API endpoint for generating images using all providers.
@@ -7583,7 +7581,6 @@ def process_audio_data(audio_data: bytes, user_id: int) -> bytes:
 
 
 @FLASK_APP.route('/voice', methods=['POST'])
-@async_run
 def process_voice():
     """
     API endpoint for receiving and processing voice messages.

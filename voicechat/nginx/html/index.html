@@ -109,41 +109,36 @@
         // Function to send audio data to the server
         function sendAudio() {
             updateStatus("Sending audio...");
-            if (audioChunks.length > 0) {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
 
-                // Create a FormData object to send the audio file and user_id
-                const formData = new FormData();
-                formData.append('audio', audioBlob);
-                formData.append('user_id', userId);
+            const formData = new FormData();
+            formData.append('user_id', userId);
 
-                // Send the audio data to the server using fetch API
-                fetch('http://10.20.30.4:58796/voice', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        // If the response is not ok, throw an error with more details
-                        return response.text().then(text => {
-                            throw new Error(`Network response was not ok, status: ${response.status}, message: ${text}`);
-                        });
-                    }
-                    return response.arrayBuffer();
-                })
-                .then(arrayBuffer => {
-                    // Play received audio.
-                    updateStatus("Audio sent. Playing received audio...");
-                    playAudio(arrayBuffer);
-                })
-                .catch(error => {
-                    updateStatus("Error sending/receiving audio: " + error.message, true);
+            fetch('http://10.20.30.4:58796/voice', {
+            method: 'POST',
+            body: formData
+            })
+            .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`Server responded with status: ${response.status}, message: ${text}`);
                 });
-                // Clear the recorded audio chunks
-                audioChunks = [];
-            } else {
-                updateStatus("No audio to send.");
             }
+            return response.blob();
+            })
+            .then(blob => {
+            updateStatus("Audio sent. Playing received audio...");
+            const arrayBuffer = await blob.arrayBuffer();
+            playAudio(arrayBuffer);
+            })
+            .catch(error => {
+            updateStatus(`Error sending/receiving audio: ${error.message}`, true);
+            if (error instanceof TypeError) {
+                updateStatus("This is likely a network error. Check browser console and server logs for more details.", true);
+            } else {
+                updateStatus("This might be a server-side issue. Check server logs for more details.", true);
+            }
+            });
+
         }
 
         // Function to play the received audio

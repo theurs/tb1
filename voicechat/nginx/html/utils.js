@@ -1,9 +1,10 @@
 // utils.js
 export function updateStatus(message) {
     const statusText = document.getElementById('statusText');
-    const currentTime = new Date().toLocaleTimeString();
-    const logMessage = `${currentTime} - ${message}\n`;
-    statusText.textContent = logMessage + statusText.textContent;
+    //const currentTime = new Date().toLocaleTimeString();
+    //const logMessage = `${currentTime} - ${message}\n`;
+    //statusText.textContent = logMessage + statusText.textContent;
+    statusText.textContent = message;
     console.log(message);
 }
 

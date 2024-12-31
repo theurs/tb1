@@ -9,10 +9,10 @@ let isFirst = true; // Flag to indicate if it's the first recording
 
 async function startRecording() {
     if (isFirst) {
-        updateStatus("Starting first recording...");
+        updateStatus("Слушаю");
         isFirst = false;
     } else {
-        updateStatus("User speaks again...");
+        updateStatus("Слушаю");
     }
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -25,24 +25,24 @@ async function startRecording() {
         };
 
         mediaRecorder.onstop = async () => {
-            updateStatus("Recording stopped.");
+            //updateStatus("Recording stopped.");
             await sendAudio();
             audioChunks = [];
         };
 
         mediaRecorder.start();
-        updateStatus("Recording started.");
+        //updateStatus("Recording started.");
         detectSilence();
 
     } catch (error) {
-        updateStatus(`Error accessing microphone: ${error.message}`);
+        updateStatus(`Ошибка микрофона: ${error.message}`);
     }
 }
 
 async function sendAudio() {
-    updateStatus("Sending audio...");
+    updateStatus("Отправляю...");
     if (audioChunks.length === 0) {
-        updateStatus("No audio to send.");
+        updateStatus("Нет данных для отправки.");
         startRecording(); // Start listening again immediately
         return;
     }
@@ -63,16 +63,16 @@ async function sendAudio() {
             throw new Error(`Server responded with status: ${response.status}, message: ${errorText}`);
         }
 
-        updateStatus("Audio sent. Waiting for response...");
+        //updateStatus("Audio sent. Waiting for response...");
         const responseBlob = await response.blob();
-        updateStatus("Response received.");
+        updateStatus("Получаю...");
         await playAudio(await responseBlob.arrayBuffer(), () => {
-            updateStatus("Audio playback finished.");
+            updateStatus("Отвечаю(голосом)");
             startRecording(); // Start listening again after audio playback
         });
 
     } catch (error) {
-        updateStatus(`Error sending/receiving audio: ${error.message}`);
+        updateStatus(`Ошибка отправки/получения: ${error.message}`);
     }
 }
 
@@ -116,7 +116,7 @@ function detectSilence() {
 }
 
 async function playAudio(arrayBuffer, onAudioEnded) {
-    updateStatus("Playing audio...");
+    //updateStatus("Playing audio...");
     try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const buffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -126,16 +126,16 @@ async function playAudio(arrayBuffer, onAudioEnded) {
         source.onended = onAudioEnded;
         source.start();
     } catch (error) {
-        updateStatus(`Error playing audio: ${error.message}`);
+        updateStatus(`Ошибка воспроизведения: ${error.message}`);
     }
 }
 
 window.onload = () => {
     userId = getUserIdFromURL();
     if (userId) {
-        updateStatus("Ready to record. User ID: " + userId);
+        updateStatus("Готов");
         startRecording(); // Start recording immediately when the page loads
     } else {
-        updateStatus("Error: User ID not found in URL.", true);
+        updateStatus("Ошибка: user_id не найден", true);
     }
 };

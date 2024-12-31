@@ -1,1 +1,40 @@
 
+types {
+    text/html                             html htm shtml;
+    text/css                              css;
+    text/xml                              xml;
+    image/gif                             gif;
+    image/jpeg                            jpeg jpg;
+    image/png                             png;
+    image/svg+xml                         svg svgz;
+    image/x-icon                          ico;
+    application/javascript                js;
+    application/atom+xml                  atom;
+    application/rss+xml                   rss;
+    application/json                      json;
+    application/pdf                       pdf;
+    application/msword                    doc;
+    application/vnd.ms-excel              xls;
+    application/vnd.ms-powerpoint         ppt;
+    application/vnd.openxmlformats-officedocument.wordprocessingml.document docx;
+    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet xlsx;
+    application/vnd.openxmlformats-officedocument.presentationml.presentation pptx;
+    application/x-javascript             js;
+    application/x-shockwave-flash         swf;
+    application/x-font-ttf                ttf;
+    application/x-font-otf               otf;
+    application/x-font-woff               woff;
+    application/x-font-woff2             woff2;
+    application/vnd.ms-fontobject        eot;
+    image/vnd.microsoft.icon              ico;
+    font/woff                              woff;
+    font/woff2                             woff2;
+    font/ttf                               ttf;
+    font/otf                               otf;
+    font/eot                               eot;
+    application/font-woff                 woff;
+    application/font-woff2                woff2;
+    application/x-font-truetype          ttf;
+    application/x-font-opentype          otf;
+    application/x-font-embedded-opentype eot;
+}

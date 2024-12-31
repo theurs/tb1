@@ -4,8 +4,10 @@ from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 
 import cfg
-import my_log
+from my_groq_voice_chat import chat, stt
+from my_tts_voicechat import tts
 
+import my_log
 from utils import async_run
 
 
@@ -26,12 +28,17 @@ def process_audio_data(audio_data: bytes, user_id: int) -> bytes:
     Returns:
         The processed audio data in bytes.
     """
-    print(f"Processing audio for user_id: {user_id}")
-    # Here you would add your actual audio processing logic
-    # For example, you might send the audio to a speech-to-text service,
-    # then to a text-to-speech service, and return the result.
-    # For now, we'll just return the original audio.
-    return audio_data
+    c_id = f'[{user_id}] [0]'
+
+    query = stt(audio_data)
+
+    answer = chat(query, c_id)
+    if answer:
+        audio_data = tts(answer, voice='de', rate='+50%', gender='female')
+        if audio_data and isinstance(audio_data, bytes):
+            return audio_data
+
+    return b''
 
 
 @FLASK_APP.route('/voice', methods=['POST'])

@@ -43,7 +43,7 @@ async function sendAudio() {
     updateStatus("Отправляю...");
     if (audioChunks.length === 0) {
         updateStatus("Нет данных для отправки.");
-        startRecording(); // Start listening again immediately
+        startRecording();
         return;
     }
 
@@ -60,19 +60,25 @@ async function sendAudio() {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Server responded with status: ${response.status}, message: ${errorText}`);
+            throw new Error(`Ошибка сервера: ${response.status} ${errorText}`);
         }
 
-        //updateStatus("Audio sent. Waiting for response...");
         const responseBlob = await response.blob();
         updateStatus("Получаю...");
         await playAudio(await responseBlob.arrayBuffer(), () => {
             updateStatus("Отвечаю(голосом)");
-            startRecording(); // Start listening again after audio playback
+            startRecording();
         });
-
     } catch (error) {
-        updateStatus(`Ошибка отправки/получения: ${error.message}`);
+        if (error.name === 'TypeError' || error.message.includes('NetworkError')) {
+            updateStatus("Ошибка сети: Проверьте подключение к интернету.");
+        } else if (error.message.startsWith('Ошибка сервера')) {
+            updateStatus(error.message);
+        }
+        else {
+            updateStatus(`Неизвестная ошибка: ${error.message}`);
+        }
+        startRecording()
     }
 }
 

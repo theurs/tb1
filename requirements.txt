@@ -16,6 +16,7 @@ edge_tts
 fastapi
 
 Flask
+flask-cors
 
 geopy
 

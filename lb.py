@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from flask import Flask, request, jsonify, Response
+from flask_cors import CORS
 
 import cfg
 import my_log
@@ -10,6 +11,7 @@ from utils import async_run
 
 # API для доступа к функциям бота (бинг в основном)
 FLASK_APP = Flask(__name__)
+CORS(FLASK_APP)
 
 
 def process_audio_data(audio_data: bytes, user_id: int) -> bytes:

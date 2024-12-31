@@ -6499,27 +6499,27 @@ def do_task(message, custom_prompt: str = ''):
 
     chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')
 
-    have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-        chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or\
-        message.from_user.id in cfg.admins or\
-        (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
+    # have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
+    #     chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or\
+    #     message.from_user.id in cfg.admins or\
+    #     (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
 
-    total_messages__ = my_db.count_msgs_total_user(chat_id_full)
-    if is_private:
-        if not have_keys:
-            # каждые 50 сообщение напоминать о ключах
-            if total_messages__ > 1 and total_messages__ % 50 == 0:
-                if message.chat.type == 'private':
-                    msg = tr('This bot uses API keys to unlock more powerful AI features. You can obtain a free key at https://ai.google.dev/ and provide it to the bot using the command /keys xxxxxxx.  Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
-                    bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+    # total_messages__ = my_db.count_msgs_total_user(chat_id_full)
+    # if is_private:
+    #     if not have_keys:
+    #         # каждые 50 сообщение напоминать о ключах
+    #         if total_messages__ > 1 and total_messages__ % 50 == 0:
+    #             if message.chat.type == 'private':
+    #                 msg = tr('This bot uses API keys to unlock more powerful AI features. You can obtain a free key at https://ai.google.dev/ and provide it to the bot using the command /keys xxxxxxx.  Video instructions:', lang) + ' https://www.youtube.com/watch?v=6aj5a7qGcb4\n\nFree VPN: https://www.vpnjantit.com/'
+    #                 bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
 
-                    # понижать модель джемини тем у кого нет ключей
-                    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15':
-                        my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
-                        chat_mode_ = 'gemini'
+    #                 # понижать модель джемини тем у кого нет ключей
+    #                 if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gemini15':
+    #                     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+    #                     chat_mode_ = 'gemini'
 
-    # но даже если ключ есть всё равно больше 300 сообщений в день нельзя,
-    if chat_mode_ == 'gemini15' and my_db.count_msgs(chat_id_full, cfg.gemini_pro_model, 60*60*24) > 300:
+    # но даже если ключ есть всё равно больше 300 сообщений в день нельзя
+    if chat_mode_ == 'gemini15' and my_db.count_msgs_last_24h(chat_id_full) > 300:
         chat_mode_ = 'gemini'
 
 

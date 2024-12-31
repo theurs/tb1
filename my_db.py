@@ -347,10 +347,7 @@ def count_msgs(user_id: str, model: str, access_time: float):
             return 0
 
 
-# задержка в 5 минут будет с таким кешем
-# а это ломает логику при проверке на каждые 50 сообщений
-# и делать отдельную функцию с кешем нет смысла
-# @cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
+@cachetools.func.ttl_cache(maxsize=100, ttl=15*60)
 def count_msgs_total_user(user_id: str) -> int:
     '''Count the number of all messages sent by a user.
     '''
@@ -366,7 +363,7 @@ def count_msgs_total_user(user_id: str) -> int:
             return 0
 
 
-@cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
+@cachetools.func.ttl_cache(maxsize=100, ttl=15*60)
 def count_msgs_last_24h(user_id: str) -> int:
     """
     Counts the number of messages sent by a user in the last 24 hours.

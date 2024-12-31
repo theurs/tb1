@@ -47,7 +47,7 @@ async function sendAudio() {
         return;
     }
 
-    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
     const formData = new FormData();
     formData.append('audio', audioBlob);
     formData.append('user_id', userId);

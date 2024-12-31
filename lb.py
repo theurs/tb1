@@ -69,7 +69,7 @@ def process_voice():
         processed_audio = process_audio_data(audio_data, user_id)
 
         # Return the processed audio data as a response
-        return Response(processed_audio, mimetype='audio/wav')
+        return Response(processed_audio, mimetype='audio/ogg; codecs=opus')
 
     except Exception as e:
         my_log.log_bing_api(f'tb:process_voice: {e}')

@@ -60,7 +60,7 @@ def restore_message_text(s1: str, l) -> str:
 @bot.message_handler()
 # @bot.message_handler(commands=['start'])
 def command_code(message: telebot.types.Message):
-    link = f'https://videochat.dns.army/?user_id={message.from_user.id}'
+    link = f'https://videochat.dns.army/voice?user_id={message.from_user.id}'
     bot.reply_to(message, link)
 
 

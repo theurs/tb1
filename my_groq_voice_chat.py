@@ -233,7 +233,7 @@ def chat(query: str, chat_id: str,
         lock = threading.Lock()
         LOCKS[chat_id] = lock
 
-    style += "\nAnswer in the same language, use a conversational style, briefly, you're chatting in a voice chat."
+    style += "\nОтвечай всегда по-русски, в разговорном стиле, кратко, как будто ты общаешься в голосовом чате."
 
     with lock:
         mem = CHATS[chat_id] if chat_id in CHATS else []
@@ -338,6 +338,7 @@ def stt(data: bytes = None,
             file=("123.mp3", data),
             model = model,
             # language=lang,
+            language='ru',
             prompt=prompt,
             timeout=120,
             )

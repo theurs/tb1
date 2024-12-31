@@ -43,7 +43,7 @@ def process_audio_data(audio_data: bytes, user_id: int) -> bytes:
     answer = my_groq_voice_chat.chat(query, c_id)
     print('ответ: ', answer)
     if answer:
-        audio_data = my_tts_voicechat.tts(answer, voice='de', rate='+50%', gender='female')
+        audio_data = my_tts_voicechat.tts(answer, voice='de', gender='female')
         print('audio_data len: ', len(audio_data))
         if audio_data:
             return audio_data
@@ -113,4 +113,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+
+    audio_data = my_tts_voicechat.tts('hello all', voice='de', rate='+50%', gender='female')
+    print(len(audio_data))

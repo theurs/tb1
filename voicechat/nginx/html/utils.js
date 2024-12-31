@@ -18,4 +18,4 @@ export function resetSilenceTimer(silenceTimer) {
     silenceTimer = null;
 }
 
-export const SILENCE_THRESHOLD = 1000; // Silence threshold in milliseconds
+export const SILENCE_THRESHOLD = 750; // Silence threshold in milliseconds

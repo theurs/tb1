@@ -101,9 +101,10 @@ function detectSilence() {
         }
         const average = sum / bufferLength;
 
-        // Check if the average volume is below a certain threshold to detect silence
-        if (average < 5) {
+        // ИЗМЕНЕНИЕ: Увеличиваем порог тишины, например, до 10
+        if (average < 10) {
             if (!silenceTimer) {
+
                 silenceTimer = setTimeout(() => {
                     if (mediaRecorder.state === 'recording') {
                         mediaRecorder.stop();

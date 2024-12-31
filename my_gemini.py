@@ -237,8 +237,10 @@ def chat(query: str,
                                     )
             except Exception as error:
                 if 'tokens, which is more than the max tokens limit allowed' in str(error):
-                    # убрать 4 первых сообщения
-                    mem = chat.history[4:]
+                    # убрать 2 первых сообщения
+                    if len(chat.history) == 0:
+                        return ''
+                    mem = chat.history[2:]
                     continue
                 my_log.log_gemini(f'my_gemini:chat2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \

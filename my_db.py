@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# import cachetools.func
+import cachetools.func
 import datetime
 import hashlib
 import lzma
@@ -366,6 +366,7 @@ def count_msgs_total_user(user_id: str) -> int:
             return 0
 
 
+@cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
 def count_msgs_last_24h(user_id: str) -> int:
     """
     Counts the number of messages sent by a user in the last 24 hours.

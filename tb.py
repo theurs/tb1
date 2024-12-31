@@ -4915,16 +4915,23 @@ def image_gen(message: telebot.types.Message):
                                                 # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
                                                 seconds = utils.extract_retry_seconds(str(error))
                                                 if seconds:
-                                                    time.sleep(seconds + 1)
+                                                    time.sleep(seconds + 5)
                                                     try:
                                                         bot.send_media_group(pics_group, x)
                                                     except Exception as error2:
-                                                        my_log.log2(f'tb:image:send_media_group_pics_group: {error2}')
-                                                        continue
+                                                        # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+                                                        seconds = utils.extract_retry_seconds(str(error2))
+                                                        if seconds:
+                                                            time.sleep(seconds + 5)
+                                                            try:
+                                                                bot.send_media_group(pics_group, x)
+                                                            except Exception as error3:
+                                                                my_log.log2(f'tb:image:send_media_group_pics_group: {error3}')
+                                                                continue
 
-                                    except Exception as error2:
+                                    except Exception as error4:
                                         traceback_error = traceback.format_exc()
-                                        my_log.log2(f'tb:image:send to pics_group: {error2}\n\n{traceback_error}')
+                                        my_log.log2(f'tb:image:send to pics_group: {error4}\n\n{traceback_error}')
 
                                 if BING_FLAG:
                                     IMG = '/bing'

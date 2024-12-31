@@ -123,7 +123,7 @@ function detectSilence() {
         const average = sum / bufferLength;
 
         // CHANGED: Increased the silence threshold, for example, to 10
-        if (average < 10) {
+        if (average < 15) {
             if (!silenceTimer) {
 
                 silenceTimer = setTimeout(() => {

@@ -183,6 +183,10 @@
 # WEBHOOK_SSL_PRIV = './webhook_pkey.pem'  # Path to the ssl private key
 
 
+# DB_BACKUP = True
+# DB_VACUUM = False
+
+
 # не журналировать id чатов из этого списка
 DO_NOT_LOG = [xxx, yyy,]
 

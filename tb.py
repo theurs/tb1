@@ -7585,7 +7585,9 @@ def main():
     """
     bot.remove_webhook()
 
-    my_db.init()
+    db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
+    db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
+    my_db.init(db_backup, db_vacuum)
 
     load_msgs()
 

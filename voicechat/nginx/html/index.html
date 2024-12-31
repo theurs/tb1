@@ -3,14 +3,24 @@
 <head>
     <title>Voice Chat</title>
     <style>
+        body {
+            font-size: 36px; /* Увеличенный размер шрифта для всего body */
+        }
         #userInfo {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
         #status {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            white-space: pre-wrap; /* Preserve line breaks */
+            font-size: 36px; /* Увеличенный размер шрифта для блока статуса */
         }
         .hidden {
             display: none;
+        }
+        button {
+            font-size: 36px; /* Увеличенный размер шрифта для кнопок */
+            padding: 20px 40px; /* Увеличенные отступы для кнопок */
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -20,6 +30,7 @@
     <div id="status">Status: <span id="statusText"></span></div>
     <button id="startButton" onclick="startRecording();">Start Recording</button>
     <button id="stopButton" onclick="stopRecording();" disabled>Stop Recording</button>
+
 
     <script>
         // Set the time threshold for silence detection (in milliseconds)
@@ -38,8 +49,18 @@
         }
 
         // Function to update the status text
-        function updateStatus(statusText) {
-            document.getElementById('statusText').innerText = statusText;
+        function updateStatus(statusText, isError = false) {
+            const statusElement = document.getElementById('statusText');
+            const currentTime = new Date().toLocaleTimeString(); // Get current time
+            const logMessage = `${currentTime} - ${statusText}\n`;
+
+            statusElement.textContent =  logMessage + statusElement.textContent; // Prepend new message
+
+            if (isError) {
+                console.error(statusText); // Also log errors to console for potential debugging
+            } else {
+                console.log(statusText); // Log all messages to console as well
+            }
         }
 
         // Function to start recording audio
@@ -65,17 +86,14 @@
 
                 // Start the media recorder
                 mediaRecorder.start();
-                console.log("Recording started.");
-                updateStatus("Recording...");
+                updateStatus("Recording started.");
                 document.getElementById('startButton').disabled = true;
                 document.getElementById('stopButton').disabled = false;
 
                 // Start the silence detection
                 detectSilence();
-
             } catch (error) {
-                console.error("Error accessing microphone:", error);
-                updateStatus("Error: " + error.message);
+                updateStatus("Error accessing microphone: " + error.message, true);
             }
         }
 
@@ -83,7 +101,7 @@
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                console.log("Recording stopped.");
+                updateStatus("Recording stopped.");
                 sendAudio();
             }
         }
@@ -100,7 +118,7 @@
                 formData.append('user_id', userId);
 
                 // Send the audio data to the server using fetch API
-                fetch('https://10.20.30.4/voice', {
+                fetch('https://videochat.dns.army/voice', {
                     method: 'POST',
                     body: formData
                 })
@@ -116,8 +134,7 @@
                     playAudio(arrayBuffer);
                 })
                 .catch(error => {
-                    console.error("Error sending/receiving audio:", error);
-                    updateStatus("Error: " + error.message);
+                    updateStatus("Error sending/receiving audio: " + error.message, true);
                 });
                 // Clear the recorded audio chunks
                 audioChunks = [];
@@ -136,8 +153,7 @@
                 source.start();
                 updateStatus("Playing audio...");
             }).catch(error => {
-                console.error("Error decoding audio data:", error);
-                updateStatus("Error: " + error.message);
+                updateStatus("Error decoding audio data: " + error.message, true);
             });
         }
 
@@ -145,7 +161,7 @@
         function detectSilence() {
             if (typeof mediaRecorder === 'undefined' || typeof mediaRecorder.stream === 'undefined')
             {
-                console.log("mediaRecorder or mediaRecorder.stream is not ready yet.");
+                updateStatus("mediaRecorder or mediaRecorder.stream is not ready yet.");
                 setTimeout(detectSilence, 500);
                 return;
             }
@@ -195,10 +211,10 @@
                 document.getElementById('userInfo').classList.remove('hidden');
                 updateStatus("Ready to record.");
             } else {
-                console.error("User ID not found in URL.");
-                updateStatus("Error: User ID not found in URL.");
+                updateStatus("Error: User ID not found in URL.", true);
             }
         };
     </script>
+
 </body>
 </html>

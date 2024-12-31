@@ -31,7 +31,6 @@
     <button id="startButton" onclick="startRecording();">Start Recording</button>
     <button id="stopButton" onclick="stopRecording();" disabled>Stop Recording</button>
 
-
     <script>
         // Set the time threshold for silence detection (in milliseconds)
         const silenceThreshold = 1000;
@@ -92,6 +91,7 @@
 
                 // Start the silence detection
                 detectSilence();
+
             } catch (error) {
                 updateStatus("Error accessing microphone: " + error.message, true);
             }
@@ -118,13 +118,16 @@
                 formData.append('user_id', userId);
 
                 // Send the audio data to the server using fetch API
-                fetch('https://videochat.dns.army/voice', {
+                fetch('https://10.20.30.4:58796/voice', {
                     method: 'POST',
                     body: formData
                 })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        // If the response is not ok, throw an error with more details
+                        return response.text().then(text => {
+                            throw new Error(`Network response was not ok, status: ${response.status}, message: ${text}`);
+                        });
                     }
                     return response.arrayBuffer();
                 })
@@ -215,6 +218,5 @@
             }
         };
     </script>
-
 </body>
 </html>

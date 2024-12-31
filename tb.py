@@ -4548,10 +4548,10 @@ def huggingface_image_gen(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
-    # забаненный в бинге юзер
-    if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-        bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw', disable_web_page_preview=True)        
-        return
+    # # забаненный в бинге юзер
+    # if my_db.get_user_property(chat_id_full, 'blocked_bing'):
+    #     bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw', disable_web_page_preview=True)        
+    #     return
 
     # проверка на подписку
     if not check_donate(message, chat_id_full, lang):

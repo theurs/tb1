@@ -5,41 +5,24 @@
     <title>Voice Chat</title>
     <style>
         body {
-            font-size: 36px; /* Увеличенный размер шрифта для всего body */
-        }
-        #userInfo {
-            margin-bottom: 20px;
-        }
-        #status {
-            margin-bottom: 20px;
-            white-space: pre-wrap; /* Preserve line breaks */
-            font-size: 36px; /* Увеличенный размер шрифта для блока статуса */
-        }
-        .hidden {
-            display: none;
+            font-size: 36px;
         }
         button {
-            font-size: 36px; /* Увеличенный размер шрифта для кнопок */
-            padding: 20px 40px; /* Увеличенные отступы для кнопок */
+            font-size: 36px;
+            padding: 20px 40px;
             margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Voice Chat</h1>
-    <div id="userInfo" class="hidden">User ID: <span id="userId"></span></div>
+    <button id="recordButton">Record and Send</button>
     <div id="status">Status: <span id="statusText"></span></div>
-    <button id="startButton" onclick="startRecording();">Start Recording</button>
-    <button id="stopButton" onclick="stopRecording();" disabled>Stop Recording</button>
 
     <script>
-        // Set the time threshold for silence detection (in milliseconds)
-        const silenceThreshold = 1000;
-
-        // Initialize variables for audio recording
+        const recordButton = document.getElementById('recordButton');
+        const statusText = document.getElementById('statusText');
         let mediaRecorder;
         let audioChunks = [];
-        let silenceTimer;
         let userId;
 
         // Function to get user_id from URL
@@ -48,166 +31,95 @@
             return urlParams.get('user_id');
         }
 
-        // Function to update the status text
-        function updateStatus(statusText, isError = false) {
-            const statusElement = document.getElementById('statusText');
-            const currentTime = new Date().toLocaleTimeString(); // Get current time
-            const logMessage = `${currentTime} - ${statusText}\n`;
+        function updateStatus(message) {
+            const currentTime = new Date().toLocaleTimeString();
+            const logMessage = `${currentTime} - ${message}\n`;
+            statusText.textContent = logMessage + statusText.textContent;
+            console.log(message);
+        }
 
-            statusElement.textContent =  logMessage + statusElement.textContent; // Prepend new message
+        recordButton.onclick = async () => {
+            updateStatus("Starting recording...");
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = (event) => {
+                    console.log("Data available:", event.data);
+                    audioChunks.push(event.data);
+                };
 
-            if (isError) {
-                console.error(statusText); // Also log errors to console for potential debugging
-            } else {
-                console.log(statusText); // Log all messages to console as well
+                mediaRecorder.onstop = async () => {
+                    updateStatus("Recording stopped.");
+                    await sendAudio();
+                    audioChunks = [];
+                };
+
+                mediaRecorder.start();
+                updateStatus("Recording started.");
+
+                // Stop recording after 5 seconds
+                setTimeout(() => {
+                    if (mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                    }
+                }, 5000);
+
+            } catch (error) {
+                updateStatus(`Error accessing microphone: ${error.message}`);
             }
-        }
+        };
 
-        // Function to start recording audio
-        function startRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(function(stream) {
-                    mediaRecorder = new MediaRecorder(stream);
-
-                    mediaRecorder.ondataavailable = (event) => {
-                        audioChunks.push(event.data);
-                        resetSilenceTimer();
-                        updateStatus("Recording...");
-                    };
-
-                    mediaRecorder.onstop = () => {
-                        updateStatus("Recording stopped.");
-                        document.getElementById('startButton').disabled = false;
-                        document.getElementById('stopButton').disabled = true;
-                    };
-
-                    mediaRecorder.start();
-                    updateStatus("Recording started.");
-                    document.getElementById('startButton').disabled = true;
-                    document.getElementById('stopButton').disabled = false;
-
-                    // Запускаем detectSilence ПОСЛЕ mediaRecorder.start()
-                    detectSilence();
-                })
-                .catch(function(error) {
-                    updateStatus("Error accessing microphone: " + error.message, true);
-                });
-        }
-
-        // Function to stop recording and send audio
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-                updateStatus("Recording stopped.");
-                sendAudio();
-            }
-        }
-
-        // Function to send audio data to the server
-        function sendAudio() {
+        async function sendAudio() {
             updateStatus("Sending audio...");
-            if (audioChunks.length > 0) {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            if (audioChunks.length === 0) {
+                updateStatus("No audio to send.");
+                return;
+            }
 
-                // Create a FormData object to send the audio file and user_id
-                const formData = new FormData();
-                formData.append('audio', audioBlob);
-                formData.append('user_id', userId);
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const formData = new FormData();
+            formData.append('audio', audioBlob);
+            formData.append('user_id', userId);
 
-                // Send the audio data to the server using fetch API
-                fetch('https://voicechat.dns.arms/voice', {
+            try {
+                const response = await fetch('https://voicechat.dns.army/voice', {
                     method: 'POST',
                     body: formData
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            throw new Error(`Server responded with status: ${response.status}, message: ${text}`);
-                        });
-                    }
-                    return response.blob();
-                })
-                .then(blob => {
-                    updateStatus("Audio sent. Playing received audio...");
-                    const arrayBuffer = blob.arrayBuffer();
-                    playAudio(arrayBuffer);
-                })
-                .catch(error => {
-                    updateStatus(`Error sending/receiving audio: ${error.message}`, true);
-                    if (error instanceof TypeError) {
-                        updateStatus("This is likely a network error. Check browser console and server logs for more details.", true);
-                    } else {
-                        updateStatus("This might be a server-side issue. Check server logs for more details.", true);
-                    }
                 });
-                // Clear the recorded audio chunks
-                audioChunks = [];
-            } else {
-                updateStatus("No audio to send.");
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server responded with status: ${response.status}, message: ${errorText}`);
+                }
+
+                updateStatus("Audio sent. Waiting for response...");
+                const responseBlob = await response.blob();
+                updateStatus("Response received.");
+                playAudio(await responseBlob.arrayBuffer());
+
+            } catch (error) {
+                updateStatus(`Error sending/receiving audio: ${error.message}`);
             }
         }
 
-        // Function to play the received audio
-       async function playAudio(arrayBuffer) {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-           audioContext.decodeAudioData(arrayBuffer).then(buffer => {
+        async function playAudio(arrayBuffer) {
+            updateStatus("Playing audio...");
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const buffer = await audioContext.decodeAudioData(arrayBuffer);
                 const source = audioContext.createBufferSource();
                 source.buffer = buffer;
                 source.connect(audioContext.destination);
                 source.start();
-                updateStatus("Playing audio...");
-            }).catch(error => {
-                updateStatus("Error decoding audio data: " + error.message, true);
-            });
+            } catch (error) {
+                updateStatus(`Error playing audio: ${error.message}`);
+            }
         }
 
-        // Function to detect silence
-        function detectSilence() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const analyser = audioContext.createAnalyser();
-            const source = audioContext.createMediaStreamSource(mediaRecorder.stream);
-            source.connect(analyser);
-            analyser.fftSize = 2048;
-
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            const checkSilence = () => {
-                analyser.getByteTimeDomainData(dataArray);
-                let sum = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    sum += Math.abs(dataArray[i] - 128);
-                }
-                const average = sum / bufferLength;
-
-                // Check if the average volume is below a certain threshold to detect silence
-                if (average < 5) {
-                    if (!silenceTimer) {
-                        silenceTimer = setTimeout(stopRecording, silenceThreshold);
-                    }
-                } else {
-                    clearTimeout(silenceTimer);
-                    silenceTimer = null;
-                }
-
-                requestAnimationFrame(checkSilence);
-            };
-
-            checkSilence();
-        }
-
-        // Function to reset the silence timer
-        function resetSilenceTimer() {
-            clearTimeout(silenceTimer);
-            silenceTimer = null;
-        }
-
-        // Start recording when the page loads
         window.onload = () => {
             userId = getUserIdFromURL();
             if (userId) {
-                document.getElementById('userId').innerText = userId;
-                document.getElementById('userInfo').classList.remove('hidden');
-                updateStatus("Ready to record.");
+                updateStatus("Ready to record. User ID: " + userId);
             } else {
                 updateStatus("Error: User ID not found in URL.", true);
             }

@@ -112,7 +112,7 @@
                 formData.append('audio', audioBlob);
                 formData.append('user_id', userId);
                 // Send the audio data to the server using fetch API
-                fetch('http://voicechat.dns.army/voice', {
+                fetch('https://voicechat.dns.army/voice', {
                     method: 'POST',
                     body: formData
                 })

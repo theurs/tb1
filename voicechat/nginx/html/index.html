@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Voice Chat</title>
     <style>
         body {
@@ -85,6 +86,7 @@
                     document.getElementById('startButton').disabled = true;
                     document.getElementById('stopButton').disabled = false;
 
+                    // Запускаем detectSilence ПОСЛЕ mediaRecorder.start()
                     detectSilence();
                 })
                 .catch(function(error) {
@@ -111,8 +113,9 @@
                 const formData = new FormData();
                 formData.append('audio', audioBlob);
                 formData.append('user_id', userId);
+
                 // Send the audio data to the server using fetch API
-                fetch('https://voicechat.dns.army/voice', {
+                fetch('https://voicechat.dns.arms/voice', {
                     method: 'POST',
                     body: formData
                 })
@@ -160,12 +163,6 @@
 
         // Function to detect silence
         function detectSilence() {
-            if (typeof mediaRecorder === 'undefined' || typeof mediaRecorder.stream === 'undefined')
-            {
-                updateStatus("mediaRecorder or mediaRecorder.stream is not ready yet.");
-                setTimeout(detectSilence, 500);
-                return;
-            }
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const analyser = audioContext.createAnalyser();
             const source = audioContext.createMediaStreamSource(mediaRecorder.stream);
@@ -192,29 +189,29 @@
                     silenceTimer = null;
                 }
 
-requestAnimationFrame(checkSilence);
-};
+                requestAnimationFrame(checkSilence);
+            };
 
-checkSilence();
-}
+            checkSilence();
+        }
 
-// Function to reset the silence timer
-function resetSilenceTimer() {
-clearTimeout(silenceTimer);
-silenceTimer = null;
-}
+        // Function to reset the silence timer
+        function resetSilenceTimer() {
+            clearTimeout(silenceTimer);
+            silenceTimer = null;
+        }
 
-// Start recording when the page loads
-window.onload = () => {
-userId = getUserIdFromURL();
-if (userId) {
-document.getElementById('userId').innerText = userId;
-document.getElementById('userInfo').classList.remove('hidden');
-updateStatus("Ready to record.");
-} else {
-updateStatus("Error: User ID not found in URL.", true);
-}
-};
-</script>
+        // Start recording when the page loads
+        window.onload = () => {
+            userId = getUserIdFromURL();
+            if (userId) {
+                document.getElementById('userId').innerText = userId;
+                document.getElementById('userInfo').classList.remove('hidden');
+                updateStatus("Ready to record.");
+            } else {
+                updateStatus("Error: User ID not found in URL.", true);
+            }
+        };
+    </script>
 </body>
 </html>

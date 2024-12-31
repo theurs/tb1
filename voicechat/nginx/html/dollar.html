@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой комфортный курс доллара</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        #dollarRate {
+            font-size: 10em;
+            font-weight: bold;
+            color: #007bff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Мой комфортный курс доллара</h1>
+    <div id="dollarRate"></div>
+
+    <script>
+        let dollarRateElement = document.getElementById('dollarRate');
+        let isFrozen = false;
+        let intervalId;
+
+        function updateDollarRate() {
+            if (!isFrozen) {
+                let rate = Math.floor(Math.random() * (300 - 30) + 30);
+                dollarRateElement.textContent = rate;
+            }
+        }
+
+        dollarRateElement.addEventListener('click', function() {
+            isFrozen = !isFrozen;
+            if (isFrozen) {
+                clearInterval(intervalId);
+            } else {
+                intervalId = setInterval(updateDollarRate, 100); // Обновляем каждые 100 мс
+            }
+        });
+
+        intervalId = setInterval(updateDollarRate, 100); // Начинаем обновление при загрузке
+    </script>
+</body>
+</html>

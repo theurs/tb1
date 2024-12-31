@@ -35,7 +35,7 @@ import my_db
 import my_log
 import my_sum
 import utils
-from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, update_user_profile, calc, calc_admin, get_cryptocurrency_rates, run_script, query_wikipedia, get_time_in_timezone
+from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, calc, calc_admin, run_script, get_time_in_timezone
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -168,9 +168,11 @@ def chat(query: str,
                 remove_key(key)
 
         time_start = time.time()
-        for key in keys:
+        key_i = 0
+        while key_i < len(keys):
+            key = keys[key_i]
             if time.time() > time_start + (TIMEOUT-1):
-                my_log.log_gemini(f'my_gemini:chat: stop after timeout {round(time.time() - time_start, 2)}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                my_log.log_gemini(f'my_gemini:chat1: stop after timeout {round(time.time() - time_start, 2)}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 return ''
 
             genai.configure(api_key = key)
@@ -192,16 +194,12 @@ def chat(query: str,
 
             if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
                 SKILLS = [
-                    # "code_execution", # не работает одновременно с другими функциями
-                    # query_wikipedia, # есть проблемы с поиском, википедия выдает варианты а гемма2 далеко не всегда справляется в выбором
                     search_google,
                     download_text_from_url,
-                    # update_user_profile,
                     calc_tool,
                     get_time_in_timezone,
                     get_weather,
                     get_currency_rates,
-                    # get_cryptocurrency_rates, # broken, why?
                     ]
                 if chat_id:
                     if chat_id != 'test':
@@ -214,10 +212,6 @@ def chat(query: str,
                 model_ = genai.GenerativeModel(
                     model,
                     tools = SKILLS,
-                    # tools={"google_search_retrieval": {
-                    #             "dynamic_retrieval_config": {
-                    #             "mode": "unspecified",
-                    #             "dynamic_threshold": 0.3}}},
                     generation_config = GENERATION_CONFIG,
                     safety_settings=SAFETY_SETTINGS,
                     system_instruction = system,
@@ -242,19 +236,24 @@ def chat(query: str,
                                     request_options=request_options,
                                     )
             except Exception as error:
-                my_log.log_gemini(f'my_gemini:chat: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                if 'tokens, which is more than the max tokens limit allowed' in str(error):
+                    # убрать 4 первых сообщения
+                    mem = chat.history[4:]
+                    continue
+                my_log.log_gemini(f'my_gemini:chat2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
                    'reason: "API_KEY_INVALID"' in str(error):
                     remove_key(key)
                 if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error) or 'User location is not supported for the API use.' in str(error):
                     return ''
                 time.sleep(2)
+                key_i += 1
                 continue
 
             try:
                 result = chat.history[-1].parts[-1].text
             except Exception as error3:
-                my_log.log_gemini(f'my_gemini:chat: {error3}\nresult: {result}\nchat history: {str(chat.history)}')
+                my_log.log_gemini(f'my_gemini:chat3: {error3}\nresult: {result}\nchat history: {str(chat.history)}')
                 result = resp.text
 
             # пытается вызвать функцию неправильно
@@ -270,7 +269,7 @@ def chat(query: str,
                 try:
                     result = chat.history[-1].parts[-1].text = result
                 except Exception as error4:
-                    my_log.log_gemini(f'my_gemini:chat: {error4}\nresult: {result}\nchat history: {str(chat.history)}')
+                    my_log.log_gemini(f'my_gemini:chat4: {error4}\nresult: {result}\nchat history: {str(chat.history)}')
 
             result = result.strip()
 
@@ -287,11 +286,13 @@ def chat(query: str,
                         my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
                 return result
 
-        my_log.log_gemini(f'my_gemini:chat:no results after 4 tries, query: {query}\n{model}')
+            key_i += 1
+
+        my_log.log_gemini(f'my_gemini:chat5:no results after 4 tries, query: {query}\n{model}')
         return ''
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'my_gemini:chat: {error}\n\n{traceback_error}\n{model}')
+        my_log.log_gemini(f'my_gemini:chat6: {error}\n\n{traceback_error}\n{model}')
         return ''
 
 

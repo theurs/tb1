@@ -4898,7 +4898,8 @@ def image_gen(message: telebot.types.Message):
                                                         continue
 
                                     except Exception as error2:
-                                        my_log.log2(f'tb:image:send to pics_group: {error2}')
+                                        traceback_error = traceback.format_exc()
+                                        my_log.log2(f'tb:image:send to pics_group: {error2}\n\n{traceback_error}')
 
                                 if BING_FLAG:
                                     IMG = '/bing'
@@ -6867,7 +6868,7 @@ def do_task(message, custom_prompt: str = ''):
                                 style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full, l = 5, model = gmodel)
                                 if style_:
-                                    answer = my_groq.ai(f'({style_}) {message.text}', mem_ = mem__, temperature=0.6)
+                                    answer = my_groq.ai(f'{message.text}', system=style_, mem_ = mem__, temperature=0.6)
                                 else:
                                     answer = my_groq.ai(message.text, mem_ = mem__, temperature=0.6)
                                 my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)
@@ -7499,6 +7500,37 @@ def bing_api_post() -> Dict[str, Any]:
         return jsonify({"error": str(e)}), 500
 
 
+@FLASK_APP.route('/images', methods=['POST'])
+def images_api_post() -> Dict[str, Any]:
+    """
+    API endpoint for generating images using all providers.
+
+    :return: A JSON response containing a list of URLs or an error message.
+    """
+    try:
+        # Get JSON data from the request
+        data: Dict[str, Any] = request.get_json()
+
+        # Extract the prompt from the JSON data
+        prompt: str = data.get('prompt', '')
+
+        if not prompt:
+            return jsonify({"error": "Prompt is required"}), 400
+
+        # Generate images using Bing API
+        image_urls: List[str] = my_genimg.gen_images(prompt, user_id='api_images')
+        # image_urls: List[str] = ['url1', 'url2', 'url3', 'url4']
+
+        if not image_urls:
+            return jsonify({"error": "No images generated"}), 404
+
+        return jsonify({"urls": image_urls}), 200
+
+    except Exception as e:
+        my_log.log_bing_api(f'tb:images_api_post: {e}')
+        return jsonify({"error": str(e)}), 500
+
+
 @async_run
 def run_flask(addr: str ='0.0.0.0', port: int = 58796):
     try:
@@ -7552,4 +7584,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    tr("тест1", 'ru', 'тест2')

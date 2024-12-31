@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pip install cryptocompare
+
 
 import cachetools.func
 import math
@@ -15,7 +15,6 @@ import re
 import requests
 import subprocess
 import traceback
-import wikipedia
 from math import *
 from decimal import *
 from numbers import *
@@ -24,7 +23,6 @@ from numbers import *
 # from random import *
 from random import betavariate, choice, choices, expovariate, gammavariate, gauss, getrandbits, getstate, lognormvariate, normalvariate, paretovariate, randbytes, randint, randrange, sample, seed, setstate, shuffle, triangular, uniform, vonmisesvariate, weibullvariate
 
-import cryptocompare
 from geopy.geocoders import Nominatim
 
 import cfg
@@ -151,48 +149,6 @@ def decode_string(s: str) -> str:
         return s
 
 
-def update_user_profile(name: str,
-                        location: str,
-                        gender: str,
-                        age: str,
-                        language: str,
-                        interests: str,
-                        remember: str,
-                        user_id: str) -> None:
-    """
-    Updates user profile info.
-
-    Call this function if the user shares something about themselves,
-    or if the user asks to remember some info.
-
-    Important: Always send all info filled, use None for unknown data.
-
-    Args:
-        name: A string with user name.
-        location: A string with user location.
-        gender: A string with user gender.
-        age: A string with user age example '18', '33'.
-        language: A string with user language, 2 letters example 'ru', 'en', 'uk'.
-        interests: A string with user interests.
-        remember: A string with user asked to remember info.
-                  Examples: name: Иван Иванов, location: Москва, gender: Мужской, age: 25, language: Русский, interests: Путешествия, фотография, музыка, remember: Моя кошка зовут Мурка
-                            name: Дмитрий, location: , gender: , age: 28, language: Русский, interests: Программирование, видеоигры, remember: Купить подарок маме на день рождения
-                            name: Алина, location: , gender: , age: , language: Русский, interests: , remember: Купить молоко и хлеб
-        user_id: A string with the user ID, examples '[1234356345] [0]', '[-102754275491] [58644]', '[777000777] [0]'.
-        If it's negative, then the user is not a person but a Telegram public chat.
-    """
-    name = decode_string(name)
-    location = decode_string(location)
-    gender = decode_string(gender)
-    age = decode_string(age)
-    language = decode_string(language)
-    interests = decode_string(interests)
-    remember = decode_string(remember)
-    bio = f'name: {name}, location: {location}, gender: {gender}, age: {age}, language: {language}, interests: {interests}, remember: {remember}'
-    my_log.log_gemini_skills(bio)
-    my_db.set_user_property(user_id, 'persistant_memory', bio)
-
-
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def calc(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
@@ -269,32 +225,6 @@ def my_factorial(n: int) -> int:
     return math.factorial(n)
 
 
-@cachetools.func.ttl_cache(maxsize=1, ttl = 60*60)
-def get_cryptocurrency_rates():
-    '''Get cryptocurrency rates.
-    Return top 20 coins rates.
-    '''
-    try:
-        my_log.log_gemini_skills('Cryptocurrency: get')
-        if hasattr(cfg, 'CRYPTOCOMPARE_KEY') and cfg.CRYPTOCOMPARE_KEY:
-            cryptocompare.cryptocompare._set_api_key_parameter(cfg.CRYPTOCOMPARE_KEY)
-            r = cryptocompare.get_coin_list()
-            coins = []
-            for key in r.keys():
-                if int(r[key]['SortOrder']) <= 20:
-                    coins.append(r[key]['Name'])
-
-            r = cryptocompare.get_price(coins, 'USD')
-            my_log.log_gemini_skills(f'Cryptocurrency: {r}')
-            return str(r)
-        else:
-            return ''
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'get_cryptocurrency_rates:Error: {error}\n\n{traceback_error}')
-        return f'Error: {error}'
-
-
 # надо использовать стиль типа такого что бы он не отнекивался, не говорил что не может не умеет
 # /style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску
 def run_script(filename: str, body: str) -> str:
@@ -345,80 +275,6 @@ def run_script(filename: str, body: str) -> str:
         return f'{error}\n\n{traceback_error}'
 
 
-def get_new_wikipedia_query(options: list, query: str) -> str:
-    '''AI Select best fit option from options list'''
-    try:
-        q = f'Select best possible option for query ({query}) from this list, what number fit best?\n\n'
-        n = 1
-        for x in options:
-            q += f'Option {n}: {x}\n'
-            n += 1
-        q += f'Option {n}: None of them\n'
-
-        answer = my_groq.ai(q,
-                            system = 'answer supershot, your answer should contain only number of option',
-                            max_tokens_ = 10,
-                            temperature = 0,
-                            timeout = 20,
-                            )
-        if answer:
-            try:
-                answer_n = int(answer)
-                if answer_n == n:
-                    return ''
-                return options[answer_n - 1]
-            except ValueError:
-                return ''
-        else:
-            return ''
-    except Exception as error:
-        my_log.log_gemini_skills(f'get_new_wikipedia_query: {error}')
-        return ''
-
-
-@cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
-def query_wikipedia(query: str, lang: str = 'ru', search: bool = True) -> str:
-    """
-    Queries Wikipedia for any facts. Returns the page content
-    or search result, if search results then select the most relevant result and query it again.
-
-    Args:
-        query: The search query.
-        lang: Query language.
-
-    Returns:
-        The content of the Wikipedia page or a disambiguation message.
-    """
-    query = decode_string(query)
-    lang = decode_string(lang)
-    my_log.log_gemini_skills(f'Wikipedia: {query} [{lang}]')
-    try:
-        wikipedia.set_lang(lang)
-        if search:
-            options = wikipedia.search(query)
-            my_log.log_gemini_skills(f'Wikipedia: options {options}')
-            if options:
-                new_query = get_new_wikipedia_query(options, query)
-                if new_query:
-                    resp = query_wikipedia(new_query, lang, search = False)
-                else:
-                    resp = ''
-            else:
-                resp = ''
-        else:
-            r = wikipedia.page(query)
-            # resp = str(r.content)
-            url = r.url
-            resp = my_sum.download_text_v2(url, max_req = 30000)
-        if not search:
-            my_log.log_gemini_skills(f'Wikipedia: {resp[:1000]}')
-        return resp
-    except Exception as error:
-        resp = 'Error: ' + str(error)
-        my_log.log_gemini_skills(f'Wikipedia: {resp}')
-        return resp
-
-
 def get_time_in_timezone(timezone_str: str) -> str:
     """
     Returns the current time in the specified timezone.
@@ -444,8 +300,8 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     my_groq.load_users_keys()
-    moscow_time = get_time_in_timezone("Europe/Moscow")
-    print(f"Time in Moscow: {moscow_time}")
+    # moscow_time = get_time_in_timezone("Europe/Moscow")
+    # print(f"Time in Moscow: {moscow_time}")
 
     # print(calc("(datetime.date(2025, 6, 1) - datetime.date.today()).days"))
     # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
@@ -455,9 +311,5 @@ if __name__ == '__main__':
 
     # text='''ls -l'''
     # print(run_script('test.sh', text))
-
-    # my_db.close()
-    
-    # print(query_wikipedia('орвилл', lang = 'ru', search = True))
 
     my_db.close()

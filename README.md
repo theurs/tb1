@@ -416,10 +416,6 @@ OPEN_ROUTER_FREE_KEYS = [
 # OPENEXCHANGER_KEY = 'xxx'
 
 
-# https://www.cryptocompare.com/
-# CRYPTOCOMPARE_KEY = 'xxx'
-
-
 # https://cloud.sambanova.ai/apis llama 8-405
 # free 10 запросов в секунду для 405b, 20 для 70b
 #SAMBANOVA_KEYS = [

@@ -42,9 +42,6 @@ USER_KEYS_LOCK = threading.Lock()
 # {hash of image:model name, ...}
 WHO_AUTOR = {}
 
-# не давать генерировать картинки больше чем 1 за раз для 1 юзера
-# {userid:lock}
-LOCKS = {}
 
 # попробовать заблокировать параллельные вызовы бинга
 BING_LOCK = threading.Lock()
@@ -604,58 +601,51 @@ def gen_images(prompt: str, moderation_flag: bool = False,
     if not user_id:
         user_id = 'test'
 
-    if user_id in LOCKS:
-        lock = LOCKS[user_id]
+    if prompt.strip() == '':
+        return []
+
+    negative = ''
+
+    reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
+    if reprompt == 'MODERATION':
+        return ['moderation',]
+
+    if reprompt:
+        prompt = reprompt
     else:
-        lock = threading.Lock()
-        LOCKS[user_id] = lock
+        return []
 
-    with lock:
-        if prompt.strip() == '':
-            return []
+    pool = ThreadPool(processes=9)
 
-        negative = ''
+    if use_bing:
+        async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
 
-        reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
-        if reprompt == 'MODERATION':
-            return ['moderation',]
+        async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
+        async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
 
-        if reprompt:
-            prompt = reprompt
-        else:
-            return []
+        async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
 
-        pool = ThreadPool(processes=9)
+        async_result9 = pool.apply_async(glm, (prompt, negative))
 
-        if use_bing:
-            async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
+        result = (async_result1.get() or []) + \
+                (async_result2.get() or []) + \
+                (async_result3.get() or []) + \
+                (async_result4.get() or []) + \
+                (async_result9.get() or [])
+    else:
+        async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
+        async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
 
-            async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
-            async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
+        async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
 
-            async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
+        async_result9 = pool.apply_async(glm, (prompt, negative))
 
-            async_result9 = pool.apply_async(glm, (prompt, negative))
+        result = (async_result2.get() or []) + \
+                (async_result3.get() or []) + \
+                (async_result4.get() or []) + \
+                (async_result9.get() or [])
 
-            result = (async_result1.get() or []) + \
-                    (async_result2.get() or []) + \
-                    (async_result3.get() or []) + \
-                    (async_result4.get() or []) + \
-                    (async_result9.get() or [])
-        else:
-            async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
-            async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
-
-            async_result4 = pool.apply_async(huggin_face_api, (prompt, negative))
-
-            async_result9 = pool.apply_async(glm, (prompt, negative))
-
-            result = (async_result2.get() or []) + \
-                    (async_result3.get() or []) + \
-                    (async_result4.get() or []) + \
-                    (async_result9.get() or [])
-
-        return result
+    return result
 
 
 def test_hkey(key: str):

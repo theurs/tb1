@@ -118,7 +118,7 @@
                 formData.append('user_id', userId);
 
                 // Send the audio data to the server using fetch API
-                fetch('https://10.20.30.4:58796/voice', {
+                fetch('http://10.20.30.4:58796/voice', {
                     method: 'POST',
                     body: formData
                 })

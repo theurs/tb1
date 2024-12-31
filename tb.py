@@ -7499,13 +7499,13 @@ def bing_api_post() -> Dict[str, Any]:
         my_log.log_bing_api(f'tb:bing_api_post: {e}')
         return jsonify({"error": str(e)}), 500
 
-
+import base64
 @FLASK_APP.route('/images', methods=['POST'])
 def images_api_post() -> Dict[str, Any]:
     """
     API endpoint for generating images using all providers.
 
-    :return: A JSON response containing a list of URLs or an error message.
+    :return: A JSON response containing a list of URLs (str) or base64 encoded image data (str) or an error message.
     """
     try:
         # Get JSON data from the request
@@ -7517,14 +7517,24 @@ def images_api_post() -> Dict[str, Any]:
         if not prompt:
             return jsonify({"error": "Prompt is required"}), 400
 
-        # Generate images using Bing API
-        image_urls: List[str] = my_genimg.gen_images(prompt, user_id='api_images')
-        # image_urls: List[str] = ['url1', 'url2', 'url3', 'url4']
+        # Generate images using available APIs, the result can be a list of strings (URLs) or bytes (image data)
+        image_results: List[Union[str, bytes]] = my_genimg.gen_images(prompt, user_id='api_images')
+        # image_results: List[Union[str, bytes]] = ['url1', b'image_data_1', 'url2', b'image_data_2']
 
-        if not image_urls:
+        if not image_results:
             return jsonify({"error": "No images generated"}), 404
 
-        return jsonify({"urls": image_urls}), 200
+        # Process the results to convert bytes to base64 encoded strings
+        processed_results: List[str] = []
+        for item in image_results:
+            if isinstance(item, bytes):
+                # Encode bytes to base64 string
+                processed_results.append(base64.b64encode(item).decode('utf-8'))
+            else:
+                # Assume it's a string (URL) and add it directly
+                processed_results.append(item)
+
+        return jsonify({"results": processed_results}), 200
 
     except Exception as e:
         my_log.log_bing_api(f'tb:images_api_post: {e}')

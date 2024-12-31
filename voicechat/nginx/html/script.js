@@ -1,0 +1,141 @@
+// script.js
+import { updateStatus, getUserIdFromURL, resetSilenceTimer, SILENCE_THRESHOLD } from './utils.js';
+
+let mediaRecorder;
+let audioChunks = [];
+let silenceTimer;
+let userId;
+let isFirst = true; // Flag to indicate if it's the first recording
+
+async function startRecording() {
+    if (isFirst) {
+        updateStatus("Starting first recording...");
+        isFirst = false;
+    } else {
+        updateStatus("User speaks again...");
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (event) => {
+            console.log("Data available:", event.data);
+            audioChunks.push(event.data);
+            resetSilenceTimer();
+        };
+
+        mediaRecorder.onstop = async () => {
+            updateStatus("Recording stopped.");
+            await sendAudio();
+            audioChunks = [];
+        };
+
+        mediaRecorder.start();
+        updateStatus("Recording started.");
+        detectSilence();
+
+    } catch (error) {
+        updateStatus(`Error accessing microphone: ${error.message}`);
+    }
+}
+
+async function sendAudio() {
+    updateStatus("Sending audio...");
+    if (audioChunks.length === 0) {
+        updateStatus("No audio to send.");
+        startRecording(); // Start listening again immediately
+        return;
+    }
+
+    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    const formData = new FormData();
+    formData.append('audio', audioBlob);
+    formData.append('user_id', userId);
+
+    try {
+        const response = await fetch('https://voicechat.dns.army/voice', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server responded with status: ${response.status}, message: ${errorText}`);
+        }
+
+        updateStatus("Audio sent. Waiting for response...");
+        const responseBlob = await response.blob();
+        updateStatus("Response received.");
+        await playAudio(await responseBlob.arrayBuffer(), () => {
+            updateStatus("Audio playback finished.");
+            startRecording(); // Start listening again after audio playback
+        });
+
+    } catch (error) {
+        updateStatus(`Error sending/receiving audio: ${error.message}`);
+    }
+}
+
+// Function to detect silence
+function detectSilence() {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioContext.createAnalyser();
+    const source = audioContext.createMediaStreamSource(mediaRecorder.stream);
+    source.connect(analyser);
+    analyser.fftSize = 2048;
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const checkSilence = () => {
+        analyser.getByteTimeDomainData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+            sum += Math.abs(dataArray[i] - 128);
+        }
+        const average = sum / bufferLength;
+
+        // Check if the average volume is below a certain threshold to detect silence
+        if (average < 5) {
+            if (!silenceTimer) {
+                silenceTimer = setTimeout(() => {
+                    if (mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                    }
+                }, SILENCE_THRESHOLD);
+            }
+        } else {
+            clearTimeout(silenceTimer);
+            silenceTimer = null;
+        }
+
+        requestAnimationFrame(checkSilence);
+    };
+
+    checkSilence();
+}
+
+async function playAudio(arrayBuffer, onAudioEnded) {
+    updateStatus("Playing audio...");
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const buffer = await audioContext.decodeAudioData(arrayBuffer);
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        source.onended = onAudioEnded;
+        source.start();
+    } catch (error) {
+        updateStatus(`Error playing audio: ${error.message}`);
+    }
+}
+
+window.onload = () => {
+    userId = getUserIdFromURL();
+    if (userId) {
+        updateStatus("Ready to record. User ID: " + userId);
+        startRecording(); // Start recording immediately when the page loads
+    } else {
+        updateStatus("Error: User ID not found in URL.", true);
+    }
+};

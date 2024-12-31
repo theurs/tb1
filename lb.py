@@ -31,13 +31,16 @@ def process_audio_data(audio_data: bytes, user_id: int) -> bytes:
     c_id = f'[{user_id}] [0]'
 
     query = stt(audio_data)
+    print('запрос: ', query)
 
     answer = chat(query, c_id)
+    print('ответ: ', answer)
     if answer:
         audio_data = tts(answer, voice='de', rate='+50%', gender='female')
-        if audio_data and isinstance(audio_data, bytes):
+        print('audio_data len: ', len(audio_data))
+        if audio_data:
             return audio_data
-
+    print('audio_data zero')
     return b''
 
 

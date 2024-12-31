@@ -7,12 +7,19 @@
     <h1>Voice Chat</h1>
     <script>
         // Set the time threshold for silence detection (in milliseconds)
-        const silenceThreshold = 1000; 
+        const silenceThreshold = 1000;
 
         // Initialize variables for audio recording
         let mediaRecorder;
         let audioChunks = [];
         let silenceTimer;
+        let userId;
+
+        // Function to get user_id from URL
+        function getUserIdFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('user_id');
+        }
 
         // Function to start recording audio
         async function startRecording() {
@@ -52,23 +59,29 @@
         function sendAudio() {
             if (audioChunks.length > 0) {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                
-                // Create a FormData object to send the audio file
+
+                // Create a FormData object to send the audio file and user_id
                 const formData = new FormData();
                 formData.append('audio', audioBlob);
+                formData.append('user_id', userId);
 
                 // Send the audio data to the server using fetch API
-                fetch('/voice', {
+                fetch('https://10.20.30.4:58796/voice', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.arrayBuffer())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.arrayBuffer();
+                })
                 .then(arrayBuffer => {
-                // Play received audio.
+                    // Play received audio.
                     playAudio(arrayBuffer);
                 })
                 .catch(error => {
-                    console.error("Error sending audio:", error);
+                    console.error("Error sending/receiving audio:", error);
                 });
                 // Clear the recorded audio chunks
                 audioChunks = [];
@@ -85,9 +98,15 @@
                 source.start();
             });
         }
-        
+
         // Function to detect silence
         function detectSilence() {
+            if (typeof mediaRecorder === 'undefined' || typeof mediaRecorder.stream === 'undefined')
+            {
+                console.log("mediaRecorder or mediaRecorder.stream is not ready yet.");
+                setTimeout(detectSilence, 500);
+                return;
+            }
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const analyser = audioContext.createAnalyser();
             const source = audioContext.createMediaStreamSource(mediaRecorder.stream);
@@ -105,7 +124,7 @@
                 const average = sum / bufferLength;
 
                 // Check if the average volume is below a certain threshold to detect silence
-                if (average < 5) { 
+                if (average < 5) {
                     if (!silenceTimer) {
                         silenceTimer = setTimeout(stopRecording, silenceThreshold);
                     }
@@ -128,7 +147,12 @@
 
         // Start recording when the page loads
         window.onload = () => {
-            startRecording();
+            userId = getUserIdFromURL();
+            if (userId) {
+                startRecording();
+            } else {
+                console.error("User ID not found in URL.");
+            }
         };
     </script>
 </body>

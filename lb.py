@@ -4,8 +4,8 @@ from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 
 import cfg
-from my_groq_voice_chat import chat, stt
-from my_tts_voicechat import tts
+import my_groq_voice_chat
+import my_tts_voicechat
 
 import my_log
 from utils import async_run
@@ -30,16 +30,20 @@ def process_audio_data(audio_data: bytes, user_id: int) -> bytes:
     """
     c_id = f'[{user_id}] [0]'
 
-    print(user_id, audio_data)
-    return b''
+    if not audio_data or len(audio_data) < 2000:
+        return b''
 
-    query = stt(audio_data)
+    query = my_groq_voice_chat.stt(audio_data)
+
+    if not query.strip():
+        return b''
+
     print('запрос: ', query)
 
-    answer = chat(query, c_id)
+    answer = my_groq_voice_chat.chat(query, c_id)
     print('ответ: ', answer)
     if answer:
-        audio_data = tts(answer, voice='de', rate='+50%', gender='female')
+        audio_data = my_tts_voicechat.tts(answer, voice='de', rate='+50%', gender='female')
         print('audio_data len: ', len(audio_data))
         if audio_data:
             return audio_data
@@ -102,6 +106,7 @@ def main():
     """
     Runs the main function, which sets default commands and starts polling the bot.
     """
+    my_groq_voice_chat.load_users_keys()
 
     if hasattr(cfg, 'BING_API') and cfg.BING_API:
         run_flask(addr='0.0.0.0', port=42796)

@@ -48,6 +48,7 @@ import my_groq
 import my_log
 import my_mistral
 import my_ocr
+import my_psd
 import my_telegraph
 import my_openrouter
 import my_openrouter_free
@@ -2458,11 +2459,15 @@ def handle_document(message: telebot.types.Message):
                                                 )+pandoc_support+simple_text or \
                                                 message.document.mime_type.startswith('text/') or \
                                                 message.document.mime_type.startswith('video/') or \
+                                                message.document.mime_type.startswith('image/') or \
+                                                message.document.file_name.lower().endswith('.psd') or \
                                                 message.document.mime_type.startswith('audio/')):
+
                 if message.document and message.document.mime_type.startswith('audio/') or \
                     message.document and message.document.mime_type.startswith('video/'):
                     handle_voice(message)
                     return
+
                 with ShowAction(message, 'typing'):
                     try:
                         file_info = bot.get_file(message.document.file_id)
@@ -2484,16 +2489,20 @@ def handle_document(message: telebot.types.Message):
                     elif message.document.mime_type in pandoc_support:
                         ext = utils.get_file_ext(file_info.file_path)
                         text = my_pandoc.fb2_to_text(file_bytes.read(), ext, lang = get_ocr_language(message))
-                    elif message.document.mime_type == 'image/svg+xml':
+                    elif message.document.mime_type == 'image/svg+xml' or message.document.file_name.lower().endswith('.psd'):
                         try:
-                            image = cairosvg.svg2png(file_bytes.read(), output_width=2048)
+                            if message.document.file_name.lower().endswith('.psd'):
+                                image = my_psd.convert_psd_to_jpg(file_bytes.read())
+                            elif message.document.mime_type == 'image/svg+xml':
+                                image = cairosvg.svg2png(file_bytes.read(), output_width=2048)
+                            image = utils.resize_image_dimention(image)
+                            image = utils.resize_image(image)
                             #send converted image back
                             bot.send_photo(message.chat.id,
                                         image,
                                         reply_to_message_id=message.message_id,
                                         message_thread_id=message.message_thread_id,
                                         caption=message.document.file_name + '.png',
-                                        reply_markup=get_keyboard('translate', message),
                                         disable_notification=True)
                             if not message.caption:
                                 proccess_image(chat_id_full, image, message)

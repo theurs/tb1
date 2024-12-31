@@ -1323,22 +1323,60 @@ def resize_image(image_bytes: bytes, max_size: int = 10 * 1024 * 1024) -> bytes:
         return image_bytes  # Return original bytes if open fails
 
     quality = 95
+
     while True:
-      output = io.BytesIO()
-      try:
-          img.save(output, format="JPEG", quality=quality, optimize=True, subsampling=0) # optimize and preserve text
-      except Exception:
-          return image_bytes # Return original bytes if save fails
+        output = io.BytesIO()
+        try:
+            img.save(output, format="JPEG", quality=quality, optimize=True, subsampling=0) # optimize and preserve text
+        except Exception:
+            return image_bytes # Return original bytes if save fails
 
-      size = output.tell()
+        size = output.tell()
 
-      if size <= max_size:
-        return output.getvalue()
+        if size <= max_size:
+            return output.getvalue()
 
-      if quality <= 10:  # Minimum quality
-        return output.getvalue()
-      
-      quality -= 5
+        if quality <= 10:  # Minimum quality
+            return output.getvalue()
+
+        quality -= 5
+
+
+def resize_image_dimention(image_bytes: bytes) -> bytes:
+    """
+    Resizes an image to fit within Telegram's dimension limits (width + height <= 10000),
+    while preserving the aspect ratio and format.
+
+    Args:
+        image_bytes: The image data as bytes.
+
+    Returns:
+        The resized image data as bytes, or the original image data if no resizing was needed.
+    """
+    try:
+        img = PIL.Image.open(io.BytesIO(image_bytes)) # Open the image from bytes
+        original_format = img.format  # Store original format
+
+        if img.width + img.height > 10000:
+            # Calculate the scaling factor to maintain aspect ratio
+            # while keeping within Telegram's size limit.
+            scale_factor = 10000 / (img.width + img.height)
+            new_width = int(img.width * scale_factor)
+            new_height = int(img.height * scale_factor)
+
+            # Resize the image using the calculated dimensions
+            img = img.resize((new_width, new_height), PIL.Image.LANCZOS)
+        else:
+            return image_bytes
+
+        # Save the image to a BytesIO object, preserving the original format
+        output_bytes = io.BytesIO()
+        img.save(output_bytes, format=original_format, optimize=True)
+        return output_bytes.getvalue()
+
+    except Exception as e:
+        my_log.log2(f"utils:resize_image_dimention: {e}")
+        return image_bytes
 
 
 def truncate_text(text: str, max_lines: int = 10, max_chars: int = 300) -> str:

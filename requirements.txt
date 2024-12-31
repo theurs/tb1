@@ -47,6 +47,7 @@ pendulum
 Pillow
 pillow-heif
 prettytable
+psd-tools
 pyarrow
 pyenchant
 pydub

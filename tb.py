@@ -7619,7 +7619,7 @@ def process_voice():
 
 
 @async_run
-def run_flask(addr: str ='0.0.0.0', port: int = 58796):
+def run_flask(addr: str ='127.0.0.1', port: int = 58796):
     try:
         FLASK_APP.run(debug=True, use_reloader=False, host=addr, port = port)
     except Exception as error:
@@ -7649,7 +7649,8 @@ def main():
     log_group_daemon()
 
     if hasattr(cfg, 'BING_API') and cfg.BING_API:
-        run_flask(addr='127.0.0.1', port=58796)
+        # run_flask(addr='127.0.0.1', port=58796)
+        run_flask(addr='0.0.0.0', port=58796)
 
     # Remove webhook, it fails sometimes the set if there is a previous webhook
     bot.remove_webhook()

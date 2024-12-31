@@ -2,9 +2,25 @@
 <html>
 <head>
     <title>Voice Chat</title>
+    <style>
+        #userInfo {
+            margin-bottom: 10px;
+        }
+        #status {
+            margin-bottom: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <h1>Voice Chat</h1>
+    <div id="userInfo" class="hidden">User ID: <span id="userId"></span></div>
+    <div id="status">Status: <span id="statusText"></span></div>
+    <button id="startButton" onclick="startRecording();">Start Recording</button>
+    <button id="stopButton" onclick="stopRecording();" disabled>Stop Recording</button>
+
     <script>
         // Set the time threshold for silence detection (in milliseconds)
         const silenceThreshold = 1000;
@@ -21,6 +37,11 @@
             return urlParams.get('user_id');
         }
 
+        // Function to update the status text
+        function updateStatus(statusText) {
+            document.getElementById('statusText').innerText = statusText;
+        }
+
         // Function to start recording audio
         async function startRecording() {
             try {
@@ -32,17 +53,29 @@
                 mediaRecorder.ondataavailable = (event) => {
                     audioChunks.push(event.data);
                     resetSilenceTimer();
+                    updateStatus("Recording...");
+                };
+
+                // Event handler for when recording stops
+                mediaRecorder.onstop = () => {
+                    updateStatus("Recording stopped.");
+                    document.getElementById('startButton').disabled = false;
+                    document.getElementById('stopButton').disabled = true;
                 };
 
                 // Start the media recorder
                 mediaRecorder.start();
                 console.log("Recording started.");
+                updateStatus("Recording...");
+                document.getElementById('startButton').disabled = true;
+                document.getElementById('stopButton').disabled = false;
 
                 // Start the silence detection
                 detectSilence();
 
             } catch (error) {
                 console.error("Error accessing microphone:", error);
+                updateStatus("Error: " + error.message);
             }
         }
 
@@ -57,6 +90,7 @@
 
         // Function to send audio data to the server
         function sendAudio() {
+            updateStatus("Sending audio...");
             if (audioChunks.length > 0) {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
 
@@ -66,7 +100,7 @@
                 formData.append('user_id', userId);
 
                 // Send the audio data to the server using fetch API
-                fetch('https://10.20.30.4:58796/voice', {
+                fetch('https://10.20.30.4/voice', {
                     method: 'POST',
                     body: formData
                 })
@@ -78,13 +112,17 @@
                 })
                 .then(arrayBuffer => {
                     // Play received audio.
+                    updateStatus("Audio sent. Playing received audio...");
                     playAudio(arrayBuffer);
                 })
                 .catch(error => {
                     console.error("Error sending/receiving audio:", error);
+                    updateStatus("Error: " + error.message);
                 });
                 // Clear the recorded audio chunks
                 audioChunks = [];
+            } else {
+                updateStatus("No audio to send.");
             }
         }
 
@@ -96,6 +134,10 @@
                 source.buffer = buffer;
                 source.connect(audioContext.destination);
                 source.start();
+                updateStatus("Playing audio...");
+            }).catch(error => {
+                console.error("Error decoding audio data:", error);
+                updateStatus("Error: " + error.message);
             });
         }
 
@@ -149,9 +191,12 @@
         window.onload = () => {
             userId = getUserIdFromURL();
             if (userId) {
-                startRecording();
+                document.getElementById('userId').innerText = userId;
+                document.getElementById('userInfo').classList.remove('hidden');
+                updateStatus("Ready to record.");
             } else {
                 console.error("User ID not found in URL.");
+                updateStatus("Error: User ID not found in URL.");
             }
         };
     </script>

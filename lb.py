@@ -113,7 +113,7 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
+    main()
 
-    audio_data = my_tts_voicechat.tts('hello all', voice='de', rate='+50%', gender='female')
-    print(len(audio_data))
+    # audio_data = my_tts_voicechat.tts('hello all', voice='de', rate='+50%', gender='female')
+    # print(len(audio_data))

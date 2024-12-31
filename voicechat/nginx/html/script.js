@@ -5,38 +5,47 @@ let mediaRecorder;
 let audioChunks = [];
 let silenceTimer;
 let userId;
+let stream; // Global variable to store the microphone stream
 let isFirst = true; // Flag to indicate if it's the first recording
 
-async function startRecording() {
+async function initializeRecorder() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (error) {
+        updateStatus(`Ошибка микрофона: ${error.message}`);
+    }
+}
+
+function startRecording() {
+    if (!stream) {
+        updateStatus("Микрофон не инициализирован.");
+        return;
+    }
+
     if (isFirst) {
         updateStatus("Слушаю");
         isFirst = false;
     } else {
         updateStatus("Слушаю");
     }
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
 
-        mediaRecorder.ondataavailable = (event) => {
-            console.log("Data available:", event.data);
-            audioChunks.push(event.data);
-            resetSilenceTimer();
-        };
+    mediaRecorder = new MediaRecorder(stream);
 
-        mediaRecorder.onstop = async () => {
-            //updateStatus("Recording stopped.");
-            await sendAudio();
-            audioChunks = [];
-        };
+    mediaRecorder.ondataavailable = (event) => {
+        console.log("Data available:", event.data);
+        audioChunks.push(event.data);
+        resetSilenceTimer();
+    };
 
-        mediaRecorder.start();
-        //updateStatus("Recording started.");
-        detectSilence();
+    mediaRecorder.onstop = async () => {
+        //updateStatus("Recording stopped.");
+        await sendAudio();
+        audioChunks = [];
+    };
 
-    } catch (error) {
-        updateStatus(`Ошибка микрофона: ${error.message}`);
-    }
+    mediaRecorder.start();
+    //updateStatus("Recording started.");
+    detectSilence();
 }
 
 async function sendAudio() {
@@ -66,7 +75,7 @@ async function sendAudio() {
         const responseBlob = await response.blob();
         const responseArrayBuffer = await responseBlob.arrayBuffer()
 
-        // Проверка на пустой ответ
+        // Checking for empty response
         if (responseArrayBuffer.byteLength === 0) {
             updateStatus("Сервер вернул пустой ответ.");
             startRecording();
@@ -92,12 +101,13 @@ async function sendAudio() {
     }
 }
 
-
 // Function to detect silence
 function detectSilence() {
+    if (!stream) return; // Exit if the microphone stream is not available
+
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const analyser = audioContext.createAnalyser();
-    const source = audioContext.createMediaStreamSource(mediaRecorder.stream);
+    const source = audioContext.createMediaStreamSource(stream);
     source.connect(analyser);
     analyser.fftSize = 2048;
 
@@ -112,12 +122,12 @@ function detectSilence() {
         }
         const average = sum / bufferLength;
 
-        // ИЗМЕНЕНИЕ: Увеличиваем порог тишины, например, до 10
+        // CHANGED: Increased the silence threshold, for example, to 10
         if (average < 10) {
             if (!silenceTimer) {
 
                 silenceTimer = setTimeout(() => {
-                    if (mediaRecorder.state === 'recording') {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
                         mediaRecorder.stop();
                     }
                 }, SILENCE_THRESHOLD);
@@ -129,10 +139,8 @@ function detectSilence() {
 
         requestAnimationFrame(checkSilence);
     };
-
     checkSilence();
 }
-
 
 async function playAudio(arrayBuffer, onAudioEnded) {
     //updateStatus("Playing audio...");
@@ -149,11 +157,14 @@ async function playAudio(arrayBuffer, onAudioEnded) {
     }
 }
 
-window.onload = () => {
+window.onload = async () => {
     userId = getUserIdFromURL();
     if (userId) {
-        updateStatus("Готов");
-        startRecording(); // Start recording immediately when the page loads
+        await initializeRecorder(); // Initialize the microphone upon loading
+        if (stream) {
+            updateStatus("Готов");
+            startRecording(); // Start recording immediately when the page loads if the microphone is available
+        }
     } else {
         updateStatus("Ошибка: user_id не найден", true);
     }

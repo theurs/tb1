@@ -30,6 +30,9 @@ def process_audio_data(audio_data: bytes, user_id: int) -> bytes:
     """
     c_id = f'[{user_id}] [0]'
 
+    print(user_id, audio_data)
+    return b''
+
     query = stt(audio_data)
     print('запрос: ', query)
 

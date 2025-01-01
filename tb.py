@@ -101,6 +101,11 @@ pics_group = cfg.pics_group if hasattr(cfg, 'pics_group') else None
 # до 500 одновременных потоков для чата с гпт
 semaphore_talks = threading.Semaphore(500)
 
+# {id: 'img'|'bing'|'bing10'|'bing20'|'hf'|None}
+# когда юзер нажимает на кнопку /img то ожидается ввод промпта для рисования всеми способами
+# но когда юзер вводит команду /bing то ожидается ввод промпта для рисования толлько бинга
+# /hf - только huggingface
+IMG_MODE_FLAG = {}
 
 # сообщения приветствия и помощи
 HELLO_MSG = {}
@@ -4652,6 +4657,7 @@ def huggingface_image_gen_fast(message: telebot.types.Message):
 @async_run
 def image_bing_gen(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
+    IMG_MODE_FLAG[chat_id_full] = 'bing'
     if my_db.get_user_property(chat_id_full, 'blocked_bing'):
         bot_reply_tr(message, 'Bing вас забанил.')
         time.sleep(2)
@@ -4664,6 +4670,7 @@ def image_bing_gen(message: telebot.types.Message):
 @async_run
 def image_bing_gen10(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
+    IMG_MODE_FLAG[chat_id_full] = 'bing10'
     stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
     if stars < 100:
         lang = get_lang(chat_id_full, message)
@@ -4682,7 +4689,7 @@ def image_bing_gen10(message: telebot.types.Message):
 @async_run
 def image_bing_gen20(message: telebot.types.Message):
     chat_id_full = get_topic_id(message)
-    chat_id_full = get_topic_id(message)
+    IMG_MODE_FLAG[chat_id_full] = 'bing20'
     stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
     if stars < 200:
         lang = get_lang(chat_id_full, message)
@@ -4876,6 +4883,16 @@ def image_gen(message: telebot.types.Message):
 
                     if prompt == tr('Продолжай', lang):
                         return
+
+                    if prompt:
+                        if chat_id_full in IMG_MODE_FLAG:
+                            if IMG_MODE_FLAG[chat_id_full] == 'bing':
+                                BING_FLAG = 1
+                            elif IMG_MODE_FLAG[chat_id_full] == 'bing10':
+                                BING_FLAG = 10
+                            elif IMG_MODE_FLAG[chat_id_full] == 'bing20':
+                                BING_FLAG = 20
+                            del IMG_MODE_FLAG[chat_id_full]
 
                     # get chat history for content
                     conversation_history = ''

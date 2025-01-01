@@ -81,6 +81,9 @@ youtube_transcript_api
 uvicorn
 unidecode
 xlrd
+
+webrtcvad
+
 webvtt-py
 
 zhipuai

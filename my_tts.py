@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import cachetools.func
-import asyncio
 import io
 import glob
 import re
@@ -119,16 +118,19 @@ VOICES = {
     'hu': {'male': 'hu-HU-TamasNeural', 'female': 'hu-HU-NoemiNeural'},
     'id': {'male': 'id-ID-ArdiNeural', 'female': 'id-ID-GadisNeural'},
     'is': {'male': 'is-IS-GunnarNeural', 'female': 'is-IS-GudrunNeural'},
-    'it': {'male': 'it-IT-DiegoNeural', 'female': 'it-IT-ElsaNeural'},
-    'it2': {'male': 'it-IT-GiuseppeNeural', 'female': 'it-IT-IsabellaNeural'},
+    'it1': {'male': 'it-IT-GiuseppeMultilingualNeural', 'female': None},
+    'it2': {'male': 'it-IT-DiegoNeural', 'female': 'it-IT-ElsaNeural'},
+    'it3': {'male': None, 'female': 'it-IT-IsabellaNeural'},
+    'iu': {'male': 'iu-Cans-CA-TaqqiqNeural', 'female': 'iu-Cans-CA-SiqiniqNeural'},
+    'iu2': {'male': 'iu-Latn-CA-TaqqiqNeural', 'female': 'iu-Latn-CA-SiqiniqNeural'},
     'ja': {'male': 'ja-JP-KeitaNeural', 'female': 'ja-JP-NanamiNeural'},
     'jv': {'male': 'jv-ID-DimasNeural', 'female': 'jv-ID-SitiNeural'},
     'ka': {'male': 'ka-GE-GiorgiNeural', 'female': 'ka-GE-EkaNeural'},
     'kk': {'male': 'kk-KZ-DauletNeural', 'female': 'kk-KZ-AigulNeural'},
     'km': {'male': 'km-KH-PisethNeural', 'female': 'km-KH-SreymomNeural'},
     'kn': {'male': 'kn-IN-GaganNeural', 'female': 'kn-IN-SapnaNeural'},
-    'ko': {'male': 'ko-KR-HyunsuNeural', 'female': 'ko-KR-SunHiNeural'},
-    'ko2': {'male': 'ko-KR-InJoonNeural', 'female': None},
+    'ko1': {'male': 'ko-KR-HyunsuMultilingualNeural', 'female': None},
+    'ko2': {'male': 'ko-KR-InJoonNeural', 'female': 'ko-KR-SunHiNeural'},
     'lo': {'male': 'lo-LA-ChanthavongNeural', 'female': 'lo-LA-KeomanyNeural'},
     'lt': {'male': 'lt-LT-LeonasNeural', 'female': 'lt-LT-OnaNeural'},
     'lv': {'male': 'lv-LV-NilsNeural', 'female': 'lv-LV-EveritaNeural'},
@@ -146,8 +148,8 @@ VOICES = {
     'nl3': {'male': None, 'female': 'nl-NL-FennaNeural'},
     'pl': {'male': 'pl-PL-MarekNeural', 'female': 'pl-PL-ZofiaNeural'},
     'ps': {'male': 'ps-AF-GulNawazNeural', 'female': 'ps-AF-LatifaNeural'},
-    'pt': {'male': 'pt-BR-AntonioNeural', 'female': 'pt-BR-FranciscaNeural'},
-    'pt2': {'male': None, 'female': 'pt-BR-ThalitaNeural'},
+    'pt1': {'male': None, 'female': 'pt-BR-ThalitaMultilingualNeural'},
+    'pt2': {'male': 'pt-BR-AntonioNeural', 'female': 'pt-BR-FranciscaNeural'},
     'pt3': {'male': 'pt-PT-DuarteNeural', 'female': 'pt-PT-RaquelNeural'},
     'ro': {'male': 'ro-RO-EmilNeural', 'female': 'ro-RO-AlinaNeural'},
     'ru': {'male': 'ru-RU-DmitryNeural', 'female': 'ru-RU-SvetlanaNeural'},
@@ -267,9 +269,8 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
             filename = f.name 
 
         # Запускаем edge-tts для генерации аудио
-        com = edge_tts.Communicate(text, voice, rate=rate)
-        # com = edge_tts.Communicate(text, voice)
-        asyncio.run(com.save(filename))
+        communicate = edge_tts.Communicate(text, voice, rate=rate)
+        communicate.save_sync(filename)
 
         # Читаем аудио из временного файла 
         with open(filename, "rb") as f: 
@@ -310,10 +311,13 @@ def detect_lang_carefully(text: str) -> str:
 
 if __name__ == "__main__":
     pass
-    # print(tts('привет', 'ja'))
+
+    with open('C:/Users/user/Downloads/1.mp3', 'wb') as f:
+        f.write(tts('привет', 'ja'))
+
     # l = []
     # for k in VOICES:
     #     if k not in l:
     #         l.append(k)
     # print(l)
-    print(detect_lang_carefully('Однако здравствуйте, как ваше ничего сегодня? To continue effectively with.'))
+    # print(detect_lang_carefully('Однако здравствуйте, как ваше ничего сегодня? To continue effectively with.'))

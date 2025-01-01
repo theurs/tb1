@@ -19,7 +19,7 @@ import threading
 import time
 from flask import Flask, request, jsonify
 from decimal import Decimal, getcontext
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import langcodes
 import pendulum
@@ -121,6 +121,9 @@ SEARCH_PICS = {}
 # только для запросов к гпт*. {chat_id_full(str):threading.Lock()}
 CHAT_LOCKS = {}
 
+# блокировка отправки картинок в галерею
+LOCK_PICS_GROUP = threading.Lock()
+
 # блокировка на выполнение одновременных команд sum, google, image, document handler, voice handler
 # {chat_id:threading.Lock()}
 GOOGLE_LOCKS = {}
@@ -159,9 +162,6 @@ subscription_cache = {}
 MESSAGE_QUEUE = {}
 # так же ловим пачки картинок(медиагруппы), телеграм их отправляет по одной
 MESSAGE_QUEUE_IMG = {}
-
-# блокировать процесс отправки картинок что бы не было перемешивания разных запросов
-SEND_IMG_LOCK = threading.Lock()
 
 GEMIMI_TEMP_DEFAULT = 1
 
@@ -4704,6 +4704,100 @@ def image_bing_gen20(message: telebot.types.Message):
     image_gen(message)
 
 
+@async_run
+def send_images_to_user(
+    chunks: list,
+    message: telebot.types.Message,
+    chat_id_full: str,
+    medias: list,
+    images: list,):
+    '''Отправляем картинки юзеру асинхронно
+    '''
+
+    for x in chunks:
+        try:
+            msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
+        except Exception as error:
+            # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+            seconds = utils.extract_retry_seconds(str(error))
+            if seconds:
+                time.sleep(seconds + 5)
+                try:
+                    msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
+                except Exception as error2:
+                    # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+                    seconds = utils.extract_retry_seconds(str(error2))
+                    if seconds:
+                        time.sleep(seconds + 5)
+                        try:
+                            msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
+                        except Exception as error3:
+                            my_log.log2(f'tb:image:send_media_group: {error3}')
+                            continue
+
+    try:
+        log_message(msgs_ids)
+    except UnboundLocalError:
+        pass
+
+    update_user_image_counter(chat_id_full, len(medias))
+
+    log_msg = '[Send images] '
+    for x in images:
+        if isinstance(x, str):
+            log_msg += x + ' '
+        elif isinstance(x, bytes):
+            log_msg += f'[binary file {round(len(x)/1024)}kb] '
+    my_log.log_echo(message, log_msg)
+
+
+@async_run
+def send_images_to_pic_group(
+    chunks: list,
+    message: telebot.types.Message,
+    chat_id_full: str,
+    prompt: str,):
+    '''Отправляем картинки в группу галереи
+    '''
+    with LOCK_PICS_GROUP:
+        try:
+            translated_prompt = tr(prompt, 'ru', save_cache=False)
+
+            hashtag = 'H' + chat_id_full.replace('[', '').replace(']', '')
+            bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
+                            link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
+
+            ratio = fuzz.ratio(translated_prompt, prompt)
+            if ratio < 70:
+                bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
+                                link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
+
+            for x in chunks:
+                try:
+                    bot.send_media_group(pics_group, x)
+                except Exception as error:
+                    # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+                    seconds = utils.extract_retry_seconds(str(error))
+                    if seconds:
+                        time.sleep(seconds + 5)
+                        try:
+                            bot.send_media_group(pics_group, x)
+                        except Exception as error2:
+                            # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+                            seconds = utils.extract_retry_seconds(str(error2))
+                            if seconds:
+                                time.sleep(seconds + 5)
+                                try:
+                                    bot.send_media_group(pics_group, x)
+                                except Exception as error3:
+                                    my_log.log2(f'tb:image:send_media_group_pics_group: {error3}')
+                                    continue
+
+        except Exception as error4:
+            traceback_error = traceback.format_exc()
+            my_log.log2(f'tb:image:send to pics_group: {error4}\n\n{traceback_error}')
+
+
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):
@@ -4762,7 +4856,6 @@ def image_gen(message: telebot.types.Message):
 
 
         with lock:
-
             with semaphore_talks:
                 draw_text = tr('draw', lang)
                 if lang == 'ru': draw_text = 'нарисуй'
@@ -4853,103 +4946,32 @@ def image_gen(message: telebot.types.Message):
                                     my_log.log2(f'tb:image:add_media_bytes: {add_media_error}\n\n{error_traceback}')
 
                         if len(medias) > 0:
-                            with SEND_IMG_LOCK:
+                            # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
+                            chunk_size = 10
+                            chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
 
-                                # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
-                                chunk_size = 10
-                                chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
+                            send_images_to_user(chunks, message, chat_id_full, medias, images)
 
-                                for x in chunks:
-                                    try:
-                                        msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
-                                    except Exception as error:
-                                        # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
-                                        seconds = utils.extract_retry_seconds(str(error))
-                                        if seconds:
-                                            time.sleep(seconds + 5)
-                                            try:
-                                                msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
-                                            except Exception as error2:
-                                                # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
-                                                seconds = utils.extract_retry_seconds(str(error2))
-                                                if seconds:
-                                                    time.sleep(seconds + 5)
-                                                    try:
-                                                        msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
-                                                    except Exception as error3:
-                                                        my_log.log2(f'tb:image:send_media_group: {error3}')
-                                                        continue
+                            if pics_group and not NSFW_FLAG:
+                                send_images_to_pic_group(chunks, message, chat_id_full, prompt)
 
-                                    try:
-                                        log_message(msgs_ids)
-                                    except UnboundLocalError:
-                                        pass
-
-                                update_user_image_counter(chat_id_full, len(medias))
-
-                                log_msg = '[Send images] '
-                                for x in images:
-                                    if isinstance(x, str):
-                                        log_msg += x + ' '
-                                    elif isinstance(x, bytes):
-                                        log_msg += f'[binary file {round(len(x)/1024)}kb] '
-                                my_log.log_echo(message, log_msg)
-
-                                if pics_group and not NSFW_FLAG:
-                                    try:
-                                        translated_prompt = tr(prompt, 'ru', save_cache=False)
-
-                                        hashtag = 'H' + chat_id_full.replace('[', '').replace(']', '')
-                                        bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
-                                                        link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
-
-                                        ratio = fuzz.ratio(translated_prompt, prompt)
-                                        if ratio < 70:
-                                            bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
-                                                            link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
-
-                                        for x in chunks:
-                                            try:
-                                                bot.send_media_group(pics_group, x)
-                                            except Exception as error:
-                                                # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
-                                                seconds = utils.extract_retry_seconds(str(error))
-                                                if seconds:
-                                                    time.sleep(seconds + 5)
-                                                    try:
-                                                        bot.send_media_group(pics_group, x)
-                                                    except Exception as error2:
-                                                        # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
-                                                        seconds = utils.extract_retry_seconds(str(error2))
-                                                        if seconds:
-                                                            time.sleep(seconds + 5)
-                                                            try:
-                                                                bot.send_media_group(pics_group, x)
-                                                            except Exception as error3:
-                                                                my_log.log2(f'tb:image:send_media_group_pics_group: {error3}')
-                                                                continue
-
-                                    except Exception as error4:
-                                        traceback_error = traceback.format_exc()
-                                        my_log.log2(f'tb:image:send to pics_group: {error4}\n\n{traceback_error}')
-
-                                if BING_FLAG:
-                                    IMG = '/bing'
-                                else:
-                                    IMG = '/img'
-                                MSG = tr(f"user used {IMG} command to generate", lang)
-                                add_to_bots_mem(f'{MSG} {prompt}',
-                                                    f'{IMG} {prompt}',
-                                                    chat_id_full)
-                                # have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-                                #             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
-                                #             message.from_user.id in cfg.admins or \
-                                #             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
-                                #             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 5000
-                                # if not have_keys:
-                                #     msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
-                                #     msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
-                                #     bot_reply(message, msg2, disable_web_page_preview = True)
+                            if BING_FLAG:
+                                IMG = '/bing'
+                            else:
+                                IMG = '/img'
+                            MSG = tr(f"user used {IMG} command to generate", lang)
+                            add_to_bots_mem(f'{MSG} {prompt}',
+                                                f'{IMG} {prompt}',
+                                                chat_id_full)
+                            # have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
+                            #             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
+                            #             message.from_user.id in cfg.admins or \
+                            #             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
+                            #             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 5000
+                            # if not have_keys:
+                            #     msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
+                            #     msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
+                            #     bot_reply(message, msg2, disable_web_page_preview = True)
                         else:
                             bot_reply_tr(message, 'Could not draw anything.')
 

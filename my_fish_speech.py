@@ -108,7 +108,7 @@ def tts(text: str, voice_sample: bytes) -> bytes:
     except Exception as error:
         my_log.log_fish_speech(f'tts: error remove {error}') 
 
-    return result_data
+    return convert_wav_bytes_to_mp3(result_data)
 
 
 if __name__ == '__main__':

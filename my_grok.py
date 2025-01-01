@@ -388,7 +388,7 @@ if __name__ == '__main__':
     # reset('test')
     # chat_cli()
 
-    # print(ai('напиши 5 самых популярных слов в русском языке'))
+    print(ai('напиши 5 самых популярных слов в русском языке'))
 
     # print(img2txt('C:/Users/user/Downloads/1.jpg', 'текст с картинки'))
 

@@ -1685,11 +1685,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         button_openrouter = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
 
         markup.row(button_gemini_flash_thinking, button_gemini_flash20)
-        markup.row(button_gemini_pro, button_grok)
+        markup.row(button_gemini_pro, button_mistral)
         markup.row(button_gpt4o_mini, button_haiku)
 
-        if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):
-            markup.row(button_mistral, button_pixtral)
+        # if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):
+        #     markup.row(button_mistral, button_pixtral)
 
         if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
             markup.row(button_llama3_70b, button_llama3_405b)
@@ -1704,6 +1704,10 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 markup.row(button_glm4plus, button_openrouter)
             else:
                 markup.row(button_glm4plus)
+
+        if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS:
+            markup.row(button_grok)
+
 
         button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
         if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

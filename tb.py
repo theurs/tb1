@@ -3,7 +3,6 @@
 import base64
 import chardet
 import concurrent.futures
-import datetime
 import io
 import iso639
 import importlib
@@ -19,7 +18,7 @@ import threading
 import time
 from flask import Flask, request, jsonify
 from decimal import Decimal, getcontext
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import langcodes
 import pendulum
@@ -79,6 +78,10 @@ START_TIME = time.time()
 # устанавливаем рабочую папку = папке в которой скрипт лежит
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
+# папка для постоянных словарей, памяти бота
+if not os.path.exists('db'):
+    os.mkdir('db')
+
 
 # API для доступа к функциям бота (бинг в основном)
 FLASK_APP = Flask(__name__)
@@ -92,22 +95,12 @@ BOT_ID = bot.get_me().id
 
 
 # телеграм группа для отправки сгенерированных картинок
-pics_group = cfg.pics_group
-pics_group_url = cfg.pics_group_url
+pics_group = cfg.pics_group if hasattr(cfg, 'pics_group') else None
 
-# следим за наличием активности, если в бота никаких событий
-# не прилетало 30 минут то перезапускаем принудительно, возможно телега зависла
-ACTIVITY_MONITOR = {
-    'last_activity': time.time(),
-    'max_inactivity': datetime.timedelta(minutes=30).seconds,
-}
 
 # до 500 одновременных потоков для чата с гпт
 semaphore_talks = threading.Semaphore(500)
 
-# папка для постоянных словарей, памяти бота
-if not os.path.exists('db'):
-    os.mkdir('db')
 
 # сообщения приветствия и помощи
 HELLO_MSG = {}
@@ -212,10 +205,6 @@ UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
 
 # {message.from_user.id: threading.Lock(), }
 CHECK_DONATE_LOCKS = {}
-
-
-supported_langs_trans = my_init.supported_langs_trans
-supported_langs_tts = my_init.supported_langs_tts
 
 
 class RequestCounter:
@@ -995,9 +984,11 @@ def authorized_owner(message: telebot.types.Message) -> bool:
 
 def authorized_admin(message: telebot.types.Message) -> bool:
     """if admin"""
+    authorized_log(message)
     if message.from_user.id not in cfg.admins:
         bot_reply_tr(message, "This command is only available to administrators")
-        return False
+        # return False
+        raise Exception(f'User {message.from_user.id} is not admin')
     return authorized(message)
 
 
@@ -1069,8 +1060,6 @@ def authorized(message: telebot.types.Message) -> bool:
     Returns:
         bool: True if the user is authorized, False otherwise.
     """
-
-    ACTIVITY_MONITOR['last_activity'] = time.time()
 
     # full block, no logs
     chat_id_full = get_topic_id(message)
@@ -1185,7 +1174,6 @@ def authorized_log(message: telebot.types.Message) -> bool:
     """
     Only log and banned
     """
-    ACTIVITY_MONITOR['last_activity'] = time.time()
 
     # full block, no logs
     chat_id_full = get_topic_id(message)
@@ -4281,7 +4269,7 @@ def language(message: telebot.types.Message):
 
     lang = get_lang(chat_id_full, message)
 
-    supported_langs_trans2 = ', '.join([x for x in supported_langs_trans])
+    supported_langs_trans2 = ', '.join([x for x in my_init.supported_langs_trans])
 
     if len(message.text.split()) < 2:
         msg = f'/lang {tr("двухбуквенный код языка. Меняет язык бота. Ваш язык сейчас: ", lang)} <b>{lang}</b> ({tr(langcodes.Language.make(language=lang).display_name(language="en"), lang).lower()})\n\n{tr("Возможные варианты:", lang)}\n{supported_langs_trans2}\n\n/lang en\n/lang de\n/lang uk\n...'
@@ -4291,7 +4279,7 @@ def language(message: telebot.types.Message):
     new_lang = message.text.split(maxsplit=1)[1].strip().lower()
     if new_lang == 'ua':
         new_lang = 'uk'
-    if new_lang in supported_langs_trans:
+    if new_lang in my_init.supported_langs_trans:
         my_db.set_user_property(chat_id_full, 'lang', new_lang)
         msg = f'{tr("Язык бота изменен на:", new_lang)} <b>{new_lang}</b> ({tr(langcodes.Language.make(language=new_lang).display_name(language="en"), new_lang).lower()})'
         bot_reply(message, msg, parse_mode='HTML')
@@ -4338,7 +4326,7 @@ def tts(message: telebot.types.Message, caption = None):
                               disable_web_page_preview=True)
             return
 
-    pattern = r'/tts\s+((?P<lang>' + '|'.join(supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
+    pattern = r'/tts\s+((?P<lang>' + '|'.join(my_init.supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
     match = re.match(pattern, message.text, re.DOTALL)
     if match:
         llang = match.group("lang") or ''
@@ -4363,7 +4351,7 @@ def tts(message: telebot.types.Message, caption = None):
         # else: # no any letters in string, use default user language if any
         #     llang = lang or 'de'
 
-    if not text or llang not in supported_langs_tts:
+    if not text or llang not in my_init.supported_langs_tts:
         help = f"""{tr('Usage:', lang)} /tts [ru|en|uk|...] [+-XX%] <{tr('text to speech', lang)}>|<URL>
 
 +-XX% - {tr('acceleration with mandatory indication of direction + or -', lang)}
@@ -4610,12 +4598,12 @@ def huggingface_image_gen(message: telebot.types.Message):
                                 translated_prompt = tr(prompt, 'ru', save_cache=False)
 
                                 hashtag = 'H' + chat_id_full.replace('[', '').replace(']', '')
-                                bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
+                                bot.send_message(pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
                                                 link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
                                 ratio = fuzz.ratio(translated_prompt, prompt)
                                 if ratio < 70:
-                                    bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
+                                    bot.send_message(pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
                                                     link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
                                 bot.send_media_group(pics_group, medias)
@@ -4764,12 +4752,12 @@ def send_images_to_pic_group(
             translated_prompt = tr(prompt, 'ru', save_cache=False)
 
             hashtag = 'H' + chat_id_full.replace('[', '').replace(']', '')
-            bot.send_message(cfg.pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
+            bot.send_message(pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
                             link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
             ratio = fuzz.ratio(translated_prompt, prompt)
             if ratio < 70:
-                bot.send_message(cfg.pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
+                bot.send_message(pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
                                 link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
             for x in chunks:
@@ -4998,7 +4986,6 @@ def image_gen(message: telebot.types.Message):
 def post_telegraph(message: telebot.types.Message):
     """Generates a web version of last response"""
     chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
     mode = my_db.get_user_property(chat_id_full, 'chat_mode')
     if mode == 'openrouter':
         text = my_openrouter.get_last_mem(chat_id_full)
@@ -5607,7 +5594,7 @@ def trans(message: telebot.types.Message):
 /trans uk hello world
 /trans was ist das
 
-{tr('Поддерживаемые языки:', lang)} {', '.join(supported_langs_trans)}
+{tr('Поддерживаемые языки:', lang)} {', '.join(my_init.supported_langs_trans)}
 
 {tr('Напишите что надо перевести', lang)}
 """
@@ -5617,7 +5604,7 @@ def trans(message: telebot.types.Message):
             message.text = message.text.replace('/tr', '/trans', 1)
         # разбираем параметры
         # регулярное выражение для разбора строки
-        pattern = r'^\/trans\s+((?:' + '|'.join(supported_langs_trans) + r')\s+)?\s*(.*)$'
+        pattern = r'^\/trans\s+((?:' + '|'.join(my_init.supported_langs_trans) + r')\s+)?\s*(.*)$'
         # поиск совпадений с регулярным выражением
         match = re.match(pattern, message.text, re.DOTALL)
         # извлечение параметров из найденных совпадений
@@ -5790,19 +5777,6 @@ def send_welcome_start(message: telebot.types.Message):
         language(message)
 
     # reset_(message, say = False)
-
-
-
-
-@bot.message_handler(commands=['voicechat'], func = authorized)
-@async_run
-def voice_chat(message: telebot.types.Message):
-    # запускаем голосовой чат в веб приложении
-    chat_id_full = get_topic_id(message)
-    COMMAND_MODE[chat_id_full] = ''
-    bot_reply_tr(message, 'Открыть голосовой чат', reply_markup=get_keyboard('voicechat', message))
-
-
 
 
 @bot.message_handler(commands=['help'], func = authorized_log)
@@ -6189,10 +6163,7 @@ def set_default_commands(message: telebot.types.Message):
 
     bot_reply_tr(message, "Localization will take a long time, do not repeat this command.")
 
-    # most_used_langs = ['ar', 'bn', 'da', 'de', 'el', 'en', 'es', 'fa', 'fi', 'fr','hi',
-    #                    'hu', 'id', 'in', 'it', 'ja', 'ko', 'nl', 'no', 'pl', 'pt', 'ro',
-    #                    'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'ur', 'vi', 'zh']
-    most_used_langs = [x for x in supported_langs_trans if len(x) == 2]
+    most_used_langs = [x for x in my_init.supported_langs_trans if len(x) == 2]
 
     msg_commands = ''
     for lang in most_used_langs:

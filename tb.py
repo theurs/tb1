@@ -4817,6 +4817,12 @@ def image_gen(message: telebot.types.Message):
         #     bot_reply(message, msg2, disable_web_page_preview = True)
         #     return
 
+
+        if message.text.lower().startswith('/i'):
+            if chat_id_full in IMG_MODE_FLAG:
+                del IMG_MODE_FLAG[chat_id_full]
+
+
         # не использовать бинг для рисования запрещенки, он за это банит
         NSFW_FLAG = False
         if message.text.endswith('NSFW'):
@@ -6642,7 +6648,10 @@ def do_task(message, custom_prompt: str = ''):
         if chat_id_full in COMMAND_MODE and not chat_bot_cmd_was_used:
             if COMMAND_MODE[chat_id_full]:
                 if COMMAND_MODE[chat_id_full] == 'image':
-                    message.text = f'/image {message.text}'
+                    if chat_id_full in IMG_MODE_FLAG and 'bing' in IMG_MODE_FLAG[chat_id_full]:
+                        message.text = f'/bing {message.text}'
+                    else:
+                        message.text = f'/img {message.text}'
                     image_gen(message)
                 elif COMMAND_MODE[chat_id_full] == 'tts':
                     message.text = f'/tts {message.text}'

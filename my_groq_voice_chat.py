@@ -2,6 +2,7 @@
 # install from PyPI
 # pip install groq
 
+import datetime
 import random
 import time
 import threading
@@ -233,7 +234,10 @@ def chat(query: str, chat_id: str,
         lock = threading.Lock()
         LOCKS[chat_id] = lock
 
-    style += "\nОтвечай всегда по-русски, в разговорном стиле, кратко, как будто ты общаешься в голосовом чате."
+    date = datetime.datetime.now().strftime("%Y-%m-%d")
+    time = datetime.datetime.now().strftime("%H:%M:%S")
+    datetime_str = f"{date} {time}"
+    style += f"\nОтвечай всегда по-русски, в разговорном стиле, кратко, как будто ты общаешься в голосовом чате. Сейчас у тебя на сервере время {datetime_str} в часовом поясе Europe/Moscow."
 
     with lock:
         mem = CHATS[chat_id] if chat_id in CHATS else []
@@ -288,7 +292,7 @@ def remove_dimatorzok(text: str) -> str:
     ]
     for line in lines:
         text = text.replace(line, '')
-    return text.strip()
+    return text.strip() or None
 
 
 def stt(data: bytes = None,
@@ -350,7 +354,7 @@ def stt(data: bytes = None,
             time.sleep(4)
             return stt(data, lang, key_, prompt, True, model)
 
-    return ''
+    return None
 
 
 def load_users_keys():

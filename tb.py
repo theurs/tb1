@@ -5553,6 +5553,8 @@ def summ_text(message: telebot.types.Message):
                                 return
         help = f"""{tr('Пример:', lang)} /sum https://youtu.be/3i123i6Bf-U
 
+{tr('Или просто отправьте ссылку без текста.', lang)}
+
 {tr('Давайте вашу ссылку и я перескажу содержание', lang)}"""
         COMMAND_MODE[chat_id_full] = 'sum'
         bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2', reply_markup=get_keyboard('command_mode', message))

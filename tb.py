@@ -977,6 +977,7 @@ def authorized_owner(message: telebot.types.Message) -> bool:
     #     return False
 
     if not (is_private or is_admin_member(message)):
+        authorized_log(message)
         bot_reply_tr(message, "This command is only available to administrators")
         return False
     return authorized(message)

@@ -4757,7 +4757,7 @@ def send_images_to_pic_group(
     message: telebot.types.Message,
     chat_id_full: str,
     prompt: str,):
-    '''Отправляем картинки в группу галереи
+    '''Отправляем картинки в группу галереи асинхронно
     '''
     with LOCK_PICS_GROUP:
         try:

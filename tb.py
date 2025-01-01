@@ -46,6 +46,7 @@ import my_grok
 import my_groq
 import my_log
 import my_mistral
+import my_fish_speech
 import my_ocr
 import my_psd
 import my_telegraph
@@ -200,6 +201,8 @@ NEW_KEYBOARD = SqliteDict('db/new_keyboard_installed.db', autocommit=True)
 # {user_id: message_group_id}
 FILE_GROUPS = {}
 
+# {id:bytes} uploaded voices
+UPLOADED_VOICES = SqliteDict('db/uploaded_voice.db', autocommit=True)
 
 # {user_id:(date, image),} keep up to UNCAPTIONED_IMAGES_MAX images
 UNCAPTIONED_IMAGES_MAX = 100
@@ -1326,6 +1329,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 markup.add(button1, button2, button2_2, button3, button4, button6)
         return markup
 
+    elif kbd == 'remove_uploaded_voice':
+        markup  = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(tr("Удалить", lang), callback_data='remove_uploaded_voice')
+        markup.add(button1)
+        return markup
+
     elif kbd == 'download_saved_text':
         markup  = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(tr("Скачать", lang), callback_data='download_saved_text')
@@ -1792,6 +1801,13 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             reset_(chat_id_full)
             bot.delete_message(message.chat.id, message.message_id)
 
+        elif call.data == 'remove_uploaded_voice':
+            try:
+                del UPLOADED_VOICES[chat_id_full]
+                bot_reply_tr(message, 'Voice sample was removed.', lang)
+            except:
+                bot_reply_tr(message, 'Voice sample was not found.', lang)
+
         elif call.data == 'image_prompt_describe':
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_DESCRIBE, lang)
@@ -2211,6 +2227,18 @@ def handle_voice(message: telebot.types.Message):
                 file_path = temp_file.name + (utils.get_file_ext(file_info.file_path) or 'unknown')
 
             downloaded_file = bot.download_file(file_info.file_path)
+
+            # если идет загрузка голосового сэмпла для клонирования
+            if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'recieve_voice':
+                sample = my_fish_speech.cut_file(downloaded_file)
+                if sample:
+                    UPLOADED_VOICES[chat_id_full] = sample
+                    bot_reply_tr(message, 'Sample saved successfully.')
+                    COMMAND_MODE[chat_id_full] = ''
+                else:
+                    bot_reply_tr(message, 'Failed to save sample. Try again or cancel.', reply_markup=get_keyboard('command_mode',message))
+                return
+
             with open(file_path, 'wb') as new_file:
                 new_file.write(downloaded_file)
 
@@ -3226,6 +3254,82 @@ https://api.openai.com/v1 (ok? please report)
     except Exception as error:
         error_tr = traceback.format_exc()
         my_log.log2(f'tb:openrouter:{error}\n\n{error_tr}')
+
+
+@bot.message_handler(commands=['upload_voice'], func=authorized_owner)
+@async_run
+def upload_voice(message: telebot.types.Message):
+    """
+    После этой команды ожидается загрузка аудио с голосом
+    который будет использован для клонирования
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+        COMMAND_MODE[chat_id_full] = 'recieve_voice'
+
+        if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:
+            bot.send_voice(message.chat.id,
+                           UPLOADED_VOICES[chat_id_full],
+                           caption = tr('Current voice was uploaded', lang),
+                           reply_markup=get_keyboard('remove_uploaded_voice', message),
+                           message_thread_id=message.message_thread_id,
+                           )
+
+        bot_reply_tr(
+            message,
+            'Send an audio sample for voice cloning (the first 30 seconds will be used).',
+            reply_markup=get_keyboard('command_mode', message))
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:upload_voice:{error}\n\n{traceback_error}')
+
+
+@bot.message_handler(commands=['clone_voice'], func=authorized_owner)
+@async_run
+def clone_voice(message: telebot.types.Message):
+    '''
+    Клонирование голоса
+    юзер должен предварительно загрузить образец, а тут
+    прислать текст для чтения голосом из образца
+    '''
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+        try:
+            prompt = message.text.split(maxsplit=1)[1].strip()
+        except IndexError:
+            prompt = ''
+
+        if not prompt:
+            COMMAND_MODE[chat_id_full] = 'clone_voice'
+            bot_reply(message, tr('Send the text for voice cloning.', lang), reply_markup=get_keyboard('command_mode', message))
+            return
+
+        if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:
+            with ShowAction(message, 'record_audio'):
+                audio_data = my_fish_speech.tts(prompt, voice_sample=UPLOADED_VOICES[chat_id_full])
+                if audio_data:
+                    try:
+                        bot.send_voice(message.chat.id,
+                                       audio_data,
+                                    #    caption = tr('Cloned voice', lang),
+                                       reply_markup=get_keyboard('command_mode', message),
+                                       message_thread_id=message.message_thread_id,
+                                       )
+                        if chat_id_full in COMMAND_MODE:
+                            del COMMAND_MODE[chat_id_full]
+                    except Exception as error:
+                        my_log.log2(f'tb:clone_voice:{error}')
+                        bot_reply_tr(message, f'Clone voice failed.', reply_markup=get_keyboard('command_mode', message))
+                else:
+                    bot_reply_tr(message, 'Clone voice failed.', reply_markup=get_keyboard('command_mode', message))
+        else:
+            bot_reply_tr(message, 'You have not uploaded a voice yet. Use /upload_voice command first.', reply_markup=get_keyboard('command_mode', message))
+            return        
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:clone_voice:{error}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['tgui'], func=authorized_admin)
@@ -6668,10 +6772,12 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
+                elif COMMAND_MODE[chat_id_full] == 'clone_voice':
+                    message.text = f'/clone_voice {message.text}'
+                    clone_voice(message)
                 elif COMMAND_MODE[chat_id_full] == 'image_prompt':
                     image_prompt = message.text
                     process_image_stage_2(image_prompt, chat_id_full, lang, message)
-
                 elif COMMAND_MODE[chat_id_full] == 'enter_start_amount':
                     try:
                         amount = int(message.text)

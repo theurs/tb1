@@ -32,6 +32,8 @@ google-generativeai
 # это другая версия
 google-genai
 
+gradio_client
+
 groq
 
 gTTS

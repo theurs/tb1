@@ -233,6 +233,9 @@ def log_bing_success(text: str) -> None:
     """для логов удачных комбинаций бинга, когда ему удалось нарисовать что-нибудь"""
     log2(text, 'bing_success')
 
+def log_fish_speech(text: str) -> None:
+    """для логов fish_speech"""
+    log2(text, 'fish_speech')
 
 def log_bing_img(text: str) -> None:
     """для дебага ошибок bing_img с помощью ai"""

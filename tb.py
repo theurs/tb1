@@ -3311,12 +3311,13 @@ def clone_voice(message: telebot.types.Message):
                 audio_data = my_fish_speech.tts(prompt, voice_sample=UPLOADED_VOICES[chat_id_full])
                 if audio_data:
                     try:
-                        bot.send_voice(message.chat.id,
+                        m = bot.send_voice(message.chat.id,
                                        audio_data,
                                     #    caption = tr('Cloned voice', lang),
                                        reply_markup=get_keyboard('command_mode', message),
                                        message_thread_id=message.message_thread_id,
                                        )
+                        log_message(m)
                         if chat_id_full in COMMAND_MODE:
                             del COMMAND_MODE[chat_id_full]
                     except Exception as error:

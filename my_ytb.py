@@ -158,6 +158,7 @@ def download_audio(url: str) -> str | None:
             subprocess.run([
                 'yt-dlp',
                 '-f', 'bestaudio[abr<=128]/bestaudio',
+                '--proxy', 'socks5://127.0.0.1:9050',
                 '-o', output_template,
                 # '--noplaylist',
                 # '--quiet',
@@ -219,8 +220,8 @@ if __name__ == '__main__':
     # files = split_audio("C:/Users/user/AppData/Local/Temp/tmp9ug1aie1/123.m4a", 20) 
     # print(files) # Выведет список файлов во временной папке
 
-    # input = download_audio('https://www.youtube.com/watch?v=DYhs2rv7pT8')
-    # print(input)
+    input = download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY')
+    print(input)
 
     # print(get_title_and_poster('https://www.youtube.com/watch?v=jfKfPfyJRdk'))
 

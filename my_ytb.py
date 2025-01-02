@@ -4,6 +4,7 @@
 
 import natsort
 import os
+import random
 import subprocess
 import shutil
 import tempfile
@@ -14,6 +15,7 @@ import pytube
 
 import my_log
 import utils
+import cfg
 
 
 def download_ogg(url: str) -> str:
@@ -139,28 +141,26 @@ def download_audio(url: str) -> str | None:
     output_template = os.path.join(tmp_dir, r"123.%(ext)s")
 
     try:
-        subprocess.run([
-            'yt-dlp',
-            '-f', 'bestaudio[abr<=128]/bestaudio',
-            # '--proxy', 'socks5://127.0.0.1:9050',
-            '-o', output_template,
-            # '--noplaylist',
-            # '--quiet',
-            url
-        ], check=True)
-    except subprocess.CalledProcessError:
-        try:
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            proxy = random.choice(cfg.YTB_PROXY)
             subprocess.run([
                 'yt-dlp',
                 '-f', 'bestaudio[abr<=128]/bestaudio',
-                '--proxy', 'socks5://127.0.0.1:9050',
+                '--proxy', proxy,
                 '-o', output_template,
                 # '--noplaylist',
                 # '--quiet',
                 url
             ], check=True)
-        except subprocess.CalledProcessError:
-            return None
+        else:
+            subprocess.run([
+                'yt-dlp',
+                '-f', 'bestaudio[abr<=128]/bestaudio',
+                '-o', output_template,
+                url
+            ], check=True)
+    except subprocess.CalledProcessError:
+        return None
 
     # Find the downloaded file in the folder
     files = [f for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]

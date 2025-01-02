@@ -460,6 +460,10 @@ COHERE_AI_KEYS = [
 #    'yyy',
 #]
 
+# прокси для скачивания с ютуба, на случай если он забанил ип
+#YTB_PROXY = [
+#    'socks5://127.0.0.1:9050', # tor
+#]
 
 
 # string for /donate command html parsing

@@ -3668,7 +3668,7 @@ def download_ytb_audio(message: telebot.types.Message):
             with ShowAction(message, "upload_audio"):
                 title, pic, desc, size = my_ytb.get_title_and_poster(url)
                 if size == 0 or size > 6*60*60:
-                    bot_reply_tr(message, 'Слишком большое видео.')
+                    bot_reply_tr(message, 'Too big video for me.')
                     return
                 m = bot.send_photo(
                     message.chat.id,
@@ -3679,7 +3679,7 @@ def download_ytb_audio(message: telebot.types.Message):
                 log_message(m)
                 source_file = my_ytb.download_audio(url)
                 if source_file:
-                    bot_reply_tr(message, 'Скачено успешно, отправляю файл.')
+                    bot_reply_tr(message, 'Downloaded successfully, sending file.')
                     files = my_ytb.split_audio(source_file, 20)
                     if files:
                         for fn in files:
@@ -3690,10 +3690,10 @@ def download_ytb_audio(message: telebot.types.Message):
                                 data,
                                 caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}',
                                 disable_notification = True,
-                                )
+                            )
                             log_message(m)
                 else:
-                    bot_reply_tr(message, 'Не удалось скачать файл.')
+                    bot_reply_tr(message, 'Download failed.')
 
                 my_ytb.remove_folder_or_parent(source_file)
                 if files:

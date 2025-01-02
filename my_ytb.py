@@ -193,6 +193,23 @@ def remove_folder_or_parent(path: str) -> None:
         my_log.log2(f'my_ytb:remove_folder_or_parent: {error2}\n\n{path}')
 
 
+def test():
+    from pytubefix import YouTube
+    from pytubefix.cli import on_progress
+
+
+    url = "https://www.youtube.com/watch?v=RdQAfzVkvpQ"
+
+
+    yt = YouTube(url, on_progress_callback=on_progress)
+    print(yt.title)
+
+
+    ys = yt.streams.get_audio_only()
+    path_ = ys.download()
+    print(path_)
+
+
 if __name__ == '__main__':
     pass
     # print(download_ogg('https://www.youtube.com/watch?v=dQw4w9WgXcQ'))
@@ -222,4 +239,6 @@ if __name__ == '__main__':
     # input = download_audio('https://www.youtube.com/watch?v=DYhs2rv7pT8')
     # print(input)
 
-    print(get_title_and_poster('https://www.youtube.com/watch?v=jfKfPfyJRdk'))
+    # print(get_title_and_poster('https://www.youtube.com/watch?v=jfKfPfyJRdk'))
+
+    test()

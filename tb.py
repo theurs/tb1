@@ -3304,7 +3304,7 @@ def upload_voice(message: telebot.types.Message):
 
         bot_reply_tr(
             message,
-            'Send an audio sample for voice cloning (the first 30 seconds will be used). ',
+            'Send the text or audio for voice cloning, audio should be clear and clean, without background noise, with clear articulation and pronunciation.',
             reply_markup=get_keyboard('command_mode', message))
     except Exception as error:
         traceback_error = traceback.format_exc()

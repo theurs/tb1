@@ -553,6 +553,8 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
     if prompt.strip() == '':
         return []
 
+    original_prompt = re.sub(r'^!+', '', prompt).strip()
+
     reprompt, _ = get_reprompt(prompt, conversation_history)
     if reprompt == 'MODERATION':
         if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(user_id) in cfg.ALLOW_PASS_NSFW_FILTER:
@@ -576,7 +578,8 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
 
         for i in range(iterations):
             containers[i] = []
-            bing_get_one_round(reprompt, user_id, containers[i])
+            # bing_get_one_round(reprompt, user_id, containers[i])
+            bing_get_one_round(original_prompt, user_id, containers[i])
             while count_running_bing_threads() >= max_threads:
                 time.sleep(1)
 
@@ -604,6 +607,8 @@ def gen_images(prompt: str, moderation_flag: bool = False,
     if prompt.strip() == '':
         return []
 
+    original_prompt = re.sub(r'^!+', '', prompt).strip()
+
     negative = ''
 
     reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
@@ -618,7 +623,8 @@ def gen_images(prompt: str, moderation_flag: bool = False,
     pool = ThreadPool(processes=9)
 
     if use_bing:
-        async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
+        # async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
+        async_result1 = pool.apply_async(bing, (original_prompt, moderation_flag, user_id))
 
         async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
         async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))

@@ -201,7 +201,7 @@ def test():
     url = "https://www.youtube.com/watch?v=RdQAfzVkvpQ"
 
 
-    yt = YouTube(url, on_progress_callback=on_progress)
+    yt = YouTube(url, on_progress_callback=on_progress, use_po_token=True)
     print(yt.title)
 
 

@@ -2249,12 +2249,14 @@ def handle_voice(message: telebot.types.Message):
                         result = my_fish_speech.clone_voice_sample(source, target)
                         COMMAND_MODE[chat_id_full] = 'clone_voice'
                         if result:
+                            kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
                             m = bot.send_audio(
                                 message.chat.id,
                                 result,
                                 caption= f'@{_bot_name}',
                                 title = 'Voice message',
                                 performer = 'XTTSv2',
+                                reply_markup=kbd,
                                 message_thread_id=message.message_thread_id)
                             log_message(m)
                             my_db.add_msg(chat_id_full, f'TTS xtts_clone_audio')
@@ -3341,12 +3343,14 @@ def clone_voice(message: telebot.types.Message):
                 audio_data = my_fish_speech.tts(prompt, voice_sample=UPLOADED_VOICES[chat_id_full])
                 if audio_data:
                     try:
+                        kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
                         m = bot.send_audio(
                             message.chat.id,
                             audio_data,
                             caption= f'@{_bot_name}',
                             title = 'Voice message',
                             performer = 'Fish speech',
+                            reply_markup=kbd,
                             message_thread_id=message.message_thread_id)
                         log_message(m)
                         my_db.add_msg(chat_id_full, f'TTS fish_speech')

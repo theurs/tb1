@@ -47,6 +47,9 @@ def convert_wav_bytes_to_mp3(wav_bytes: bytes) -> bytes:
     Returns:
         The byte data of the MP3 audio.
     """
+    if not wav_bytes:
+        return b""
+
     wav_file = BytesIO(wav_bytes)
     mp3_file = BytesIO()
 
@@ -92,21 +95,22 @@ def tts(text: str, voice_sample: bytes) -> bytes:
                 with open(result_file, 'rb') as f:
                     result_data = f.read()
             except:
-                utils.remove_file(source_file)
                 result_data = None
-
 
         except Exception as error:
             traceback_error = traceback.format_exc()
             my_log.log_fish_speech(f'tts: {error}\n\n{traceback_error}')
 
     utils.remove_file(source_file)
-    utils.remove_file(result_file)
-    base_path = os.path.dirname(result_file)
     try:
-        os.rmdir(base_path)
-    except Exception as error:
-        my_log.log_fish_speech(f'tts: error remove {error}') 
+        utils.remove_file(result_file)
+        base_path = os.path.dirname(result_file)
+        try:
+            os.rmdir(base_path)
+        except Exception as error:
+            my_log.log_fish_speech(f'tts: error remove {error}') 
+    except UnboundLocalError:
+        pass
 
     return convert_wav_bytes_to_mp3(result_data)
 
@@ -114,16 +118,15 @@ def tts(text: str, voice_sample: bytes) -> bytes:
 if __name__ == '__main__':
     my_genimg.load_users_keys()
 
-    voice_sample = open('c:/Users/user/Downloads/1.ogg', 'rb').read()
-
-    # Example of cutting the voice sample
-    cut_voice_sample = cut_file(voice_sample)
-    if cut_voice_sample:
-        with open('c:/Users/user/Downloads/cut_output.mp3', 'wb') as f:
-            f.write(cut_voice_sample)
-        print("Successfully cut the voice sample.")
-    else:
-        print("Failed to cut the voice sample.")
+    # voice_sample = open('c:/Users/user/Downloads/1.ogg', 'rb').read()
+    # # Example of cutting the voice sample
+    # cut_voice_sample = cut_file(voice_sample)
+    # if cut_voice_sample:
+    #     with open('c:/Users/user/Downloads/cut_output.mp3', 'wb') as f:
+    #         f.write(cut_voice_sample)
+    #     print("Successfully cut the voice sample.")
+    # else:
+    #     print("Failed to cut the voice sample.")
 
     # text = 'Да ёб твою мать, чтоб тебя налево!'
     # result = tts(text, cut_voice_sample if cut_voice_sample else voice_sample)

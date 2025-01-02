@@ -39,11 +39,23 @@ def valid_youtube_url(url: str) -> str:
     return ''
 
 
+def get_yt(url: str):
+    if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+        proxy = random.choice(cfg.YTB_PROXY)
+        proxies = {
+            "http": proxy,
+            "https": proxy,
+        }
+        return pytube.YouTube(url, proxies=proxies)
+    else:
+        return pytube.YouTube(url)
+
+
 def get_title(url: str) -> str:
     '''Gets the title of the YouTube video from the given URL.
        Returns the title or an empty string if an error occurs.'''
     try:
-        yt = pytube.YouTube(url)
+        yt = get_yt(url)
         return yt.title
     except Exception as error:
         return ''
@@ -60,7 +72,7 @@ def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
         If an error occurs, returns a tuple of three empty strings.
     """
     try:
-        yt = pytube.YouTube(url)
+        yt = get_yt(url)
         title = yt.title
         pic = yt.thumbnail_url
         description = yt.description
@@ -215,8 +227,8 @@ if __name__ == '__main__':
     # files = split_audio("C:/Users/user/AppData/Local/Temp/tmp9ug1aie1/123.m4a", 20) 
     # print(files) # Выведет список файлов во временной папке
 
-    input = download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY')
-    print(input)
+    # input = download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY')
+    # print(input)
 
-    # print(get_title_and_poster('https://www.youtube.com/watch?v=jfKfPfyJRdk'))
+    print(get_title_and_poster('https://www.youtube.com/watch?v=jfKfPfyJRdk'))
 

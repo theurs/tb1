@@ -2,6 +2,7 @@
 # pip install pytube
 
 
+import json
 import natsort
 import os
 import random
@@ -40,15 +41,16 @@ def valid_youtube_url(url: str) -> str:
 
 
 def get_yt(url: str):
-    if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
-        proxy = random.choice(cfg.YTB_PROXY)
-        proxies = {
-            "http": proxy,
-            "https": proxy,
-        }
-        return pytube.YouTube(url, proxies=proxies)
-    else:
-        return pytube.YouTube(url)
+    # if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+    #     proxy = random.choice(cfg.YTB_PROXY)
+    #     proxies = {
+    #         "http": proxy,
+    #         "https": proxy,
+    #     }
+    #     return pytube.YouTube(url, proxies=proxies)
+    # else:
+    #     return pytube.YouTube(url)
+    return pytube.YouTube(url)
 
 
 def get_title(url: str) -> str:
@@ -61,25 +63,69 @@ def get_title(url: str) -> str:
         return ''
 
 
+# def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
+#     """Gets the title, thumbnail URL, description and size of a YouTube video.
+
+#     Args:
+#         url: The URL of the YouTube video.
+
+#     Returns:
+#         A tuple containing the title, thumbnail URL, and description of the video. 
+#         If an error occurs, returns a tuple of three empty strings.
+#     """
+#     try:
+#         yt = get_yt(url)
+#         title = yt.title
+#         pic = yt.thumbnail_url
+#         description = yt.description
+#         size = yt.length
+
+#         return title or '', pic, description or '', size
+#     except Exception as error:
+#         my_log.log2(f'my_ytb:get_title_and_poster {url} {error}')
+#         return '', '', '', 0
+
+
 def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
-    """Gets the title, thumbnail URL, description and size of a YouTube video.
+    """
+    Gets the title, thumbnail URL, description, and size of a YouTube video using yt-dlp.
 
     Args:
         url: The URL of the YouTube video.
 
     Returns:
-        A tuple containing the title, thumbnail URL, and description of the video. 
-        If an error occurs, returns a tuple of three empty strings.
+        A tuple containing the title, thumbnail URL, description, and size (duration in seconds) of the video.
+        If an error occurs, returns a tuple of four empty strings or 0 for size.
     """
     try:
-        yt = get_yt(url)
-        title = yt.title
-        pic = yt.thumbnail_url
-        description = yt.description
-        size = yt.length
+        # Use yt-dlp to extract video information
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            proxy = random.choice(cfg.YTB_PROXY)
+            process = subprocess.run([
+                'yt-dlp',
+                '--dump-json',
+                '--proxy', proxy,
+                url
+            ], capture_output=True, text=True, check=True)
+        else:
+            process = subprocess.run([
+                'yt-dlp',
+                '--dump-json',
+                url
+            ], capture_output=True, text=True, check=True)
 
-        return title or '', pic, description or '', size
-    except Exception as error:
+        # Parse the JSON output
+        video_info = json.loads(process.stdout)
+
+        # Extract the required information
+        title = video_info.get('title', '')
+        thumbnail_url = video_info.get('thumbnail', '')
+        description = video_info.get('description', '')
+        size = video_info.get('duration', 0)
+
+        return title, thumbnail_url, description, size
+
+    except (subprocess.CalledProcessError, json.JSONDecodeError) as error:
         my_log.log2(f'my_ytb:get_title_and_poster {url} {error}')
         return '', '', '', 0
 
@@ -230,5 +276,5 @@ if __name__ == '__main__':
     # input = download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY')
     # print(input)
 
-    print(get_title_and_poster('https://www.youtube.com/watch?v=jfKfPfyJRdk'))
+    print(get_title_and_poster('https://www.youtube.com/watch?v=5F24kWz1tKk'))
 

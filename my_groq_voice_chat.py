@@ -237,7 +237,7 @@ def chat(query: str, chat_id: str,
     date = datetime.datetime.now().strftime("%Y-%m-%d")
     time = datetime.datetime.now().strftime("%H:%M:%S")
     datetime_str = f"{date} {time}"
-    style += f"\nОтвечай всегда по-русски, в разговорном стиле, кратко, как будто ты общаешься в голосовом чате. Сейчас у тебя на сервере время {datetime_str} в часовом поясе Europe/Moscow."
+    # style += f"\nОтвечай всегда по-русски, в разговорном стиле, кратко, как будто ты общаешься в голосовом чате. Сейчас у тебя на сервере время {datetime_str} в часовом поясе Europe/Moscow."
 
     with lock:
         mem = CHATS[chat_id] if chat_id in CHATS else []

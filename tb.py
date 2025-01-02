@@ -2252,11 +2252,12 @@ def handle_voice(message: telebot.types.Message):
                             m = bot.send_audio(
                                 message.chat.id,
                                 result,
-                                # caption='Fake',
+                                caption= f'@{_bot_name}',
                                 title = 'Voice message',
-                                performer = 'XTTSv2 ' + _bot_name,
+                                performer = 'XTTSv2',
                                 message_thread_id=message.message_thread_id)
                             log_message(m)
+                            my_db.add_msg(chat_id_full, f'TTS xtts_clone_audio')
                             COMMAND_MODE[chat_id_full] = ''
                         else:
                             bot_reply_tr(message, 'Failed to clone sample. Try again or cancel.', reply_markup=get_keyboard('command_mode',message))
@@ -3336,16 +3337,19 @@ def clone_voice(message: telebot.types.Message):
 
         if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:
             with ShowAction(message, 'record_audio'):
+                bot_reply_tr()
                 audio_data = my_fish_speech.tts(prompt, voice_sample=UPLOADED_VOICES[chat_id_full])
                 if audio_data:
                     try:
-                        m = bot.send_voice(message.chat.id,
-                                       audio_data,
-                                    #    caption = tr('Cloned voice', lang),
-                                       reply_markup=get_keyboard('command_mode', message),
-                                       message_thread_id=message.message_thread_id,
-                                       )
+                        m = bot.send_audio(
+                            message.chat.id,
+                            audio_data,
+                            caption= f'@{_bot_name}',
+                            title = 'Voice message',
+                            performer = 'Fish speech',
+                            message_thread_id=message.message_thread_id)
                         log_message(m)
+                        my_db.add_msg(chat_id_full, f'TTS fish_speech')
                         if chat_id_full in COMMAND_MODE:
                             del COMMAND_MODE[chat_id_full]
                     except Exception as error:
@@ -4550,6 +4554,7 @@ def tts(message: telebot.types.Message, caption = None):
                     m = bot.send_voice(message.chat.id, audio, caption=caption)
                 log_message(m)
                 my_log.log_echo(message, f'[Sent voice message] [{gender}]')
+                my_db.add_msg(chat_id_full, f'TTS {gender}')
             else:
                 bot_reply_tr(message, 'Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.')
 

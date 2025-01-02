@@ -3660,47 +3660,58 @@ def download_ytb_audio(message: telebot.types.Message):
     """
     Download, split and send chunks to user.
     """
-    url = message.text.split(maxsplit=1)
-    if len(url) == 2:
-        url = url[1]
-        
-        if my_ytb.valid_youtube_url(url):
-            with ShowAction(message, "upload_audio"):
-                title, pic, desc, size = my_ytb.get_title_and_poster(url)
-                if size == 0 or size > 6*60*60:
-                    bot_reply_tr(message, 'Too big video for me.')
-                    return
-                m = bot.send_photo(
-                    message.chat.id,
-                    pic,
-                    caption=f'{title}\n\n{desc}',
-                    disable_notification=True,
-                    )
-                log_message(m)
-                source_file = my_ytb.download_audio(url)
-                if source_file:
-                    bot_reply_tr(message, 'Downloaded successfully, sending file.')
-                    files = my_ytb.split_audio(source_file, 20)
+    try:
+        url = message.text.split(maxsplit=1)
+        if len(url) == 2:
+            url = url[1]
+            
+            if my_ytb.valid_youtube_url(url):
+                with ShowAction(message, "upload_audio"):
+                    title, pic, desc, size = my_ytb.get_title_and_poster(url)
+                    if size == 0 or size > 6*60*60:
+                        bot_reply_tr(message, 'Too big video for me.')
+                        return
+                    # caption = caption[:900]
+                    # m = bot.send_photo(
+                    #     message.chat.id,
+                    #     pic,
+                    #     caption=caption,
+                    #     disable_notification=True,
+                    #     )
+                    # log_message(m)
+                    source_file = my_ytb.download_audio(url)
+                    if source_file:
+                        bot_reply_tr(message, 'Downloaded successfully, sending file.')
+                        files = my_ytb.split_audio(source_file, 19) # !19 а не 20 так как VBR mp3
+                        bot_reply(message, desc[:4090], send_message=True, disable_web_page_preview=True)
+                        if files:
+                            for fn in files:
+                                with open(fn, 'rb') as f:
+                                    data = f.read()
+                                caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}'
+                                caption = caption[:900]
+                                image_stream = io.BytesIO(utils.download_image_as_bytes(pic))
+                                m = bot.send_audio(
+                                    message.chat.id,
+                                    data,
+                                    title = f'{os.path.splitext(os.path.basename(fn))[0]}.mp3',
+                                    caption = f'@{_bot_name} {caption}',
+                                    disable_notification = True,
+                                    thumbnail=telebot.types.InputFile(image_stream, 'image.webp'),
+                                )
+                                log_message(m)
+                    else:
+                        bot_reply_tr(message, 'Download failed.')
+
+                    my_ytb.remove_folder_or_parent(source_file)
                     if files:
-                        for fn in files:
-                            with open(fn, 'rb') as f:
-                                data = f.read()
-                            m = bot.send_voice(
-                                message.chat.id,
-                                data,
-                                caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}',
-                                disable_notification = True,
-                            )
-                            log_message(m)
-                else:
-                    bot_reply_tr(message, 'Download failed.')
+                        my_ytb.remove_folder_or_parent(files[0])
+                    return
 
-                my_ytb.remove_folder_or_parent(source_file)
-                if files:
-                    my_ytb.remove_folder_or_parent(files[0])
-                return
-
-    bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube.')
+        bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube.')
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:download_ytb_audio:{error}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)

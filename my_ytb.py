@@ -130,16 +130,68 @@ def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
         return '', '', '', 0
 
 
+# def split_audio(input_file: str, max_size_mb: int) -> List[str]:
+#     """
+#     Splits audio file into parts no larger than the specified size using ffmpeg.
+
+#     Args:
+#         input_file: Path to the input audio file.
+#         max_size_mb: Maximum part size in megabytes.
+
+#     Returns:
+#         A list of paths to files in a temporary folder.
+#     """
+
+#     # Create a temporary folder
+#     tmp_dir = tempfile.mkdtemp()
+
+#     # Create a temporary folder if it doesn't exist
+#     if not os.path.exists(tmp_dir):
+#         os.makedirs(tmp_dir)
+
+#     output_prefix = os.path.join(tmp_dir, "part")
+
+#     bit_rate = 64000
+
+#     # Calculate the segment time in seconds
+#     segment_time = int(max_size_mb * 8 * 1000 * 1000 / bit_rate)
+
+#     subprocess.run([
+#         'ffmpeg',
+#         '-i',
+#         input_file,
+#         '-f',
+#         'segment',
+#         '-segment_time',
+#         str(segment_time),
+#         '-acodec',
+#         'libvorbis',
+#         '-ab',
+#         '64k',
+#         '-reset_timestamps',
+#         '1',
+#         '-loglevel',
+#         'quiet',
+#         f'{output_prefix}%03d.ogg'
+#     ], check=True)
+
+#     # Get the list of files in the temporary folder
+#     files = [os.path.join(tmp_dir, f) for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]
+
+#     return natsort.natsorted(files)
+
+
 def split_audio(input_file: str, max_size_mb: int) -> List[str]:
     """
-    Splits audio file into parts no larger than the specified size using ffmpeg.
+    Splits an audio file into parts no larger than the specified size using ffmpeg,
+    saving them as MP3 files with variable bitrate (VBR).
 
     Args:
         input_file: Path to the input audio file.
         max_size_mb: Maximum part size in megabytes.
 
     Returns:
-        A list of paths to files in a temporary folder.
+        A list of paths to the MP3 files in a temporary folder.
     """
 
     # Create a temporary folder
@@ -151,9 +203,9 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
 
     output_prefix = os.path.join(tmp_dir, "part")
 
+    # Calculate the segment time in seconds based on the average bitrate
+    # We'll use an average bitrate of 64kbps for the calculation
     bit_rate = 64000
-
-    # Calculate the segment time in seconds
     segment_time = int(max_size_mb * 8 * 1000 * 1000 / bit_rate)
 
     subprocess.run([
@@ -165,14 +217,14 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
         '-segment_time',
         str(segment_time),
         '-acodec',
-        'libvorbis',
-        '-ab',
-        '64k',
+        'libmp3lame',  # Use libmp3lame for MP3 encoding
+        '-q:a',  # Use -q:a for VBR
+        '6',  # VBR quality level (0-9, 0 being the highest quality)
         '-reset_timestamps',
         '1',
         '-loglevel',
         'quiet',
-        f'{output_prefix}%03d.ogg'
+        f'{output_prefix}%03d.mp3'  # Save as MP3 files
     ], check=True)
 
     # Get the list of files in the temporary folder

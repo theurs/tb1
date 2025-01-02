@@ -2244,7 +2244,7 @@ def handle_voice(message: telebot.types.Message):
                     with ShowAction(message, 'upload_audio'):
                         source = UPLOADED_VOICES[chat_id_full]
                         target = downloaded_file
-                        bot_reply_tr(message, 'Cloning your audio, it may take a while...')
+                        bot_reply_tr(message, 'Start cloning your audio, it may take a while...')
                         COMMAND_MODE[chat_id_full] = ''
                         result = my_fish_speech.clone_voice_sample(source, target)
                         COMMAND_MODE[chat_id_full] = 'clone_voice'
@@ -3337,7 +3337,7 @@ def clone_voice(message: telebot.types.Message):
 
         if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:
             with ShowAction(message, 'record_audio'):
-                bot_reply_tr()
+                bot_reply_tr(message, 'Start cloning your audio, it may take a while...')
                 audio_data = my_fish_speech.tts(prompt, voice_sample=UPLOADED_VOICES[chat_id_full])
                 if audio_data:
                     try:

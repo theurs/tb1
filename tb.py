@@ -3691,13 +3691,17 @@ def download_ytb_audio(message: telebot.types.Message):
                                 caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}'
                                 caption = caption[:900]
                                 image_stream = io.BytesIO(utils.download_image_as_bytes(pic))
+                                try:
+                                    tmb = telebot.types.InputFile(image_stream)
+                                except:
+                                    tmb = None
                                 m = bot.send_audio(
                                     message.chat.id,
                                     data,
                                     title = f'{os.path.splitext(os.path.basename(fn))[0]}.mp3',
                                     caption = f'@{_bot_name} {caption}',
                                     disable_notification = True,
-                                    thumbnail=telebot.types.InputFile(image_stream, 'image.webp'),
+                                    thumbnail=tmb,
                                 )
                                 log_message(m)
                     else:

@@ -2245,7 +2245,9 @@ def handle_voice(message: telebot.types.Message):
                         source = UPLOADED_VOICES[chat_id_full]
                         target = downloaded_file
                         bot_reply_tr(message, 'Cloning your audio, it may take a while...')
+                        COMMAND_MODE[chat_id_full] = ''
                         result = my_fish_speech.clone_voice_sample(source, target)
+                        COMMAND_MODE[chat_id_full] = 'clone_voice'
                         if result:
                             m = bot.send_audio(
                                 message.chat.id,

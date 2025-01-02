@@ -448,10 +448,18 @@ COHERE_AI_KEYS = [
 ]
 
 # https://x.ai/api -> https://console.x.ai/
-GROK_KEYS = [
-    'xxx',
-    'yyy',
-]
+#GROK_KEYS = [
+#    'xxx',
+#    'yyy',
+#]
+
+
+# https://huggingface.co/ ключи с доступом к спейсу в котором запущено клонирование голоса
+#CLONE_VOICE_HF_API_KEYS = [
+#    'xxx',
+#    'yyy',
+#]
+
 
 
 # string for /donate command html parsing

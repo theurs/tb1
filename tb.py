@@ -2238,6 +2238,32 @@ def handle_voice(message: telebot.types.Message):
                 else:
                     bot_reply_tr(message, 'Failed to save sample. Try again or cancel.', reply_markup=get_keyboard('command_mode',message))
                 return
+            # отправили голосовой семпл вместо текста после команды /clone_voice, значит нужно клонировать голосовой семпл
+            elif chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'clone_voice':
+                if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:
+                    with ShowAction(message, 'upload_audio'):
+                        source = UPLOADED_VOICES[chat_id_full]
+                        target = downloaded_file
+                        bot_reply_tr(message, 'Cloning your audio, it may take a while...')
+                        result = my_fish_speech.clone_voice_sample(source, target)
+                        if result:
+                            m = bot.send_audio(
+                                message.chat.id,
+                                result,
+                                # caption='Fake',
+                                title = 'Voice message',
+                                performer = 'XTTSv2 ' + _bot_name,
+                                message_thread_id=message.message_thread_id)
+                            log_message(m)
+                            COMMAND_MODE[chat_id_full] = ''
+                        else:
+                            bot_reply_tr(message, 'Failed to clone sample. Try again or cancel.', reply_markup=get_keyboard('command_mode',message))
+                            return
+                else:
+                    bot_reply_tr(message, 'Upload sample voice first. Use /upload_voice command.', reply_markup=get_keyboard('command_mode',message))
+                    COMMAND_MODE[chat_id_full] = ''
+                return
+
 
             with open(file_path, 'wb') as new_file:
                 new_file.write(downloaded_file)
@@ -3256,7 +3282,7 @@ https://api.openai.com/v1 (ok? please report)
         my_log.log2(f'tb:openrouter:{error}\n\n{error_tr}')
 
 
-@bot.message_handler(commands=['upload_voice'], func=authorized_owner)
+@bot.message_handler(commands=['upload_voice', 'uv'], func=authorized_owner)
 @async_run
 def upload_voice(message: telebot.types.Message):
     """
@@ -3278,14 +3304,14 @@ def upload_voice(message: telebot.types.Message):
 
         bot_reply_tr(
             message,
-            'Send an audio sample for voice cloning (the first 30 seconds will be used).',
+            'Send an audio sample for voice cloning (the first 30 seconds will be used). ',
             reply_markup=get_keyboard('command_mode', message))
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:upload_voice:{error}\n\n{traceback_error}')
 
 
-@bot.message_handler(commands=['clone_voice'], func=authorized_owner)
+@bot.message_handler(commands=['clone_voice', 'clone', 'cv'], func=authorized_owner)
 @async_run
 def clone_voice(message: telebot.types.Message):
     '''
@@ -3303,7 +3329,7 @@ def clone_voice(message: telebot.types.Message):
 
         if not prompt:
             COMMAND_MODE[chat_id_full] = 'clone_voice'
-            bot_reply(message, tr('Send the text for voice cloning.', lang), reply_markup=get_keyboard('command_mode', message))
+            bot_reply(message, tr('Send the text or audio for voice cloning, audio should be clear and clean, without background noise, with clear articulation and pronunciation.', lang), reply_markup=get_keyboard('command_mode', message))
             return
 
         if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:

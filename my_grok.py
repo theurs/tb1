@@ -134,7 +134,7 @@ def update_mem(query: str, resp: str, chat_id: str):
             i += 1
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_grok(f'my_openrouter:update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
+        my_log.log_grok(f'update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
 
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
 
@@ -251,7 +251,7 @@ def get_last_mem(chat_id: str) -> str:
         return ''
 
 
-def get_mem_as_string(chat_id: str) -> str:
+def get_mem_as_string(chat_id: str, md: bool = False) -> str:
     """
     Returns the chat history as a string for the given ID.
 
@@ -273,13 +273,19 @@ def get_mem_as_string(chat_id: str) -> str:
             if text.startswith('[Info to help you answer'):
                 end = text.find(']') + 1
                 text = text[end:].strip()
-            result += f'{role}: {text}\n'
+            if md:
+                result += f'{role}:\n\n{text}\n\n'
+            else:
+                result += f'{role}: {text}\n'
             if role == '𝐁𝐎𝐓':
-                result += '\n'
+                if md:
+                    result += '\n\n'
+                else:
+                    result += '\n'
         return result 
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_grok(f'my_openrouter:get_mem_as_string: {error}\n\n{error_traceback}')
+        my_log.log_grok(f'get_mem_as_string: {error}\n\n{error_traceback}')
         return ''
 
 

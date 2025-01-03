@@ -136,6 +136,16 @@ def convert_text_to_odt(text: str) -> bytes:
     return data
 
 
+def convert_text_to_pdf(text: str) -> bytes:
+    '''convert text to pdf file'''
+    output_file = utils.get_tmp_fname() + '.pdf'
+    subprocess.run(['pandoc', '-f', 'markdown', '-t', 'pdf', '-o', output_file, '-'], input=text.encode('utf-8'), stdout=subprocess.PIPE)
+    with open(output_file, 'rb') as f:
+        data = f.read()
+    utils.remove_file(output_file)
+    return data
+
+
 if __name__ == '__main__':
     pass
     # result = fb2_to_text(open('c:/Users/user/Downloads/1.xlsx', 'rb').read(), '.xlsx')
@@ -143,3 +153,5 @@ if __name__ == '__main__':
     # print(result)
     # print(convert_djvu2pdf('/home/ubuntu/tmp/2.djvu'))
 
+    with open('c:/Users/user/Downloads/1.pdf', 'wb') as f:
+        f.write(convert_text_to_pdf('**test**\n\nHello __world__.\n\n###test\n\nhi there.'))

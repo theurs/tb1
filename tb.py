@@ -6275,7 +6275,32 @@ def reload_module(message: telebot.types.Message):
     '''command for reload imported module on the fly'''
     try:
         module_name = message.text.split(' ', 1)[1].strip()
-        module = importlib.import_module(module_name)
+
+        # Сначала проверяем, существует ли файл с оригинальным именем
+        if os.path.exists(module_name):
+            found_filename = module_name
+        else:
+            # Если файл с оригинальным именем не найден, ищем среди потенциальных имен
+            potential_filenames = [
+                module_name + ".py",
+                "my_" + module_name,
+                "my_" + module_name + ".py",
+            ]
+
+            found_filename = None
+            for filename in potential_filenames:
+                if os.path.exists(filename):
+                    found_filename = filename
+                    break
+
+        if found_filename is None:
+            bot_reply_tr(message, f"Модуль '{module_name}' не найден.")
+            return
+
+        # py на конце надо удалить
+        module_import_name = found_filename[:-3] if found_filename.endswith(".py") else found_filename
+
+        module = importlib.import_module(module_import_name)
         importlib.reload(module)
 
         # реинициализация модуля

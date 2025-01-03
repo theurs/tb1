@@ -199,8 +199,8 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
                     if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
                         proxy = random.choice(cfg.YTB_PROXY)
                         proxies = {
-                            'http': 'proxy',
-                            'https': 'proxy'
+                            'http': proxy,
+                            'https': proxy
                         }
                         t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = proxies)
                     else:

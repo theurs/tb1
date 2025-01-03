@@ -115,6 +115,57 @@ https://t.me/kun4_sun_bot_support
 start_msg_file = 'msg_hello.dat'
 help_msg_file = 'msg_help.dat'
 
+# html команды для администратора
+admin_help = '''
+/gmodels - список моделей gemini
+
+/tgui - исправление локализации
+/create_all_translations - создать кеш переводов
+/init - recreate telegram info (bot name, description, menu commands)
+
+/sdonate - добавить или убавить юзеру звезды, только в логе будет видно что они виртуальные
+
+/alang - set language for specific user
+/set_stt_mode - mandatory switch user from one stt engine to another
+/set_chat_mode - mandatory switch user from one chatbot to another
+/addkeys - добавить gemini API ключи юзеру за него 
+/reset_gemini2 - reset gemini memory for specific chat
+/style2 - change style for specific chat
+
+/downgrade - downgrade llm model for free users mandatory
+
+/disable_chat_mode - mandatory switch <b>all</b> users from one chatbot to another
+
+/kc - clear bing cookies
+/k - set bing cookies
+
+/restart - restart bot
+/reload - reload specific modules without restarting bot
+
+/stats - show bot stats
+
+/cmd - run shell commands
+
+Block commands:
+Level 1 = block all but logs
+Level 2 = block bing access only
+Level 3 = block all with logs
+/blockadd
+/blockadd2
+/blockadd3
+/blockdel
+/blockdel2
+/blockdel3
+/blocklist
+/blocklist2
+/blocklist3
+
+/leave - leave chat
+/revoke - revoke leaved chat
+
+/mes - send message to user
+/alert - send alert message to all users (actually filtered)
+'''
 
 def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date):
     hidden_text = (

@@ -4035,6 +4035,7 @@ def remove_keyboard(message: telebot.types.Message):
 @bot.message_handler(commands=['reset_gemini2'], func=authorized_admin)
 @async_run
 def reset_gemini2(message: telebot.types.Message):
+    '''reset gemini memory for specific chat'''
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
@@ -4115,31 +4116,10 @@ def set_bing_cookies(message: telebot.types.Message):
         bot_reply(message, msg, parse_mode='HTML')
 
 
-@bot.message_handler(commands=['model2'], func=authorized_admin)
-@async_run
-def change_mode2(message: telebot.types.Message):
-    '''изменить модель для другого чата'''
-    chat_id_full = get_topic_id(message)
-
-    try:
-        arg = message.text.split()[1].strip()
-        if arg:
-            if '[' not in arg:
-                arg = f'[{arg}] [0]'
-            else:
-                arg = f'{message.text.split()[1].strip()} {message.text.split()[2].strip()}'
-            chat_id_full = arg
-    except IndexError:
-        pass
-    model = message.text.split()[-1].strip()
-
-    my_db.set_user_property(chat_id_full, 'chat_mode', model)
-    bot_reply_tr(message, 'Model changed.')
-
-
 @bot.message_handler(commands=['style2'], func=authorized_admin)
 @async_run
 def change_style2(message: telebot.types.Message):
+    '''change style for specific chat'''
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
 
@@ -4402,6 +4382,7 @@ def set_new_temperature(message: telebot.types.Message):
 
 @bot.message_handler(commands=['alang'], func=authorized_admin)
 def change_user_language(message):
+    '''set lang for specific user'''
     try:
         # Разделяем команду на части
         parts = message.text.split()
@@ -5988,6 +5969,9 @@ def send_welcome_help(message: telebot.types.Message):
 
     help = utils.bot_markdown_to_html(help)
     bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
+
+    if message.from_user.id in cfg.admins and len(args) != 2:
+        bot_reply(message, my_init.admin_help, parse_mode='HTML', disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=['free', 'help_1'], func = authorized_log)

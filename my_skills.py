@@ -533,7 +533,7 @@ ls -l
         if not body.split()[0].startswith('#!/'):
             body = '#!/bin/bash\n\n' + body
     # Remove extra escaping that was added previously
-    body = body.replace('\\\\', '\\')
+    # body = body.replace('\\\\', '\\')
 
     my_log.log_gemini_skills(f'run_script {filename}\n\n{body}')
 

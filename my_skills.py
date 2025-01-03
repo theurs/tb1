@@ -225,6 +225,27 @@ def my_factorial(n: int) -> int:
     return math.factorial(n)
 
 
+def get_time_in_timezone(timezone_str: str) -> str:
+    """
+    Returns the current time in the specified timezone.
+
+    Args:
+        timezone_str: A string representing the timezone (e.g., "Europe/Moscow", "America/New_York").
+
+    Returns:
+        A string with the current time in "YYYY-MM-DD HH:MM:SS" format, or an error message if the timezone is invalid.
+    """
+    try:
+        timezone = pytz.timezone(timezone_str)
+        now = datetime.datetime.now(timezone)
+        time_str = now.strftime("%Y-%m-%d %H:%M:%S")
+        my_log.log_gemini_skills(f'get_time_in_timezone: timezone_str={timezone_str} time={time_str}')
+        return now.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception as error:
+        my_log.log_gemini_skills(f'get_time_in_timezone: Invalid timezone {timezone_str}\n{error}')
+        return f"Error: Invalid timezone '{timezone_str}'"
+
+
 # # надо использовать стиль типа такого что бы он не отнекивался, не говорил что не может не умеет
 # # /style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску
 # def run_script(filename: str, body: str) -> str:
@@ -253,6 +274,93 @@ def my_factorial(n: int) -> int:
 #     # body = '\n'.join(lines)
 
 #     my_log.log_gemini_skills(f'run_script {filename}\n\n{body}')
+#     try:
+#         with open(filename, 'w') as f:
+#             f.write(body)
+#         os.chmod(filename, 0o777)
+#         try:
+#             output = subprocess.check_output(f'./{filename}', shell=True, timeout=300, stderr=subprocess.STDOUT)
+#         except subprocess.CalledProcessError as error:
+#             if not error.output:
+#                 output = str(error).encode('utf-8', errors='replace')
+#             else:
+#                 output = error.output
+#         utils.remove_file(filename)
+#         result = output.decode('utf-8', errors='replace')
+#         my_log.log_gemini_skills(f'run_script: {result}')
+#         return result
+#     except Exception as error:
+#         utils.remove_file(filename)
+#         traceback_error = traceback.format_exc()
+#         my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{filename}\n{body}')
+#         return f'{error}\n\n{traceback_error}'
+
+
+# def run_script(filename: str, body: str) -> str:
+#     """
+#     Saves and runs a script in the shell, returning its output. This script has full access to files and network, there are no sandboxes.
+#     Allowed file extensions are ".py" for Python and ".sh" for Bash. Do not add any shebang to the body.
+#     The function will execute the code using: subprocess.check_output(f'./run_script_{filename}', shell=True, timeout=300)
+
+#     Args:
+#         filename: The name of the file to be created.
+#         body: The content of the script to be executed.
+
+#     Returns:
+#         The output of the executed script.
+
+#     Instructions:
+#         1. Pass the filename with the extension (.py or .sh) to the 'filename' argument.
+#         2. Pass the script content without the shebang (#!... ) to the 'body' argument.
+#         3. If 'filename' ends with .py, the 'body' will be executed as a Python script.
+#         4. If 'filename' ends with .sh, the 'body' will be executed as a Bash script.
+#         5. The function will save the script to disk, make it executable, run it, and return the output.
+#         6. If an error occurs during script execution, the function will return the error message.
+#         7. After executing the script, it will be deleted from the disk.
+
+#     Example:
+#         filename = 'script.py'
+#         body = '''
+# import os
+# print(os.getcwd())
+# '''
+#         result = run_script(filename, body)
+#         print(result)
+
+#     Or:
+
+#         filename = 'script.sh'
+#         body = '''
+# echo "Hello, world!"
+# ls -l
+# '''
+#         result = run_script(filename, body)
+#         print(result)
+
+#     Important:
+#     - Ensure the script content in `body` is properly formatted and does not contain syntax errors.
+#     - Be cautious when running scripts with network access, as they have full access to the network.
+#     - If the script generates files, make sure to handle them appropriately (e.g., delete them after use).
+#     - Double quotes inside the script body are escaped
+#     """
+#     body = decode_string(body)
+#     filename = 'run_script_' + filename
+#     ext = utils.get_file_ext(filename)
+#     if ext.startswith('.'):
+#         ext = ext[1:]
+
+#     if ext == 'py':
+#         if not body.split()[0].startswith('#!/'):
+#             body = '#!/usr/bin/env python3\n\n' + body
+#     elif ext == 'sh':
+#         if not body.split()[0].startswith('#!/'):
+#             body = '#!/bin/bash\n\n' + body
+
+#     # Escape only double quotes inside the string
+#     body = body.replace('"', '\\"')
+
+#     my_log.log_gemini_skills(f'run_script {filename}\n\n{body}')
+
 #     try:
 #         with open(filename, 'w') as f:
 #             f.write(body)
@@ -328,15 +436,17 @@ ls -l
     if ext.startswith('.'):
         ext = ext[1:]
 
+    # Escape double quotes before adding shebang
+    body = body.replace('"', '\\"')
+
     if ext == 'py':
         if not body.split()[0].startswith('#!/'):
             body = '#!/usr/bin/env python3\n\n' + body
     elif ext == 'sh':
         if not body.split()[0].startswith('#!/'):
             body = '#!/bin/bash\n\n' + body
-
-    # Escape only double quotes inside the string
-    body = body.replace('"', '\\"')
+    # Replace \\n with \n after adding shebang
+    body = body.replace('\\\\n', '\\n')
 
     my_log.log_gemini_skills(f'run_script {filename}\n\n{body}')
 
@@ -360,27 +470,6 @@ ls -l
         traceback_error = traceback.format_exc()
         my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{filename}\n{body}')
         return f'{error}\n\n{traceback_error}'
-
-
-def get_time_in_timezone(timezone_str: str) -> str:
-    """
-    Returns the current time in the specified timezone.
-
-    Args:
-        timezone_str: A string representing the timezone (e.g., "Europe/Moscow", "America/New_York").
-
-    Returns:
-        A string with the current time in "YYYY-MM-DD HH:MM:SS" format, or an error message if the timezone is invalid.
-    """
-    try:
-        timezone = pytz.timezone(timezone_str)
-        now = datetime.datetime.now(timezone)
-        time_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        my_log.log_gemini_skills(f'get_time_in_timezone: timezone_str={timezone_str} time={time_str}')
-        return now.strftime("%Y-%m-%d %H:%M:%S")
-    except Exception as error:
-        my_log.log_gemini_skills(f'get_time_in_timezone: Invalid timezone {timezone_str}\n{error}')
-        return f"Error: Invalid timezone '{timezone_str}'"
 
 
 if __name__ == '__main__':

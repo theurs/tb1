@@ -6275,44 +6275,19 @@ def reload_module(message: telebot.types.Message):
     '''command for reload imported module on the fly'''
     try:
         module_name = message.text.split(' ', 1)[1].strip()
-
-        # Сначала проверяем, существует ли файл с оригинальным именем
-        if os.path.isfile(module_name):
-            found_filename = module_name
-        else:
-            # Если файл с оригинальным именем не найден, ищем среди потенциальных имен
-            potential_filenames = [
-                module_name + ".py",
-                "my_" + module_name,
-                "my_" + module_name + ".py",
-            ]
-
-            found_filename = None
-            for filename in potential_filenames:
-                if os.path.isfile(filename):
-                    found_filename = filename
-                    break
-
-        if found_filename is None:
-            bot_reply_tr(message, f"Модуль '{module_name}' не найден.")
-            return
-
-        # py на конце надо удалить
-        module_import_name = found_filename[:-3] if found_filename.endswith(".py") else found_filename
-
-        module = importlib.import_module(module_import_name)
+        module = importlib.import_module(module_name)
         importlib.reload(module)
 
         # реинициализация модуля
-        if module_import_name == 'my_gemini':
+        if module_name == 'my_gemini':
             my_gemini.load_users_keys()
-        elif module_import_name == 'my_groq':
+        elif module_name == 'my_groq':
             my_groq.load_users_keys()
-        elif module_import_name == 'my_genimg':
+        elif module_name == 'my_genimg':
             my_genimg.load_users_keys()
-        elif module_import_name == 'my_trans':
+        elif module_name == 'my_trans':
             my_trans.load_users_keys()
-        elif module_import_name == 'my_db':
+        elif module_name == 'my_db':
             db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
             db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
             my_db.init(db_backup, db_vacuum)

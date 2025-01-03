@@ -3664,21 +3664,13 @@ def download_ytb_audio(message: telebot.types.Message):
         url = message.text.split(maxsplit=1)
         if len(url) == 2:
             url = url[1]
-            
-            if my_ytb.valid_youtube_url(url):
-                with ShowAction(message, "upload_audio"):
+
+            with ShowAction(message, "upload_audio"):            
+                if my_ytb.valid_youtube_url(url):
                     title, pic, desc, size = my_ytb.get_title_and_poster(url)
                     if size == 0 or size > 6*60*60:
                         bot_reply_tr(message, 'Too big video for me.')
                         return
-                    # caption = caption[:900]
-                    # m = bot.send_photo(
-                    #     message.chat.id,
-                    #     pic,
-                    #     caption=caption,
-                    #     disable_notification=True,
-                    #     )
-                    # log_message(m)
                     source_file = my_ytb.download_audio(url)
                     if source_file:
                         bot_reply_tr(message, 'Downloaded successfully, sending file.')
@@ -3711,8 +3703,8 @@ def download_ytb_audio(message: telebot.types.Message):
                     if files:
                         my_ytb.remove_folder_or_parent(files[0])
                     return
-
-        bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube.')
+                else:
+                    bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube.')
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:download_ytb_audio:{error}\n\n{traceback_error}')

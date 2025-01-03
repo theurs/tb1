@@ -279,7 +279,7 @@ def run_script(filename: str, body: str) -> str:
     """
     Saves and runs a script in the shell, returning its output. This script has full access to files and network, there are no sandboxes.
     Allowed file extensions are ".py" for Python and ".sh" for Bash. Do not add any shebang to the body.
-    The function will execute the code using: subprocess.check_output(f'./{filename}', shell=True, timeout=300)
+    The function will execute the code using: subprocess.check_output(f'./run_script_{filename}', shell=True, timeout=300)
 
     Args:
         filename: The name of the file to be created.

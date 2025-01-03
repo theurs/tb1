@@ -32,7 +32,7 @@ def get_cookie():
     if len(COOKIES) == 0:
         COOKIES = list(COOKIE.items())
     try:
-        cookie = COOKIES.pop()
+        cookie = COOKIES.pop()[0]
     except IndexError:
         # my_log.log_bing_img(f'get_images: {query} no cookies')
         raise Exception('no cookies')

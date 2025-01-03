@@ -6277,7 +6277,7 @@ def reload_module(message: telebot.types.Message):
         module_name = message.text.split(' ', 1)[1].strip()
 
         # Сначала проверяем, существует ли файл с оригинальным именем
-        if os.path.exists(module_name):
+        if os.path.isfile(module_name):
             found_filename = module_name
         else:
             # Если файл с оригинальным именем не найден, ищем среди потенциальных имен
@@ -6289,7 +6289,7 @@ def reload_module(message: telebot.types.Message):
 
             found_filename = None
             for filename in potential_filenames:
-                if os.path.exists(filename):
+                if os.path.isfile(filename):
                     found_filename = filename
                     break
 
@@ -6304,14 +6304,18 @@ def reload_module(message: telebot.types.Message):
         importlib.reload(module)
 
         # реинициализация модуля
-        if module_name == 'my_gemini':
+        if module_import_name == 'my_gemini':
             my_gemini.load_users_keys()
-        elif module_name == 'my_groq':
+        elif module_import_name == 'my_groq':
             my_groq.load_users_keys()
-        elif module_name == 'my_genimg':
+        elif module_import_name == 'my_genimg':
             my_genimg.load_users_keys()
-        elif module_name == 'my_trans':
+        elif module_import_name == 'my_trans':
             my_trans.load_users_keys()
+        elif module_import_name == 'my_db':
+            db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
+            db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
+            my_db.init(db_backup, db_vacuum)
 
         bot_reply_tr(message, f"Модуль '{module_name}' успешно перезагружен.")
     except Exception as e:

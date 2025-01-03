@@ -47,7 +47,8 @@ def get_images_v2(prompt: str,
     results = []
 
     try:
-        sync_gen = ImageGen(auth_cookie=get_cookie(), quiet=True, proxy=proxy)
+        c = get_cookie()
+        sync_gen = ImageGen(auth_cookie=c, quiet=True, proxy=proxy)
         results = sync_gen.get_images(prompt)
     except Exception as error:
         my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
@@ -59,7 +60,8 @@ def get_images_v2(prompt: str,
         elif 'Image create failed pls check cookie or old image still creating' in str(error):
             time.sleep(60)
             try:
-                sync_gen = ImageGen(auth_cookie=get_cookie(), quiet=True, proxy=proxy)
+                cc = get_cookie()
+                sync_gen = ImageGen(auth_cookie=cc, quiet=True, proxy=proxy)
                 results = sync_gen.get_images(prompt)
             except Exception as error2:
                 my_log.log_bing_img(f'get_images_v2: {error2} \n\n {cc} \n\nPrompt: {prompt}')

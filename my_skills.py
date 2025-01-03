@@ -542,7 +542,7 @@ ls -l
             f.write(body)
         os.chmod(filename, 0o777)
         try:
-            output = subprocess.check_output(f'{filename}', shell=True, timeout=300, stderr=subprocess.STDOUT)
+            output = subprocess.check_output(f'./{filename}', shell=True, timeout=300, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as error:
             if not error.output:
                 output = str(error).encode('utf-8', errors='replace')

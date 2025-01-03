@@ -153,5 +153,5 @@ if __name__ == '__main__':
     # print(result)
     # print(convert_djvu2pdf('/home/ubuntu/tmp/2.djvu'))
 
-    with open('c:/Users/user/Downloads/1.pdf', 'wb') as f:
+    with open('1.pdf', 'wb') as f:
         f.write(convert_text_to_pdf('**test**\n\nHello __world__.\n\n###test\n\nhi there.'))

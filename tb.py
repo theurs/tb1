@@ -5070,7 +5070,7 @@ def image_gen(message: telebot.types.Message):
                                 if i.startswith('moderation') and not has_good_images:
                                     bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
                                     return
-                                elif 'error1_Bad images' in i:
+                                elif 'error1_Bad images' in i and not has_good_images:
                                     bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
                                     return
                                 if not has_good_images and not i.startswith('https://'):

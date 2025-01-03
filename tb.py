@@ -2525,7 +2525,7 @@ def handle_document(message: telebot.types.Message):
                     handle_voice(message)
                     return
 
-                if message.document and message.document.mime_type.startswith('image/'):
+                if message.document and message.document.mime_type.startswith('image/') and message.document.mime_type != 'image/svg+xml':
                     handle_photo(message)
                     return
 

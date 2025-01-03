@@ -4171,57 +4171,62 @@ def save_history(message: telebot.types.Message):
     Используя конвертер маркдауна pandoc
     pandoc -f markdown -t odt 1.md -o output.odt
     """
-    chat_id_full = get_topic_id(message)
-    COMMAND_MODE[chat_id_full] = ''
-
     try:
-        if message.from_user.id in cfg.admins:
-            arg = message.text.split(maxsplit=1)[1].strip()
-            if arg:
-                if '[' not in arg:
-                    arg = f'[{arg}] [0]'
-                chat_id_full = arg
-    except IndexError:
-        pass
+        chat_id_full = get_topic_id(message)
+        COMMAND_MODE[chat_id_full] = ''
 
-    prompt = ''
-    if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        prompt = my_gemini.get_mem_as_string(chat_id_full, md = True, model = my_db.get_user_property(chat_id_full, 'chat_mode')) or ''
-    if 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        prompt = my_groq.get_mem_as_string(chat_id_full, md = True) or ''
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
-        prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-        prompt = my_sambanova.get_mem_as_string(chat_id_full, md = True) or ''
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
-        prompt = my_sambanova.get_mem_as_string(chat_id_full, md = True) or ''
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
-        prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
-        prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
-        prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
-        prompt = my_grok.get_mem_as_string(chat_id_full, md = True) or ''
-    if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
-        prompt = my_glm.get_mem_as_string(chat_id_full, md = True) or ''
-    if 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        prompt = my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
-    if 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-        prompt += my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
+        try:
+            if message.from_user.id in cfg.admins:
+                arg = message.text.split(maxsplit=1)[1].strip()
+                if arg:
+                    if '[' not in arg:
+                        arg = f'[{arg}] [0]'
+                    chat_id_full = arg
+        except IndexError:
+            pass
 
-    if prompt:
-        m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_docx(prompt), message_thread_id=message.message_thread_id,
-                              caption='resp.docx', visible_file_name = 'resp.docx', reply_markup=get_keyboard('hide', message))
-        log_message(m)
-        m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_odt(prompt), message_thread_id=message.message_thread_id,
-                              caption='resp.odt', visible_file_name = 'resp.odt', reply_markup=get_keyboard('hide', message))
-        log_message(m)
-        m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_pdf(prompt), message_thread_id=message.message_thread_id,
-                              caption='resp.pdf', visible_file_name = 'resp.pdf', reply_markup=get_keyboard('hide', message))
-        log_message(m)
-    else:
-        bot_reply_tr(message, 'Memory is empty, nothing to save.')
+        prompt = ''
+        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            prompt = my_gemini.get_mem_as_string(chat_id_full, md = True, model = my_db.get_user_property(chat_id_full, 'chat_mode')) or ''
+        if 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            prompt = my_groq.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+            prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
+            prompt = my_sambanova.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
+            prompt = my_sambanova.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
+            prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
+            prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
+            prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
+            prompt = my_grok.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
+            prompt = my_glm.get_mem_as_string(chat_id_full, md = True) or ''
+        if 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            prompt = my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
+        if 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            prompt += my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
+
+        if prompt:
+            m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_docx(prompt), message_thread_id=message.message_thread_id,
+                                caption='resp.docx', visible_file_name = 'resp.docx', reply_markup=get_keyboard('hide', message))
+            log_message(m)
+            m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_odt(prompt), message_thread_id=message.message_thread_id,
+                                caption='resp.odt', visible_file_name = 'resp.odt', reply_markup=get_keyboard('hide', message))
+            log_message(m)
+            m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_pdf(prompt), message_thread_id=message.message_thread_id,
+                                caption='resp.pdf', visible_file_name = 'resp.pdf', reply_markup=get_keyboard('hide', message))
+            log_message(m)
+        else:
+            bot_reply_tr(message, 'Memory is empty, nothing to save.')
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:save_history: {unknown}\n\n{traceback_error}')
+        bot_reply_tr(message, 'An error occurred while processing the request.')
 
 
 @bot.message_handler(commands=['mem'], func=authorized_owner)

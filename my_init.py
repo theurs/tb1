@@ -117,18 +117,19 @@ help_msg_file = 'msg_help.dat'
 
 # html команды для администратора
 admin_help = '''
-/gmodels - список моделей gemini
+/ping - ping bot no dependency
+/gmodels - list of gemini models
 
-/tgui - исправление локализации
-/create_all_translations - создать кеш переводов
+/tgui - localization fix
+/create_all_translations - create translation cache
 /init - recreate telegram info (bot name, description, menu commands)
 
-/sdonate - добавить или убавить юзеру звезды, только в логе будет видно что они виртуальные
+/sdonate - add or remove stars for a user, it will only be visible in the log that they are virtual
 
 /alang - set language for specific user
 /set_stt_mode - mandatory switch user from one stt engine to another
 /set_chat_mode - mandatory switch user from one chatbot to another
-/addkeys - добавить gemini API ключи юзеру за него 
+/addkeys - add gemini API keys for a user for them
 /reset_gemini2 - reset gemini memory for specific chat
 /style2 - change style for specific chat
 

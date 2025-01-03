@@ -3681,7 +3681,7 @@ def download_ytb_audio(message: telebot.types.Message):
                                 with open(fn, 'rb') as f:
                                     data = f.read()
                                 caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}'
-                                caption = caption[:900]
+                                caption = f'{caption[:900]}\n\n{url}'
                                 image_stream = io.BytesIO(utils.download_image_as_bytes(pic))
                                 try:
                                     tmb = telebot.types.InputFile(image_stream)

@@ -24,17 +24,18 @@ COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 BAD_IMAGES_PROMPT = {}
 
 
-def get_cookie():
-    # используем только первую куку (одну)
-    cookies = [x for x in COOKIE.items()]
-    random.shuffle(cookies)
+COOKIES = []
 
-    if not cookies:
+
+def get_cookie():
+    global COOKIES
+    if len(COOKIES) == 0:
+        COOKIES = list(COOKIE.items())
+    try:
+        cookie = COOKIES.pop()
+    except IndexError:
         # my_log.log_bing_img(f'get_images: {query} no cookies')
         raise Exception('no cookies')
-
-    cookie = cookies[0][0]
-
     return cookie
 
 
@@ -46,8 +47,7 @@ def get_images_v2(prompt: str,
     results = []
 
     try:
-        c = get_cookie()
-        sync_gen = ImageGen(auth_cookie=c, quiet=True)
+        sync_gen = ImageGen(auth_cookie=get_cookie(), quiet=True, proxy=proxy)
         results = sync_gen.get_images(prompt)
     except Exception as error:
         my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
@@ -57,13 +57,13 @@ def get_images_v2(prompt: str,
             BAD_IMAGES_PROMPT[prompt] = True
             return [str(error),]
         elif 'Image create failed pls check cookie or old image still creating' in str(error):
-            time.sleep(10)
+            time.sleep(60)
             try:
-                cc = get_cookie()
-                sync_gen = ImageGen(auth_cookie=cc, quiet=True)
+                sync_gen = ImageGen(auth_cookie=get_cookie(), quiet=True, proxy=proxy)
                 results = sync_gen.get_images(prompt)
             except Exception as error2:
                 my_log.log_bing_img(f'get_images_v2: {error2} \n\n {cc} \n\nPrompt: {prompt}')
+                time.sleep(60)
 
     if results:
         results = [x for x in results if '.bing.net/th/id/' in x]

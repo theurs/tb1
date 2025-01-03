@@ -2054,7 +2054,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot_reply_tr(message, 'История диалога с Pixtral Large очищена.')
         elif call.data == 'commandrplus_reset':
             my_cohere.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Grok 2 очищена.')
+            bot_reply_tr(message, 'История диалога с Command R+ очищена.')
         elif call.data == 'grok_reset':
             my_grok.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Grok 2 очищена.')

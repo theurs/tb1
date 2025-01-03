@@ -68,6 +68,8 @@ python-pptx
 
 re_edge_gpt
 
+requests[socks]
+
 SpeechRecognition
 sqlitedict
 starlette

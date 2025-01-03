@@ -192,7 +192,8 @@ def chat(query: str,
             # use_skills = False
             calc_tool = calc if utils.extract_user_id(chat_id) not in cfg.admins else calc_admin
 
-            if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
+            # if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
+            if use_skills and '-8b' not in model and 'thinking' not in model:
                 SKILLS = [
                     search_google,
                     download_text_from_url,

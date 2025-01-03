@@ -395,12 +395,6 @@ OPEN_ROUTER_FREE_KEYS = [
 #]
 
 
-# for youtube subtitles downloads
-#YT_SUBS_PROXY = [
-#    'socks5://user:pass@host:port',
-#]
-
-
 # proxy for DuckDuckGo Chat
 #DDG_PROXY = [
 #    'socks5://user:pass@host:port',

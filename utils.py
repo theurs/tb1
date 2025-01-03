@@ -1486,6 +1486,17 @@ def shorten_all_repeats(text: str, min_repetitions: int = 200, max_keep: int = 1
     return re.sub(pattern, replace_repeat, text, flags=re.DOTALL)
 
 
+def get_ytb_proxy() -> str:
+    '''return insert line with proxy if any else Empty string'''
+    if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+        proxy = random.choice(cfg.YTB_PROXY)
+        result = f' --proxy "{proxy}" '
+    else:
+        result = ''
+
+    return result
+
+
 if __name__ == '__main__':
     pass
 

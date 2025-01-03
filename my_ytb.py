@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# pip install pytube
 
 
 import json
@@ -13,7 +12,6 @@ import threading
 from typing import List, Tuple
 
 import natsort.natsort
-import pytube
 
 import my_log
 import utils
@@ -31,63 +29,97 @@ def download_ogg(url: str) -> str:
 
 
 def valid_youtube_url(url: str) -> str:
-    '''Checks if the URL is a valid YouTube URL (all variants are supported). 
-       Returns the video ID or an empty string if the URL is invalid.'''
-    if url.startswith('https://') and len(url.split()) == 1 and ('youtu.be/' in url or 'youtube.com/' in url):
-        try:
-            id_ = pytube.extract.video_id(url)
-            if '-nocookie' in url:
-                id_ = pytube.extract.video_id(url.replace('-nocookie', ''))
-        except Exception as error:
-            return ''
-        return id_
-    return ''
+    """
+    Checks if the URL is a valid YouTube URL using yt-dlp, with proxy support.
 
+    Supports various YouTube URL formats:
+    - youtu.be/
+    - youtube.com/watch?v=
+    - m.youtube.com/watch?v=
+    - youtube-nocookie.com/embed/
 
-def get_yt(url: str):
-    # if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
-    #     proxy = random.choice(cfg.YTB_PROXY)
-    #     proxies = {
-    #         "http": proxy,
-    #         "https": proxy,
-    #     }
-    #     return pytube.YouTube(url, proxies=proxies)
-    # else:
-    #     return pytube.YouTube(url)
-    return pytube.YouTube(url)
+    Args:
+        url: The URL string to check.
 
-
-def get_title(url: str) -> str:
-    '''Gets the title of the YouTube video from the given URL.
-       Returns the title or an empty string if an error occurs.'''
+    Returns:
+        The YouTube video ID if the URL is valid, otherwise an empty string.
+    """
     try:
-        yt = get_yt(url)
-        return yt.title
-    except Exception as error:
+        # Check if a proxy is configured
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            # Use a random proxy from the list
+            proxy = random.choice(cfg.YTB_PROXY)
+            process = subprocess.run([
+                'yt-dlp',
+                '--print', '%(id)s',
+                '--skip-download',  # Skip downloading the video
+                '--proxy', proxy,
+                url
+            ], capture_output=True, text=True, check=True)
+        else:
+            # No proxy configured, use yt-dlp directly
+            process = subprocess.run([
+                'yt-dlp',
+                '--print', '%(id)s',
+                '--skip-download',  # Skip downloading the video
+                url
+            ], capture_output=True, text=True, check=True)
+
+        # Extract the video ID from the output
+        video_id = process.stdout.strip()
+
+        # Check if the extracted ID is not empty
+        if video_id:
+            return video_id
+        else:
+            # Log an invalid URL error using my_log.log2()
+            my_log.log2(f'my_ytb:valid_youtube_url: Invalid YouTube URL: {url}')
+            return ''
+
+    except subprocess.CalledProcessError as error:
+        # Log the error using my_log.log2()
+        my_log.log2(f'my_ytb:valid_youtube_url: {url} {error}')
         return ''
 
 
-# def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
-#     """Gets the title, thumbnail URL, description and size of a YouTube video.
+def get_title(url: str) -> str:
+    """
+    Gets the title of the YouTube video from the given URL using yt-dlp.
+    Uses a proxy if available in the configuration.
+    Logs errors using the my_log module.
 
-#     Args:
-#         url: The URL of the YouTube video.
+    Args:
+        url: The URL of the YouTube video.
 
-#     Returns:
-#         A tuple containing the title, thumbnail URL, and description of the video. 
-#         If an error occurs, returns a tuple of three empty strings.
-#     """
-#     try:
-#         yt = get_yt(url)
-#         title = yt.title
-#         pic = yt.thumbnail_url
-#         description = yt.description
-#         size = yt.length
+    Returns:
+        The title of the video or an empty string if an error occurs.
+    """
+    try:
+        # Check if a proxy is configured
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            # Use a random proxy from the list
+            proxy = random.choice(cfg.YTB_PROXY)
+            process = subprocess.run([
+                'yt-dlp',
+                '--print', 'title',
+                '--proxy', proxy,
+                url
+            ], capture_output=True, text=True, check=True)
+        else:
+            # No proxy configured, use yt-dlp directly
+            process = subprocess.run([
+                'yt-dlp',
+                '--print', 'title',
+                url
+            ], capture_output=True, text=True, check=True)
 
-#         return title or '', pic, description or '', size
-#     except Exception as error:
-#         my_log.log2(f'my_ytb:get_title_and_poster {url} {error}')
-#         return '', '', '', 0
+        # Get the title from the output
+        title = process.stdout.strip()
+        return title
+    except subprocess.CalledProcessError as error:
+        # Log the error using my_log.log2()
+        my_log.log2(f'my_ytb:get_title: {url} {error}')
+        return ''
 
 
 def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
@@ -132,57 +164,6 @@ def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
     except (subprocess.CalledProcessError, json.JSONDecodeError) as error:
         my_log.log2(f'my_ytb:get_title_and_poster {url} {error}')
         return '', '', '', 0
-
-
-# def split_audio(input_file: str, max_size_mb: int) -> List[str]:
-#     """
-#     Splits audio file into parts no larger than the specified size using ffmpeg.
-
-#     Args:
-#         input_file: Path to the input audio file.
-#         max_size_mb: Maximum part size in megabytes.
-
-#     Returns:
-#         A list of paths to files in a temporary folder.
-#     """
-
-#     # Create a temporary folder
-#     tmp_dir = tempfile.mkdtemp()
-
-#     # Create a temporary folder if it doesn't exist
-#     if not os.path.exists(tmp_dir):
-#         os.makedirs(tmp_dir)
-
-#     output_prefix = os.path.join(tmp_dir, "part")
-
-#     bit_rate = 64000
-
-#     # Calculate the segment time in seconds
-#     segment_time = int(max_size_mb * 8 * 1000 * 1000 / bit_rate)
-
-#     subprocess.run([
-#         'ffmpeg',
-#         '-i',
-#         input_file,
-#         '-f',
-#         'segment',
-#         '-segment_time',
-#         str(segment_time),
-#         '-acodec',
-#         'libvorbis',
-#         '-ab',
-#         '64k',
-#         '-reset_timestamps',
-#         '1',
-#         '-loglevel',
-#         'quiet',
-#         f'{output_prefix}%03d.ogg'
-#     ], check=True)
-
-#     # Get the list of files in the temporary folder
-#     files = [os.path.join(tmp_dir, f) for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]
-
-#     return natsort.natsorted(files)
 
 
 def split_audio(input_file: str, max_size_mb: int) -> List[str]:
@@ -332,5 +313,9 @@ if __name__ == '__main__':
     # input = download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY')
     # print(input)
 
-    print(get_title_and_poster('https://www.youtube.com/watch?v=5F24kWz1tKk'))
+    # print(get_title_and_poster('https://www.youtube.com/watch?v=5F24kWz1tKk'))
+
+    # print(get_title('https://www.youtube.com/watch?v=5F24kWz1tKk'))
+
+    # print(valid_youtube_url('https://www.youtube.com/watch?v=5F24kWz1tKk'))
 

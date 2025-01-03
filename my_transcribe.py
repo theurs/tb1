@@ -337,7 +337,10 @@ def transcribe_groq(audio_file: str, prompt: str = '', language: str = 'ru') -> 
 def download_worker(video_url: str, part: tuple, n: int, fname: str, language: str):
     with download_worker_semaphore:
         utils.remove_file(f'{fname}_{n}.ogg')
-        proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            proc = subprocess.run([YT_DLP, '-x', '--proxy', random.choice(cfg.YTB_PROXY), '-g', video_url], stdout=subprocess.PIPE)
+        else:
+            proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
         stream_url = proc.stdout.decode('utf-8', errors='replace').strip()
 
         proc = subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
@@ -364,7 +367,11 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str, language: s
 def download_worker_v2(video_url: str, part: tuple, n: int, fname: str, language: str):
     with download_worker_semaphore_v2:
         utils.remove_file(f'{fname}_{n}.ogg')
-        proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
+        
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            proc = subprocess.run([YT_DLP, '-x', '--proxy', random.choice(cfg.YTB_PROXY), '-g', video_url], stdout=subprocess.PIPE)
+        else:
+            proc = subprocess.run([YT_DLP, '-x', '-g', video_url], stdout=subprocess.PIPE)
         stream_url = proc.stdout.decode('utf-8', errors='replace').strip()
 
         proc = subprocess.run([FFMPEG, '-ss', str(part[0]), '-i', stream_url, '-t',
@@ -389,7 +396,10 @@ def download_worker_v2(video_url: str, part: tuple, n: int, fname: str, language
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_url_video_duration(url: str) -> int:
     '''return duration of video, get with yt-dlp'''
-    proc = subprocess.run([YT_DLP, '--skip-download', '-J', url], stdout=subprocess.PIPE)
+    if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+        proc = subprocess.run([YT_DLP, '--proxy', random.choice(cfg.YTB_PROXY), '--skip-download', '-J', url], stdout=subprocess.PIPE)
+    else:
+        proc = subprocess.run([YT_DLP, '--skip-download', '-J', url], stdout=subprocess.PIPE)
     output = proc.stdout.decode('utf-8', errors='replace')
     info = json.loads(output)
     try:
@@ -460,7 +470,10 @@ def download_youtube_clip_v2(video_url: str, language: str):
     part_size = 10 * 60 # размер куска несколько минут
     treshold = 5 # захватывать +- несколько секунд в каждом куске
 
-    proc = subprocess.run([YT_DLP, '--skip-download', '-J', video_url], stdout=subprocess.PIPE)
+    if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+        proc = subprocess.run([YT_DLP, '--proxy', random.choice(cfg.YTB_PROXY), '--skip-download', '-J', video_url], stdout=subprocess.PIPE)
+    else:
+        proc = subprocess.run([YT_DLP, '--skip-download', '-J', video_url], stdout=subprocess.PIPE)
     output = proc.stdout.decode('utf-8', errors='replace')
     info = json.loads(output)
     try:
@@ -578,11 +591,17 @@ def find_split_segments(audio_file: str, max_size: int = 50) -> list:
         list: Список кортежей (позиция разреза, длительность фрагмента).
     """
     if '/youtu.be/' in audio_file or 'youtube.com/' in audio_file:
-        proc = subprocess.run([YT_DLP, '--skip-download', '-J', audio_file], stdout=subprocess.PIPE)
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            proc = subprocess.run([YT_DLP, '--proxy', random.choice(cfg.YTB_PROXY), '--skip-download', '-J', audio_file], stdout=subprocess.PIPE)
+        else:
+            proc = subprocess.run([YT_DLP, '--skip-download', '-J', audio_file], stdout=subprocess.PIPE)
         output = proc.stdout.decode('utf-8', errors='replace')
         info = json.loads(output)
         duration__ = info['duration']
-        proc = subprocess.run([YT_DLP, '-x', '-g', audio_file], stdout=subprocess.PIPE)
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            proc = subprocess.run([YT_DLP, '-x', '--proxy', random.choice(cfg.YTB_PROXY), '-g', audio_file], stdout=subprocess.PIPE)
+        else:
+            proc = subprocess.run([YT_DLP, '-x', '-g', audio_file], stdout=subprocess.PIPE)
         audio_file = proc.stdout.decode('utf-8', errors='replace').strip()
     else:
         result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

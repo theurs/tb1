@@ -49,7 +49,7 @@ def get_subs_from_rutube(url: str) -> str:
     tmpname = utils.get_tmp_fname()
     result = ''
     try:
-        cmd = f'yt-dlp -x -S "+size,+br" "{url}" -o {tmpname}'
+        cmd = f'yt-dlp -x -S "+size,+br" {utils.get_ytb_proxy()} "{url}" -o {tmpname}'
         try:
             output = subprocess.check_output(cmd, shell=True, timeout=3000, stderr = subprocess.STDOUT)
         except subprocess.CalledProcessError as error:
@@ -83,7 +83,7 @@ def get_subs_from_dzen_video(url: str) -> str:
     '''Downloads subtitles from dzen video url, converts them to text and returns the text. 
     Returns None if no subtitles found.'''
     list_of_subs = []
-    cmd = f'yt-dlp -q --skip-download --list-subs "{url}"'
+    cmd = f'yt-dlp -q --skip-download --list-subs  {utils.get_ytb_proxy()}  "{url}"'
     try:
         output = subprocess.check_output(cmd, shell=True, timeout=300, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as error:
@@ -101,7 +101,7 @@ def get_subs_from_dzen_video(url: str) -> str:
 
     if list_of_subs:
         tmpname = utils.get_tmp_fname()
-        cmd = f'yt-dlp -q --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}" "{url}" -o "{tmpname}"'
+        cmd = f'yt-dlp -q --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}"  {utils.get_ytb_proxy()}  "{url}" -o "{tmpname}"'
         subprocess.call(cmd, shell=True)
         ext = f'.{list_of_subs[0][0]}.{list_of_subs[0][1].split(",")[0]}'
         ext = ext.replace(' ', '')
@@ -196,9 +196,13 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
                 t = ''
                 try:
                     proxy = ''
-                    if hasattr(cfg, 'YT_SUBS_PROXY'):
-                        proxy = random.choice(cfg.YT_SUBS_PROXY)
-                        t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = {'https': proxy})
+                    if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+                        proxy = random.choice(cfg.YTB_PROXY)
+                        proxies = {
+                            'http': 'proxy',
+                            'https': 'proxy'
+                        }
+                        t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = proxies)
                     else:
                         t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
                 except Exception as download_error:
@@ -508,5 +512,6 @@ def is_valid_url(url: str) -> bool:
 if __name__ == "__main__":
     pass
     # my_groq.load_users_keys()
-    r = get_subs_from_dzen_video('https://www.youtube.com/watch?v=lyGvQn_clQM')
+    # r = get_subs_from_dzen_video('https://www.youtube.com/watch?v=lyGvQn_clQM')
+    r = get_text_from_youtube('https://www.youtube.com/watch?v=qnvNkXs7NpY', transcribe=False)
     print(r)

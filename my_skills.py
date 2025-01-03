@@ -436,12 +436,11 @@ ls -l
     if ext.startswith('.'):
         ext = ext[1:]
 
-    # Escape double quotes before adding shebang
-    body = body.replace('"', '\\"')
-
     if ext == 'py':
         if not body.split()[0].startswith('#!/'):
             body = '#!/usr/bin/env python3\n\n' + body
+        # Escape double quotes only for Python scripts
+        body = body.replace('"', '\\"')
     elif ext == 'sh':
         if not body.split()[0].startswith('#!/'):
             body = '#!/bin/bash\n\n' + body

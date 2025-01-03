@@ -612,7 +612,7 @@ def update_translation(text: str, lang: str, help: str, translation: str):
                     VALUES (?, ?, ?, ?)
                 ''', (text, lang, help, translation))
         except Exception as error:
-            my_log.log2(f'my_db:update_translation {error}')
+            my_log.log2(f'my_db:update_translation {error}\n\n{text}\n\n{lang}\n\n{help}\n\n{translation}')
 
 
 def update_translations(values: list):
@@ -628,7 +628,7 @@ def update_translations(values: list):
                 VALUES (?, ?, ?, ?)
             ''', values)
         except Exception as error:
-            my_log.log2(f'my_db:update_translations {error}')
+            my_log.log2(f'my_db:update_translations {error}\n\n{values}')
 
 
 def get_translations_like(text: str) -> list:

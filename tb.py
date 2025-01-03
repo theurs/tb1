@@ -2052,7 +2052,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'pixtral_reset':
             my_mistral.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Pixtral Large очищена.')
-        elif call.data == 'commandrplus':
+        elif call.data == 'commandrplus_reset':
             my_cohere.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Grok 2 очищена.')
         elif call.data == 'grok_reset':
@@ -2061,7 +2061,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'qwen70_reset':
             my_sambanova.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Qwen2.5-72B-Instruct очищена.')
-        elif call.data == 'glm4plus':
+        elif call.data == 'glm4plus_reset':
             my_glm.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с GLM 4 PLUS очищена.')
         elif call.data == 'gpt-4o-mini-ddg_reset':

@@ -656,7 +656,7 @@ TEXT:
     return text
 
 
-def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_MODEL) -> str:
+def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_MODEL, role: str = '') -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature.
@@ -665,15 +665,17 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_M
         text (str): The complete text to be used as input.
         query (str): The query to be used for generating the response.
         temperature (float, optional): The temperature parameter for controlling the randomness of the response. Defaults to 0.1.
+        model (str, optional): The name of the model to be used for generating the response. Defaults to DEFAULT_MODEL.
+        role (str, optional): The role of the AI model.
 
     Returns:
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    r = ai(query, temperature=temperature, model_ = model)
+    r = ai(query, temperature=temperature, model_ = model, system=role)
     if not r and model == DEFAULT_MODEL:
-        r = ai(query, temperature=temperature, model_ = FALLBACK_MODEL)
-    return r
+        r = ai(query, temperature=temperature, model_ = FALLBACK_MODEL, system=role)
+    return r.strip()
 
 
 def check_phone_number(number: str) -> str:

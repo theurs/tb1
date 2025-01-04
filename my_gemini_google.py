@@ -19,14 +19,10 @@ import traceback
 
 from google import genai
 from google.genai.types import (
-    FunctionDeclaration,
     GenerateContentConfig,
     GoogleSearch,
-    Part,
-    Retrieval,
     SafetySetting,
     Tool,
-    VertexAISearch,
 )
 
 import cfg
@@ -131,7 +127,7 @@ def calc(query: str, chat_id: str = '') -> str:
     return ''
 
 
-def google_search(query: str, chat_id: str = '') -> str:
+def google_search(query: str, chat_id: str = '', role: str = '') -> str:
     '''
     Поиск в Google
     '''
@@ -141,10 +137,13 @@ def google_search(query: str, chat_id: str = '') -> str:
             query = f'''{query}{formatting}'''
             google_search_tool = Tool(google_search=GoogleSearch())
             client = get_client()
+            if not role:
+                role = None
             response = client.models.generate_content(
                 model=MODEL_ID,
                 contents=query,
                 config=GenerateContentConfig(
+                    system_instruction = role,
                     tools=[google_search_tool],
                     temperature=0.2,
                     max_output_tokens=8000,

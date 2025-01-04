@@ -244,7 +244,7 @@ def check_ytb_subs_exists(url: str) -> bool:
     return False
     
 
-def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') -> str:
+def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str = '', role: str = '') -> str:
     """параллельный воркер для summ_text
        subj == 'text' or 'pdf'  - обычный текст о котором ничего не известно
        subj == 'chat_log'       - журнал чата
@@ -318,7 +318,7 @@ Text:
         try:
             if query:
                 qq = query
-            r = my_gemini.sum_big_text(text[:my_gemini.MAX_SUM_REQUEST], qq).strip()
+            r = my_gemini.sum_big_text(text[:my_gemini.MAX_SUM_REQUEST], qq, role=role)
             if r:
                 result = f'{r}\n\n--\nGemini Flash [{len(text[:my_gemini.MAX_SUM_REQUEST])}]'
         except Exception as error:
@@ -329,7 +329,7 @@ Text:
         try:
             if query:
                 qq = query
-            r = my_cohere.sum_big_text(text[:my_cohere.MAX_SUM_REQUEST], qq).strip()
+            r = my_cohere.sum_big_text(text[:my_cohere.MAX_SUM_REQUEST], qq, role=role)
             if r:
                 result = f'{r}\n\n--\nCommand R+ [{len(text[:my_cohere.MAX_SUM_REQUEST])}]'
         except Exception as error:
@@ -340,7 +340,7 @@ Text:
         try:
             if query:
                 qq = query
-            r = my_groq.sum_big_text(text[:my_groq.MAX_SUM_REQUEST], qq).strip()
+            r = my_groq.sum_big_text(text[:my_groq.MAX_SUM_REQUEST], qq, role=role)
             if r != '':
                 result = f'{r}\n\n--\nLlama 3.2 90b [Groq] [{len(text[:my_groq.MAX_SUM_REQUEST])}]'
         except Exception as error:
@@ -350,11 +350,11 @@ Text:
     return result
 
 
-def summ_text(text: str, subj: str = 'text', lang: str = 'ru', query: str = '') -> str:
+def summ_text(text: str, subj: str = 'text', lang: str = 'ru', query: str = '', role: str = '') -> str:
     """сумморизирует текст с помощью бинга или гптчата или клод-100к, возвращает краткое содержание, только первые 30(60)(99)т символов
     subj - смотрите summ_text_worker()
     """
-    return summ_text_worker(text, subj, lang, query)
+    return summ_text_worker(text, subj, lang, query, role)
 
 
 def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) -> str:
@@ -412,7 +412,11 @@ def get_urls_from_text(text):
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool = False):
+def summ_url(url:str,
+             download_only: bool = False,
+             lang: str = 'ru',
+             deep: bool = False,
+             role: str = ''):
     """скачивает веб страницу, просит гптчат или бинг сделать краткое изложение текста, возвращает текст
     если в ссылке ютуб то скачивает субтитры к видео вместо текста
     может просто скачать текст без саммаризации, для другой обработки"""
@@ -487,15 +491,15 @@ def summ_url(url:str, download_only: bool = False, lang: str = 'ru', deep: bool 
         return r
     else:
         if youtube:
-            r = summ_text(text, 'youtube_video', lang)
+            r = summ_text(text, 'youtube_video', lang, role=role)
         elif pdf:
-            r = summ_text(text, 'pdf', lang)
+            r = summ_text(text, 'pdf', lang, role=role)
         else:
             if deep:
                 text += '\n\n==============\nDownloaded links from the text for better analysis\n==============\n\n' + download_in_parallel(get_urls_from_text(text), my_gemini.MAX_SUM_REQUEST)
-                r = summ_text(text, 'text', lang)
+                r = summ_text(text, 'text', lang, role=role)
             else:
-                r = summ_text(text, 'text', lang)
+                r = summ_text(text, 'text', lang, role=role)
         return r, text
 
 

@@ -18,15 +18,21 @@ import utils
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def search_v3(query: str, lang: str = 'ru', max_search: int = 10, download_only = False, chat_id: str = ''):
+def search_v3(query: str,
+              lang: str = 'ru',
+              max_search: int = 10,
+              download_only = False,
+              chat_id: str = '',
+              role: str = ''):
     # сначала пробуем спросить в гугле
-    google_response = my_gemini_google.google_search(query, chat_id)
+    google_response = my_gemini_google.google_search(query, chat_id, role=role)
     if google_response:
         if download_only:
             return google_response
         else:
             return google_response, google_response
 
+    ## Если гугол не ответил то ищем самостоятельно
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
@@ -77,21 +83,21 @@ Search results:
     r = ''
 
     if not r:
-        r =  my_gemini.ai(q[:100000], model=cfg.gemini_flash_model, temperature=1)
+        r =  my_gemini.ai(q[:100000], model=cfg.gemini_flash_model, temperature=1, system=role)
         if r:
             r += '\n\n--\n[Gemini Flash]'
 
     if not r:
-        r = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST])
+        r = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
         if r:
             r += '\n\n--\n[Command R+]'
 
     if not r:
-        r = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], max_tokens_ = 4000)
+        r = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], max_tokens_ = 4000, system=role)
         if r:
             r += '\n\n--\n[Llama 3.2 90b]'
     if not r:
-        r = my_groq.ai(q[:32000], max_tokens_ = 4000, model_ = 'mixtral-8x7b-32768')
+        r = my_groq.ai(q[:32000], max_tokens_ = 4000, model_ = 'mixtral-8x7b-32768', system=role)
         if r:
             r += '\n\n--\n[Mixtral-8x7b-32768]'
 

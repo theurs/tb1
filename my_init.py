@@ -67,7 +67,7 @@ supported_langs_tts = [
 
 PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image. Break down long responses into easy-to-read paragraphs. Use markdown formatting to make it look good.'
 PROMPT_COPY_TEXT = 'Copy all the text from this image, save it as is - do not translate. Maintain the original formatting (except for line breaks, which should be corrected).'
-PROMPT_COPY_TEXT_TR = 'Copy all the text from this image, translate to my language. Maintain the original formatting (except for line breaks, which should be corrected).'
+PROMPT_COPY_TEXT_TR = 'Translate all texts from this image to my language (language of this TEXT request). Maintain the original formatting (except for line breaks, which should be corrected).'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. 50-300 words. Format your response as follows:'
 PROMPT_SOLVE = 'Solve all problems presented in the image. Show your step-by-step solution and clearly indicate the final answer. Rewrite latex expressions with unicode symbols with no markdown in it.'
 PROMPT_QRCODE = 'Read QRCODE.'

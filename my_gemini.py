@@ -152,8 +152,6 @@ def chat(query: str,
         if system == '':
             system = None
 
-        system = f'user_id: {chat_id}\n\n{str(system)}'
-
         if not key__:
             keys = cfg.gemini_keys[:] + ALL_KEYS
         else:
@@ -194,6 +192,8 @@ def chat(query: str,
 
             # if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
             if use_skills and '-8b' not in model and 'thinking' not in model:
+                # id в системный промпт надо добавлять что бы бот мог юзать его в скилах
+                system = f'user_id: {chat_id}\n\n{str(system)}'
                 SKILLS = [
                     search_google,
                     download_text_from_url,
@@ -761,7 +761,7 @@ def check_phone_number(number: str) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def sum_big_text(text:str, query: str, temperature: float = 1) -> str:
+def sum_big_text(text:str, query: str, temperature: float = 1, role: str = '') -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature. Split big text into chunks of 15000 characters.
@@ -770,15 +770,16 @@ def sum_big_text(text:str, query: str, temperature: float = 1) -> str:
         text (str): The complete text to be used as input.
         query (str): The query to be used for generating the response.
         temperature (float, optional): The temperature parameter for controlling the randomness of the response. Defaults to 0.1.
+        role (str, optional): System prompt. Defaults to ''.
 
     Returns:
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    r = ai(query, temperature=temperature, model=cfg.gemini_flash_model)
+    r = ai(query, temperature=temperature, model=cfg.gemini_flash_model, system=role)
     if not r:
-        r = ai(query, temperature=temperature, model=cfg.gemini_flash_model_fallback)
-    return r
+        r = ai(query, temperature=temperature, model=cfg.gemini_flash_model_fallback, system=role)
+    return r.strip()
 
 
 def detect_lang(text: str) -> str:

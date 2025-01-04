@@ -3541,13 +3541,16 @@ def users_keys_for_gemini(message: telebot.types.Message):
                     bot_reply_tr(message, 'Added keys successfully!')
                     return
 
-        msg = tr('Usage: /keys API KEYS space separated (gemini, groq, deepl, huggingface)\n\nThis bot needs free API keys.\n\n', lang)+'\n\n'+\
-                 '0️⃣ Free VPN: https://www.vpnjantit.com/\n\n'+\
-                 '1️⃣ https://www.youtube.com/watch?v=6aj5a7qGcb4\nhttps://ai.google.dev/\n\n'+\
-                 '2️⃣ https://github.com/theurs/tb1/tree/master/pics/groq\nhttps://console.groq.com/keys\n\n'+\
+        msg = tr('Usage: /keys API KEYS space separated (gemini, groq, huggingface)', lang) + '\n\n' + \
+                 '<blockquote>/keys xxxxx yyyy zzz\n/keys xxxxx</blockquote>\n\n' + \
+                 tr('This bot requires free API keys.', lang) + '\n\n' + \
+                 tr('Please <b>use only FREE keys</b>. Do not use paid accounts. If you have a paid account, please create a new one.', lang)+'\n\n'+\
+                 '0️⃣ Free VPN: https://www.vpnjantit.com/\n\n' + \
+                 '1️⃣ https://www.youtube.com/watch?v=6aj5a7qGcb4\nhttps://ai.google.dev/\nhttps://aistudio.google.com/apikey\n\n' + \
+                 '2️⃣ https://github.com/theurs/tb1/tree/master/pics/groq\nhttps://console.groq.com/keys\n\n' + \
                  '3️⃣ https://github.com/theurs/tb1/tree/master/pics/hf\nhttps://huggingface.co/settings/tokens'
 
-        bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+        bot_reply(message, msg, disable_web_page_preview = True, parse_mode='HTML', reply_markup = get_keyboard('donate_stars', message))
 
         # показать юзеру его ключи
         if is_private:
@@ -3703,8 +3706,8 @@ def download_ytb_audio(message: telebot.types.Message):
                     if files:
                         my_ytb.remove_folder_or_parent(files[0])
                     return
-                else:
-                    bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube.')
+
+        bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube.')
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:download_ytb_audio:{error}\n\n{traceback_error}')
@@ -4567,6 +4570,7 @@ def google(message: telebot.types.Message):
     """ищет в гугле перед ответом"""
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    role = my_db.get_user_property(chat_id_full, 'role')
 
     # проверка на подписку
     if not check_donate(message, chat_id_full, lang):
@@ -4595,7 +4599,7 @@ def google(message: telebot.types.Message):
         with ShowAction(message, 'typing'):
             with semaphore_talks:
                 COMMAND_MODE[chat_id_full] = ''
-                r, text = my_google.search_v3(q, lang, chat_id_full)
+                r, text = my_google.search_v3(q, lang, chat_id_full, role=role)
                 if not r.strip():
                     bot_reply_tr(message, 'Search failed.')
                     return
@@ -5553,6 +5557,7 @@ def ask_file(message: telebot.types.Message):
     '''ответ по сохраненному файлу, админ может запросить файл другого пользователя'''
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    role = my_db.get_user_property(chat_id_full, 'role')
 
     try:
         command_parts = message.text.split(maxsplit=2)
@@ -5611,14 +5616,14 @@ def ask_file(message: telebot.types.Message):
 
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
     '''
-            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = cfg.gemini_flash_model)
+            result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
             if not result:
-                result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST])
+                result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
             if not result:
-                result = my_grok.ai(q[:my_grok.MAX_SUM_REQUEST])
-            # result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-pro')
+                result = my_grok.ai(q[:my_grok.MAX_SUM_REQUEST], system=role)
+            # result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-pro', system=role)
             if not result:
-                result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000)
+                result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000, system=role)
 
             if result:
                 answer = utils.bot_markdown_to_html(result)
@@ -5645,6 +5650,7 @@ def summ_text(message: telebot.types.Message):
 
     chat_id_full = get_topic_id(message)
     lang = get_lang(chat_id_full, message)
+    role = my_db.get_user_property(chat_id_full, 'role') or ''
 
     # проверка на подписку
     if not check_donate(message, chat_id_full, lang):
@@ -5678,7 +5684,7 @@ def summ_text(message: telebot.types.Message):
                         if r:
                             with ShowAction(message, 'typing'):
                                 my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
-                                text = my_sum.summ_url(url, lang = lang, deep = False, download_only=True)
+                                text = my_sum.summ_url(url, lang = lang, deep = False, download_only=True, role=role)
                                 my_db.set_user_property(chat_id_full, 'saved_file', text)
                                 rr = utils.bot_markdown_to_html(r)
                                 ask = tr('Use /ask command to query or delete this file. Example /ask generate a short version of part 1.', lang)
@@ -5697,7 +5703,7 @@ def summ_text(message: telebot.types.Message):
                                 if not has_subs and ('/youtu.be/' in url or 'youtube.com/' in url):
                                     bot_reply_tr(message, 'Видео с ютуба не содержит субтитров.')
                                     return
-                                res, text = my_sum.summ_url(url, lang = lang, deep = False)
+                                res, text = my_sum.summ_url(url, lang = lang, deep = False, role=role)
                                 my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
                                 my_db.set_user_property(chat_id_full, 'saved_file', text)
                             except Exception as error2:

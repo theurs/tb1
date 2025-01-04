@@ -7252,7 +7252,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             answer = answer.strip()
                             if not answer:
-                                answer = 'Llama 405b' + tr('did not answered, try to /reset and start again.', lang)
+                                answer = 'Llama 405b ' + tr('did not answered, try to /reset and start again.', lang)
 
                             my_log.log_echo(message, f'[Meta-Llama-3.1-405B-Instruct] {answer}')
 
@@ -7299,7 +7299,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             answer = answer.strip()
                             if not answer:
-                                answer = 'Qwen2.5-72B-Instruct' + tr('did not answered, try to /reset and start again.', lang)
+                                answer = 'Qwen2.5-72B-Instruct ' + tr('did not answered, try to /reset and start again.', lang)
 
                             my_log.log_echo(message, f'[Qwen2.5-72B-Instruct] {answer}')
 
@@ -7346,7 +7346,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             answer = answer.strip()
                             if not answer:
-                                answer = 'Mistral Large' + tr('did not answered, try to /reset and start again.', lang)
+                                answer = 'Mistral Large ' + tr('did not answered, try to /reset and start again.', lang)
 
                             my_log.log_echo(message, f'[Mistral Large] {answer}')
 
@@ -7393,7 +7393,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             answer = answer.strip()
                             if not answer:
-                                answer = 'Pixtral Large' + tr('did not answered, try to /reset and start again.', lang)
+                                answer = 'Pixtral Large ' + tr('did not answered, try to /reset and start again.', lang)
 
                             my_log.log_echo(message, f'[Pixtral Large] {answer}')
 
@@ -7569,7 +7569,7 @@ def do_task(message, custom_prompt: str = ''):
                                 time.sleep(2)
                                 answer = my_ddg.chat(helped_query, chat_id_full, model='claude-3-haiku').strip()
                                 if not answer:
-                                    answer = 'Haiku' + tr('did not answered, try to /reset and start again', lang)
+                                    answer = 'Haiku ' + tr('did not answered, try to /reset and start again', lang)
                             WHO_ANSWERED[chat_id_full] = 'haiku-ddg'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
@@ -7610,7 +7610,7 @@ def do_task(message, custom_prompt: str = ''):
                                 time.sleep(2)
                                 answer = my_ddg.chat(helped_query, chat_id_full, model = 'gpt-4o-mini').strip()
                                 if not answer:
-                                    answer = 'GPT 4o mini' + tr('did not answered, try to /reset and start again', lang)
+                                    answer = 'GPT 4o mini ' + tr('did not answered, try to /reset and start again', lang)
 
                             WHO_ANSWERED[chat_id_full] = 'gpt-4o-mini-ddg'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'

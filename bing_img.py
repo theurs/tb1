@@ -5,7 +5,6 @@
 # 50.7.85.220 edgeservices.bing.com
 # 50.7.85.220 www.bing.com
 
-import random
 import time
 
 from sqlitedict import SqliteDict

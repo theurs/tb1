@@ -1781,12 +1781,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         message = call.message
         chat_id = message.chat.id
         chat_id_full = get_topic_id(message)
-        user_full_id = f'[{call.from_user.id}] [0]'
         lang = get_lang(chat_id_full, message)
         bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
         MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {bot_name} /name
 
-<b>{tr('Bot style(role):', lang)}</b> {utils.html.escape(my_db.get_user_property(chat_id_full, 'role')) if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)} /style
+<b>{tr('Bot style(role):', lang)}</b> /style <blockquote expandable>{utils.html.escape(my_db.get_user_property(chat_id_full, 'role')[:3000]) if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)}</blockquote>
 
 <b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
 
@@ -2994,7 +2993,7 @@ def config(message: telebot.types.Message):
         bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
         MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {bot_name} /name
 
-<b>{tr('Bot style(role):', lang)}</b> {utils.html.escape(my_db.get_user_property(chat_id_full, 'role')) if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)} /style
+<b>{tr('Bot style(role):', lang)}</b> /style <blockquote expandable>{utils.bot_markdown_to_html(my_db.get_user_property(chat_id_full, 'role')[:3000]) if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)}</blockquote>
 
 <b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
 
@@ -3771,21 +3770,16 @@ def change_mode(message: telebot.types.Message):
         my_db.set_user_property(chat_id_full, 'role', new_prompt)
         my_db.set_user_property(chat_id_full, 'original_mode', False)
         if new_prompt:
-            new_prompt = new_prompt.replace('\n', '  ')
-            msg =  f'{tr("[Новая роль установлена]", lang)} `/style {new_prompt}`'
+            msg =  f'{tr("New role was set.", lang)}'
         else:
-            msg =  f'{tr("[Роли отключены]", lang)}'
-        bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
+            msg =  f'{tr("Roles was reset.", lang)}'
+        bot_reply(message, msg, parse_mode='HTML', disable_web_page_preview=True)
     else:
-        msg = f"""{tr('Текущий стиль', lang)}
-
-`/style {my_db.get_user_property(chat_id_full, 'role') or tr('нет никакой роли', lang)}`
-
-{tr('Меняет роль бота, строку с указаниями что и как говорить.', lang)}
+        msg = f"""{tr('Меняет роль бота, строку с указаниями что и как говорить', lang)}
 
 `/style <0|1|2|3|4|5|6|{tr('свой текст', lang)}>`
 
-{tr('сброс, нет никакой роли', lang)}
+{tr('Сброс, нет никакой роли', lang)}
 `/style 0`
 
 `/style 1`
@@ -3797,20 +3791,27 @@ def change_mode(message: telebot.types.Message):
 `/style 3`
 `/style {DEFAULT_ROLES[2]}`
 
-{tr('Фокус на выполнение какой то задачи.', lang)}
+{tr('Фокус на выполнение какой то задачи', lang)}
 `/style 4`
 `/style {DEFAULT_ROLES[3]}`
 
-{tr('Неформальное общение.', lang)}
+{tr('Неформальное общение', lang)}
 `/style 5`
 `/style {DEFAULT_ROLES[4]}`
-
 """
 
-        _user_id = utils.extract_user_id(chat_id_full)
-        if _user_id in cfg.admins:
-            msg += '`/style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску`'
-        bot_reply(message, md2tgmd.escape(msg), parse_mode='MarkdownV2')
+        # _user_id = utils.extract_user_id(chat_id_full)
+        # if _user_id in cfg.admins:
+        #     msg += '\n\n\n`/style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску`'
+
+        msg = utils.bot_markdown_to_html(msg)
+        msg += f'''
+
+{tr("Текущий стиль", lang)}
+<blockquote expandable><code>/style {my_db.get_user_property(chat_id_full, 'role') or tr('нет никакой роли', lang)}</code></blockquote>
+    '''
+
+        bot_reply(message, msg, parse_mode='HTML')
 
 
 @bot.message_handler(commands=['set_stt_mode'], func=authorized_admin)

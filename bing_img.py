@@ -23,7 +23,9 @@ COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 BAD_IMAGES_PROMPT = {}
 
 
+# очереди для куков и проксей
 COOKIES = []
+PROXIES = []
 
 
 def get_cookie():
@@ -38,39 +40,60 @@ def get_cookie():
     return cookie
 
 
-def get_images_v2(prompt: str,
-               proxy: str = None,
-               timeout: int = 60,
-               max_generate_time_sec: int = 60):
+def get_proxy():
+    global PROXIES
+    if hasattr(cfg, 'bing_proxy') and cfg.bing_proxy:
+        proxies = cfg.bing_proxy[:]
+    else:
+        proxies = []
 
-    results = []
+    if len(PROXIES) == 0:
+        PROXIES = proxies[:]
 
     try:
-        c = get_cookie()
-        sync_gen = ImageGen(auth_cookie=c, quiet=True, proxy=proxy)
-        results = sync_gen.get_images(prompt)
-    except Exception as error:
-        my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
-        if 'Bad images' in str(error) or \
-            'Your prompt is being reviewed by Bing. Try to change any sensitive words and try again.' in str(error) or \
-            'Your prompt has been blocked by Bing. Try to change any bad words and try again' in str(error):
-            BAD_IMAGES_PROMPT[prompt] = True
-            return [str(error),]
-        elif 'Image create failed pls check cookie or old image still creating' in str(error):
-            time.sleep(60)
-            try:
-                cc = get_cookie()
-                sync_gen = ImageGen(auth_cookie=cc, quiet=True, proxy=proxy)
-                results = sync_gen.get_images(prompt)
-            except Exception as error2:
-                my_log.log_bing_img(f'get_images_v2: {error2} \n\n {cc} \n\nPrompt: {prompt}')
+        proxy = PROXIES.pop()
+    except IndexError:
+        proxy = None
+
+    return proxy
+
+
+def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 60) -> list:
+    try:
+        results = []
+        proxy = get_proxy()
+
+        try:
+            c = get_cookie()
+            sync_gen = ImageGen(auth_cookie=c, quiet=True, proxy=proxy)
+            results = sync_gen.get_images(prompt)
+        except Exception as error:
+            my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
+            if 'Bad images' in str(error) or \
+                'Your prompt is being reviewed by Bing. Try to change any sensitive words and try again.' in str(error) or \
+                'Your prompt has been blocked by Bing. Try to change any bad words and try again' in str(error):
+                BAD_IMAGES_PROMPT[prompt] = True
+                return [str(error),]
+            elif 'Image create failed pls check cookie or old image still creating' in str(error):
                 time.sleep(60)
+                try:
+                    cc = get_cookie()
+                    sync_gen = ImageGen(auth_cookie=cc, quiet=True, proxy=proxy)
+                    results = sync_gen.get_images(prompt)
+                except Exception as error2:
+                    my_log.log_bing_img(f'get_images_v2: {error2} \n\n {cc} \n\nPrompt: {prompt}')
+                    time.sleep(60)
 
-    if results:
-        results = [x for x in results if '.bing.net/th/id/' in x]
-        my_log.log_bing_success(f'{c}\n{proxy}\n{prompt}\n{results}')
+        if results:
+            results = [x for x in results if '.bing.net/th/id/' in x]
+            my_log.log_bing_success(f'{c}\n{proxy}\n{prompt}\n{results}')
 
-    return results
+        return results
+
+    except Exception as error:
+        my_log.log_bing_img(f'get_images_v2: {error}')
+
+    return []
 
 
 def gen_images(query: str, user_id: str = ''):
@@ -91,17 +114,10 @@ def gen_images(query: str, user_id: str = ''):
         my_log.log_bing_img(f'get_images: {query} is in BAD_IMAGES_PROMPT')
         return ['error1_Bad images',]
 
-
-    if hasattr(cfg, 'bing_proxy') and cfg.bing_proxy:
-        try:
-            return get_images_v2(query, cfg.bing_proxy)
-        except Exception as error:
-            my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}\n\nProxy: {cfg.bing_proxy}')
-    else:
-        try:
-            return get_images_v2(query)
-        except Exception as error:
-            my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}')
+    try:
+        return get_images_v2(query)
+    except Exception as error:
+        my_log.log_bing_img(f'get_images: {error}\n\nQuery: {query}')
 
     return []
 

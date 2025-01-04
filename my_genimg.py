@@ -193,8 +193,8 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
         while n > 0:
             n -= 1
 
-            if hasattr(cfg, 'bing_proxy'):
-                proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
+            if hasattr(cfg, 'hf_proxy') and cfg.hf_proxy:
+                proxy = {'http': random.choice(cfg.hf_proxy), 'https': random.choice(cfg.hf_proxy)}
             else:
                 proxy = None
             api_key = random.choice(ALL_KEYS)
@@ -670,8 +670,8 @@ def test_hkey(key: str):
     while n > 0:
         n -= 1
 
-        if hasattr(cfg, 'bing_proxy'):
-            proxy = {'http': random.choice(cfg.bing_proxy), 'https': random.choice(cfg.bing_proxy)}
+        if hasattr(cfg, 'hf_proxy') and cfg.hf_proxy:
+            proxy = {'http': random.choice(cfg.hf_proxy), 'https': random.choice(cfg.hf_proxy)}
         else:
             proxy = None
         api_key = key

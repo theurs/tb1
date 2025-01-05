@@ -9,6 +9,7 @@ import subprocess
 import shutil
 import tempfile
 import threading
+import traceback
 from typing import List, Tuple
 
 import natsort.natsort
@@ -76,7 +77,8 @@ def valid_youtube_url(url: str) -> str:
             return ''
 
     except subprocess.CalledProcessError as error:
-        my_log.log2(f'my_ytb:valid_youtube_url2: {url} {error}')
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_ytb:valid_youtube_url2: {url} {error}\n\n{error_traceback}')
         return ''
 
 

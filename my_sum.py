@@ -41,9 +41,9 @@ def get_subs_from_rutube(url: str) -> str:
         return cache
 
     duration = my_transcribe.get_url_video_duration(url)
-    my_log.log2(f'my_sum:get_subs_from_rutube: {url} Duration: {duration}')
+    my_log.log2(f'get_subs_from_rutube1: {url} Duration: {duration}')
     if duration == 0 or duration > 2*60*60:
-        my_log.log2(f'my_sum:get_subs_from_rutube: too long video {url} {duration}')
+        my_log.log2(f'get_subs_from_rutube2: too long video {url} {duration}')
         return ''
 
     tmpname = utils.get_tmp_fname()
@@ -72,7 +72,7 @@ def get_subs_from_rutube(url: str) -> str:
         return result
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'get_subs_from_rutube: {error} {url} {tmpname}\n\n{traceback_error}')
+        my_log.log2(f'get_subs_from_rutube3: {error} {url} {tmpname}\n\n{traceback_error}')
     finally:
         utils.remove_file(tmpname)
         return result

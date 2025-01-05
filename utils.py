@@ -32,6 +32,7 @@ from pillow_heif import register_heif_opener
 from prettytable import PrettyTable
 from textwrap import wrap
 
+import cfg
 import my_log
 
 

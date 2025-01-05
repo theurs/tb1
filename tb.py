@@ -1269,865 +1269,887 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
     'mem' - клавиатура для команды mem, с кнопками Забудь и Скрой
     'hide' - клавиатура с одной кнопкой Скрой
     """
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
 
-    if kbd == 'mem':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(tr("Стереть историю", lang), callback_data='clear_history')
-        button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
-        markup.add(button1, button2)
-        return markup
+        if kbd == 'mem':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup()
+            button1 = telebot.types.InlineKeyboardButton(tr("Стереть историю", lang), callback_data='clear_history')
+            button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
+            markup.add(button1, button2)
+            return markup
 
-    elif kbd == 'voicechat':
-        keyboard = telebot.types.ReplyKeyboardMarkup(
-            row_width=1,
-            resize_keyboard=True,
-            one_time_keyboard=True
-            )
-        webAppTest = telebot.types.WebAppInfo("https://theurs.github.io/test/dollar.html") #создаем webappinfo - формат хранения url
-        one_butt = telebot.types.KeyboardButton(text="Голосовой чат", web_app=webAppTest) #создаем кнопку типа webapp
-        keyboard.add(one_butt) #добавляем кнопки в клавиатуру
-        return keyboard #возвращаем клавиатуру
+        elif kbd == 'voicechat':
+            keyboard = telebot.types.ReplyKeyboardMarkup(
+                row_width=1,
+                resize_keyboard=True,
+                one_time_keyboard=True
+                )
+            webAppTest = telebot.types.WebAppInfo("https://theurs.github.io/test/dollar.html") #создаем webappinfo - формат хранения url
+            one_butt = telebot.types.KeyboardButton(text="Голосовой чат", web_app=webAppTest) #создаем кнопку типа webapp
+            keyboard.add(one_butt) #добавляем кнопки в клавиатуру
+            return keyboard #возвращаем клавиатуру
 
-    elif kbd.startswith('pay_stars_'):
-        amount = int(kbd.split('_')[-1])
-        keyboard = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(text=tr(f"Donate {amount} stars", lang), pay = True)
-        keyboard.add()
-        return keyboard
-    elif kbd == 'donate_stars':
-        keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
-        button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 100 stars", lang), callback_data = "buy_stars_100")
-        button2 = telebot.types.InlineKeyboardButton(text=tr("Donate 500 stars", lang), callback_data = "buy_stars_500")
-        button3 = telebot.types.InlineKeyboardButton(text=tr("Donate 1000 stars", lang), callback_data = "buy_stars_1000")
-        button4 = telebot.types.InlineKeyboardButton(text=tr("Donate custom amount of stars", lang), callback_data = "buy_stars_0")
-        keyboard.add(button1, button2, button3, button4)
-        return keyboard
+        elif kbd.startswith('pay_stars_'):
+            amount = int(kbd.split('_')[-1])
+            keyboard = telebot.types.InlineKeyboardMarkup()
+            button1 = telebot.types.InlineKeyboardButton(text=tr(f"Donate {amount} stars", lang), pay = True)
+            keyboard.add()
+            return keyboard
+        elif kbd == 'donate_stars':
+            keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
+            button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 100 stars", lang), callback_data = "buy_stars_100")
+            button2 = telebot.types.InlineKeyboardButton(text=tr("Donate 500 stars", lang), callback_data = "buy_stars_500")
+            button3 = telebot.types.InlineKeyboardButton(text=tr("Donate 1000 stars", lang), callback_data = "buy_stars_1000")
+            button4 = telebot.types.InlineKeyboardButton(text=tr("Donate custom amount of stars", lang), callback_data = "buy_stars_0")
+            keyboard.add(button1, button2, button3, button4)
+            return keyboard
 
-    elif kbd == 'image_prompt':
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
-        button1 = telebot.types.InlineKeyboardButton(tr("Describe the image", lang), callback_data='image_prompt_describe')
-        button2 = telebot.types.InlineKeyboardButton(tr("Extract all text from image", lang), callback_data='image_prompt_text')
-        button2_2 = telebot.types.InlineKeyboardButton(tr("Translate all text from image", lang), callback_data='image_prompt_text_tr')
-        button3 = telebot.types.InlineKeyboardButton(tr("Create image generation prompt", lang), callback_data='image_prompt_generate')
-        button4 = telebot.types.InlineKeyboardButton(tr("Solve the problem shown in the image", lang), callback_data='image_prompt_solve')
-        button4_2 = telebot.types.InlineKeyboardButton(tr("Read QRCODE", lang), callback_data='image_prompt_qrcode')
-        button6 = telebot.types.InlineKeyboardButton(tr("Cancel", lang), callback_data='erase_answer')
-        if chat_id_full in UNCAPTIONED_PROMPTS:
-            button5 = telebot.types.InlineKeyboardButton(tr("Repeat my last request", lang), callback_data='image_prompt_repeat_last')
-            if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
-                markup.add(button1, button2, button2_2, button3, button4, button4_2, button5, button6)
+        elif kbd == 'image_prompt':
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
+            button1 = telebot.types.InlineKeyboardButton(tr("Describe the image", lang), callback_data='image_prompt_describe')
+            button2 = telebot.types.InlineKeyboardButton(tr("Extract all text from image", lang), callback_data='image_prompt_text')
+            button2_2 = telebot.types.InlineKeyboardButton(tr("Translate all text from image", lang), callback_data='image_prompt_text_tr')
+            button3 = telebot.types.InlineKeyboardButton(tr("Create image generation prompt", lang), callback_data='image_prompt_generate')
+            button4 = telebot.types.InlineKeyboardButton(tr("Solve the problem shown in the image", lang), callback_data='image_prompt_solve')
+            button4_2 = telebot.types.InlineKeyboardButton(tr("Read QRCODE", lang), callback_data='image_prompt_qrcode')
+            button6 = telebot.types.InlineKeyboardButton(tr("Cancel", lang), callback_data='erase_answer')
+            if chat_id_full in UNCAPTIONED_PROMPTS:
+                button5 = telebot.types.InlineKeyboardButton(tr("Repeat my last request", lang), callback_data='image_prompt_repeat_last')
+                if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
+                    markup.add(button1, button2, button2_2, button3, button4, button4_2, button5, button6)
+                else:
+                    markup.add(button1, button2, button2_2, button3, button4, button5, button6)
             else:
-                markup.add(button1, button2, button2_2, button3, button4, button5, button6)
-        else:
-            if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
-                markup.add(button1, button2, button2_2, button3, button4, button4_2, button6)
-            else:
-                markup.add(button1, button2, button2_2, button3, button4, button6)
-        return markup
+                if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
+                    markup.add(button1, button2, button2_2, button3, button4, button4_2, button6)
+                else:
+                    markup.add(button1, button2, button2_2, button3, button4, button6)
+            return markup
 
-    elif kbd == 'remove_uploaded_voice':
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(tr("Удалить", lang), callback_data='remove_uploaded_voice')
-        markup.add(button1)
-        return markup
+        elif kbd == 'remove_uploaded_voice':
+            markup  = telebot.types.InlineKeyboardMarkup()
+            button1 = telebot.types.InlineKeyboardButton(tr("Удалить", lang), callback_data='remove_uploaded_voice')
+            markup.add(button1)
+            return markup
 
-    elif kbd == 'download_saved_text':
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(tr("Скачать", lang), callback_data='download_saved_text')
-        button2 = telebot.types.InlineKeyboardButton(tr("Удалить", lang), callback_data='delete_saved_text')
-        markup.add(button1, button2)
-        return markup
+        elif kbd == 'download_saved_text':
+            markup  = telebot.types.InlineKeyboardMarkup()
+            button1 = telebot.types.InlineKeyboardButton(tr("Скачать", lang), callback_data='download_saved_text')
+            button2 = telebot.types.InlineKeyboardButton(tr("Удалить", lang), callback_data='delete_saved_text')
+            markup.add(button1, button2)
+            return markup
 
-    elif kbd == 'hide':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
-        markup.add(button1)
-        return markup
-    elif kbd == 'command_mode':
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='cancel_command')
-        markup.add(button1)
-        return markup
+        elif kbd == 'hide':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup()
+            button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
+            markup.add(button1)
+            return markup
+        elif kbd == 'command_mode':
+            markup  = telebot.types.InlineKeyboardMarkup()
+            button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='cancel_command')
+            markup.add(button1)
+            return markup
 
-    elif kbd == 'select_lang':
-        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-        most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de', 'fr', 'it', 'tr', 'ko', 'id', 'vi']
+        elif kbd == 'select_lang':
+            markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+            most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de', 'fr', 'it', 'tr', 'ko', 'id', 'vi']
 
-        # Словарь с флагами
-        flags = {
-            'en': '🇬🇧',
-            'zh': '🇨🇳',
-            'es': '🇪🇸',
-            'ar': '🇸🇦',
-            'hi': '🇮🇳',
-            'pt': '🇧🇷',
-            'bn': '🇧🇩',
-            'ru': '🇷🇺',
-            'ja': '🇯🇵',
-            'de': '🇩🇪',
-            'fr': '🇫🇷',
-            'it': '🇮🇹',
-            'tr': '🇹🇷',
-            'ko': '🇰🇷',
-            'id': '🇮🇩',
-            'vi': '🇻🇳'
-        }
+            # Словарь с флагами
+            flags = {
+                'en': '🇬🇧',
+                'zh': '🇨🇳',
+                'es': '🇪🇸',
+                'ar': '🇸🇦',
+                'hi': '🇮🇳',
+                'pt': '🇧🇷',
+                'bn': '🇧🇩',
+                'ru': '🇷🇺',
+                'ja': '🇯🇵',
+                'de': '🇩🇪',
+                'fr': '🇫🇷',
+                'it': '🇮🇹',
+                'tr': '🇹🇷',
+                'ko': '🇰🇷',
+                'id': '🇮🇩',
+                'vi': '🇻🇳'
+            }
 
-        pair = []
-        for x in most_used_langs:
-            native_name = langcodes.Language.make(language=x).display_name(language=x).capitalize()
-            lang_name = f'{flags[x]} {native_name}'  # Добавляем флаг к названию языка
-            cb = f'select_lang-{x}'
-            button = telebot.types.InlineKeyboardButton(lang_name, callback_data=cb)
-            pair.append(button)
+            pair = []
+            for x in most_used_langs:
+                native_name = langcodes.Language.make(language=x).display_name(language=x).capitalize()
+                lang_name = f'{flags[x]} {native_name}'  # Добавляем флаг к названию языка
+                cb = f'select_lang-{x}'
+                button = telebot.types.InlineKeyboardButton(lang_name, callback_data=cb)
+                pair.append(button)
+                if len(pair) == 2:
+                    markup.row(pair[0], pair[1])
+                    pair = []
             if len(pair) == 2:
                 markup.row(pair[0], pair[1])
-                pair = []
-        if len(pair) == 2:
-            markup.row(pair[0], pair[1])
-        if len(pair) == 1:
-            markup.row(pair[0])
+            if len(pair) == 1:
+                markup.row(pair[0])
 
-        button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='erase_answer')
-        markup.row(button1)
+            button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='erase_answer')
+            markup.row(button1)
 
-        return markup
+            return markup
 
-    elif kbd == 'translate':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup()
-        button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
-        button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button3 = telebot.types.InlineKeyboardButton(tr("Перевод", lang), callback_data='translate')
-        markup.add(button1, button2, button3)
-        return markup
+        elif kbd == 'translate':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup()
+            button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
+            button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button3 = telebot.types.InlineKeyboardButton(tr("Перевод", lang), callback_data='translate')
+            markup.add(button1, button2, button3)
+            return markup
 
-    elif kbd == 'start':
-        b_msg_draw = '/img'
-        b_msg_search = '/google'
-        b_msg_summary = '/sum'
-        b_msg_tts = '/tts'
-        b_msg_translate = '/trans'
-        b_msg_settings = '/config'
+        elif kbd == 'start':
+            b_msg_draw = '/img'
+            b_msg_search = '/google'
+            b_msg_summary = '/sum'
+            b_msg_tts = '/tts'
+            b_msg_translate = '/trans'
+            b_msg_settings = '/config'
 
-        markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = telebot.types.KeyboardButton(b_msg_draw)
-        button2 = telebot.types.KeyboardButton(b_msg_search)
-        button3 = telebot.types.KeyboardButton(b_msg_summary)
-        button4 = telebot.types.KeyboardButton(b_msg_tts)
-        button5 = telebot.types.KeyboardButton(b_msg_translate)
-        button6 = telebot.types.KeyboardButton(b_msg_settings)
-        markup.row(button1, button2, button3)
-        markup.row(button4, button5, button6)
-        return markup
+            markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+            button1 = telebot.types.KeyboardButton(b_msg_draw)
+            button2 = telebot.types.KeyboardButton(b_msg_search)
+            button3 = telebot.types.KeyboardButton(b_msg_summary)
+            button4 = telebot.types.KeyboardButton(b_msg_tts)
+            button5 = telebot.types.KeyboardButton(b_msg_translate)
+            button6 = telebot.types.KeyboardButton(b_msg_settings)
+            markup.row(button1, button2, button3)
+            markup.row(button4, button5, button6)
+            return markup
 
-    elif kbd == 'openrouter_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='openrouter_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'openrouter_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='openrouter_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'openrouter_llama405_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='openrouter_llama405_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'openrouter_llama405_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='openrouter_llama405_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'qwen70_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='qwen70_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'qwen70_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='qwen70_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'mistral_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='mistral_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'mistral_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='mistral_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'pixtral_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='pixtral_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'pixtral_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='pixtral_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'commandrplus_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='commandrplus_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'commandrplus_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='commandrplus_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'grok_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='grok_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'grok_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='grok_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'glm4plus_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='glm4plus_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'glm4plus_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='glm4plus_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'haiku_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='haiku_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'haiku_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='haiku_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'gpt-4o-mini-ddg_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt-4o-mini-ddg_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'gpt-4o-mini-ddg_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt-4o-mini-ddg_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'groq_groq-llama370_chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='groq-llama370_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
+        elif kbd == 'groq_groq-llama370_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='groq-llama370_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
 
-    elif kbd == 'gemini_chat' or kbd == 'chat':
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            return None
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-        button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-        button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gemini_reset')
-        button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-        markup.add(button0, button1, button2, button3, button4)
-        return markup
-    elif kbd.startswith('search_pics_'):
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=3)
-        button0 = telebot.types.InlineKeyboardButton('📸', callback_data=f'search_pics_{kbd[12:]}')
-        button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-        button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-        markup.add(button0, button1, button2)
-        return markup
-    elif kbd == 'config':
-        if my_db.get_user_property(chat_id_full, 'tts_gender'):
-            voice = f'tts_{my_db.get_user_property(chat_id_full, "tts_gender")}'
-        else:
-            voice = 'tts_female'
-
-        voices = {'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
-                  'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
-                  'tts_google_female': 'Google',
-                  }
-        voice_title = voices[voice]
-
-        # кто по умолчанию
-        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
-        chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
-
-        markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
-
-        if chat_mode == 'gemini':
-            msg = '✅ Gemini 2.0 Flash'
-        else:
-            msg = 'Gemini 2.0 Flash'
-        button_gemini_flash20 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_flash')
-
-        if chat_mode == 'gemini15':
-            msg = '✅ Gemini 1.5 Pro'
-        else:
-            msg = 'Gemini 1.5 Pro'
-        # have_gemini_keys = check_vip_user(chat_id_full)
-        # if have_gemini_keys:
-        #     button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
-        # else:
-        #     button_gemini_pro = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini_pro')
-        button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
-
-        if chat_mode == 'gemini_2_flash_thinking':
-            msg = '✅ Gemini Flash Thinking'
-        else:
-            msg = 'Gemini Flash Thinking'
-        button_gemini_flash_thinking = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_2_flash_thinking')
-
-        if chat_mode == 'llama370':
-            msg = '✅ Llama-3.3 70b'
-        else:
-            msg = 'Llama-3.3 70b'
-        button_llama3_70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
-
-        if chat_mode == 'openrouter_llama405':
-            msg = '✅ Llama-3.1 405b'
-        else:
-            msg = 'Llama-3.1 405b'
-        button_llama3_405b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama405')
-
-        if chat_mode == 'qwen70':
-            msg = '✅ Qwen2.5-72B-Instruct'
-        else:
-            msg = 'Qwen2.5-72B-Instruct'
-        button_qwen2_72b = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwen70')
-
-        if chat_mode == 'gpt-4o-mini-ddg':
-            msg = '✅ GPT 4o mini'
-        else:
-            msg = 'GPT 4o mini'
-        button_gpt4o_mini = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o-mini-ddg')
-
-        if chat_mode == 'haiku':
-            msg = '✅ Haiku'
-        else:
-            msg = 'Haiku'
-        button_haiku = telebot.types.InlineKeyboardButton(msg, callback_data='select_haiku')
-
-        if chat_mode == 'glm4plus':
-            msg = '✅ GLM 4 PLUS'
-        else:
-            msg = 'GLM 4 PLUS'
-        button_glm4plus = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
-
-        if chat_mode == 'gemini-exp':
-            msg = '✅ Gemini exp'
-        else:
-            msg = 'Gemini exp'
-        button_gemini_exp = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
-
-        if chat_mode == 'gemini-learn':
-            msg = '✅ Gemini LearnLM'
-        else:
-            msg = 'Gemini LearnLM'
-        button_gemini_learnlm = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
-
-        if chat_mode == 'mistral':
-            msg = '✅ Mistral'
-        else:
-            msg = 'Mistral'
-        button_mistral = telebot.types.InlineKeyboardButton(msg, callback_data='select_mistral')
-
-        if chat_mode == 'pixtral':
-            msg = '✅ Pixtral'
-        else:
-            msg = 'Pixtral'
-        button_pixtral = telebot.types.InlineKeyboardButton(msg, callback_data='select_pixtral')
-
-        if chat_mode == 'commandrplus':
-            msg = '✅ Command R+'
-        else:
-            msg = 'Command R+'
-        button_commandrplus = telebot.types.InlineKeyboardButton(msg, callback_data='select_commandrplus')
-
-        if chat_mode == 'grok':
-            msg = '✅ Grok 2'
-        else:
-            msg = 'Grok 2'
-        button_grok = telebot.types.InlineKeyboardButton(msg, callback_data='select_grok')
-
-        if chat_mode == 'openrouter':
-            msg = '✅ OpenRouter'
-        else:
-            msg = 'OpenRouter'
-        button_openrouter = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
-
-        markup.row(button_gemini_flash_thinking, button_gemini_flash20)
-        markup.row(button_gemini_pro, button_mistral)
-        markup.row(button_gpt4o_mini, button_haiku)
-
-        # if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):
-        #     markup.row(button_mistral, button_pixtral)
-
-        if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
-            markup.row(button_llama3_70b, button_llama3_405b)
-        else:
-            markup.row(button_llama3_70b)
-        markup.row(button_gemini_exp, button_gemini_learnlm)
-
-        markup.row(button_commandrplus, button_qwen2_72b)
-
-        if hasattr(cfg, 'GLM4_KEYS'):
-            if chat_id_full in my_openrouter.KEYS:
-                markup.row(button_glm4plus, button_openrouter)
+        elif kbd == 'gemini_chat' or kbd == 'chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gemini_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
+        elif kbd.startswith('search_pics_'):
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=3)
+            button0 = telebot.types.InlineKeyboardButton('📸', callback_data=f'search_pics_{kbd[12:]}')
+            button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            markup.add(button0, button1, button2)
+            return markup
+        elif kbd == 'config':
+            if my_db.get_user_property(chat_id_full, 'tts_gender'):
+                voice = f'tts_{my_db.get_user_property(chat_id_full, "tts_gender")}'
             else:
-                markup.row(button_glm4plus)
+                voice = 'tts_female'
 
-        if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS:
-            markup.row(button_grok)
+            voices = {'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
+                    'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
+                    'tts_google_female': 'Google',
+                    }
+            voice_title = voices[voice]
 
+            # кто по умолчанию
+            if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+                my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+            chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
-        button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
-        if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-            button2 = telebot.types.InlineKeyboardButton(tr('✅Только голос', lang), callback_data='voice_only_mode_disable')
-        else:
-            button2 = telebot.types.InlineKeyboardButton(tr('☑️Только голос', lang), callback_data='voice_only_mode_enable')
-        markup.row(button1, button2)
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
-        speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
-        button1 = telebot.types.InlineKeyboardButton(tr(f'🎤Speech-to-text:', lang) + ' ' + speech_to_text_engine, callback_data='switch_speech_to_text')
-        if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-            button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
-        else:
-            button2 = telebot.types.InlineKeyboardButton(tr(f'✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
-        markup.row(button1)
-        markup.row(button2)
-
-
-        if my_db.get_user_property(chat_id_full, 'transcribe_only'):
-            button2 = telebot.types.InlineKeyboardButton(tr(f'✅Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
-        else:
-            button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
-        markup.row(button2)
-
-        is_private = message.chat.type == 'private'
-        is_admin_of_group = False
-        if message.reply_to_message:
-            is_admin_of_group = is_admin_member(message.reply_to_message)
-            from_user = message.reply_to_message.from_user.id
-        else:
-            from_user = message.from_user.id
-            is_admin_of_group = is_admin_member(message)
-
-        if flag == 'admin' or is_admin_of_group or from_user in cfg.admins:
-            supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-            if supch == 1:
-                button = telebot.types.InlineKeyboardButton(tr('✅Автоответы в чате', lang), callback_data='admin_chat')
+            if chat_mode == 'gemini':
+                msg = '✅ Gemini 2.0 Flash'
             else:
-                button = telebot.types.InlineKeyboardButton(tr('☑️Автоответы в чате', lang), callback_data='admin_chat')
-            if not is_private:
-                markup.add(button)
+                msg = 'Gemini 2.0 Flash'
+            button_gemini_flash20 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_flash')
 
-        button = telebot.types.InlineKeyboardButton(tr('🙈Закрыть меню', lang), callback_data='erase_answer')
-        markup.add(button)
+            if chat_mode == 'gemini15':
+                msg = '✅ Gemini 1.5 Pro'
+            else:
+                msg = 'Gemini 1.5 Pro'
+            # have_gemini_keys = check_vip_user(chat_id_full)
+            # if have_gemini_keys:
+            #     button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
+            # else:
+            #     button_gemini_pro = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini_pro')
+            button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
 
-        return markup
-    else:
-        raise f"Неизвестная клавиатура '{kbd}'"
+            if chat_mode == 'gemini_2_flash_thinking':
+                msg = '✅ Gemini Flash Thinking'
+            else:
+                msg = 'Gemini Flash Thinking'
+            button_gemini_flash_thinking = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_2_flash_thinking')
+
+            if chat_mode == 'llama370':
+                msg = '✅ Llama-3.3 70b'
+            else:
+                msg = 'Llama-3.3 70b'
+            button_llama3_70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
+
+            if chat_mode == 'openrouter_llama405':
+                msg = '✅ Llama-3.1 405b'
+            else:
+                msg = 'Llama-3.1 405b'
+            button_llama3_405b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama405')
+
+            if chat_mode == 'qwen70':
+                msg = '✅ Qwen2.5-72B-Instruct'
+            else:
+                msg = 'Qwen2.5-72B-Instruct'
+            button_qwen2_72b = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwen70')
+
+            if chat_mode == 'gpt-4o-mini-ddg':
+                msg = '✅ GPT 4o mini'
+            else:
+                msg = 'GPT 4o mini'
+            button_gpt4o_mini = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o-mini-ddg')
+
+            if chat_mode == 'haiku':
+                msg = '✅ Haiku'
+            else:
+                msg = 'Haiku'
+            button_haiku = telebot.types.InlineKeyboardButton(msg, callback_data='select_haiku')
+
+            if chat_mode == 'glm4plus':
+                msg = '✅ GLM 4 PLUS'
+            else:
+                msg = 'GLM 4 PLUS'
+            button_glm4plus = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
+
+            if chat_mode == 'gemini-exp':
+                msg = '✅ Gemini exp'
+            else:
+                msg = 'Gemini exp'
+            button_gemini_exp = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
+
+            if chat_mode == 'gemini-learn':
+                msg = '✅ Gemini LearnLM'
+            else:
+                msg = 'Gemini LearnLM'
+            button_gemini_learnlm = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
+
+            if chat_mode == 'mistral':
+                msg = '✅ Mistral'
+            else:
+                msg = 'Mistral'
+            button_mistral = telebot.types.InlineKeyboardButton(msg, callback_data='select_mistral')
+
+            if chat_mode == 'pixtral':
+                msg = '✅ Pixtral'
+            else:
+                msg = 'Pixtral'
+            button_pixtral = telebot.types.InlineKeyboardButton(msg, callback_data='select_pixtral')
+
+            if chat_mode == 'commandrplus':
+                msg = '✅ Command R+'
+            else:
+                msg = 'Command R+'
+            button_commandrplus = telebot.types.InlineKeyboardButton(msg, callback_data='select_commandrplus')
+
+            if chat_mode == 'grok':
+                msg = '✅ Grok 2'
+            else:
+                msg = 'Grok 2'
+            button_grok = telebot.types.InlineKeyboardButton(msg, callback_data='select_grok')
+
+            if chat_mode == 'openrouter':
+                msg = '✅ OpenRouter'
+            else:
+                msg = 'OpenRouter'
+            button_openrouter = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
+
+            markup.row(button_gemini_flash_thinking, button_gemini_flash20)
+            markup.row(button_gemini_pro, button_mistral)
+            markup.row(button_gpt4o_mini, button_haiku)
+
+            # if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):
+            #     markup.row(button_mistral, button_pixtral)
+
+            if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
+                markup.row(button_llama3_70b, button_llama3_405b)
+            else:
+                markup.row(button_llama3_70b)
+            markup.row(button_gemini_exp, button_gemini_learnlm)
+
+            markup.row(button_commandrplus, button_qwen2_72b)
+
+            if hasattr(cfg, 'GLM4_KEYS'):
+                if chat_id_full in my_openrouter.KEYS:
+                    markup.row(button_glm4plus, button_openrouter)
+                else:
+                    markup.row(button_glm4plus)
+
+            if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS:
+                markup.row(button_grok)
+
+
+            button1 = telebot.types.InlineKeyboardButton(f"{tr(f'📢Голос:', lang)} {voice_title}", callback_data=voice)
+            if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                button2 = telebot.types.InlineKeyboardButton(tr('✅Только голос', lang), callback_data='voice_only_mode_disable')
+            else:
+                button2 = telebot.types.InlineKeyboardButton(tr('☑️Только голос', lang), callback_data='voice_only_mode_enable')
+            markup.row(button1, button2)
+
+            speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+            button1 = telebot.types.InlineKeyboardButton(tr(f'🎤Speech-to-text:', lang) + ' ' + speech_to_text_engine, callback_data='switch_speech_to_text')
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
+            else:
+                button2 = telebot.types.InlineKeyboardButton(tr(f'✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
+            markup.row(button1)
+            markup.row(button2)
+
+
+            if my_db.get_user_property(chat_id_full, 'transcribe_only'):
+                button2 = telebot.types.InlineKeyboardButton(tr(f'✅Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
+            else:
+                button2 = telebot.types.InlineKeyboardButton(tr(f'☑️Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
+            markup.row(button2)
+
+            is_private = message.chat.type == 'private'
+            is_admin_of_group = False
+            if message.reply_to_message:
+                is_admin_of_group = is_admin_member(message.reply_to_message)
+                from_user = message.reply_to_message.from_user.id
+            else:
+                from_user = message.from_user.id
+                is_admin_of_group = is_admin_member(message)
+
+            if flag == 'admin' or is_admin_of_group or from_user in cfg.admins:
+                supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+                if supch == 1:
+                    button = telebot.types.InlineKeyboardButton(tr('✅Автоответы в чате', lang), callback_data='admin_chat')
+                else:
+                    button = telebot.types.InlineKeyboardButton(tr('☑️Автоответы в чате', lang), callback_data='admin_chat')
+                if not is_private:
+                    markup.add(button)
+
+            button = telebot.types.InlineKeyboardButton(tr('🙈Закрыть меню', lang), callback_data='erase_answer')
+            markup.add(button)
+
+            return markup
+        else:
+            raise f"Неизвестная клавиатура '{kbd}'"
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:get_keyboard: {unknown}\n\n{traceback_error}')
 
 
 @bot.callback_query_handler(func=authorized_callback)
 @async_run
 def callback_inline_thread(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
+    try:
+        with semaphore_talks:
+            message = call.message
+            chat_id = message.chat.id
+            chat_id_full = get_topic_id(message)
+            lang = get_lang(chat_id_full, message)
+            bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+            MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {bot_name} /name
 
-    with semaphore_talks:
-        message = call.message
-        chat_id = message.chat.id
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-        bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-        MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {bot_name} /name
+    <b>{tr('Bot style(role):', lang)}</b> /style <blockquote expandable>{utils.bot_markdown_to_html(my_db.get_user_property(chat_id_full, 'role')[:3000]) if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)}</blockquote>
 
-<b>{tr('Bot style(role):', lang)}</b> /style <blockquote expandable>{utils.bot_markdown_to_html(my_db.get_user_property(chat_id_full, 'role')[:3000]) if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)}</blockquote>
+    <b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
 
-<b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
+    {tr('Disable/enable the context, the bot will not know who it is, where it is, who it is talking to, it will work as on the original website', lang, '_')}
 
-{tr('Disable/enable the context, the bot will not know who it is, where it is, who it is talking to, it will work as on the original website', lang, '_')}
+    /original_mode
 
-/original_mode
+    """
 
-"""
+            if call.data == 'clear_history':
+                # обработка нажатия кнопки "Стереть историю"
+                reset_(chat_id_full)
+                bot.delete_message(message.chat.id, message.message_id)
 
-        if call.data == 'clear_history':
-            # обработка нажатия кнопки "Стереть историю"
-            reset_(chat_id_full)
-            bot.delete_message(message.chat.id, message.message_id)
+            elif call.data == 'remove_uploaded_voice':
+                try:
+                    del UPLOADED_VOICES[chat_id_full]
+                    bot_reply_tr(message, 'Voice sample was removed.', lang)
+                except:
+                    bot_reply_tr(message, 'Voice sample was not found.', lang)
 
-        elif call.data == 'remove_uploaded_voice':
-            try:
-                del UPLOADED_VOICES[chat_id_full]
-                bot_reply_tr(message, 'Voice sample was removed.', lang)
-            except:
-                bot_reply_tr(message, 'Voice sample was not found.', lang)
+            elif call.data == 'image_prompt_describe':
+                COMMAND_MODE[chat_id_full] = ''
+                image_prompt = tr(my_init.PROMPT_DESCRIBE, lang)
+                process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
-        elif call.data == 'image_prompt_describe':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_DESCRIBE, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+            elif call.data == 'image_prompt_text':
+                COMMAND_MODE[chat_id_full] = ''
+                image_prompt = tr(my_init.PROMPT_COPY_TEXT, lang)
+                process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
-        elif call.data == 'image_prompt_text':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_COPY_TEXT, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+            elif call.data == 'image_prompt_text_tr':
+                COMMAND_MODE[chat_id_full] = ''
+                image_prompt = tr(my_init.PROMPT_COPY_TEXT_TR, lang)
+                process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
-        elif call.data == 'image_prompt_text_tr':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_COPY_TEXT_TR, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+            elif call.data == 'image_prompt_generate':
+                COMMAND_MODE[chat_id_full] = ''
+                image_prompt = tr(my_init.PROMPT_REPROMPT, lang) + \
+                            '\n\n```prompt\n/img image generation prompt in english```\n\n'
+                process_image_stage_2(image_prompt, chat_id_full, lang, message, temp = 1.5)
 
-        elif call.data == 'image_prompt_generate':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_REPROMPT, lang) + \
-                           '\n\n```prompt\n/img image generation prompt in english```\n\n'
-            process_image_stage_2(image_prompt, chat_id_full, lang, message, temp = 1.5)
+            elif call.data == 'image_prompt_solve':
+                COMMAND_MODE[chat_id_full] = ''
+                image_prompt = tr(my_init.PROMPT_SOLVE, lang)
+                # process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_exp_model, temp = 0.1)
+                process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_2_flash_thinking_exp_model, temp = 0.1)
 
-        elif call.data == 'image_prompt_solve':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_SOLVE, lang)
-            # process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_exp_model, temp = 0.1)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_2_flash_thinking_exp_model, temp = 0.1)
+            elif call.data == 'image_prompt_qrcode':
+                COMMAND_MODE[chat_id_full] = ''
+                if chat_id_full in UNCAPTIONED_IMAGES:
+                    img = UNCAPTIONED_IMAGES[chat_id_full][1]
+                    text = my_qrcode.get_text(img)
+                    if text:
+                        bot_reply(message, text)
+                        add_to_bots_mem(tr('user asked to get the text from an qrcode image', lang), text, chat_id_full)
+                        return
+                bot_reply_tr(message, 'No image found or text not found')
 
-        elif call.data == 'image_prompt_qrcode':
-            COMMAND_MODE[chat_id_full] = ''
-            if chat_id_full in UNCAPTIONED_IMAGES:
-                img = UNCAPTIONED_IMAGES[chat_id_full][1]
-                text = my_qrcode.get_text(img)
-                if text:
-                    bot_reply(message, text)
-                    add_to_bots_mem(tr('user asked to get the text from an qrcode image', lang), text, chat_id_full)
+            elif call.data == 'image_prompt_repeat_last':
+                COMMAND_MODE[chat_id_full] = ''
+                process_image_stage_2(UNCAPTIONED_PROMPTS[chat_id_full], chat_id_full, lang, message)
+
+            elif call.data.startswith('buy_stars_'):
+                
+                amount = int(call.data.split('_')[-1])
+                if amount == 0:
+                    bot_reply_tr(message, 'Please enter the desired amount of stars you would like to donate', reply_markup=get_keyboard('command_mode', message))
+                    COMMAND_MODE[chat_id_full] = 'enter_start_amount'
                     return
-            bot_reply_tr(message, 'No image found or text not found')
+                prices = [telebot.types.LabeledPrice(label = "XTR", amount = amount)]
+                try:
+                    bot.send_invoice(
+                        call.message.chat.id,
+                        title=tr(f'Donate {amount} stars', lang),
+                        description = tr(f'Donate {amount} stars', lang),
+                        invoice_payload="stars_donate_payload",
+                        provider_token = "",  # Для XTR этот токен может быть пустым
+                        currency = "XTR",
+                        prices = prices,
+                        reply_markup = get_keyboard(f'pay_stars_{amount}', message)
+                    )
+                except Exception as error:
+                    my_log.log_donate(f'tb:callback_inline_thread: {error}\n\n{call.message.chat.id} {amount}')
+                    bot_reply_tr(message, 'An unexpected error occurred during the payment process. Please try again later. If the problem persists, contact support.')
 
-        elif call.data == 'image_prompt_repeat_last':
-            COMMAND_MODE[chat_id_full] = ''
-            process_image_stage_2(UNCAPTIONED_PROMPTS[chat_id_full], chat_id_full, lang, message)
-
-        elif call.data.startswith('buy_stars_'):
-            
-            amount = int(call.data.split('_')[-1])
-            if amount == 0:
-                bot_reply_tr(message, 'Please enter the desired amount of stars you would like to donate', reply_markup=get_keyboard('command_mode', message))
-                COMMAND_MODE[chat_id_full] = 'enter_start_amount'
+            elif call.data == 'continue_gpt':
+                # обработка нажатия кнопки "Продолжай GPT"
+                message.dont_check_topic = True
+                echo_all(message, tr('Продолжай', lang))
                 return
-            prices = [telebot.types.LabeledPrice(label = "XTR", amount = amount)]
-            try:
-                bot.send_invoice(
-                    call.message.chat.id,
-                    title=tr(f'Donate {amount} stars', lang),
-                    description = tr(f'Donate {amount} stars', lang),
-                    invoice_payload="stars_donate_payload",
-                    provider_token = "",  # Для XTR этот токен может быть пустым
-                    currency = "XTR",
-                    prices = prices,
-                    reply_markup = get_keyboard(f'pay_stars_{amount}', message)
-                )
-            except Exception as error:
-                my_log.log_donate(f'tb:callback_inline_thread: {error}\n\n{call.message.chat.id} {amount}')
-                bot_reply_tr(message, 'An unexpected error occurred during the payment process. Please try again later. If the problem persists, contact support.')
-
-        elif call.data == 'continue_gpt':
-            # обработка нажатия кнопки "Продолжай GPT"
-            message.dont_check_topic = True
-            echo_all(message, tr('Продолжай', lang))
-            return
-        elif call.data == 'cancel_command':
-            # обработка нажатия кнопки "Отменить ввод команды"
-            COMMAND_MODE[chat_id_full] = ''
-            bot.delete_message(message.chat.id, message.message_id)
-        elif call.data == 'cancel_command_not_hide':
-            # обработка нажатия кнопки "Отменить ввод команды, но не скрывать"
-            COMMAND_MODE[chat_id_full] = ''
-            # bot.delete_message(message.chat.id, message.message_id)
-            bot_reply_tr(message, 'Режим поиска в гугле отключен')
-        # режим автоответов в чате, бот отвечает на все реплики всех участников
-        # комната для разговоров с ботом Ж)
-        elif call.data == 'admin_chat' and is_admin_member(call):
-            supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-            if supch == 1:
-                supch = 0
-                my_db.set_user_property(chat_id_full, 'superchat', 0)
-            else:
-                supch = 1
-                my_db.set_user_property(chat_id_full, 'superchat', 1)
-            bot.edit_message_text(chat_id=chat_id, parse_mode='HTML', message_id=message.message_id,
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message, 'admin'))
-        elif call.data == 'erase_answer':
-            # обработка нажатия кнопки "Стереть ответ"
-            COMMAND_MODE[chat_id_full] = ''
-            bot.delete_message(message.chat.id, message.message_id)
-        elif call.data == 'tts':
-            detected_lang = my_tts.detect_lang_carefully(message.text or message.caption or "")
-            if not detected_lang:
-                detected_lang = lang or "de"
-            message.text = f'/tts {detected_lang} {message.text or message.caption or ""}'
-            tts(message)
-        elif call.data.startswith('select_lang-'):
-            l = call.data[12:]
-            message.text = f'/lang {l}'
-            language(message)
-        elif call.data == 'translate':
-            # реакция на клавиатуру для OCR кнопка перевести текст
-            with ShowAction(message, 'typing'):
-                text = message.text if message.text else message.caption
-                translated = my_trans.translate_text2(text, lang)
-            if translated and translated != text:
-                if message.text:
-                    bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
-                                      reply_markup=get_keyboard('translate', message))
-                if message.caption:
-                    bot.edit_message_caption(chat_id=message.chat.id, message_id=message.message_id, caption=translated, 
-                                      reply_markup=get_keyboard('translate', message), parse_mode='HTML')
-
-        elif call.data.startswith('search_pics_'):
-            # Поиск картинок в дак дак гоу
-            if chat_id_full not in GOOGLE_LOCKS:
-                GOOGLE_LOCKS[chat_id_full] = threading.Lock()
-            with GOOGLE_LOCKS[chat_id_full]:
-                with ShowAction(message, 'upload_photo'):
-                    hash_ = call.data[12:]
-                    query = SEARCH_PICS[hash_]
-                    images = my_ddg.get_images(query)
-                    medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
-                    msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
-                    log_message(msgs_ids)
-
-
-        elif call.data == 'download_saved_text':
-            # отдать юзеру его текст
-            if my_db.get_user_property(chat_id_full, 'saved_file_name'):
+            elif call.data == 'cancel_command':
+                # обработка нажатия кнопки "Отменить ввод команды"
+                COMMAND_MODE[chat_id_full] = ''
+                bot.delete_message(message.chat.id, message.message_id)
+            elif call.data == 'cancel_command_not_hide':
+                # обработка нажатия кнопки "Отменить ввод команды, но не скрывать"
+                COMMAND_MODE[chat_id_full] = ''
+                # bot.delete_message(message.chat.id, message.message_id)
+                bot_reply_tr(message, 'Режим поиска в гугле отключен')
+            # режим автоответов в чате, бот отвечает на все реплики всех участников
+            # комната для разговоров с ботом Ж)
+            elif call.data == 'admin_chat' and is_admin_member(call):
+                supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+                if supch == 1:
+                    supch = 0
+                    my_db.set_user_property(chat_id_full, 'superchat', 0)
+                else:
+                    supch = 1
+                    my_db.set_user_property(chat_id_full, 'superchat', 1)
+                bot.edit_message_text(chat_id=chat_id, parse_mode='HTML', message_id=message.message_id,
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message, 'admin'))
+            elif call.data == 'erase_answer':
+                # обработка нажатия кнопки "Стереть ответ"
+                COMMAND_MODE[chat_id_full] = ''
+                bot.delete_message(message.chat.id, message.message_id)
+            elif call.data == 'tts':
+                detected_lang = my_tts.detect_lang_carefully(message.text or message.caption or "")
+                if not detected_lang:
+                    detected_lang = lang or "de"
+                message.text = f'/tts {detected_lang} {message.text or message.caption or ""}'
+                tts(message)
+            elif call.data.startswith('select_lang-'):
+                l = call.data[12:]
+                message.text = f'/lang {l}'
+                language(message)
+            elif call.data in ('translate', 'translate_chat'):
+                # реакция на клавиатуру, кнопка перевести текст
                 with ShowAction(message, 'typing'):
-                    buf = io.BytesIO()
-                    buf.write(my_db.get_user_property(chat_id_full, 'saved_file').encode())
-                    buf.seek(0)
-                    fname = utils.safe_fname(my_db.get_user_property(chat_id_full, 'saved_file_name')) + '.txt'
-                    if fname.endswith('.txt.txt'):
-                        fname = fname[:-4]
-                    m = bot.send_document(message.chat.id,
-                                          document=buf,
-                                          message_thread_id=message.message_thread_id,
-                                          caption=fname,
-                                          visible_file_name = fname)
-                    log_message(m)
-            else:
-                bot_reply_tr(message, 'No text was saved.')
+                    if message.text:
+                        text = message.text
+                        entities = message.entities
+                    elif message.caption:
+                        text = message.caption
+                        entities = message.caption_entities
+                    if call.data == 'translate':
+                        kbd = 'translate'
+                    else:
+                        kbd = 'chat'
+                    text = my_log.restore_message_text(text, entities)
+                    translated = tr(text, lang, help = 'This is a markdown formatted text. Please maintain the same format and provide a skilled literary translation.', save_cache=False)
+                    html = utils.bot_markdown_to_html(translated)
+                if translated and translated != text:
+                    if message.text:
+                        func = bot.edit_message_text
+                    else:
+                        func = bot.edit_message_caption
+                    func(
+                        chat_id=message.chat.id,
+                        message_id=message.message_id,
+                        text=html, 
+                        parse_mode='HTML',
+                        reply_markup=get_keyboard(kbd, message))
+
+            elif call.data.startswith('search_pics_'):
+                # Поиск картинок в дак дак гоу
+                if chat_id_full not in GOOGLE_LOCKS:
+                    GOOGLE_LOCKS[chat_id_full] = threading.Lock()
+                with GOOGLE_LOCKS[chat_id_full]:
+                    with ShowAction(message, 'upload_photo'):
+                        hash_ = call.data[12:]
+                        query = SEARCH_PICS[hash_]
+                        images = my_ddg.get_images(query)
+                        medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
+                        msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
+                        log_message(msgs_ids)
 
 
-        elif call.data == 'delete_saved_text':
-            # удалить сохраненный текст
-            if my_db.get_user_property(chat_id_full, 'saved_file_name'):
-                my_db.delete_user_property(chat_id_full, 'saved_file_name')
-                my_db.delete_user_property(chat_id_full, 'saved_file')
-                bot_reply_tr(message, 'Saved text deleted.')
-            else:
-                bot_reply_tr(message, 'No text was saved.')
+            elif call.data == 'download_saved_text':
+                # отдать юзеру его текст
+                if my_db.get_user_property(chat_id_full, 'saved_file_name'):
+                    with ShowAction(message, 'typing'):
+                        buf = io.BytesIO()
+                        buf.write(my_db.get_user_property(chat_id_full, 'saved_file').encode())
+                        buf.seek(0)
+                        fname = utils.safe_fname(my_db.get_user_property(chat_id_full, 'saved_file_name')) + '.txt'
+                        if fname.endswith('.txt.txt'):
+                            fname = fname[:-4]
+                        m = bot.send_document(message.chat.id,
+                                            document=buf,
+                                            message_thread_id=message.message_thread_id,
+                                            caption=fname,
+                                            visible_file_name = fname)
+                        log_message(m)
+                else:
+                    bot_reply_tr(message, 'No text was saved.')
 
 
-        elif call.data == 'translate_chat':
-            # реакция на клавиатуру для Чата кнопка перевести текст
-            with ShowAction(message, 'typing'):
-                translated = my_trans.translate_text2(message.text, lang)
-            if translated and translated != message.text:
-                bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
-                                      reply_markup=get_keyboard('chat', message))
-        elif call.data == 'select_llama370':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.3 70b Groq.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
-        elif call.data == 'select_llama405':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter_llama405')
-        elif call.data == 'select_mistral':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Mistral Large.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')
-        elif call.data == 'select_pixtral':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Pixtral Large.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'pixtral')
-        elif call.data == 'select_commandrplus':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Command R+.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'commandrplus')
-        elif call.data == 'select_grok':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Grok 2.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'grok')
-        elif call.data == 'select_qwen70':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Qwen2.5-72B-Instruct.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen70')
-        elif call.data == 'select_glm4plus':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GLM 4 PLUS.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'glm4plus')
-        elif call.data == 'select_haiku':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claude 3 Haiku from DuckDuckGo.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'haiku')
-        elif call.data == 'select_gpt-4o-mini-ddg':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o mini from DuckDuckGo.', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o-mini-ddg')
-        elif call.data == 'select_gemini_flash':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_model, lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
-        elif call.data == 'select_gemini_2_flash_thinking':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_2_flash_thinking_model, lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini_2_flash_thinking')
-        elif call.data == 'select_gemini8':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_light_model, lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini8')
-        elif call.data == 'select_gemini-exp':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
-        elif call.data == 'select_gemini-learn':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_learn_model, lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
-        elif call.data == 'select_gemini_pro':
-            # have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
-            #     user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
-            #         or message.from_user.id in cfg.admins
-            # if have_keys:
-            #     # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
-            #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
-            # else:
-            #     bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))
+            elif call.data == 'delete_saved_text':
+                # удалить сохраненный текст
+                if my_db.get_user_property(chat_id_full, 'saved_file_name'):
+                    my_db.delete_user_property(chat_id_full, 'saved_file_name')
+                    my_db.delete_user_property(chat_id_full, 'saved_file')
+                    bot_reply_tr(message, 'Saved text deleted.')
+                else:
+                    bot_reply_tr(message, 'No text was saved.')
 
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
-        elif call.data == 'select_openrouter':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: openrouter', lang))
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
-        elif call.data == 'groq-llama370_reset':
-            my_groq.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Groq llama 3.3 70b очищена.')
-        elif call.data == 'openrouter_reset':
-            my_openrouter.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с openrouter очищена.')
-        elif call.data == 'openrouter_llama405_reset':
-            my_sambanova.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Llama 405b очищена.')
-        elif call.data == 'mistral_reset':
-            my_mistral.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Mistral Large очищена.')
-        elif call.data == 'pixtral_reset':
-            my_mistral.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Pixtral Large очищена.')
-        elif call.data == 'commandrplus_reset':
-            my_cohere.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Command R+ очищена.')
-        elif call.data == 'grok_reset':
-            my_grok.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Grok 2 очищена.')
-        elif call.data == 'qwen70_reset':
-            my_sambanova.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Qwen2.5-72B-Instruct очищена.')
-        elif call.data == 'glm4plus_reset':
-            my_glm.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с GLM 4 PLUS очищена.')
-        elif call.data == 'gpt-4o-mini-ddg_reset':
-            my_ddg.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с GPT 4o mini очищена.')
-        elif call.data == 'haiku_reset':
-            my_ddg.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с haiku очищена.')
-        elif call.data == 'gemini_reset':
-            my_gemini.reset(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
-            bot_reply_tr(message, 'История диалога с Gemini очищена.')
-        elif call.data == 'tts_female' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'male')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_male' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'google_female')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_google_female' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'voice_only_mode', False)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'voice_only_mode_enable'  and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'voice_only_mode', True)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'transcribe_only_chat_disable' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'transcribe_only', False)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'transcribe_only_chat_enable'  and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'transcribe_only', True)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'switch_speech_to_text' and is_admin_member(call):
-            speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
-            if speech_to_text_engine == 'whisper':
-                speech_to_text_engine = 'gemini'
-            elif speech_to_text_engine == 'gemini':
-                speech_to_text_engine = 'google'
-            elif speech_to_text_engine == 'google':
-                speech_to_text_engine = 'assembly.ai'
-            elif speech_to_text_engine == 'assembly.ai':
-                speech_to_text_engine = 'deepgram_nova2'
-            elif speech_to_text_engine == 'deepgram_nova2':
-                speech_to_text_engine = 'whisper'
-            else: # в базе записно что то другое, то что было раньше а теперь нет
-                speech_to_text_engine = 'whisper'
-            my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'disable_chat_kbd' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'disabled_kbd', False)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        elif call.data == 'enable_chat_kbd' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'disabled_kbd', True)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
-        if call.data.startswith('select_'):
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                  text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+
+            # elif call.data == 'translate_chat':
+            #     # реакция на клавиатуру для Чата кнопка перевести текст
+            #     with ShowAction(message, 'typing'):
+            #         translated = my_trans.translate_text2(message.text, lang)
+            #     if translated and translated != message.text:
+            #         bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
+            #                               reply_markup=get_keyboard('chat', message))
+            elif call.data == 'select_llama370':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.3 70b Groq.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
+            elif call.data == 'select_llama405':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter_llama405')
+            elif call.data == 'select_mistral':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Mistral Large.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')
+            elif call.data == 'select_pixtral':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Pixtral Large.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'pixtral')
+            elif call.data == 'select_commandrplus':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Command R+.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'commandrplus')
+            elif call.data == 'select_grok':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Grok 2.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'grok')
+            elif call.data == 'select_qwen70':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Qwen2.5-72B-Instruct.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen70')
+            elif call.data == 'select_glm4plus':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GLM 4 PLUS.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'glm4plus')
+            elif call.data == 'select_haiku':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claude 3 Haiku from DuckDuckGo.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'haiku')
+            elif call.data == 'select_gpt-4o-mini-ddg':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o mini from DuckDuckGo.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o-mini-ddg')
+            elif call.data == 'select_gemini_flash':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_model, lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+            elif call.data == 'select_gemini_2_flash_thinking':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_2_flash_thinking_model, lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini_2_flash_thinking')
+            elif call.data == 'select_gemini8':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_light_model, lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini8')
+            elif call.data == 'select_gemini-exp':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
+            elif call.data == 'select_gemini-learn':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_learn_model, lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
+            elif call.data == 'select_gemini_pro':
+                # have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
+                #     user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
+                #         or message.from_user.id in cfg.admins
+                # if have_keys:
+                #     # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
+                #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
+                # else:
+                #     bot.answer_callback_query(callback_query_id=call.id, show_alert=True, text=tr('Надо вставить свои ключи что бы использовать Google Gemini 1.5 Pro. Команда /keys', lang))
+
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
+            elif call.data == 'select_openrouter':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: openrouter', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+            elif call.data == 'groq-llama370_reset':
+                my_groq.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с Groq llama 3.3 70b очищена.')
+            elif call.data == 'openrouter_reset':
+                my_openrouter.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с openrouter очищена.')
+            elif call.data == 'openrouter_llama405_reset':
+                my_sambanova.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с Llama 405b очищена.')
+            elif call.data == 'mistral_reset':
+                my_mistral.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с Mistral Large очищена.')
+            elif call.data == 'pixtral_reset':
+                my_mistral.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с Pixtral Large очищена.')
+            elif call.data == 'commandrplus_reset':
+                my_cohere.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с Command R+ очищена.')
+            elif call.data == 'grok_reset':
+                my_grok.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с Grok 2 очищена.')
+            elif call.data == 'qwen70_reset':
+                my_sambanova.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с Qwen2.5-72B-Instruct очищена.')
+            elif call.data == 'glm4plus_reset':
+                my_glm.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с GLM 4 PLUS очищена.')
+            elif call.data == 'gpt-4o-mini-ddg_reset':
+                my_ddg.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с GPT 4o mini очищена.')
+            elif call.data == 'haiku_reset':
+                my_ddg.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с haiku очищена.')
+            elif call.data == 'gemini_reset':
+                my_gemini.reset(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
+                bot_reply_tr(message, 'История диалога с Gemini очищена.')
+            elif call.data == 'tts_female' and is_admin_member(call):
+                my_db.set_user_property(chat_id_full, 'tts_gender', 'male')
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            elif call.data == 'tts_male' and is_admin_member(call):
+                my_db.set_user_property(chat_id_full, 'tts_gender', 'google_female')
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            elif call.data == 'tts_google_female' and is_admin_member(call):
+                my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
+                my_db.set_user_property(chat_id_full, 'voice_only_mode', False)
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            elif call.data == 'voice_only_mode_enable'  and is_admin_member(call):
+                my_db.set_user_property(chat_id_full, 'voice_only_mode', True)
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            elif call.data == 'transcribe_only_chat_disable' and is_admin_member(call):
+                my_db.set_user_property(chat_id_full, 'transcribe_only', False)
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            elif call.data == 'transcribe_only_chat_enable'  and is_admin_member(call):
+                my_db.set_user_property(chat_id_full, 'transcribe_only', True)
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            elif call.data == 'switch_speech_to_text' and is_admin_member(call):
+                speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+                if speech_to_text_engine == 'whisper':
+                    speech_to_text_engine = 'gemini'
+                elif speech_to_text_engine == 'gemini':
+                    speech_to_text_engine = 'google'
+                elif speech_to_text_engine == 'google':
+                    speech_to_text_engine = 'assembly.ai'
+                elif speech_to_text_engine == 'assembly.ai':
+                    speech_to_text_engine = 'deepgram_nova2'
+                elif speech_to_text_engine == 'deepgram_nova2':
+                    speech_to_text_engine = 'whisper'
+                else: # в базе записно что то другое, то что было раньше а теперь нет
+                    speech_to_text_engine = 'whisper'
+                my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            elif call.data == 'disable_chat_kbd' and is_admin_member(call):
+                my_db.set_user_property(chat_id_full, 'disabled_kbd', False)
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            elif call.data == 'enable_chat_kbd' and is_admin_member(call):
+                my_db.set_user_property(chat_id_full, 'disabled_kbd', True)
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+            if call.data.startswith('select_'):
+                bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+    except Exception as unexpected_error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:callback_query_handler:{unexpected_error}\n\n{traceback_error}')
 
 
 # Обработчик запросов перед оплатой

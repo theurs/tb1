@@ -72,13 +72,11 @@ def valid_youtube_url(url: str) -> str:
         if video_id:
             return video_id
         else:
-            # Log an invalid URL error using my_log.log2()
-            my_log.log2(f'my_ytb:valid_youtube_url: Invalid YouTube URL: {url}')
+            my_log.log2(f'my_ytb:valid_youtube_url1: Invalid YouTube URL: {url}')
             return ''
 
     except subprocess.CalledProcessError as error:
-        # Log the error using my_log.log2()
-        my_log.log2(f'my_ytb:valid_youtube_url: {url} {error}')
+        my_log.log2(f'my_ytb:valid_youtube_url2: {url} {error}')
         return ''
 
 

@@ -2182,6 +2182,8 @@ def handle_voice(message: telebot.types.Message):
     if supch == 1:
         is_private = True
 
+    message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
+
     # if check_blocks(get_topic_id(message)) and not is_private:
     #     return
     # определяем какое имя у бота в этом чате, на какое слово он отзывается
@@ -2459,6 +2461,8 @@ def handle_document(message: telebot.types.Message):
         is_private = True
 
     chat_id = message.chat.id
+
+    message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
 
     # if check_blocks(chat_id_full) and not is_private:
     #     return
@@ -2777,6 +2781,7 @@ def handle_photo(message: telebot.types.Message):
         MESSAGES = [message,]
     del MESSAGE_QUEUE_IMG[chat_id_full]
 
+    message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
 
     try:
         is_private = message.chat.type == 'private'
@@ -5026,6 +5031,7 @@ def image_gen(message: telebot.types.Message):
 
 {tr('Write what to draw, what it looks like.', lang)}
     """
+                message.text = my_log.restore_message_text(message.text, message.entities)
                 prompt = message.text.split(maxsplit = 1)
 
                 if len(prompt) > 1:

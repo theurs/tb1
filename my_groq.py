@@ -784,7 +784,7 @@ if __name__ == '__main__':
     # print(translate('Привет как дела!', to_lang='en', model = '', censored=False))
 
     # reset('test')
-    # chat_cli()
+    chat_cli()
 
     # print(stt('d:\\downloads\\1.ogg', 'en'))
 

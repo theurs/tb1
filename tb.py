@@ -1785,7 +1785,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
         MSG_CONFIG = f"""<b>{tr('Bot name:', lang)}</b> {bot_name} /name
 
-<b>{tr('Bot style(role):', lang)}</b> /style <blockquote expandable>{utils.html.escape(my_db.get_user_property(chat_id_full, 'role')[:3000]) if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)}</blockquote>
+<b>{tr('Bot style(role):', lang)}</b> /style <blockquote expandable>{utils.bot_markdown_to_html(my_db.get_user_property(chat_id_full, 'role')[:3000]) if my_db.get_user_property(chat_id_full, 'role') else tr('No role was set.', lang)}</blockquote>
 
 <b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
 
@@ -3773,7 +3773,7 @@ def change_mode(message: telebot.types.Message):
         else:
             new_prompt = arg
         my_db.set_user_property(chat_id_full, 'role', new_prompt)
-        my_db.set_user_property(chat_id_full, 'original_mode', False)
+        # my_db.set_user_property(chat_id_full, 'original_mode', False)
         if new_prompt:
             msg =  f'{tr("New role was set.", lang)}'
         else:
@@ -6943,25 +6943,30 @@ def do_task(message, custom_prompt: str = ''):
 
             formatted_date = utils.get_full_time()
 
+
+            user_role = my_db.get_user_property(chat_id_full, 'role') or ''
             if message.chat.title:
                 lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
                 hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date)
             else:
                 hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date)
 
-            hidden_text_for_llama370 = my_init.get_hidden_prompt_for_llama(tr, lang)
+            hidden_text_for_llama370 = my_init.get_hidden_prompt_for_llama(tr, lang) + ', ' + user_role
+
+            # for DDG who dont support system_prompt
+            helped_query = f'{hidden_text} {message.text}'
 
             omode = my_db.get_user_property(chat_id_full, 'original_mode') or False
+            # if original mode enabled - use only user's role
             if omode:
-                helped_query = message.text
-                hidden_text_for_llama370 = ''
-                hidden_text = ''
-            else:
-                helped_query = f'{hidden_text} {message.text}'
+                hidden_text_for_llama370 = user_role
+                hidden_text = hidden_text_for_llama370
+                helped_query = f'({hidden_text}) {message.text}'
 
             if chat_id_full not in CHAT_LOCKS:
                 CHAT_LOCKS[chat_id_full] = threading.Lock()
             with CHAT_LOCKS[chat_id_full]:
+                gmodel = 'unknown'
                 if chat_mode_ == 'gemini':
                     gmodel = cfg.gemini_flash_model
                 elif chat_mode_ == 'gemini15':
@@ -7181,8 +7186,7 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
-                            status, answer = my_openrouter.chat(message.text, chat_id_full, system=style_)
+                            status, answer = my_openrouter.chat(message.text, chat_id_full, system=hidden_text)
                             if answer:
                                 def float_to_string(num):
                                     getcontext().prec = 8  # устанавливаем точность
@@ -7239,12 +7243,11 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             answer = my_sambanova.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                system=style_,
+                                system=hidden_text,
                                 model = 'Meta-Llama-3.1-405B-Instruct',
                             )
 
@@ -7286,12 +7289,11 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             answer = my_sambanova.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                system=style_,
+                                system=hidden_text,
                                 model = 'Qwen2.5-72B-Instruct',
                             )
 
@@ -7333,12 +7335,11 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             answer = my_mistral.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                system=style_,
+                                system=hidden_text,
                                 model = my_mistral.DEFAULT_MODEL,
                             )
 
@@ -7380,12 +7381,11 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             answer = my_mistral.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                system=style_,
+                                system=hidden_text,
                                 model = my_mistral.VISION_MODEL,
                             )
 
@@ -7427,12 +7427,11 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             answer = my_cohere.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                system=style_,
+                                system=hidden_text,
                                 model = my_cohere.DEFAULT_MODEL,
                             )
 
@@ -7475,12 +7474,11 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or ''
                             answer = my_grok.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                system=style_,
+                                system=hidden_text,
                                 model = my_grok.DEFAULT_MODEL,
                             )
 

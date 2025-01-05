@@ -490,7 +490,8 @@ def list_models(user_id: str = "") -> Optional[List[str]]:
         result: List[str] = [x.id for x in model_list]  # Type hint for clarity
         return result
     except Exception as e:  # More specific exception handling is recommended in production
-        my_log.log_openrouter(f'list_models:{e}')
+        traceback_error: str = traceback.format_exc()
+        my_log.log_openrouter(f'list_models:{e}\n\n{traceback_error}')
         return []  # Return empty list on error
 
 

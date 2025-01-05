@@ -42,6 +42,9 @@ langcodes[data]
 lxml[html_clean]
 matplotlib
 natsort
+
+openai
+
 opencv-python
 openpyxl
 odfpy

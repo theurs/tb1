@@ -107,122 +107,129 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
     Returns:
         str: The recognized speech as text.
     """
-    speech_to_text_engine = my_db.get_user_property(chat_id, 'speech_to_text_engine') or DEFAULT_STT_ENGINE
-    if chat_id not in LOCKS:
-        LOCKS[chat_id] = threading.Lock()
-    with LOCKS[chat_id]:
-        text = ''
+    text = ''
+    try:
+        speech_to_text_engine = my_db.get_user_property(chat_id, 'speech_to_text_engine') or DEFAULT_STT_ENGINE
+        if chat_id not in LOCKS:
+            LOCKS[chat_id] = threading.Lock()
+        with LOCKS[chat_id]:
 
-        dur = audio_duration(input_file)
-        input_file2 = convert_to_ogg_with_ffmpeg(input_file)
+            dur = audio_duration(input_file)
+            input_file2 = convert_to_ogg_with_ffmpeg(input_file)
 
-        done_flag = False
+            done_flag = False
 
-        try:
-            # first try google if short
-            # if dur < 30:
-            #     # быстро и хорошо распознает но до 1 минуты всего
-            #     # и часто глотает последнее слово
-            #     try:
-            #         text = stt_google(input_file2, lang)
-            #         if text and not done_flag:
-            #             done_flag = True
-            #             my_db.add_msg(chat_id, 'STT google-free')
-            #     except Exception as unknown_error:
-            #         my_log.log2(str(unknown_error))
-            
-            if not text:
-                # try first shot from config
-                if speech_to_text_engine == 'whisper':
-                    text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
+            try:
+                # first try google if short
+                # if dur < 30:
+                #     # быстро и хорошо распознает но до 1 минуты всего
+                #     # и часто глотает последнее слово
+                #     try:
+                #         text = stt_google(input_file2, lang)
+                #         if text and not done_flag:
+                #             done_flag = True
+                #             my_db.add_msg(chat_id, 'STT google-free')
+                #     except Exception as unknown_error:
+                #         my_log.log2(str(unknown_error))
+                
+                if not text:
+                    # try first shot from config
+                    if speech_to_text_engine == 'whisper':
+                        text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
+                        if text and not done_flag:
+                            done_flag = True
+                            my_db.add_msg(chat_id, 'STT whisper-large-v3')
+                    elif speech_to_text_engine == 'deepgram_nova2':
+                        text = my_deepgram.stt(input_file2, lang, prompt)
+                        if text and not done_flag:
+                            done_flag = True
+                            my_db.add_msg(chat_id, 'STT nova2')
+                    elif speech_to_text_engine == 'gemini':
+                        try: # gemini
+                            text = stt_genai(input_file2, lang)
+                            if text and not done_flag:
+                                done_flag = True
+                                my_db.add_msg(chat_id, cfg.gemini_flash_model)
+                        except Exception as error:
+                            my_log.log2(f'my_stt:stt:genai:{error}')
+                    elif speech_to_text_engine == 'google':
+                        text = my_transcribe.stt_google_pydub_v2(input_file2, lang = lang)
+                        if text:
+                            my_db.add_msg(chat_id, 'STT google-free')
+                    elif speech_to_text_engine == 'assembly.ai':
+                        text = assemblyai(input_file2, lang)
+                        if text and not done_flag:
+                            done_flag = True
+                            my_db.add_msg(chat_id, 'STT assembly.ai')
+
+                if not text and dur < 60:
+                    text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo')
                     if text and not done_flag:
                         done_flag = True
-                        my_db.add_msg(chat_id, 'STT whisper-large-v3')
-                elif speech_to_text_engine == 'deepgram_nova2':
-                    text = my_deepgram.stt(input_file2, lang, prompt)
-                    if text and not done_flag:
-                        done_flag = True
-                        my_db.add_msg(chat_id, 'STT nova2')
-                elif speech_to_text_engine == 'gemini':
+                        my_db.add_msg(chat_id, 'STT whisper-large-v3-turbo')
+
+                # if not text and dur < 55:
+                #     # быстро и хорошо распознает но до 1 минуты всего
+                #     # и часто глотает последнее слово
+                #     try: # пробуем через гугл
+                #         text = stt_google(input_file2, lang)
+                #         if text and not done_flag:
+                #             done_flag = True
+                #             my_db.add_msg(chat_id, 'STT google-free')
+                #     except Exception as unknown_error:
+                #         my_log.log2(str(unknown_error))
+
+                if not text:
                     try: # gemini
+                        # может выдать до 8000 токенов (30000 русских букв) более чем достаточно для голосовух
+                        # у него в качестве fallback используется тот же гугл но с разбиением на части
                         text = stt_genai(input_file2, lang)
                         if text and not done_flag:
                             done_flag = True
                             my_db.add_msg(chat_id, cfg.gemini_flash_model)
+                        if len(text) < 100: # failed?
+                            done_flag = False
+                            my_log.log2(f'my_stt:stt: stt_genai failed long file, trying groq')
+                            text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo') or text
+                            if text and not done_flag:
+                                done_flag = True
+                                my_db.add_msg(chat_id, 'STT whisper-large-v3-turbo')
+                            if len(text) < 100: # failed?
+                                my_log.log2(f'my_stt:stt: stt groq failed long file, trying assemblyai')
+                                text = assemblyai(input_file2, lang) or text
+                                if text and not done_flag:
+                                    done_flag = True
+                                    my_db.add_msg(chat_id, 'STT assembly.ai')
                     except Exception as error:
                         my_log.log2(f'my_stt:stt:genai:{error}')
-                elif speech_to_text_engine == 'google':
-                    text = my_transcribe.stt_google_pydub_v2(input_file2, lang = lang)
-                    if text:
-                        my_db.add_msg(chat_id, 'STT google-free')
-                elif speech_to_text_engine == 'assembly.ai':
+
+                if not text:
+                    text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
+                    if text and not done_flag:
+                        done_flag = True
+                        my_db.add_msg(chat_id, 'STT whisper-large-v3')
+
+                if not text:
+                    text = my_deepgram.stt(input_file2, lang, prompt)
+                    if text and not done_flag:
+                        done_flag = True
+                        my_db.add_msg(chat_id, 'STT nova2')
+
+                if not text:
                     text = assemblyai(input_file2, lang)
                     if text and not done_flag:
                         done_flag = True
                         my_db.add_msg(chat_id, 'STT assembly.ai')
 
-            if not text and dur < 60:
-                text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo')
-                if text and not done_flag:
-                    done_flag = True
-                    my_db.add_msg(chat_id, 'STT whisper-large-v3-turbo')
+            finally:
+                utils.remove_file(input_file2)
 
-            # if not text and dur < 55:
-            #     # быстро и хорошо распознает но до 1 минуты всего
-            #     # и часто глотает последнее слово
-            #     try: # пробуем через гугл
-            #         text = stt_google(input_file2, lang)
-            #         if text and not done_flag:
-            #             done_flag = True
-            #             my_db.add_msg(chat_id, 'STT google-free')
-            #     except Exception as unknown_error:
-            #         my_log.log2(str(unknown_error))
+            if text and len(text) > 1:
+                return text
 
-            if not text:
-                try: # gemini
-                    # может выдать до 8000 токенов (30000 русских букв) более чем достаточно для голосовух
-                    # у него в качестве fallback используется тот же гугл но с разбиением на части
-                    text = stt_genai(input_file2, lang)
-                    if text and not done_flag:
-                        done_flag = True
-                        my_db.add_msg(chat_id, cfg.gemini_flash_model)
-                    if len(text) < 100: # failed?
-                        done_flag = False
-                        my_log.log2(f'my_stt:stt: stt_genai failed long file, trying groq')
-                        text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo') or text
-                        if text and not done_flag:
-                            done_flag = True
-                            my_db.add_msg(chat_id, 'STT whisper-large-v3-turbo')
-                        if len(text) < 100: # failed?
-                            my_log.log2(f'my_stt:stt: stt groq failed long file, trying assemblyai')
-                            text = assemblyai(input_file2, lang) or text
-                            if text and not done_flag:
-                                done_flag = True
-                                my_db.add_msg(chat_id, 'STT assembly.ai')
-                except Exception as error:
-                    my_log.log2(f'my_stt:stt:genai:{error}')
-
-            if not text:
-                text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
-                if text and not done_flag:
-                    done_flag = True
-                    my_db.add_msg(chat_id, 'STT whisper-large-v3')
-
-            if not text:
-                text = my_deepgram.stt(input_file2, lang, prompt)
-                if text and not done_flag:
-                    done_flag = True
-                    my_db.add_msg(chat_id, 'STT nova2')
-
-            if not text:
-                text = assemblyai(input_file2, lang)
-                if text and not done_flag:
-                    done_flag = True
-                    my_db.add_msg(chat_id, 'STT assembly.ai')
-
-        finally:
-            utils.remove_file(input_file2)
-
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'my_stt:stt: {error}\n\n{traceback_error}')
         if text and len(text) > 1:
             return text
 

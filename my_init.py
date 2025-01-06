@@ -151,15 +151,7 @@ Block commands:
 Level 1 = block all but logs
 Level 2 = block bing access only
 Level 3 = block all with logs
-/blockadd
-/blockadd2
-/blockadd3
-/blockdel
-/blockdel2
-/blockdel3
-/blocklist
-/blocklist2
-/blocklist3
+Usage: /block <add|add2|add3|del|del2|del3|list|list2|list3> <user_id>
 
 /leave - leave chat
 /revoke - revoke leaved chat

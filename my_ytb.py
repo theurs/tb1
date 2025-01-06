@@ -46,6 +46,10 @@ def valid_youtube_url(url: str) -> str:
         The YouTube video ID if the URL is valid, otherwise an empty string.
     """
     try:
+        url = url.strip()
+        if not url.lower().startswith('http'):
+            return ''
+
         # Check if a proxy is configured
         if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
             # Use a random proxy from the list

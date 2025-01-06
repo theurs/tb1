@@ -6,6 +6,7 @@ import json
 import os
 import random
 import re
+import requests
 import subprocess
 import threading
 import time
@@ -14,6 +15,7 @@ import zlib
 from pydub import AudioSegment
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List
 
 import speech_recognition as sr
 import google.generativeai as genai
@@ -314,8 +316,8 @@ def transcribe_groq(audio_file: str, prompt: str = '', language: str = 'ru') -> 
         return result
 
     try:
-        if not prompt:
-            prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text."
+        # if not prompt:
+        #     prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text."
 
         with open(audio_file, 'rb') as f:
             data = f.read()
@@ -327,11 +329,12 @@ def transcribe_groq(audio_file: str, prompt: str = '', language: str = 'ru') -> 
             time.sleep(2)
 
         if not text:
-            return stt_google_pydub_v2(audio_file, lang = language)
+            # return stt_google_pydub_v2(audio_file, lang = language)
+            return transcribe_genai(audio_file, prompt, language)
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log_gemini(f'my_transcribe.py:transcribe_roq: Failed to convert audio data to text: {error}\n\n{traceback_error}')
-        return stt_google_pydub_v2(audio_file, lang = language)
+        return transcribe_genai(audio_file, prompt, language)
 
 
 def download_worker(video_url: str, part: tuple, n: int, fname: str, language: str):
@@ -724,6 +727,132 @@ def shazam(url: str):
     print(r)
 
 
+def split_audio_file(audio_file_path: str, max_split_size: int = 18 * 1024 * 1024) -> List[str]:
+    """
+    Splits an audio file into multiple parts of a specified maximum size using ffmpeg.
+
+    Args:
+        audio_file_path: The path to the input audio file.
+        max_split_size: The maximum size of each split in bytes.
+
+    Returns:
+        A list of paths to the generated audio files.
+    """
+
+    # Get the file size and duration of the audio file using ffprobe
+    file_size_command = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=size",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        audio_file_path,
+    ]
+    file_size_output = subprocess.check_output(file_size_command).decode("utf-8").strip()
+    total_file_size = float(file_size_output)
+
+    duration_command = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        audio_file_path,
+    ]
+    duration_output = subprocess.check_output(duration_command).decode("utf-8").strip()
+    total_duration = float(duration_output)
+
+    # Calculate the number of splits needed
+    num_splits = int(total_file_size / max_split_size) + 1
+
+    # Calculate the duration of each split
+    split_duration = total_duration / num_splits
+
+    # Split the audio file using ffmpeg
+    split_files = []
+    for i in range(num_splits):
+        start_time = i * split_duration
+        output_file = os.path.splitext(audio_file_path)[0] + f"_{i}" + os.path.splitext(audio_file_path)[1]
+
+        split_command = [
+            "ffmpeg",
+            "-i",
+            audio_file_path,
+            "-ss",
+            str(start_time),
+            "-t",
+            str(split_duration),
+            "-c",
+            "copy",
+            output_file,
+        ]
+
+        subprocess.run(split_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        split_files.append(output_file)
+
+    return split_files
+
+
+def download_audio_file(url: str, max_size: int = 150*1024*1024, chunk_size: int = 1 * 1024 * 1024) -> str:
+    """
+    Downloads a file from the given URL in chunks.
+
+    Args:
+        url: The URL of the file to download.
+        max_size: The maximum allowed size of the file in bytes.
+        chunk_size: The size of each chunk to download in bytes.
+
+    Returns:
+        The path to the downloaded file if the download was successful.
+        If the download was aborted due to exceeding the maximum size or an error occurred, returns an empty string.
+    """
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+
+        temp_filename =  utils.get_tmp_fname() + url[-4:]
+
+        downloaded_size = 0
+        with open(temp_filename, 'wb') as temp_file:
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                downloaded_size += len(chunk)
+                if downloaded_size > max_size:
+                    temp_file.close()
+                    os.remove(temp_filename)
+                    return ""
+                temp_file.write(chunk)
+        temp_file.close()
+        return temp_filename
+    except Exception as error:
+        my_log.log2(f'my_transcribe:download_audio_file: {error}')
+        os.remove(temp_filename)
+        return ""
+
+
+def transcribe_audio_file_web(url: str) -> str:
+    '''
+    Транскрибирует аудио файл, скачивает, режет на куски и отдает из в groq-whisper (google backup)
+    '''
+    source_file = download_audio_file(url)
+    if not source_file:
+        return ''
+    segments = split_audio_file(source_file)
+    text = ''
+    for segment in segments:
+        text += transcribe_groq(segment) + '\n\n'
+
+    for segment in segments:
+        utils.remove_file(segment)
+
+    utils.remove_file(source_file)
+
+    return text
+
+
 if __name__ == '__main__':
     pass
     my_groq.load_users_keys()
@@ -743,3 +872,12 @@ if __name__ == '__main__':
         
     # print(transcribe_genai('d:\\downloads\\1.ogg', prompt='_'))
     # genai_clear()
+
+    # f = download_audio_file('https://cdn.radio-t.com/rt_podcast942.mp3')
+    # print(f)
+    # f = split_audio_file('C:/Users/user/AppData/Local/Temp/tmpeuzzy252.mp3')
+    # print(f)
+
+    # r = transcribe_audio_file_web('https://cdn.radio-t.com/rt_podcast942.mp3')
+    # print(r)
+

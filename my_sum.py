@@ -430,6 +430,8 @@ def summ_url(url:str,
        ('//my.mail.ru/v/' in url and '/video/' in url):
         text = get_text_from_youtube(url, language=lang)
         youtube = True
+    elif url.lower().startswith('http://') and url.lower().endswith(('.mp3', '.ogg', '.aac', '.m4a', '.flac')):
+        text = my_transcribe.transcribe_audio_file_web(url)
     else:
         # Получаем содержимое страницы
 

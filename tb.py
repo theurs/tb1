@@ -2878,12 +2878,12 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
 
         h,w = utils.get_image_size(image)
         if h > 5000 or w > 5000:
-            my_log.log2(f'tb:download_image_from_message: too big image {h}x{w}')
+            # my_log.log2(f'tb:download_image_from_message: too big image {h}x{w}')
             return b''
         return utils.heic2jpg(image)
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:download_image_from_message: {error} {traceback_error}')
+        my_log.log2(f'tb:download_image_from_message2: {error} {traceback_error}')
         return b''
 
 
@@ -2982,7 +2982,7 @@ def handle_photo(message: telebot.types.Message):
                         try:
                             result_image_as_bytes = utils.make_collage(images)
                         except Exception as make_collage_error:
-                            my_log.log2(f'tb:handle_photo: {make_collage_error}')
+                            # my_log.log2(f'tb:handle_photo1: {make_collage_error}')
                             bot_reply_tr(message, 'Too big files.')
                             return
                         if len(result_image_as_bytes) > 10 * 1024 *1024:
@@ -2995,7 +2995,7 @@ def handle_photo(message: telebot.types.Message):
                                                 reply_markup=get_keyboard('hide', message))
                             log_message(m)
                         except Exception as send_img_error:
-                            my_log.log2(f'tb:handle_photo: {send_img_error}')
+                            my_log.log2(f'tb:handle_photo2: {send_img_error}')
                         width, height = utils.get_image_size(result_image_as_bytes)
                         if width >= 1280 or height >= 1280:
                             try:
@@ -3010,7 +3010,7 @@ def handle_photo(message: telebot.types.Message):
                                     )
                                 log_message(m)
                             except Exception as send_doc_error:
-                                my_log.log2(f'tb:handle_photo: {send_doc_error}')
+                                my_log.log2(f'tb:handle_photo3: {send_doc_error}')
                         my_log.log_echo(message, f'Made collage of {len(images)} images.')
                         if not message.caption:
                             proccess_image(chat_id_full, result_image_as_bytes, message)

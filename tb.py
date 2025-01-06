@@ -2043,13 +2043,14 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if chat_id_full not in GOOGLE_LOCKS:
                     GOOGLE_LOCKS[chat_id_full] = threading.Lock()
                 with GOOGLE_LOCKS[chat_id_full]:
-                    with ShowAction(message, 'upload_photo'):
-                        hash_ = call.data[12:]
-                        query = SEARCH_PICS[hash_]
-                        images = my_ddg.get_images(query)
-                        medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
-                        msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
-                        log_message(msgs_ids)
+                    hash_ = call.data[12:]
+                    if hash_ in SEARCH_PICS:
+                        with ShowAction(message, 'upload_photo'):
+                            query = SEARCH_PICS[hash_]
+                            images = my_ddg.get_images(query)
+                            medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
+                            msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
+                            log_message(msgs_ids)
 
 
             elif call.data == 'download_saved_text':
@@ -5043,7 +5044,13 @@ def huggingface_image_gen(message: telebot.types.Message):
                                 model_ = model_[44:]
                             cap = (bot_addr + '\n\n' + model_ + '\n\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
                             medias = [telebot.types.InputMediaPhoto(x, caption = cap) for x in images5]
-                            msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                            try:
+                                msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
+                            except telebot.apihelper.ApiTelegramException as error:
+                                if 'Bad Request: message to be replied not found' not in str(error):
+                                    my_log.log2(f'tb:huggingface_image_gen:send_media_group1: {error}')
+                                bot_reply_tr(message, tr("Image generation failed.", lang))
+                                return
                             log_message(msgs_ids)
                             if pics_group:
                                 try:
@@ -6849,6 +6856,8 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                             error_traceback = traceback.format_exc()
                             my_log.log_parser_error(f'{str(error)}\n\n{error_traceback}\n\n{DEBUG_MD_TO_HTML.get(resp, "")}\n=====================================================\n{resp}')
                             my_log.log_parser_error2(DEBUG_MD_TO_HTML.get(resp, ""))
+                        elif 'Bad Request: message to be replied not found' in str(error):
+                            return
                         else:
                             my_log.log2(f'tb:reply_to_long_message: {error}')
                             my_log.log2(chunk)
@@ -6858,12 +6867,17 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                             chunk = chunk.replace('<i>', '')
                             chunk = chunk.replace('</b>', '')
                             chunk = chunk.replace('</i>', '')
-                        if send_message:
-                            m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
-                                                link_preview_options=preview, reply_markup=reply_markup)
-                        else:
-                            m = bot.reply_to(message, chunk, parse_mode='', link_preview_options=preview, reply_markup=reply_markup)
-                        log_message(m)
+                        try:
+                            if send_message:
+                                m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
+                                                    link_preview_options=preview, reply_markup=reply_markup)
+                            else:
+                                m = bot.reply_to(message, chunk, parse_mode='', link_preview_options=preview, reply_markup=reply_markup)
+                            log_message(m)
+                        except Exception as error2:
+                            if 'Bad Request: message to be replied not found' in str(error):
+                                return
+                            my_log.log2(f'tb:reply_to_long_message2: {error2}')
                 counter -= 1
                 if counter < 0:
                     break
@@ -6879,7 +6893,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
             del DEBUG_MD_TO_HTML[resp]
     except Exception as unknown:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:reply_to_long_message: {unknown}\n{traceback_error}')
+        my_log.log2(f'tb:reply_to_long_message3: {unknown}\n{traceback_error}')
 
 
 def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -> bool:

@@ -562,7 +562,11 @@ def get_last_mem(chat_id: str, model: str = '') -> str:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
 
     mem = transform_mem2(mem)
-    last = mem[-1]
+    try:
+        last = mem[-1]
+    except IndexError:
+        return ''
+
     if last:
         if len(last.parts) == 1:
             return last.parts[0].text

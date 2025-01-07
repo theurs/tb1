@@ -427,10 +427,15 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
         if save_cache:
             my_db.update_translation(text, lang, help, translated)
 
-        return translated
+        if isinstance(translated, str):
+            return translated
+        else:
+            my_log.log2(f'tb:tr: переводчик вернул что то вместо строки {type(translated)}\n\n{str(translated)}')
+            return text
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:tr: {unknown}\n{traceback_error}')
+        return text
 
 
 def add_to_bots_mem(query: str, resp: str, chat_id_full: str):

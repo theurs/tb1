@@ -1711,7 +1711,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
         elif kbd.startswith('search_pics_'):
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=3)
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
             button0 = telebot.types.InlineKeyboardButton('📸', callback_data=f'search_pics_{kbd[12:]}')
             button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
             button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')

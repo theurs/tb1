@@ -5989,6 +5989,8 @@ def summ_text(message: telebot.types.Message):
                                     if not has_subs and ('/youtu.be/' in url or 'youtube.com/' in url):
                                         bot_reply_tr(message, 'Видео с ютуба не содержит субтитров.')
                                         return
+                                    if url.lower().startswith('http') and url.lower().endswith(('.mp3', '.ogg', '.aac', '.m4a', '.flac')):
+                                        bot_reply_tr(message, 'Audiofile download and transcription started, please wait for a while.')
                                     res, text = my_sum.summ_url(url, lang = lang, deep = False, role=role)
                                     my_db.set_user_property(chat_id_full, 'saved_file_name', url + '.txt')
                                     my_db.set_user_property(chat_id_full, 'saved_file', text)

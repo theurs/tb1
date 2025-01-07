@@ -127,7 +127,7 @@ def init(backup: bool = True, vacuum: bool = False):
     month_seconds = day_seconds * 30
     year_seconds = day_seconds * 365
     keep_files_seconds = 1 * week_seconds
-    keep_messages_seconds = 1 * month_seconds
+    keep_messages_seconds = 2 * week_seconds # 1 * month_seconds
     keep_global_messages_seconds = 10 * year_seconds
     try:
         if backup:

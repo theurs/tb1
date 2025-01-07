@@ -5987,7 +5987,12 @@ def summ_text(message: telebot.types.Message):
                                     my_db.set_user_property(chat_id_full, 'saved_file', text)
                                 except Exception as error2:
                                     print(error2)
-                                    bot_reply_tr(message, md2tgmd.escape('Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши `что там`'), parse_mode='MarkdownV2')
+                                    bot_reply_tr(
+                                        message,
+                                        'Не нашел тут текста. Возможно что в видео на ютубе нет субтитров или страница слишком динамическая '
+                                        'и не показывает текст без танцев с бубном, или сайт меня не пускает.\n\nЕсли очень хочется '
+                                        'то отправь мне текстовый файл .txt (utf8) с текстом этого сайта и подпиши <code>что там</code>',
+                                        parse_mode='HTML')
                                     return
                                 if res:
                                     rr = utils.bot_markdown_to_html(res)

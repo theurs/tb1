@@ -1715,7 +1715,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button0 = telebot.types.InlineKeyboardButton('📸', callback_data=f'search_pics_{kbd[12:]}')
             button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
             button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            markup.add(button0, button1, button2)
+            button3 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3)
             return markup
         elif kbd == 'config':
             if my_db.get_user_property(chat_id_full, 'tts_gender'):

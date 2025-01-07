@@ -81,6 +81,19 @@ MEM_UNCENSORED = [
 ]
 
 
+def is_flash_model(chat_mode: str) -> bool:
+    '''
+    Проверяет что за модель по режиму
+    gemini - флеш обычный
+    gemini8 - флеш 8б
+    gemini_2_flash_thinking - думающий флеш
+    все остальные - не флеши, у них другой набор памяти
+    '''
+    if chat_mode in ('gemini', 'gemini8', 'gemini_2_flash_thinking') or 'flash' in chat_mode:
+        return True
+    return False
+
+
 def chat(query: str,
          chat_id: str = '',
          temperature: float = 1,
@@ -137,7 +150,12 @@ def chat(query: str,
             model = cfg.gemini_flash_model
 
         if chat_id:
-            if 'thinking' in model:
+            # тут объединил память всех флешей. thinking не умеет работать с функциями даже в остаточном виде
+            # при этом есть необходимость переключать с thinking на обычный flash, пришлось запретить для
+            # флеша функции и сделать отдельную память для тех кто без функций (все флеши) 
+            # и тех кто с функциями (остальные джемини про, экс, лёрн)
+            # if 'thinking' in model:
+            if 'flash' in model:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
             else:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -191,7 +209,8 @@ def chat(query: str,
             calc_tool = calc if utils.extract_user_id(chat_id) not in cfg.admins else calc_admin
 
             # if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
-            if use_skills and '-8b' not in model and 'thinking' not in model:
+            # if use_skills and '-8b' not in model and 'thinking' not in model:
+            if use_skills and 'flash' not in model:
                 # id в системный промпт надо добавлять что бы бот мог юзать его в скилах
                 system = f'user_id: {chat_id}\n\n{str(system)}'
                 SKILLS = [
@@ -283,7 +302,8 @@ def chat(query: str,
                     mem = chat.history[-MAX_CHAT_LINES*2:]
                     while count_chars(mem) > MAX_CHAT_MEM_CHARS:
                         mem = mem[2:]
-                    if 'thinking' in model:
+                    # if 'thinking' in model:
+                    if 'flash' in model:
                         my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
                     else:
                         my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -392,7 +412,8 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
     chat_id = ''
     if isinstance(mem, str): # if mem - chat_id
         chat_id = mem
-        if 'thinking' in model:
+        # if 'thinking' in model:
+        if is_flash_model(model):
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
         else:
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -408,7 +429,8 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
         mem = mem[2:]
 
     if chat_id:
-        if 'thinking' in model:
+        # if 'thinking' in model:
+        if is_flash_model(model):
             my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
         else:
             my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -424,7 +446,8 @@ def force(chat_id: str, text: str, model: str = ''):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            if 'thinking' in model:
+            # if 'thinking' in model:
+            if is_flash_model(model):
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
             else:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -438,7 +461,8 @@ def force(chat_id: str, text: str, model: str = ''):
                         if p.text != mem[-1].parts[-1].text:
                             p.text = ''
                     mem[-1].parts[-1].text = text
-                if 'thinking' in model:
+                # if 'thinking' in model:
+                if is_flash_model(model):
                     my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
                 else:
                     my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -468,14 +492,16 @@ def undo(chat_id: str, model: str = ''):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            if 'thinking' in model:
+            # if 'thinking' in model:
+            if is_flash_model(model):
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
             else:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
             mem = transform_mem2(mem)
             # remove 2 last lines from mem
             mem = mem[:-2]
-            if 'thinking' in model:
+            # if 'thinking' in model:
+            if is_flash_model(model):
                 my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
             else:
                 my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -496,7 +522,8 @@ def reset(chat_id: str, model: str = ''):
         None
     """
     mem = []
-    if 'thinking' in model:
+    # if 'thinking' in model:
+    if is_flash_model(model):
         my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
     else:
         my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -517,7 +544,8 @@ def get_mem_for_llama(chat_id: str, l: int = 3, model: str = ''):
     res_mem = []
     l = l*2
 
-    if 'thinking' in model:
+    # if 'thinking' in model:
+    if is_flash_model(model):
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
     else:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -556,7 +584,8 @@ def get_last_mem(chat_id: str, model: str = '') -> str:
     Returns:
         str:
     """
-    if 'thinking' in model:
+    # if 'thinking' in model:
+    if is_flash_model(model):
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
     else:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -586,7 +615,8 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     Returns:
         str: The chat history as a string.
     """
-    if 'thinking' in model:
+    # if 'thinking' in model:
+    if is_flash_model(model):
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
     else:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []

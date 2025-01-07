@@ -6373,7 +6373,7 @@ def purge_cmd_handler(message: telebot.types.Message):
                     if data[2] == chat_id_full:
                         del LOG_GROUP_MESSAGES[k]
 
-            my_gemini.reset(chat_id_full, model='thinking')
+            my_gemini.reset(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
             my_gemini.reset(chat_id_full)
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)

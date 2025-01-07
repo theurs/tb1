@@ -526,6 +526,7 @@ def img2txt(text, lang: str,
 
         try:
             text = ''
+            thinking_model_used = False
 
             # попробовать с помощью openrouter
             # кто по умолчанию отвечает
@@ -554,6 +555,7 @@ def img2txt(text, lang: str,
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_2_flash_thinking_exp_model, temp=temperature, chat_id=chat_id_full)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_2_flash_thinking_exp_model
+                        thinking_model_used = True
                 elif chat_mode == 'pixtral':
                     text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
                     if text:
@@ -574,22 +576,29 @@ def img2txt(text, lang: str,
                 text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + model
+                    if 'thinking' in model:
+                        thinking_model_used = True
 
             if not text and model == cfg.gemini_pro_model:
                 text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
+                    if 'thinking' in cfg.gemini_pro_model_fallback:
+                        thinking_model_used = True
 
             if not text:
                 text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
+                    if 'thinking' in cfg.gemini_flash_model:
+                        thinking_model_used = True
 
             if not text:
                 text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model_fallback
-
+                    if 'thinking' in cfg.gemini_flash_model_fallback:
+                        thinking_model_used = True
 
             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
             # передаем эстафету следующему претенденту
@@ -634,8 +643,25 @@ def img2txt(text, lang: str,
             traceback_error = traceback.format_exc()
             my_log.log2(f'tb:img2txt: {img_from_link_error}\n\n{traceback_error}')
 
-        if text and 'gemini' not in chat_mode:
-            add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
+        
+        if text:
+            thinking = 'gemini' in chat_mode and 'thinking' in chat_mode
+            not_thinking = 'gemini' in chat_mode and not 'thinking' in chat_mode
+
+            if thinking and thinking_model_used:
+                pass
+
+            # elif not_thinking and thinking_model_used:
+            #     add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
+
+            # elif thinking and not thinking_model_used:
+            #     add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
+
+            elif not_thinking and not thinking_model_used:
+                pass
+
+            else:
+                add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
 
         if chat_id_full in WHO_ANSWERED:
             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'

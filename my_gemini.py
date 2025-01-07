@@ -693,7 +693,16 @@ TEXT:
         translated = chat(query, temperature=0.1, insert_mem=MEM_UNCENSORED, model=model, json_output = True)
     translated_dict = utils.string_to_dict(translated)
     if translated_dict:
-        return translated_dict['translation']
+        l1 = translated_dict['translation']
+        # иногда возвращает словарь в словаре вложенный
+        if isinstance(l1, dict):
+            l2 = l1['translation']
+            return l2
+        elif isinstance(l1, str):
+            return l1
+        else:
+            my_log.log_gemini(f'translate: unknown type {type(l1)}\n\n{str(l1)}')
+            return text
     return text
 
 

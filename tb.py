@@ -430,7 +430,8 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
         if isinstance(translated, str):
             return translated
         else:
-            my_log.log2(f'tb:tr: переводчик вернул что то вместо строки {type(translated)}\n\n{str(translated)}')
+            traceback_error = traceback.format_exc()
+            my_log.log2(f'tb:tr: переводчик вернул что то вместо строки {type(translated)}\n\n{str(translated)}\n\n{traceback_error}')
             return text
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -2087,14 +2088,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 else:
                     bot_reply_tr(message, 'No text was saved.')
 
-
-            # elif call.data == 'translate_chat':
-            #     # реакция на клавиатуру для Чата кнопка перевести текст
-            #     with ShowAction(message, 'typing'):
-            #         translated = my_trans.translate_text2(message.text, lang)
-            #     if translated and translated != message.text:
-            #         bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text=translated, 
-            #                               reply_markup=get_keyboard('chat', message))
             elif call.data == 'select_llama370':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.3 70b Groq.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')

@@ -719,27 +719,23 @@ def get_topic_id(message: telebot.types.Message) -> str:
 
 def check_blocked_user(id_: str, from_user_id: int, check_trottle = True):
     """Raises an exception if the user is blocked and should not be replied to"""
-    try:
-        for x in cfg.admins:
-            if id_ == f'[{x}] [0]':
-                return
-        user_id = id_.replace('[','').replace(']','').split()[0]
-        if check_trottle:
-            if not request_counter.check_limit(user_id):
-                my_log.log2(f'tb:check_blocked_user: User {id_} is blocked for DDoS')
-                raise Exception(f'user {user_id} in ddos stop list, ignoring')
+    for x in cfg.admins:
+        if id_ == f'[{x}] [0]':
+            return
+    user_id = id_.replace('[','').replace(']','').split()[0]
+    if check_trottle:
+        if not request_counter.check_limit(user_id):
+            my_log.log2(f'tb:check_blocked_user: User {id_} is blocked for DDoS')
+            raise Exception(f'user {user_id} in ddos stop list, ignoring')
 
-        from_user_id = f'[{from_user_id}] [0]'
-        if my_db.get_user_property(from_user_id, 'blocked'):
-            my_log.log2(f'tb:check_blocked_user: User {from_user_id} is blocked')
-            raise Exception(f'user {from_user_id} in stop list, ignoring')
+    from_user_id = f'[{from_user_id}] [0]'
+    if my_db.get_user_property(from_user_id, 'blocked'):
+        my_log.log2(f'tb:check_blocked_user: User {from_user_id} is blocked')
+        raise Exception(f'user {from_user_id} in stop list, ignoring')
 
-        if my_db.get_user_property(id_, 'blocked'):
-            my_log.log2(f'tb:check_blocked_user: User {id_} is blocked')
-            raise Exception(f'user {user_id} in stop list, ignoring')
-    except Exception as unexpected_error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:check_blocked_user:{unexpected_error}\n\n{traceback_error}')
+    if my_db.get_user_property(id_, 'blocked'):
+        my_log.log2(f'tb:check_blocked_user: User {id_} is blocked')
+        raise Exception(f'user {user_id} in stop list, ignoring')
 
 
 def is_admin_member(message: telebot.types.Message) -> bool:

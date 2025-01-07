@@ -64,7 +64,10 @@ def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
     """
     tmp_wav_file = utils.get_tmp_fname() + '.ogg'
     subprocess.run(['ffmpeg', '-i', audio_file, '-map', '0:a', '-c:a','libvorbis', tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return tmp_wav_file
+    if os.path.exists(tmp_wav_file):
+        return tmp_wav_file
+    else:
+        return ''
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
@@ -116,6 +119,8 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
 
             dur = audio_duration(input_file)
             input_file2 = convert_to_ogg_with_ffmpeg(input_file)
+            if not input_file2:
+                return ''
 
             done_flag = False
 

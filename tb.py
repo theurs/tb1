@@ -1969,7 +1969,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         reply_markup = get_keyboard(f'pay_stars_{amount}', message)
                     )
                 except Exception as error:
-                    my_log.log_donate(f'tb:callback_inline_thread: {error}\n\n{call.message.chat.id} {amount}')
+                    my_log.log_donate(f'tb:callback_inline_thread1: {error}\n\n{call.message.chat.id} {amount}')
                     bot_reply_tr(message, 'An unexpected error occurred during the payment process. Please try again later. If the problem persists, contact support.')
 
             elif call.data == 'continue_gpt':
@@ -2001,7 +2001,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'erase_answer':
                 # обработка нажатия кнопки "Стереть ответ"
                 COMMAND_MODE[chat_id_full] = ''
-                bot.delete_message(message.chat.id, message.message_id)
+                try:
+                    bot.delete_message(message.chat.id, message.message_id)
+                except telebot.apihelper.ApiTelegramException as error:
+                    if "Bad Request: message can't be deleted for everyone" not in error:
+                        my_log.log2(f'tb:callback_inline_thread2: {error}')
             elif call.data == 'tts':
                 detected_lang = my_tts.detect_lang_carefully(message.text or message.caption or "")
                 if not detected_lang:
@@ -2045,9 +2049,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                             query = SEARCH_PICS[hash_]
                             images = my_ddg.get_images(query)
                             medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
-                            msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
-                            log_message(msgs_ids)
-
+                            if medias:
+                                msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
+                                log_message(msgs_ids)
 
             elif call.data == 'download_saved_text':
                 # отдать юзеру его текст
@@ -3052,7 +3056,7 @@ def handle_photo(message: telebot.types.Message):
                             if len(image) > 10 * 1024 *1024:
                                 image = utils.resize_image(image, 10 * 1024 *1024)
                             if not image:
-                                my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
+                                # my_log.log2(f'tb:handle_photo4: не удалось распознать документ или фото {str(message)}')
                                 return
 
                             image = utils.heic2jpg(image)
@@ -3102,7 +3106,7 @@ def handle_photo(message: telebot.types.Message):
                                 fp = io.BytesIO(file)
                                 image = fp.read()
                             else:
-                                my_log.log2(f'tb:handle_photo: не удалось распознать документ или фото {str(message)}')
+                                # my_log.log2(f'tb:handle_photo5: не удалось распознать документ или фото {str(message)}')
                                 return
 
                             image = utils.heic2jpg(image)
@@ -3139,10 +3143,10 @@ def handle_photo(message: telebot.types.Message):
                             return
         except Exception as error:
             traceback_error = traceback.format_exc()
-            my_log.log2(f'tb:handle_photo: {error}\n{traceback_error}')
+            my_log.log2(f'tb:handle_photo6: {error}\n{traceback_error}')
     except Exception as unknown:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:handle_photo: {unknown}\n{traceback_error}')
+        my_log.log2(f'tb:handle_photo7: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['config', 'settings', 'setting', 'options'], func=authorized_owner)

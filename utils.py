@@ -430,7 +430,7 @@ def bot_markdown_to_html(text: str) -> str:
 
     text = text.replace('\n</code></pre>\n</code>', '\n</code></pre>')
 
-    return text
+    return text.strip()
 
 
 def clear_tables(text: str) -> str:

@@ -2782,9 +2782,10 @@ def handle_document(message: telebot.types.Message):
                                 caption_ = tr("юзер попросил ответить по содержанию файла", lang)
                                 if caption:
                                     caption_ += ', ' + caption
-                                add_to_bots_mem(caption_,
-                                                    f'{tr("бот посмотрел файл и ответил:", lang)} {summary}',
-                                                    chat_id_full)
+                                add_to_bots_mem(
+                                    caption_,
+                                    f'{tr("бот посмотрел файл и ответил:", lang)} {summary}',
+                                    chat_id_full)
                         else:
                             bot_reply_tr(message, 'Не удалось получить никакого текста из документа.')
                         return
@@ -3122,9 +3123,10 @@ def handle_photo(message: telebot.types.Message):
                                                     disable_web_page_preview = True)
 
                                 text = text[:8000]
-                                add_to_bots_mem(f'{tr("юзер попросил распознать текст с картинки", lang)}',
-                                                    f'{tr("бот распознал текст и ответил:", lang)} {text}',
-                                                    chat_id_full)
+                                add_to_bots_mem(
+                                    f'{tr("юзер попросил распознать текст с картинки", lang)}',
+                                    text,
+                                    chat_id_full)
 
                             else:
                                 bot_reply_tr(message, '[OCR] no results')
@@ -4887,9 +4889,7 @@ def google(message: telebot.types.Message):
                 except Exception as error2:
                     my_log.log2(f'tb.py:google: {error2}')
 
-                add_to_bots_mem(f'user {tr("юзер попросил сделать запрос в Google:", lang)} {q}',
-                                        f'{tr("бот поискал в Google и ответил:", lang)} {r}',
-                                        chat_id_full)
+                add_to_bots_mem(message.text, r, chat_id_full)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:google: {unknown}\n{traceback_error}')
@@ -5069,9 +5069,7 @@ def huggingface_image_gen(message: telebot.types.Message):
                                 except Exception as error2:
                                     my_log.log2(f'tb:huggingface_image_gen:send to pics_group: {error2}')
                             update_user_image_counter(chat_id_full, len(medias))
-                            add_to_bots_mem(f'{tr("User used /hf command to generate images", lang)} "{prompt}"',
-                                            f'/hf {model} {prompt}',
-                                            chat_id_full)
+                            add_to_bots_mem(message.text, 'OK', chat_id_full)
                         else:
                             bot_reply_tr(message, tr("Image generation failed.", lang))
                     except Exception as e:
@@ -5444,9 +5442,7 @@ def image_gen(message: telebot.types.Message):
                             else:
                                 IMG = '/img'
                             MSG = tr(f"user used {IMG} command to generate", lang)
-                            add_to_bots_mem(f'{MSG} {prompt}',
-                                                f'{IMG} {prompt}',
-                                                chat_id_full)
+                            add_to_bots_mem(message.text, 'OK', chat_id_full)
                             # have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
                             #             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
                             #             message.from_user.id in cfg.admins or \
@@ -5460,14 +5456,8 @@ def image_gen(message: telebot.types.Message):
                             bot_reply_tr(message, 'Could not draw anything.')
 
                             my_log.log_echo(message, '[image gen error] ')
-                            if BING_FLAG:
-                                IMG = '/bing'
-                            else:
-                                IMG = '/img'
-                            MSG = tr(f"user used {IMG} command to generate", lang)
-                            add_to_bots_mem(f'{MSG} {prompt}',
-                                                    f'{tr("bot did not want or could not draw this", lang)}',
-                                                    chat_id_full)
+
+                            add_to_bots_mem(message.text, 'FAIL', chat_id_full)
 
                 else:
                     COMMAND_MODE[chat_id_full] = 'image'
@@ -5904,8 +5894,12 @@ def ask_file(message: telebot.types.Message):
                 if result:
                     answer = utils.bot_markdown_to_html(result)
                     bot_reply(message, answer, parse_mode='HTML', reply_markup=get_keyboard('translate', message))
-                    add_to_bots_mem(tr("The user asked to answer the question based on the saved text:", lang) + ' ' + my_db.get_user_property(chat_id_full, 'saved_file_name')+'\n'+query,
-                                    result, chat_id_full)
+                    add_to_bots_mem(
+                        tr("The user asked to answer the question based on the saved text:", lang) + ' ' + \
+                        my_db.get_user_property(chat_id_full, 'saved_file_name') + '\n' + query,
+
+                        result,
+                        chat_id_full)
                 else:
                     bot_reply_tr(message, 'No reply from AI')
                     return
@@ -5977,9 +5971,7 @@ def summ_text(message: telebot.types.Message):
                                     bot_reply(message, rr + '\n' + ask, disable_web_page_preview = True,
                                                         parse_mode='HTML',
                                                         reply_markup=get_keyboard('translate', message))
-                                    add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                                        f'{tr("бот прочитал и ответил:", lang)} {r}',
-                                                        chat_id_full)
+                                    add_to_bots_mem(message.text, r, chat_id_full)
                                     return
 
                             with ShowAction(message, 'typing'):
@@ -6005,9 +5997,7 @@ def summ_text(message: telebot.types.Message):
                                                         disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('translate', message))
                                     my_db.set_sum_cache(url_id, res)
-                                    add_to_bots_mem(tr("юзер попросил кратко пересказать содержание текста по ссылке/из файла", lang) + ' ' + url,
-                                                    f'{tr("бот прочитал и ответил:", lang)} {res}',
-                                                    chat_id_full)
+                                    add_to_bots_mem(message.text, res, chat_id_full)
                                     return
                                 else:
                                     bot_reply_tr(message, 'Не смог прочитать текст с этой страницы.')
@@ -6094,21 +6084,25 @@ def trans(message: telebot.types.Message):
                 llang = 'uk'
 
             with ShowAction(message, 'typing'):
-                translated = tr(text, llang, save_cache=False)
+                translated = tr(text, llang, save_cache=False, help = "Telegram bot's user used the /trans <lang> <text> command to translate this text.")
                 if translated and translated != text:
-                    try:
-                        if len(text) > 30:
-                            detected_lang = my_trans.detect(text) or 'unknown language'
-                            detected_lang = tr(langcodes.Language.make(language=detected_lang).display_name(language="en"), lang).lower()
-                        else:
-                            detected_lang = tr('not detected', lang)
-                    except:
-                        detected_lang = tr('unknown language', lang)
+                    # try:
+                    #     if len(text) > 30:
+                    #         detected_lang = my_trans.detect(text) or 'unknown language'
+                    #         detected_lang = tr(langcodes.Language.make(language=detected_lang).display_name(language="en"), lang).lower()
+                    #     else:
+                    #         detected_lang = tr('not detected', lang)
+                    # except:
+                    #     detected_lang = tr('unknown language', lang)
 
-                    bot_reply(message,
-                            translated + '\n\n' + tr('Распознанный язык:', lang) \
-                            + ' ' + detected_lang,
-                            reply_markup=get_keyboard('translate', message))
+                    # bot_reply(message,
+                    #         translated + '\n\n' + tr('Распознанный язык:', lang) \
+                    #         + ' ' + detected_lang,
+                    #         reply_markup=get_keyboard('translate', message))
+
+                    html = utils.bot_markdown_to_html(translated)
+                    bot_reply(message, html, parse_mode='HTML', reply_markup=get_keyboard('translate', message))
+                    add_to_bots_mem(message.text, translated, chat_id_full)
                 else:
                     # bot_reply_tr(message, 'Ошибка перевода')
                     message.text = text

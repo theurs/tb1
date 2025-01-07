@@ -2003,7 +2003,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     supch = 1
                     my_db.set_user_property(chat_id_full, 'superchat', 1)
                 bot.edit_message_text(chat_id=chat_id, parse_mode='HTML', message_id=message.message_id,
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message, 'admin'))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message, 'admin'))
             elif call.data == 'erase_answer':
                 # обработка нажатия кнопки "Стереть ответ"
                 COMMAND_MODE[chat_id_full] = ''
@@ -2040,8 +2040,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         func(
                             chat_id=message.chat.id,
                             message_id=message.message_id,
-                            text=html, 
+                            text=html,
                             parse_mode='HTML',
+                            disable_web_page_preview = False,
                             reply_markup=get_keyboard(kbd, message))
 
             elif call.data.startswith('search_pics_'):
@@ -2187,31 +2188,31 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'tts_female' and is_admin_member(call):
                 my_db.set_user_property(chat_id_full, 'tts_gender', 'male')
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             elif call.data == 'tts_male' and is_admin_member(call):
                 my_db.set_user_property(chat_id_full, 'tts_gender', 'google_female')
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             elif call.data == 'tts_google_female' and is_admin_member(call):
                 my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
                 my_db.set_user_property(chat_id_full, 'voice_only_mode', False)
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             elif call.data == 'voice_only_mode_enable'  and is_admin_member(call):
                 my_db.set_user_property(chat_id_full, 'voice_only_mode', True)
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             elif call.data == 'transcribe_only_chat_disable' and is_admin_member(call):
                 my_db.set_user_property(chat_id_full, 'transcribe_only', False)
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             elif call.data == 'transcribe_only_chat_enable'  and is_admin_member(call):
                 my_db.set_user_property(chat_id_full, 'transcribe_only', True)
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             elif call.data == 'switch_speech_to_text' and is_admin_member(call):
                 speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
                 if speech_to_text_engine == 'whisper':
@@ -2228,18 +2229,18 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     speech_to_text_engine = 'whisper'
                 my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             elif call.data == 'disable_chat_kbd' and is_admin_member(call):
                 my_db.set_user_property(chat_id_full, 'disabled_kbd', False)
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             elif call.data == 'enable_chat_kbd' and is_admin_member(call):
                 my_db.set_user_property(chat_id_full, 'disabled_kbd', True)
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
             if call.data.startswith('select_'):
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                    text = MSG_CONFIG, reply_markup=get_keyboard('config', message))
+                                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:callback_query_handler:{unexpected_error}\n\n{traceback_error}')
@@ -3160,7 +3161,7 @@ def config(message: telebot.types.Message):
 
         MSG_CONFIG = get_config_msg(chat_id_full, lang)
 
-        bot_reply(message, MSG_CONFIG, parse_mode='HTML', reply_markup=get_keyboard('config', message))
+        bot_reply(message, MSG_CONFIG, parse_mode='HTML', disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:config: {unknown}\n{traceback_error}')

@@ -6312,7 +6312,7 @@ def send_welcome_help(message: telebot.types.Message):
         bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
 
         if message.from_user.id in cfg.admins and len(args) != 2:
-            bot_reply_tr(message, my_init.admin_help, parse_mode='HTML', disable_web_page_preview=True)
+            bot_reply_tr(message, my_init.admin_help, disable_web_page_preview=True)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:help: {unknown}\n{traceback_error}')

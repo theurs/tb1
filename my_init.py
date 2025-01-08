@@ -115,7 +115,7 @@ https://t.me/kun4_sun_bot_support
 start_msg_file = 'msg_hello.dat'
 help_msg_file = 'msg_help.dat'
 
-# html команды для администратора
+# команды для администратора
 admin_help = '''
 /ping - ping bot no dependency
 /gmodels - list of gemini models

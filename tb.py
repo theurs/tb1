@@ -1447,9 +1447,10 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             return keyboard
 
         elif kbd == 'image_prompt':
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=2)
             button1 = telebot.types.InlineKeyboardButton(tr("Describe the image", lang), callback_data='image_prompt_describe')
-            button2 = telebot.types.InlineKeyboardButton(tr("Extract all text from image", lang), callback_data='image_prompt_text')
+            button2 = telebot.types.InlineKeyboardButton(tr("Extract text", lang), callback_data='image_prompt_text')
+            button2_1 = telebot.types.InlineKeyboardButton(tr("Read aloud text", lang), callback_data='image_prompt_text_tts')
             button2_2 = telebot.types.InlineKeyboardButton(tr("Translate all text from image", lang), callback_data='image_prompt_text_tr')
             button3 = telebot.types.InlineKeyboardButton(tr("Create image generation prompt", lang), callback_data='image_prompt_generate')
             button4 = telebot.types.InlineKeyboardButton(tr("Solve the problem shown in the image", lang), callback_data='image_prompt_solve')
@@ -1458,9 +1459,22 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             if chat_id_full in UNCAPTIONED_PROMPTS:
                 button5 = telebot.types.InlineKeyboardButton(tr("Repeat my last request", lang), callback_data='image_prompt_repeat_last')
                 if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
-                    markup.add(button1, button2, button2_2, button3, button4, button4_2, button5, button6)
+                    markup.row(button1)
+                    markup.row(button2, button2_1)
+                    markup.row(button2_2)
+                    markup.row(button3)
+                    markup.row(button4)
+                    markup.row(button4_2)
+                    markup.row(button5)
+                    markup.row(button6)
                 else:
-                    markup.add(button1, button2, button2_2, button3, button4, button5, button6)
+                    markup.row(button1)
+                    markup.row(button2, button2_1)
+                    markup.row(button2_2)
+                    markup.row(button3)
+                    markup.row(button4)
+                    markup.row(button5)
+                    markup.row(button6)
             else:
                 if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
                     markup.add(button1, button2, button2_2, button3, button4, button4_2, button6)
@@ -1948,6 +1962,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'image_prompt_text':
                 COMMAND_MODE[chat_id_full] = ''
                 image_prompt = tr(my_init.PROMPT_COPY_TEXT, lang)
+                process_image_stage_2(image_prompt, chat_id_full, lang, message)
+
+            elif call.data == 'image_prompt_text_tts':
+                COMMAND_MODE[chat_id_full] = ''
+                image_prompt = tr(my_init.PROMPT_COPY_TEXT_TTS, lang)
                 process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
             elif call.data == 'image_prompt_text_tr':
@@ -2584,6 +2603,7 @@ def process_image_stage_2(image_prompt: str,
             default_prompts = (
                 tr(my_init.PROMPT_DESCRIBE, lang),
                 tr(my_init.PROMPT_COPY_TEXT, lang),
+                tr(my_init.PROMPT_COPY_TEXT_TTS, lang),
                 tr(my_init.PROMPT_COPY_TEXT_TR, lang),
                 tr(my_init.PROMPT_REPROMPT, lang),
                 tr(my_init.PROMPT_SOLVE, lang),
@@ -2607,7 +2627,11 @@ def process_image_stage_2(image_prompt: str,
                 )
                 # Send the processed text to the user.
                 if text:
-                    bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
+                    if image_prompt == tr(my_init.PROMPT_COPY_TEXT_TTS, lang):
+                        message.text = f'/tts {text}'
+                        tts(message)
+                    else:
+                        bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
                 else:
                     # Send an error message if the image processing fails.
                     bot_reply_tr(message, "I'm sorry, I wasn't able to process that image or understand your request.")

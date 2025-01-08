@@ -212,6 +212,8 @@ default_bot_name = 'бот'
 chat_mode_default = 'gemini15'
 
 img2_txt_model = 'gemini-1.5-flash'
+# для ответов на математические задачи
+img2_txt_model_solve = 'gemini-exp-1206'
 
 gemini_flash_model = 'gemini-2.0-flash-exp'
 gemini_flash_model_fallback = 'gemini-1.5-flash-latest'

@@ -1964,8 +1964,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'image_prompt_solve':
                 COMMAND_MODE[chat_id_full] = ''
                 image_prompt = tr(my_init.PROMPT_SOLVE, lang)
-                # process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_exp_model, temp = 0.1)
-                process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.gemini_2_flash_thinking_exp_model, temp = 0.1)
+                process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.img2_txt_model_solve, temp = 0)
 
             elif call.data == 'image_prompt_qrcode':
                 COMMAND_MODE[chat_id_full] = ''
@@ -3094,8 +3093,7 @@ def handle_photo(message: telebot.types.Message):
                                 return
                             # грязный хак, для решения задач надо использовать мощную модель
                             if 'реши' in message.caption.lower() or 'solve' in message.caption.lower():
-                                # text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.gemini_exp_model)
-                                text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.gemini_2_flash_thinking_exp_model)
+                                text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.img2_txt_model_solve, temperature=0)
                             else:
                                 text = img2txt(image, lang, chat_id_full, message.caption)
                             if text:

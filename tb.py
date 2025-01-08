@@ -3688,30 +3688,44 @@ def users_keys_for_gemini(message: telebot.types.Message):
         args = message.text.split(maxsplit=1)
         if len(args) > 1:
 
+            # gemini keys
             keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
             already_exists = any(key in my_gemini.ALL_KEYS for key in keys)
             if already_exists:
                 msg = f'{tr("This key has already been added by someone earlier.", lang)} {keys}'
+                keys = []
                 bot_reply(message, msg)
             keys = [x for x in keys if x not in my_gemini.ALL_KEYS and x.startswith('AIza')]
+
+            # mistral keys len = 32 and passed test
+            keys_mistral = [x.strip() for x in args[1].split() if len(x.strip()) == 32 and my_mistral.test_key(x)]
+            already_exists = any(key in my_mistral.ALL_KEYS for key in keys_mistral)
+            if already_exists:
+                keys_mistral = []
+                msg = f'{tr("This key has already been added by someone earlier.", lang)} {keys_mistral}'
+                bot_reply(message, msg)
 
             # groq keys len=56, starts with "gsk_"
             keys_groq = [x.strip() for x in args[1].split() if len(x.strip()) == 56]
             if keys_groq and keys_groq[0] in my_groq.ALL_KEYS:
+                keys_groq = []
                 bot_reply_tr(message, 'Groq API key already exists!')
             keys_groq = [x for x in keys_groq if x not in my_groq.ALL_KEYS and x.startswith('gsk_')]
 
             #deepl keys len=39, endwith ":fx"
             deepl_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
             if deepl_keys and deepl_keys[0] in my_trans.ALL_KEYS:
+                deepl_keys = []
                 bot_reply_tr(message, 'Deepl API key already exists!')
             deepl_keys = [x for x in deepl_keys if x not in my_trans.ALL_KEYS and x.endswith(':fx')]
 
             # huggingface keys len=37, starts with "hf_"
             huggingface_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 37]
             if huggingface_keys and huggingface_keys[0] in my_genimg.ALL_KEYS:
+                huggingface_keys = []
                 bot_reply_tr(message, 'Huggingface API key already exists!')
             huggingface_keys = [x for x in huggingface_keys if x not in my_genimg.ALL_KEYS and x.startswith('hf_')]
+
 
             if huggingface_keys:
                 if my_genimg.test_hkey(huggingface_keys[0]):
@@ -3722,6 +3736,12 @@ def users_keys_for_gemini(message: telebot.types.Message):
                 else:
                     msg = tr('API key for Huggingface failed, check if it has permissions.', lang) + ' (Inference)'
                     bot_reply(message, msg)
+
+            if keys_mistral:
+                my_mistral.USER_KEYS[chat_id_full] = keys_mistral[0]
+                my_mistral.ALL_KEYS.append(keys_mistral[0])
+                my_log.log_keys(f'Added new API key for Mistral: {chat_id_full} {keys_mistral}')
+                bot_reply_tr(message, 'Added API key for Mistral successfully!')
 
             if keys_groq:
                 my_groq.USER_KEYS[chat_id_full] = keys_groq[0]
@@ -3766,17 +3786,19 @@ def users_keys_for_gemini(message: telebot.types.Message):
                  '0️⃣ Free VPN: https://www.vpnjantit.com/\n\n' + \
                  '1️⃣ https://www.youtube.com/watch?v=6aj5a7qGcb4\nhttps://ai.google.dev/\nhttps://aistudio.google.com/apikey\n\n' + \
                  '2️⃣ https://github.com/theurs/tb1/tree/master/pics/groq\nhttps://console.groq.com/keys\n\n' + \
-                 '3️⃣ https://github.com/theurs/tb1/tree/master/pics/hf\nhttps://huggingface.co/settings/tokens'
+                 '3️⃣ https://github.com/theurs/tb1/tree/master/pics/hf\nhttps://huggingface.co/settings/tokens' +\
+                 '\n\nhttps://console.mistral.ai/api-keys/'
 
         bot_reply(message, msg, disable_web_page_preview = True, parse_mode='HTML', reply_markup = get_keyboard('donate_stars', message))
 
         # показать юзеру его ключи
         if is_private:
             if chat_id_full in my_gemini.USER_KEYS:
+                mistral_keys= [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
                 qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
                 deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
                 huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
-                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys
+                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys + mistral_keys
                 msg = tr('Your keys:', lang) + '\n\n'
                 for key in keys:
                     msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
@@ -4223,6 +4245,15 @@ def reset_(message: telebot.types.Message, say: bool = True):
             chat_id_full = message    
         else:
             chat_id_full = get_topic_id(message)
+            try:
+                if message.from_user.id in cfg.admins:
+                    arg = message.text.split(maxsplit=1)[1].strip()
+                    if arg:
+                        if '[' not in arg:
+                            arg = f'[{arg}] [0]'
+                        chat_id_full = arg
+            except IndexError:
+                pass
 
         if not my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
@@ -6555,12 +6586,10 @@ def id_cmd_handler(message: telebot.types.Message):
 
         gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
         groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
+        mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
         openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
         deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
         huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
-        # keys_count = len(gemini_keys) + len(groq_keys) + len(openrouter_keys) + len(deepl_keys)
-        keys_count = len(gemini_keys) + len(groq_keys) + len(deepl_keys)
-        keys_count_ = '🔑'*keys_count
 
         if openrouter_keys:
             msg += '\n\n🔑️ OpenRouter\n'
@@ -6574,6 +6603,10 @@ def id_cmd_handler(message: telebot.types.Message):
             msg += '🔑️ Groq\n'
         else:
             msg += '🔒 Groq\n'
+        if mistral_keys:
+            msg += '🔑️ Mistral\n'
+        else:
+            msg += '🔒 Mistral\n'
         if deepl_keys:
             msg += '🔑️ Deepl\n'
         else:
@@ -6622,6 +6655,8 @@ def reload_module(message: telebot.types.Message):
             my_genimg.load_users_keys()
         elif module_name == 'my_trans':
             my_trans.load_users_keys()
+        elif module_name == 'my_mistral':
+            my_mistral.load_users_keys()
         elif module_name == 'my_db':
             db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
             db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
@@ -8171,6 +8206,7 @@ def main():
         my_genimg.load_users_keys()
         my_groq.load_users_keys()
         my_trans.load_users_keys()
+        my_mistral.load_users_keys()
 
         one_time_shot()
 

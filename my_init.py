@@ -126,6 +126,7 @@ admin_help = '''
 
 /sdonate - add or remove stars for a user, it will only be visible in the log that they are virtual
 
+/reset <id> - reset mem for user
 /alang - set language for specific user
 /set_stt_mode - mandatory switch user from one stt engine to another
 /set_chat_mode - mandatory switch user from one chatbot to another

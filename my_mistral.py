@@ -8,6 +8,7 @@ import threading
 import traceback
 
 import openai
+from sqlitedict import SqliteDict
 
 import cfg
 import my_db
@@ -31,6 +32,14 @@ MAX_HIST_CHARS = 60000
 # {id:lock}
 LOCKS = {}
 
+# каждый юзер дает свои ключи и они используются совместно со всеми
+# каждый ключ дает всего 500000 токенов в минуту так что чем больше тем лучше
+# {full_chat_id as str: key}
+# {'[9123456789] [0]': 'key', ...}
+ALL_KEYS = []
+USER_KEYS = SqliteDict('db/mistral_user_keys.db', autocommit=True)
+USER_KEYS_LOCK = threading.Lock()
+
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 40000
 
@@ -44,24 +53,6 @@ FALLBACK_MODEL = 'pixtral-large-latest'
 VISION_MODEL = 'pixtral-large-latest'
 
 
-def clear_mem(mem, user_id: str):
-    while 1:
-        sizeofmem = count_tokens(mem)
-        if sizeofmem <= MAX_HIST_CHARS:
-            break
-        try:
-            mem = mem[2:]
-        except IndexError:
-            mem = []
-            break
-
-    return mem[-MAX_MEM_LINES*2:]
-
-
-def count_tokens(mem) -> int:
-    return sum([len(m['content']) for m in mem])
-
-
 def ai(
     prompt: str = '',
     mem = None,
@@ -70,10 +61,11 @@ def ai(
     model = '',
     temperature: float = 1,
     max_tokens: int = 8000,
-    timeout: int = 120
+    timeout: int = 120,
+    key_: str = ''
     ) -> str:
 
-    if not hasattr(cfg, 'MISTRALAI_KEYS'):
+    if not len(ALL_KEYS) and not key_:
         return ''
 
     if not model:
@@ -88,8 +80,9 @@ def ai(
     text = ''
     for _ in range(3):
         try:
+            key = random.choice(ALL_KEYS) if not key_ else key_
             client = openai.OpenAI(
-                api_key = random.choice(cfg.MISTRALAI_KEYS),
+                api_key = key,
                 base_url = BASE_URL,
             )
             response = client.chat.completions.create(
@@ -109,6 +102,8 @@ def ai(
                     my_db.add_msg(user_id, model)
                 break  # Exit loop if successful
             else:
+                if key_:
+                    break
                 time.sleep(2)
         except Exception as e:
             if 'The maximum context length' in str(e):
@@ -121,6 +116,98 @@ def ai(
             time.sleep(2)
 
     return text
+
+
+def img2txt(
+    image_data: bytes,
+    prompt: str = 'Describe picture',
+    model = VISION_MODEL,
+    temperature: float = 1,
+    max_tokens: int = 8000,
+    timeout: int = 120,
+    chat_id: str = '',
+    ) -> str:
+    """
+    Describes an image using the specified model and parameters.
+
+    Args:
+        image_data: The image data as bytes.
+        prompt: The prompt to guide the description. Defaults to 'Describe picture'.
+        model: The model to use for generating the description. Defaults to VISION_MODEL.
+        temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
+        max_tokens: The maximum number of tokens to generate. Defaults to 8000.
+        timeout: The timeout for the request in seconds. Defaults to 120.
+
+    Returns:
+        A string containing the description of the image, or an empty string if an error occurs.
+    """
+    if not len(ALL_KEYS):
+        return ''
+
+    if not model:
+        model = VISION_MODEL
+
+    if isinstance(image_data, str):
+        with open(image_data, 'rb') as f:
+            image_data = f.read()
+
+    img_base = base64.b64encode(image_data).decode('utf-8')
+
+    for _ in range(3):
+        try:
+            client = openai.OpenAI(
+                api_key = random.choice(ALL_KEYS),
+                base_url = BASE_URL,
+            )
+            response = client.chat.completions.create(
+                model = model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                timeout=timeout,
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": f"data:image/jpeg;base64,{img_base}" 
+                            }
+                        ]
+                    }
+                ]
+            )
+            result = response.choices[0].message.content
+            if chat_id:
+                my_db.add_msg(chat_id, model)
+            break
+        except Exception as error:
+            my_log.log_glm(f'img2txt: Failed to parse response: {error}')
+            result = ''
+            time.sleep(2)
+
+    return result
+
+
+def clear_mem(mem, user_id: str):
+    while 1:
+        sizeofmem = count_tokens(mem)
+        if sizeofmem <= MAX_HIST_CHARS:
+            break
+        try:
+            mem = mem[2:]
+        except IndexError:
+            mem = []
+            break
+
+    return mem[-MAX_MEM_LINES*2:]
+
+
+def count_tokens(mem) -> int:
+    return sum([len(m['content']) for m in mem])
 
 
 def update_mem(query: str, resp: str, chat_id: str):
@@ -293,78 +380,41 @@ def get_mem_as_string(chat_id: str, md: bool = False) -> str:
         return ''
 
 
-def img2txt(
-    image_data: bytes,
-    prompt: str = 'Describe picture',
-    model = VISION_MODEL,
-    temperature: float = 1,
-    max_tokens: int = 8000,
-    timeout: int = 120,
-    chat_id: str = '',
-    ) -> str:
+def remove_key(key: str):
+    '''Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.'''
+    try:
+        if key in ALL_KEYS:
+            del ALL_KEYS[ALL_KEYS.index(key)]
+        with USER_KEYS_LOCK:
+            # remove key from USER_KEYS
+            for user in USER_KEYS:
+                if USER_KEYS[user] == key:
+                    del USER_KEYS[user]
+                    my_log.log_keys(f'mistral: Invalid key {key} removed from user {user}')
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
+
+
+def load_users_keys():
     """
-    Describes an image using the specified model and parameters.
-
-    Args:
-        image_data: The image data as bytes.
-        prompt: The prompt to guide the description. Defaults to 'Describe picture'.
-        model: The model to use for generating the description. Defaults to VISION_MODEL.
-        temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
-        max_tokens: The maximum number of tokens to generate. Defaults to 8000.
-        timeout: The timeout for the request in seconds. Defaults to 120.
-
-    Returns:
-        A string containing the description of the image, or an empty string if an error occurs.
+    Load users' keys into memory and update the list of all keys available.
     """
-    if not hasattr(cfg, 'MISTRALAI_KEYS'):
-        return ''
+    with USER_KEYS_LOCK:
+        global USER_KEYS, ALL_KEYS
+        ALL_KEYS = cfg.MISTRALAI_KEYS if hasattr(cfg, 'MISTRALAI_KEYS') and cfg.MISTRALAI_KEYS else []
+        for user in USER_KEYS:
+            key = USER_KEYS[user]
+            if key not in ALL_KEYS:
+                ALL_KEYS.append(key)
 
-    if not model:
-        model = VISION_MODEL
 
-    if isinstance(image_data, str):
-        with open(image_data, 'rb') as f:
-            image_data = f.read()
-
-    img_base = base64.b64encode(image_data).decode('utf-8')
-
-    for _ in range(3):
-        try:
-            client = openai.OpenAI(
-                api_key = random.choice(cfg.MISTRALAI_KEYS),
-                base_url = BASE_URL,
-            )
-            response = client.chat.completions.create(
-                model = model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                timeout=timeout,
-                messages = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": prompt
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": f"data:image/jpeg;base64,{img_base}" 
-                            }
-                        ]
-                    }
-                ]
-            )
-            result = response.choices[0].message.content
-            if chat_id:
-                my_db.add_msg(chat_id, model)
-            break
-        except Exception as error:
-            my_log.log_glm(f'img2txt: Failed to parse response: {error}')
-            result = ''
-            time.sleep(2)
-
-    return result
+def test_key(key: str) -> bool:
+    '''
+    Tests a given key by making a simple request to the Mistral AI API.
+    '''
+    r = ai('1+1=', key_=key.strip())
+    return bool(r)
 
 
 def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_MODEL) -> str:
@@ -390,6 +440,7 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_M
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
+    load_users_keys()
 
     # print(ai('сделай хороший перевод на английский этого текста:\n\n"Привет, как дела?"'))
 

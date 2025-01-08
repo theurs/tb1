@@ -758,16 +758,16 @@ def check_blocked_user(id_: str, from_user_id: int, check_trottle = True):
     user_id = id_.replace('[','').replace(']','').split()[0]
     if check_trottle:
         if not request_counter.check_limit(user_id):
-            my_log.log2(f'tb:check_blocked_user: User {id_} is blocked for DDoS')
+            # my_log.log2(f'tb:check_blocked_user: User {id_} is blocked for DDoS')
             raise Exception(f'user {user_id} in ddos stop list, ignoring')
 
     from_user_id = f'[{from_user_id}] [0]'
     if my_db.get_user_property(from_user_id, 'blocked'):
-        my_log.log2(f'tb:check_blocked_user: User {from_user_id} is blocked')
+        # my_log.log2(f'tb:check_blocked_user: User {from_user_id} is blocked')
         raise Exception(f'user {from_user_id} in stop list, ignoring')
 
     if my_db.get_user_property(id_, 'blocked'):
-        my_log.log2(f'tb:check_blocked_user: User {id_} is blocked')
+        # my_log.log2(f'tb:check_blocked_user: User {id_} is blocked')
         raise Exception(f'user {user_id} in stop list, ignoring')
 
 

@@ -987,6 +987,54 @@ def download_image_as_bytes(url_or_urls):
         return None
 
 
+def download_image_for_thumb(url: str) -> bytes:
+    """
+    Downloads an image from the given URL, converts it to JPG format if necessary,
+    resizes it to a maximum size of 200KB, and ensures its dimensions do not exceed 320x320 pixels.
+
+    Args:
+        url: The URL of the image.
+
+    Returns:
+        The image data as bytes in JPG format, or empty bytes if an error occurred.
+    """
+    try:
+        # Download the image using requests
+        response = requests.get(url, stream=True)
+        response.raise_for_status()  # Raise an exception for bad status codes
+
+        # Read the image data into a BytesIO object
+        image_data = io.BytesIO(response.content)
+
+        # Open the image using PIL
+        image = PIL.Image.open(image_data)
+
+        # Convert the image to RGB mode if it's not
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+
+        # Resize the image if necessary, maintaining aspect ratio
+        if image.width > 320 or image.height > 320:
+            width, height = image.size
+            if width > height:
+                new_width = 320
+                new_height = int(height * (320 / width))
+            else:
+                new_height = 320
+                new_width = int(width * (320 / height))
+            image = image.resize((new_width, new_height), PIL.Image.LANCZOS)
+
+        output_data = io.BytesIO()
+        quality = 75
+        image.save(output_data, format='JPEG', quality=quality)
+
+        return output_data.getvalue()
+
+    except Exception as error:
+        my_log.log2(f'download_image_as_bytes_as_jpg: error: {error}\n\n{traceback.format_exc()}')
+        return b''
+
+
 def fast_hash(data: Any) -> str:
     """
     Calculates the SHA256 hash of any Python data.

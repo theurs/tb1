@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import cachetools.func
 import json
 import natsort
 import os
@@ -29,6 +30,7 @@ def download_ogg(url: str) -> str:
     return tmp_file + '.ogg'
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def valid_youtube_url(url: str) -> str:
     """
     Checks if the URL is a valid YouTube URL using yt-dlp, with proxy support.
@@ -86,6 +88,7 @@ def valid_youtube_url(url: str) -> str:
         return ''
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_title(url: str) -> str:
     """
     Gets the title of the YouTube video from the given URL using yt-dlp.
@@ -126,6 +129,7 @@ def get_title(url: str) -> str:
         return ''
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
     """
     Gets the title, thumbnail URL, description, and size of a YouTube video using yt-dlp.
@@ -182,6 +186,10 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
     Returns:
         A list of paths to the MP3 files in a temporary folder.
     """
+    file_size = os.path.getsize(input_file)
+    if file_size <= max_size_mb * 1024 * 1024:
+        return [input_file,]
+
     with LOCK_TRANSCODE:
         # Create a temporary folder
         tmp_dir = tempfile.mkdtemp()
@@ -222,10 +230,47 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
         return natsort.natsorted(files)
 
 
+def convert_to_mp3(input_file: str) -> str | None:
+    """
+    Converts an audio file to MP3 format using ffmpeg with the highest quality settings.
+
+    Args:
+        input_file: Path to the input audio file.
+
+    Returns:
+        Path to the converted MP3 file, or None if an error occurred.
+    """
+    with LOCK_TRANSCODE:
+        try:
+            output_file = utils.get_tmp_fname() + '.mp3'
+
+            subprocess.run([
+                'ffmpeg',
+                '-i',
+                input_file,
+                '-vn',  # Disable video processing
+                '-acodec',
+                'libmp3lame',  # Use libmp3lame for MP3 encoding
+                '-q:a',
+                '0',  # Use -q:a for VBR (Variable Bit Rate)
+                # 0 is the highest quality, 9 is the lowest
+                '-loglevel',
+                'error',
+                output_file
+            ], check=True)
+
+            return output_file
+
+        except subprocess.CalledProcessError as error:
+            my_log.log2(f'convert_to_mp3: error: {error}\n\n{traceback.format_exc()}')
+            return None
+
+
+
 def download_audio(url: str) -> str | None:
     """
     Downloads audio file using yt-dlp to a temporary folder
-    with audio quality 128k or lower.
+    with audio quality 128k or lower. If small file them download best quality.
 
     Args:
         url: Link to the audio file.
@@ -240,21 +285,24 @@ def download_audio(url: str) -> str | None:
     output_template = os.path.join(tmp_dir, r"123.%(ext)s")
 
     try:
+        duration = get_title_and_poster(url)[3]
+        if duration < 10*60:
+            quality = 'bestaudio'
+        else:
+            quality = 'bestaudio[abr<=128]/bestaudio'
         if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
             proxy = random.choice(cfg.YTB_PROXY)
             subprocess.run([
                 'yt-dlp',
-                '-f', 'bestaudio[abr<=128]/bestaudio',
+                '-f', quality,
                 '--proxy', proxy,
                 '-o', output_template,
-                # '--noplaylist',
-                # '--quiet',
                 url
             ], check=True)
         else:
             subprocess.run([
                 'yt-dlp',
-                '-f', 'bestaudio[abr<=128]/bestaudio',
+                '-f', quality,
                 '-o', output_template,
                 url
             ], check=True)
@@ -264,7 +312,15 @@ def download_audio(url: str) -> str | None:
     # Find the downloaded file in the folder
     files = [f for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]
     if files:
-        return os.path.join(tmp_dir, files[0])
+        r = os.path.join(tmp_dir, files[0])
+        if quality == 'bestaudio':
+            r2 = convert_to_mp3(r)
+            if r2:
+                utils.remove_file(r)
+                return r2
+            else:
+                return None
+        return r
     else:
         return None  # File not found
 
@@ -323,3 +379,4 @@ if __name__ == '__main__':
 
     # print(valid_youtube_url('https://www.youtube.com/watch?v=5F24kWz1tKk'))
 
+    print(download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY'))

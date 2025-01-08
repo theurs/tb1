@@ -2643,6 +2643,81 @@ def process_image_stage_2(image_prompt: str,
         my_log.log2(f'tb:process_image_stage_2: {unknown}\n{traceback_error}')
 
 
+
+
+def process_wg_config(text: str) -> bool:
+    '''
+    Проверяет является ли текст конфигом ваиргарда, если да то
+    применяет его и возвращает True иначе False
+    Конфиг нужен для бинга в основном.
+    '''
+    try:
+        values: dict[str, str | None] = {
+            "Address": None,
+            "PrivateKey": None,
+            "publickey": None,
+            "Endpoint": None,
+        }
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+
+            for key in values:
+                # Используем регулярное выражение для поиска ключа с игнорированием регистра и пробелов
+                match = re.match(rf"^\s*{key}\s*=\s*(.+?)\s*$", line, re.IGNORECASE)
+                if match:
+                    values[key] = match.group(1)
+                    break  # Переходим к следующей строке, т.к. ключ уже найден для этой строки
+
+        if not all(values.values()):
+            return False
+
+        AllowedIPs = '2.17.0.0/16, 2.16.0.0/16, 2.18.0.0/16, 2.19.0.0/16, 2.21.0.0/16, 2.22.0.0/16, 2.23.0.0/16,'\
+                    ' 3.128.0.0/9, 13.104.0.0/14, 13.96.0.0/13, 13.64.0.0/11, 23.62.0.0/16, 44.192.0.0/11, 54.92.128.0/17,'\
+                    ' 54.160.0.0/11, 54.208.0.0/13, 54.192.0.0/12, 54.220.0.0/15, 54.216.0.0/14, 54.144.0.0/12,'\
+                    ' 54.64.0.0/11, 62.115.0.0/16, 64.233.0.0/16, 80.239.0.0/16, 88.221.0.0/16, 95.100.0.0/16,'\
+                    ' 95.101.0.0/16, 104.110.0.0/16, 139.45.0.0/16, 142.250.0.0/15, 172.253.0.0/16, 172.217.0.0/16,'\
+                    ' 173.194.0.0/16, 204.79.0.0/16, 209.85.0.0/16, 216.58.0.0/16, 3.209.228.0/16,'\
+                    ' 34.195.101.0/16, 44.214.233.0/16, 3.216.231.0/16, 52.22.132.0/16, 44.208.13.0/16,'\
+                    ' 173.194.0.0/16, 64.233.0.0/16, 34.64.0.0/10'
+
+        Address = values['Address']
+        PrivateKey = values['PrivateKey']
+        publickey = values['publickey']
+        Endpoint = values['Endpoint']
+
+        target_wg1 = '/etc/wireguard/wg1.conf'
+        target_body = f'''
+[Interface]
+Address = {Address}
+
+PrivateKey = {PrivateKey}
+[Peer]
+publickey={publickey}
+
+Endpoint = {Endpoint}
+
+AllowedIPs = {AllowedIPs}
+'''
+        cmd = 'sudo systemctl restart wg-quick@wg1.service'
+
+        with open(target_wg1, 'w') as f:
+            f.write(target_body)
+
+        with subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding=utils.get_codepage()) as proc:
+            stdout, stderr = proc.communicate()
+        out = stdout + '\n\n' + stderr
+        out = f'```cmd\n{out}```'
+        bot_reply(message, utils.bot_markdown_to_html(out), parse_mode='HTML')
+
+        return True
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:process_wg_config: {unknown}\n{traceback_error}')
+        return False
+
+
 @bot.message_handler(content_types = ['document'], func=authorized)
 @async_run
 def handle_document(message: telebot.types.Message):
@@ -2819,6 +2894,11 @@ def handle_document(message: telebot.types.Message):
                                 my_db.set_user_property(chat_id_full, 'saved_file', text.strip())
                                 bot_reply(message, tr('The file has been added to the group of files, use /ask to query it', lang) + ': ' + message.document.file_name if hasattr(message, 'document') else 'noname.txt')
                             else:
+                                # если админ отправил .conf файл и внутри есть нужные поля для настройки ваиргарда то применить этот конфиг
+                                if message.from_user.id in cfg.admins and message.document.file_name.endswith('.conf'):
+                                    if process_wg_config(text):
+                                        bot_reply_tr(message, 'OK')
+                                        return
                                 caption = message.caption or ''
                                 caption = caption.strip()
                                 summary = my_sum.summ_text(text, 'text', lang, caption)
@@ -3956,16 +4036,18 @@ def download_ytb_audio(message: telebot.types.Message):
                         files = my_ytb.split_audio(source_file, 19) # !19 а не 20 так как VBR mp3
                         bot_reply(message, desc[:4090], send_message=True, disable_web_page_preview=True)
                         if files:
+                            image_stream = io.BytesIO(utils.download_image_for_thumb(pic))
+                            try:
+                                tmb = telebot.types.InputFile(image_stream)
+                            except:
+                                tmb = None
+
                             for fn in files:
                                 with open(fn, 'rb') as f:
                                     data = f.read()
                                 caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}'
                                 caption = f'{caption[:900]}\n\n{url}'
-                                image_stream = io.BytesIO(utils.download_image_as_bytes(pic))
-                                try:
-                                    tmb = telebot.types.InputFile(image_stream)
-                                except:
-                                    tmb = None
+
                                 m = bot.send_audio(
                                     message.chat.id,
                                     data,
@@ -6946,7 +7028,6 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                             # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
                             chunks2 = utils.split_text(chunk, 3500)
                             for chunk2 in chunks2:
-
                                 try:
                                     if send_message:
                                         m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,
@@ -6977,7 +7058,23 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                         except Exception as error2:
                             if 'Bad Request: message to be replied not found' in str(error):
                                 return
-                            my_log.log2(f'tb:reply_to_long_message2: {error2}')
+
+                            elif 'Bad Request: message is too long' in str(error):
+                                # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
+                                chunks2 = utils.split_text(chunk, 3500)
+                                for chunk2 in chunks2:
+                                    try:
+                                        if send_message:
+                                            m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,
+                                                            link_preview_options=preview, reply_markup=reply_markup)
+                                        else:
+                                            m = bot.reply_to(message, chunk2,
+                                                    link_preview_options=preview, reply_markup=reply_markup)
+                                        log_message(m)
+                                    except Exception as error_chunk2_2:
+                                        my_log.log2(f'tb:reply_to_log_message2: {error_chunk2_2}\n\n{chunk2}')
+                            else:
+                                my_log.log2(f'tb:reply_to_long_message3: {error2}')
                 counter -= 1
                 if counter < 0:
                     break

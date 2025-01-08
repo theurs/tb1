@@ -120,6 +120,8 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     if moderation_flag or prompt.strip() == '':
         return []
     try:
+        if bing_img.PAUSED['time'] > time.time():
+            return []
         with BING_LOCK:
             images = bing_img.gen_images(prompt, user_id)
             if any([x for x in images if not x.startswith('https://')]):

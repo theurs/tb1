@@ -289,7 +289,7 @@ class ShowAction(threading.Thread):
             while self.is_running:
                 if time.time() - self.started_time > 60*5:
                     self.stop()
-                    my_log.log2(f'tb:show_action:stoped after 5min [{self.chat_id}] [{self.thread_id}] is topic: {self.is_topic} action: {self.action}')
+                    # my_log.log2(f'tb:show_action:stoped after 5min [{self.chat_id}] [{self.thread_id}] is topic: {self.is_topic} action: {self.action}')
                     return
                 try:
                     if self.is_topic:
@@ -1936,9 +1936,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'remove_uploaded_voice':
                 try:
                     del UPLOADED_VOICES[chat_id_full]
-                    bot_reply_tr(message, 'Voice sample was removed.', lang)
+                    bot_reply_tr(message, 'Voice sample was removed.')
                 except:
-                    bot_reply_tr(message, 'Voice sample was not found.', lang)
+                    bot_reply_tr(message, 'Voice sample was not found.')
 
             elif call.data == 'image_prompt_describe':
                 COMMAND_MODE[chat_id_full] = ''
@@ -2037,8 +2037,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 try:
                     bot.delete_message(message.chat.id, message.message_id)
                 except telebot.apihelper.ApiTelegramException as error:
-                    if "Bad Request: message can't be deleted for everyone" not in error:
-                        my_log.log2(f'tb:callback_inline_thread2: {error}')
+                    if "Bad Request: message can't be deleted for everyone" not in str(error):
+                        my_log.log2(f'tb:callback_inline_thread2: {str(error)}')
             elif call.data == 'tts':
                 detected_lang = my_tts.detect_lang_carefully(message.text or message.caption or "")
                 if not detected_lang:
@@ -2269,6 +2269,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                     text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
     except Exception as unexpected_error:
+        if 'Bad Request: message is not modified' in str(error):
+            return
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:callback_query_handler:{unexpected_error}\n\n{traceback_error}')
 
@@ -5359,14 +5361,12 @@ def image_gen(message: telebot.types.Message):
                 if lang == 'en': draw_text = 'draw'
                 help = f"""/image {tr('Text description of the picture, what to draw.', lang)}
 
-/image {tr('an apple', lang)}
-/img {tr('an apple', lang)}
-/i {tr('an apple', lang)}
-{draw_text} {tr('an apple', lang)}
+/image {tr('космический корабль в полете', lang)}
+/img {tr('средневековый замок с рвом и мостом', lang)}
+/i {tr('подводный мир с рыбами и кораллами', lang)}
+<b>{draw_text}</b> {tr('красивый сад с цветами и фонтаном', lang)}
 
-{tr('Use ! marker in the beginning to avoid translation and use the text as it is.', lang)}
-
-{tr('Use /bing command for Bing only. /bing10 /bing20 repeat the command 10/20 times.', lang)}
+{tr('Use /bing command for Bing only.', lang)}
 
 {tr('Use /hf and /hff command for HuggingFace only.', lang)}
 
@@ -5487,7 +5487,7 @@ def image_gen(message: telebot.types.Message):
 
                 else:
                     COMMAND_MODE[chat_id_full] = 'image'
-                    bot_reply(message, md2tgmd.escape(help), parse_mode = 'MarkdownV2', reply_markup=get_keyboard('command_mode', message))
+                    bot_reply(message, help, parse_mode = 'HTML', reply_markup=get_keyboard('command_mode', message))
     except Exception as error_unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:image:send: {error_unknown}\n{traceback_error}')
@@ -6902,7 +6902,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                                     my_log.log2(f'tb:reply_to_log_message: {error_chunk2}\n\n{chunk2}')
 
                         else:
-                            my_log.log2(f'tb:reply_to_long_message: {error}')
+                            my_log.log2(f'tb:reply_to_long_message: {error}\n\nresp: {resp[:500]}\n\nparse_mode: {parse_mode}')
                             my_log.log2(chunk)
                         if parse_mode == 'HTML':
                             chunk = utils.html.unescape(chunk)

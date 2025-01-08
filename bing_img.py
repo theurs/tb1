@@ -28,6 +28,9 @@ COOKIES = []
 PROXIES = []
 
 
+PAUSED = {'time': 0}
+
+
 def get_cookie():
     global COOKIES
     if len(COOKIES) == 0:
@@ -59,6 +62,7 @@ def get_proxy():
 
 
 def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 60) -> list:
+    global PAUSED
     try:
         results = []
         proxy = get_proxy()
@@ -75,14 +79,16 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
                 BAD_IMAGES_PROMPT[prompt] = True
                 return [str(error),]
             elif 'Image create failed pls check cookie or old image still creating' in str(error):
-                time.sleep(60)
-                try:
-                    cc = get_cookie()
-                    sync_gen = ImageGen(auth_cookie=cc, quiet=True, proxy=proxy)
-                    results = sync_gen.get_images(prompt)
-                except Exception as error2:
-                    my_log.log_bing_img(f'get_images_v2: {error2} \n\n {cc} \n\nPrompt: {prompt}')
-                    time.sleep(60)
+                PAUSED['time'] = time.time() + 125
+
+                # time.sleep(60)
+                # try:
+                #     cc = get_cookie()
+                #     sync_gen = ImageGen(auth_cookie=cc, quiet=True, proxy=proxy)
+                #     results = sync_gen.get_images(prompt)
+                # except Exception as error2:
+                #     my_log.log_bing_img(f'get_images_v2: {error2} \n\n {cc} \n\nPrompt: {prompt}')
+                #     time.sleep(60)
 
         if results:
             results = [x for x in results if '.bing.net/th/id/' in x]

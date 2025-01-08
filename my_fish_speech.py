@@ -114,12 +114,13 @@ def tts(text: str, voice_sample: bytes) -> bytes:
 
     utils.remove_file(source_file)
     try:
-        utils.remove_file(result_file)
-        base_path = os.path.dirname(result_file)
-        try:
-            os.rmdir(base_path)
-        except Exception as error:
-            my_log.log_fish_speech(f'tts: error remove {error}')
+        if result_file:
+            utils.remove_file(result_file)
+            base_path = os.path.dirname(result_file)
+            try:
+                os.rmdir(base_path)
+            except Exception as error:
+                my_log.log_fish_speech(f'tts: error remove {error}')
     except UnboundLocalError:
         pass
 

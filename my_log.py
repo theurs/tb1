@@ -174,6 +174,10 @@ def log_ddg(text: str) -> None:
     """для логов ddg"""
     log2(text[:2000], 'ddg')
 
+def log_stability_ai(text: str) -> None:
+    """для логов stability_ai"""
+    log2(text[:2000], 'stability_ai')
+
 
 def log_keys(text: str) -> None:
     """для логов новых ключей"""

@@ -301,7 +301,8 @@ class ShowAction(threading.Thread):
                         if 'Forbidden: bot was blocked by the user' in str(error):
                             self.stop()
                             return
-                        my_log.log2(f'tb:show_action:run: {error}')
+                        if 'Forbidden: bot was blocked by the user' not in str(error):
+                            my_log.log2(f'tb:show_action:run: {str(error)}')
                 n = 50
                 while n > 0:
                     time.sleep(0.1)

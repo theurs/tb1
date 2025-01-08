@@ -393,7 +393,7 @@ def remove_key(key: str):
                     my_log.log_keys(f'mistral: Invalid key {key} removed from user {user}')
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
+        my_log.log_mistral(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
 def load_users_keys():

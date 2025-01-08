@@ -3806,7 +3806,15 @@ def users_keys_for_gemini(message: telebot.types.Message):
             already_exists = any(key in my_mistral.ALL_KEYS for key in keys_mistral)
             if already_exists:
                 keys_mistral = []
-                msg = f'{tr("This key has already been added by someone earlier.", lang)} {keys_mistral}'
+                msg = f'{tr("This key has already been added by someone earlier.", lang)}'
+                bot_reply(message, msg)
+
+            # cohere keys len = 40 and passed test
+            keys_cohere = [x.strip() for x in args[1].split() if len(x.strip()) == 40 and my_cohere.test_key(x)]
+            already_exists = any(key in my_cohere.ALL_KEYS for key in keys_cohere)
+            if already_exists:
+                keys_cohere = []
+                msg = f'{tr("This key has already been added by someone earlier.", lang)}'
                 bot_reply(message, msg)
 
             # groq keys len=56, starts with "gsk_"
@@ -3846,6 +3854,12 @@ def users_keys_for_gemini(message: telebot.types.Message):
                 my_mistral.ALL_KEYS.append(keys_mistral[0])
                 my_log.log_keys(f'Added new API key for Mistral: {chat_id_full} {keys_mistral}')
                 bot_reply_tr(message, 'Added API key for Mistral successfully!')
+
+            if keys_cohere:
+                my_cohere.USER_KEYS[chat_id_full] = keys_cohere[0]
+                my_cohere.ALL_KEYS.append(keys_cohere[0])
+                my_log.log_keys(f'Added new API key for Cohere: {chat_id_full} {keys_cohere}')
+                bot_reply_tr(message, 'Added API key for Cohere successfully!')
 
             if keys_groq:
                 my_groq.USER_KEYS[chat_id_full] = keys_groq[0]
@@ -3891,18 +3905,19 @@ def users_keys_for_gemini(message: telebot.types.Message):
                  '1️⃣ https://www.youtube.com/watch?v=6aj5a7qGcb4\nhttps://ai.google.dev/\nhttps://aistudio.google.com/apikey\n\n' + \
                  '2️⃣ https://github.com/theurs/tb1/tree/master/pics/groq\nhttps://console.groq.com/keys\n\n' + \
                  '3️⃣ https://github.com/theurs/tb1/tree/master/pics/hf\nhttps://huggingface.co/settings/tokens' +\
-                 '\n\nhttps://console.mistral.ai/api-keys/'
+                 '\n\nhttps://console.mistral.ai/api-keys/\n\nhttps://dashboard.cohere.com/api-keys'
 
         bot_reply(message, msg, disable_web_page_preview = True, parse_mode='HTML', reply_markup = get_keyboard('donate_stars', message))
 
         # показать юзеру его ключи
         if is_private:
             if chat_id_full in my_gemini.USER_KEYS:
-                mistral_keys= [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
+                mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
+                cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
                 qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
                 deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
                 huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
-                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys + mistral_keys
+                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys + mistral_keys + cohere_keys
                 msg = tr('Your keys:', lang) + '\n\n'
                 for key in keys:
                     msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
@@ -6693,6 +6708,7 @@ def id_cmd_handler(message: telebot.types.Message):
         gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
         groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
         mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
+        cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
         openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
         deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
         huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
@@ -6713,6 +6729,10 @@ def id_cmd_handler(message: telebot.types.Message):
             msg += '🔑️ Mistral\n'
         else:
             msg += '🔒 Mistral\n'
+        if cohere_keys:
+            msg += '🔑️ Cohere\n'
+        else:
+            msg += '🔒 Cohere\n'
         if deepl_keys:
             msg += '🔑️ Deepl\n'
         else:
@@ -6763,6 +6783,8 @@ def reload_module(message: telebot.types.Message):
             my_trans.load_users_keys()
         elif module_name == 'my_mistral':
             my_mistral.load_users_keys()
+        elif module_name == 'my_cohere':
+            my_cohere.load_users_keys()
         elif module_name == 'my_db':
             db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
             db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
@@ -8328,6 +8350,7 @@ def main():
         my_groq.load_users_keys()
         my_trans.load_users_keys()
         my_mistral.load_users_keys()
+        my_cohere.load_users_keys()
 
         one_time_shot()
 

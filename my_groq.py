@@ -317,7 +317,7 @@ def remove_key(key: str):
                     my_log.log_keys(f'Invalid key {key} removed from user {user}')
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_gemini(f'groq: Failed to remove key {key}: {error}\n\n{error_traceback}')
+        my_log.log_groq(f'groq: Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
 def token_count(mem, model:str = "meta-llama/Meta-Llama-3-8B") -> int:

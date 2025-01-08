@@ -31,6 +31,7 @@ https://api-inference.huggingface.co/models/multimodalart/flux-tarot-v1
 https://api-inference.huggingface.co/models/alvdansen/frosting_lane_flux
 https://api-inference.huggingface.co/models/alvdansen/flux_film_foto
 https://api-inference.huggingface.co/models/kudzueye/Boreal
+https://api-inference.huggingface.co/models/kudzueye/boreal-flux-dev-v2
 https://api-inference.huggingface.co/models/linoyts/yarn_art_Flux_LoRA
 
 # https://api-inference.huggingface.co/models/ByteDance/Hyper-SD
@@ -54,6 +55,7 @@ https://api-inference.huggingface.co/models/Jovie/Midjourney
 
 https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large
 https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo
+https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0
 https://api-inference.huggingface.co/models/Shakker-Labs/SD3.5-LoRA-Linear-Red-Light
 
 https://api-inference.huggingface.co/models/shuttleai/shuttle-3-diffusion

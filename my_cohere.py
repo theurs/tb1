@@ -7,6 +7,7 @@ import threading
 import traceback
 
 import cohere
+from sqlitedict import SqliteDict
 
 import cfg
 import my_db
@@ -25,6 +26,15 @@ MAX_HIST_CHARS = 60000
 # блокировка чатов что бы не испортить историю
 # {id:lock}
 LOCKS = {}
+
+
+# каждый юзер дает свои ключи и они используются совместно со всеми
+# каждый ключ дает всего 500000 токенов в минуту так что чем больше тем лучше
+# {full_chat_id as str: key}
+# {'[9123456789] [0]': 'key', ...}
+ALL_KEYS = []
+USER_KEYS = SqliteDict('db/cohere_user_keys.db', autocommit=True)
+USER_KEYS_LOCK = threading.Lock()
 
 
 def ai(
@@ -84,7 +94,7 @@ def ai(
         if key_:
             keys = [key_, ]
         else:
-            keys = cfg.COHERE_AI_KEYS
+            keys = ALL_KEYS
             random.shuffle(keys)
             keys = keys[:4]
 
@@ -94,7 +104,7 @@ def ai(
             mem = mem[2:]
 
         for key in keys:
-            client = cohere.ClientV2(cfg.COHERE_AI_KEYS[0], timeout = timeout)
+            client = cohere.ClientV2(key, timeout = timeout)
 
             if json_output:
                 resp_type = 'json_object'
@@ -120,10 +130,15 @@ def ai(
                 if user_id:
                     my_db.add_msg(user_id, model)
                 return resp
+        if model == DEFAULT_MODEL:
+            return ai(prompt, mem, user_id, system, FALLBACK_MODEL, temperature, max_tokens_, timeout, key_, json_output)
         return ''
     except Exception as error2:
         error_traceback = traceback.format_exc()
         my_log.log_cohere(f'my_groq:ai: {error2}\n\n{error_traceback}\n\n{prompt}\n\n{system}\n\n{mem_}\n{temperature}\n{model_}\n{max_tokens_}\n{key_}')
+
+    if model == DEFAULT_MODEL:
+        return ai(prompt, mem, user_id, system, FALLBACK_MODEL, temperature, max_tokens_, timeout, key_, json_output)
 
     return ''
 
@@ -337,8 +352,46 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_M
     return r.strip()
 
 
+def remove_key(key: str):
+    '''Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.'''
+    try:
+        if key in ALL_KEYS:
+            del ALL_KEYS[ALL_KEYS.index(key)]
+        with USER_KEYS_LOCK:
+            # remove key from USER_KEYS
+            for user in USER_KEYS:
+                if USER_KEYS[user] == key:
+                    del USER_KEYS[user]
+                    my_log.log_keys(f'cohere: Invalid key {key} removed from user {user}')
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_cohere(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
+
+
+def load_users_keys():
+    """
+    Load users' keys into memory and update the list of all keys available.
+    """
+    with USER_KEYS_LOCK:
+        global USER_KEYS, ALL_KEYS
+        ALL_KEYS = cfg.COHERE_AI_KEYS if hasattr(cfg, 'COHERE_AI_KEYS') and cfg.COHERE_AI_KEYS else []
+        for user in USER_KEYS:
+            key = USER_KEYS[user]
+            if key not in ALL_KEYS:
+                ALL_KEYS.append(key)
+
+
+def test_key(key: str) -> bool:
+    '''
+    Tests a given key by making a simple request to the Cohere AI API.
+    '''
+    r = ai('1+1=', key_=key.strip())
+    return bool(r)
+
+
 if __name__ == '__main__':
     pass
+    load_users_keys()
 
     # r = ai('привет как дела')
     # print(r)

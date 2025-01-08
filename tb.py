@@ -2627,11 +2627,10 @@ def process_image_stage_2(image_prompt: str,
                 )
                 # Send the processed text to the user.
                 if text:
+                    bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
                     if image_prompt == tr(my_init.PROMPT_COPY_TEXT_TTS, lang):
                         message.text = f'/tts {text}'
                         tts(message)
-                    else:
-                        bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
                 else:
                     # Send an error message if the image processing fails.
                     bot_reply_tr(message, "I'm sorry, I wasn't able to process that image or understand your request.")

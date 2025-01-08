@@ -2629,7 +2629,7 @@ def process_image_stage_2(image_prompt: str,
                 if text:
                     bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
                     if image_prompt == tr(my_init.PROMPT_COPY_TEXT_TTS, lang):
-                        message.text = f'/tts {text}'
+                        message.text = f'/tts {my_gemini.detect_lang(text)} {text}'
                         tts(message)
                 else:
                     # Send an error message if the image processing fails.

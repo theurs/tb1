@@ -88,6 +88,60 @@ def valid_youtube_url(url: str) -> str:
         return ''
 
 
+# @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+# def valid_other_video_url(url: str) -> bool:
+#     """
+#     Checks if the URL is a valid video link that can be downloaded by yt-dlp.
+#     Attempts to get the file size as a way to validate.
+#     Uses a proxy if available in the configuration.
+#     Limit of 8000 seconds
+
+#     Args:
+#         url: The URL string to check.
+
+#     Returns:
+#         True if it's a valid video link, otherwise False.
+#     """
+#     try:
+#         if not url.lower().startswith('https://'):
+#             return False
+
+#         # Use yt-dlp to check the file size without downloading
+#         if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+#             proxy = random.choice(cfg.YTB_PROXY)
+#             process = subprocess.run([
+#                 'yt-dlp',
+#                 '--print', 'filesize',
+#                 '--skip-download',  # Skip downloading the video
+#                 '--proxy', proxy,
+#                 url
+#             ], capture_output=True, text=True, check=True)
+#         else:
+#             process = subprocess.run([
+#                 'yt-dlp',
+#                 '--print', 'duration',
+#                 '--skip-download',  # Skip downloading the video
+#                 url
+#             ], capture_output=True, text=True, check=True)
+
+#         # If the output is not empty and can be converted to an integer, it's likely a valid video
+#         duration = process.stdout.strip()
+#         if duration and duration.isdigit():
+#             duration = int(duration)
+#             if duration < 8000:
+#                 return True
+#             else:
+#                 return False
+#         else:
+#             # my_log.log2(f'my_ytb:valid_other_video_url1: Invalid video URL or no file size: {url}')
+#             return False
+
+#     except subprocess.CalledProcessError as error:
+#         error_traceback = traceback.format_exc()
+#         my_log.log2(f'my_ytb:valid_other_video_url2: {url} {error}\n\n{error_traceback}')
+#         return False
+
+
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_title(url: str) -> str:
     """
@@ -188,11 +242,13 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
     """
     file_size = os.path.getsize(input_file)
     if file_size <= max_size_mb * 1024 * 1024:
-        return [input_file,]
+        duration = utils.audio_duration(input_file)
+        if duration < 10 * 60:
+            return [input_file,]
 
     with LOCK_TRANSCODE:
         # Create a temporary folder
-        tmp_dir = tempfile.mkdtemp()
+        tmp_dir = utils.get_tmp_fname()
 
         # Create a temporary folder if it doesn't exist
         if not os.path.exists(tmp_dir):
@@ -200,10 +256,7 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
 
         output_prefix = os.path.join(tmp_dir, "part")
 
-        # Calculate the segment time in seconds based on the average bitrate
-        # We'll use an average bitrate of 64kbps for the calculation
-        bit_rate = 64000
-        segment_time = int(max_size_mb * 8 * 1000 * 1000 / bit_rate)
+        segment_time = 5000
 
         subprocess.run([
             'ffmpeg',
@@ -214,14 +267,18 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
             '-segment_time',
             str(segment_time),
             '-acodec',
-            'libmp3lame',  # Use libmp3lame for MP3 encoding
-            '-q:a',  # Use -q:a for VBR
-            '6',  # VBR quality level (0-9, 0 being the highest quality)
+            'libmp3lame',
+            '-q:a',  # Сохраняем настройку VBR качества
+            '8',
+            '-maxrate', # Устанавливаем максимальный битрейт
+            '80k',
+            '-bufsize', # Рекомендуется устанавливать bufsize, обычно в 2 раза больше maxrate
+            '168k',
             '-reset_timestamps',
             '1',
             '-loglevel',
             'quiet',
-            f'{output_prefix}%03d.mp3'  # Save as MP3 files
+            f'{output_prefix}%03d.mp3'
         ], check=True)
 
         # Get the list of files in the temporary folder
@@ -244,6 +301,21 @@ def convert_to_mp3(input_file: str) -> str | None:
         try:
             output_file = utils.get_tmp_fname() + '.mp3'
 
+            # LAME Bitrate Overview
+            # lame option | Average kbit/s | Bitrate range kbit/s      | ffmpeg option
+            # ----------- | --------------- | ----------------------- | -------------
+            # -b 320      | 320             | 320 CBR (non VBR) example | -b:a 320k (NB this is 32KB/s, or its max)
+            # -V 0        | 245             | 220-260                 | -q:a 0 (NB this is VBR from 220 to 260 KB/s)
+            # -V 1        | 225             | 190-250                 | -q:a 1
+            # -V 2        | 190             | 170-210                 | -q:a 2
+            # -V 3        | 175             | 150-195                 | -q:a 3
+            # -V 4        | 165             | 140-185                 | -q:a 4
+            # -V 5        | 130             | 120-150                 | -q:a 5
+            # -V 6        | 115             | 100-130                 | -q:a 6
+            # -V 7        | 100             | 80-120                  | -q:a 7
+            # -V 8        | 85              | 70-105                  | -q:a 8
+            # -V 9        | 65              | 45-85                   | -q:a 9
+
             subprocess.run([
                 'ffmpeg',
                 '-i',
@@ -252,7 +324,7 @@ def convert_to_mp3(input_file: str) -> str | None:
                 '-acodec',
                 'libmp3lame',  # Use libmp3lame for MP3 encoding
                 '-q:a',
-                '0',  # Use -q:a for VBR (Variable Bit Rate)
+                '2',  # Use -q:a for VBR (Variable Bit Rate)
                 # 0 is the highest quality, 9 is the lowest
                 '-loglevel',
                 'error',
@@ -266,7 +338,6 @@ def convert_to_mp3(input_file: str) -> str | None:
             return None
 
 
-
 def download_audio(url: str) -> str | None:
     """
     Downloads audio file using yt-dlp to a temporary folder
@@ -278,11 +349,7 @@ def download_audio(url: str) -> str | None:
     Returns:
         Path to the downloaded file in the temporary folder, or None if download failed.
     """
-    tmp_dir = tempfile.mkdtemp()
-    # Create a temporary folder if it doesn't exist
-    if not os.path.exists(tmp_dir):
-        os.makedirs(tmp_dir)
-    output_template = os.path.join(tmp_dir, r"123.%(ext)s")
+    output_template = utils.get_tmp_fname()
 
     try:
         duration = get_title_and_poster(url)[3]
@@ -309,39 +376,51 @@ def download_audio(url: str) -> str | None:
     except subprocess.CalledProcessError:
         return None
 
-    # Find the downloaded file in the folder
-    files = [f for f in os.listdir(tmp_dir) if os.path.isfile(os.path.join(tmp_dir, f))]
-    if files:
-        r = os.path.join(tmp_dir, files[0])
-        if quality == 'bestaudio':
-            r2 = convert_to_mp3(r)
-            if r2:
-                utils.remove_file(r)
-                return r2
-            else:
-                return None
-        return r
-    else:
-        return None  # File not found
+    r = output_template
+    if quality == 'bestaudio':
+        r2 = convert_to_mp3(r)
+        if r2:
+            utils.remove_file(r)
+            return r2
+        else:
+            return None
+    return r
 
 
 def remove_folder_or_parent(path: str) -> None:
     """
-    Removes a folder with all its contents or the parent folder of a file.
+    Removes a file or folder within the root temporary directory.
+    If a file is given, its parent directory is removed.
 
     Args:
-        path: Path to the folder or file.
+        path: Path to the file or folder to remove.
     """
+    temp_dir = tempfile.gettempdir()
+    normalized_path = os.path.normpath(path)
+    normalized_temp_dir = os.path.normpath(temp_dir)
+
+    if not normalized_path.startswith(normalized_temp_dir):
+        my_log.log2(f'my_ytb:remove_folder_or_parent: Path is not within the temporary directory: {path}')
+        return
+
     try:
-        if os.path.isdir(path):
-            shutil.rmtree(path)
+        if os.path.isfile(normalized_path):
+            parent_dir = os.path.dirname(normalized_path)
+            if parent_dir == normalized_temp_dir:
+                os.remove(normalized_path)
+                # my_log.log2(f'my_ytb:remove_folder_or_parent: File removed from root temp dir: {path}')
+            else:
+                shutil.rmtree(parent_dir)
+                # my_log.log2(f'my_ytb:remove_folder_or_parent: Parent directory removed: {parent_dir}')
+            return
+        elif os.path.isdir(normalized_path):
+            shutil.rmtree(normalized_path)
+            # my_log.log2(f'my_ytb:remove_folder_or_parent: Directory removed: {path}')
+            return
+        else:
+            my_log.log2(f'my_ytb:remove_folder_or_parent: Path is not a file or directory: {path}')
     except Exception as error:
-        my_log.log2(f'my_ytb:remove_folder_or_parent: {error}\n\n{path}')
-    try:
-        if os.path.isfile(path):
-            shutil.rmtree(os.path.dirname(path))
-    except Exception as error2:
-        my_log.log2(f'my_ytb:remove_folder_or_parent: {error2}\n\n{path}')
+        my_log.log2(f'my_ytb:remove_folder_or_parent: Error removing path: {error}\n\n{path}')
 
 
 if __name__ == '__main__':
@@ -379,4 +458,5 @@ if __name__ == '__main__':
 
     # print(valid_youtube_url('https://www.youtube.com/watch?v=5F24kWz1tKk'))
 
-    print(download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY'))
+    # print(download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY'))
+    # print(valid_other_video_url('https://vkvideo.ru/video-217672812_456239407'))

@@ -30,28 +30,6 @@ LOCKS = {}
 DEFAULT_STT_ENGINE = cfg.DEFAULT_STT_ENGINE if hasattr(cfg, 'DEFAULT_STT_ENGINE') else 'whisper' # 'gemini', 'google', 'assembly.ai'
 
 
-def audio_duration(audio_file: str) -> int:
-    """
-    Get the duration of an audio file.
-
-    Args:
-        audio_file (str): The path to the audio file.
-
-    Returns:
-        int: The duration of the audio file in seconds.
-    """
-    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    try:
-        r = float(result.stdout)
-    except ValueError:
-        r = 0
-    try:
-        r = int(r)
-    except ValueError:
-        r = 0
-    return r
-
-
 def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
     """
     Converts an audio file to a ogg format using FFmpeg.
@@ -117,7 +95,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
             LOCKS[chat_id] = threading.Lock()
         with LOCKS[chat_id]:
 
-            dur = audio_duration(input_file)
+            dur = utils.audio_duration(input_file)
             input_file2 = convert_to_ogg_with_ffmpeg(input_file)
             if not input_file2:
                 return ''
@@ -279,7 +257,7 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
         str: The converted text.
     """
     prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps."
-    duration = audio_duration(audio_file)
+    duration = utils.audio_duration(audio_file)
 
     part_size = 10 * 60 # размер куска несколько минут
     treshold = 5 # захватывать +- несколько секунд в каждом куске

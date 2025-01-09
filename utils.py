@@ -1546,6 +1546,28 @@ def get_ytb_proxy() -> str:
     return result
 
 
+def audio_duration(audio_file: str) -> int:
+    """
+    Get the duration of an audio file.
+
+    Args:
+        audio_file (str): The path to the audio file.
+
+    Returns:
+        int: The duration of the audio file in seconds.
+    """
+    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    try:
+        r = float(result.stdout)
+    except ValueError:
+        r = 0
+    try:
+        r = int(r)
+    except ValueError:
+        r = 0
+    return r
+
+
 if __name__ == '__main__':
     pass
 

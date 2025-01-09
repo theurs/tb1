@@ -4048,7 +4048,7 @@ def download_ytb_audio(message: telebot.types.Message):
                     source_file = my_ytb.download_audio(url)
                     if source_file:
                         bot_reply_tr(message, 'Downloaded successfully, sending file.')
-                        files = my_ytb.split_audio(source_file, 19) # !19 а не 20 так как VBR mp3
+                        files = my_ytb.split_audio(source_file, 45)
                         bot_reply(message, desc[:4090], send_message=True, disable_web_page_preview=True)
                         if files:
                             image_stream = io.BytesIO(utils.download_image_for_thumb(pic))
@@ -4063,24 +4063,32 @@ def download_ytb_audio(message: telebot.types.Message):
                                 caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}'
                                 caption = f'{caption[:900]}\n\n{url}'
 
-                                m = bot.send_audio(
-                                    message.chat.id,
-                                    data,
-                                    title = f'{os.path.splitext(os.path.basename(fn))[0]}.mp3',
-                                    caption = f'@{_bot_name} {caption}',
-                                    disable_notification = True,
-                                    thumbnail=tmb,
-                                )
-                                log_message(m)
+                                try:
+                                    m = bot.send_audio(
+                                        message.chat.id,
+                                        data,
+                                        title = f'{os.path.splitext(os.path.basename(fn))[0]}.mp3',
+                                        caption = f'@{_bot_name} {caption}',
+                                        disable_notification = True,
+                                        thumbnail=tmb,
+                                    )
+                                    log_message(m)
+                                except Exception as faild_upload_audio:
+                                    my_log.log2(f'tb:download_ytb_audio: {faild_upload_audio}')
+                                    bot_reply_tr(message, 'Upload failed.')
+                                    my_ytb.remove_folder_or_parent(source_file)
+                                    if files and files[0] != source_file:
+                                        my_ytb.remove_folder_or_parent(files[0])
+                                    return
                     else:
                         bot_reply_tr(message, 'Download failed.')
 
                     my_ytb.remove_folder_or_parent(source_file)
-                    if files:
+                    if files and files[0] != source_file:
                         my_ytb.remove_folder_or_parent(files[0])
                     return
 
-        bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube.')
+        bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube (and other video sites).')
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:download_ytb_audio:{error}\n\n{traceback_error}')

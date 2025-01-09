@@ -647,7 +647,7 @@ def img2txt(text, lang: str,
 
         except Exception as img_from_link_error:
             traceback_error = traceback.format_exc()
-            my_log.log2(f'tb:img2txt: {img_from_link_error}\n\n{traceback_error}')
+            my_log.log2(f'tb:img2txt1: {img_from_link_error}\n\n{traceback_error}')
 
         
         if text:
@@ -675,7 +675,7 @@ def img2txt(text, lang: str,
         return text
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:img2txt:{unexpected_error}\n\n{traceback_error}')
+        my_log.log2(f'tb:img2txt2:{unexpected_error}\n\n{traceback_error}')
         return ''
 
 
@@ -5303,12 +5303,12 @@ def send_images_to_pic_group(
                         if seconds:
                             time.sleep(seconds + 5)
                             continue
-                        my_log.log2(f'tb:image:send_media_group_pics_group: {error}')
+                        my_log.log2(f'tb:image:send_media_group_pics_group1: {error}')
                         break
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:image:send to pics_group: {unknown}\n\n{traceback_error}')
+        my_log.log2(f'tb:image:send_media_group_pics_group2: {unknown}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)

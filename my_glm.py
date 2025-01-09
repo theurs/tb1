@@ -145,7 +145,6 @@ def ai(prompt: str = '',
     for _ in range(3):
         try:
             client = ZhipuAI(api_key=random.choice(cfg.GLM4_KEYS))
-            response = ''
             response = client.chat.completions.create(
                 model = model, # glm-4-flash (free?), glm-4-plus, glm-4, glm-4v-plus
                 messages = mem_,
@@ -157,7 +156,7 @@ def ai(prompt: str = '',
             my_db.add_msg(user_id, model)
             break
         except Exception as error:
-            my_log.log_glm(f'ai: Failed to parse response: {error}\n\n{str(response)}')
+            my_log.log_glm(f'ai: Failed to parse response: {error}')
             result = ''
             time.sleep(2)
 
@@ -331,7 +330,7 @@ def img2txt(
             my_db.add_msg(chat_id, model)
             break
         except Exception as error:
-            my_log.log_glm(f'img2txt: Failed to parse response: {error}\n\n{str(response)}')
+            my_log.log_glm(f'img2txt: {error}')
             result = ''
             time.sleep(2)
 

@@ -122,7 +122,6 @@ def chat(query: str,
     Returns:
         str: The generated response from the AI model.
     '''
-    global ALL_KEYS
     try:
         query = query[:MAX_SUM_REQUEST]
         if temperature < 0:
@@ -230,19 +229,19 @@ def chat(query: str,
             # request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
             request_options = RequestOptions(timeout=TIMEOUT)
 
-            chat = model_.start_chat(history=mem, enable_automatic_function_calling=True)
-            # chat = model_.start_chat(history=mem)
+            chat_ = model_.start_chat(history=mem, enable_automatic_function_calling=True)
+
             try:
-                resp = chat.send_message(query,
+                resp = chat_.send_message(query,
                                     safety_settings=SAFETY_SETTINGS,
                                     request_options=request_options,
                                     )
             except Exception as error:
                 if 'tokens, which is more than the max tokens limit allowed' in str(error) or 'exceeds the maximum number of tokens allowed' in str(error):
                     # убрать 2 первых сообщения
-                    if len(chat.history) == 0:
+                    if len(chat_.history) == 0:
                         return ''
-                    mem = chat.history[2:]
+                    mem = chat_.history[2:]
                     continue
                 my_log.log_gemini(f'my_gemini:chat2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
@@ -255,9 +254,9 @@ def chat(query: str,
                 continue
 
             try:
-                result = chat.history[-1].parts[-1].text
+                result = chat_.history[-1].parts[-1].text
             except Exception as error3:
-                my_log.log_gemini(f'my_gemini:chat3: {error3}\nresult: {result}\nchat history: {str(chat.history)}')
+                my_log.log_gemini(f'my_gemini:chat3: {error3}\nchat history: {str(chat_.history)}')
                 result = resp.text
 
             # пытается вызвать функцию неправильно
@@ -271,9 +270,9 @@ def chat(query: str,
             if len(result_)+100 < len(result): # удалось сильно уменьшить
                 result = result_
                 try:
-                    result = chat.history[-1].parts[-1].text = result
+                    result = chat_.history[-1].parts[-1].text = result
                 except Exception as error4:
-                    my_log.log_gemini(f'my_gemini:chat4: {error4}\nresult: {result}\nchat history: {str(chat.history)}')
+                    my_log.log_gemini(f'my_gemini:chat4: {error4}\nresult: {result}\nchat history: {str(chat_.history)}')
 
             result = result.strip()
 
@@ -281,7 +280,7 @@ def chat(query: str,
                 if chat_id:
                     my_db.add_msg(chat_id, model)
                 if chat_id and do_not_update_history is False:
-                    mem = chat.history[-MAX_CHAT_LINES*2:]
+                    mem = chat_.history[-MAX_CHAT_LINES*2:]
                     while count_chars(mem) > MAX_CHAT_MEM_CHARS:
                         mem = mem[2:]
                     if 'thinking' in model:
@@ -324,12 +323,12 @@ def img2txt(data_: bytes,
             traceback_error = traceback.format_exc()
             my_log.log_gemini(f'my_gemini:img2txt: {error}\n\n{traceback_error}')
         time.sleep(2)
-    my_log.log_gemini(f'my_gemini:img2txt 4 tries done and no result')
+    my_log.log_gemini('my_gemini:img2txt 4 tries done and no result')
     return ''
 
 
 def ai(q: str,
-       mem = [],
+       mem = None,
        temperature: float = 1,
        model: str = '',
        tokens_limit: int = 8000,
@@ -503,20 +502,20 @@ def reset(chat_id: str, model: str = ''):
         my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
 
 
-def get_mem_for_llama(chat_id: str, l: int = 3, model: str = ''):
+def get_mem_for_llama(chat_id: str, lines_amount: int = 3, model: str = ''):
     """
     Retrieves the recent chat history for a given chat_id. For using with llama.
 
     Parameters:
         chat_id (str): The unique identifier for the chat session.
-        l (int, optional): The number of lines to retrieve. Defaults to 3.
+        lines_amount (int, optional): The number of lines to retrieve. Defaults to 3.
         model (str, optional): The name of the model.
 
     Returns:
         list: The recent chat history as a list of dictionaries with role and content.
     """
     res_mem = []
-    l = l*2
+    lines_amount = lines_amount * 2
 
     if 'thinking' in model:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
@@ -524,7 +523,7 @@ def get_mem_for_llama(chat_id: str, l: int = 3, model: str = ''):
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
 
     mem = transform_mem2(mem)
-    mem = mem[-l:]
+    mem = mem[-lines_amount:]
 
     for x in mem:
         role = x.role
@@ -904,7 +903,6 @@ def load_users_keys():
     Load users' keys into memory and update the list of all keys available.
     """
     with USER_KEYS_LOCK:
-        global USER_KEYS, ALL_KEYS
         for user in USER_KEYS:
             for key in USER_KEYS[user]:
                 if key not in ALL_KEYS:
@@ -1018,37 +1016,37 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
     return None
 
 
-def imagen(prompt: str = "Fuzzy bunnies in my kitchen"):
-    '''!!!не работает пока!!!
-    https://ai.google.dev/gemini-api/docs/imagen
-    AttributeError: module 'google.generativeai' has no attribute 'ImageGenerationModel'
-    '''
-    keys = cfg.gemini_keys[:] + ALL_KEYS
-    random.shuffle(keys)
-    keys = keys[:4]
-    badkeys = ['b3470eb3b2055346b76f2ce3b11aadf2f6fdccf5703ad853b4a5b0cf46f1cf16',]
-    for key in keys[:]:
-        if utils.fast_hash(key) in badkeys:
-            keys.remove(key)
+# def imagen(prompt: str = "Fuzzy bunnies in my kitchen"):
+#     '''!!!не работает пока!!!
+#     https://ai.google.dev/gemini-api/docs/imagen
+#     AttributeError: module 'google.generativeai' has no attribute 'ImageGenerationModel'
+#     '''
+#     keys = cfg.gemini_keys[:] + ALL_KEYS
+#     random.shuffle(keys)
+#     keys = keys[:4]
+#     badkeys = ['b3470eb3b2055346b76f2ce3b11aadf2f6fdccf5703ad853b4a5b0cf46f1cf16',]
+#     for key in keys[:]:
+#         if utils.fast_hash(key) in badkeys:
+#             keys.remove(key)
 
-    for key in keys:
-        genai.configure(api_key = key)
+#     for key in keys:
+#         genai.configure(api_key = key)
 
-        imagen_ = genai.ImageGenerationModel("imagen-3.0-generate-001")
+#         imagen_ = genai.ImageGenerationModel("imagen-3.0-generate-001")
 
-        result = imagen_.generate_images(
-            prompt=prompt,
-            number_of_images=4,
-            safety_filter_level="block_fewest",
-            person_generation="allow_adult",
-            aspect_ratio="3:4",
-            negative_prompt="Outside",
-        )
+#         result = imagen_.generate_images(
+#             prompt=prompt,
+#             number_of_images=4,
+#             safety_filter_level="block_fewest",
+#             person_generation="allow_adult",
+#             aspect_ratio="3:4",
+#             negative_prompt="Outside",
+#         )
 
-        for image in result.images:
-            print(image)
+#         for image in result.images:
+#             print(image)
 
-        break
+#         break
 
 
 if __name__ == '__main__':

@@ -2299,7 +2299,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                     text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
     except Exception as unexpected_error:
-        if 'Bad Request: message is not modified' in str(error):
+        if 'Bad Request: message is not modified' in str(unexpected_error):
             return
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:callback_query_handler:{unexpected_error}\n\n{traceback_error}')
@@ -2656,7 +2656,7 @@ def process_image_stage_2(image_prompt: str,
 
 
 
-def process_wg_config(text: str) -> bool:
+def process_wg_config(text: str, message: telebot.types.Message) -> bool:
     '''
     Проверяет является ли текст конфигом ваиргарда, если да то
     применяет его и возвращает True иначе False
@@ -2907,7 +2907,7 @@ def handle_document(message: telebot.types.Message):
                             else:
                                 # если админ отправил .conf файл и внутри есть нужные поля для настройки ваиргарда то применить этот конфиг
                                 if message.from_user.id in cfg.admins and message.document.file_name.endswith('.conf'):
-                                    if process_wg_config(text):
+                                    if process_wg_config(text, message):
                                         bot_reply_tr(message, 'OK')
                                         return
                                 caption = message.caption or ''
@@ -4034,7 +4034,7 @@ def calc_gemini(message: telebot.types.Message):
                     bot_reply(message, a, parse_mode='HTML', disable_web_page_preview=True)
             else:
                 bot_reply_tr(message, 'Calculation failed.')
-            add_to_bots_mem(query=arg, resp=f'{underground}\n\n{answer}', chat_id_full=chat_id_full)
+            add_to_bots_mem(arg, f'{underground}\n\n{answer}', chat_id_full)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:calc_gemini: {unknown}\n{traceback_error}')

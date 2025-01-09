@@ -580,6 +580,7 @@ def img2txt(text, lang: str,
                     if 'thinking' in model:
                         thinking_model_used = True
 
+            # если это была джемини про то пробуем ее фолбек
             if not text and model == cfg.gemini_pro_model:
                 text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full)
                 if text:
@@ -587,6 +588,15 @@ def img2txt(text, lang: str,
                     if 'thinking' in cfg.gemini_pro_model_fallback:
                         thinking_model_used = True
 
+            # если это была думающая модель то пробуем вместо нее exp
+            if not text and model == cfg.gemini_2_flash_thinking_exp_model:
+                text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
+                    if 'thinking' in cfg.gemini_exp_model:
+                        thinking_model_used = True
+
+            # и еще раз флеш
             if not text:
                 text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
                 if text:
@@ -594,6 +604,7 @@ def img2txt(text, lang: str,
                     if 'thinking' in cfg.gemini_flash_model:
                         thinking_model_used = True
 
+            # флеш фолбек
             if not text:
                 text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
                 if text:

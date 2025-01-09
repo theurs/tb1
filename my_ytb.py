@@ -324,7 +324,7 @@ def convert_to_mp3(input_file: str) -> str | None:
                 '-acodec',
                 'libmp3lame',  # Use libmp3lame for MP3 encoding
                 '-q:a',
-                '2',  # Use -q:a for VBR (Variable Bit Rate)
+                '3',  # Use -q:a for VBR (Variable Bit Rate)
                 # 0 is the highest quality, 9 is the lowest
                 '-loglevel',
                 'error',

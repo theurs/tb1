@@ -16,8 +16,6 @@
 
 Если отправить текстовый файл или пдф то выдаст краткое содержание.
 
-Если отправить картинку с подписью `ocr` то вытащит текст из них.
-
 Если отправить ссылку в приват то попытается прочитать текст из неё и выдать краткое содержание.
 
 Если отправить картинку с другой подписью или без подписи то напишет описание того что изображено на картинке или ответит на вопрос из подписи, в чате надо начинать с знака ?
@@ -30,7 +28,7 @@
 
 ## Уникальные фичи бота
 
-* Может работать на бесплатных ключах от пользователей, gemini, groq, huggingface, deepl, и на платных openrouter (и bothub.chat) - любая модель, ключи от бинга мог бы брать но с ними мороки много и вроде не надо, своих хватает.
+* Может работать на бесплатных ключах от пользователей, gemini, groq, huggingface, и на платных openrouter (и bothub.chat) - любая модель, ключи от бинга мог бы брать но с ними мороки много и вроде не надо, своих хватает.
 
 * В этого бота можно кидать тексты больше 4к символов. Телеграмм их режет на части а бот склеивает обратно и отвечает на них как на цельные сообщения большого размера.
 
@@ -131,19 +129,10 @@ level 3 - блокировать всё включая логи
 
 1. Установите Python 3.8+.
 2. Установите утилиту trans `sudo apt-get install translate-shell`
-3. Установите утилиту tesseract. В убунте 22.04.х (и дебиане 11) в репах очень старая версия тессеракта, надо подключать репозиторий с новыми версиями или ставить из бекпортов
-    ```
-    sudo apt-get update && \
-    sudo apt-get install -y software-properties-common && \
-    sudo add-apt-repository -y ppa:alex-p/tesseract-ocr5 && \
-    sudo apt-get update && \
-    sudo apt install tesseract-ocr tesseract-ocr-eng \
-    tesseract-ocr-rus tesseract-ocr-ukr tesseract-ocr-osd
-    ```
-4. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin enchant-2 ffmpeg pandoc texlive-latex-base texlive-latex-recommended python3-venv sox`
+3. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin ffmpeg pandoc texlive-latex-base texlive-latex-recommended python3-venv sox`
    yt-dlp надо установить отдельно, т.к. в репах нет актуальной свежей версии, а она нужна для скачивания тиктоков и музыки с ютуба.
 
-5. Клонируйте репозиторий с помощью команды:
+4. Клонируйте репозиторий с помощью команды:
 
    ```
    git clone https://github.com/theurs/tb1.git
@@ -153,7 +142,7 @@ level 3 - блокировать всё включая логи
    
    ```
    
-4. Перейдите в директорию проекта:
+5. Перейдите в директорию проекта:
 
    ```
    cd tb1
@@ -161,7 +150,7 @@ level 3 - блокировать всё включая логи
    pip install -r requirements.txt
    ```
    
-5. Создайте файл cfg.py и добавьте в него строку
+6. Создайте файл cfg.py и добавьте в него строку
 ```
 # Quick'n'dirty SSL certificate generation:
 #
@@ -298,14 +287,6 @@ max_google_answer = 2000
 max_message_from_user = 20000
 
 
-# язык для распознавания, в том виде в котором принимает tesseract
-# 'eng', 'ukr', 'rus+eng+ukr'
-# можно указывать несколько через + но чем больше чем хуже, может путать буквы из разных языков даже в одном слове
-# пакет для tesseract с этими языками должен быть установлен 
-# https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html
-ocr_language = 'rus'
-
-
 # показывать ли рекламу группы Neural Networks Forum при рисовании,
 # что бы люди туда уходили рисовать и отстали от моего бота
 enable_image_adv = False
@@ -380,9 +361,6 @@ OPEN_ROUTER_FREE_KEYS = [
     'xxx',
     'yyy'
 ]
-
-# translate api https://www.deepl.com
-# DEEPL_KEYS = ['xxx', 'yyy']
 
 
 # shell команды которые бот может выполнять /shell

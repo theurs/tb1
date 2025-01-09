@@ -10,7 +10,6 @@ import pandas as pd
 from pptx import Presentation
 
 import my_log
-import my_ocr
 import utils
 
 
@@ -59,11 +58,6 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
         text = ''
         for page in pdf_reader.pages:
             text += page.extract_text()
-
-        if len(text) < 100 and book_type == 'djvu':
-            with open(input_file, 'rb') as f:
-                file_bytes = f.read()
-            text = my_ocr.get_text_from_pdf(file_bytes, lang)
 
         utils.remove_file(input_file)
         return text

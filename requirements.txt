@@ -10,13 +10,11 @@ cryptocompare
 
 deepgram-sdk
 
-deepl
 duckduckgo_search[lxml]
 edge_tts
 fastapi
 
 Flask
-flask-cors
 
 geopy
 
@@ -25,7 +23,7 @@ json_repair
 httpx[socks]
 fake_useragent
 fuzzywuzzy
-iso639-lang
+
 google
 
 google-generativeai
@@ -55,7 +53,7 @@ pillow-heif
 prettytable
 psd-tools
 pyarrow
-pyenchant
+
 pydub
 pylatexenc
 PyMuPDF
@@ -65,7 +63,6 @@ pysocks
 # 4.19 вызывает ошибку copy_message() got an unexpected keyword argument "show_caption_above_media" при копировании сообщений
 pytelegrambotapi==4.16.1
 
-pytesseract
 python-Levenshtein
 python-pptx
 
@@ -75,20 +72,17 @@ requests[socks]
 
 SpeechRecognition
 sqlitedict
-starlette
-telegramify-markdown
-telegraph
+
 trafilatura
 
 # требует установки vc++ tools
 # TTS
 
 youtube_transcript_api
-uvicorn
+
 unidecode
 xlrd
 
-webrtcvad
 
 webvtt-py
 

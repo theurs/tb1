@@ -4,7 +4,6 @@ import base64
 import chardet
 import concurrent.futures
 import io
-import iso639
 import importlib
 import hashlib
 import os
@@ -47,9 +46,7 @@ import my_groq
 import my_log
 import my_mistral
 import my_fish_speech
-import my_ocr
 import my_psd
-import my_telegraph
 import my_openrouter
 import my_openrouter_free
 import my_pandoc
@@ -408,10 +405,7 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
                 my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
 
         if not translated:
-            translated = my_trans.translate_text2(text, lang)
-
-        if not translated:
-            translated = my_trans.translate_deepl(text, to_lang = lang)
+            translated = my_trans.translate(text, lang)
 
         if not translated and not help:
             translated = my_groq.translate(text, to_lang=lang, help=help)
@@ -715,25 +709,6 @@ def get_lang(user_id: str, message: telebot.types.Message = None) -> str:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:get_lang:{unexpected_error}\n\n{traceback_error}')
         return cfg.DEFAULT_LANGUAGE
-
-
-def get_ocr_language(message) -> str:
-    """Возвращает настройки языка OCR для этого чата"""
-    try:
-        chat_id_full = get_topic_id(message)
-
-        lang = my_db.get_user_property(chat_id_full, 'ocr_lang')
-        if not lang:
-            if hasattr(cfg, 'ocr_language'):
-                my_db.set_user_property(chat_id_full, 'ocr_lang', cfg.ocr_language)
-            else:
-                my_db.set_user_property(chat_id_full, 'ocr_lang', 'rus+eng')
-            lang = my_db.get_user_property(chat_id_full, 'ocr_lang')
-        return lang
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:get_ocr_language: {error}\n\n{traceback_error}')
-        return 'rus+eng'
 
 
 def get_topic_id(message: telebot.types.Message) -> str:
@@ -2193,7 +2168,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
             elif call.data == 'select_gemini_pro':
                 # have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
-                #     user_full_id in my_trans.USER_KEYS or user_full_id in my_genimg.USER_KEYS\
+                #     user_full_id in my_genimg.USER_KEYS\
                 #         or message.from_user.id in cfg.admins
                 # if have_keys:
                 #     # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
@@ -2836,11 +2811,9 @@ def handle_document(message: telebot.types.Message):
                             pdf_reader = PyPDF2.PdfReader(file_bytes)
                             for page in pdf_reader.pages:
                                 text += page.extract_text()
-                            if not text.strip() or len(text) < 100:
-                                text = my_ocr.get_text_from_pdf(file_bytes, get_ocr_language(message))
                         elif message.document.mime_type in pandoc_support:
                             ext = utils.get_file_ext(file_info.file_path)
-                            text = my_pandoc.fb2_to_text(file_bytes.read(), ext, lang = get_ocr_language(message))
+                            text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
                         elif message.document.mime_type == 'image/svg+xml' or message.document.file_name.lower().endswith('.psd'):
                             try:
                                 if message.document.file_name.lower().endswith('.psd'):
@@ -2932,47 +2905,6 @@ def handle_document(message: telebot.types.Message):
                             bot_reply_tr(message, 'Не удалось получить никакого текста из документа.')
                         return
 
-                # дальше идет попытка распознать ПДФ или jpg файл, вытащить текст с изображений
-                if is_private or caption.lower().startswith('ocr'):
-                    with ShowAction(message, 'upload_document'):
-                        # получаем самый большой документ из списка
-                        document = message.document
-                        # если документ не является PDF-файлом или изображением jpg png, отправляем сообщение об ошибке
-                        if document.mime_type.startswith('image/'):
-                            handle_photo(message)
-                            return
-                        if document.mime_type != 'application/pdf':
-                            bot_reply(message, f'{tr("Unsupported file type.", lang)} {document.mime_type}')
-                            return
-                        # скачиваем документ в байтовый поток
-                        file_id = message.document.file_id
-                        try:
-                            file_info = bot.get_file(file_id)
-                        except telebot.apihelper.ApiTelegramException as error:
-                            if 'file is too big' in str(error):
-                                bot_reply_tr(message, 'Too big file.')
-                                return
-                            else:
-                                raise error
-                        file_name = message.document.file_name + '.txt'
-                        file = bot.download_file(file_info.file_path)
-                        # распознаем текст в документе с помощью функции get_text
-                        text = my_ocr.get_text_from_pdf(file, get_ocr_language(message))
-                        # отправляем распознанный текст пользователю
-                        if text.strip() != '':
-                            # если текст слишком длинный, отправляем его в виде текстового файла
-                            if len(text) > 4096:
-                                with io.StringIO(text) as f:
-                                    if not is_private:
-                                        m = bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
-                                                        reply_to_message_id = message.message_id, reply_markup=get_keyboard('hide', message))
-                                    else:
-                                        m = bot.send_document(chat_id, document = f, visible_file_name = file_name, caption=file_name, 
-                                                        reply_markup=get_keyboard('hide', message))
-                                    log_message(m)
-                            else:
-                                bot_reply(message, text, reply_markup=get_keyboard('translate', message))
-                            my_log.log_echo(message, f'[распознанный из PDF текст] {text}')
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:handle_document: {unknown}\n{traceback_error}')
@@ -3098,11 +3030,7 @@ def handle_photo(message: telebot.types.Message):
                 state = 'describe'
                 message.caption = message.caption[1:]
 
-            elif 'ocr' in msglower:
-                state = 'ocr'
             elif is_private:
-                # state = 'translate'
-                # автопереводом никто не пользуется а вот описание по запросу популярно
                 state = 'describe'
             else:
                 state = ''
@@ -3220,70 +3148,6 @@ def handle_photo(message: telebot.types.Message):
                             else:
                                 bot_reply_tr(message, 'Sorry, I could not answer your question.')
                         return
-                    elif state == 'ocr':
-                        with ShowAction(message, 'typing'):
-                            if message.photo:
-                                photo = message.photo[-1]
-                                try:
-                                    file_info = bot.get_file(photo.file_id)
-                                except telebot.apihelper.ApiTelegramException as error:
-                                    if 'file is too big' in str(error):
-                                        bot_reply_tr(message, 'Too big file.')
-                                        return
-                                    else:
-                                        raise error
-                                image = bot.download_file(file_info.file_path)
-                            elif message.document:
-                                # скачиваем документ в байтовый поток
-                                file_id = message.document.file_id
-                                try:
-                                    file_info = bot.get_file(file_id)
-                                except telebot.apihelper.ApiTelegramException as error:
-                                    if 'file is too big' in str(error):
-                                        bot_reply_tr(message, 'Too big file.')
-                                        return
-                                    else:
-                                        raise error
-                                file = bot.download_file(file_info.file_path)
-                                fp = io.BytesIO(file)
-                                image = fp.read()
-                            else:
-                                # my_log.log2(f'tb:handle_photo5: не удалось распознать документ или фото {str(message)}')
-                                return
-
-                            image = utils.heic2jpg(image)
-                            # распознаем текст на фотографии с помощью pytesseract
-                            llang = get_ocr_language(message)
-                            if message.caption.strip()[3:]:
-                                llang = message.caption.strip()[3:].strip()
-                            text = my_ocr.get_text_from_image(image, llang)
-                            # отправляем распознанный текст пользователю
-                            if text.strip() != '':
-                                bot_reply(message, text, parse_mode='',
-                                                    reply_markup=get_keyboard('translate', message),
-                                                    disable_web_page_preview = True)
-
-                                text = text[:8000]
-                                add_to_bots_mem(
-                                    f'{tr("юзер попросил распознать текст с картинки", lang)}',
-                                    text,
-                                    chat_id_full)
-
-                            else:
-                                bot_reply_tr(message, '[OCR] no results')
-                        return
-                    elif state == 'translate':
-                        # пересланные сообщения пытаемся перевести даже если в них картинка
-                        # новости в телеграме часто делают как картинка + длинная подпись к ней
-                        if message.forward_from_chat and message.caption:
-                            # у фотографий нет текста но есть заголовок caption. его и будем переводить
-                            with ShowAction(message, 'typing'):
-                                text = my_trans.translate(message.caption)
-                            if text:
-                                bot_reply(message, text)
-                            else:
-                                my_log.log_echo(message, "Не удалось/понадобилось перевести.")
-                            return
         except Exception as error:
             traceback_error = traceback.format_exc()
             my_log.log2(f'tb:handle_photo6: {error}\n{traceback_error}')
@@ -3835,12 +3699,6 @@ def users_keys_for_gemini(message: telebot.types.Message):
                 bot_reply_tr(message, 'Groq API key already exists!')
             keys_groq = [x for x in keys_groq if x not in my_groq.ALL_KEYS and x.startswith('gsk_')]
 
-            #deepl keys len=39, endwith ":fx"
-            deepl_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
-            if deepl_keys and deepl_keys[0] in my_trans.ALL_KEYS:
-                deepl_keys = []
-                bot_reply_tr(message, 'Deepl API key already exists!')
-            deepl_keys = [x for x in deepl_keys if x not in my_trans.ALL_KEYS and x.endswith(':fx')]
 
             # huggingface keys len=37, starts with "hf_"
             huggingface_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 37]
@@ -3877,12 +3735,6 @@ def users_keys_for_gemini(message: telebot.types.Message):
                 my_groq.ALL_KEYS.append(keys_groq[0])
                 my_log.log_keys(f'Added new API key for Groq: {chat_id_full} {keys_groq}')
                 bot_reply_tr(message, 'Added API key for Groq successfully!')
-
-            if deepl_keys:
-                my_trans.USER_KEYS[chat_id_full] = deepl_keys[0]
-                my_trans.ALL_KEYS.append(deepl_keys[0])
-                my_log.log_keys(f'Added new API key for Deepl: {chat_id_full} {deepl_keys}')
-                bot_reply_tr(message, 'Added API key for Deepl successfully!')
 
             if keys:
                 added_flag = False
@@ -3926,9 +3778,8 @@ def users_keys_for_gemini(message: telebot.types.Message):
                 mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
                 cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
                 qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
-                deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
                 huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
-                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + deepl_keys + huggingface_keys + mistral_keys + cohere_keys
+                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + huggingface_keys + mistral_keys + cohere_keys
                 msg = tr('Your keys:', lang) + '\n\n'
                 for key in keys:
                     msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
@@ -5119,7 +4970,7 @@ def check_vip_user(chat_id_full: str) -> bool:
     try:
         user_id = utils.extract_user_id(chat_id_full)
         have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-                chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
+                chat_id_full in my_genimg.USER_KEYS or \
                 user_id in cfg.admins or \
                 (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
         return have_keys
@@ -5470,7 +5321,7 @@ def image_gen(message: telebot.types.Message):
 
         # # если уже есть 10000 картинок и нет ключей то давай до свидания
         # have_keys_10000 = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-        #             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
+        #             chat_id_full in my_genimg.USER_KEYS or \
         #             message.from_user.id in cfg.admins or \
         #             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
         #             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 10000
@@ -5640,7 +5491,7 @@ def image_gen(message: telebot.types.Message):
                             MSG = tr(f"user used {IMG} command to generate", lang)
                             add_to_bots_mem(message.text, 'OK', chat_id_full)
                             # have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-                            #             chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or \
+                            #             chat_id_full in my_genimg.USER_KEYS or \
                             #             message.from_user.id in cfg.admins or \
                             #             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
                             #             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 5000
@@ -5661,50 +5512,6 @@ def image_gen(message: telebot.types.Message):
     except Exception as error_unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:image:send: {error_unknown}\n{traceback_error}')
-
-
-@bot.message_handler(commands=['web'], func=authorized)
-@async_run
-def post_telegraph(message: telebot.types.Message):
-    """Generates a web version of last response"""
-    try:
-        chat_id_full = get_topic_id(message)
-        mode = my_db.get_user_property(chat_id_full, 'chat_mode')
-        if mode == 'openrouter':
-            text = my_openrouter.get_last_mem(chat_id_full)
-        elif 'gemini' in mode:
-            text = my_gemini.get_last_mem(chat_id_full)
-        elif mode in ('llama370',):
-            text = my_groq.get_last_mem(chat_id_full)
-        elif mode == 'openrouter_llama405':
-            text = my_sambanova.get_last_mem(chat_id_full)
-        elif mode == 'qwen70':
-            text = my_sambanova.get_last_mem(chat_id_full)
-        elif mode == 'mistral':
-            text = my_mistral.get_last_mem(chat_id_full)
-        elif mode == 'pixtral':
-            text = my_mistral.get_last_mem(chat_id_full)
-        elif mode == 'commandrplus':
-            text = my_cohere.get_last_mem(chat_id_full)
-        elif mode == 'grok':
-            text = my_grok.get_last_mem(chat_id_full)
-        elif mode == 'glm4plus':
-            text = my_glm.get_last_mem(chat_id_full)
-        elif mode in ('gpt-4o-mini-ddg', 'haiku',):
-            text = my_ddg.get_last_mem(chat_id_full)
-        if text:
-            html = ''
-            # html = my_gemini.md2html(text)
-            if not html:
-                html = utils.bot_markdown_to_html(text)
-            html = html.strip().replace('\n', '<br />')
-            if html:
-                url = my_telegraph.post(html, chat_id_full)
-                if url:
-                    bot_reply(message, url, disable_web_page_preview=True)
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:post_telegraph: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['stats', 'stat'], func=authorized_admin)
@@ -5749,7 +5556,6 @@ def stats(message: telebot.types.Message):
             msg += f'\nMistral keys: {len(my_mistral.ALL_KEYS)}'
             msg += f'\nCohere keys: {len(my_cohere.ALL_KEYS)}'
             msg += f'\nHuggingface keys: {len(my_genimg.ALL_KEYS)}'
-            msg += f'\nDEEPL keys: {len(my_trans.ALL_KEYS)+len(cfg.DEEPL_KEYS if hasattr(cfg, "DEEPL_KEYS") else [])}'
             msg += f'\n\n Uptime: {get_uptime()}'
 
             usage_plots_image = my_stat.draw_user_activity(90)
@@ -6289,20 +6095,6 @@ def trans(message: telebot.types.Message):
             with ShowAction(message, 'typing'):
                 translated = tr(text, llang, save_cache=False, help = "Telegram bot's user used the /trans <lang> <text> command to translate this text.")
                 if translated and translated != text:
-                    # try:
-                    #     if len(text) > 30:
-                    #         detected_lang = my_trans.detect(text) or 'unknown language'
-                    #         detected_lang = tr(langcodes.Language.make(language=detected_lang).display_name(language="en"), lang).lower()
-                    #     else:
-                    #         detected_lang = tr('not detected', lang)
-                    # except:
-                    #     detected_lang = tr('unknown language', lang)
-
-                    # bot_reply(message,
-                    #         translated + '\n\n' + tr('Распознанный язык:', lang) \
-                    #         + ' ' + detected_lang,
-                    #         reply_markup=get_keyboard('translate', message))
-
                     html = utils.bot_markdown_to_html(translated)
                     bot_reply(message, html, parse_mode='HTML', reply_markup=get_keyboard('translate', message))
                     add_to_bots_mem(message.text, translated, chat_id_full)
@@ -6348,75 +6140,6 @@ def send_name(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:send_name: {unknown}\n{traceback_error}')
-
-
-def is_language_code_valid_for_ocr(code: str) -> bool:
-  """
-  Проверяет, является ли строка с языками корректной.
-
-  Args:
-    code: Строка с языками, разделенными плюсами (например, "rus+eng+jpn").
-
-  Returns:
-    True, если строка корректна, False в противном случае.
-  """
-  for lang in code.split('+'):
-    if lang not in my_init.languages_ocr:
-      return False
-  return True
-
-
-@bot.message_handler(commands=['ocr'], func=authorized)
-@async_run
-def ocr_setup(message: telebot.types.Message):
-    """меняет настройки ocr"""
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-        COMMAND_MODE[chat_id_full] = ''
-
-        try:
-            arg = message.text.split(maxsplit=1)[1]
-        except IndexError:
-            msg = f'''/ocr langs
-
-<code>/ocr rus+eng</code>
-
-{tr("""Меняет настройки OCR
-
-Не указан параметр, какой язык (код) или сочетание кодов например""", lang)} rus+eng+ukr
-
-{tr("Сейчас выбран:", lang)} <b>{get_ocr_language(message)}</b>
-
-https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'''
-
-            bot_reply(message, msg, parse_mode='HTML',
-                        reply_markup=get_keyboard('hide', message),
-                        disable_web_page_preview=True)
-            return
-
-        llang = get_ocr_language(message)
-
-
-        # меняем двухбуквенные коды языков на 3 буквенные, на случай если юзер затупил
-        replacement_list = {}
-        for l in iso639.iter_langs():
-            if l.pt1 and l.pt3:
-                replacement_list[l.pt1] = l.pt3
-
-        for key, value in replacement_list.items():
-            arg = re.sub(r'\b' + key + r'\b', value, arg)
-
-
-        msg = f'{tr("Старые настройки:", lang)} {llang}\n\n{tr("Новые настройки:", lang)} {arg}'
-        my_db.set_user_property(chat_id_full, 'ocr_lang', arg)
-
-        bot_reply(message, msg, parse_mode='HTML')
-        if not is_language_code_valid_for_ocr(arg):
-            bot_reply_tr(message, 'Проверьте правильность введенных данных, похоже что в них ошибка.', lang)
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:ocr_setup: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['start'], func = authorized_log)
@@ -6510,8 +6233,6 @@ def send_welcome_help_1(message: telebot.types.Message):
 **Groq** gives free API keys to its **llama3** and **mistral** AI, and they can be inserted into this bot.
 
 **Openrouter** provides access to all other paid AIs, you can insert your personal key and use it in this bot.
-
-**DEEPL** will give free API keys to its translator, they can be inserted into this bot.
 
 The keys have usage limits, but if you use them together and there are enough keys, the limits cease to be a problem.
 
@@ -6732,7 +6453,6 @@ def id_cmd_handler(message: telebot.types.Message):
         mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
         cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
         openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
-        deepl_keys = [my_trans.USER_KEYS[chat_id_full],] if chat_id_full in my_trans.USER_KEYS else []
         huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
 
         if openrouter_keys:
@@ -6755,10 +6475,6 @@ def id_cmd_handler(message: telebot.types.Message):
             msg += '🔑️ Cohere\n'
         else:
             msg += '🔒 Cohere\n'
-        if deepl_keys:
-            msg += '🔑️ Deepl\n'
-        else:
-            msg += '🔒 Deepl\n'
         if huggingface_keys:
             msg += '🔑️ Huggingface\n'
         else:
@@ -6801,8 +6517,6 @@ def reload_module(message: telebot.types.Message):
             my_groq.load_users_keys()
         elif module_name == 'my_genimg':
             my_genimg.load_users_keys()
-        elif module_name == 'my_trans':
-            my_trans.load_users_keys()
         elif module_name == 'my_mistral':
             my_mistral.load_users_keys()
         elif module_name == 'my_cohere':
@@ -7274,7 +6988,7 @@ def do_task(message, custom_prompt: str = ''):
         chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')
 
         # have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-        #     chat_id_full in my_trans.USER_KEYS or chat_id_full in my_genimg.USER_KEYS or\
+        #     chat_id_full in my_genimg.USER_KEYS or\
         #     message.from_user.id in cfg.admins or\
         #     (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
 
@@ -7669,7 +7383,7 @@ def do_task(message, custom_prompt: str = ''):
                                 flag_gpt_help = False
                                 if not answer:
                                     style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                                    mem__ = my_gemini.get_mem_for_llama(chat_id_full, l = 5, model = gmodel)
+                                    mem__ = my_gemini.get_mem_for_llama(chat_id_full, lines_amount = 5, model = gmodel)
                                     if style_:
                                         answer = my_groq.ai(f'{message.text}', system=style_, mem_ = mem__, temperature=0.6)
                                     else:
@@ -8254,8 +7968,8 @@ def one_time_shot():
             pass
 
             queries = [
-                #  '''ALTER TABLE users DROP COLUMN dialog_shadow;''',
-                #  '''ALTER TABLE users DROP COLUMN dialog_gpt4omini;''',
+                 '''ALTER TABLE users DROP COLUMN api_key_deepl;''',
+                 '''ALTER TABLE users DROP COLUMN ocr_lang;''',
                 # '''DELETE FROM translations;''',
                  ]
             for q in queries:
@@ -8373,7 +8087,6 @@ def main():
         my_gemini.load_users_keys()
         my_genimg.load_users_keys()
         my_groq.load_users_keys()
-        my_trans.load_users_keys()
         my_mistral.load_users_keys()
         my_cohere.load_users_keys()
 

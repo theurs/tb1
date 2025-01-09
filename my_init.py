@@ -7,27 +7,6 @@ import my_gemini
 import my_groq
 import my_db
 import my_ddg
-import my_trans
-
-
-languages_ocr = ["afr", "amh", "ara", "asm", "aze", "aze_cyrl", "bel", "ben", "bod",
-                 "bos", "bre", "bul", "cat", "ceb", "ces", "chi_sim", "chi_tra", "chr",
-                 "cos", "cym", "dan", "dan_frak", "deu", "deu_frak", "deu_latf", "dzo",
-                 "ell", "eng", "enm", "epo", "equ", "est", "eus", "fao", "fas", "fil",
-                 "fin", "fra", "frk", "frm", "fry", "gla", "gle", "glg", "grc", "guj",
-                 "hat", "heb", "hin", "hrv", "hun", "hye", "iku", "ind", "isl", "ita",
-                 "ita_old", "jav", "jpn", "kan", "kat", "kat_old", "kaz", "khm", "kir",
-                 "kmr", "kor", "kor_vert", "kur", "lao", "lat", "lav", "lit", "ltz",
-                 "mal", "mar", "mkd", "mlt", "mon", "mri", "msa", "mya", "nep", "nld",
-                 "nor", "oci", "ori", "osd", "pan", "pol", "por", "pus", "que", "ron",
-                 "rus", "san", "sin", "slk", "slk_frak", "slv", "snd", "spa", "spa_old",
-                 "sqi", "srp", "srp_latn", "sun", "swa", "swe", "syr", "tam", "tat", "tel",
-                 "tgk", "tgl", "tha", "tir", "ton", "tur", "uig", "ukr", "urd", "uzb", "uzb_cyrl",
-                 "vie", "yid", "yor",
-                 "arab", "armn", "beng", "cans", "cher", "cyrl", "deva", "ethi", "frak", 
-                 "geor", "grek", "gujr", "guru", "hans", "hans-vert", "hant", "hant-vert", "hang",
-                 "hang-vert", "hebr", "jpan", "jpan-vert", "knda", "khmr", "laoo", "latn", "mlym",
-                 "mymr", "orya", "sinh", "syrc", "taml", "telu", "thaa", "thai", "tibt", "viet"]
 
 
 supported_langs_trans = [
@@ -111,8 +90,6 @@ Remove keyboard /remove_keyboard.
 
 help_msg = f"""🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
 After the file or link is downloaded, you can ask questions about file using the `/ask` command.
-
-🛸 To get text from an image, send the image with the caption "ocr".
 
 🎙️ You can issue commands and make requests using voice messages.
 
@@ -240,8 +217,6 @@ def generate_start_msg():
         msg = ''
 
         if not msg:
-            msg = my_trans.translate_deepl(start_msg, to_lang=x)
-        if not msg:
             msg = my_groq.translate(start_msg, to_lang = x)
         if not msg:
             msg = start_msg
@@ -259,8 +234,8 @@ def generate_help_msg():
     msgs = {}
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
-        # msg = my_trans.translate_text2(help_msg, x)
-        msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
+        # msg = my_trans.translate(help_msg, x)
+        msg = my_gemini.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
@@ -403,7 +378,6 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     my_groq.load_users_keys()
     my_gemini.load_users_keys()
-    my_trans.load_users_keys()
 
     # with open(help_msg_file, 'rb') as f:
     #     d = pickle.load(f)
@@ -412,8 +386,8 @@ if __name__ == '__main__':
     #     pickle.dump(d, f)
 
     # generate_start_msg()
-    # generate_help_msg()
-    regenerate_help_msg('eo')
+    generate_help_msg()
+    # regenerate_help_msg('eo')
     # regenerate_start_msg('en')
 
     my_db.close()

@@ -189,7 +189,6 @@ def init(backup: bool = True, vacuum: bool = False):
             suggest_enabled INTEGER,
             chat_enabled INTEGER,
             original_mode INTEGER,
-            ocr_lang TEXT,
             superchat INTEGER,
             transcribe_only INTEGER,
             command_mode TEXT,
@@ -209,7 +208,6 @@ def init(backup: bool = True, vacuum: bool = False):
 
             api_key_gemini TEXT,
             api_key_groq TEXT,
-            api_key_deepl TEXT,
             api_key_huggingface TEXT,
 
             dialog_gemini BLOB,

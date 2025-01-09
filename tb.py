@@ -4034,6 +4034,7 @@ def calc_gemini(message: telebot.types.Message):
                     bot_reply(message, a, parse_mode='HTML', disable_web_page_preview=True)
             else:
                 bot_reply_tr(message, 'Calculation failed.')
+            add_to_bots_mem(query=arg, resp=f'{underground}\n\n{answer}', chat_id_full=chat_id_full)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:calc_gemini: {unknown}\n{traceback_error}')
@@ -7564,7 +7565,7 @@ def do_task(message, custom_prompt: str = ''):
 
                         if answer.startswith('```'):
                             answer = answer[3:]
-                        if answer.startswith(('/img ', '/bing', '/tts ', '/google ', '/trans ', '/sum ', '/reset')):
+                        if answer.startswith(('/img ', '/bing', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc')):
                             cmd = answer.split(maxsplit=1)[0]
                             message.text = answer
                             if cmd == '/img':
@@ -7581,6 +7582,9 @@ def do_task(message, custom_prompt: str = ''):
                                 summ_text(message)
                             elif cmd == '/reset':
                                 reset_(message)
+                            elif cmd == '/calc':
+                                message.text = f'{answer} {tr("Answer in my language please", lang)}, [language = {lang}].'
+                                calc_gemini(message)
                             return True
 
                         if answer.startswith(('{"was_translated": "true"', '{&quot;was_translated&quot;: &quot;true&quot;,')):

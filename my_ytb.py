@@ -13,8 +13,6 @@ import threading
 import traceback
 from typing import List, Tuple
 
-import natsort.natsort
-
 import my_log
 import utils
 import cfg
@@ -86,60 +84,6 @@ def valid_youtube_url(url: str) -> str:
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_ytb:valid_youtube_url2: {url} {error}\n\n{error_traceback}')
         return ''
-
-
-# @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-# def valid_other_video_url(url: str) -> bool:
-#     """
-#     Checks if the URL is a valid video link that can be downloaded by yt-dlp.
-#     Attempts to get the file size as a way to validate.
-#     Uses a proxy if available in the configuration.
-#     Limit of 8000 seconds
-
-#     Args:
-#         url: The URL string to check.
-
-#     Returns:
-#         True if it's a valid video link, otherwise False.
-#     """
-#     try:
-#         if not url.lower().startswith('https://'):
-#             return False
-
-#         # Use yt-dlp to check the file size without downloading
-#         if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
-#             proxy = random.choice(cfg.YTB_PROXY)
-#             process = subprocess.run([
-#                 'yt-dlp',
-#                 '--print', 'filesize',
-#                 '--skip-download',  # Skip downloading the video
-#                 '--proxy', proxy,
-#                 url
-#             ], capture_output=True, text=True, check=True)
-#         else:
-#             process = subprocess.run([
-#                 'yt-dlp',
-#                 '--print', 'duration',
-#                 '--skip-download',  # Skip downloading the video
-#                 url
-#             ], capture_output=True, text=True, check=True)
-
-#         # If the output is not empty and can be converted to an integer, it's likely a valid video
-#         duration = process.stdout.strip()
-#         if duration and duration.isdigit():
-#             duration = int(duration)
-#             if duration < 8000:
-#                 return True
-#             else:
-#                 return False
-#         else:
-#             # my_log.log2(f'my_ytb:valid_other_video_url1: Invalid video URL or no file size: {url}')
-#             return False
-
-#     except subprocess.CalledProcessError as error:
-#         error_traceback = traceback.format_exc()
-#         my_log.log2(f'my_ytb:valid_other_video_url2: {url} {error}\n\n{error_traceback}')
-#         return False
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)

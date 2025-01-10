@@ -1063,6 +1063,7 @@ def authorized_admin(message: telebot.types.Message) -> bool:
         if message.from_user.id not in cfg.admins:
             authorized_log(message)
             bot_reply_tr(message, "This command is only available to administrators")
+            my_log.log_auth(f'User {message.from_user.id} is not admin. Text: {message.text} Caption: {message.caption}')
             return False
             # raise Exception(f'User {message.from_user.id} is not admin')
         return authorized(message)

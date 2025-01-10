@@ -143,6 +143,10 @@ def log_donate_consumption_fail(text: str) -> None:
     """для логов о потреблении донатов, когда не хватило"""
     log2(text, 'donate_consumption_fail')
 
+def log_auth(text: str) -> None:
+    """для логов авторизации"""
+    log2(text, 'auth')
+
 def log_gemini(text: str) -> None:
     """для логов gemini"""
     a = [

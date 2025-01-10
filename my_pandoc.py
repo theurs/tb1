@@ -17,6 +17,16 @@ pandoc_cmd = 'pandoc'
 catdoc_cmd = 'catdoc'
 
 
+def convert_md2mdtelegram(md: str) -> str:
+    '''
+    Convert markdown to markdown for telegram
+    strike 
+    
+    '''
+
+
+
+
 def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
     """convert from fb2 or epub (bytes) and other types of books file to string"""
     if isinstance(data, str):
@@ -35,19 +45,19 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
     book_type = ext
 
     if 'epub' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'pptx' in book_type:
         text = read_pptx(input_file)
         utils.remove_file(input_file)
         return text
     elif 'docx' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'docx', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'docx', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'html' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'html', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'html', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'odt' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'odt', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'odt', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'rtf' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'rtf', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'rtf', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'doc' in book_type:
         proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
     elif 'pdf' in book_type or 'djvu' in book_type:
@@ -74,7 +84,7 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
         # return buffer.getvalue()
         return result
     elif 'fb2' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     else:
         utils.remove_file(input_file)
         try:

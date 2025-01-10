@@ -173,7 +173,6 @@ def log_gemini_lite(text: str) -> None:
         return
     log2(text[:2000], 'gemini_lite')
 
-
 def log_ddg(text: str) -> None:
     """для логов ddg"""
     log2(text[:2000], 'ddg')
@@ -182,26 +181,21 @@ def log_stability_ai(text: str) -> None:
     """для логов stability_ai"""
     log2(text[:2000], 'stability_ai')
 
-
 def log_keys(text: str) -> None:
     """для логов новых ключей"""
     log2(text, 'keys')
-
 
 def log_openrouter(text: str) -> None:
     """для логов openrouter"""
     log2(text[:2000], 'openrouter')
 
-
 def log_openrouter_free(text: str) -> None:
     """для логов openrouter free"""
     log2(text[:2000], 'openrouter_free')
 
-
 def log_grok(text: str) -> None:
     """для логов grok"""
     log2(text[:2000], 'grok')
-
 
 def log_glm(text: str) -> None:
     """для логов glm"""
@@ -215,7 +209,6 @@ def log_mistral(text: str) -> None:
     """для логов openrouter mistral"""
     log2(text[:2000], 'mistral')
 
-
 def log_sambanova(text: str) -> None:
     """для логов openrouter sambanova"""
     log2(text[:2000], 'sambanova')
@@ -227,7 +220,6 @@ def log_cohere(text: str) -> None:
 def log_groq(text: str) -> None:
     """для логов groq"""
     log2(text[:2000], 'groq')
-
 
 def log_entropy_detector(text: str) -> None:
     """для логов entropy_detector"""
@@ -248,7 +240,6 @@ def log_fish_speech(text: str) -> None:
 def log_bing_img(text: str) -> None:
     """для дебага ошибок bing_img с помощью ai"""
     log2(text, 'bing_img')
-
 
 def log_huggin_face_api(text: str) -> None:
     """для логов от hugging_face_api"""

@@ -177,7 +177,7 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, fo
                     f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
                     f'no emoji unless it is required. Rewrite latex expressions with unicode symbols with no markdown in it, '
                     f'use google search if you stuck with a question, if you dont have api search_google then say /google "question", '
-                    f'use calc for math operations, if you dont have api calc then say /calc "question", '
+                    f'use calc for math operations, if you dont have api calc or you need complex tasks then say /calc "your complex task", '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 
@@ -195,7 +195,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted
                     f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
                     f'no emoji unless it is required. Rewrite latex expressions with unicode symbols with no markdown in it, '
                     f'use google search if you stuck with a question, if you dont have api search_google then say /google "question", '
-                    f'use calc for math operations, if you dont have api calc then say /calc "question", '
+                    f'use calc for math operations, if you dont have api calc or you need complex tasks then say /calc "your complex task", '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 

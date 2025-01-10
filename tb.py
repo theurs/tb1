@@ -45,6 +45,7 @@ import my_grok
 import my_groq
 import my_log
 import my_mistral
+import my_pdf
 import my_fish_speech
 import my_psd
 import my_openrouter
@@ -2810,9 +2811,7 @@ def handle_document(message: telebot.types.Message):
                         file_bytes = io.BytesIO(downloaded_file)
                         text = ''
                         if message.document.mime_type == 'application/pdf':
-                            pdf_reader = PyPDF2.PdfReader(file_bytes)
-                            for page in pdf_reader.pages:
-                                text += page.extract_text()
+                            text = my_pdf.get_text(file_bytes)
                         elif message.document.mime_type in pandoc_support:
                             ext = utils.get_file_ext(file_info.file_path)
                             text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
@@ -2910,6 +2909,7 @@ def handle_document(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:handle_document: {unknown}\n{traceback_error}')
+        bot_reply_tr(message, 'Unknown error.')
 
 
 def download_image_from_message(message: telebot.types.Message) -> bytes:

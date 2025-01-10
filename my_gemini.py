@@ -325,10 +325,12 @@ def img2txt(data_: bytes,
             #     my_db.add_msg(chat_id, model)
             return res
         except Exception as error:
+            if 'cannot identify image file' in str(error):
+                return ''
             traceback_error = traceback.format_exc()
-            my_log.log_gemini(f'my_gemini:img2txt: {error}\n\n{traceback_error}')
+            my_log.log_gemini(f'my_gemini:img2txt1: {error}\n\n{traceback_error}')
         time.sleep(2)
-    my_log.log_gemini('my_gemini:img2txt 4 tries done and no result')
+    my_log.log_gemini('my_gemini:img2txt2: 4 tries done and no result')
     return ''
 
 
@@ -886,23 +888,6 @@ def rebuild_subtitles(text: str, lang: str) -> str:
     return result
 
 
-def ocr(data, lang: str = 'ru') -> str:
-    '''Распознает текст на картинке, использует функцию img2txt
-    data - имя файла или байты из файла
-    '''
-    try:
-        if isinstance(data, str):
-            with open(data, 'rb') as f:
-                data = f.read()
-        query = 'Extract all the text from the image, correct any recognition errors, and preserve the original text formatting. Your response should only contain the recognized and corrected text. The language of the text should remain the same as it is in the image.'
-        text = img2txt(data, query)
-        return text
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log2(f'my_gemini:ocr: {error}\n\n{error_traceback}')
-        return ''
-
-
 def load_users_keys():
     """
     Load users' keys into memory and update the list of all keys available.
@@ -1019,6 +1004,23 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
         if reprompt and negative_prompt:
             return reprompt, negative_prompt, moderation_sexual, moderation_hate
     return None
+
+
+def ocr_page(data: bytes, prompt: str = None) -> str:
+    '''
+    OCRs the image and returns the text in markdown.
+    '''
+    if not prompt:
+        prompt =    "Это скан документа. Надо достать весь текст и записать его "\
+                    "используя маркдаун форматирование, выполнить работу OCR."\
+                    "Не используй блок кода для отображения извлеченного маркдаун текста."\
+                    "Покажи только извлеченный текст в формате маркдаун. Ничего кроме извлеченного текста не показывай."
+
+    text = img2txt(data, prompt, temp=0, model=cfg.gemini_flash_model)
+    if not text:
+        text = img2txt(data, prompt, temp=0.1, model=cfg.gemini_flash_model_fallback)
+
+    return text
 
 
 # def imagen(prompt: str = "Fuzzy bunnies in my kitchen"):

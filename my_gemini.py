@@ -312,6 +312,11 @@ def img2txt(data_: bytes,
     '''
     for _ in range(4):
         try:
+
+            # надо уменьшить или загружать через облако, или просто не делать слишком большое
+            if len(data_) > 20000000:
+                data_ = utils.resize_image(data_, 20000000)
+
             data = io.BytesIO(data_)
             img = PIL.Image.open(data)
             q = [prompt, img]

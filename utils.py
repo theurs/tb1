@@ -1371,7 +1371,7 @@ def resize_image(image_bytes: bytes, max_size: int = 10 * 1024 * 1024) -> bytes:
     except Exception:
         return image_bytes  # Return original bytes if open fails
 
-    quality = 95
+    quality = 75
 
     while True:
         output = io.BytesIO()
@@ -1388,7 +1388,7 @@ def resize_image(image_bytes: bytes, max_size: int = 10 * 1024 * 1024) -> bytes:
         if quality <= 10:  # Minimum quality
             return output.getvalue()
 
-        quality -= 5
+        quality -= 10
 
 
 def resize_image_dimention(image_bytes: bytes) -> bytes:

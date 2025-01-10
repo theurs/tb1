@@ -2274,7 +2274,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                     text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
     except Exception as unexpected_error:
-        if 'Bad Request: message is not modified' in str(unexpected_error):
+        if 'Bad Request: message is not modified' in str(unexpected_error) or \
+           'Bad Request: message to be replied not found' in str(unexpected_error):
             return
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:callback_query_handler:{unexpected_error}\n\n{traceback_error}')

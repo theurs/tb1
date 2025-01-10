@@ -5,7 +5,10 @@
 # 50.7.85.220 edgeservices.bing.com
 # 50.7.85.220 www.bing.com
 
+
+import hashlib
 import time
+from collections import OrderedDict
 
 from sqlitedict import SqliteDict
 from re_edge_gpt import ImageGen
@@ -19,8 +22,7 @@ COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
 # {cookie:datetime, ...}
 
 # storage of requests that Bing rejected, they cannot be repeated
-# BAD_IMAGES_PROMPT = SqliteDict('db/bad_images_prompt.db', autocommit=True)
-BAD_IMAGES_PROMPT = {}
+BAD_IMAGES_PROMPT = OrderedDict()
 
 
 # очереди для куков и проксей
@@ -29,6 +31,21 @@ PROXIES = []
 
 
 PAUSED = {'time': 0}
+
+
+def hash_prompt(prompt: str, length: int = 8) -> str:
+    """
+    Generates a short hash of the given prompt using blake2b.
+
+    Args:
+        prompt: The string to hash.
+        length: The desired length of the hash in bytes (will be hex-encoded to double this length).
+
+    Returns:
+        A hexadecimal string representing the hash.
+    """
+    hash_object = hashlib.blake2b(prompt.encode('utf-8'), digest_size=length)
+    return hash_object.hexdigest()
 
 
 def get_cookie():
@@ -76,7 +93,10 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
             if 'Bad images' in str(error) or \
                 'Your prompt is being reviewed by Bing. Try to change any sensitive words and try again.' in str(error) or \
                 'Your prompt has been blocked by Bing. Try to change any bad words and try again' in str(error):
-                BAD_IMAGES_PROMPT[prompt] = True
+                BAD_IMAGES_PROMPT[hash_prompt(prompt)] = True
+                if len(BAD_IMAGES_PROMPT) > 1000:
+                    BAD_IMAGES_PROMPT.popitem(last=False)
+
                 return [str(error),]
             elif 'Image create failed pls check cookie or old image still creating' in str(error):
                 PAUSED['time'] = time.time() + 125
@@ -116,7 +136,7 @@ def gen_images(query: str, user_id: str = ''):
         Exception: If there is an error getting the images.
 
     """
-    if query in BAD_IMAGES_PROMPT:
+    if hash_prompt(query) in BAD_IMAGES_PROMPT:
         my_log.log_bing_img(f'get_images: {query} is in BAD_IMAGES_PROMPT')
         return ['error1_Bad images',]
 

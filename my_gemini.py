@@ -277,6 +277,8 @@ def chat(query: str,
             result = result.strip()
 
             if result:
+                if result.startswith('```tool_code') and result.endswith('```'):
+                    result = result[11:-3]
                 if chat_id:
                     my_db.add_msg(chat_id, model)
                 if chat_id and do_not_update_history is False:

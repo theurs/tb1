@@ -1970,7 +1970,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
             elif call.data == 'image_prompt_solve':
                 COMMAND_MODE[chat_id_full] = ''
-                image_prompt = tr(my_init.PROMPT_SOLVE, lang) + ' ' + tr('Answer in language:', lang) + ' ' + lang
+                image_prompt = tr(my_init.PROMPT_SOLVE, lang) + ' ' + f'Answer in [{lang}] language.'
                 process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.img2_txt_model_solve, temp = 0)
 
             elif call.data == 'image_prompt_qrcode':
@@ -3137,7 +3137,8 @@ def handle_photo(message: telebot.types.Message):
                                 proccess_image(chat_id_full, image, message)
                                 return
                             # грязный хак, для решения задач надо использовать мощную модель
-                            if 'реши' in message.caption.lower() or 'solve' in message.caption.lower():
+                            if 'реши' in message.caption.lower() or 'solve' in message.caption.lower() \
+                                or 'задач' in message.caption.lower() or 'задан' in message.caption.lower():
                                 text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.img2_txt_model_solve, temperature=0)
                             else:
                                 text = img2txt(image, lang, chat_id_full, message.caption)

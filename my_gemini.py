@@ -197,7 +197,7 @@ def chat(query: str,
                 SKILLS = [
                     search_google,
                     download_text_from_url,
-                    # calc_tool,
+                    calc_tool,
                     get_time_in_timezone,
                     get_weather,
                     get_currency_rates,

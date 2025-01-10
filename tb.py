@@ -3880,13 +3880,14 @@ def calc_gemini(message: telebot.types.Message):
                 a = utils.bot_markdown_to_html(answer)
                 if underground:
                     u = utils.bot_markdown_to_html(underground)
-                    bot_reply(message, u, parse_mode='HTML', disable_web_page_preview=True)
+                    # bot_reply(message, u, parse_mode='HTML', disable_web_page_preview=True)
                     bot_reply(message, a, parse_mode='HTML', disable_web_page_preview=True)
                 else:
                     bot_reply(message, a, parse_mode='HTML', disable_web_page_preview=True)
             else:
                 bot_reply_tr(message, 'Calculation failed.')
-            add_to_bots_mem(arg, f'{underground}\n\n{answer}', chat_id_full)
+            # add_to_bots_mem(arg, f'{underground}\n\n{answer}', chat_id_full)
+            add_to_bots_mem(arg, f'{answer}', chat_id_full)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:calc_gemini: {unknown}\n{traceback_error}')

@@ -97,16 +97,23 @@ def calc(query: str, chat_id: str = '') -> str:
         for _ in range(4):
             client = get_client()
 
-            response = client.models.generate_content(
-                model=MODEL_ID,
-                contents=query,
-                config=GenerateContentConfig(
-                    tools=[code_execution_tool],
-                    temperature=0,
-                    max_output_tokens=8000,
-                    safety_settings=SAFETY_SETTINGS,
-                ),
-            )
+            try:
+                response = client.models.generate_content(
+                    model=MODEL_ID,
+                    contents=query,
+                    config=GenerateContentConfig(
+                        tools=[code_execution_tool],
+                        temperature=0,
+                        max_output_tokens=8000,
+                        safety_settings=SAFETY_SETTINGS,
+                    ),
+                )
+            except Exception as inner_error:
+                if 'User location is not supported for the API use':
+                    my_log.log(f'calc:inner error: {inner_error}')
+                    return ''
+                if 'Resource has been exhausted (e.g. check quota)' in str(inner_error):
+                    continue
 
             underground = ''
             if response.candidates[0].content.parts:
@@ -192,7 +199,7 @@ def google_search(query: str, chat_id: str = '', role: str = '') -> str:
             return response.text
         except Exception as error:
             traceback_error = traceback.format_exc()
-            if error.message != 'Resource has been exhausted (e.g. check quota).':
+            if str(error) != 'Resource has been exhausted (e.g. check quota).':
                 my_log.log_gemini_google(f'google_search: error: {error}]\n{traceback_error}')
     return ''
 

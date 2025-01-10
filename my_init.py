@@ -176,7 +176,7 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, fo
                     f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
                     f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
                     f'no emoji unless it is required. Rewrite latex expressions with unicode symbols with no markdown in it, '
-                    f'use calc for complex math operations if you need it, invoke it yourself by saying /calc "complex task" to get the answer, '
+                    f'use a special function to perform complex calculations, the task must be formulated in ordinary human language, no matter how difficult it is to solve, just say yourself(dont`t ask user to say) /calc "the task as a person would formulate it" to get the answer, '
                     f'use google search if you stuck with a question, if you dont have api search_google then say /google "question", '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
@@ -194,7 +194,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted
                     f'you are using different neural networks for work and the user can configure these networks with the /config command and see details with the /id command, '
                     f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
                     f'no emoji unless it is required. Rewrite latex expressions with unicode symbols with no markdown in it, '
-                    f'use calc for complex math operations if you need it, invoke it yourself by saying /calc "complex task" to get the answer, '
+                    f'use a special function to perform complex calculations, the task must be formulated in ordinary human language, no matter how difficult it is to solve, just say yourself(dont`t ask user to say) /calc "the task as a person would formulate it" to get the answer, '
                     f'use google search if you stuck with a question, if you dont have api search_google then say /google "question", '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )

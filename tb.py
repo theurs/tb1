@@ -1063,12 +1063,12 @@ def authorized_admin(message: telebot.types.Message) -> bool:
         if message.from_user.id not in cfg.admins:
             authorized_log(message)
             bot_reply_tr(message, "This command is only available to administrators")
-            # return False
-            raise Exception(f'User {message.from_user.id} is not admin')
+            return False
+            # raise Exception(f'User {message.from_user.id} is not admin')
         return authorized(message)
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:authorized_admin:{unexpected_error}\n\n{traceback_error}')
+        my_log.log2(f'tb:authorized_admin: {unexpected_error}\n\n{traceback_error}')
         return False
 
 

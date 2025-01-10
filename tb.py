@@ -1970,7 +1970,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
             elif call.data == 'image_prompt_solve':
                 COMMAND_MODE[chat_id_full] = ''
-                image_prompt = tr(my_init.PROMPT_SOLVE, lang)
+                image_prompt = tr(my_init.PROMPT_SOLVE, lang) + ' ' + tr('Answer in language:', lang) + ' ' + lang
                 process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.img2_txt_model_solve, temp = 0)
 
             elif call.data == 'image_prompt_qrcode':

@@ -35,19 +35,19 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
     book_type = ext
 
     if 'epub' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
     elif 'pptx' in book_type:
         text = read_pptx(input_file)
         utils.remove_file(input_file)
         return text
     elif 'docx' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'docx', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'docx', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
     elif 'html' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'html', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'html', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
     elif 'odt' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'odt', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'odt', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
     elif 'rtf' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'rtf', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'rtf', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
     elif 'doc' in book_type:
         proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
     elif 'pdf' in book_type or 'djvu' in book_type:
@@ -74,7 +74,7 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
         # return buffer.getvalue()
         return result
     elif 'fb2' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'plain', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'markdown', input_file], stdout=subprocess.PIPE)
     else:
         utils.remove_file(input_file)
         try:
@@ -147,5 +147,5 @@ if __name__ == '__main__':
     # print(result)
     # print(convert_djvu2pdf('/home/ubuntu/tmp/2.djvu'))
 
-    with open('1.pdf', 'wb') as f:
-        f.write(convert_text_to_pdf('**test**\n\nHello __world__.\n\n###test\n\nhi there.'))
+    with open('c:/Users/user/Downloads/1.docx', 'rb') as f:
+        print(fb2_to_text(f.read(), '.docx'))

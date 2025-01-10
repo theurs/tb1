@@ -6,6 +6,7 @@ import fitz
 import time
 from typing import List, Tuple
 
+import cfg
 import my_log
 import my_gemini
 from utils import async_run
@@ -81,17 +82,13 @@ def get_text(data: bytes) -> str:
         images = extract_images_from_pdf_bytes(data)
         results = {}
         index = 0
-        for image in images[:30]:
+        LIMIT = cfg.LIMIT_PDF_OCR if hasattr(cfg, 'LIMIT_PDF_OCR') else 50
+        for image in images[:LIMIT]:
             process_image_ocr(image, index, results)
             index += 1
 
-        timeout = 180
         while len(results) != len(images):
             time.sleep(1)
-            timeout -= 1
-            if timeout == 0:
-                my_log.log2("my_pdf:get_text: OCR timeout")
-                return ""
 
         # remove empty markers
         results = {k: v for k, v in results.items() if v != 'EMPTY MARKER 4975934685'}

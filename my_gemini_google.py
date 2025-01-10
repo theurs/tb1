@@ -52,6 +52,7 @@ SAFETY_SETTINGS = [
 
 
 MODEL_ID = "gemini-2.0-flash-exp"
+MODEL_ID_FALLBACK = "gemini-1.5-flash"
 # MODEL_ID = 'gemini-1.5-flash-8b'
 # MODEL_ID = "gemini-2.0-flash-thinking-exp-1219"
 # MODEL_ID = 'gemini-1.5-flash'
@@ -131,25 +132,47 @@ def google_search(query: str, chat_id: str = '', role: str = '') -> str:
     '''
     Поиск в Google
     '''
-    for _ in range(4):
+    if not role:
+        role = None
+    formatting = '\n\nResponse on language of the question.'
+    query = f'''{query}{formatting}'''
+    google_search_tool = Tool(google_search=GoogleSearch())
+
+    for _ in range(3):
         try:
-            formatting = '\n\nResponse on language of the question.'
-            query = f'''{query}{formatting}'''
-            google_search_tool = Tool(google_search=GoogleSearch())
             client = get_client()
-            if not role:
-                role = None
-            response = client.models.generate_content(
-                model=MODEL_ID,
-                contents=query,
-                config=GenerateContentConfig(
-                    system_instruction = role,
-                    tools=[google_search_tool],
-                    temperature=0.2,
-                    max_output_tokens=8000,
-                    safety_settings=SAFETY_SETTINGS,
-                    ),
-            )
+
+            try:
+                response = client.models.generate_content(
+                    model=MODEL_ID,
+                    contents=query,
+                    config=GenerateContentConfig(
+                        system_instruction = role,
+                        tools=[google_search_tool],
+                        temperature=0.2,
+                        max_output_tokens=8000,
+                        safety_settings=SAFETY_SETTINGS,
+                        ),
+                )
+            except Exception as inner_error:
+                if 'User location is not supported for the API use':
+                    my_log.log(f'google_search:inner error: {inner_error}')
+                    return ''
+                if 'Resource has been exhausted (e.g. check quota)' in str(inner_error):
+                    continue
+                my_log.log(f'google_search:inner error: {inner_error}')
+                response = client.models.generate_content(
+                    model=MODEL_ID_FALLBACK,
+                    contents=query,
+                    config=GenerateContentConfig(
+                        system_instruction = role,
+                        tools=[google_search_tool],
+                        temperature=0.2,
+                        max_output_tokens=8000,
+                        safety_settings=SAFETY_SETTINGS,
+                        ),
+                )
+
             if chat_id:
                 my_db.add_msg(chat_id, MODEL_ID)
             links = []
@@ -172,14 +195,11 @@ def google_search(query: str, chat_id: str = '', role: str = '') -> str:
             if error.message != 'Resource has been exhausted (e.g. check quota).':
                 my_log.log_gemini_google(f'google_search: error: {error}]\n{traceback_error}')
     return ''
-    # print(response.text)
-    # print(response.candidates[0].grounding_metadata)
-    # print(response.candidates[0].grounding_metadata.search_entry_point.rendered_content)
 
 
 if __name__ == "__main__":
-    r = calc('какое 28ое числов в знаке пи после запятой')
-    # r = google_search('самые дешевые новые машины в сша в 2024')
+    # r = calc('какое 28ое числов в знаке пи после запятой')
+    r = google_search('самые дешевые новые машины в сша в 2024')
     print(r)
 
 

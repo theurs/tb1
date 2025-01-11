@@ -82,6 +82,36 @@ MEM_UNCENSORED = [
 ]
 
 
+def extract_and_replace_tool_code(text: str) -> str:
+    """
+    Searches for a specific code block in the text and extracts its content.
+    If the content starts with '/google' or '/calc', the function returns only the content.
+    Otherwise, it returns the original text.
+
+    Args:
+        text: The input string to search within.
+
+    Returns:
+        The extracted content or the original text.
+    """
+    start_delimiter = "```tool_code"
+    end_delimiter = "```"
+    start_index = text.find(start_delimiter)
+    end_index = text.find(end_delimiter, start_index + len(start_delimiter))
+
+    if start_index != -1 and end_index != -1:
+        # Extract the content of the code block
+        extracted_content = text[start_index + len(start_delimiter):end_index].strip()
+
+        # Check if the content starts with '/google' or '/calc'
+        if extracted_content.startswith("/google") or extracted_content.startswith("/calc"):
+            return extracted_content
+        else:
+            return text
+    else:
+        return text
+
+
 def chat(query: str,
          chat_id: str = '',
          temperature: float = 1,
@@ -259,14 +289,15 @@ def chat(query: str,
                 my_log.log_gemini(f'my_gemini:chat3: {error3}\nchat history: {str(chat_.history)}')
                 result = resp.text
 
-            # пытается вызвать функцию неправильно
-            if result:
-                if 'print(default_api.' in result[:100]:
-                    return ''
+            # # пытается вызвать функцию неправильно
+            # if result:
+            #     if 'print(default_api.' in result[:100]:
+            #         return ''
 
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
             # куча пробелов, и возможно другие тоже. укарачиваем
-            result_ = utils.shorten_all_repeats(result)
+            result_ = re.sub(r" {1000,}", " " * 10, result) # очень много пробелов в ответе
+            result_ = utils.shorten_all_repeats(result_)
             if len(result_)+100 < len(result): # удалось сильно уменьшить
                 result = result_
                 try:
@@ -277,8 +308,11 @@ def chat(query: str,
             result = result.strip()
 
             if result:
-                if result.startswith('```tool_code') and result.endswith('```'):
-                    result = result[11:-3]
+                # если в ответе есть отсылка к использованию tool code то оставляем только ее что бы бот мог вызвать функцию
+                # if result.startswith('```tool_code') and result.endswith('```'):
+                #     result = result[11:-3]
+                result = extract_and_replace_tool_code(result)
+
                 if chat_id:
                     my_db.add_msg(chat_id, model)
                 if chat_id and do_not_update_history is False:

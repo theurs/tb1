@@ -2075,7 +2075,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                             message_id=message.message_id,
                             text=html,
                             parse_mode='HTML',
-                            disable_web_page_preview = False,
+                            disable_web_page_preview = True,
                             reply_markup=get_keyboard(kbd, message))
 
             elif call.data.startswith('search_pics_'):
@@ -4923,7 +4923,7 @@ def google(message: telebot.types.Message):
             with ShowAction(message, 'typing'):
                 with semaphore_talks:
                     COMMAND_MODE[chat_id_full] = ''
-                    r, text = my_google.search_v3(q, lang, chat_id_full, role=role)
+                    r, text = my_google.search_v3(q, lang, chat_id=chat_id_full, role=role, lang=lang)
                     if not r.strip():
                         bot_reply_tr(message, 'Search failed.')
                         return

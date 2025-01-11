@@ -135,14 +135,16 @@ def calc(query: str, chat_id: str = '') -> str:
     return ''
 
 
-def google_search(query: str, chat_id: str = '', role: str = '') -> str:
+def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en') -> str:
     '''
     Поиск в Google
     '''
     if not role:
         role = None
-    formatting = '\n\nResponse on language of the question.'
+
+    formatting = f"\n\nAnswer in the user's language: [{lang}]."
     query = f'''{query}{formatting}'''
+
     google_search_tool = Tool(google_search=GoogleSearch())
 
     for _ in range(3):

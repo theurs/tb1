@@ -25,7 +25,7 @@ def search_v3(query: str,
               chat_id: str = '',
               role: str = ''):
     # сначала пробуем спросить в гугле
-    google_response = my_gemini_google.google_search(query, chat_id, role=role)
+    google_response = my_gemini_google.google_search(query, chat_id, role=role, lang=lang)
     if google_response:
         if download_only:
             return google_response

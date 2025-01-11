@@ -1,15 +1,59 @@
 #!/usr/bin/env python3
 # pip install -U PyMuPDF
+# install https://imagemagick.org/index.php (for windows install also https://ghostscript.com/releases/gsdnld.html)
 
 
 import fitz
+import os
 import time
+import subprocess
 from typing import List, Tuple
 
 import cfg
 import my_log
 import my_gemini
-from utils import async_run
+from utils import async_run, get_codepage, platform, get_tmp_fname, remove_file, remove_dir
+
+
+def extract_images_from_pdf_with_imagemagick(data: bytes) -> List[bytes]:
+    '''
+    Extracts all images from a PDF using ImageMagick.
+
+    Args:
+        data: The content of the PDF file as bytes.
+
+    Returns:
+        A list of bytes, where each element is the byte content of an image found in the PDF.
+    '''
+    source = get_tmp_fname() + '.pdf'
+    target = get_tmp_fname()
+    images = []
+    try:
+        with open(source, 'wb') as f:
+            f.write(data)
+        os.mkdir(target)
+
+        CMD = 'magick' if 'windows' in platform().lower() else 'convert'
+        path_separator = '\\' if 'windows' in platform().lower() else '/'
+
+        cmd = f"{CMD} -density 150 {source} {target}{path_separator}%003d.jpg"
+
+        with subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding = get_codepage()) as proc:
+            stdout, stderr = proc.communicate()
+        if stderr:
+            my_log.log2(f"my_pdf:extract_images_from_pdf_with_imagemagick: Error processing PDF: {stderr}")
+
+        for file in os.listdir(target):
+            with open(os.path.join(target, file), 'rb') as f:
+                images.append(f.read())
+
+    except Exception as error:
+        my_log.log2(f"my_pdf:extract_images_from_pdf_with_imagemagick: Error processing PDF: {error}")
+
+    remove_dir(target)
+    remove_file(source)
+
+    return images
 
 
 def extract_images_from_pdf_bytes(pdf_bytes: bytes) -> List[bytes]:
@@ -22,7 +66,11 @@ def extract_images_from_pdf_bytes(pdf_bytes: bytes) -> List[bytes]:
     Returns:
         A list of bytes, where each element is the byte content of an image found in the PDF.
     """
-    image_list_bytes: List[bytes] = []
+    # try to extract images from pdf with imagemagick
+    image_list_bytes = extract_images_from_pdf_with_imagemagick(pdf_bytes)
+    if image_list_bytes:
+        return image_list_bytes
+
     try:
         pdf_file = fitz.open(stream=pdf_bytes, filetype="pdf")
         for page_index in range(len(pdf_file)):
@@ -106,6 +154,6 @@ def get_text(data: bytes) -> str:
 
 if __name__ == "__main__":
     my_gemini.load_users_keys()
-    with open("c:/Users/User/Downloads/3.pdf", "rb") as f:
+    with open("c:/Users/User/Downloads/1.pdf", "rb") as f:
         data = f.read()
         print(get_text(data))

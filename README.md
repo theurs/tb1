@@ -129,7 +129,7 @@ level 3 - блокировать всё включая логи
 
 1. Установите Python 3.8+.
 2. Установите утилиту trans `sudo apt-get install translate-shell`
-3. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin ffmpeg pandoc texlive-latex-base texlive-latex-recommended python3-venv sox`
+3. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin ffmpeg imagemagick pandoc texlive-latex-base texlive-latex-recommended python3-venv sox`
    yt-dlp надо установить отдельно, т.к. в репах нет актуальной свежей версии, а она нужна для скачивания тиктоков и музыки с ютуба.
 
 4. Клонируйте репозиторий с помощью команды:

@@ -14,6 +14,7 @@ import random
 import re
 import regex
 import requests
+import shutil
 import string
 import subprocess
 import tempfile
@@ -1145,6 +1146,22 @@ def remove_file(fname: str):
     '''Удаляет файл по имени'''
     try:
         os.unlink(fname)
+        return True
+    except Exception as error:
+        # my_log.log2(f'utils:remove_file: {fname}\n\n{error}')
+        return False
+
+
+def remove_dir(fname: str):
+    '''Удаляет папку рекурсивно'''
+    try:
+        if os.path.isdir(fname):
+            shutil.rmtree(fname)
+        elif os.path.isfile(fname):
+            os.unlink(fname)
+        else:
+            # my_log.log2(f'utils:remove_dir: {fname} not found or not a directory or file')
+            return False
         return True
     except Exception as error:
         # my_log.log2(f'utils:remove_file: {fname}\n\n{error}')

@@ -124,7 +124,7 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
             my_log.log_bing_success(f'{c}\n{proxy}\n{prompt}\n{results}')
 
         if not results:
-            my_log.log_bing_img(f'get_images_v2:3: {c}\n{proxy}\n{prompt}')
+            my_log.log_bing_img(f'get_images_v2:3: empty results {c}\n{proxy}\n{prompt}')
         return results or []
 
     except Exception as error:

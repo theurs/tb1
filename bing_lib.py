@@ -6,7 +6,7 @@ import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
-from urllib.parse import quote_plus
+from requests.utils import requote_uri
 
 
 class BingImageCreator:
@@ -32,7 +32,10 @@ class BingImageCreator:
 
     async def generate_images(self, prompt: str, model: str = "dall-e-3"):
         try:
-            prompt = quote_plus(prompt)
+            prompt = prompt.replace(' ', '%20')
+            prompt = prompt.replace('\n', '%0A')
+
+            # prompt = requote_uri(prompt)
             for rt in [4, 3]:
                 _U = self.cookies
                 headers = {

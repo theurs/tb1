@@ -157,4 +157,5 @@ def gen_images(query: str, user_id: str = ''):
 
 
 if __name__ == '__main__':
-    print(gen_images('вкусный торт с медом и орехами'))
+    p='''светлый с бежевым кот с шелковистой шерстью'''
+    print(gen_images(p))

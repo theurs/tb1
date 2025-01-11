@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # pip install -U PyMuPDF
 # install https://imagemagick.org/index.php (for windows install also https://ghostscript.com/releases/gsdnld.html)
+# in linux /etc/ImageMagick-6/policy.xml change 
+# <policy domain="coder" rights="none" pattern="PDF" />
+#  to
+# <policy domain="coder" rights="read|write" pattern="PDF" />
 
 
 import fitz

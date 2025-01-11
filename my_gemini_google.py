@@ -110,7 +110,7 @@ def calc(query: str, chat_id: str = '') -> str:
                 )
             except Exception as inner_error:
                 if 'User location is not supported for the API use':
-                    my_log.log(f'calc:inner error: {inner_error}')
+                    my_log.log2(f'calc:inner error: {inner_error}')
                     return ''
                 if 'Resource has been exhausted (e.g. check quota)' in str(inner_error):
                     continue
@@ -165,11 +165,11 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
                 )
             except Exception as inner_error:
                 if 'User location is not supported for the API use':
-                    my_log.log(f'google_search:inner error: {inner_error}')
+                    my_log.log2(f'google_search:inner error: {inner_error}')
                     return ''
                 if 'Resource has been exhausted (e.g. check quota)' in str(inner_error):
                     continue
-                my_log.log(f'google_search:inner error: {inner_error}')
+                my_log.log2(f'google_search:inner error: {inner_error}')
                 response = client.models.generate_content(
                     model=MODEL_ID_FALLBACK,
                     contents=query,

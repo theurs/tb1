@@ -33,6 +33,7 @@ class BingImageCreator:
         try:
             prompt = prompt.replace('.', ' ')
             prompt = prompt.replace('\n', '%0A')
+            prompt = prompt.strip()
 
             for rt in [4, 3]:
                 _U = self.cookies

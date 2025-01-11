@@ -5,7 +5,9 @@
 
 import fitz
 import os
+import re
 import time
+import traceback
 import subprocess
 from typing import List, Tuple
 
@@ -43,12 +45,17 @@ def extract_images_from_pdf_with_imagemagick(data: bytes) -> List[bytes]:
         if stderr:
             my_log.log2(f"my_pdf:extract_images_from_pdf_with_imagemagick: Error processing PDF: {stderr}")
 
-        for file in os.listdir(target):
+        files = os.listdir(target)
+        # Sort files based on the page number in the filename
+        files.sort(key=lambda filename: int(re.search(r'\d+', filename).group(0)) if re.search(r'\d+', filename) else 0)
+
+        for file in files:
             with open(os.path.join(target, file), 'rb') as f:
                 images.append(f.read())
 
     except Exception as error:
-        my_log.log2(f"my_pdf:extract_images_from_pdf_with_imagemagick: Error processing PDF: {error}")
+        traceback_error = traceback.format_exc()
+        my_log.log2(f"my_pdf:extract_images_from_pdf_with_imagemagick: Error processing PDF: {error}\n\n{traceback_error}")
 
     remove_dir(target)
     remove_file(source)
@@ -128,26 +135,33 @@ def get_text(data: bytes) -> str:
     Extract text from pdf
     if no text, OCR images with gemini using 8 threads
     """
-    text = extract_text_from_pdf_bytes(data)
-    if len(text) < 100:
-        images = extract_images_from_pdf_bytes(data)
-        results = {}
-        index = 0
-        LIMIT = cfg.LIMIT_PDF_OCR if hasattr(cfg, 'LIMIT_PDF_OCR') else 50
-        for image in images[:LIMIT]:
-            process_image_ocr(image, index, results)
-            index += 1
+    text = ''
 
-        while len(results) != len(images):
-            time.sleep(1)
+    try:
 
-        # remove empty markers
-        results = {k: v for k, v in results.items() if v != 'EMPTY MARKER 4975934685'}
+        text = extract_text_from_pdf_bytes(data)
+        if len(text) < 100:
+            images = extract_images_from_pdf_bytes(data)
+            results = {}
+            index = 0
+            LIMIT = cfg.LIMIT_PDF_OCR if hasattr(cfg, 'LIMIT_PDF_OCR') else 50
+            for image in images[:LIMIT]:
+                process_image_ocr(image, index, results)
+                index += 1
 
-        # convert to list sorted ny index
-        results = sorted(results.items(), key=lambda x: x[0])
+            while len(results) != len(images):
+                time.sleep(1)
 
-        text = '\n'.join([v for _, v in results])
+            # remove empty markers
+            results = {k: v for k, v in results.items() if v != 'EMPTY MARKER 4975934685'}
+
+            # convert to list sorted ny index
+            results = sorted(results.items(), key=lambda x: x[0])
+
+            text = '\n'.join([v for _, v in results])
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f"my_pdf:get_text: Error processing PDF: {error}\n\n{traceback_error}")
 
     return text
 

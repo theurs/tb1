@@ -23,7 +23,6 @@ import langcodes
 import pendulum
 import PIL
 import prettytable
-import PyPDF2
 import telebot
 from fuzzywuzzy import fuzz
 from sqlitedict import SqliteDict
@@ -2809,7 +2808,7 @@ def handle_document(message: telebot.types.Message):
                         file_bytes = io.BytesIO(downloaded_file)
                         text = ''
                         if message.document.mime_type == 'application/pdf':
-                            text = my_pdf.get_text(file_bytes)
+                            text = my_pdf.get_text(downloaded_file)
                         elif message.document.mime_type in pandoc_support:
                             ext = utils.get_file_ext(file_info.file_path)
                             text = my_pandoc.fb2_to_text(file_bytes.read(), ext)

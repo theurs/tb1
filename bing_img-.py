@@ -11,8 +11,7 @@ import time
 from collections import OrderedDict
 
 from sqlitedict import SqliteDict
-# from re_edge_gpt import ImageGen
-from bing_lib import BingImageCreator
+from re_edge_gpt import ImageGen
 
 import cfg
 import my_log
@@ -87,20 +86,13 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
 
         try:
             c = get_cookie()
-            # sync_gen = ImageGen(auth_cookie=c, quiet=True, proxy=proxy)
-            sync_gen = BingImageCreator(c)
-            results = sync_gen.generate_images_sync(prompt)
+            sync_gen = ImageGen(auth_cookie=c, quiet=True, proxy=proxy)
+            results = sync_gen.get_images(prompt)
         except Exception as error:
             my_log.log_bing_img(f'get_images_v2: {error} \n\n {c} \n\nPrompt: {prompt}')
-
-            # if 'Bad images' in str(error) or \
-            #     'Your prompt is being reviewed by Bing. Try to change any sensitive words and try again.' in str(error) or \
-            #     'Your prompt has been blocked by Bing. Try to change any bad words and try again' in str(error):
-            #     BAD_IMAGES_PROMPT[hash_prompt(prompt)] = True
-            #     if len(BAD_IMAGES_PROMPT) > 1000:
-            #         BAD_IMAGES_PROMPT.popitem(last=False)
-
-            if 'Error generating Bing images for prompt' in str(error):
+            if 'Bad images' in str(error) or \
+                'Your prompt is being reviewed by Bing. Try to change any sensitive words and try again.' in str(error) or \
+                'Your prompt has been blocked by Bing. Try to change any bad words and try again' in str(error):
                 BAD_IMAGES_PROMPT[hash_prompt(prompt)] = True
                 if len(BAD_IMAGES_PROMPT) > 1000:
                     BAD_IMAGES_PROMPT.popitem(last=False)
@@ -122,7 +114,7 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
             results = [x for x in results if '.bing.net/th/id/' in x]
             my_log.log_bing_success(f'{c}\n{proxy}\n{prompt}\n{results}')
 
-        return results or []
+        return results
 
     except Exception as error:
         my_log.log_bing_img(f'get_images_v2: {error}')
@@ -157,25 +149,4 @@ def gen_images(query: str, user_id: str = ''):
 
 
 if __name__ == '__main__':
-    p='''светлый с бежевым кот с шелковистой шерстью
-
-сепия, пастельные цвета бирюзово-голубого, {серо-голубого} и нежно-голубого, сиренево-голубого и легкий оттенок синего...
-светлые цвета, мягкие тона, рассеянный свет...
-реалистичный стиль...
-сказка...
-однотонный фон...
-высокое разрешение...
-детализация...
-все детали требуемых изображений видны четко, задний фон четкий...'''
-    p2 = '''A poster make {Head top view} -  Dev_Artificial 
-
-{Option feature key}
-
-• High Image Generator
-• Chat Gpt 
-• Image Models
-• Design
-• clothes
-• Music with Ai
-• Q&A'''
-    print(gen_images(p2))
+    print(gen_images('вкусный торт с медом и орехами'))

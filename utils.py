@@ -1585,6 +1585,28 @@ def audio_duration(audio_file: str) -> int:
     return r
 
 
+def replace_non_letters_with_spaces(text: str) -> str:
+    """
+    Replaces all characters in a string with spaces, except for letters and spaces.
+
+    Args:
+        text: The input string.
+
+    Returns:
+        A new string with non-letter and non-space characters replaced by spaces.
+    """
+    result = []
+    for char in text:
+        if char.isalpha():
+            result.append(char)
+        else:
+            result.append(' ')
+    r = "".join(result)
+    #remove redundant spaces
+    r = re.sub(' +', ' ', r)
+    return r.strip()
+
+
 if __name__ == '__main__':
     pass
 

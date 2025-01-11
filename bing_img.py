@@ -122,7 +122,7 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
             results = [x for x in results if '.bing.net/th/id/' in x]
             my_log.log_bing_success(f'{c}\n{proxy}\n{prompt}\n{results}')
 
-        return results
+        return results or []
 
     except Exception as error:
         my_log.log_bing_img(f'get_images_v2: {error}')

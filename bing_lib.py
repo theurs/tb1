@@ -114,7 +114,7 @@ class BingImageCreator:
         except Exception as e:
             error_message = str(e)
             # raise RuntimeError(f"Error generating Bing images for prompt '{prompt}': {error_message}")
-            raise RuntimeError(f"Error generating Bing images for prompt: {error_message}")
+            raise RuntimeError(f"Error generating Bing images for this prompt: {error_message}")
 
 
     def generate_images_sync(self, prompt: str, model: str = "dall-e-3"):

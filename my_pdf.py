@@ -104,9 +104,9 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
             text_content += page.get_text()
     except TypeError as error_type:
         if "'module' object is not callable" not in str(error_type):
-            my_log(f"my_pdf:extract_text_from_pdf_bytes:type_error: Error processing PDF: {error_type}")
+            my_log.log2(f"my_pdf:extract_text_from_pdf_bytes:type_error: Error processing PDF: {error_type}")
     except Exception as error:
-        my_log(f"my_pdf:extract_text_from_pdf_bytes: Error processing PDF: {error}")
+        my_log.log2(f"my_pdf:extract_text_from_pdf_bytes: Error processing PDF: {error}")
     return text_content
 
 

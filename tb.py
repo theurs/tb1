@@ -2632,8 +2632,6 @@ def process_image_stage_2(image_prompt: str,
         my_log.log2(f'tb:process_image_stage_2: {unknown}\n{traceback_error}')
 
 
-
-
 def process_wg_config(text: str, message: telebot.types.Message) -> bool:
     '''
     Проверяет является ли текст конфигом ваиргарда, если да то

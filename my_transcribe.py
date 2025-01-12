@@ -409,7 +409,7 @@ def get_url_video_duration(url: str, proxy: bool = True) -> int:
         duration = info['duration']
     except:
         duration = 0
-    if not duration and proxy:
+    if duration == 0 and proxy:
         return get_url_video_duration(url, proxy = False)
     return duration
 

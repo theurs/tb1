@@ -15,6 +15,7 @@
 
 
 import random
+import time
 import traceback
 
 from google import genai
@@ -150,6 +151,7 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
     for _ in range(3):
         try:
             client = get_client()
+            retry_counter = 0 # retry on overload error
 
             try:
                 response = client.models.generate_content(
@@ -165,11 +167,18 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
                 )
             except Exception as inner_error:
                 if 'User location is not supported for the API use':
-                    my_log.log2(f'google_search:inner error: {inner_error}')
+                    my_log.log2(f'google_search:inner error1: {inner_error}')
                     return ''
                 if 'Resource has been exhausted (e.g. check quota)' in str(inner_error):
                     continue
-                my_log.log2(f'google_search:inner error: {inner_error}')
+                if 'The model is overloaded. Please try again later.' in str(inner_error):
+                    my_log.log2(f'google_search:inner error2: {inner_error}')
+                    time.sleep(5)
+                    retry_counter += 1
+                    if retry_counter > 5:
+                        return ''
+                    continue
+                my_log.log2(f'google_search:inner error2: {inner_error}')
                 response = client.models.generate_content(
                     model=MODEL_ID_FALLBACK,
                     contents=query,

@@ -2062,7 +2062,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     entities = message.entities if message.entities else message.caption_entities
                     kbd = 'translate' if call.data == 'translate' else 'chat'
                     text = my_log.restore_message_text(text, entities)
-                    translated = tr(text, lang, help = 'This is a markdown formatted text. Please maintain the same format and provide a skilled literary translation.', save_cache=False)
+                    translated = tr(text, lang, help = 'This is text formatted in Markdown. Please preserve the original Markdown formatting and provide a high-quality, artistically nuanced translation.', save_cache=False)
                     html = utils.bot_markdown_to_html(translated)
 
                     if translated and translated != text:
@@ -4867,7 +4867,7 @@ def tts(message: telebot.types.Message, caption = None):
                     llang = re.sub(r'\d+', '', llang)
                 audio = my_tts.tts(text, llang, rate, gender=gender)
                 if not audio and llang != 'de':
-                    my_log.log2(f'tb:tts:error: trying universal voice for {llang} {rate} {gender} {text}')
+                    my_log.log2(f'tb:tts1:error: trying universal voice for {llang} {rate} {gender} {text}')
                     audio = my_tts.tts(text, 'de', rate, gender=gender)
                 if audio:
                     if message.chat.type != 'private':
@@ -4876,7 +4876,13 @@ def tts(message: telebot.types.Message, caption = None):
                     else:
                         # In private, you don't need to add a keyboard with a delete button,
                         # you can delete it there without it, and accidental deletion is useless
-                        m = bot.send_voice(message.chat.id, audio, caption=caption)
+                        try:
+                            m = bot.send_voice(message.chat.id, audio, caption=caption)
+                        except telebot.apihelper.ApiTelegramException as error:
+                            if 'Bad Request: VOICE_MESSAGES_FORBIDDEN' in str(error):
+                                bot_reply_tr(message, '⚠️ Voice messages are not allowed in this chat.')
+                                return
+
                     log_message(m)
                     my_log.log_echo(message, f'[Sent voice message] [{gender}]')
                     my_db.add_msg(chat_id_full, f'TTS {gender}')
@@ -4884,7 +4890,7 @@ def tts(message: telebot.types.Message, caption = None):
                     bot_reply_tr(message, 'Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.')
     except Exception as unknown:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:tts: {unknown}\n{traceback_error}')
+        my_log.log2(f'tb:tts2: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['google','Google'], func=authorized)
@@ -5292,6 +5298,7 @@ def send_images_to_pic_group(
                 bot.send_message(pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
                                 link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
+            retry_counter = 0 # retry on internal error
             for x in chunks:
                 seconds = 1
                 while seconds:
@@ -5304,12 +5311,19 @@ def send_images_to_pic_group(
                         if seconds:
                             time.sleep(seconds + 5)
                             continue
-                        my_log.log2(f'tb:image:send_media_group_pics_group1: {error}')
+                        elif 'Error code: 500. Description: Internal Server Error' in str(error):
+                            my_log.log2(f'tb:image:send_media_group_pics_group1: {error}')
+                            retry_counter += 1
+                            if retry_counter > 5:
+                                break
+                            time.sleep(30)
+                            continue
+                        my_log.log2(f'tb:image:send_media_group_pics_group2: {error}')
                         break
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:image:send_media_group_pics_group2: {unknown}\n\n{traceback_error}')
+        my_log.log2(f'tb:image:send_media_group_pics_group3: {unknown}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)

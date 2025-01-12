@@ -2045,7 +2045,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     bot.delete_message(message.chat.id, message.message_id)
                 except telebot.apihelper.ApiTelegramException as error:
                     if "Bad Request: message can't be deleted for everyone" not in str(error):
-                        my_log.log2(f'tb:callback_inline_thread2: {str(error)}')
+                        traceback_error = traceback.format_exc()
+                        my_log.log2(f'tb:callback_inline_thread2: {str(error)}\n\n{traceback_error}')
             elif call.data == 'tts':
                 detected_lang = my_tts.detect_lang_carefully(message.text or message.caption or "")
                 if not detected_lang:

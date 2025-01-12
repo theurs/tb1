@@ -397,9 +397,9 @@ def download_worker_v2(video_url: str, part: tuple, n: int, fname: str, language
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def get_url_video_duration(url: str) -> int:
+def get_url_video_duration(url: str, proxy: bool = True) -> int:
     '''return duration of video, get with yt-dlp'''
-    if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+    if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY and proxy:
         proc = subprocess.run([YT_DLP, '--proxy', random.choice(cfg.YTB_PROXY), '--skip-download', '-J', url], stdout=subprocess.PIPE)
     else:
         proc = subprocess.run([YT_DLP, '--skip-download', '-J', url], stdout=subprocess.PIPE)
@@ -409,6 +409,8 @@ def get_url_video_duration(url: str) -> int:
         duration = info['duration']
     except:
         duration = 0
+    if not duration and proxy:
+        return get_url_video_duration(url, proxy = False)
     return duration
 
 

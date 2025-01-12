@@ -148,7 +148,7 @@ def get_text(data: bytes) -> str:
             images = extract_images_from_pdf_bytes(data)
             results = {}
             index = 0
-            LIMIT = cfg.LIMIT_PDF_OCR if hasattr(cfg, 'LIMIT_PDF_OCR') else 50
+            LIMIT = cfg.LIMIT_PDF_OCR if hasattr(cfg, 'LIMIT_PDF_OCR') else 20
             for image in images[:LIMIT]:
                 process_image_ocr(image, index, results)
                 index += 1

@@ -7983,16 +7983,17 @@ def one_time_shot():
             pass
 
             queries = [
-                 '''ALTER TABLE users DROP COLUMN api_key_deepl;''',
-                 '''ALTER TABLE users DROP COLUMN ocr_lang;''',
+                '''ALTER TABLE users DROP COLUMN suggest_enabled;''',
                 # '''DELETE FROM translations;''',
+                '''DROP TABLE IF EXISTS im_suggests;''',
+                '''VACUUM;''',
                  ]
             for q in queries:
                 try:
                     my_db.CUR.execute(q)
-                    my_db.CON.commit()
                 except Exception as error:
                     my_log.log2(f'tb:one_time_shot: {error}')
+            my_db.CON.commit()
 
             with open('one_time_flag.txt', 'w') as f:
                 f.write('done')

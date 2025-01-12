@@ -264,14 +264,6 @@ def init(backup: bool = True, vacuum: bool = False):
             )
         ''')
 
-        CUR.execute('''
-            CREATE TABLE IF NOT EXISTS im_suggests (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date REAL,
-                hash TEXT,
-                prompt TEXT
-            )
-        ''')
 
         if vacuum:
             CON.commit()
@@ -937,67 +929,6 @@ def delete_from_sum(url_id: str):
             ''', (url_id,))
         except Exception as error:
             my_log.log2(f'my_db:remove_from_sum {error}')
-
-
-def set_im_suggests(hash, prompt):
-    '''Set im_suggests'''
-    with LOCK:
-        try:
-            # проверяем есть ли в таблице im_suggests такая запись
-            CUR.execute('''
-                SELECT 1 FROM im_suggests
-                WHERE hash = ?
-            ''', (hash,))
-            if CUR.fetchone():
-                # если есть, то обновляем
-                CUR.execute('''
-                    UPDATE im_suggests
-                    SET prompt = ?,
-                    date = ?
-                    WHERE hash = ?
-                ''', (prompt, time.time(), hash))
-            else:
-                # если нет, то добавляем
-                CUR.execute('''
-                    INSERT INTO im_suggests (hash, date, prompt)
-                    VALUES (?, ?, ?)
-                ''', (hash, time.time(), prompt))
-            # remove old records
-            CUR.execute('''
-                DELETE FROM im_suggests
-                WHERE date < ?
-            ''', (time.time() - 60*60*24*30,))
-        except Exception as error:
-            my_log.log2(f'my_db:set_im_suggests {error}')
-
-
-def get_from_im_suggests(hash: str) -> str:
-    '''Get from im_suggests'''
-    with LOCK:
-        try:
-            CUR.execute('''
-                SELECT prompt FROM im_suggests
-                WHERE hash = ?
-            ''', (hash,))
-            result = CUR.fetchone()
-            if result is None:
-                return ''
-            return result[0]
-        except Exception as error:
-            my_log.log2(f'my_db:get_from_im_suggests {error}')
-            return ''
-
-
-def delete_from_im_suggests(hash: str):
-    '''Remove from im_suggests'''
-    with LOCK:
-        try:
-            CUR.execute('''
-                DELETE FROM im_suggests
-                WHERE hash = ?
-            ''', (hash,))
-        except Exception as error:
-            my_log.log2(f'my_db:remove_from_im_suggests {error}')
 
 
 def find_users_with_many_messages() -> List[str]:

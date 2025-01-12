@@ -3945,24 +3945,24 @@ def download_ytb_audio(message: telebot.types.Message):
                                     )
                                     log_message(m)
                                 except Exception as faild_upload_audio:
-                                    my_log.log2(f'tb:download_ytb_audio: {faild_upload_audio}')
+                                    my_log.log2(f'tb:download_ytb_audio1: {faild_upload_audio}')
                                     bot_reply_tr(message, 'Upload failed.')
                                     my_ytb.remove_folder_or_parent(source_file)
-                                    if files and files[0] != source_file:
+                                    if files and files[0] and source_file and files[0] != source_file:
                                         my_ytb.remove_folder_or_parent(files[0])
                                     return
                     else:
                         bot_reply_tr(message, 'Download failed.')
 
                     my_ytb.remove_folder_or_parent(source_file)
-                    if files and files[0] != source_file:
+                    if files and files[0] and source_file and files[0] != source_file:
                         my_ytb.remove_folder_or_parent(files[0])
                     return
 
         bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube (and other video sites).')
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:download_ytb_audio:{error}\n\n{traceback_error}')
+        my_log.log2(f'tb:download_ytb_audio2:{error}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)

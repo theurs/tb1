@@ -217,7 +217,7 @@ def bot_markdown_to_html(text: str) -> str:
         'z': 'ᶻ'
     }
 
-    # экранируем весь текст для html
+    # экранируем весь текст для html, потом надо будет вернуть теги <u>
     text = html.escape(text)
 
     # надо заранее найти в таблицах блоки кода (однострочного `кода`) и заменить ` на пробелы
@@ -312,7 +312,6 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r"(?<=\S) {2,}(?=\S)", " ", text)
 
 
-
     # First handle _*text*_ pattern (italic-bold combined)
     text = re.sub(r"(?<!\w)_\*([^\n\s].*?[^\n\s])\*_(?!\w)", r"<i><b>\1</b></i>", text)
 
@@ -365,6 +364,10 @@ def bot_markdown_to_html(text: str) -> str:
     text = text.replace('&#x27;', "'")
     text = text.replace('   #x27;', "'")
     text = text.replace('#x27;', "'")
+
+
+    # меняем теги &lt;u&gt;  &lt;/u&gt; на <u></u>
+    text = re.sub(r'&lt;u&gt;(.+?)&lt;/u&gt;', r'<u>\1</u>', text)
 
     # меняем таблицы до возвращения кода
     text = replace_tables(text)

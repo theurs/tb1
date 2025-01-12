@@ -335,7 +335,7 @@ def restore_message_text(s1: str, l) -> str:
             elif i.type == 'spoiler':
                 formatted_text = f"||{formatted_text}||"
             elif i.type == 'underline':
-                formatted_text = f"__{formatted_text}__"
+                formatted_text = f"<u>{formatted_text}</u>"
             elif i.type == 'text_link':
                 formatted_text = f"[{formatted_text}]({i.url})"
             elif i.type == 'blockquote' or i.type == 'expandable_blockquote':

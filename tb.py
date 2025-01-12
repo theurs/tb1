@@ -6334,15 +6334,15 @@ def purge_cmd_handler(message: telebot.types.Message):
                 my_db.delete_user_property(chat_id_full, 'saved_file_name')
                 my_db.delete_user_property(chat_id_full, 'saved_file')
 
-            if chat_id_full in LOGS_GROUPS_DB:
-                try:
-                    r = bot.delete_forum_topic(cfg.LOGS_GROUP, LOGS_GROUPS_DB[chat_id_full])
-                    del LOGS_GROUPS_DB[chat_id_full]
-                    if not r:
-                        my_log.log2(f'tb:purge_cmd_handler: {LOGS_GROUPS_DB[chat_id_full]} not deleted')
-                except Exception as unknown:
-                    error_traceback = traceback.format_exc()
-                    my_log.log2(f'tb:purge_cmd_handler: {unknown}\n\n{chat_id_full}\n\n{error_traceback}')
+            # if chat_id_full in LOGS_GROUPS_DB:
+            #     try:
+            #         r = bot.delete_forum_topic(cfg.LOGS_GROUP, LOGS_GROUPS_DB[chat_id_full])
+            #         del LOGS_GROUPS_DB[chat_id_full]
+            #         if not r:
+            #             my_log.log2(f'tb:purge_cmd_handler: {LOGS_GROUPS_DB[chat_id_full]} not deleted')
+            #     except Exception as unknown:
+            #         error_traceback = traceback.format_exc()
+            #         my_log.log2(f'tb:purge_cmd_handler: {unknown}\n\n{chat_id_full}\n\n{error_traceback}')
 
             msg = f'{tr("Your logs was purged. Keep in mind there could be a backups and some mixed logs. It is hard to erase you from the internet.", lang)}'
         else:

@@ -258,7 +258,7 @@ class ShowAction(threading.Thread):
     with ShowAction(message, 'typing'):
         do something and while doing it the notification does not go out
     """
-    def __init__(self, message, action):
+    def __init__(self, message: telebot.types.Message, action: str = 'typing', max_timeout: int = 5):
         """_summary_
 
         Args:
@@ -270,6 +270,7 @@ class ShowAction(threading.Thread):
         self.actions = [  "typing", "upload_photo", "record_video", "upload_video", "record_audio",
                          "upload_audio", "upload_document", "find_location", "record_video_note", "upload_video_note"]
         assert action in self.actions, f'Допустимые actions = {self.actions}'
+        self.max_timeout = max_timeout
         self.chat_id = message.chat.id
         self.full_chat_id = get_topic_id(message)
         self.thread_id = message.message_thread_id
@@ -284,7 +285,7 @@ class ShowAction(threading.Thread):
             SHOW_ACTION_LOCKS[self.full_chat_id] = threading.Lock()
         with SHOW_ACTION_LOCKS[self.full_chat_id]:
             while self.is_running:
-                if time.time() - self.started_time > 60*5:
+                if time.time() - self.started_time > 60 * self.max_timeout:
                     self.stop()
                     # my_log.log2(f'tb:show_action:stoped after 5min [{self.chat_id}] [{self.thread_id}] is topic: {self.is_topic} action: {self.action}')
                     return
@@ -5366,6 +5367,8 @@ def image_gen(message: telebot.types.Message):
         #     bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw', disable_web_page_preview=True)
         #     return
 
+        show_timeout = 5 # как долго показывать активность
+
         # рисовать только бингом, команда /bing
         BING_FLAG = 0
         if message.text.endswith('[{(BING)}]'):
@@ -5374,9 +5377,11 @@ def image_gen(message: telebot.types.Message):
         elif message.text.endswith('[{(BING10)}]'):
             message.text = message.text[:-12]
             BING_FLAG = 10
+            show_timeout = 20
         elif message.text.endswith('[{(BING20)}]'):
             message.text = message.text[:-12]
             BING_FLAG = 20
+            show_timeout = 30
 
         if chat_id_full in IMG_GEN_LOCKS:
             lock = IMG_GEN_LOCKS[chat_id_full]
@@ -5436,7 +5441,7 @@ def image_gen(message: telebot.types.Message):
                     # как то он совсем плохо стал работать с историей, отключил пока что
                     conversation_history = ''
 
-                    with ShowAction(message, 'upload_photo'):
+                    with ShowAction(message, 'upload_photo', max_timeout = show_timeout):
                         moderation_flag = False
 
                         if NSFW_FLAG:

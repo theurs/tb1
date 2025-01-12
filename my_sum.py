@@ -49,7 +49,7 @@ def get_subs_from_rutube(url: str) -> str:
     tmpname = utils.get_tmp_fname()
     result = ''
     try:
-        cmd = f'yt-dlp -x -S "+size,+br" {utils.get_ytb_proxy()} "{url}" -o {tmpname}'
+        cmd = f'yt-dlp -x -S "+size,+br" {utils.get_ytb_proxy(url)} "{url}" -o {tmpname}'
         try:
             output = subprocess.check_output(cmd, shell=True, timeout=3000, stderr = subprocess.STDOUT)
         except subprocess.CalledProcessError as error:

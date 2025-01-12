@@ -228,10 +228,19 @@ def calc_admin(expression: str) -> str:
     try:
         expression_ = expression.replace('math.factorial', 'my_factorial')
         r = str(eval(expression_))
+        if not r:
+            r = my_gemini_google.calc(expression)
+            if not r:
+                return f'Error: Invalid expression'
         my_log.log_gemini_skills(f'Admin calc result: {r}')
         return r
     except Exception as error:
-        return f'Error: {error}'
+        r = my_gemini_google.calc(expression)
+        if r:
+            my_log.log_gemini_skills(f'Admin calc result: {r}')
+            return r
+        else:
+            return f'Error: {error}'
 
 
 def my_factorial(n: int) -> int:

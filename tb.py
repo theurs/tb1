@@ -2062,7 +2062,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     entities = message.entities if message.entities else message.caption_entities
                     kbd = 'translate' if call.data == 'translate' else 'chat'
                     text = my_log.restore_message_text(text, entities)
-                    translated = tr(text, lang, help = 'Please, provide a high-quality artistic translation, format the output using Markdown.')
+                    translated = tr(text, lang, help = 'Please, provide a high-quality artistic translation, format the output using Markdown.', save_cache = False)
                     html = utils.bot_markdown_to_html(translated)
 
                     if translated and translated != text:

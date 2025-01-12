@@ -42,7 +42,7 @@ def get_subs_from_rutube(url: str) -> str:
 
     duration = my_transcribe.get_url_video_duration(url)
     my_log.log2(f'get_subs_from_rutube1: {url} Duration: {duration}')
-    if duration == 0 or duration > 2*60*60:
+    if duration == 0 or duration > 3*60*60:
         my_log.log2(f'get_subs_from_rutube2: too long video {url} {duration}')
         return ''
 

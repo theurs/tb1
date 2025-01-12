@@ -33,7 +33,7 @@ import utils
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def get_subs_from_rutube(url: str) -> str:
+def get_subs_from_rutube(url: str, proxy: bool = True) -> str:
     '''Downloads subtitles from rutube(any yt-dlp capable urls actually) video url, converts them to text and returns the text. 
     Returns None if no subtitles found.'''
     cache = my_db.get_from_sum(url+'.sub')
@@ -49,7 +49,12 @@ def get_subs_from_rutube(url: str) -> str:
     tmpname = utils.get_tmp_fname()
     result = ''
     try:
-        cmd = f'yt-dlp -x -S "+size,+br" {utils.get_ytb_proxy(url)} "{url}" -o {tmpname}'
+
+        if proxy:
+            cmd = f'yt-dlp -x -S "+size,+br" {utils.get_ytb_proxy(url)} "{url}" -o {tmpname}'
+        else:
+            cmd = f'yt-dlp -x -S "+size,+br" "{url}" -o {tmpname}'
+
         try:
             output = subprocess.check_output(cmd, shell=True, timeout=3000, stderr = subprocess.STDOUT)
         except subprocess.CalledProcessError as error:
@@ -73,6 +78,8 @@ def get_subs_from_rutube(url: str) -> str:
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'get_subs_from_rutube3: {error} {url} {tmpname}\n\n{traceback_error}')
+        if proxy:
+            return get_subs_from_rutube(url, proxy = False)
     finally:
         utils.remove_file(tmpname)
         return result

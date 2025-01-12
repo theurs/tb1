@@ -28,6 +28,7 @@ from geopy.geocoders import Nominatim
 import cfg
 import my_db
 import my_google
+import my_gemini_google
 import my_log
 import my_groq
 import my_sum
@@ -183,14 +184,31 @@ def calc(expression: str) -> str:
         if len(word) == 1:
             continue
         if word not in allowed_words:
-            return f'Error: Invalid expression. Forbidden word: {word}'
+            r = my_gemini_google.calc(expression)
+            if r:
+                my_log.log_gemini_skills(f'Calc result: {r}')
+                return r
+            else:
+                return f'Error: Invalid expression. Forbidden word: {word}'
     try:
         expression_ = expression.replace('math.factorial', 'my_factorial')
+
         r = str(eval(expression_))
+
+        if not r:
+            r = my_gemini_google.calc(expression)
+
         my_log.log_gemini_skills(f'Calc result: {r}')
+
         return r
+
     except Exception as error:
-        return f'Error: {error}'
+        r = my_gemini_google.calc(expression)
+        if r:
+            my_log.log_gemini_skills(f'Calc result: {r}')
+            return r
+        else:
+            return f'Error: {error}'
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)

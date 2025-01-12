@@ -339,6 +339,10 @@ def remove_folder_or_parent(path: str) -> None:
     Args:
         path: Path to the file or folder to remove.
     """
+
+    if not path:
+        return
+
     temp_dir = tempfile.gettempdir()
     normalized_path = os.path.normpath(path)
     normalized_temp_dir = os.path.normpath(temp_dir)

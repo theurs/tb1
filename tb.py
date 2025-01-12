@@ -2048,11 +2048,16 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         traceback_error = traceback.format_exc()
                         my_log.log2(f'tb:callback_inline_thread2: {str(error)}\n\n{traceback_error}')
             elif call.data == 'tts':
-                detected_lang = my_tts.detect_lang_carefully(message.text or message.caption or "")
-                if not detected_lang:
-                    detected_lang = lang or "de"
-                message.text = f'/tts {detected_lang} {message.text or message.caption or ""}'
-                tts(message)
+                text = message.text or message.caption
+                text = text.strip()
+                if text:
+                    detected_lang = my_tts.detect_lang_carefully(text)
+                    if not detected_lang:
+                        detected_lang = lang or "de"
+                    rewrited_text = my_gemini.rewrite_for_tts(text, chat_id_full, lang)
+                    # rewrited_text = text
+                    message.text = f'/tts {detected_lang} {rewrited_text}'
+                    tts(message)
             elif call.data.startswith('select_lang-'):
                 l = call.data[12:]
                 message.text = f'/lang {l}'
@@ -5123,7 +5128,18 @@ def huggingface_image_gen(message: telebot.types.Message):
                                         bot.send_message(pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
                                                         link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
-                                    bot.send_media_group(pics_group, medias)
+                                    while 1:
+                                        try:
+                                            bot.send_media_group(pics_group, medias)
+                                            break
+                                        except Exception as error:
+                                            # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
+                                            seconds = utils.extract_retry_seconds(str(error))
+                                            if seconds:
+                                                time.sleep(seconds + 5)
+                                            else:
+                                                my_log.log2(f'tb:huggingface_image_gen:send to pics_group: {error}')
+                                                break
                                 except Exception as error2:
                                     my_log.log2(f'tb:huggingface_image_gen:send to pics_group: {error2}')
                             update_user_image_counter(chat_id_full, len(medias))

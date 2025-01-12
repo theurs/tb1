@@ -1059,6 +1059,43 @@ def ocr_page(data: bytes, prompt: str = None) -> str:
     return text
 
 
+def rewrite_for_tts(text: str, chat_id_full: str, lang: str) -> str:
+    '''
+    Rewrite the text for TTS.
+    Тут у нас 2 противоположные инструкции, с одной стороны надо сказать что бы не переводил ничего на другой язык
+    а с другой надо транслитерировать иностранные слова. Из за этого плохо работает (не работает).
+    '''
+    
+    PROMPT_REWRITE_TEXT_FOR_TTS = '''Rewrite text. Preserve the original formatting, including line breaks. Never translate the text, keep original languages in text! Rewrite the text for TTS reading:
+
+1. Numbers: Write all numbers in words. For decimal fractions, use the separator for the integer and fractional parts accepted in the original language and pronounce it with the corresponding word. For example: 0.25 - "zero point twenty-five" (for a point), 3.14 - "three comma fourteen" (for a comma).
+2. Abbreviations: Expand all abbreviations into full words corresponding to the original language. For example: "kg" - "kilogram" (for the English language).
+3. Dates: Write dates in words, preserving the order of day, month, and year accepted in the original language. For example, for the English language (US): January 1st, 2024.
+4. Symbols: Replace all & symbols with the word corresponding to the conjunction "and" in the original language.
+5. Symbol №: Replace with the word 'number'.
+6. Mathematical expressions: Rewrite in words: √ - square root of, ∑ - sum, ∫ - integral, ≠ - not equal to, ∞ - infinity, π - pi, α - alpha, β - beta, γ - gamma.
+7. Punctuation: After periods, make a longer pause, after commas - a shorter one.
+8. URLs:
+* If the URL is short, simple, and understandable (for example, google.com, youtube.com/watch, vk.com/id12345), pronounce it completely, following the reading rules for known and unknown domains, as well as subdomains. For known domains (.ru, .com, .org, .net, .рф), pronounce them as abbreviations. For example, ".ru" - "dot ru", ".com" - "dot com", ".рф" - "dot er ef". For unknown domains, pronounce them character by character. Subdomains, if possible, read in words.
+    * If the URL is long, complex, or contains many special characters, do not pronounce it completely. Instead, mention that there is a link in the text, and, if possible, indicate the domain or briefly describe what it leads to. For example: "There is a link to the website example dot com in the text" or "Further in the text there is a link to a page with detailed information".
+    * When reading a domain, do not pronounce "www".
+    * If the URL is not important for understanding the text, you can ignore it.
+    Use your knowledge of the structure of URLs to determine if it is simple and understandable.
+
+Examples:
+
+* https://google.com - "google dot com"
+* youtube.com/watch?v=dQw4w9WgXcQ - "youtube dot com slash watch question mark v equals ... (do not read further)"
+* https://www.example.com/very/long/and/complex/url/with/many/parameters?param1=value1&param2=value2 - "There is a long link to the website example dot com in the text"
+* 2+2≠5 - "two plus two is not equal to five"'''
+
+    result = chat(text, system=PROMPT_REWRITE_TEXT_FOR_TTS, model = cfg.gemini_flash_model, chat_id=chat_id_full, do_not_update_history=True)
+    if not result:
+        result = chat(text, system=PROMPT_REWRITE_TEXT_FOR_TTS, model = cfg.gemini_flash_model_fallback, chat_id=chat_id_full, do_not_update_history=True)
+    
+    return result or text
+
+
 # def imagen(prompt: str = "Fuzzy bunnies in my kitchen"):
 #     '''!!!не работает пока!!!
 #     https://ai.google.dev/gemini-api/docs/imagen

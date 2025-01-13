@@ -78,10 +78,10 @@ def get_subs_from_rutube(url: str, proxy: bool = True) -> str:
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'get_subs_from_rutube3: {error} {url} {tmpname}\n\n{traceback_error}')
-        if proxy:
-            return get_subs_from_rutube(url, proxy = False)
     finally:
         utils.remove_file(tmpname)
+        if proxy and not result:
+            result = get_subs_from_rutube(url, proxy = False)
         return result
 
 
@@ -526,5 +526,6 @@ if __name__ == "__main__":
     pass
     # my_groq.load_users_keys()
     # r = get_subs_from_dzen_video('https://www.youtube.com/watch?v=lyGvQn_clQM')
-    r = get_text_from_youtube('https://www.youtube.com/watch?v=qnvNkXs7NpY', transcribe=False)
+    # r = get_text_from_youtube('https://www.youtube.com/watch?v=qnvNkXs7NpY', transcribe=False)
+    r = get_subs_from_rutube('https://vimeo.com/216790976')
     print(r)

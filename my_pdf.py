@@ -121,7 +121,7 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
     return text_content
 
 
-@async_run_with_limit(10)
+@async_run_with_limit(1)
 def process_image_ocr(image: bytes, index: int, results) -> Tuple[str, int]:
     """
     Performs OCR on a single image using my_gemini.ocr_page.

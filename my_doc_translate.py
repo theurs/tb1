@@ -39,7 +39,7 @@ def get_prompt(dst: str) -> str:
     return help
 
 
-@async_run_with_limit(max_threads=20)
+@async_run_with_limit(max_threads=1)
 def translate_text(text: str, src: str, dst: str, results: dict, index: int) -> str:
     '''
     Translate text with ai

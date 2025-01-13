@@ -2314,11 +2314,12 @@ def handle_successful_payment(message: telebot.types.Message):
         currency = message.successful_payment.currency
 
         # Отправка подтверждающего сообщения о покупке
+        msg = f'{tr("✅ Донат принят.", lang)} [{amount}]'
         try:
-            bot_reply_tr(message, "✅ Донат принят.")
+            bot_reply(message, msg)
         except Exception as error:
             my_log.log_donate(f'tb:handle_successful_payment: {error}\n\n{str(message)}')
-            bot.send_message(message.chat.id, "✅ Донат принят.")
+            bot.send_message(message.chat.id, msg)
 
         # Сохранение информации о платеже в базе данных
         # save_payment(user_id, payment_id, amount, currency)

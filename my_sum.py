@@ -86,11 +86,14 @@ def get_subs_from_rutube(url: str, proxy: bool = True) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def get_subs_from_dzen_video(url: str) -> str:
+def get_subs_from_dzen_video(url: str, proxy: bool = True) -> str:
     '''Downloads subtitles from dzen video url, converts them to text and returns the text. 
     Returns None if no subtitles found.'''
     list_of_subs = []
-    cmd = f'yt-dlp -q --skip-download --list-subs  {utils.get_ytb_proxy()}  "{url}"'
+    if proxy:
+        cmd = f'yt-dlp -q --skip-download --list-subs  {utils.get_ytb_proxy()}  "{url}"'
+    else:
+        cmd = f'yt-dlp -q --skip-download --list-subs  "{url}"'
     try:
         output = subprocess.check_output(cmd, shell=True, timeout=300, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as error:
@@ -101,14 +104,25 @@ def get_subs_from_dzen_video(url: str) -> str:
 
     output = output.decode('utf-8', errors='replace')
 
+    if output.startswith('ERROR'):
+        if proxy:
+            return get_subs_from_dzen_video(url, proxy = False)
+        else:
+            return ''
+
     for line in output.splitlines():
         line = line.strip()
         if line and not line.startswith('Language'):
             list_of_subs.append((line.split(' ', 1)[0], line.split(' ', 1)[1]))
 
+    list_of_subs = [x for x in list_of_subs if 'WARNING' not in x[0]]
+
     if list_of_subs:
         tmpname = utils.get_tmp_fname()
-        cmd = f'yt-dlp -q --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}"  {utils.get_ytb_proxy()}  "{url}" -o "{tmpname}"'
+        if proxy:
+            cmd = f'yt-dlp -q --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}"  {utils.get_ytb_proxy()}  "{url}" -o "{tmpname}"'
+        else:
+            cmd = f'yt-dlp -q --skip-download --write-subs --sub-lang "{list_of_subs[0][0]}"  "{url}" -o "{tmpname}"'
         subprocess.call(cmd, shell=True)
         ext = f'.{list_of_subs[0][0]}.{list_of_subs[0][1].split(",")[0]}'
         ext = ext.replace(' ', '')
@@ -120,7 +134,10 @@ def get_subs_from_dzen_video(url: str) -> str:
         utils.remove_file(tmpname + ext)
         return clear_text_subs_from_dzen_video(text)
     else:
-        return get_subs_from_rutube(url)
+        if proxy:
+            return get_subs_from_dzen_video(url, proxy = False)
+        else:
+            return get_subs_from_rutube(url)
 
 
 def clear_text_subs_from_dzen_video(text: str) -> str:
@@ -191,7 +208,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
         if '//my.mail.ru/v/' in url and '/video/' in url:
             return get_subs_from_rutube(url)
         if 'https://vimeo.com/' in url:
-            return get_subs_from_rutube(url)
+            return get_subs_from_dzen_video(url)
 
         try:
             video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
@@ -527,5 +544,6 @@ if __name__ == "__main__":
     # my_groq.load_users_keys()
     # r = get_subs_from_dzen_video('https://www.youtube.com/watch?v=lyGvQn_clQM')
     # r = get_text_from_youtube('https://www.youtube.com/watch?v=qnvNkXs7NpY', transcribe=False)
-    r = get_subs_from_rutube('https://vimeo.com/216790976')
+    # r = get_subs_from_rutube('https://vimeo.com/216790976')
+    r = get_subs_from_dzen_video('https://vimeo.com/channels/bestofstaffpicks/1024184564')
     print(r)

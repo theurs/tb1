@@ -2313,6 +2313,13 @@ def handle_successful_payment(message: telebot.types.Message):
         amount = message.successful_payment.total_amount
         currency = message.successful_payment.currency
 
+        # Сохранение информации о платеже в базе данных
+        # save_payment(user_id, payment_id, amount, currency)
+        my_log.log_donate(f'{user_id} {payment_id} {amount} {currency}')
+        user_stars = my_db.get_user_property(chat_full_id, 'telegram_stars') or 0
+        user_stars += amount
+        my_db.set_user_property(chat_full_id, 'telegram_stars', user_stars)
+
         # Отправка подтверждающего сообщения о покупке
         msg = f'{tr("✅ Донат принят.", lang)} [{amount}]'
         try:
@@ -2321,12 +2328,6 @@ def handle_successful_payment(message: telebot.types.Message):
             my_log.log_donate(f'tb:handle_successful_payment: {error}\n\n{str(message)}')
             bot.send_message(message.chat.id, msg)
 
-        # Сохранение информации о платеже в базе данных
-        # save_payment(user_id, payment_id, amount, currency)
-        my_log.log_donate(f'{user_id} {payment_id} {amount} {currency}')
-        user_stars = my_db.get_user_property(chat_full_id, 'telegram_stars') or 0
-        user_stars += amount
-        my_db.set_user_property(chat_full_id, 'telegram_stars', user_stars)
     except Exception as error:
         chat_full_id = get_topic_id(message)
         lang = get_lang(chat_full_id, message)

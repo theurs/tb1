@@ -2834,7 +2834,7 @@ def handle_document(message: telebot.types.Message):
                                     target_lang,
                                     fname=new_fname)
                                 if new_data:
-                                    new_fname2 = f'(translated) {new_fname}'
+                                    new_fname2 = f'(translated by @{_bot_name}) {new_fname}'
                                     m = bot.send_document(
                                         message.chat.id,
                                         new_data,

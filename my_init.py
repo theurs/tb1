@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 
 import pickle
+import threading
+import time
 
 import cfg
 import my_gemini
 import my_groq
 import my_db
 import my_ddg
+from utils import async_run_with_limit
+
+
+PRINT_LOCK = threading.Lock()
 
 
 supported_langs_trans = [
@@ -90,6 +96,8 @@ Remove keyboard /remove_keyboard.
 
 help_msg = f"""🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
 After the file or link is downloaded, you can ask questions about file using the `/ask` command.
+
+Send document with caption `!tr lang` to translate document to this language
 
 🎙️ You can issue commands and make requests using voice messages.
 
@@ -234,20 +242,31 @@ def generate_start_msg():
         pickle.dump(msgs, f)
 
 
+@async_run_with_limit(1)
+def translate_help_msg(msg_source: str, source: str, target: str, container: dict):
+    msg = my_gemini.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.')
+    if not msg:
+        msg = my_groq.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.')
+    if msg:
+        container[target] = msg
+    else:
+        with PRINT_LOCK:
+            print(f'google translate failed {target}')
+        container[target] = msg_source
+    time.sleep(5)
+
+
 def generate_help_msg():
-    msgs = {}
+    container = {}
+
     for x in supported_langs_trans:
-    # for x in ['ru', 'uk', 'de']:
-        # msg = my_trans.translate(help_msg, x)
-        msg = my_gemini.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
-        if msg:
-            msgs[x] = msg
-            print('\n\n', x, '\n\n', msg)
-        if not msg:
-            print(f'google translate failed {x}')
+        translate_help_msg(help_msg, 'en', x, container)
+
+    while len(container) < len(supported_langs_trans):
+        time.sleep(1)
 
     with open(help_msg_file, 'wb') as f:
-        pickle.dump(msgs, f)
+        pickle.dump(container, f)
 
 
 def regenerate_help_msg(langs):
@@ -261,18 +280,7 @@ def regenerate_help_msg(langs):
     print(missing)
 
     for x in langs:
-        msg = my_ddg.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
-        if not msg:
-            msg_ = help_msg
-            msg = my_gemini.translate(
-                help_msg,
-                from_lang='en',
-                to_lang=x,
-                help='It is a /help message for telegram chat bot. Keep the formatting.',
-                model = cfg.gemini_pro_model
-            )
-            if msg == msg_:
-                msg = ''
+        msg = my_gemini.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
         if not msg:
             msg = my_groq.translate(
                 help_msg,
@@ -281,6 +289,7 @@ def regenerate_help_msg(langs):
                 help='It is a /help message for telegram chat bot. Keep the formatting.',
                 model = cfg.gemini_pro_model
             )
+
         if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
@@ -390,8 +399,10 @@ if __name__ == '__main__':
     #     pickle.dump(d, f)
 
     # generate_start_msg()
-    generate_help_msg()
-    # regenerate_help_msg('eo')
+
+    # generate_help_msg()
+
+    regenerate_help_msg(('zu', 'sw'))
     # regenerate_start_msg('en')
 
     my_db.close()

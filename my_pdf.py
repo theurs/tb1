@@ -18,7 +18,7 @@ from typing import List, Tuple
 import cfg
 import my_log
 import my_gemini
-from utils import async_run, get_codepage, platform, get_tmp_fname, remove_file, remove_dir
+from utils import async_run_with_limit, get_codepage, platform, get_tmp_fname, remove_file, remove_dir
 
 
 def extract_images_from_pdf_with_imagemagick(data: bytes) -> List[bytes]:
@@ -121,7 +121,7 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
     return text_content
 
 
-@async_run
+@async_run_with_limit(10)
 def process_image_ocr(image: bytes, index: int, results) -> Tuple[str, int]:
     """
     Performs OCR on a single image using my_gemini.ocr_page.

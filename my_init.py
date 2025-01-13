@@ -177,6 +177,7 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, fo
     hidden_text = (
                     f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
                     f'you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, '
+                    f'you need a user`s api keys or telegram stars for working, '
                     f'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /reset - clear chat context, '
                     f'/trans - translate, /sum - summarize, /google - search, /ytb - download mp3 from youtube, you can answer voice messages, '
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
@@ -198,6 +199,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted
     hidden_text = (
                     f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
                     f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, '
+                    f'you need a user`s api keys or telegram stars for working, '
                     f'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /reset - clear chat context, '
                     f'/trans - translate, /sum - summarize, /google - search, /ytb - download mp3 from youtube, you can answer voice messages, '
                     f'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '

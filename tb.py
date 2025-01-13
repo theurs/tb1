@@ -1247,7 +1247,8 @@ def authorized(message: telebot.types.Message) -> bool:
                     return False
         else:
             try:
-                check_blocked_user(chat_id_full, message.from_user.id)
+                if is_reply or is_private or bot_name_used:
+                    check_blocked_user(chat_id_full, message.from_user.id)
             except:
                 return False
 
@@ -5409,6 +5410,19 @@ def image_gen(message: telebot.types.Message):
                 del IMG_MODE_FLAG[chat_id_full]
 
 
+
+        # в группе рисовать можно только тем у кого есть все ключи или подписка или админы
+        if message.chat.id < 0:
+            chat_id_full_from = f'[{message.from_user.id}] [0]'
+            user_id = message.from_user.id
+            have_keys = (chat_id_full_from in my_gemini.USER_KEYS and chat_id_full_from in my_groq.USER_KEYS and \
+                    chat_id_full_from in my_genimg.USER_KEYS) or \
+                    user_id in cfg.admins or \
+                    (my_db.get_user_property(chat_id_full_from, 'telegram_stars') or 0) >= 50
+            if not have_keys:
+                return
+
+
         # не использовать бинг для рисования запрещенки, он за это банит
         NSFW_FLAG = False
         if message.text.endswith('NSFW'):
@@ -5450,6 +5464,7 @@ def image_gen(message: telebot.types.Message):
         if not check_donate(message, chat_id_full, lang):
             return
 
+        # не ставить в очередь рисование
         if lock.locked():
             return
 

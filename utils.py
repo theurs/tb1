@@ -49,6 +49,33 @@ def async_run(func):
     return wrapper
 
 
+def async_run_with_limit(max_threads: int):
+    """
+    Decorator to run a function in a separate thread asynchronously,
+    with a limit on the number of concurrent threads.
+
+    Args:
+        max_threads: The maximum number of threads allowed to run concurrently.
+    """
+    semaphore = threading.Semaphore(max_threads)
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            def task():
+                try:
+                    func(*args, **kwargs)
+                finally:
+                    semaphore.release()
+
+            semaphore.acquire()
+            thread = threading.Thread(target=task)
+            thread.start()
+            return thread  # Optionally return the thread object
+        return wrapper
+    return decorator
+
+
 def get_file_ext(fname: str) -> str:
     '''return extension of file using pathlib'''
     try:

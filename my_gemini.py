@@ -751,6 +751,8 @@ TEXT:
             return l2
         elif isinstance(l1, str):
             return l1
+        elif isinstance(translated_dict, list):
+            text = translated_dict[0]['translation']
         else:
             my_log.log_gemini(f'translate2: unknown type {type(l1)}\n\n{str(l1)}')
             return text

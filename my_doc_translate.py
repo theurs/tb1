@@ -13,13 +13,39 @@ import my_groq
 from utils import async_run_with_limit
 
 
-@async_run_with_limit(max_threads=50)
+def get_prompt_dialog(dst: str) -> str:
+    '''
+    Get prompt for ai
+    '''
+    help = (
+        f'Делаем качественный художественный перевод текста на язык [{dst}]. '
+        'Можешь использовать синонимы что бы сделать текст более художественным. '
+        'Я посылаю тебе куски текста один за другим а ты делаешь перевод и показываешь мне '
+        'только перевод без комментариев и лишних слов. '
+        'Сохраняй оригинальное форматирование, абзацы, переносы строк итп.'
+    )
+    return help
+
+
+def get_prompt(dst: str) -> str:
+    '''
+    Get prompt for ai
+    '''
+    help = (
+        f'Делаем качественный художественный перевод текста на язык [{dst}]. '
+        'Можешь использовать синонимы что бы сделать текст более художественным. '
+        'Сохраняй оригинальное форматирование, теги, абзацы, переносы строк итп.'
+    )
+    return help
+
+
+@async_run_with_limit(max_threads=20)
 def translate_text(text: str, src: str, dst: str, results: dict, index: int) -> str:
     '''
     Translate text with ai
     results - dict[index] = text (translated or original(fail to translate))
     '''
-    help = 'Сделай высококачественный художественный перевод текста сохраняя форматирование html'
+    help = get_prompt(dst)
     result = my_gemini.translate(text, src, dst, help = help)
     if not result:
         result = my_groq.translate(text, src, dst, help = help)
@@ -27,11 +53,11 @@ def translate_text(text: str, src: str, dst: str, results: dict, index: int) -> 
     results[index] = result or text
 
 
-def translate_text_in_dialog(chunk: str, src: str, dst: str, chat_id: str) -> str:
+def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
     '''
     Translate text in dialog mode with gemini
     '''
-    help = 'Делаем качественный художественный перевод текста сохраняя форматирование html. Можешь использовать синонимы что бы сделать текст более художественным. Я посылаю тебе куски текста один за другим а ты делаешь перевод и показываешь мне только перевод без комментариев и лишних слов.'
+    help = get_prompt_dialog(dst)
 
     r = my_gemini.chat(
         query=chunk,
@@ -95,7 +121,7 @@ def split_text(text: str, chunk_size: int = 5000) -> list[str]:
         chunks.append(current_chunk.strip())
     
     return chunks
-    
+
 
 def translate_file(data: bytes, src: str, dst: str, fname: str) -> bytes:
     '''
@@ -105,8 +131,11 @@ def translate_file(data: bytes, src: str, dst: str, fname: str) -> bytes:
     3. Translate with google gemini
     4. convert back to document with pandoc
     '''
-    # Convert the document to HTML using pandoc
-    text = my_pandoc.convert_file_to_html(data, filename=fname)
+    if isinstance(data, str):
+        text = data
+    else:
+        # Convert the document to HTML using pandoc
+        text = my_pandoc.convert_file_to_html(data, filename=fname)
 
     # Split the HTML into chunks for translation
     chunks = split_text(text)
@@ -142,6 +171,10 @@ def translate_file_in_dialog(data: bytes, src: str, dst: str, fname: str) -> byt
     3. Translate with google gemini
     4. convert back to document with pandoc
     '''
+    if isinstance(data, str):
+        with open(data, 'rb') as f:
+            data = f.read()
+
     # Convert the document to HTML using pandoc
     text = my_pandoc.convert_file_to_html(data, filename=fname)
 
@@ -174,10 +207,9 @@ if __name__ == '__main__':
 
     with open('c:/Users/user/Downloads/1.epub', 'rb') as f:
         data = f.read()
-        new_data = translate_file_in_dialog(data, 'en', 'ru', '1.epub')
+        # new_data = translate_file_in_dialog(data, 'en', 'ru', '1.epub')
+        new_data = translate_file(data, 'en', 'ru', '1.epub')
         with open('c:/Users/user/Downloads/2.epub', 'wb') as f:
             f.write(new_data)
 
     my_db.close()
-
-    

@@ -36,6 +36,7 @@ import my_genimg
 import my_cohere
 import my_db
 import my_ddg
+import my_doc_translate
 import my_google
 import my_gemini
 import my_gemini_google
@@ -2892,6 +2893,32 @@ def handle_document(message: telebot.types.Message):
                                         return
                                 caption = message.caption or ''
                                 caption = caption.strip()
+
+                                # если подпись к документу начинается на !tr то это запрос на перевод
+                                # и через пробел должен быть указан язык например !tr ru
+                                if caption.startswith('!tr '):
+                                    target_lang = caption[4:].strip()
+                                    if target_lang: # добавить уведомление о начале перевода
+                                        new_fname = message.document.file_name if hasattr(message, 'document') else 'noname.txt'
+                                        new_data = my_doc_translate.translate_file(
+                                            text,
+                                            lang,
+                                            target_lang,
+                                            fname=new_fname)
+                                        if new_data:
+                                            new_fname2 = f'(translated) {new_fname}'
+                                            m = bot.send_document(
+                                                message.chat.id,
+                                                new_data,
+                                                reply_to_message_id=message.message_id,
+                                                message_thread_id=message.message_thread_id,
+                                                caption=new_fname2,
+                                                visible_file_name=new_fname2,
+                                                disable_notification=True)
+                                            log_message(m)
+                                            return
+
+
                                 summary = my_sum.summ_text(text, 'text', lang, caption)
                                 my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')
                                 my_db.set_user_property(chat_id_full, 'saved_file', text)

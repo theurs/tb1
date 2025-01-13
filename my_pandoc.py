@@ -111,9 +111,11 @@ def convert_djvu2pdf(input_file: str) -> str:
 
 
 def convert_text_to_docx(text: str) -> bytes:
-    '''convert text to docx file'''
+    '''convert md text to docx file'''
     output_file = utils.get_tmp_fname() + '.docx'
-    subprocess.run(['pandoc', '-f', 'markdown', '-t', 'docx', '-o', output_file, '-'], input=text.encode('utf-8'), stdout=subprocess.PIPE)
+    html = utils.bot_markdown_to_html(text)
+    html = html.replace('\n', '<br>')
+    subprocess.run(['pandoc', '-f', 'html', '-t', 'docx', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
     with open(output_file, 'rb') as f:
         data = f.read()
     utils.remove_file(output_file)
@@ -121,9 +123,11 @@ def convert_text_to_docx(text: str) -> bytes:
 
 
 def convert_text_to_odt(text: str) -> bytes:
-    '''convert text to odt file'''
+    '''convert md text to odt file'''
     output_file = utils.get_tmp_fname() + '.odt'
-    subprocess.run(['pandoc', '-f', 'markdown', '-t', 'odt', '-o', output_file, '-'], input=text.encode('utf-8'), stdout=subprocess.PIPE)
+    html = utils.bot_markdown_to_html(text)
+    html = html.replace('\n', '<br>')
+    subprocess.run(['pandoc', '-f', 'html', '-t', 'odt', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
     with open(output_file, 'rb') as f:
         data = f.read()
     utils.remove_file(output_file)
@@ -133,7 +137,9 @@ def convert_text_to_odt(text: str) -> bytes:
 def convert_text_to_pdf(text: str) -> bytes:
     '''convert text to pdf file'''
     output_file = utils.get_tmp_fname() + '.pdf'
-    subprocess.run(['pandoc', '-f', 'markdown', '-t', 'pdf', '-o', output_file, '-'], input=text.encode('utf-8'), stdout=subprocess.PIPE)
+    html = utils.bot_markdown_to_html(text)
+    html = html.replace('\n', '<br>')
+    subprocess.run(['pandoc', '-f', 'html', '-t', 'pdf', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
     with open(output_file, 'rb') as f:
         data = f.read()
     utils.remove_file(output_file)

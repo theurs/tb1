@@ -5498,6 +5498,8 @@ def image_gen(message: telebot.types.Message):
                             # caption_ = prompt[:900]
                             if isinstance(i, str):
                                 d = utils.download_image_as_bytes(i)
+                                if len(d) < 2000: # placeholder?
+                                    continue
                                 caption_ = f'{bot_addr} bing.com\n\n' + caption_
                                 my_db.add_msg(chat_id_full, 'img ' + 'bing.com')
                             elif isinstance(i, bytes):

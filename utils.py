@@ -992,7 +992,7 @@ def is_image_link(url: str) -> bool:
     return False
 
 
-def download_image_as_bytes(url_or_urls):
+def download_image_as_bytes(url_or_urls: str) -> bytes:
     """Загружает изображение(я) по URL-адресу(ам) и возвращает его(их) в виде байтов.
 
     Args:
@@ -1006,7 +1006,7 @@ def download_image_as_bytes(url_or_urls):
         try:
             response = requests.get(url_or_urls, timeout=30)
         except Exception as error:
-            return None
+            return b''
         return response.content
 
     elif isinstance(url_or_urls, list):
@@ -1015,7 +1015,7 @@ def download_image_as_bytes(url_or_urls):
         return results
 
     else:
-        return None
+        return b''
 
 
 def download_image_for_thumb(url: str) -> bytes:

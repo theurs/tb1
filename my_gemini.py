@@ -66,10 +66,10 @@ MAX_CHAT_LINES = 20
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
     MAX_CHAT_LINES = cfg.GEMINI_MAX_CHAT_LINES
 # MAX_CHAT_MEM_CHARS = 20000*3 # 20000 токенов по 3 символа на токен. +8000 токенов на ответ остается 4000 токенов на системный промпт и прочее
-MAX_CHAT_MEM_CHARS = 50000
+MAX_CHAT_MEM_CHARS = 40000
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 20000
-MAX_SUM_REQUEST = 250000
+MAX_SUM_REQUEST = 200000
 # MAX_SUM_REQUEST = 31000
 
 MEM_UNCENSORED = [
@@ -273,7 +273,10 @@ def chat(query: str,
                         return ''
                     mem = chat_.history[2:]
                     continue
-                my_log.log_gemini(f'my_gemini:chat2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                if '429 Quota exceeded for quota metric' n in str(error):
+                    my_log.log_gemini(f'my_gemini:chat2: 429 Quota exceeded {model} {key}')
+                else:
+                    my_log.log_gemini(f'my_gemini:chat2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
                    'reason: "API_KEY_INVALID"' in str(error):
                     remove_key(key)

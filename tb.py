@@ -2535,7 +2535,7 @@ def image_info(image_bytes: bytes, lang: str = "ru") -> str:
 def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Message):
     '''The user sent an image without a caption.  Ask the user what to do with it,
     save the image, and display a keyboard with options.
-    
+
     Args:
         chat_id_full: The full chat ID string.
         image: The image data as bytes.
@@ -5450,6 +5450,8 @@ def image_gen(message: telebot.types.Message):
         if not check_donate(message, chat_id_full, lang):
             return
 
+        if lock.locked():
+            return
 
         with lock:
             with semaphore_talks:

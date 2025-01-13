@@ -183,7 +183,7 @@ def chat(query: str,
             system = None
 
         if not key__:
-            keys = cfg.gemini_keys[:] + ALL_KEYS
+            keys = cfg.gemini_keys[:] + ALL_KEYS[:]
         else:
             keys = [key__,]
 

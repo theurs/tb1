@@ -131,7 +131,11 @@ def process_image_ocr(image: bytes, index: int, results) -> Tuple[str, int]:
         index: The index of the image in the original list.
     """
     text = my_gemini.ocr_page(image)
-    results[index] = text or 'EMPTY MARKER 4975934685'
+
+    if 'EMPTY' in text and len(text) < 20:
+        results[index] = 'EMPTY MARKER 4975934685'
+    else:
+        results[index] = text
 
 
 def get_text(data: bytes) -> str:
@@ -153,7 +157,7 @@ def get_text(data: bytes) -> str:
                 process_image_ocr(image, index, results)
                 index += 1
 
-            while len(results) != len(images):
+            while len(results) != len(images[:LIMIT]):
                 time.sleep(1)
 
             # remove empty markers

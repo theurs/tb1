@@ -2815,6 +2815,39 @@ def handle_document(message: telebot.types.Message):
                             else:
                                 raise error
                         downloaded_file = bot.download_file(file_info.file_path)
+
+
+
+
+                        caption = message.caption or ''
+                        caption = caption.strip()
+
+                        # если подпись к документу начинается на !tr то это запрос на перевод
+                        # и через пробел должен быть указан язык например !tr ru
+                        if caption.startswith('!tr '):
+                            target_lang = caption[4:].strip()
+                            if target_lang: # добавить уведомление о начале перевода
+                                new_fname = message.document.file_name if hasattr(message, 'document') else 'noname.txt'
+                                new_data = my_doc_translate.translate_file(
+                                    downloaded_file,
+                                    lang,
+                                    target_lang,
+                                    fname=new_fname)
+                                if new_data:
+                                    new_fname2 = f'(translated) {new_fname}'
+                                    m = bot.send_document(
+                                        message.chat.id,
+                                        new_data,
+                                        reply_to_message_id=message.message_id,
+                                        message_thread_id=message.message_thread_id,
+                                        caption=new_fname2,
+                                        visible_file_name=new_fname2,
+                                        disable_notification=True)
+                                    log_message(m)
+                                    return
+
+
+
                         file_bytes = io.BytesIO(downloaded_file)
                         text = ''
                         if message.document.mime_type == 'application/pdf':
@@ -2891,33 +2924,6 @@ def handle_document(message: telebot.types.Message):
                                     if process_wg_config(text, message):
                                         bot_reply_tr(message, 'OK')
                                         return
-                                caption = message.caption or ''
-                                caption = caption.strip()
-
-                                # если подпись к документу начинается на !tr то это запрос на перевод
-                                # и через пробел должен быть указан язык например !tr ru
-                                if caption.startswith('!tr '):
-                                    target_lang = caption[4:].strip()
-                                    if target_lang: # добавить уведомление о начале перевода
-                                        new_fname = message.document.file_name if hasattr(message, 'document') else 'noname.txt'
-                                        new_data = my_doc_translate.translate_file(
-                                            text,
-                                            lang,
-                                            target_lang,
-                                            fname=new_fname)
-                                        if new_data:
-                                            new_fname2 = f'(translated) {new_fname}'
-                                            m = bot.send_document(
-                                                message.chat.id,
-                                                new_data,
-                                                reply_to_message_id=message.message_id,
-                                                message_thread_id=message.message_thread_id,
-                                                caption=new_fname2,
-                                                visible_file_name=new_fname2,
-                                                disable_notification=True)
-                                            log_message(m)
-                                            return
-
 
                                 summary = my_sum.summ_text(text, 'text', lang, caption)
                                 my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')

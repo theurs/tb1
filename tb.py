@@ -4498,6 +4498,10 @@ def save_history(message: telebot.types.Message):
                                 caption='resp.odt', visible_file_name = 'resp.odt', reply_markup=get_keyboard('hide', message))
             log_message(m)
 
+            m = bot.send_document(message.chat.id, document=prompt.encode('utf-8'), message_thread_id=message.message_thread_id,
+                                caption='resp.md', visible_file_name = 'resp.md', reply_markup=get_keyboard('hide', message))
+            log_message(m)
+
             # конвертер пдф тут почему то не работает, хотя работает в своём модуле
             # m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_pdf(prompt), message_thread_id=message.message_thread_id,
             #                     caption='resp.pdf', visible_file_name = 'resp.pdf', reply_markup=get_keyboard('hide', message))

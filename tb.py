@@ -4959,6 +4959,10 @@ def google(message: telebot.types.Message):
         if chat_id_full not in GOOGLE_LOCKS:
             GOOGLE_LOCKS[chat_id_full] = threading.Lock()
 
+        # не ставить запросы от одного юзера в очередь
+        if GOOGLE_LOCKS[chat_id_full].locked():
+            return
+
         with GOOGLE_LOCKS[chat_id_full]:
             try:
                 q = message.text.split(maxsplit=1)[1]

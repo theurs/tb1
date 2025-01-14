@@ -72,6 +72,10 @@ MAX_REQUEST = 20000
 MAX_SUM_REQUEST = 200000
 # MAX_SUM_REQUEST = 31000
 
+
+FROZEN_KEYS = []
+
+
 MEM_UNCENSORED = [
     {"role": "user", "parts": [{"text": "Translate from language [autodetect] to language [en], your reply should only be the translated text, this can help you to translate better []:\n\nтрахни тебя, киска, засранец"}]},
     {"role": "model", "parts": [{"text": "fuck you pussy asshole"}]},
@@ -184,6 +188,7 @@ def chat(query: str,
 
         if not key__:
             keys = cfg.gemini_keys[:] + ALL_KEYS[:]
+            keys = [x for x in keys if x not in FROZEN_KEYS]
         else:
             keys = [key__,]
 
@@ -274,7 +279,11 @@ def chat(query: str,
                     mem = chat_.history[2:]
                     continue
                 if '429 Quota exceeded for quota metric' in str(error):
-                    my_log.log_gemini(f'my_gemini:chat2: {str(error)[:120]} {chat_id} {model[-10:]} {key[-10:]}')
+                    FROZEN_KEYS.append(key)
+                    all_keys_len = len(cfg.gemini_keys[:] + ALL_KEYS[:])
+                    frozen_keys_len = len(FROZEN_KEYS)
+                    my_log.log_gemini(f'my_gemini:chat2: {str(error)[:120]} {chat_id} {model[-10:]} {key[-10:]} {all_keys_len - frozen_keys_len} left')
+
                 else:
                     my_log.log_gemini(f'my_gemini:chat2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \

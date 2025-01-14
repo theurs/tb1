@@ -141,7 +141,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
                     if images:
                         my_log.log_bing_success('MAIN BING SUCCESS')
                     else:
-                        my_log.log_bing_api('MAIN BING FAILED' + prompt)
+                        my_log.log_bing_img('MAIN BING FAILED' + prompt)
                     BING_SWITCH = 1
                 else:
                     images = bing_api_client.gen_images(prompt)
@@ -149,7 +149,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
                     if images:
                         my_log.log_bing_success('SECONDARY BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
                     else:
-                        my_log.log_bing_api('SECONDARY BING FAILED ' + prompt)
+                        my_log.log_bing_img('SECONDARY BING FAILED ' + prompt)
             else:
                 images = bing_img.gen_images(prompt, user_id)
 

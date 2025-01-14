@@ -70,13 +70,10 @@ def send_image_generation_request(prompt: str) -> List[str]:
         
         return image_urls
 
-    except requests.RequestException as e:
-        my_log.log_bing_api(f'bing_api_client:send_image_generation_request: {e}')
-    except json.JSONDecodeError as e:
-        my_log.log_bing_api(f'bing_api_client:send_image_generation_request: {e}')
-    except Exception as e:
-        traceback_error = traceback.format_exc()
-        my_log.log_bing_api(f'bing_api_client:send_image_generation_request: {e}\n\n{traceback_error}')
+    except Exception as error:
+        if '404 Client Error: NOT FOUND for url:' not in str(error):
+            traceback_error = traceback.format_exc()
+            my_log.log_bing_api(f'bing_api_client:send_image_generation_request3: {error}\n\n{traceback_error}')
 
     return []
 

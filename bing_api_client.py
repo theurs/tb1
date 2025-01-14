@@ -1,9 +1,17 @@
+#!/usr/bin/env python3
+
+
 import json
 import requests
+import traceback
 from typing import List, Dict, Any
 
+import cfg
+import my_log
+import utils
 
-BASE_URL = "http://127.0.0.1:58796/bing"
+
+BASE_URL = cfg.BING_SECONDARY_URL if hasattr(cfg, 'BING_SECONDARY_URL') and cfg.BING_SECONDARY_URL else "http://127.0.0.1:58796/bing"
 
 
 def send_image_generation_request(prompt: str) -> List[str]:
@@ -21,7 +29,7 @@ def send_image_generation_request(prompt: str) -> List[str]:
 
     try:
         # Send the POST request
-        response: requests.Response = requests.post(url, headers=headers, json=data)
+        response: requests.Response = requests.post(url, headers=headers, json=data, timeout=180)
         
         # Raise an exception for bad status codes
         response.raise_for_status()
@@ -35,11 +43,14 @@ def send_image_generation_request(prompt: str) -> List[str]:
         return image_urls
 
     except requests.RequestException as e:
-        print(f"An error occurred while sending the request: {e}")
-        raise
+        my_log.log_bing_api(f'bing_api_client:send_image_generation_request: {e}')
     except json.JSONDecodeError as e:
-        print(f"An error occurred while parsing the response: {e}")
-        raise
+        my_log.log_bing_api(f'bing_api_client:send_image_generation_request: {e}')
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log_bing_api(f'bing_api_client:send_image_generation_request: {e}\n\n{traceback_error}')
+
+    return []
 
 
 def gen_images(prompt: str) -> List[str]:
@@ -48,11 +59,11 @@ def gen_images(prompt: str) -> List[str]:
 
 if __name__ == "__main__":
     # Example prompt in Russian
-    prompt: str = "Нарисуй закат на море с яркими оранжевыми и розовыми оттенками на небе,\nа на переднем плане пусть будет одинокая лодка, покачивающаяся на волнах."
+    prompt: str = "Нарисуй закат на море с яркими оранжевыми и розовыми оттенками на небе а на переднем плане пусть будет одинокая лодка покачивающаяся на волнах"
     
     try:
         # Send the request and get the URLs
-        urls: List[str] = send_image_generation_request(prompt)
+        urls: List[str] = gen_images(prompt)
         
         # Print the URLs
         for url in urls:

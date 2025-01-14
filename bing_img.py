@@ -88,18 +88,10 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
 
         try:
             c = get_cookie()
-            # sync_gen = ImageGen(auth_cookie=c, quiet=True, proxy=proxy)
             sync_gen = BingImageCreator(c)
-            results = sync_gen.generate_images_sync(utils.replace_non_letters_with_spaces(prompt))
+            results = sync_gen.generate_images_sync(prompt)
         except Exception as error:
             my_log.log_bing_img(f'get_images_v2:1: {error} \n\n {c} \n\nPrompt: {prompt}')
-
-            # if 'Bad images' in str(error) or \
-            #     'Your prompt is being reviewed by Bing. Try to change any sensitive words and try again.' in str(error) or \
-            #     'Your prompt has been blocked by Bing. Try to change any bad words and try again' in str(error):
-            #     BAD_IMAGES_PROMPT[hash_prompt(prompt)] = True
-            #     if len(BAD_IMAGES_PROMPT) > 1000:
-            #         BAD_IMAGES_PROMPT.popitem(last=False)
 
             if 'Error generating Bing images for prompt' in str(error):
                 BAD_IMAGES_PROMPT[hash_prompt(prompt)] = True
@@ -110,14 +102,7 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
             elif 'Image create failed pls check cookie or old image still creating' in str(error):
                 PAUSED['time'] = time.time() + 125
 
-                # time.sleep(60)
-                # try:
-                #     cc = get_cookie()
-                #     sync_gen = ImageGen(auth_cookie=cc, quiet=True, proxy=proxy)
-                #     results = sync_gen.get_images(prompt)
-                # except Exception as error2:
-                #     my_log.log_bing_img(f'get_images_v2:2: {error2} \n\n {cc} \n\nPrompt: {prompt}')
-                #     time.sleep(60)
+        time.sleep(20)
 
         if results:
             results = [x for x in results if '.bing.net/th/id/' in x]
@@ -125,10 +110,13 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
 
         if not results:
             my_log.log_bing_img(f'get_images_v2:3: empty results {c}\n{proxy}\n{prompt}')
+
         return results or []
 
     except Exception as error:
         my_log.log_bing_img(f'get_images_v2:4: {error}')
+
+    time.sleep(20)
 
     return []
 

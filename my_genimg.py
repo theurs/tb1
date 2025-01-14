@@ -18,6 +18,7 @@ import requests
 from sqlitedict import SqliteDict
 from PIL import Image
 
+import bing_api_client
 import bing_img
 import cfg
 import my_db
@@ -47,6 +48,9 @@ WHO_AUTOR = {}
 
 # попробовать заблокировать параллельные вызовы бинга
 BING_LOCK = threading.Lock()
+# 0 - main, 1 - second instance
+# если есть второй инстанс с бингом то переключаться между ними циклично
+BING_SWITCH = 0
 
 
 def load_users_keys():
@@ -118,17 +122,40 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     Раз в месяц я их меняю на новые.
 
     """
-    prompt = prompt[:950] # нельзя больше 950?
+    global BING_SWITCH
+
+    prompt = prompt.strip()[:950] # нельзя больше 950?
+    prompt = utils.replace_non_letters_with_spaces(prompt)
+
     if moderation_flag or prompt.strip() == '':
         return []
+
     try:
         if bing_img.PAUSED['time'] > time.time():
             return []
         with BING_LOCK:
-            images = bing_img.gen_images(prompt, user_id)
+            images = []
+            if hasattr(cfg, 'BING_SECONDARY_URL') and cfg.BING_SECONDARY_URL:
+                if BING_SWITCH == 0:
+                    images = bing_img.gen_images(prompt, user_id)
+                    if images:
+                        my_log.log_bing_success('MAIN BING SUCCESS')
+                    else:
+                        my_log.log_bing_api('MAIN BING FAILED')
+                    BING_SWITCH = 1
+                else:
+                    images = bing_api_client.gen_images(prompt)
+                    BING_SWITCH = 0
+                    if images:
+                        my_log.log_bing_success('SECONDARY BING SUCCESS')
+                    else:
+                        my_log.log_bing_api('SECONDARY BING FAILED')
+            else:
+                images = bing_img.gen_images(prompt, user_id)
+
             if any([x for x in images if not x.startswith('https://')]):
                 return images
-            time.sleep(20)
+
         if type(images) == list:
             return list(set(images))
     except Exception as error_bing_img:

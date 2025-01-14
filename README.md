@@ -440,6 +440,9 @@ COHERE_AI_KEYS = [
 #    'socks5://127.0.0.1:9050', # tor
 #]
 
+# второй инстанс
+# BING_SECONDARY_URL = 'http://172.28.1.23:123/bing'
+
 
 # string for /donate command html parsing
 # DONATION_STRING = '<a href = "https://www.donationalerts.com/r/xxx">DonationAlerts</a>'

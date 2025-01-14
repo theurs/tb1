@@ -1,17 +1,41 @@
 #!/usr/bin/env python3
 
 
+import importlib
 import json
+import os
 import requests
 import traceback
 from typing import List, Dict, Any
 
 import cfg
 import my_log
-import utils
 
 
-BASE_URL = cfg.BING_SECONDARY_URL if hasattr(cfg, 'BING_SECONDARY_URL') and cfg.BING_SECONDARY_URL else "http://127.0.0.1:58796/bing"
+CFG_FILE_TIMESTAMP = 0
+
+
+def get_base_url() -> str:
+    '''
+    Returns the base URL for the image generation API.
+    Auto reload cfg.py if it has changed
+    '''
+    try:
+        global CFG_FILE_TIMESTAMP
+
+        if os.path.exists('cfg.py') and os.path.getmtime('cfg.py') != CFG_FILE_TIMESTAMP:
+            CFG_FILE_TIMESTAMP = os.path.getmtime('cfg.py')
+            module = importlib.import_module('cfg')
+            importlib.reload(module)
+
+        BASE_URL = cfg.BING_SECONDARY_URL if hasattr(cfg, 'BING_SECONDARY_URL') and cfg.BING_SECONDARY_URL else ''
+
+        return BASE_URL
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_bing_api(f'bing_api_client:get_base_url: {error}\n\n{traceback_error}')
+        return ''
 
 
 def send_image_generation_request(prompt: str) -> List[str]:
@@ -23,7 +47,11 @@ def send_image_generation_request(prompt: str) -> List[str]:
     :raises requests.RequestException: If there's an error with the request.
     :raises json.JSONDecodeError: If the response is not a valid JSON.
     """
-    url: str = BASE_URL
+    url: str = get_base_url()
+
+    if not url:
+        return []
+
     headers: Dict[str, str] = {"Content-Type": "application/json"}
     data: Dict[str, str] = {"prompt": prompt}
 

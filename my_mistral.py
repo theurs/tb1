@@ -13,6 +13,7 @@ from sqlitedict import SqliteDict
 import cfg
 import my_db
 import my_log
+import utils
 
 
 BASE_URL = 'https://api.mistral.ai/v1'
@@ -62,7 +63,8 @@ def ai(
     temperature: float = 1,
     max_tokens: int = 8000,
     timeout: int = 120,
-    key_: str = ''
+    key_: str = '',
+    json_output: bool = False,
     ) -> str:
 
     if not len(ALL_KEYS) and not key_:
@@ -85,13 +87,23 @@ def ai(
                 api_key = key,
                 base_url = BASE_URL,
             )
-            response = client.chat.completions.create(
-                model = model,
-                messages = messages,
-                temperature = temperature,
-                max_tokens=max_tokens,
-                timeout = timeout,
-            )
+            if json_output:
+                response = client.chat.completions.create(
+                    model = model,
+                    messages = messages,
+                    temperature = int(temperature/2),
+                    max_tokens=max_tokens,
+                    timeout = timeout,
+                    response_format = { "type": "json_object" },
+                )
+            else:
+                response = client.chat.completions.create(
+                    model = model,
+                    messages = messages,
+                    temperature = int(temperature/2),
+                    max_tokens=max_tokens,
+                    timeout = timeout,
+                )
             try:
                 text = response.choices[0].message.content.strip()
             except Exception as error:
@@ -105,15 +117,18 @@ def ai(
                 if key_:
                     break
                 time.sleep(2)
-        except Exception as e:
-            if 'The maximum context length' in str(e):
+        except Exception as error2:
+            if 'The maximum context length' in str(error2):
                 messages = []
                 if system:
                     messages.append({"role": "system", "content": system})
                 messages += mem[-4:]
                 continue
-            my_log.log_mistral(f'ai: {e}')
+            my_log.log_mistral(f'ai: {error2}')
             time.sleep(2)
+
+    if not text and model == DEFAULT_MODEL:
+        text = ai(prompt, mem, user_id, system, FALLBACK_MODEL, temperature, max_tokens, timeout, key_, json_output)
 
     return text
 
@@ -437,6 +452,51 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_M
     return r
 
 
+def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bool, bool] | None:
+    """
+    Generates a detailed prompt for image generation based on user query and conversation history.
+
+    Args:
+        prompt: User's query for image generation.
+
+    Returns:
+        A tuple of four elements: (positive prompt, negative prompt, moderation_sexual, moderation_hate)
+        or None if an error occurred.
+    """
+
+    result = ai(
+        prompt,
+        temperature=1.5,
+        json_output=True,
+        model=DEFAULT_MODEL,
+        user_id=chat_id,
+        )
+    result_dict = utils.string_to_dict(result)
+    if result_dict:
+        reprompt = ''
+        negative_prompt = ''
+        moderation_sexual = False
+        moderation_hate = False
+        if 'reprompt' in result_dict:
+            reprompt = result_dict['reprompt']
+        if 'negative_reprompt' in result_dict:
+            negative_prompt = result_dict['negative_reprompt']
+        if 'negative_prompt' in result_dict:
+            negative_prompt = result_dict['negative_prompt']
+        if 'moderation_sexual' in result_dict:
+            moderation_sexual = result_dict['moderation_sexual']
+            if moderation_sexual:
+                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+        if 'moderation_hate' in result_dict:
+            moderation_hate = result_dict['moderation_hate']
+            if moderation_hate:
+                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+
+        if reprompt and negative_prompt:
+            return reprompt, negative_prompt, moderation_sexual, moderation_hate
+    return None
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
@@ -453,6 +513,7 @@ if __name__ == '__main__':
 
     # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
 
-    chat_cli(model = '')
+    # chat_cli(model = '')
+    print(get_reprompt_for_image(''))
 
     my_db.close()

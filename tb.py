@@ -6514,7 +6514,7 @@ def id_cmd_handler(message: telebot.types.Message):
             first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale='en')
         now = pendulum.now()
         diff = now - first_meet_dt
-        
+
         try:
             delta_time_str = diff.in_words(locale=lang)
         except:

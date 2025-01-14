@@ -61,7 +61,8 @@ MODEL_ID_FALLBACK = "gemini-1.5-flash"
 
 
 def get_client():
-    api_key = random.choice(cfg.gemini_keys[:] + my_gemini.ALL_KEYS)
+    api_key = random.choice(cfg.gemini_keys[:] + my_gemini.ALL_KEYS[:])
+    api_key = [x for x in cfg.gemini_keys if x not in my_gemini.FROZEN_KEYS]
     return genai.Client(api_key=api_key)
 
 
@@ -166,11 +167,13 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
                         ),
                 )
             except Exception as inner_error:
-                if 'User location is not supported for the API use':
-                    my_log.log2(f'google_search:inner error1: {inner_error}')
-                    return ''
+                if "Quota exceeded for quota metric 'Generate Content API requests per minute' and limit" in str(inner_error):
+                    continue
                 if 'Resource has been exhausted (e.g. check quota)' in str(inner_error):
                     continue
+                if 'User location is not supported for the API use' in str(inner_error):
+                    my_log.log2(f'google_search:inner error1: {inner_error}')
+                    return ''
                 if 'The model is overloaded. Please try again later.' in str(inner_error):
                     my_log.log2(f'google_search:inner error2: {inner_error}')
                     time.sleep(5)

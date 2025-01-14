@@ -63,6 +63,8 @@ MODEL_ID_FALLBACK = "gemini-1.5-flash"
 def get_client():
     api_key = random.choice(cfg.gemini_keys[:] + my_gemini.ALL_KEYS[:])
     api_key = [x for x in cfg.gemini_keys if x not in my_gemini.FROZEN_KEYS]
+    if isinstance(api_key, list):
+        api_key = random.choice(api_key)
     return genai.Client(api_key=api_key)
 
 

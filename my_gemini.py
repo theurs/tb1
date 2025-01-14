@@ -282,6 +282,8 @@ def chat(query: str,
                     FROZEN_KEYS.append(key)
                     all_keys_len = len(cfg.gemini_keys[:] + ALL_KEYS[:])
                     frozen_keys_len = len(FROZEN_KEYS)
+                    if all_keys_len - frozen_keys_len < 20:
+                        FROZEN_KEYS.clear()
                     my_log.log_gemini(f'my_gemini:chat2: {str(error)[:120]} {chat_id} {model[-10:]} {key[-10:]} {all_keys_len - frozen_keys_len} left')
 
                 else:

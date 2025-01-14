@@ -86,8 +86,11 @@ if not os.path.exists('db'):
 FLASK_APP = Flask(__name__)
 
 
-bot = telebot.TeleBot(cfg.token)
-# bot = telebot.TeleBot(cfg.token, skip_pending=True)
+if hasattr(cfg, 'SKIP_PENDING') and cfg.SKIP_PENDING:
+    bot = telebot.TeleBot(cfg.token, skip_pending=True)
+else:
+    bot = telebot.TeleBot(cfg.token)
+
 
 _bot_name = bot.get_me().username
 BOT_ID = bot.get_me().id

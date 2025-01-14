@@ -169,6 +169,7 @@ level 3 - блокировать всё включая логи
 # WEBHOOK_SSL_PRIV = './webhook_pkey.pem'  # Path to the ssl private key
 
 
+# SKIP_PENDING = False
 # DB_BACKUP = True
 # DB_VACUUM = False
 

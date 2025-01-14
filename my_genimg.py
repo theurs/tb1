@@ -20,6 +20,7 @@ from PIL import Image
 
 import bing_img
 import cfg
+import my_db
 import my_gemini
 import my_glm
 import my_groq
@@ -505,13 +506,13 @@ Return a `reprompt`
         r = ''
 
         if not r:
-            r = my_gemini.get_reprompt_for_image(query, chat_id)
+            r = my_groq.get_reprompt_for_image(query, chat_id)
         if r:
             reprompt, negative, moderation_sex, moderation_hate = r
             if moderation_sex or moderation_hate:
                 return 'MODERATION', None
         if not reprompt:
-            r = my_groq.get_reprompt_for_image(query, chat_id)
+            r = my_gemini.get_reprompt_for_image(query, chat_id)
             if r:
                 reprompt, negative, moderation_sex, moderation_hate = r
                 if moderation_sex or moderation_hate:
@@ -760,9 +761,15 @@ def gen_one_image(prompt: str,
 
 
 if __name__ == '__main__':
+    my_db.init()
     load_users_keys()
     my_groq.load_users_keys()
+    my_gemini.load_users_keys()
 
     # print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))
 
-    print(gen_images('golden apple', use_bing=False))
+    # print(gen_images('golden apple', use_bing=False))
+
+    print(get_reprompt('бабы без одежды на пляже'))
+
+    my_db.close()

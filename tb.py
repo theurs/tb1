@@ -6520,7 +6520,9 @@ def id_cmd_handler(message: telebot.types.Message):
         except:
             delta_time_str = diff.in_words(locale='en')
 
-        subscription_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
+        last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
+        if time.time() - last_donate_time > 60*60*24*30:
+            last_donate_time = 0
 
         msg = ''
         if message.from_user.id in cfg.admins:
@@ -6538,8 +6540,8 @@ def id_cmd_handler(message: telebot.types.Message):
 
 {tr("Выбранная чат модель:", lang)} {user_model}'''
 
-        if subscription_time:
-            msg += f'\n\n{tr("Подписка:", lang)} {utils.format_timestamp(subscription_time)}'
+        if last_donate_time:
+            msg += f'\n\n{tr("Подписка:", lang)} {utils.format_timestamp(last_donate_time)}'
 
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             msg += f' <b>{open_router_model}</b>'

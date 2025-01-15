@@ -5500,7 +5500,7 @@ def image_gen(message: telebot.types.Message):
             show_timeout = 30
 
         # 10х и 20х отключены пока
-        BING_FLAG = 1
+        BING_FLAG = 0
 
         if chat_id_full in IMG_GEN_LOCKS:
             lock = IMG_GEN_LOCKS[chat_id_full]

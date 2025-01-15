@@ -177,13 +177,13 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
                     my_log.log2(f'google_search:inner error1: {inner_error}')
                     return ''
                 if 'The model is overloaded. Please try again later.' in str(inner_error):
-                    my_log.log2(f'google_search:inner error2: {inner_error}')
+                    my_log.log2(f'google_search:inner:1: error2: {inner_error}')
                     time.sleep(5)
                     retry_counter += 1
                     if retry_counter > 5:
                         return ''
                     continue
-                my_log.log2(f'google_search:inner error2: {inner_error}')
+                my_log.log2(f'google_search:inner:2: error2: {inner_error}')
                 response = client.models.generate_content(
                     model=MODEL_ID_FALLBACK,
                     contents=query,

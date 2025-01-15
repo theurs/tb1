@@ -84,7 +84,7 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
             elif 'Image create failed pls check cookie or old image still creating' in str(error):
                 PAUSED['time'] = time.time() + 125
 
-        time.sleep(20)
+        time.sleep(30)
 
         if results:
             results = [x for x in results if '.bing.net/th/id/' in x]

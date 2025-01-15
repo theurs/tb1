@@ -210,6 +210,7 @@ UNCAPTIONED_IMAGES_MAX = 100
 UNCAPTIONED_IMAGES = SqliteDict('db/user_images.db', autocommit = True)
 # {user_id: image_prompt}
 UNCAPTIONED_PROMPTS = SqliteDict('db/user_image_prompts.db', autocommit = True)
+UNCAPTIONED_IMAGES_LOCK = threading.Lock()
 
 
 # {message.from_user.id: threading.Lock(), }
@@ -2574,40 +2575,44 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
         message: The Telegram message object.
     '''
     try:
-        current_date = time.time()
+        with UNCAPTIONED_IMAGES_LOCK:
+            current_date = time.time()
 
-        # Store the image and timestamp associated with the chat ID.
-        UNCAPTIONED_IMAGES[chat_id_full] = (current_date, image)
+            # Store the image and timestamp associated with the chat ID.
+            UNCAPTIONED_IMAGES[chat_id_full] = (current_date, image)
 
-        # Limit the storage to UNCAPTIONED_IMAGES_MAX uncaptioned images.
-        if len(UNCAPTIONED_IMAGES) > UNCAPTIONED_IMAGES_MAX:
-            # Sort the images by timestamp (oldest first).
-            sorted_images = sorted(UNCAPTIONED_IMAGES.items(), key=lambda item: item[1][0])
-            # Get the IDs of the oldest images to delete.
-            user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - UNCAPTIONED_IMAGES_MAX]]
-            # Delete the oldest images.
-            for user_id in user_ids_to_delete:
-                UNCAPTIONED_IMAGES.pop(user_id, None)
+            # Limit the storage to UNCAPTIONED_IMAGES_MAX uncaptioned images.
+            if len(UNCAPTIONED_IMAGES) > UNCAPTIONED_IMAGES_MAX:
+                # Sort the images by timestamp (oldest first).
+                sorted_images = sorted(UNCAPTIONED_IMAGES.items(), key=lambda item: item[1][0])
+                # Get the IDs of the oldest images to delete.
+                user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - UNCAPTIONED_IMAGES_MAX]]
+                # Delete the oldest images.
+                for user_id in user_ids_to_delete:
+                    try:
+                        UNCAPTIONED_IMAGES.pop(user_id, None)
+                    except KeyError:
+                        pass
 
-        # Set the command mode for the chat to 'image_prompt'.
-        COMMAND_MODE[chat_id_full] = 'image_prompt'
-        
-        # Retrieve the last prompt used by the user for uncaptioned images, if any.
-        user_prompt = ''
-        if chat_id_full in UNCAPTIONED_PROMPTS:
-            user_prompt = UNCAPTIONED_PROMPTS[chat_id_full]
+            # Set the command mode for the chat to 'image_prompt'.
+            COMMAND_MODE[chat_id_full] = 'image_prompt'
+            
+            # Retrieve the last prompt used by the user for uncaptioned images, if any.
+            user_prompt = ''
+            if chat_id_full in UNCAPTIONED_PROMPTS:
+                user_prompt = UNCAPTIONED_PROMPTS[chat_id_full]
 
-        # Get the user's language.
-        lang = get_lang(chat_id_full, message)
-        # Create the message to send to the user.
-        msg = tr('What would you like to do with this image?', lang)
-        msg += '\n\n' + image_info(image, lang)
-        # Append the last prompt to the message, if available.
-        if user_prompt:
-            msg += '\n\n' + tr('Repeat my last request', lang) + ':\n\n' + utils.truncate_text(user_prompt)
+            # Get the user's language.
+            lang = get_lang(chat_id_full, message)
+            # Create the message to send to the user.
+            msg = tr('What would you like to do with this image?', lang)
+            msg += '\n\n' + image_info(image, lang)
+            # Append the last prompt to the message, if available.
+            if user_prompt:
+                msg += '\n\n' + tr('Repeat my last request', lang) + ':\n\n' + utils.truncate_text(user_prompt)
 
-        # Send the message to the user with the appropriate keyboard.
-        bot_reply(message, msg, parse_mode = 'HTML', disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
+            # Send the message to the user with the appropriate keyboard.
+            bot_reply(message, msg, parse_mode = 'HTML', disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:proccess_image: {unknown}\n{traceback_error}')

@@ -160,7 +160,10 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
                     else:
                         my_log.log_bing_img('SECONDARY BING FAILED ' + prompt)
             else:
-                images = bing_img.gen_images(prompt, user_id)
+                if len(list(bing_img.COOKIE.items())):
+                    images = bing_img.gen_images(prompt, user_id)
+                else:
+                    return []
 
             if any([x for x in images if not x.startswith('https://')]):
                 return images

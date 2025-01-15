@@ -12,6 +12,7 @@ import traceback
 import sqlite3
 import sys
 from typing import List, Tuple
+from pprint import pprint
 
 import zstandard
 from collections import OrderedDict
@@ -828,6 +829,11 @@ def delete_user_property(user_id: str, property: str):
 
 def set_user_property(user_id: str, property: str, value):
     '''Set user`s property'''
+
+    # limit file save size
+    if property == 'saved_file':
+        value = value[:300000]
+
     cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
     USERS_CACHE.set(cache_key, value)
     with LOCK:
@@ -963,11 +969,172 @@ def fix_tts_model_used():
             my_log.log2(f'my_db:fix_tts_model_used {error}')
 
 
+def get_top_users_by_size(top_n: int = 100) -> List[Tuple[str, int]]:
+    """
+    Get the top N users by the total size of their texts and blobs.
+
+    Args:
+        top_n (int): The number of top users to retrieve.
+
+    Returns:
+        List[Tuple[str, int]]: A list of tuples containing user IDs and their total sizes.
+    """
+    with LOCK:
+        try:
+            # Извлекаем данные о пользователях
+            CUR.execute('''
+                SELECT id, saved_file, dialog_gemini, dialog_gemini_thinking, dialog_groq,
+                       dialog_openrouter, dialog_glm, persistant_memory
+                FROM users
+            ''')
+            users_data = CUR.fetchall()
+
+            # Подсчитываем размеры текстов и блобов для каждого пользователя
+            user_sizes = []
+            for user in users_data:
+                user_id = user[0]
+                total_size = 0
+
+                # Подсчитываем размеры текстов
+                for text in user[1:]:
+                    if text:
+                        total_size += len(text)
+
+                # Подсчитываем размеры блобов
+                for blob in user[2:]:
+                    if blob:
+                        total_size += len(blob)
+
+                user_sizes.append((user_id, total_size))
+
+            # Сортируем пользователей по суммарному размеру
+            user_sizes.sort(key=lambda x: x[1], reverse=True)
+
+            # Возвращаем топ-N пользователей
+            return user_sizes[:top_n]
+
+        except Exception as error:
+            my_log.log2(f'my_db:get_top_users_by_size {error}')
+            return []
+
+
+def get_user_data_sizes(user_id: str) -> dict:
+    """
+    Get the sizes of text and blob fields for a specific user.
+
+    Args:
+        user_id (str): The ID of the user.
+
+    Returns:
+        dict: A dictionary containing the sizes of text and blob fields.
+    """
+    with LOCK:
+        try:
+            # Извлекаем данные о пользователе
+            CUR.execute('''
+                SELECT id, saved_file, dialog_gemini, dialog_gemini_thinking, dialog_groq,
+                       dialog_openrouter, dialog_glm, persistant_memory
+                FROM users
+                WHERE id = ?
+            ''', (user_id,))
+            user_data = CUR.fetchone()
+
+            if not user_data:
+                return {}
+
+            # Подсчитываем размеры текстовых и блоб полей
+            data_sizes = {
+                'saved_file': len(user_data[1]) if user_data[1] else 0,
+                'dialog_gemini': len(user_data[2]) if user_data[2] else 0,
+                'dialog_gemini_thinking': len(user_data[3]) if user_data[3] else 0,
+                'dialog_groq': len(user_data[4]) if user_data[4] else 0,
+                'dialog_openrouter': len(user_data[5]) if user_data[5] else 0,
+                'dialog_glm': len(user_data[6]) if user_data[6] else 0,
+                'persistant_memory': len(user_data[7]) if user_data[7] else 0
+            }
+
+            return data_sizes
+
+        except Exception as error:
+            my_log.log2(f'my_db:get_user_data_sizes {error}')
+            return {}
+
+
+def delete_large_gemini_blobs(max_size_mb: float = 1):
+    """
+    Delete Gemini blobs larger than the specified size from the users table.
+
+    Args:
+        max_size_mb (int): The maximum size in megabytes for Gemini blobs.
+    """
+    max_size_bytes = int(max_size_mb * 1024 * 1024)  # Convert MB to bytes
+    page_size = 10  # Number of records to process at a time
+
+    with LOCK:
+        try:
+            offset = 0
+            while True:
+                # Извлекаем записи из таблицы users по частям
+                CUR.execute('''
+                    SELECT id_num, dialog_gemini, dialog_gemini_thinking
+                    FROM users
+                    LIMIT ? OFFSET ?
+                ''', (page_size, offset))
+                users_data = CUR.fetchall()
+
+                if not users_data:
+                    break
+
+                for user in users_data:
+                    user_id = user[0]
+                    dialog_gemini = user[1]
+                    dialog_gemini_thinking = user[2]
+
+                    # Проверяем размеры блобов и обновляем их, если они превышают max_size_bytes
+                    if dialog_gemini and len(dialog_gemini) > max_size_bytes:
+                        CUR.execute('''
+                            UPDATE users
+                            SET dialog_gemini = NULL
+                            WHERE id_num = ?
+                        ''', (user_id,))
+
+                    if dialog_gemini_thinking and len(dialog_gemini_thinking) > max_size_bytes:
+                        CUR.execute('''
+                            UPDATE users
+                            SET dialog_gemini_thinking = NULL
+                            WHERE id_num = ?
+                        ''', (user_id,))
+
+                CON.commit()
+                offset += page_size
+
+            my_log.log2('my_db:delete_large_gemini_blobs: Large Gemini blobs have been deleted.')
+        except Exception as error:
+            my_log.log2(f'my_db:delete_large_gemini_blobs {error}')
+            CON.rollback()
+
+
 if __name__ == '__main__':
     pass
     init(backup=False)
 
     # print(find_users_with_many_messages())
     # fix_tts_model_used()
+
+    # # Пример использования функции
+    # top_users = get_top_users_by_size(100)
+    # for user_id, total_size in top_users:
+    #     print(f'User ID: {user_id}, Total Size: {total_size} bytes')
+
+    # # Пример использования функции
+    user_id = 'xxx'
+
+    # user_data_sizes = get_user_data_sizes(user_id)
+    # for field, size in user_data_sizes.items():
+    #     print(f'Field: {field}, Size: {size} bytes')
+
+    # dialog = get_user_property(user_id, 'dialog_gemini')
+    # decompressed_dialog = blob_to_obj(dialog)
+    # pprint(decompressed_dialog)
 
     close()

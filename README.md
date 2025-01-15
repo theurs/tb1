@@ -128,15 +128,14 @@ level 3 - блокировать всё включая логи
 Для установки проекта выполните следующие шаги:
 
 1. Установите Python 3.8+.
-2. Установите утилиту trans `sudo apt-get install translate-shell`
-3. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin ffmpeg imagemagick pandoc texlive-latex-base texlive-latex-recommended python3-venv sox`
+2. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin ffmpeg imagemagick pandoc texlive-latex-base texlive-latex-recommended python3-venv sox`
    yt-dlp надо установить отдельно, т.к. в репах нет актуальной свежей версии, а она нужна для скачивания тиктоков и музыки с ютуба.
    в файле `/etc/ImageMagick-6/policy.xml` надо найти и изменить
    `<policy domain="coder" rights="none" pattern="PDF" />`
    на
    `<policy domain="coder" rights="read|write" pattern="PDF" />`
 
-4. Клонируйте репозиторий с помощью команды:
+3. Клонируйте репозиторий с помощью команды:
 
    ```
    git clone https://github.com/theurs/tb1.git
@@ -146,7 +145,7 @@ level 3 - блокировать всё включая логи
    
    ```
    
-5. Перейдите в директорию проекта:
+4. Перейдите в директорию проекта:
 
    ```
    cd tb1
@@ -154,7 +153,7 @@ level 3 - блокировать всё включая логи
    pip install -r requirements.txt
    ```
    
-6. Создайте файл cfg.py и добавьте в него строку
+5. Создайте файл cfg.py и добавьте в него строку
 ```
 # Quick'n'dirty SSL certificate generation:
 #
@@ -452,7 +451,7 @@ COHERE_AI_KEYS = [
 # DEBUG = False
 ```
 
-Что бы работало рисование бингом надо заменить куки, взять с сайта https://www.bing.com/images/create, попасть туда можно только с ип приличных стран и с аккаунтом в микрософте. С помощью браузерного расширения cookie editor надо достать куки с именем _U и передать боту через команду /bingcookie xxx
+Что бы работало рисование бингом надо заменить куки, взять с сайта https://www.bing.com/images/create, попасть туда можно только с ип приличных стран и с аккаунтом в микрософте. С помощью браузерного расширения cookie editor надо достать куки с именем _U и передать боту через команду /k xxx
 
 
 

@@ -1,50 +1,102 @@
 #!/usr/bin/env python3
 
 import cachetools.func
-import subprocess
+import hashlib
+import requests
+import time
 
 import my_log
-import utils
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl = 10 * 60)
-def translate(text: str, lang: str = 'ru') -> str:
+def genTK(text: str) -> str:
     """
-    Translates the given text into the specified language using an external 
-    translation service. Requires the `trans` command to be installed.
+    Generates a token for Google Translate API request.
 
     Args:
-        text (str): The text to be translated.
-        lang (str, optional): The language to translate the text to. Defaults to 'ru'.
-    
+        text (str): Text to be translated.
+
     Returns:
-        str: The translated text.
+        str: Generated token.
     """
-    if 'windows' in utils.platform().lower():
-        return text
+    tkk = int(time.time() / 3600)
+    a = tkk
+    for char in text:
+        a += ord(char)
+        a = genRL(a, '+-a^+6')
+    a = genRL(a, '+-3^+b+-f')
+    a ^= tkk
+    if a < 0:
+        a = (a & 2147483647) + 2147483648
+    a %= 1000000
 
-    if lang == 'ua':
-        lang = 'uk'
+    # Use hashlib to create a hash of the token
+    token = hashlib.md5(f"{a}.{a ^ tkk}".encode()).hexdigest()
+    return token
 
-    text = text.strip()
-    startswithslash = False
-    if text.startswith('/'):
-        text = text.replace('/', '@', 1)
-        startswithslash = True
 
-    process = subprocess.Popen(['trans', f':{lang}', '-b', text], stdout = subprocess.PIPE)
-    output, error = process.communicate()
-    result = output.decode('utf-8').strip()
-    if error:
-        my_log.log2(f'my_trans:translate_text2: {error}\n\n{text}\n\n{lang}')
-        return ''
+def genRL(a: int, b: str) -> int:
+    """
+    Helper function for token generation.
 
-    if startswithslash:
-        if result.startswith('@'):
-            result = result.replace('@', '/', 1)
+    Args:
+        a (int): Number to be transformed.
+        b (str): String for transformation.
 
-    return result
+    Returns:
+        int: Transformed number.
+    """
+    for char in b:
+        if char == '+':
+            a += ord(char)
+        elif char == '-':
+            a -= ord(char)
+        elif char == '^':
+            a ^= ord(char)
+        elif char.isdigit():
+            a = (a << int(char)) & 0xFFFFFFFF
+    return a
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+def translate(text: str, lang: str = 'ru') -> str:
+    """
+    Translates text to the specified language.
+
+    Args:
+        text (str): Text to be translated.
+        lang (str): Target language code (e.g., 'en' for English, 'ru' for Russian).
+
+    Returns:
+        str: Translated text or an empty string in case of an error.
+    """
+    url = "https://translate.googleapis.com/translate_a/single"
+    params = {
+        "client": "gtx",
+        "sl": "auto",
+        "tl": lang,
+        "dt": "t",
+        "q": text,
+        "tk": genTK(text)
+    }
+
+    try:
+        # Make a request to the Google Translate API with a timeout of 60 seconds
+        response = requests.get(url, params=params, timeout=60)
+        response.raise_for_status()
+        response_json = response.json()
+
+        translated_text = ""
+        for item in response_json[0]:
+            translated_text += item[0]
+
+        return translated_text
+    except requests.RequestException as error:
+        my_log.log_translate(f"Error making request to Google Translate API: {error}\n\n{lang}\n\n{text}")
+        return ""
 
 
 if __name__ == "__main__":
-    pass
+    text = "Hello, world!\n\nHow are you? & What's <up>?"
+    target_language = 'ru'
+    translated_text = translate(text, target_language)
+    print(translated_text)

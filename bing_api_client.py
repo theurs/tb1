@@ -57,7 +57,7 @@ def send_image_generation_request(prompt: str) -> List[str]:
 
     try:
         # Send the POST request
-        response: requests.Response = requests.post(url, headers=headers, json=data, timeout=180)
+        response: requests.Response = requests.post(url, headers=headers, json=data, timeout=90)
         
         # Raise an exception for bad status codes
         response.raise_for_status()

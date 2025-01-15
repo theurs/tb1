@@ -136,34 +136,42 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
         with BING_LOCK:
             images = []
             if hasattr(cfg, 'BING_SECONDARY_URL') and cfg.BING_SECONDARY_URL:
-                if BING_SWITCH == 0:
-                    if len(list(bing_img.COOKIE.items())):
-                        images = bing_img.gen_images(prompt, user_id)
-                        if images:
-                            my_log.log_bing_success('MAIN BING SUCCESS')
-                        else:
-                            my_log.log_bing_img('MAIN BING FAILED ' + prompt)
-                        BING_SWITCH = 1
-                    else:
-                        images = bing_api_client.gen_images(prompt)
+                images = bing_api_client.gen_images(prompt)
 
-                        if images:
-                            my_log.log_bing_success('SECONDARY BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
-                        else:
-                            my_log.log_bing_img('SECONDARY BING FAILED ' + prompt)
+                if images:
+                    my_log.log_bing_success('SECONDARY BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
+                else:
+                    my_log.log_bing_img('SECONDARY BING FAILED ' + prompt)
 
-                else:
-                    images = bing_api_client.gen_images(prompt)
-                    BING_SWITCH = 0
-                    if images:
-                        my_log.log_bing_success('SECONDARY BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
-                    else:
-                        my_log.log_bing_img('SECONDARY BING FAILED ' + prompt)
-            else:
-                if len(list(bing_img.COOKIE.items())):
-                    images = bing_img.gen_images(prompt, user_id)
-                else:
-                    return []
+
+            #     if BING_SWITCH == 0:
+            #         if len(list(bing_img.COOKIE.items())):
+            #             images = bing_img.gen_images(prompt, user_id)
+            #             if images:
+            #                 my_log.log_bing_success('MAIN BING SUCCESS')
+            #             else:
+            #                 my_log.log_bing_img('MAIN BING FAILED ' + prompt)
+            #             BING_SWITCH = 1
+            #         else:
+            #             images = bing_api_client.gen_images(prompt)
+
+            #             if images:
+            #                 my_log.log_bing_success('SECONDARY BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
+            #             else:
+            #                 my_log.log_bing_img('SECONDARY BING FAILED ' + prompt)
+
+            #     else:
+            #         images = bing_api_client.gen_images(prompt)
+            #         BING_SWITCH = 0
+            #         if images:
+            #             my_log.log_bing_success('SECONDARY BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
+            #         else:
+            #             my_log.log_bing_img('SECONDARY BING FAILED ' + prompt)
+            # else:
+            #     if len(list(bing_img.COOKIE.items())):
+            #         images = bing_img.gen_images(prompt, user_id)
+            #     else:
+            #         return []
 
             if any([x for x in images if not x.startswith('https://')]):
                 return images

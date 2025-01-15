@@ -96,3 +96,10 @@ if __name__ == "__main__":
     
     except Exception as e:
         print(f"An error occurred: {e}")
+
+
+'''
+curl -X POST   -H "Content-Type: application/json"   -d '{
+    "prompt": "a beautiful landscape"
+  }'   http://172.28.1.10:58796/bing
+'''

@@ -58,7 +58,7 @@ def get_cookie():
         cookie = COOKIES.pop()[0]
     except IndexError:
         # my_log.log_bing_img(f'get_images: {query} no cookies')
-        raise Exception('no cookies')
+        return None
     return cookie
 
 
@@ -88,6 +88,8 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
 
         try:
             c = get_cookie()
+            if not c:
+                return []
             sync_gen = BingImageCreator(c)
             results = sync_gen.generate_images_sync(prompt)
         except Exception as error:

@@ -46,10 +46,12 @@ MAX_REQUEST = 40000
 
 # максимальный размер суммаризации
 # MAX_SUM_REQUEST = 128*1000*3 # 128k tokens, 3 char per token
-MAX_SUM_REQUEST = 300000
+MAX_SUM_REQUEST = 100000
 
 
 DEFAULT_MODEL = 'mistral-large-latest'
+CODE_MODEL = 'codestral-latest'
+CODE_MODEL_FALLBACK = 'codestral-2405'
 FALLBACK_MODEL = 'pixtral-large-latest'
 VISION_MODEL = 'pixtral-large-latest'
 
@@ -513,7 +515,7 @@ if __name__ == '__main__':
 
     # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
 
-    # chat_cli(model = '')
-    print(get_reprompt_for_image(''))
+    chat_cli(model = '')
+    # print(get_reprompt_for_image(''))
 
     my_db.close()

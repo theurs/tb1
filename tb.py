@@ -470,6 +470,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_mistral.update_mem(query, resp, chat_id_full)
         elif 'pixtral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_mistral.update_mem(query, resp, chat_id_full)
+        elif 'codestral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            my_mistral.update_mem(query, resp, chat_id_full)
         elif 'commandrplus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_cohere.update_mem(query, resp, chat_id_full)
         elif 'grok' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -1635,6 +1637,19 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
 
+        elif kbd == 'codestral_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='codestral_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
+
+
         elif kbd == 'commandrplus_chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
@@ -1828,6 +1843,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Pixtral'
             button_pixtral = telebot.types.InlineKeyboardButton(msg, callback_data='select_pixtral')
 
+            if chat_mode == 'codestral':
+                msg = '✅ Codestral'
+            else:
+                msg = 'Codestral'
+            button_codestral = telebot.types.InlineKeyboardButton(msg, callback_data='select_codestral')
+
             if chat_mode == 'commandrplus':
                 msg = '✅ Command R+'
             else:
@@ -1847,7 +1868,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_openrouter = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
 
             markup.row(button_gemini_flash_thinking, button_gemini_flash20)
-            markup.row(button_gemini_pro, button_mistral)
+            markup.row(button_codestral, button_mistral)
             markup.row(button_gpt4o_mini, button_haiku)
 
             # if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):
@@ -1870,6 +1891,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS:
                 markup.row(button_grok)
 
+            markup.row(button_gemini_pro)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2146,6 +2168,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'select_pixtral':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Pixtral Large.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'pixtral')
+            elif call.data == 'select_codestral':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Codestral.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'codestral')
             elif call.data == 'select_commandrplus':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Command R+.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'commandrplus')
@@ -2209,6 +2234,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'pixtral_reset':
                 my_mistral.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с Pixtral Large очищена.')
+            elif call.data == 'codestral_reset':
+                my_mistral.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с Codestral очищена.')
             elif call.data == 'commandrplus_reset':
                 my_cohere.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с Command R+ очищена.')
@@ -4189,6 +4217,8 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_mistral.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
             my_mistral.force(chat_id_full, text)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
+            my_mistral.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
@@ -4257,6 +4287,8 @@ def undo_cmd(message: telebot.types.Message):
             my_mistral.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
             my_mistral.undo(chat_id_full)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
+            my_mistral.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
@@ -4310,6 +4342,8 @@ def reset_(message: telebot.types.Message, say: bool = True):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             my_mistral.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
+            my_mistral.reset(chat_id_full)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.reset(chat_id_full)
@@ -4518,6 +4552,8 @@ def save_history(message: telebot.types.Message):
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
+            prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
@@ -4594,6 +4630,9 @@ def send_debug_history(message: telebot.types.Message):
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
             prompt = 'Pixtral Large\n\n'
+            prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
+            prompt = 'Codestral\n\n'
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             prompt = 'Commandr R+\n\n'
@@ -6485,6 +6524,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'qwen70': 'Qwen2.5-72B-Instruct',
             'mistral': my_mistral.DEFAULT_MODEL,
             'pixtral': my_mistral.VISION_MODEL,
+            'codestral': my_mistral.CODE_MODEL,
             'commandrplus': my_cohere.DEFAULT_MODEL,
             'grok': my_grok.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
@@ -7806,6 +7846,60 @@ def do_task(message, custom_prompt: str = ''):
                             except Exception as error3:
                                 error_traceback = traceback.format_exc()
                                 my_log.log2(f'tb:do_task:pixtral {error3}\n{error_traceback}')
+                            return
+
+
+                    # если активирован режим общения с Codestral
+                    if chat_mode_ == 'codestral':
+                        if len(msg) > my_mistral.MAX_REQUEST:
+                            bot_reply(message, f'{tr("Слишком длинное сообщение для Codestral, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_mistral.MAX_REQUEST}')
+                            return
+
+                        with ShowAction(message, action):
+                            try:
+                                answer = my_mistral.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_mistral.CODE_MODEL,
+                                )
+                                if not answer:
+                                    answer = my_mistral.chat(
+                                        message.text,
+                                        chat_id_full,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                        system=hidden_text,
+                                        model = my_mistral.CODE_MODEL_FALLBACK,
+                                    )
+
+                                WHO_ANSWERED[chat_id_full] = 'Codestral'
+                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                                if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                    answer_ = utils.bot_markdown_to_html(answer)
+                                    DEBUG_MD_TO_HTML[answer_] = answer
+                                    answer = answer_
+
+                                answer = answer.strip()
+                                if not answer:
+                                    answer = 'Codestral ' + tr('did not answered, try to /reset and start again.', lang)
+
+                                my_log.log_echo(message, f'[Codestral] {answer}')
+
+                                try:
+                                    if command_in_answer(answer, message):
+                                        return
+                                    bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                            reply_markup=get_keyboard('codestral_chat', message), not_log=True, allow_voice = True)
+                                except Exception as error:
+                                    print(f'tb:do_task: {error}')
+                                    my_log.log2(f'tb:do_task: {error}')
+                                    bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                            reply_markup=get_keyboard('codestral_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error3:
+                                error_traceback = traceback.format_exc()
+                                my_log.log2(f'tb:do_task:codestral {error3}\n{error_traceback}')
                             return
 
 

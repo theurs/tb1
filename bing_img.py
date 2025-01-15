@@ -14,13 +14,12 @@ from sqlitedict import SqliteDict
 # from re_edge_gpt import ImageGen
 from bing_lib import BingImageCreator
 
-import cfg
 import my_log
-import utils
 
 
 # {cookie: times used, ...}
 COOKIE = SqliteDict('db/bing_cookie.db', autocommit=True)
+
 # {cookie:datetime, ...}
 
 # storage of requests that Bing rejected, they cannot be repeated
@@ -62,29 +61,10 @@ def get_cookie():
     return cookie
 
 
-def get_proxy():
-    global PROXIES
-    if hasattr(cfg, 'bing_proxy') and cfg.bing_proxy:
-        proxies = cfg.bing_proxy[:]
-    else:
-        proxies = []
-
-    if len(PROXIES) == 0:
-        PROXIES = proxies[:]
-
-    try:
-        proxy = PROXIES.pop()
-    except IndexError:
-        proxy = None
-
-    return proxy
-
-
 def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 60) -> list:
     global PAUSED
     try:
         results = []
-        proxy = get_proxy()
 
         try:
             c = get_cookie()
@@ -108,10 +88,10 @@ def get_images_v2(prompt: str, timeout: int = 60, max_generate_time_sec: int = 6
 
         if results:
             results = [x for x in results if '.bing.net/th/id/' in x]
-            my_log.log_bing_success(f'{c}\n{proxy}\n{prompt}\n{results}')
+            my_log.log_bing_success(f'{c}\n{prompt}\n{results}')
 
         if not results:
-            my_log.log_bing_img(f'get_images_v2:3: empty results {c}\n{proxy}\n{prompt}')
+            my_log.log_bing_img(f'get_images_v2:3: empty results {c}\n{prompt}')
 
         return results or []
 

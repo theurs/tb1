@@ -137,12 +137,21 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
             images = []
             if hasattr(cfg, 'BING_SECONDARY_URL') and cfg.BING_SECONDARY_URL:
                 if BING_SWITCH == 0:
-                    images = bing_img.gen_images(prompt, user_id)
-                    if images:
-                        my_log.log_bing_success('MAIN BING SUCCESS')
+                    if len(list(bing_img.COOKIE.items())):
+                        images = bing_img.gen_images(prompt, user_id)
+                        if images:
+                            my_log.log_bing_success('MAIN BING SUCCESS')
+                        else:
+                            my_log.log_bing_img('MAIN BING FAILED ' + prompt)
+                        BING_SWITCH = 1
                     else:
-                        my_log.log_bing_img('MAIN BING FAILED ' + prompt)
-                    BING_SWITCH = 1
+                        images = bing_api_client.gen_images(prompt)
+
+                        if images:
+                            my_log.log_bing_success('SECONDARY BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
+                        else:
+                            my_log.log_bing_img('SECONDARY BING FAILED ' + prompt)
+
                 else:
                     images = bing_api_client.gen_images(prompt)
                     BING_SWITCH = 0

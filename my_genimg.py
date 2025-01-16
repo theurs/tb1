@@ -123,7 +123,8 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     """
     global BING_SWITCH
 
-    prompt = prompt.strip()[:950] # нельзя больше 950?
+    # prompt = prompt.strip()[:950] # нельзя больше 950?
+    prompt = prompt.strip()
 
     if moderation_flag or prompt.strip() == '':
         return []

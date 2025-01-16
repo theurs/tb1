@@ -28,7 +28,6 @@ from fuzzywuzzy import fuzz
 from sqlitedict import SqliteDict
 
 import cfg
-import bing_img
 import md2tgmd
 import my_alert
 import my_init
@@ -4421,82 +4420,6 @@ def reset_gemini2(message: telebot.types.Message):
         bot_reply_tr(message, 'Usage: /reset_gemini2 <chat_id_full!>')
 
 
-@bot.message_handler(commands=['bingcookieclear', 'kc'], func=authorized_admin)
-@async_run
-def clear_bing_cookies(message: telebot.types.Message):
-    try:
-        bing_img.COOKIE.clear()
-        bot_reply_tr(message, 'Cookies cleared.')
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:clear_bing_cookies: {unknown}\n{traceback_error}')
-
-
-@bot.message_handler(commands=['bingcookie', 'cookie', 'k'], func=authorized_admin)
-@async_run
-def set_bing_cookies(message: telebot.types.Message):
-    try:
-        try:
-            chat_id_full = get_topic_id(message)
-            lang = get_lang(chat_id_full, message)
-
-            args = message.text.split(maxsplit=1)[1]
-            args = args.replace('\n', ' ')
-            cookies = args.split()
-            cookies = [x for x in cookies if not x.startswith('-')]
-            n = 0
-
-            if cookies:
-                bing_img.COOKIE.clear()
-            for cookie in cookies:
-                if len(cookie) < 200:
-                    continue
-                if cookie in bing_img.COOKIE:
-                    continue
-                cookie = cookie.strip()
-                bing_img.COOKIE[cookie] = 0
-                n += 1
-
-            # reset counters after add more cookies
-            for cookie in bing_img.COOKIE:
-                bing_img.COOKIE[cookie] = 0
-
-            msg = f'{tr("Cookies added:", lang)} {n}'
-            bot_reply(message, msg)
-
-        except Exception as error:
-
-            if 'list index out of range' not in str(error):
-                my_log.log2(f'set_bing_cookies: {error}\n\n{message.text}')
-
-            bot_reply_tr(message, 'Usage: /bingcookie <whitespace separated cookies> get in at bing.com, i need _U cookie')
-
-            # сортируем куки по количеству обращений к ним
-            cookies = [x for x in bing_img.COOKIE.items()]
-            cookies = sorted(cookies, key=lambda x: x[1])
-
-            pt = prettytable.PrettyTable(
-                align = "r",
-                set_style = prettytable.MSWORD_FRIENDLY,
-                hrules = prettytable.HEADER,
-                junction_char = '|'
-                )
-            header = ['#', tr('Key', lang, 'тут имеется в виду ключ для рисования'),
-                    tr('Counter', lang, 'тут имеется в виду счётчик количества раз использования ключа для рисования')]
-            pt.field_names = header
-
-            n = 1
-            for cookie in cookies:
-                pt.add_row([n, cookie[0][:5], cookie[1]])
-                n += 1
-
-            msg = f'{tr("Current cookies:", lang)} {len(bing_img.COOKIE)} \n\n<pre><code>{pt.get_string()}</code></pre>'
-            bot_reply(message, msg, parse_mode='HTML')
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:set_bing_cookies: {unknown}\n{traceback_error}')
-
-
 @bot.message_handler(commands=['style2'], func=authorized_admin)
 @async_run
 def change_style2(message: telebot.types.Message):
@@ -5505,7 +5428,7 @@ def image_gen(message: telebot.types.Message):
             show_timeout = 30
 
         # 10х и 20х отключены пока
-        BING_FLAG = 0
+        # BING_FLAG = 0
 
         if chat_id_full in IMG_GEN_LOCKS:
             lock = IMG_GEN_LOCKS[chat_id_full]

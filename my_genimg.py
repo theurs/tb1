@@ -560,7 +560,7 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
     if reprompt == 'MODERATION':
         # если сработала модерация но юзер в белом списке то ок
         if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(user_id) in cfg.ALLOW_PASS_NSFW_FILTER:
-            pass
+            reprompt = prompt
         # если сработала модерация то возвращаем ошибку
         else:
             return ['moderation',]

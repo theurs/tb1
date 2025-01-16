@@ -131,7 +131,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     try:
         with BING_LOCK:
             images = []
-            if hasattr(cfg, 'BING_SECONDARY_URL') and cfg.BING_SECONDARY_URL:
+            if hasattr(cfg, 'BING_URLS') and cfg.BING_URLS:
                 images = bing_api_client.gen_images(prompt)
 
                 if images:

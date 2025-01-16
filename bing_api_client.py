@@ -14,6 +14,9 @@ import my_log
 
 CFG_FILE_TIMESTAMP = 0
 
+# round robin BING_URLS
+CURRENT_BING_APIS = []
+
 
 def get_base_url() -> str:
     '''
@@ -21,14 +24,17 @@ def get_base_url() -> str:
     Auto reload cfg.py if it has changed
     '''
     try:
-        global CFG_FILE_TIMESTAMP
+        global CFG_FILE_TIMESTAMP, CURRENT_BING_APIS
 
         if os.path.exists('cfg.py') and os.path.getmtime('cfg.py') != CFG_FILE_TIMESTAMP:
             CFG_FILE_TIMESTAMP = os.path.getmtime('cfg.py')
             module = importlib.import_module('cfg')
             importlib.reload(module)
 
-        BASE_URL = cfg.BING_SECONDARY_URL if hasattr(cfg, 'BING_SECONDARY_URL') and cfg.BING_SECONDARY_URL else ''
+        if hasattr(cfg, 'BING_URLS') and cfg.BING_URLS:
+            if not CURRENT_BING_APIS:
+                CURRENT_BING_APIS = cfg.BING_URLS[:]
+            BASE_URL = CURRENT_BING_APIS.pop(0)
 
         return BASE_URL
 

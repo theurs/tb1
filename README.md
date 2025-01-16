@@ -439,8 +439,12 @@ COHERE_AI_KEYS = [
 #    'socks5://127.0.0.1:9050', # tor
 #]
 
-# второй инстанс
-# BING_SECONDARY_URL = 'http://172.28.1.23:123/bing'
+
+# api инстансы для бинга. без авторизации (подключены через впн)
+# BING_URLS = [
+#    'http://172.28.1.23:123/bing',
+#    'http://172.28.1.24:123/bing',
+#    ]
 
 
 # string for /donate command html parsing

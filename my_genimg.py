@@ -135,9 +135,9 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
                 images = bing_api_client.gen_images(prompt)
 
                 if images:
-                    my_log.log_bing_success('SECONDARY BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
+                    my_log.log_bing_success('BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
                 else:
-                    my_log.log_bing_img('SECONDARY BING FAILED ' + prompt)
+                    my_log.log_bing_img('BING FAILED ' + prompt)
 
             if any([x for x in images if not x.startswith('https://')]):
                 return images

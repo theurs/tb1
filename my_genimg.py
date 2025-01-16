@@ -546,23 +546,6 @@ Return a `reprompt`
     return reprompt, negative
 
 
-@utils.async_run
-def bing_get_one_round(reprompt: str, user_id: str, container):
-    '''fill containers with results (0-4 images)'''
-    r = bing(reprompt, user_id=user_id)
-    if r:
-        container += r
-    else:
-        container += ['none',]
-
-
-def count_running_bing_threads() -> list[str]:
-    """Возвращает количество запущенных потоков bing."""
-    thread_list = threading.enumerate()
-    thread_names = [thread.name for thread in thread_list if 'bing_get_one_round' in thread.name]
-    return len(thread_names)
-
-
 def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: str ='', iterations: int = 1) -> list:
     if iterations == 0:
         iterations = 1
@@ -570,45 +553,26 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
     if prompt.strip() == '':
         return []
 
-    original_prompt = re.sub(r'^!+', '', prompt).strip()
-
+    # переводим на английский и модерируем
     reprompt, _ = get_reprompt(prompt, conversation_history)
+
     if reprompt == 'MODERATION':
+        # если сработала модерация но юзер в белом списке то ок
         if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(user_id) in cfg.ALLOW_PASS_NSFW_FILTER:
-            prompt = re.sub(r'^!+', '', prompt).strip()
-            reprompt = prompt
+            pass
+        # если сработала модерация то возвращаем ошибку
         else:
             return ['moderation',]
 
-    if reprompt:
-        prompt = re.sub(r'^!+', '', prompt).strip()
-        result = []
+    # если промпт начинается с ! то не переводим
+    if prompt.startswith('!'):
+        reprompt = re.sub(r'^!+', '', prompt).strip()
 
-        # max_threads = len([x for x in bing_img.COOKIE.keys()])
-        max_threads = 1
-        if max_threads > 4:
-            max_threads = max_threads - 2 # leave 2 threads for other tasks
-        else:
-            max_threads = 1
 
-        containers = {}
-
-        for i in range(iterations):
-            containers[i] = []
-            # bing_get_one_round(reprompt, user_id, containers[i])
-            bing_get_one_round(original_prompt, user_id, containers[i])
-            while count_running_bing_threads() >= max_threads:
-                time.sleep(1)
-
-        while True:
-            time.sleep(1)
-            ready_containers = sum(1 for value_list in containers.values() if value_list)
-            if ready_containers == iterations:
-                break
-
-        result = [s for value_list in containers.values() for s in value_list if s != 'none']
-
+    if reprompt.strip():
+        result = bing(reprompt, user_id=user_id)
         return result
+
     return []
 
 
@@ -624,9 +588,8 @@ def gen_images(prompt: str, moderation_flag: bool = False,
     if prompt.strip() == '':
         return []
 
-    original_prompt = re.sub(r'^!+', '', prompt).strip()
-
     negative = ''
+    original_prompt = prompt
 
     reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
     if reprompt == 'MODERATION':
@@ -637,11 +600,12 @@ def gen_images(prompt: str, moderation_flag: bool = False,
     else:
         return []
 
+    bing_prompt = original_prompt if original_prompt.startswith('!') else prompt
+
     pool = ThreadPool(processes=9)
 
     if use_bing:
-        # async_result1 = pool.apply_async(bing, (prompt, moderation_flag, user_id))
-        async_result1 = pool.apply_async(bing, (original_prompt, moderation_flag, user_id))
+        async_result1 = pool.apply_async(bing, (bing_prompt, moderation_flag, user_id))
 
         async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
         async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))

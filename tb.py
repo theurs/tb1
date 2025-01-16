@@ -5461,6 +5461,8 @@ def image_gen(message: telebot.types.Message):
 
 {tr('Use /hf and /hff command for HuggingFace only.', lang)}
 
+{tr('Start with ! to not translate prompt to english.', lang)}
+
 {tr('Write what to draw, what it looks like.', lang)}
 """
                 message.text = my_log.restore_message_text(message.text, message.entities)

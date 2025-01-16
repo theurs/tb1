@@ -570,7 +570,9 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
 
 
     if reprompt.strip():
-        result = bing(reprompt, user_id=user_id)
+        result = []
+        for _ in range(iterations):
+            result += bing(reprompt, user_id=user_id)
         return result
 
     return []

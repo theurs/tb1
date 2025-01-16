@@ -520,13 +520,13 @@ Return a `reprompt`
         r = ''
 
         if not r:
-            r = my_mistral.get_reprompt_for_image(query, chat_id)
+            r = my_gemini.get_reprompt_for_image(query, chat_id)
         if r:
             reprompt, negative, moderation_sex, moderation_hate = r
             if moderation_sex or moderation_hate:
                 return 'MODERATION', None
         if not reprompt:
-            r = my_gemini.get_reprompt_for_image(query, chat_id)
+            r = my_mistral.get_reprompt_for_image(query, chat_id)
             if r:
                 reprompt, negative, moderation_sex, moderation_hate = r
                 if moderation_sex or moderation_hate:

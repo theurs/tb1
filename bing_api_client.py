@@ -63,7 +63,7 @@ def send_image_generation_request(prompt: str) -> List[str]:
 
     try:
         # Send the POST request
-        response: requests.Response = requests.post(url, headers=headers, json=data, timeout=90)
+        response: requests.Response = requests.post(url, headers=headers, json=data, timeout=70)
         
         # Raise an exception for bad status codes
         response.raise_for_status()
@@ -78,8 +78,11 @@ def send_image_generation_request(prompt: str) -> List[str]:
 
     except Exception as error:
         if '404 Client Error: NOT FOUND for url:' not in str(error):
-            traceback_error = traceback.format_exc()
-            my_log.log_bing_api(f'bing_api_client:send_image_generation_request3: {error}\n\n{traceback_error}')
+            if 'timeout' in str(error).lower():
+                my_log.log_bing_api(f'bing_api_client:send_image_generation_request1: {str(error)[:150]}')
+            else:
+                traceback_error = traceback.format_exc()
+                my_log.log_bing_api(f'bing_api_client:send_image_generation_request3: {error}\n\n{traceback_error}')
 
     return []
 

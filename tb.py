@@ -3476,8 +3476,13 @@ def list_models_command(message: telebot.types.Message):
 
             if available_models:
                 formatted_models: str = my_openrouter.format_models_for_telegram(available_models)
-                msg: str = utils.bot_markdown_to_html(formatted_models)
-                bot_reply(message, msg, parse_mode="HTML")
+                lines = formatted_models.split('\n')
+                # chunk 150 lines per chunk
+                chunks = [lines[i:i + 150] for i in range(0, len(lines), 150)]
+                for chunk in chunks:
+                    ch = '\n'.join(chunk)
+                    msg: str = utils.bot_markdown_to_html(ch)
+                    bot_reply(message, msg, parse_mode="HTML")
 
             else:
                 bot_reply_tr(message, "No models found.")

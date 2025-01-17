@@ -1598,26 +1598,51 @@ def get_ytb_proxy(url: str = None) -> str:
     return result
 
 
-def audio_duration(audio_file: str) -> int:
+def audio_duration(audio_file: Union[str, bytes]) -> int:
     """
     Get the duration of an audio file.
 
     Args:
-        audio_file (str): The path to the audio file.
+        audio_file: The path to the audio file (str) or the audio file content as bytes.
 
     Returns:
         int: The duration of the audio file in seconds.
     """
-    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    tmpfname = ''
+    if isinstance(audio_file, bytes):
+        # Create a temporary file to pass to ffprobe
+        tmpfname = get_tmp_fname()
+        with open(tmpfname, 'wb') as f:
+            f.write(audio_file)
+        audio_file = tmpfname
+
+    duration_seconds = 0
     try:
-        r = float(result.stdout)
-    except ValueError:
-        r = 0
-    try:
-        r = int(r)
-    except ValueError:
-        r = 0
-    return r
+        # Execute ffprobe to get the duration
+        result = subprocess.run(
+            ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', audio_file],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=True  # Raise CalledProcessError for non-zero return codes
+        )
+        if result.stdout:
+            try:
+                # Convert the output to float and then to integer
+                duration_seconds = int(float(result.stdout.decode('utf-8').strip()))
+            except ValueError:
+                my_log.error(f'utils:audio_duration Could not convert ffprobe output to float: {result.stdout}')
+    except subprocess.CalledProcessError as error:
+        my_log.error(f'utils:audio_duration ffprobe failed for {audio_file}\n{error}')
+    except FileNotFoundError as error:
+        my_log.error(f'utils:audio_duration ffprobe not found\n{error}')
+    except Exception as error:
+        my_log.error(f'utils:audio_duration {audio_file}\n{error}')
+    finally:
+        # Clean up the temporary file if it was created
+        if tmpfname:
+            remove_file(tmpfname)
+
+    return duration_seconds
 
 
 if __name__ == '__main__':

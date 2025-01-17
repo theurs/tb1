@@ -130,6 +130,10 @@ def log_layout_switcher(orig: str, translated: str):
     t = orig + '\n->\n' + translated
     log2(t, 'log_layout_switcher')
 
+def log_transcribe(text: str) -> None:
+    """для логов транскрибации аудио в субтитры"""
+    log2(text, 'transcribe')
+
 
 def log_donate(text: str) -> None:
     """для логов донатов"""

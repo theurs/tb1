@@ -77,6 +77,9 @@ FROZEN_KEYS = []
 FROZEN_KEYS_LOCK = threading.Lock()
 
 
+ROUND_ROBIN_KEYS = []
+
+
 MEM_UNCENSORED = [
     {"role": "user", "parts": [{"text": "Translate from language [autodetect] to language [en], your reply should only be the translated text, this can help you to translate better []:\n\nтрахни тебя, киска, засранец"}]},
     {"role": "model", "parts": [{"text": "fuck you pussy asshole"}]},
@@ -115,6 +118,25 @@ def extract_and_replace_tool_code(text: str) -> str:
             return text
     else:
         return text
+
+
+def get_next_key():
+    '''
+    Дает один ключ из всех, последовательно перебирает доступные ключи
+    '''
+    global ROUND_ROBIN_KEYS
+    
+    if not ROUND_ROBIN_KEYS:
+        keys = cfg.gemini_keys[:] + ALL_KEYS[:]
+        keys = [x for x in keys if x not in FROZEN_KEYS]
+        badkeys = ['b3470eb3b2055346b76f2ce3b11aadf2f6fdccf5703ad853b4a5b0cf46f1cf16',]
+        for key in keys[:]:
+            if utils.fast_hash(key) in badkeys:
+                keys.remove(key)
+                remove_key(key)
+        ROUND_ROBIN_KEYS = keys[:]
+
+    return ROUND_ROBIN_KEYS.pop(0)
 
 
 def chat(query: str,
@@ -157,6 +179,7 @@ def chat(query: str,
     Returns:
         str: The generated response from the AI model.
     '''
+
     try:
         query = query[:MAX_SUM_REQUEST]
         if temperature < 0:
@@ -187,24 +210,18 @@ def chat(query: str,
         if system == '':
             system = None
 
-        if not key__:
-            keys = cfg.gemini_keys[:] + ALL_KEYS[:]
-            keys = [x for x in keys if x not in FROZEN_KEYS]
-        else:
-            keys = [key__,]
-
-        random.shuffle(keys)
-        keys = keys[:4]
-        badkeys = ['b3470eb3b2055346b76f2ce3b11aadf2f6fdccf5703ad853b4a5b0cf46f1cf16',]
-        for key in keys[:]:
-            if utils.fast_hash(key) in badkeys:
-                keys.remove(key)
-                remove_key(key)
-
         time_start = time.time()
+
         key_i = 0
-        while key_i < len(keys):
-            key = keys[key_i]
+
+        while key_i < 4:
+
+            if key__: # если передан конкретный ключ то используем только его только 1 раз
+                key = key__
+                key_i = 4
+            else:
+                key = get_next_key()
+
             if time.time() > time_start + (TIMEOUT-1):
                 my_log.log_gemini(f'my_gemini:chat1: stop after timeout {round(time.time() - time_start, 2)}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 return ''
@@ -288,7 +305,6 @@ def chat(query: str,
                         FROZEN_KEYS.clear()
                         SAVE_FROZEN()
                     my_log.log_gemini(f'my_gemini:chat2:1: {str(error)[:120]} {chat_id} {model[-10:]} {key[-10:]} {all_keys_len - frozen_keys_len} left')
-
                 else:
                     my_log.log_gemini(f'my_gemini:chat2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
@@ -305,11 +321,6 @@ def chat(query: str,
             except Exception as error3:
                 my_log.log_gemini(f'my_gemini:chat3: {error3}\nchat history: {str(chat_.history)}')
                 result = resp.text
-
-            # # пытается вызвать функцию неправильно
-            # if result:
-            #     if 'print(default_api.' in result[:100]:
-            #         return ''
 
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
             # куча пробелов, и возможно другие тоже. укарачиваем
@@ -374,8 +385,7 @@ def img2txt(data_: bytes,
             img = PIL.Image.open(data)
             q = [prompt, img]
             res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills, chat_id=chat_id)
-            # if chat_id:
-            #     my_db.add_msg(chat_id, model)
+
             return res
         except Exception as error:
             if 'cannot identify image file' in str(error):
@@ -1178,7 +1188,7 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
-    # print(test_new_key('xxx'))
+    print(test_new_key('AIzaSyAUyQRRT9J23fNR1Q8671hwyCwcn5K5EdU'))
 
     # chat('привет', chat_id='[1651196] [0]')
     # update_mem('1+2', '3', '[1651196] [0]')

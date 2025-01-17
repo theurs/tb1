@@ -3,9 +3,10 @@
 
 
 import random
-import time
+# import time
 import traceback
-from datetime import timedelta
+# from datetime import timedelta
+from typing import Optional, Tuple
 
 
 from deepgram import (
@@ -111,13 +112,13 @@ def tts(text: str, lang: str = 'ru', voice: str = 'aura-zeus-en') -> bytes:
     return b''
 
 
-def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = ''):
+def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = '') -> Tuple[Optional[str], Optional[str], Optional[str]]:
     '''
     Транскрибирует аудиозапись и возвращает субтитры в 2 форматах srt и vtt и текст.
     '''
     try:
         if not hasattr(cfg, 'DEEPGRAM_KEYS') or not cfg.DEEPGRAM_KEYS:
-            return ''
+            return None, None, None
 
         api_key = random.choice(cfg.DEEPGRAM_KEYS)
         deepgram = DeepgramClient(api_key=api_key)
@@ -136,15 +137,15 @@ def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = ''):
             detect_language=True,
             # diarize=True  # Добавляем diarize=True для определения говорящих
         )
-        time_start = time.time()
+        # time_start = time.time()
         # human readable time format
-        print("Start time is: " + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_start)))
+        # print("Start time is: " + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_start)))
         response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
-        time_end = time.time()
-        time_delta = time_end - time_start
+        # time_end = time.time()
+        # time_delta = time_end - time_start
         # human readable time format
-        print('End time is: ' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_end)))
-        print(f'Time elapsed: {timedelta(seconds=time_delta)}')
+        # print('End time is: ' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_end)))
+        # print(f'Time elapsed: {timedelta(seconds=time_delta)}')
 
         t = DeepgramConverter(response)
         captions_srt = srt(t)
@@ -156,7 +157,7 @@ def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = ''):
         traceback_error = traceback.format_exc()
         my_log.log_deepgram(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
 
-    return ''
+    return None, None, None
 
 
 def save_caps(cap_srt: str, cap_vtt: str, text: str, fname: str):
@@ -181,5 +182,5 @@ if __name__ == "__main__":
     # with open('C:/Users/user/Downloads/output.mp3', 'wb') as f:
     #     f.write(data)
 
-    cap_crt, cap_vtt, text = transcribe('C:/Users/user/Downloads/3.m4a')
-    save_caps(cap_crt, cap_vtt, text, 'C:/Users/user/Downloads/3')
+    # cap_crt, cap_vtt, text = transcribe('C:/Users/user/Downloads/3.m4a')
+    # save_caps(cap_crt, cap_vtt, text, 'C:/Users/user/Downloads/3')

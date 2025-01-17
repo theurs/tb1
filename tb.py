@@ -6,6 +6,7 @@ import concurrent.futures
 import io
 import importlib
 import hashlib
+import math
 import os
 import pickle
 import re
@@ -22,7 +23,6 @@ from typing import Any, Dict, List, Optional, Union
 import langcodes
 import pendulum
 import PIL
-import prettytable
 import telebot
 from fuzzywuzzy import fuzz
 from sqlitedict import SqliteDict
@@ -30,6 +30,7 @@ from sqlitedict import SqliteDict
 import cfg
 import md2tgmd
 import my_alert
+import my_deepgram
 import my_init
 import my_genimg
 import my_cohere
@@ -2426,8 +2427,10 @@ def handle_voice(message: telebot.types.Message):
                         file_info = bot.get_file(message.voice.file_id)
                     elif message.audio:
                         file_info = bot.get_file(message.audio.file_id)
+                        file_name = message.audio.file_name
                     elif message.video:
                         file_info = bot.get_file(message.video.file_id)
+                        file_name = message.video.file_name
                     elif message.video_note:
                         file_info = bot.get_file(message.video_note.file_id)
                     elif message.document:
@@ -2447,6 +2450,8 @@ def handle_voice(message: telebot.types.Message):
 
                 downloaded_file = bot.download_file(file_info.file_path)
 
+
+                ## /clone_voice ##################################################################################
                 # если идет загрузка голосового сэмпла для клонирования
                 if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'recieve_voice':
                     sample = my_fish_speech.cut_file(downloaded_file)
@@ -2487,6 +2492,80 @@ def handle_voice(message: telebot.types.Message):
                         bot_reply_tr(message, 'Upload sample voice first. Use /upload_voice command.', reply_markup=get_keyboard('command_mode',message))
                         COMMAND_MODE[chat_id_full] = ''
                     return
+                ## /clone_voice ##################################################################################
+
+
+                ## /transcribe ###################################################################################
+                # если отправили аудио файл для транскрибации в субтитры
+                if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
+
+                    audio_duration = utils.audio_duration(downloaded_file)
+                    price = math.ceil((25 / 3600) * audio_duration)
+                    users_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+                    if users_stars < price:
+                        msg =  tr('Not enough stars. Use /stars command to get more.', lang) + '\n\n'
+                        msg += tr('Need stars:', lang) + ' ' + str(price) + '\n'
+                        msg += tr('Current stars:', lang) + ' ' + str(users_stars) + '\n'
+                        msg += tr('You need more', lang) + ' ' + str(price - users_stars) + ' ' + tr('stars to use this command.', lang)
+                        bot_reply(message, msg)
+                        COMMAND_MODE[chat_id_full] = ''
+                        return
+
+                    cap_srt, cap_vtt, text = my_deepgram.transcribe(downloaded_file, lang)
+
+                    if cap_srt or cap_vtt:
+                        # send captions
+                        kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
+                        try:
+                            m1 = bot.send_document(
+                                message.chat.id,
+                                cap_srt.encode('utf-8', 'replace'),
+                                reply_to_message_id=message.message_id,
+                                caption = 'SRT caption',
+                                reply_markup=kbd,
+                                parse_mode='HTML',
+                                disable_notification = True,
+                                visible_file_name = file_name + '.srt',
+                                message_thread_id = message.message_thread_id,
+                            )
+                            log_message(m1)
+                            m2 = bot.send_document(
+                                message.chat.id,
+                                cap_vtt.encode('utf-8', 'replace'),
+                                reply_to_message_id=message.message_id,
+                                caption = 'VTT caption',
+                                reply_markup=kbd,
+                                parse_mode='HTML',
+                                disable_notification = True,
+                                visible_file_name = file_name + '.vtt',
+                                message_thread_id = message.message_thread_id,
+                            )
+                            log_message(m2)
+                            m3 = bot.send_document(
+                                message.chat.id,
+                                text.encode('utf-8', 'replace'),
+                                reply_to_message_id=message.message_id,
+                                caption = 'clear text',
+                                reply_markup=kbd,
+                                parse_mode='HTML',
+                                disable_notification = True,
+                                visible_file_name = file_name + '.txt',
+                                message_thread_id = message.message_thread_id,
+                            )
+                            log_message(m3)
+
+                            my_db.set_user_property(chat_id_full, 'telegram_stars', users_stars - price)
+                            my_log.log_transcribe(f'Consumed {price} stars from user {chat_id_full} for audio file duration {audio_duration}')
+                            COMMAND_MODE[chat_id_full] = ''
+                            msg = tr('Transcription created successfully, telegram stars used:', lang) + ' ' + str(price)
+                            bot_reply(message, msg)
+                            return
+                        except Exception as error_transcribe:
+                            my_log.log2(f'tb:handle_voice:transcribe: {error_transcribe}')
+                            bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
+                            return
+                        
+                ## /transcribe ###################################################################################
 
 
                 with open(file_path, 'wb') as new_file:
@@ -3286,6 +3365,26 @@ def gmodel(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:gmodel: {unknown}\n{traceback_error}')
+
+
+@bot.message_handler(commands=['transcribe',], func=authorized_owner)
+@async_run
+def transcribe(message: telebot.types.Message):
+    """
+    Бот может транскрибировать аудиозапись, переделать ее в субтитры.
+    Юзер должен сначала вызвать эту команду а затем кинуть файл или ссылку.
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+        COMMAND_MODE[chat_id_full] = 'transcribe'
+        help = (
+            'Send an audio file or link to transcribe. You will get files with subtitles.\n\n'
+            '25 telegram stars per hour required.'
+        )
+        bot_reply_tr(message, help, reply_markup=get_keyboard('command_mode', message))
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:transcribe: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['model',], func=authorized_owner)
@@ -5454,8 +5553,10 @@ def image_gen(message: telebot.types.Message):
         with lock:
             with semaphore_talks:
                 draw_text = tr('draw', lang)
-                if lang == 'ru': draw_text = 'нарисуй'
-                if lang == 'en': draw_text = 'draw'
+                if lang == 'ru':
+                    draw_text = 'нарисуй'
+                if lang == 'en':
+                    draw_text = 'draw'
                 help = f"""/image {tr('Text description of the picture, what to draw.', lang)}
 
 /image {tr('космический корабль в полете', lang)}

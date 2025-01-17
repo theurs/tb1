@@ -6929,8 +6929,12 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
 
 
 def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -> bool:
-    '''если общее количество сообщений превышает лимит то надо проверить подписку
-        и если не подписан то предложить подписаться
+    '''
+    Если общее количество сообщений превышает лимит то надо проверить подписку
+    и если не подписан то предложить подписаться.
+
+    Если у юзера есть все ключи, и есть звезды в достаточном количестве то
+    звезды надо потреблять всё равно, что бы не накапливались.
     '''
     try:
         # если ожидается нестандартная сумма то пропустить
@@ -6954,10 +6958,9 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                 if msgs24h <= max_per_day:
                     return True
 
-                # юзеры у которых есть 3 ключа не требуют подписки
+                # юзеры у которых есть 3 ключа не требуют подписки,
+                # но если есть звезды то их надо снимать чтоб не копились
                 have_keys = chat_id_full in my_gemini.USER_KEYS and chat_id_full in my_groq.USER_KEYS and chat_id_full in my_genimg.USER_KEYS
-                if have_keys:
-                    return True
 
                 total_messages__ = my_db.count_msgs_total_user(chat_id_full)
                 MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
@@ -6973,20 +6976,25 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                             msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
                             msg += '\n\n' + tr('You have enough stars for a month of free access. Thank you for your support!', lang)
                             bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+                            return True
                         else:
-                            msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
-                            msg += '\n\n' + tr('You have not enough stars for a month of free access.\n\nYou can get free access if bring all free keys, see /keys command for instruction.', lang)
-                            bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
-                            # my_log.log_donate_consumption_fail(f'{chat_id_full} user have not enough stars {stars}')
-                            return False
+                            if have_keys:
+                                return True
+                            else:
+                                msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
+                                msg += '\n\n' + tr('You have not enough stars for a month of free access.\n\nYou can get free access if bring all free keys, see /keys command for instruction.', lang)
+                                bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+                                # my_log.log_donate_consumption_fail(f'{chat_id_full} user have not enough stars {stars}')
+                                return False
             except Exception as unexpected_error:
                 error_traceback = traceback.format_exc()
                 my_log.log2(f'tb:check_donate: {chat_id_full} {total_messages__}\n\n{unexpected_error}\n\n{error_traceback}')
-        return True
+
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:check_donate: {unknown}\n{traceback_error}')
-        return True
+
+    return True
 
 
 @bot.message_handler(func=authorized)

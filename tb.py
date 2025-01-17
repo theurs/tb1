@@ -6988,7 +6988,7 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                                 return False
             except Exception as unexpected_error:
                 error_traceback = traceback.format_exc()
-                my_log.log2(f'tb:check_donate: {chat_id_full} {total_messages__}\n\n{unexpected_error}\n\n{error_traceback}')
+                my_log.log2(f'tb:check_donate: {chat_id_full}\n\n{unexpected_error}\n\n{error_traceback}')
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()

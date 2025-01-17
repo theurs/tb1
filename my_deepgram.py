@@ -1,9 +1,11 @@
-# pip install deepgram-sdk
+# pip install deepgram-sdk deepgram_captions
 # ??pip install python-dotenv??
 
 
 import random
+import time
 import traceback
+from datetime import timedelta
 
 
 from deepgram import (
@@ -12,6 +14,7 @@ from deepgram import (
     SpeakOptions,
     FileSource,
 )
+from deepgram_captions import DeepgramConverter, srt, webvtt
 
 import cfg
 import my_log
@@ -108,6 +111,66 @@ def tts(text: str, lang: str = 'ru', voice: str = 'aura-zeus-en') -> bytes:
     return b''
 
 
+def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = ''):
+    '''
+    Транскрибирует аудиозапись и возвращает субтитры в 2 форматах srt и vtt и текст.
+    '''
+    try:
+        if not hasattr(cfg, 'DEEPGRAM_KEYS') or not cfg.DEEPGRAM_KEYS:
+            return ''
+
+        api_key = random.choice(cfg.DEEPGRAM_KEYS)
+        deepgram = DeepgramClient(api_key=api_key)
+
+        if isinstance(buffer_data, str):
+            with open(buffer_data, "rb") as file:
+                buffer_data = file.read()
+
+        payload: FileSource = {
+            "buffer": buffer_data,
+        }
+
+        options = PrerecordedOptions(
+            model="nova-2",
+            smart_format=True,
+            detect_language=True,
+            # diarize=True  # Добавляем diarize=True для определения говорящих
+        )
+        time_start = time.time()
+        # human readable time format
+        print("Start time is: " + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_start)))
+        response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
+        time_end = time.time()
+        time_delta = time_end - time_start
+        # human readable time format
+        print('End time is: ' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_end)))
+        print(f'Time elapsed: {timedelta(seconds=time_delta)}')
+
+        t = DeepgramConverter(response)
+        captions_srt = srt(t)
+        captions_vtt = webvtt(t)
+        transcript = response["results"]["channels"][0]["alternatives"][0]["transcript"]        
+
+        return captions_srt, captions_vtt, transcript
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_deepgram(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
+
+    return ''
+
+
+def save_caps(cap_srt: str, cap_vtt: str, text: str, fname: str):
+    '''
+    Сохраняет в указанный файл (добавляет разные расширения) субтитры в форматах srt и vtt и текст.
+    '''
+    with open(fname + '.srt', 'w', encoding='utf-8') as f:
+        f.write(cap_srt)
+    with open(fname + '.vtt', 'w', encoding='utf-8') as f:
+        f.write(cap_vtt)
+    with open(fname + '.txt', 'w', encoding='utf-8') as f:
+        f.write(text)
+
+
 if __name__ == "__main__":
     pass
     # print(stt('C:/Users/user/Downloads/1.ogg'))
@@ -117,3 +180,6 @@ if __name__ == "__main__":
     # data = tts(text_to_say)
     # with open('C:/Users/user/Downloads/output.mp3', 'wb') as f:
     #     f.write(data)
+
+    cap_crt, cap_vtt, text = transcribe('C:/Users/user/Downloads/3.m4a')
+    save_caps(cap_crt, cap_vtt, text, 'C:/Users/user/Downloads/3')

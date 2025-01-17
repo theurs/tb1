@@ -8,6 +8,7 @@ cachetools
 cohere
 cryptocompare
 
+deepgram_captions
 deepgram-sdk
 
 duckduckgo_search[lxml]

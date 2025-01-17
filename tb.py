@@ -567,11 +567,12 @@ def img2txt(text, lang: str,
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_grok.DEFAULT_MODEL
 
-            if not model and not text:
-                if check_vip_user_gemini(chat_id_full):
-                    model = cfg.gemini_pro_model
-                else:
-                    model = cfg.img2_txt_model
+            # if not model and not text:
+            #     if check_vip_user_gemini(chat_id_full):
+            #         model = cfg.gemini_pro_model
+            #     else:
+            #         model = cfg.img2_txt_model
+            model = cfg.img2_txt_model
 
             # сначала попробовать с помощью джемини
             if not text:

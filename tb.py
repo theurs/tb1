@@ -6976,10 +6976,9 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                             msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
                             msg += '\n\n' + tr('You have enough stars for a month of free access. Thank you for your support!', lang)
                             bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
-                            return True
                         else:
                             if have_keys:
-                                return True
+                                pass
                             else:
                                 msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
                                 msg += '\n\n' + tr('You have not enough stars for a month of free access.\n\nYou can get free access if bring all free keys, see /keys command for instruction.', lang)

@@ -2395,6 +2395,11 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
     '''
     with ShowAction(message, 'typing', 15):
         bot_reply_tr(message, 'Processing audio file...')
+        if isinstance(data, str):
+            data = utils.download_audio_file_as_bytes(data)
+            if not data:
+                bot_reply_tr(message, 'Audio file not found')
+                return
 
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
@@ -7395,8 +7400,9 @@ def do_task(message, custom_prompt: str = ''):
                                 bot_reply_tr(message, 'Invalid input. Please try the donation process again. Make sure the donation amount is correct. It might be too large or too small.')
                         else:
                             bot_reply_tr(message, 'Invalid input. Please try the donation process again.')
-                    COMMAND_MODE[chat_id_full] = ''
-                    return
+                    if COMMAND_MODE[chat_id_full] != 'transcribe':
+                        COMMAND_MODE[chat_id_full] = ''
+                        return
 
             if msg == tr('забудь', lang) and (is_private or is_reply) or bot_name_used and msg==tr('забудь', lang):
                 reset_(message)
@@ -7438,7 +7444,7 @@ def do_task(message, custom_prompt: str = ''):
                         return
                 else:
                     if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
-                        transcribe_file(utils.download_audio_file_as_bytes(message.text), utils.get_filename_from_url(message.text), message)
+                        transcribe_file(message.text, utils.get_filename_from_url(message.text), message)
                     else:
                         message.text = '/sum ' + message.text
                         summ_text(message)

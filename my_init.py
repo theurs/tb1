@@ -85,7 +85,17 @@ PROMPT_SOLVE = 'Solve all problems presented in the image. Show your step-by-ste
 PROMPT_QRCODE = 'Read QRCODE.'
 
 
-start_msg = '''Hello, I`m AI chat bot powered by Google, Microsoft, Openai etc.
+start_msg = '''Hello, I`m AI chat bot. I`m here to help you with anything you need.
+
+✨ Access to all text AIs
+🎨 Draws pictures
+🗣️ Recognizes voice and creates subtitles
+🖼️ Answers questions about pictures
+🌐 Searches the internet using AI
+🔊 Generates speech
+📝 Translates documents
+📚 Summarizes long texts and videos
+🎧 Downloads audio from YouTube
 
 Ask me anything. Send me you text/image/audio/documents with questions.
 Generate images with /image command.
@@ -233,7 +243,9 @@ def generate_start_msg():
         msg = ''
 
         if not msg:
-            msg = my_groq.translate(start_msg, to_lang = x)
+            msg = my_gemini.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
+        if not msg:
+            msg = my_groq.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
         if not msg:
             msg = start_msg
         if msg:
@@ -406,7 +418,7 @@ if __name__ == '__main__':
 
     # generate_help_msg()
 
-    regenerate_help_msg(('zu', 'sw'))
+    # regenerate_help_msg(('zu', 'sw'))
     # regenerate_start_msg('en')
 
     my_db.close()

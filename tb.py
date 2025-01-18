@@ -2384,6 +2384,97 @@ def handle_pay_support(message):
         bot.send_message(message.chat.id, msg)
 
 
+def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message):
+    '''
+    Транскрибирует аудио файл, отправляет в ответ субтитры, снимает 25 звезд за каждый час звука
+    Если аудио короткое, до 5 минут то не снимает звезды
+    
+    Args: 
+        data: Аудио файл в байтовом формате
+        file_name: Название файла
+        message: Сообщение
+    '''
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
+    audio_duration = utils.audio_duration(data)
+    price = math.ceil((25 / 3600) * audio_duration)
+    if audio_duration < 5*60:
+        price = 0
+
+    users_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+
+    if users_stars < price:
+        msg =  tr('Not enough stars. Use /stars command to get more.', lang) + '\n\n'
+        msg += tr('Need stars:', lang) + ' ' + str(price) + '\n'
+        msg += tr('Current stars:', lang) + ' ' + str(users_stars) + '\n'
+        msg += tr('You need more', lang) + ' ' + str(price - users_stars) + ' ' + tr('stars to use this command.', lang)
+        bot_reply(message, msg)
+        COMMAND_MODE[chat_id_full] = ''
+        return
+
+    cap_srt, cap_vtt, text = my_deepgram.transcribe(data, lang)
+
+    if cap_srt or cap_vtt:
+        # send captions
+        kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
+        try:
+            m1 = bot.send_document(
+                message.chat.id,
+                cap_srt.encode('utf-8', 'replace'),
+                reply_to_message_id=message.message_id,
+                caption = tr(f'SRT subtitles generated at @{_bot_name}', lang),
+                reply_markup=kbd,
+                parse_mode='HTML',
+                disable_notification = True,
+                visible_file_name = file_name + '.srt',
+                message_thread_id = message.message_thread_id,
+            )
+            log_message(m1)
+            m2 = bot.send_document(
+                message.chat.id,
+                cap_vtt.encode('utf-8', 'replace'),
+                reply_to_message_id=message.message_id,
+                caption = tr(f'VTT subtitles generated at @{_bot_name}', lang),
+                reply_markup=kbd,
+                parse_mode='HTML',
+                disable_notification = True,
+                visible_file_name = file_name + '.vtt',
+                message_thread_id = message.message_thread_id,
+            )
+            log_message(m2)
+            m3 = bot.send_document(
+                message.chat.id,
+                text.encode('utf-8', 'replace'),
+                reply_to_message_id=message.message_id,
+                caption = tr(f'Transcription generated at @{_bot_name}', lang),
+                reply_markup=kbd,
+                parse_mode='HTML',
+                disable_notification = True,
+                visible_file_name = file_name + '.txt',
+                message_thread_id = message.message_thread_id,
+            )
+            log_message(m3)
+
+            if price:
+                my_db.set_user_property(chat_id_full, 'telegram_stars', users_stars - price)
+                my_log.log_transcribe(f'Consumed {price} stars from user {chat_id_full} for audio file duration {audio_duration}')
+                msg = tr('Transcription created successfully, telegram stars used:', lang) + ' ' + str(price)
+            else:
+                msg = tr('Transcription created successfully', lang)
+
+            COMMAND_MODE[chat_id_full] = ''
+
+            bot_reply(message, msg)
+
+        except Exception as error_transcribe:
+            my_log.log2(f'tb:handle_voice:transcribe: {error_transcribe}')
+            bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
+
+    else:
+        bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
+
+
 @bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)
 @async_run
 def handle_voice(message: telebot.types.Message):
@@ -2423,8 +2514,11 @@ def handle_voice(message: telebot.types.Message):
             with semaphore_talks:
                 # Скачиваем аудиофайл во временный файл
                 try:
+                    file_name = 'unknown'
+                    file_info = None
                     if message.voice:
                         file_info = bot.get_file(message.voice.file_id)
+                        file_name = 'telegram voice message'
                     elif message.audio:
                         file_info = bot.get_file(message.audio.file_id)
                         file_name = message.audio.file_name
@@ -2435,6 +2529,7 @@ def handle_voice(message: telebot.types.Message):
                         file_info = bot.get_file(message.video_note.file_id)
                     elif message.document:
                         file_info = bot.get_file(message.document.file_id)
+                        file_name = message.document.file_name
                     else:
                         bot_reply_tr(message, 'Unknown message type')
                 except telebot.apihelper.ApiTelegramException as error:
@@ -2498,73 +2593,8 @@ def handle_voice(message: telebot.types.Message):
                 ## /transcribe ###################################################################################
                 # если отправили аудио файл для транскрибации в субтитры
                 if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
-
-                    audio_duration = utils.audio_duration(downloaded_file)
-                    price = math.ceil((25 / 3600) * audio_duration)
-                    users_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
-                    if users_stars < price:
-                        msg =  tr('Not enough stars. Use /stars command to get more.', lang) + '\n\n'
-                        msg += tr('Need stars:', lang) + ' ' + str(price) + '\n'
-                        msg += tr('Current stars:', lang) + ' ' + str(users_stars) + '\n'
-                        msg += tr('You need more', lang) + ' ' + str(price - users_stars) + ' ' + tr('stars to use this command.', lang)
-                        bot_reply(message, msg)
-                        COMMAND_MODE[chat_id_full] = ''
-                        return
-
-                    cap_srt, cap_vtt, text = my_deepgram.transcribe(downloaded_file, lang)
-
-                    if cap_srt or cap_vtt:
-                        # send captions
-                        kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
-                        try:
-                            m1 = bot.send_document(
-                                message.chat.id,
-                                cap_srt.encode('utf-8', 'replace'),
-                                reply_to_message_id=message.message_id,
-                                caption = 'SRT caption',
-                                reply_markup=kbd,
-                                parse_mode='HTML',
-                                disable_notification = True,
-                                visible_file_name = file_name + '.srt',
-                                message_thread_id = message.message_thread_id,
-                            )
-                            log_message(m1)
-                            m2 = bot.send_document(
-                                message.chat.id,
-                                cap_vtt.encode('utf-8', 'replace'),
-                                reply_to_message_id=message.message_id,
-                                caption = 'VTT caption',
-                                reply_markup=kbd,
-                                parse_mode='HTML',
-                                disable_notification = True,
-                                visible_file_name = file_name + '.vtt',
-                                message_thread_id = message.message_thread_id,
-                            )
-                            log_message(m2)
-                            m3 = bot.send_document(
-                                message.chat.id,
-                                text.encode('utf-8', 'replace'),
-                                reply_to_message_id=message.message_id,
-                                caption = 'clear text',
-                                reply_markup=kbd,
-                                parse_mode='HTML',
-                                disable_notification = True,
-                                visible_file_name = file_name + '.txt',
-                                message_thread_id = message.message_thread_id,
-                            )
-                            log_message(m3)
-
-                            my_db.set_user_property(chat_id_full, 'telegram_stars', users_stars - price)
-                            my_log.log_transcribe(f'Consumed {price} stars from user {chat_id_full} for audio file duration {audio_duration}')
-                            COMMAND_MODE[chat_id_full] = ''
-                            msg = tr('Transcription created successfully, telegram stars used:', lang) + ' ' + str(price)
-                            bot_reply(message, msg)
-                            return
-                        except Exception as error_transcribe:
-                            my_log.log2(f'tb:handle_voice:transcribe: {error_transcribe}')
-                            bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
-                            return
-                        
+                    transcribe_file(downloaded_file, file_name, message)
+                    return
                 ## /transcribe ###################################################################################
 
 
@@ -7373,8 +7403,11 @@ def do_task(message, custom_prompt: str = ''):
                         proccess_image(chat_id_full, utils.download_image_as_bytes(message.text), message)
                         return
                 else:
-                    message.text = '/sum ' + message.text
-                    summ_text(message)
+                    if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
+                        transcribe_file(utils.download_audio_file_as_bytes(message.text), utils.get_filename_from_url(message.text), message)
+                    else:
+                        message.text = '/sum ' + message.text
+                        summ_text(message)
                     return
 
 

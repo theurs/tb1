@@ -1939,6 +1939,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button)
 
             return markup
+        elif kbd == 'chat_mode':
+            markup = telebot.types.InlineKeyboardMarkup(row_width=3)
+            b1 = telebot.types.InlineKeyboardButton('Flash', callback_data='chat_mode_select_gemini')
+            b2 = telebot.types.InlineKeyboardButton('Thinking', callback_data='chat_mode_select_gemini_thinking')
+            b3 = telebot.types.InlineKeyboardButton('Codestral', callback_data='chat_mode_select_codestral')
+            markup.row(b1, b2, b3)
+            return markup
         else:
             raise f"Неизвестная клавиатура '{kbd}'"
     except Exception as unknown:
@@ -1985,6 +1992,16 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 COMMAND_MODE[chat_id_full] = ''
                 image_prompt = tr(my_init.PROMPT_COPY_TEXT_TTS, lang)
                 process_image_stage_2(image_prompt, chat_id_full, lang, message)
+
+            elif call.data == 'chat_mode_select_gemini':
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+                bot.delete_message(message.chat.id, message.message_id)
+            elif call.data == 'chat_mode_select_gemini_thinking':
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini_2_flash_thinking')
+                bot.delete_message(message.chat.id, message.message_id)
+            elif call.data == 'chat_mode_select_codestral':
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'codestral')
+                bot.delete_message(message.chat.id, message.message_id)
 
             elif call.data == 'image_prompt_text_tr':
                 COMMAND_MODE[chat_id_full] = ''
@@ -6439,8 +6456,6 @@ def send_welcome_start(message: telebot.types.Message):
         lang = get_lang(chat_id_full, message)
 
         COMMAND_MODE[chat_id_full] = ''
-        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         args = message.text.split(maxsplit = 1)
         if len(args) == 2:
@@ -6453,9 +6468,34 @@ def send_welcome_start(message: telebot.types.Message):
             help = my_init.start_msg
             my_log.log2(f'tb:send_welcome_start Unknown language: {lang}')
 
-        bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True, reply_markup=get_keyboard('start', message))
+        bot_reply(
+            message,
+            help,
+            parse_mode='HTML',
+            disable_web_page_preview=True,
+            reply_markup=get_keyboard('start', message),
+            send_message=True)
         if chat_id_full not in NEW_KEYBOARD:
             NEW_KEYBOARD[chat_id_full] = True
+
+        # показать выбор моделей новому юзеру
+        if not my_db.get_user_property(chat_id_full, 'chat_mode') or my_db.get_user_property(chat_id_full, 'chat_mode') == 'test':
+            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+            bot_reply_tr(
+                message,
+                f"""Выберите подходящую модель
+
+Gemini Flash - стандартная модель
+
+Gemini Thinking - модель для решения задач
+
+Codestral - модель для программирования
+
+/config - все остальные модели""",
+                parse_mode='HTML',
+                reply_markup=get_keyboard('chat_mode', message),
+                send_message=True
+            )
 
         # no language in user info, show language selector
         if not user_have_lang:

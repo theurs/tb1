@@ -6811,6 +6811,8 @@ def reload_module(message: telebot.types.Message):
             my_mistral.load_users_keys()
         elif module_name == 'my_cohere':
             my_cohere.load_users_keys()
+        elif module_name == 'my_init':
+            load_msgs()
         elif module_name == 'my_db':
             db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
             db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False

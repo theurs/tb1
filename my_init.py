@@ -85,24 +85,23 @@ PROMPT_SOLVE = 'Solve all problems presented in the image. Show your step-by-ste
 PROMPT_QRCODE = 'Read QRCODE.'
 
 
-start_msg = '''Hello, I`m AI chat bot. I`m here to help you with anything you need.
+start_msg = '''Hello, I'm an AI chat bot. I'm here to help you with anything you need.
 
 ✨ Access to all text AIs
-🎨 Draws pictures
-🗣️ Recognizes voice and creates subtitles
-🖼️ Answers questions about pictures
-🌐 Searches the internet using AI
-🔊 Generates speech
-📝 Translates documents
-📚 Summarizes long texts and videos
-🎧 Downloads audio from YouTube
+🎨 Picture drawing
+🗣 Voice recognition and subtitles creation
+🖼 Answers to questions about pictures
+🌐 Internet search using AI
+🔊 Speech generation
+📝 Document translation
+📚 Summarization of long texts and videos
+🎧 Audio download from YouTube
 
-Ask me anything. Send me you text/image/audio/documents with questions.
-Generate images with /image command.
+Ask me anything. Send me your text/image/audio/documents with questions.
+Generate images with the /img command.
 
-Change language with /lang command.
-Remove keyboard /remove_keyboard.
-'''
+Change language with the /lang command.
+Remove keyboard with /remove_keyboard.'''
 
 help_msg = f"""🔭 If you send a link or text file in a private message, the bot will try to extract and provide a brief summary of the content.
 After the file or link is downloaded, you can ask questions about file using the `/ask` command.

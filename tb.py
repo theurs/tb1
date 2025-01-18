@@ -1883,13 +1883,10 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_commandrplus, button_qwen2_72b)
 
-            markup.row(button_glm4plus, button_gemini_pro)
-
             if hasattr(cfg, 'GLM4_KEYS'):
-                if chat_id_full in my_openrouter.KEYS:
-                    markup.row(button_glm4plus, button_openrouter)
-                else:
-                    markup.row(button_glm4plus)
+                markup.row(button_glm4plus, button_gemini_pro)
+            else:
+                markup.row(button_gemini_pro)
 
             if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS and chat_id_full in my_openrouter.KEYS:
                 markup.row(button_grok, button_openrouter)

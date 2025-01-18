@@ -5578,9 +5578,9 @@ def image_gen(message: telebot.types.Message):
         if not check_donate(message, chat_id_full, lang):
             return
 
-        # не ставить в очередь рисование
-        if lock.locked():
-            return
+        # # не ставить в очередь рисование
+        # if lock.locked():
+        #     return
 
         with lock:
             with semaphore_talks:
@@ -6424,41 +6424,6 @@ def send_welcome_help(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:help: {unknown}\n{traceback_error}')
-
-
-@bot.message_handler(commands=['free', 'help_1'], func = authorized_log)
-@async_run
-def send_welcome_help_1(message: telebot.types.Message):
-    # почему бесплатно и как это работает
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-        COMMAND_MODE[chat_id_full] = ''
-
-        args = message.text.split(maxsplit = 1)
-        if len(args) == 2:
-            if args[1] in my_init.supported_langs_trans+['pt-br',]:
-                lang = args[1]
-
-        help = """
-**Google** gives everyone free API keys to its **Gemini** AI, you can insert them into this bot and use them.
-
-**Groq** gives free API keys to its **llama3** and **mistral** AI, and they can be inserted into this bot.
-
-**Openrouter** provides access to all other paid AIs, you can insert your personal key and use it in this bot.
-
-The keys have usage limits, but if you use them together and there are enough keys, the limits cease to be a problem.
-
-**If you have paid accounts on these services and use them for something else, do not give your keys to this bot, it is meant to work only with free keys.**
-
-Voice recognition, drawing, etc. also all work on free services in one way or another.
-"""
-        help = tr(help, lang)
-        help = utils.bot_markdown_to_html(help)
-        bot_reply(message, help, disable_web_page_preview=True, parse_mode='HTML')
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:send_welcome_help_1: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['report'], func = authorized_log)

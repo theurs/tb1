@@ -2872,7 +2872,8 @@ def handle_document(message: telebot.types.Message):
         if not check_donate(message, chat_id_full, lang):
             return
 
-        COMMAND_MODE[chat_id_full] = ''
+        if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] != 'transcribe':
+            COMMAND_MODE[chat_id_full] = ''
 
         is_private = message.chat.type == 'private'
         supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
@@ -3409,7 +3410,7 @@ def transcribe(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = 'transcribe'
         help = (
             'Send an audio file or link to transcribe. You will get files with subtitles.\n\n'
-            '25 telegram stars per hour required.'
+            '25 telegram stars per hour required. /stars'
         )
         bot_reply_tr(message, help, reply_markup=get_keyboard('command_mode', message))
     except Exception as unknown:

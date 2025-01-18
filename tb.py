@@ -2410,8 +2410,8 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
         file_name: Название файла
         message: Сообщение
     '''
+    bot_reply_tr(message, 'Processing audio file...')
     with ShowAction(message, 'typing', 15):
-        bot_reply_tr(message, 'Processing audio file...')
         if isinstance(data, str):
             data = utils.download_audio_file_as_bytes(data)
             if not data:
@@ -2437,9 +2437,20 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
             COMMAND_MODE[chat_id_full] = ''
             return
 
-        cap_srt, cap_vtt, text = my_deepgram.transcribe(data, lang)
+        engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+        if engine == 'assembly.ai':
+            cap_srt, cap_vtt = my_stt.assemblyai_to_caps(data, lang)
+            text = utils.srt_to_text(cap_srt)
+        else:
+            cap_srt, cap_vtt, text = my_deepgram.transcribe(data, lang)
 
-        if cap_srt or cap_vtt:
+        if cap_srt.strip() or cap_vtt.strip():
+            if not cap_srt.strip():
+                cap_srt = 'EMPTY'
+            if not cap_vtt.strip():
+                cap_vtt = 'EMPTY'
+            if not text.strip():
+                text = 'EMPTY'
             # send captions
             kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
             try:

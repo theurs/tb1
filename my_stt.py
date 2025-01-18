@@ -328,8 +328,10 @@ def miliseconds_to_str(miliseconds: int) -> str:
 
 
 def assemblyai_2(audio_file: str, language: str = 'ru'):
-    '''Converts the given audio file to text using the AssemblyAI API.
-    Multivoice version'''
+    '''
+    Converts the given audio file to text using the AssemblyAI API.
+    Multivoice version
+    '''
     try:
         aai.settings.api_key = random.choice(cfg.ASSEMBLYAI_KEYS)
         transcriber = aai.Transcriber()
@@ -351,13 +353,50 @@ def assemblyai_2(audio_file: str, language: str = 'ru'):
         return result or ''
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'my_stt:assemblyai: {error}\n\n{traceback_error}')
+        my_log.log2(f'my_stt:assemblyai_2: {error}\n\n{traceback_error}')
         return ''
+
+
+def assemblyai_to_caps(audio_file, language: str = 'ru') -> tuple[str | None, str | None]:
+    '''
+    Transcribes an audio file to subtitle formats (SRT and VTT) using the AssemblyAI API.
+    This function supports multi-speaker diarization and entity detection.
+
+    Args:
+        audio_file: The path to the audio file or the audio data as bytes.
+        language: The language code of the audio (e.g., 'ru' for Russian). Defaults to 'ru'.
+
+    Returns:
+        A tuple containing the subtitles in SRT and VTT formats, respectively.
+        Returns (None, None) if an error occurs during transcription.
+    '''
+    try:
+        aai.settings.api_key = random.choice(cfg.ASSEMBLYAI_KEYS)
+        transcriber = aai.Transcriber()
+        audio_url = (audio_file)
+        config = aai.TranscriptionConfig(speaker_labels=True,
+                                         language_code = language,
+                                         entity_detection=True,
+                                         )
+        assembly_response = transcriber.transcribe(audio_url, config)
+
+        vtt_caps = assembly_response.export_subtitles_vtt()
+        srt_caps = assembly_response.export_subtitles_srt()
+
+        return srt_caps, vtt_caps
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'Error in assemblyai_to_caps: {error}\n\n{traceback_error}')
+
+    return None, None
 
 
 if __name__ == "__main__":
     pass
-    r = assemblyai_2('d:\\Downloads\\rt_podcast919.mp3')
-    with open('d:\\Downloads\\rt_podcast919.mp3.txt', 'w', encoding='utf-8') as f:
-        f.write(r)
-    print(r[:1000])
+    s, v = assemblyai_to_caps('C:/Users/user/Downloads/1.ogg')
+
+    with open('C:/Users/user/Downloads/1.srt', 'w', encoding='utf-8') as f:
+        f.write(s)
+
+    with open('C:/Users/user/Downloads/1.vtt', 'w', encoding='utf-8') as f:
+        f.write(s)

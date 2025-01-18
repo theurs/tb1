@@ -8,7 +8,6 @@ import traceback
 # from datetime import timedelta
 from typing import Optional, Tuple
 
-
 from deepgram import (
     DeepgramClient,
     PrerecordedOptions,
@@ -114,7 +113,18 @@ def tts(text: str, lang: str = 'ru', voice: str = 'aura-zeus-en') -> bytes:
 
 def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = '') -> Tuple[Optional[str], Optional[str], Optional[str]]:
     '''
-    Транскрибирует аудиозапись и возвращает субтитры в 2 форматах srt и vtt и текст.
+    Transcribes audio data and returns subtitles in SRT and VTT formats, and the transcribed text.
+
+    Args:
+        buffer_data: The audio data as bytes, or a string representing the path to an audio file.
+        lang: The language of the audio (default: 'ru').
+        prompt: An optional prompt to guide the transcription.
+
+    Returns:
+        A tuple containing:
+            - The subtitles in SRT format (string), or None if an error occurred.
+            - The subtitles in VTT format (string), or None if an error occurred.
+            - The transcribed text (string), or None if an error occurred.
     '''
     try:
         if not hasattr(cfg, 'DEEPGRAM_KEYS') or not cfg.DEEPGRAM_KEYS:
@@ -137,15 +147,8 @@ def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = '') -> Tuple[
             detect_language=True,
             # diarize=True  # Добавляем diarize=True для определения говорящих
         )
-        # time_start = time.time()
-        # human readable time format
-        # print("Start time is: " + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_start)))
+
         response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
-        # time_end = time.time()
-        # time_delta = time_end - time_start
-        # human readable time format
-        # print('End time is: ' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_end)))
-        # print(f'Time elapsed: {timedelta(seconds=time_delta)}')
 
         t = DeepgramConverter(response)
         captions_srt = srt(t)

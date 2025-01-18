@@ -11,6 +11,7 @@ import html
 import os
 import pathlib
 import pickle
+import pysrt
 import pytz
 import random
 import re
@@ -1934,7 +1935,30 @@ def audio_duration(audio_file: Union[str, bytes]) -> int:
     return duration_seconds
 
 
+def srt_to_text(cap_srt: str) -> str:
+    """Converts an SRT subtitle string to plain text.
+
+    Args:
+        cap_srt: A string containing subtitles in SRT format.
+
+    Returns:
+        A string with the extracted text from the subtitles.
+        Returns an empty string ('') if an error occurs during processing.
+    """
+    try:
+        subs = pysrt.from_string(cap_srt)
+        text = subs.text
+        return text
+    except pysrt.Error:
+        return ''
+
+
 if __name__ == '__main__':
     pass
+
+    with open('C:/Users/user/Downloads/1.srt', 'r', encoding='utf8') as f:
+        srt_text = f.read()
+    text = srt_to_text(srt_text)
+    print(text)
 
     # print(get_filename_from_url('https://youtu.be/1234567890.ogg'))

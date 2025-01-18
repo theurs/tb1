@@ -61,6 +61,8 @@ PyMuPDF
 PyPDF2
 pysocks
 
+pysrt
+
 # 4.19 вызывает ошибку copy_message() got an unexpected keyword argument "show_caption_above_media" при копировании сообщений
 pytelegrambotapi==4.16.1
 

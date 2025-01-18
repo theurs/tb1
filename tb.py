@@ -3257,6 +3257,12 @@ def handle_photo(message: telebot.types.Message):
             if is_private:
                 # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку
                 if len(MESSAGES) > 1:
+                    # найти сообщение у которого есть caption
+                    caption = ''
+                    for msg in MESSAGES:
+                        if msg.caption:
+                            caption = msg.caption
+                            break
                     with ShowAction(message, 'typing'):
                         images = [download_image_from_message(msg) for msg in MESSAGES]
                         if sys.getsizeof(images) > 10 * 1024 *1024:
@@ -3295,10 +3301,10 @@ def handle_photo(message: telebot.types.Message):
                             except Exception as send_doc_error:
                                 my_log.log2(f'tb:handle_photo3: {send_doc_error}')
                         my_log.log_echo(message, f'Made collage of {len(images)} images.')
-                        if not message.caption:
+                        if not caption:
                             proccess_image(chat_id_full, result_image_as_bytes, message)
                             return
-                        text = img2txt(result_image_as_bytes, lang, chat_id_full, message.caption)
+                        text = img2txt(result_image_as_bytes, lang, chat_id_full, caption)
                         if text:
                             text = utils.bot_markdown_to_html(text)
                             # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)

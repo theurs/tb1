@@ -1883,16 +1883,21 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_commandrplus, button_qwen2_72b)
 
+            markup.row(button_glm4plus, button_gemini_pro)
+
             if hasattr(cfg, 'GLM4_KEYS'):
                 if chat_id_full in my_openrouter.KEYS:
                     markup.row(button_glm4plus, button_openrouter)
                 else:
                     markup.row(button_glm4plus)
 
-            if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS:
-                markup.row(button_grok)
-
-            markup.row(button_gemini_pro)
+            if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS and chat_id_full in my_openrouter.KEYS:
+                markup.row(button_grok, button_openrouter)
+            else:
+                if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS:
+                    markup.row(button_grok)
+                if chat_id_full in my_openrouter.KEYS:
+                    markup.row(button_openrouter)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):

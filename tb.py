@@ -2593,7 +2593,8 @@ def handle_voice(message: telebot.types.Message):
                 ## /transcribe ###################################################################################
                 # если отправили аудио файл для транскрибации в субтитры
                 if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
-                    transcribe_file(downloaded_file, file_name, message)
+                    with ShowAction(message, 'upload_audio', 15):
+                        transcribe_file(downloaded_file, file_name, message)
                     return
                 ## /transcribe ###################################################################################
 

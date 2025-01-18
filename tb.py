@@ -573,7 +573,8 @@ def img2txt(text, lang: str,
             #         model = cfg.gemini_pro_model
             #     else:
             #         model = cfg.img2_txt_model
-            model = cfg.img2_txt_model
+            if not model and not text:
+                model = cfg.img2_txt_model
 
             # сначала попробовать с помощью джемини
             if not text:

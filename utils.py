@@ -957,23 +957,6 @@ def get_tmp_fname() -> str:
         return temp_file.name
 
 
-def split_long_string(long_string: str, header = False, MAX_LENGTH = 24) -> str:
-    if len(long_string) <= MAX_LENGTH:
-        return long_string
-    if header:
-        return long_string[:MAX_LENGTH-2] + '..'
-    split_strings = []
-    while len(long_string) > MAX_LENGTH:
-        split_strings.append(long_string[:MAX_LENGTH])
-        long_string = long_string[MAX_LENGTH:]
-
-    if long_string:
-        split_strings.append(long_string)
-
-    result = "\n".join(split_strings) 
-    return result
-
-
 def is_image_link(url: str) -> bool:
   """Проверяет, является ли URL-адрес ссылкой на картинку.
 

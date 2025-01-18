@@ -1417,7 +1417,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
             markup.add(button1, button2)
             return markup
-
         elif kbd == 'voicechat':
             keyboard = telebot.types.ReplyKeyboardMarkup(
                 row_width=1,
@@ -1428,7 +1427,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             one_butt = telebot.types.KeyboardButton(text="Голосовой чат", web_app=webAppTest) #создаем кнопку типа webapp
             keyboard.add(one_butt) #добавляем кнопки в клавиатуру
             return keyboard #возвращаем клавиатуру
-
         elif kbd.startswith('pay_stars_'):
             amount = int(kbd.split('_')[-1])
             keyboard = telebot.types.InlineKeyboardMarkup()
@@ -1500,6 +1498,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
             markup.add(button1)
             return markup
+
         elif kbd == 'command_mode':
             markup  = telebot.types.InlineKeyboardMarkup()
             button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='cancel_command')
@@ -2394,85 +2393,88 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
         file_name: Название файла
         message: Сообщение
     '''
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
+    with ShowAction(message, 'typing', 15):
+        bot_reply_tr(message, 'Processing audio file...')
 
-    audio_duration = utils.audio_duration(data)
-    price = math.ceil((25 / 3600) * audio_duration)
-    if audio_duration < 5*60:
-        price = 0
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
 
-    users_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+        audio_duration = utils.audio_duration(data)
+        price = math.ceil((25 / 3600) * audio_duration)
+        if audio_duration < 5*60:
+            price = 0
 
-    if users_stars < price:
-        msg =  tr('Not enough stars. Use /stars command to get more.', lang) + '\n\n'
-        msg += tr('Need stars:', lang) + ' ' + str(price) + '\n'
-        msg += tr('Current stars:', lang) + ' ' + str(users_stars) + '\n'
-        msg += tr('You need more', lang) + ' ' + str(price - users_stars) + ' ' + tr('stars to use this command.', lang)
-        bot_reply(message, msg)
-        COMMAND_MODE[chat_id_full] = ''
-        return
+        users_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
 
-    cap_srt, cap_vtt, text = my_deepgram.transcribe(data, lang)
-
-    if cap_srt or cap_vtt:
-        # send captions
-        kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
-        try:
-            m1 = bot.send_document(
-                message.chat.id,
-                cap_srt.encode('utf-8', 'replace'),
-                reply_to_message_id=message.message_id,
-                caption = tr(f'SRT subtitles generated at @{_bot_name}', lang),
-                reply_markup=kbd,
-                parse_mode='HTML',
-                disable_notification = True,
-                visible_file_name = file_name + '.srt',
-                message_thread_id = message.message_thread_id,
-            )
-            log_message(m1)
-            m2 = bot.send_document(
-                message.chat.id,
-                cap_vtt.encode('utf-8', 'replace'),
-                reply_to_message_id=message.message_id,
-                caption = tr(f'VTT subtitles generated at @{_bot_name}', lang),
-                reply_markup=kbd,
-                parse_mode='HTML',
-                disable_notification = True,
-                visible_file_name = file_name + '.vtt',
-                message_thread_id = message.message_thread_id,
-            )
-            log_message(m2)
-            m3 = bot.send_document(
-                message.chat.id,
-                text.encode('utf-8', 'replace'),
-                reply_to_message_id=message.message_id,
-                caption = tr(f'Transcription generated at @{_bot_name}', lang),
-                reply_markup=kbd,
-                parse_mode='HTML',
-                disable_notification = True,
-                visible_file_name = file_name + '.txt',
-                message_thread_id = message.message_thread_id,
-            )
-            log_message(m3)
-
-            if price:
-                my_db.set_user_property(chat_id_full, 'telegram_stars', users_stars - price)
-                my_log.log_transcribe(f'Consumed {price} stars from user {chat_id_full} for audio file duration {audio_duration}')
-                msg = tr('Transcription created successfully, telegram stars used:', lang) + ' ' + str(price)
-            else:
-                msg = tr('Transcription created successfully', lang)
-
-            COMMAND_MODE[chat_id_full] = ''
-
+        if users_stars < price:
+            msg =  tr('Not enough stars. Use /stars command to get more.', lang) + '\n\n'
+            msg += tr('Need stars:', lang) + ' ' + str(price) + '\n'
+            msg += tr('Current stars:', lang) + ' ' + str(users_stars) + '\n'
+            msg += tr('You need more', lang) + ' ' + str(price - users_stars) + ' ' + tr('stars to use this command.', lang)
             bot_reply(message, msg)
+            COMMAND_MODE[chat_id_full] = ''
+            return
 
-        except Exception as error_transcribe:
-            my_log.log2(f'tb:handle_voice:transcribe: {error_transcribe}')
+        cap_srt, cap_vtt, text = my_deepgram.transcribe(data, lang)
+
+        if cap_srt or cap_vtt:
+            # send captions
+            kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
+            try:
+                m1 = bot.send_document(
+                    message.chat.id,
+                    cap_srt.encode('utf-8', 'replace'),
+                    reply_to_message_id=message.message_id,
+                    caption = tr(f'SRT subtitles generated at @{_bot_name}', lang),
+                    reply_markup=kbd,
+                    parse_mode='HTML',
+                    disable_notification = True,
+                    visible_file_name = file_name + '.srt',
+                    message_thread_id = message.message_thread_id,
+                )
+                log_message(m1)
+                m2 = bot.send_document(
+                    message.chat.id,
+                    cap_vtt.encode('utf-8', 'replace'),
+                    reply_to_message_id=message.message_id,
+                    caption = tr(f'VTT subtitles generated at @{_bot_name}', lang),
+                    reply_markup=kbd,
+                    parse_mode='HTML',
+                    disable_notification = True,
+                    visible_file_name = file_name + '.vtt',
+                    message_thread_id = message.message_thread_id,
+                )
+                log_message(m2)
+                m3 = bot.send_document(
+                    message.chat.id,
+                    text.encode('utf-8', 'replace'),
+                    reply_to_message_id=message.message_id,
+                    caption = tr(f'Transcription generated at @{_bot_name}', lang),
+                    reply_markup=kbd,
+                    parse_mode='HTML',
+                    disable_notification = True,
+                    visible_file_name = file_name + '.txt',
+                    message_thread_id = message.message_thread_id,
+                )
+                log_message(m3)
+
+                if price:
+                    my_db.set_user_property(chat_id_full, 'telegram_stars', users_stars - price)
+                    my_log.log_transcribe(f'Consumed {price} stars from user {chat_id_full} for audio file duration {audio_duration}')
+                    msg = tr('Transcription created successfully, telegram stars used:', lang) + ' ' + str(price)
+                else:
+                    msg = tr('Transcription created successfully', lang)
+
+                COMMAND_MODE[chat_id_full] = ''
+
+                bot_reply(message, msg)
+
+            except Exception as error_transcribe:
+                my_log.log2(f'tb:handle_voice:transcribe: {error_transcribe}')
+                bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
+
+        else:
             bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
-
-    else:
-        bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
 
 
 @bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)
@@ -2593,8 +2595,7 @@ def handle_voice(message: telebot.types.Message):
                 ## /transcribe ###################################################################################
                 # если отправили аудио файл для транскрибации в субтитры
                 if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
-                    with ShowAction(message, 'upload_audio', 15):
-                        transcribe_file(downloaded_file, file_name, message)
+                    transcribe_file(downloaded_file, file_name, message)
                     return
                 ## /transcribe ###################################################################################
 
@@ -4171,6 +4172,69 @@ def download_ytb_audio(message: telebot.types.Message):
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:download_ytb_audio2:{error}\n\n{traceback_error}')
+
+
+
+
+
+@bot.message_handler(commands=['memo', 'memos'], func=authorized_owner)
+@async_run
+def memo_handler(message: telebot.types.Message):
+    """
+    Попросить бота запомнить что то.
+
+    Запомненное добавляется в системный промпт как список того что юзер просил запомнить.
+    
+    Если вызвать команду без аргумента то показывать список запомненного с номерами по
+    которым можно удалить их
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        COMMAND_MODE[chat_id_full] = ''
+
+        arg = message.text.split(maxsplit=1)[1:]
+
+        if arg:
+            arg = arg[0]
+            if len(arg) < 3 and arg.isdigit():
+                memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
+                arg = int(arg)
+                if arg <= len(memos):
+                    memos.pop(arg - 1)
+                    my_db.set_user_property(chat_id_full, 'memos', my_db.obj_to_blob(memos))
+                    bot_reply_tr(message, 'OK')
+                elif len(memos) > 10:
+                    bot_reply_tr(message, 'Too many memos. Delete some before add new.')
+                else:
+                    bot_reply_tr(message, 'There is no such memo.')
+            else:
+                memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
+                arg = arg.strip()
+                if len(arg) > 3:
+                    if len(memos) > 10:
+                        bot_reply_tr(message, 'Too many memos. Delete some before add new.')
+                    else:
+                        memos.append(arg)
+                        my_db.set_user_property(chat_id_full, 'memos', my_db.obj_to_blob(memos))
+                        bot_reply_tr(message, 'OK')
+                else:
+                    bot_reply_tr(message, 'Too short memo.')
+
+        else:
+            msg = tr(f"""Usage : /memo <text> or <number to delete> - попросить бота запомнить что то, например /memo если речь зайдет про аниме отвечай как кавайная девочка а если про мангу как оттаку""", lang)
+            memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
+            i = 1
+            for memo in memos:
+                msg += f'\n\n[❌ {i}] {memo}'
+                i += 1
+            COMMAND_MODE[chat_id_full] = 'memo'
+            bot_reply(message, msg, reply_markup=get_keyboard('command_mode', message))
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:memo_handler: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)
@@ -7287,6 +7351,9 @@ def do_task(message, custom_prompt: str = ''):
                     elif COMMAND_MODE[chat_id_full] == 'tts':
                         message.text = f'/tts {message.text}'
                         tts(message)
+                    elif COMMAND_MODE[chat_id_full] == 'memo':
+                        message.text = f'/memo {message.text}'
+                        memo_handler(message)
                     elif COMMAND_MODE[chat_id_full] == 'trans':
                         message.text = f'/trans {message.text}'
                         trans(message)
@@ -7424,6 +7491,11 @@ def do_task(message, custom_prompt: str = ''):
                     hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date)
                 else:
                     hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date)
+
+                memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
+                if memos:
+                    hidden_text += '\n\nUser asked you to keep in mind this memos:'
+                    hidden_text += '\n'.join(memos)
 
                 hidden_text_for_llama370 = my_init.get_hidden_prompt_for_llama(tr, lang) + ', ' + user_role
 

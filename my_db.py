@@ -30,24 +30,44 @@ DAEMON_RUN = True
 DAEMON_TIME = 30
 
 
-# Serialize and compress an object
-def obj_to_blob(obj):
+def obj_to_blob(obj) -> bytes:
+    """
+    Serializes and compresses an object.
+
+    Args:
+        obj: The object to serialize and compress.
+
+    Returns:
+        bytes: The compressed serialized version of the object or None in case of an error.
+    """
     if obj is None:
         return None
     else:
         try:
+            # Serialize the object using pickle and compress it using lzma
             return lzma.compress(pickle.dumps(obj))
         except Exception as error:
+            # Log the error and return None
             my_log.log2(f'my_db:obj_to_blob {error}')
             return None
 
 
-# De-serialize and decompress an object
-def blob_to_obj(blob):
+def blob_to_obj(blob) -> object:
+    """
+    Deserializes and decompresses an object from its compressed serialized version.
+
+    Args:
+        blob (bytes): The compressed serialized version of the object.
+
+    Returns:
+        object: The original object or None in case of an error.
+    """
     if blob:
         try:
+            # Decompress the compressed serialized version of the object using lzma and deserialize it using pickle
             return pickle.loads(lzma.decompress(blob))
         except Exception as error:
+            # Log the error and return None
             my_log.log2(f'my_db:blob_to_obj {error}')
             return None
     else:
@@ -196,6 +216,7 @@ def init(backup: bool = True, vacuum: bool = False):
             disabled_kbd INTEGER,
             chat_mode TEXT,
             role TEXT,
+            memos BLOB,
             temperature REAL,
             bot_name TEXT,
 

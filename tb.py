@@ -4216,9 +4216,6 @@ def download_ytb_audio(message: telebot.types.Message):
         my_log.log2(f'tb:download_ytb_audio2:{error}\n\n{traceback_error}')
 
 
-
-
-
 @bot.message_handler(commands=['memo', 'memos'], func=authorized_owner)
 @async_run
 def memo_handler(message: telebot.types.Message):

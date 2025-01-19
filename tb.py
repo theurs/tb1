@@ -6498,7 +6498,8 @@ def send_welcome_start(message: telebot.types.Message):
                     if os.path.isfile(p):
                         with open(p, 'rb') as f:
                             data = f.read()
-                            transcribe_file(data, arg, message)
+                        utils.remove_file(p)
+                        transcribe_file(data, arg, message)
                     else:
                         bot_reply_tr(message, 'File not found')
                     return

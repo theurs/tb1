@@ -6476,8 +6476,21 @@ def send_welcome_start(message: telebot.types.Message):
 
         args = message.text.split(maxsplit = 1)
         if len(args) == 2:
-            if args[1].lower() in [x.lower() for x in my_init.supported_langs_trans+['pt-br',]]:
-                lang = args[1].lower()
+            # if in number
+            if args[1].isdigit():
+                if args[1].lower() in [x.lower() for x in my_init.supported_langs_trans+['pt-br',]]:
+                    lang = args[1].lower()
+            else: # if file link for transcibe?
+                arg = args[1]
+                if arg and len(arg) == 30 and hasattr(cfg, 'PATH_TO_UPLOAD_FILES'):
+                    p = os.path.join(cfg.PATH_TO_UPLOAD_FILES, arg)
+                    if os.path.isfile(p):
+                        with open(p, 'rb') as f:
+                            data = f.read()
+                            transcribe_file(data, arg, message)
+                    else:
+                        bot_reply_tr(message, 'File not found')
+                    return
 
         if lang in HELLO_MSG:
             help = HELLO_MSG[lang]

@@ -199,6 +199,12 @@ bot_name = "Бот"
 # имя на которое отзывается бот по умолчанию
 default_bot_name = 'бот'
 
+
+# путь к папке с загруженными файлами, их можно загружать через отдельный сервис
+# например для транскрибации файлов
+# PATH_TO_UPLOAD_FILES = '/uploads'
+
+
 # какой бот отвечает по умолчанию
 # 'gemini', 'gemini15', 'gemini8', 'gemini-exp', 'gemini-learn', 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'haiku',
 # 'gpt-4o-mini-ddg', 'openrouter_llama405', 'glm4plus', 'qwen70', 'mistral', 'pixtral', 'commandrplus', 'grok'

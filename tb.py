@@ -1506,6 +1506,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button1)
             return markup
 
+        elif kbd == 'command_mode_transcribe':
+            markup  = telebot.types.InlineKeyboardMarkup()
+            button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='cancel_command')
+            if hasattr(cfg, 'UPLOADER_URL') and cfg.UPLOADER_URL:
+                button2 = telebot.types.InlineKeyboardButton(tr("Файл больше чем 20мб?", lang), url=cfg.UPLOADER_URL)
+                markup.add(button1)
+                markup.add(button2)
+            else:
+                markup.add(button1)
+            return markup
+
         elif kbd == 'select_lang':
             markup = telebot.types.InlineKeyboardMarkup(row_width=2)
             most_used_langs = ['en', 'zh', 'es', 'ar', 'hi', 'pt', 'bn', 'ru', 'ja', 'de', 'fr', 'it', 'tr', 'ko', 'id', 'vi']
@@ -3456,7 +3467,7 @@ def transcribe(message: telebot.types.Message):
             'Send an audio file or link to transcribe. You will get files with subtitles.\n\n'
             '25 telegram stars per hour required. /stars'
         )
-        bot_reply_tr(message, help, reply_markup=get_keyboard('command_mode', message))
+        bot_reply_tr(message, help, reply_markup=get_keyboard('command_mode_transcribe', message))
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:transcribe: {unknown}\n{traceback_error}')

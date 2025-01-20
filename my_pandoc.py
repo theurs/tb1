@@ -5,6 +5,7 @@ import io
 import os
 import subprocess
 
+import chardet
 import PyPDF2
 import pandas as pd
 from pptx import Presentation
@@ -161,6 +162,15 @@ def convert_file_to_html(data: bytes, filename: str) -> str:
     result: str = ''
     _, file_extension = os.path.splitext(filename)
     input_format: str = file_extension[1:].lower()  # Remove the leading dot and convert to lowercase
+
+    if input_format == 'txt':
+        # autodetect codepage and convert to utf8
+        try:
+            from_enc = chardet.detect(data)['encoding']
+            if from_enc != 'utf-8':
+                data = data.decode(from_enc).encode('utf-8')
+        except Exception as error:
+            my_log.log2(f'my_pandoc: convert_file_to_html detect txt encoding error: {error}')
 
     # Mapping of file extensions to pandoc input formats
     format_mapping: dict[str, str] = {

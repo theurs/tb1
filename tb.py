@@ -217,6 +217,11 @@ UNCAPTIONED_IMAGES_LOCK = threading.Lock()
 CHECK_DONATE_LOCKS = {}
 
 
+# при каждом запуске маркер будет уникальным никому кроме бота не известным
+BING10MARKER = str(hash('[{(BING10)}]'))[:12]
+BING20MARKER = str(hash('[{(BING20)}]'))[:12]
+
+
 class RequestCounter:
     """Ограничитель числа запросов к боту
     не дает делать больше 10 в минуту, банит на cfg.DDOS_BAN_TIME сек после превышения"""
@@ -4140,6 +4145,30 @@ def sdonate(message: telebot.types.Message):
         my_log.log2(f'tb:sdonate: {unknown}\n{traceback_error}')
 
 
+@bot.message_handler(commands=['drop_subscription'], func=authorized_admin)
+@async_run
+def drop_subscription(message: telebot.types.Message):
+    '''
+    админ может удалить запись об активной подписке
+    использование - sdonate <id> as int
+    '''
+    try:
+        arg = message.text.split()[1]
+        user_id = int(arg)
+
+        if user_id:
+            chat_id_full = f'[{user_id}] [0]'
+            my_db.set_user_property(chat_id_full, 'last_donate_time', 0)
+            my_log.log_donate(f'drop_subscription {chat_id_full}')
+            bot_reply_tr(message, 'Dropped successfully!')
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:drop_subscription: {unknown}\n{traceback_error}')
+
+    bot_reply_tr(message, 'Usage: /drop_subscription id_as_int')
+
+
 @bot.message_handler(commands=['calc', 'math'], func=authorized_owner)
 @async_run
 def calc_gemini(message: telebot.types.Message):
@@ -5495,7 +5524,7 @@ def image_bing_gen10(message: telebot.types.Message):
             bot_reply_tr(message, 'Bing вас забанил.')
             time.sleep(2)
             return
-        message.text += '[{(BING10)}]'
+        message.text += BING10MARKER
         image_gen(message)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -5518,7 +5547,7 @@ def image_bing_gen20(message: telebot.types.Message):
             bot_reply_tr(message, 'Bing вас забанил.')
             time.sleep(2)
             return
-        message.text += '[{(BING20)}]'
+        message.text += BING20MARKER
         image_gen(message)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -5685,11 +5714,11 @@ def image_gen(message: telebot.types.Message):
         if message.text.endswith('[{(BING)}]'):
             message.text = message.text[:-10]
             BING_FLAG = 1
-        elif message.text.endswith('[{(BING10)}]'):
+        elif message.text.endswith(BING10MARKER):
             message.text = message.text[:-12]
             BING_FLAG = 10
             show_timeout = 20
-        elif message.text.endswith('[{(BING20)}]'):
+        elif message.text.endswith(BING20MARKER):
             message.text = message.text[:-12]
             BING_FLAG = 20
             show_timeout = 30

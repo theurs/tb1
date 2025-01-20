@@ -156,6 +156,7 @@ admin_help = '''
 /addkeys - add gemini API keys for a user for them
 /reset_gemini2 - reset gemini memory for specific chat
 /style2 - change style for specific chat
+/drop_subscription - drop user subscription
 
 /downgrade - downgrade llm model for free users mandatory
 

@@ -3453,6 +3453,22 @@ def gmodel(message: telebot.types.Message):
         my_log.log2(f'tb:gmodel: {unknown}\n{traceback_error}')
 
 
+@bot.message_handler(commands=['vacuum', 'vacuum_db', 'vacuumdb', 'clean', 'clean_db', 'cleandb', 'cleanup'], func=authorized_admin)
+@async_run
+def vacuum_db(message: telebot.types.Message):
+    """Чистка базы (блокирует бота на какое то время)"""
+    try:
+        with ShowAction(message):
+            chat_id_full = get_topic_id(message)
+            COMMAND_MODE[chat_id_full] = ''
+            bot_reply_tr(message, 'Cleaning database. Please wait...')
+            result = my_db.drop_all_user_files_and_big_dialogs(delete_data=True)
+            bot_reply(message, result)
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:vacuum_db: {unknown}\n{traceback_error}')
+
+
 @bot.message_handler(commands=['transcribe',], func=authorized_owner)
 @async_run
 def transcribe(message: telebot.types.Message):
@@ -8387,9 +8403,6 @@ def one_time_shot():
                 except Exception as error:
                     my_log.log2(f'tb:one_time_shot: {error}')
             my_db.CON.commit()
-
-            # картинки в них сохраняются. плюс еще и в разных отделах (для обычной и думающей версии)
-            my_db.delete_large_gemini_blobs(1)
 
             # Выполняем VACUUM вне транзакции
             try:

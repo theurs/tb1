@@ -704,9 +704,18 @@ def get_unique_originals() -> List[Tuple[str, str]]:
             return []
 
 
-def vacuum():
+def vacuum(lock_db: bool = True):
     '''Vacuum database'''
-    with LOCK:
+    if lock_db:
+        with LOCK:
+            try:
+                CUR.execute('''
+                    VACUUM
+                ''')
+                CON.commit()
+            except Exception as error:
+                my_log.log2(f'my_db:vacuum {error}')
+    else:
         try:
             CUR.execute('''
                 VACUUM
@@ -714,6 +723,7 @@ def vacuum():
             CON.commit()
         except Exception as error:
             my_log.log2(f'my_db:vacuum {error}')
+
 
 
 def drop_long_translations():
@@ -1081,58 +1091,126 @@ def get_user_data_sizes(user_id: str) -> dict:
             return {}
 
 
-def delete_large_gemini_blobs(max_size_mb: float = 1):
-    """
-    Delete Gemini blobs larger than the specified size from the users table.
+def drop_all_user_files_and_big_dialogs(max_dialog_size: int = 500000, delete_data: bool = False) -> str:
+    '''
+    Deletes user uploaded files and large Gemini dialogs.
+    Dialogs with gemini can grow significantly due to images,
+    sometimes they need to be deleted forcibly, but only
+    if their size is larger than the specified limit in compressed form.
+    User uploaded files can also be safely deleted,
+    there is no need to store them for a long time.
+    After deletion, a vacuum operation should be performed to reduce the database size.
 
     Args:
-        max_size_mb (int): The maximum size in megabytes for Gemini blobs.
-    """
-    max_size_bytes = int(max_size_mb * 1024 * 1024)  # Convert MB to bytes
-    page_size = 10  # Number of records to process at a time
+        max_dialog_size: The maximum size of a dialog in bytes before it is considered for deletion.
+        delete_data: If True, performs actual deletion. If False, only displays statistics.
 
+    Returns:
+        str: A message indicating the result of the operation.
+    '''
     with LOCK:
         try:
-            offset = 0
-            while True:
-                # Извлекаем записи из таблицы users по частям
+            if delete_data:
+                total_deleted_size = 0
+
+                # Delete saved files
                 CUR.execute('''
-                    SELECT id_num, dialog_gemini, dialog_gemini_thinking
+                    UPDATE users
+                    SET saved_file = NULL,
+                    saved_file_name = NULL
+                ''')
+
+                # Delete large Gemini dialogs individually
+                CUR.execute('''
+                    SELECT id, LENGTH(dialog_gemini)
                     FROM users
-                    LIMIT ? OFFSET ?
-                ''', (page_size, offset))
-                users_data = CUR.fetchall()
+                    WHERE LENGTH(dialog_gemini) > ?
+                ''', (max_dialog_size,))
+                results = CUR.fetchall()
+                for user_id, size in results:
+                    if size is not None:
+                        total_deleted_size += size
+                    CUR.execute('''
+                        UPDATE users
+                        SET dialog_gemini = NULL
+                        WHERE id = ?
+                    ''', (user_id,))
 
-                if not users_data:
-                    break
-
-                for user in users_data:
-                    user_id = user[0]
-                    dialog_gemini = user[1]
-                    dialog_gemini_thinking = user[2]
-
-                    # Проверяем размеры блобов и обновляем их, если они превышают max_size_bytes
-                    if dialog_gemini and len(dialog_gemini) > max_size_bytes:
-                        CUR.execute('''
-                            UPDATE users
-                            SET dialog_gemini = NULL
-                            WHERE id_num = ?
-                        ''', (user_id,))
-
-                    if dialog_gemini_thinking and len(dialog_gemini_thinking) > max_size_bytes:
-                        CUR.execute('''
-                            UPDATE users
-                            SET dialog_gemini_thinking = NULL
-                            WHERE id_num = ?
-                        ''', (user_id,))
+                CUR.execute('''
+                    SELECT id, LENGTH(dialog_gemini_thinking)
+                    FROM users
+                    WHERE LENGTH(dialog_gemini_thinking) > ?
+                ''', (max_dialog_size,))
+                results = CUR.fetchall()
+                for user_id, size in results:
+                    if size is not None:
+                        total_deleted_size += size
+                    CUR.execute('''
+                        UPDATE users
+                        SET dialog_gemini_thinking = NULL
+                        WHERE id = ?
+                    ''', (user_id,))
 
                 CON.commit()
-                offset += page_size
+                msg = f'my_db:drop_all_user_files_and_big_dialogs: User files and large dialogs have been deleted. Total deleted size: {total_deleted_size} bytes'
+                my_log.log2(msg)
 
-            my_log.log2('my_db:delete_large_gemini_blobs: Large Gemini blobs have been deleted.')
+                # Execute VACUUM to reduce the database size (outside the LOCK)
+                vacuum(lock_db = False)
+
+                return msg
+
+            else:
+                # Print information about what would be deleted
+                print("Information about data that would be deleted:")
+                total_would_be_deleted_size = 0
+
+                # Check for large dialog_gemini
+                CUR.execute('''
+                    SELECT id, LENGTH(dialog_gemini)
+                    FROM users
+                    WHERE LENGTH(dialog_gemini) > ?
+                ''', (max_dialog_size,))
+                results = CUR.fetchall()
+                for user_id, size in results:
+                    print(f"  User {user_id}: Delete dialog_gemini (size: {size} bytes)")
+                    if size is not None:
+                        total_would_be_deleted_size += size
+
+                # Check for large dialog_gemini_thinking
+                CUR.execute('''
+                    SELECT id, LENGTH(dialog_gemini_thinking)
+                    FROM users
+                    WHERE LENGTH(dialog_gemini_thinking) > ?
+                ''', (max_dialog_size,))
+                results = CUR.fetchall()
+                for user_id, size in results:
+                    print(f"  User {user_id}: Delete dialog_gemini_thinking (size: {size} bytes)")
+                    if size is not None:
+                        total_would_be_deleted_size += size
+
+                # Check for saved files
+                CUR.execute('''
+                    SELECT id
+                    FROM users
+                    WHERE saved_file IS NOT NULL OR saved_file_name IS NOT NULL
+                ''')
+                results = CUR.fetchall()
+                for user_id in results:
+                    print(f"  User {user_id}: Delete saved_file and saved_file_name")
+
+                # Estimate the size of saved_files - difficult to get the exact size without reading the files
+                print(f"  Estimated total size of deleted data (excluding saved files): {total_would_be_deleted_size} bytes")
+                msg = f'my_db:drop_all_user_files_and_big_dialogs: User files and large dialogs would have been deleted (but were not). Estimated total size: {total_would_be_deleted_size} bytes (excluding saved files)'
+                my_log.log2(msg)
+
+                return msg
+
         except Exception as error:
-            my_log.log2(f'my_db:delete_large_gemini_blobs {error}')
-            CON.rollback()
+            my_log.log2(f'my_db:drop_all_user_files_and_big_dialogs {error}')
+            if delete_data:
+                CON.rollback()
+                return f'my_db:drop_all_user_files_and_big_dialogs: Error deleting data: {error}'
 
 
 if __name__ == '__main__':

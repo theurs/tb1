@@ -145,6 +145,8 @@ admin_help = '''
 /create_all_translations - create translation cache
 /init - recreate telegram info (bot name, description, menu commands)
 
+/vacuum - drop large gemini dialogs and users files
+
 /sdonate - add or remove stars for a user, it will only be visible in the log that they are virtual
 
 /reset <id> - reset mem for user

@@ -462,14 +462,15 @@ def summ_url(url:str,
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 
         try:
-            response = requests.get(url, stream=True, headers=headers, timeout=20)
+            response = requests.get(url, stream=True, headers=headers, timeout=20, verify=False)
             content = b''
             # Ограничиваем размер
             for chunk in response.iter_content(chunk_size=1024):
                 content += chunk
                 if len(content) > 1 * 1024 * 1024: # 1 MB
                     break
-        except:
+        except Exception as e:
+            my_log.log2(f'my_sum.summ_url:download: {e}')
             if download_only:
                 return ''
             else:

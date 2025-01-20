@@ -4162,6 +4162,8 @@ def drop_subscription(message: telebot.types.Message):
             my_log.log_donate(f'drop_subscription {chat_id_full}')
             bot_reply_tr(message, 'Dropped successfully!')
 
+    except (IndexError, ValueError):
+        pass
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:drop_subscription: {unknown}\n{traceback_error}')

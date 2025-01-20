@@ -158,6 +158,11 @@ admin_help = '''
 /style2 - change style for specific chat
 /drop_subscription - drop user subscription
 
+/think, /th - `gemini_2_flash_thinking`
+/flash, /f - `gemini`
+/code, /c - `codestral`
+Usage: /<command> <user_id>
+
 /downgrade - downgrade llm model for free users mandatory
 
 /disable_chat_mode - mandatory switch <b>all</b> users from one chatbot to another
@@ -184,6 +189,7 @@ Usage: /block <add|add2|add3|del|del2|del3|list|list2|list3> <user_id>
 /mes - send message to user
 /alert - send alert message to all users (actually filtered)
 '''
+
 
 def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date):
     hidden_text = (

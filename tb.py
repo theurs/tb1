@@ -1960,9 +1960,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             return markup
         elif kbd == 'chat_mode':
             markup = telebot.types.InlineKeyboardMarkup(row_width=3)
-            b1 = telebot.types.InlineKeyboardButton('Flash', callback_data='chat_mode_select_gemini')
-            b2 = telebot.types.InlineKeyboardButton('Thinking', callback_data='chat_mode_select_gemini_thinking')
-            b3 = telebot.types.InlineKeyboardButton('Codestral', callback_data='chat_mode_select_codestral')
+            b1 = telebot.types.InlineKeyboardButton('⚡️ Flash', callback_data='chat_mode_select_gemini')
+            b2 = telebot.types.InlineKeyboardButton('🤔 Thinking', callback_data='chat_mode_select_gemini_thinking')
+            b3 = telebot.types.InlineKeyboardButton('💻 Codestral', callback_data='chat_mode_select_codestral')
             markup.row(b1, b2, b3)
             return markup
         else:
@@ -6622,6 +6622,49 @@ def send_welcome_help(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:help: {unknown}\n{traceback_error}')
+
+
+@bot.message_handler(commands=['think', 'th', 'flash', 'f', 'code', 'c'], func=authorized_admin)
+@async_run
+def set_chat_mode(message: telebot.types.Message):
+    """
+    Sets the chat mode for the specified user based on the command used.
+    /think, /th - gemini_2_flash_thinking
+    /flash, /f - gemini
+    /code, /c - codestral
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        command = message.text.split()[0]  # Get the command without arguments
+
+        try:
+            user_id = message.text.split(maxsplit=1)[1].strip()
+            if not user_id.startswith('['):
+                user_id = f'[{user_id}] [0]'
+        except (IndexError, ValueError):
+            bot_reply_tr(message, "Usage: /<command> <user_id> (use /id to get it)")
+            return
+        # Determine the mode based on the command used
+        if command in ['/think', '/th']:
+            mode = 'gemini_2_flash_thinking'
+        elif command in ['/flash', '/f']:
+            mode = 'gemini'
+        elif command in ['/code', '/c']:
+            mode = 'codestral'
+        else:
+            return  # Should not happen, but just in case
+        
+        my_db.set_user_property(user_id, 'chat_mode', mode)
+
+        msg = f'{tr("Chat mode changed for", lang)} {user_id} {tr("to", lang)} {mode}.'
+        bot_reply(message, msg)
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:set_chat_mode: {unknown}\n{traceback_error}')
+        bot_reply_tr(message, "An error occurred while processing the command.")
 
 
 @bot.message_handler(commands=['report'], func = authorized_log)

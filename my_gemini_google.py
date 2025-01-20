@@ -15,7 +15,6 @@
 
 
 import random
-import requests
 import time
 import traceback
 
@@ -67,30 +66,6 @@ def get_client():
     if isinstance(api_key, list):
         api_key = random.choice(api_key)
     return genai.Client(api_key=api_key)
-
-
-def resolve_short_url(short_url):
-    """
-    Resolves a short URL to its original, long URL.
-
-    Args:
-        short_url: The short URL to resolve.
-
-    Returns:
-        The resolved long URL, or None if an error occurs.
-    """
-    try:
-        response = requests.head(short_url, allow_redirects=False, timeout=10)
-        if 300 <= response.status_code < 400:
-            return response.headers['Location']
-        else:
-            return short_url  # If no redirect, return the original URL
-    except requests.exceptions.RequestException as e:
-        my_log.log_gemini_google(f"Error resolving URL: {e}\n{short_url}")
-        return short_url
-    except Exception as e:
-        my_log.log_gemini_google(f"Error resolving URL: {e}\n{short_url}")
-        return short_url
 
 
 def get_config(system_instruction: str = "", max_output_tokens: int = 8000, temperature: float = 1):
@@ -229,7 +204,7 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
             if response.candidates[0].grounding_metadata.grounding_chunks:
                 for part in response.candidates[0].grounding_metadata.grounding_chunks:
                     title = part.web.title
-                    url = resolve_short_url(part.web.uri)
+                    url = part.web.uri
                     link = f'[{title}]({url})'
                     links.append(link)
 

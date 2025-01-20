@@ -66,6 +66,7 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
         system = help,
         temperature=0.3,
         max_tokens=int(len(chunk)/2),
+        max_chat_lines=3,
         )
 
     if not r:
@@ -76,6 +77,7 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
             system = help,
             temperature=0.3,
             max_tokens=int(len(chunk)/2),
+            max_chat_lines=3,
             )
 
     return r or chunk
@@ -184,12 +186,8 @@ def translate_file_in_dialog(data: bytes, src: str, dst: str, fname: str) -> byt
     result = ''
     chat_id = 'translate_doc_' + str(uuid.uuid4())
 
-    total = len(chunks) + 1
-    current = 1
     for chunk in chunks:
-        result += translate_text_in_dialog(chunk, src, dst, chat_id)
-        print(f'{current}/{total}')
-        current += 1
+        result += translate_text_in_dialog(chunk, dst, chat_id)
 
     my_gemini.reset(chat_id)
 

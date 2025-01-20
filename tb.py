@@ -3030,7 +3030,7 @@ def handle_document(message: telebot.types.Message):
                             if target_lang:
                                 bot_reply_tr(message, 'Translating it will take some time...')
                                 new_fname = message.document.file_name if hasattr(message, 'document') else 'noname.txt'
-                                new_data = my_doc_translate.translate_file(
+                                new_data = my_doc_translate.translate_file_in_dialog(
                                     downloaded_file,
                                     lang,
                                     target_lang,

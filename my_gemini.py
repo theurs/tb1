@@ -17,7 +17,6 @@
 import cachetools.func
 import io
 import PIL
-import random
 import re
 import sys
 import time
@@ -149,7 +148,10 @@ def chat(query: str,
          key__: str = '',
          use_skills: bool = False,
          json_output: bool = False,
-         do_not_update_history=False) -> str:
+         do_not_update_history=False,
+         max_chat_lines: int = MAX_CHAT_LINES,
+         max_chat_mem_chars: int = MAX_CHAT_MEM_CHARS
+         ) -> str:
     '''Chat with AI model.
     Args:
         query (str): The query to be used for generating the response.
@@ -344,8 +346,8 @@ def chat(query: str,
                 if chat_id:
                     my_db.add_msg(chat_id, model)
                 if chat_id and do_not_update_history is False:
-                    mem = chat_.history[-MAX_CHAT_LINES*2:]
-                    while count_chars(mem) > MAX_CHAT_MEM_CHARS:
+                    mem = chat_.history[-max_chat_lines*2:]
+                    while count_chars(mem) > max_chat_mem_chars:
                         mem = mem[2:]
                     if 'thinking' in model:
                         my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))

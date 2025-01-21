@@ -247,7 +247,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
 
                 response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)
             except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
+                my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:1: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
                 continue
 
             if '"error":"Authorization header is correct, but the token seems invalid' in response.text:
@@ -269,9 +269,9 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
                 '"CUDA out of memory' in str(resp_text) or \
                 '"error":"Service Unavailable"' in str(resp_text):
                 if DEBUG:
-                    my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {resp_text} | {proxy} | {url}')
+                    my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:2: {resp_text} | {proxy} | {url}')
             else: # unknown error
-                my_log.log_huggin_face_api(f'my_genimg:huggin_face_api: {resp_text} | {proxy} | {url}')
+                my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:3: {resp_text} | {proxy} | {url}')
             time.sleep(10)
 
         return result

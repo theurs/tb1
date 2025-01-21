@@ -178,7 +178,8 @@ def bot_markdown_to_tts(text: str) -> str:
 
 
 def replace_math_byte_sequences(text: str) -> str:
-    """Replaces byte sequences like <0xE2><0xXX><0xYY> with their Unicode characters.
+    """
+    Replaces byte sequences like <0xXX><0xYY><0xZZ> with their corresponding Unicode characters.
 
     Args:
         text: The input string containing the byte sequences.
@@ -187,15 +188,16 @@ def replace_math_byte_sequences(text: str) -> str:
         The string with the byte sequences replaced by Unicode characters.
     """
     def replace(match: re.Match) -> str:
-        hex_byte2 = match.group(1)
-        hex_byte3 = match.group(2)
-        byte_values = [int(hex_byte2, 16), int(hex_byte3, 16)]
+        hex_byte1 = match.group(1)
+        hex_byte2 = match.group(2)
+        hex_byte3 = match.group(3)
+        byte_values = [int(hex_byte1, 16), int(hex_byte2, 16), int(hex_byte3, 16)]
         try:
-            return bytes([0xE2] + byte_values).decode('utf-8')
+            return bytes(byte_values).decode('utf-8')
         except UnicodeDecodeError:
             return match.group(0)
 
-    pattern = r'<0xE2><0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})>'
+    pattern = r'<0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})>'
     replaced_text = re.sub(pattern, replace, text)
     return replaced_text
 

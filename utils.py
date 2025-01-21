@@ -1931,13 +1931,13 @@ def audio_duration(audio_file: Union[str, bytes]) -> int:
                 # Convert the output to float and then to integer
                 duration_seconds = int(float(result.stdout.decode('utf-8').strip()))
             except ValueError:
-                my_log.error(f'utils:audio_duration Could not convert ffprobe output to float: {result.stdout}')
+                my_log.log2(f'utils:audio_duration Could not convert ffprobe output to float: {result.stdout}')
     except subprocess.CalledProcessError as error:
-        my_log.error(f'utils:audio_duration ffprobe failed for {audio_file}\n{error}')
+        my_log.log2(f'utils:audio_duration ffprobe failed for {audio_file}\n{error}')
     except FileNotFoundError as error:
-        my_log.error(f'utils:audio_duration ffprobe not found\n{error}')
+        my_log.log2(f'utils:audio_duration ffprobe not found\n{error}')
     except Exception as error:
-        my_log.error(f'utils:audio_duration {audio_file}\n{error}')
+        my_log.log2(f'utils:audio_duration {audio_file}\n{error}')
     finally:
         # Clean up the temporary file if it was created
         if tmpfname:

@@ -7189,6 +7189,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
             counter = len(chunks)
             for chunk in chunks:
                 if not chunk.strip():
+                    counter -= 1
                     continue
                 # в режиме только голоса ответы идут голосом без текста
                 # скорее всего будет всего 1 чанк, не слишком длинный текст

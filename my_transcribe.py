@@ -197,22 +197,19 @@ def genai_clear(_key: str = ''):
 
     try:
         if not _key:
-            keys = my_gemini.get_next_key()
-            random.shuffle(keys)
+            key = my_gemini.get_next_key()
         else:
-            keys = [_key,]
+            key = _key
 
-        for key in keys:
-            print(key)
-            genai.configure(api_key=key) # здесь может быть рейс кондишн?
-            files = genai.list_files()
-            for f in files:
-                print(f.name)
-                try:
-                    genai.delete_file(f.name)
-                    pass # можно ли удалять чужие файлы?
-                except Exception as error:
-                    my_log.log_gemini(f'stt:genai_clear: delete file {error}\n{key}\n{f.name}')
+        genai.configure(api_key=key) # здесь может быть рейс кондишн?
+        files = genai.list_files()
+        for f in files:
+            print(f.name)
+            try:
+                genai.delete_file(f.name)
+                pass # можно ли удалять чужие файлы?
+            except Exception as error:
+                my_log.log_gemini(f'stt:genai_clear: delete file {error}\n{key}\n{f.name}')
 
     except Exception as error:
         traceback_error = traceback.format_exc()
@@ -240,9 +237,7 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
         return result
 
     try:
-        keys = my_gemini.get_next_key()
-        random.shuffle(keys)
-        key = keys[0]
+        key = my_gemini.get_next_key()
 
         your_file = None
         if not prompt:

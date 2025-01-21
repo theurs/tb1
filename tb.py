@@ -3151,7 +3151,9 @@ def handle_document(message: telebot.types.Message):
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:handle_document: {unknown}\n{traceback_error}')
         bot_reply_tr(message, 'Unknown error.')
+        return
 
+    my_log.log2(f'tb:handle_document: Unknown type of file: {message.document.mime_type}')
     bot_reply_tr(message, 'Unknown type of file.')
 
 

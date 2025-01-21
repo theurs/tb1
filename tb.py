@@ -7215,6 +7215,8 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                             # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
                             chunks2 = utils.split_text(chunk, 3500)
                             for chunk2 in chunks2:
+                                if not chunk2.strip():
+                                    continue
                                 try:
                                     if send_message:
                                         m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,
@@ -7243,13 +7245,15 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                                 m = bot.reply_to(message, chunk, parse_mode='', link_preview_options=preview, reply_markup=reply_markup)
                             log_message(m)
                         except Exception as error2:
-                            if 'Bad Request: message to be replied not found' in str(error):
+                            if 'Bad Request: message to be replied not found' in str(error2):
                                 return
 
-                            elif 'Bad Request: message is too long' in str(error):
+                            elif 'Bad Request: message is too long' in str(error2):
                                 # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
                                 chunks2 = utils.split_text(chunk, 3500)
                                 for chunk2 in chunks2:
+                                    if not chunk2.strip():
+                                        continue
                                     try:
                                         if send_message:
                                             m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,

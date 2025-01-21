@@ -166,6 +166,24 @@ def remove_huggin_face_key(api_key: str):
         my_log.log_huggin_face_api(f'Failed to remove key {api_key}: {error}\n\n{error_traceback}')
 
 
+def get_hf_proxy() -> dict or None:
+    """
+    Retrieves a proxy configuration for accessing Hugging Face resources.
+
+    If a list of proxies is configured in `cfg.hf_proxy`, a random proxy
+    from the list is returned. Otherwise, None is returned, indicating no proxy.
+
+    Returns:
+        dict or None: A dictionary containing 'http' and 'https' proxy URLs,
+                     or None if no proxy is configured.
+    """
+    if hasattr(cfg, 'hf_proxy') and cfg.hf_proxy:
+        proxy = {'http': random.choice(cfg.hf_proxy), 'https': random.choice(cfg.hf_proxy)}
+    else:
+        proxy = None
+    return proxy
+
+
 def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
     """
     Calls the Hugging Face API to generate text based on a given prompt.
@@ -211,10 +229,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
         while n > 0:
             n -= 1
 
-            if hasattr(cfg, 'hf_proxy') and cfg.hf_proxy:
-                proxy = {'http': random.choice(cfg.hf_proxy), 'https': random.choice(cfg.hf_proxy)}
-            else:
-                proxy = None
+            proxy = get_hf_proxy()
             api_key = random.choice(ALL_KEYS)
             headers = {"Authorization": f"Bearer {api_key}"}
 
@@ -325,9 +340,10 @@ def huggin_face_api_one_image(
     for attempt in range(retries):
         api_key = random.choice(ALL_KEYS)  # Выбираем случайный ключ
         headers = {"Authorization": f"Bearer {api_key}"}
+        proxy = get_hf_proxy()
 
         try:
-            response = requests.post(url, headers=headers, data=payload, timeout=timeout)
+            response = requests.post(url, headers=headers, data=payload, timeout=timeout, proxies=proxy)
 
             if response.status_code == 200 and len(response.content) > 100:
                 # my_log.log_huggin_face_api(f"Успешно сгенерировано изображение на попытке {attempt + 1}")
@@ -659,10 +675,7 @@ def test_hkey(key: str):
     while n > 0:
         n -= 1
 
-        if hasattr(cfg, 'hf_proxy') and cfg.hf_proxy:
-            proxy = {'http': random.choice(cfg.hf_proxy), 'https': random.choice(cfg.hf_proxy)}
-        else:
-            proxy = None
+        proxy = get_hf_proxy()
         api_key = key
         headers = {"Authorization": f"Bearer {api_key}"}
 
@@ -753,9 +766,11 @@ if __name__ == '__main__':
     my_gemini.load_users_keys()
     my_mistral.load_users_keys()
 
-    print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))
+    # print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))
     # print(get_reprompt('картину где бабушка сидит во рту с огурцами  рядом сидит ее внучка пишет математику,а сверху бог летает'))
 
     # print(gen_images('golden apple', use_bing=False))
+    
+    print(huggin_face_api_one_image('https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2', 'golden apple', ''))
 
     my_db.close()

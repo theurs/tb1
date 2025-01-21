@@ -197,7 +197,7 @@ def genai_clear(_key: str = ''):
 
     try:
         if not _key:
-            keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
+            keys = my_gemini.get_next_key()
             random.shuffle(keys)
         else:
             keys = [_key,]
@@ -240,7 +240,7 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
         return result
 
     try:
-        keys = cfg.gemini_keys[:] + my_gemini.ALL_KEYS
+        keys = my_gemini.get_next_key()
         random.shuffle(keys)
         key = keys[0]
 
@@ -527,7 +527,7 @@ def download_youtube_clip_v2(video_url: str, language: str):
 
 
 def gemini_tokens_count(text: str) -> int:
-    genai.configure(api_key=cfg.gemini_keys[0])
+    genai.configure(api_key=my_gemini.get_next_key())
     # print([(x.name, x.input_token_limit, x.output_token_limit, x.supported_generation_methods) for x in genai.list_models()])
     response = genai.count_message_tokens(prompt=text)
     return response['token_count']

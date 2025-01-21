@@ -1039,7 +1039,7 @@ def list_models():
     '''
     Lists all available models.
     '''
-    genai.configure(api_key = cfg.gemini_keys[0])
+    genai.configure(api_key = get_next_key())
     result = []
     for model in genai.list_models():
         # pprint.pprint(model)

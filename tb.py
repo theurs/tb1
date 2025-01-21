@@ -7287,8 +7287,13 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
             buf = io.BytesIO()
             buf.write(resp.encode())
             buf.seek(0)
-            m = bot.send_document(message.chat.id, document=buf, message_thread_id=message.message_thread_id,
-                                caption='resp.txt', visible_file_name = 'resp.txt', reply_markup=reply_markup)
+            m = bot.send_document(
+                message.chat.id,
+                document=buf,
+                message_thread_id=message.message_thread_id,
+                caption='resp.txt',
+                visible_file_name = 'resp.txt',
+                reply_markup=reply_markup)
             log_message(m)
 
         if resp in DEBUG_MD_TO_HTML:

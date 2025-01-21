@@ -3152,6 +3152,8 @@ def handle_document(message: telebot.types.Message):
         my_log.log2(f'tb:handle_document: {unknown}\n{traceback_error}')
         bot_reply_tr(message, 'Unknown error.')
 
+    bot_reply_tr(message, 'Unknown type of file.')
+
 
 def download_image_from_message(message: telebot.types.Message) -> bytes:
     '''Download image from message'''
@@ -6627,7 +6629,7 @@ def send_welcome_help(message: telebot.types.Message):
 
 @bot.message_handler(commands=['think', 'th', 'flash', 'f', 'code', 'c'], func=authorized_admin)
 @async_run
-def set_chat_mode(message: telebot.types.Message):
+def set_chat_mode_command(message: telebot.types.Message):
     """
     Sets the chat mode for the specified user based on the command used.
     /think, /th - gemini_2_flash_thinking

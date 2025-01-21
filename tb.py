@@ -7171,9 +7171,21 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
                           disable_web_page_preview: bool = None,
                           reply_markup: telebot.types.InlineKeyboardMarkup = None, send_message: bool = False,
                           allow_voice: bool = False):
-    # отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл
+    """
+    Sends a message, splitting it into two parts if it's too long, or sending it as a text file.
+
+    Args:
+        message: The message object.
+        resp: The response string.
+        parse_mode: The parse mode.
+        disable_web_page_preview: Whether to disable web page preview.
+        reply_markup: The reply markup.
+        send_message: Whether to send the message instead of replying.
+        allow_voice: Whether to allow voice responses.
+    """
     try:
         if not resp.strip():
+            my_log.log2(f'tb:reply_to_long_message: empty message')
             return
 
         chat_id_full = get_topic_id(message)
@@ -7278,6 +7290,7 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
             m = bot.send_document(message.chat.id, document=buf, message_thread_id=message.message_thread_id,
                                 caption='resp.txt', visible_file_name = 'resp.txt', reply_markup=reply_markup)
             log_message(m)
+
         if resp in DEBUG_MD_TO_HTML:
             del DEBUG_MD_TO_HTML[resp]
     except Exception as unknown:

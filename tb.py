@@ -18,7 +18,7 @@ import threading
 import time
 from flask import Flask, request, jsonify
 from decimal import Decimal, getcontext
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import langcodes
 import pendulum
@@ -7301,6 +7301,238 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:reply_to_long_message3: {unknown}\n{traceback_error}')
+
+
+
+
+
+
+
+# попытка отрефакторить функцию reply_to_long_message
+
+# def split_message(text: str, max_length: int, parse_mode: str = None) -> List[str]:
+#     """
+#     Splits the text into parts taking into account the features of HTML (if parse_mode == 'HTML').
+
+#     Args:
+#         text: The text to be split.
+#         max_length: The maximum length of each part.
+#         parse_mode: The parsing mode, can be 'HTML' or None.
+
+#     Returns:
+#         A list of strings, where each string is a part of the original text.
+#     """
+#     if parse_mode == 'HTML':
+#         return utils.split_html(text, max_length)  # Assuming utils.split_html is defined elsewhere
+#     else:
+#         return utils.split_text(text, max_length)  # Assuming utils.split_text is defined elsewhere
+
+
+# def send_with_retry(send_function: Callable[..., Any], *args: Any, **kwargs: Any) -> bool:
+#     """
+#     Attempts to send a message, handling the "Too Many Requests" error and other Telegram API errors.
+
+#     Args:
+#         send_function: The function to send the message (e.g., bot.send_message or bot.reply_to).
+#         *args: Positional arguments for send_function.
+#         **kwargs: Keyword arguments for send_function.
+
+#     Returns:
+#         True if the message was sent successfully, False otherwise.
+#     """
+#     retries = 0
+#     max_retries = 3
+#     retry_after = 0
+#     while retries < max_retries:
+#         try:
+#             m = send_function(*args, **kwargs)
+#             log_message(m)
+#             return True
+#         except telebot.apihelper.ApiTelegramException as e:
+#             if "Too Many Requests: retry after" in str(e):
+#                 retry_after = utils.extract_retry_seconds(str(e))
+#                 if retry_after == 0:
+#                     retry_after = 10
+
+#                 my_log.log2(
+#                     f'tb:send_with_retry: Too Many Requests: retry after {retry_after} seconds. Attempt {retries + 1} of {max_retries}'
+#                 )
+#                 time.sleep(retry_after)
+#                 retries += 1
+#             else:
+#                 # Handle other Telegram API errors here:
+#                 message = args[0] if 'message' not in kwargs else kwargs['message']
+#                 chunk = args[1] if len(args) > 1 else kwargs['text']
+#                 parse_mode = args[2] if len(args) > 2 else kwargs.get('parse_mode')
+#                 preview = args[3] if len(args) > 3 else kwargs.get('link_preview_options')
+#                 reply_markup = args[4] if len(args) > 4 else kwargs.get('reply_markup')
+#                 send_message = send_function == bot.send_message
+
+#                 retry, new_chunk, new_parse_mode, new_preview, new_reply_markup = handle_telegram_api_error(
+#                     e, message, chunk, parse_mode, preview, reply_markup, send_message
+#                 )
+#                 if retry:
+#                     #  Update arguments for retry:
+#                     if len(args) > 1:
+#                       args = list(args)
+#                       args[1] = new_chunk
+#                       args = tuple(args)
+#                     else:
+#                       kwargs['text'] = new_chunk
+#                     if len(args) > 2:
+#                         args = list(args)
+#                         args[2] = new_parse_mode
+#                         args = tuple(args)
+#                     else:
+#                         kwargs['parse_mode'] = new_parse_mode
+
+#                     kwargs['link_preview_options'] = new_preview
+#                     kwargs['reply_markup'] = new_reply_markup
+
+#                     retries += 1
+#                     my_log.log2(f'tb:send_with_retry: Retrying with modified parameters. Attempt {retries + 1} of {max_retries}')
+#                     continue  # Retry immediately
+#                 else:
+#                     return False  # Do not retry
+#         except Exception as unknown_error:
+#             my_log.log2(f'tb:send_with_retry: Unknown error: {unknown_error}\n{traceback.format_exc()}')
+#             return False
+#     my_log.log2(f'tb:send_with_retry: Failed to send message after {max_retries} retries')
+#     return False
+
+
+# def handle_telegram_api_error(error: Exception, message: telebot.types.Message, chunk: str, parse_mode: Optional[str],
+#                               preview: telebot.types.LinkPreviewOptions, reply_markup: telebot.types.ReplyKeyboardMarkup,
+#                               send_message: bool) -> Tuple[bool, str, Optional[str], telebot.types.LinkPreviewOptions, telebot.types.ReplyKeyboardMarkup]:
+#     """
+#     Handles specific Telegram API errors.
+
+#     Args:
+#         error: The Telegram API error that occurred.
+#         message: The original message object.
+#         chunk: The text chunk that caused the error.
+#         parse_mode: The parse mode used for the message ('HTML' or None).
+#         preview: Options for link preview
+#         reply_markup: The reply markup used for the message.
+#         send_message: Boolean, True if it is bot.send_message, False if it is bot.reply_to
+
+#     Returns:
+#         Tuple: (retry, new_chunk, new_parse_mode, new_preview, new_reply_markup)
+#         retry: True if the message should be retried, False otherwise.
+#         new_chunk: The new chunk to send (if retry is True).
+#         new_parse_mode: The new parse mode to use (if retry is True).
+#         new_preview: The new preview to use (if retry is True).
+#         new_reply_markup: The new reply markup to use (if retry is True).
+#     """
+#     if "Bad Request: can't parse entities" in str(error):
+#         my_log.log_parser_error(
+#             f'{str(error)}\n\n{DEBUG_MD_TO_HTML.get(chunk, "")}\n=====================================================\n{chunk}'
+#         )
+#         my_log.log_parser_error2(DEBUG_MD_TO_HTML.get(chunk, ""))
+#         if parse_mode == 'HTML':
+#             # Return modified chunk and parameters for retry without HTML formatting
+#             new_chunk = utils.html.unescape(chunk)
+#             new_chunk = new_chunk.replace('<b>', '').replace('<i>', '').replace('</b>', '').replace('</i>', '')
+#             return True, new_chunk, None, preview, reply_markup
+#         else:
+#             return False, None, None, None, None
+
+#     elif 'Bad Request: message is too long' in str(error):
+#         my_log.log2(
+#             f'tb:handle_telegram_api_error: Chunk too long: {len(chunk)} bytes, retrying without HTML parsing.'
+#         )
+#         if parse_mode == 'HTML':
+#             # Return modified parameters for retry without parsing
+#             return True, chunk, None, preview, reply_markup
+
+#         else:
+#             my_log.log2(
+#                 f'tb:handle_telegram_api_error: Chunk too long even without HTML parsing.\nError: {str(error)}'
+#             )
+#             return False, None, None, None, None
+#     else:
+#         my_log.log2(
+#             f'tb:handle_telegram_api_error: {error}\n\nresp: {chunk[:500]}\n\nparse_mode: {parse_mode}'
+#         )
+#         return False, None, None, None, None
+
+
+# def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: Optional[str] = None,
+#                           disable_web_page_preview: Optional[bool] = None,
+#                           reply_markup: Optional[telebot.types.InlineKeyboardMarkup] = None,
+#                           send_message: bool = False,
+#                           allow_voice: bool = False) -> None:
+#     """
+#     Sends a message, splitting it into smaller chunks or sending it as a text file if it's too long.
+
+#     Args:
+#         message: The original message object.
+#         resp: The response string to send.
+#         parse_mode: The parse mode for the message (e.g., 'HTML', 'Markdown').
+#         disable_web_page_preview: Whether to disable web page previews.
+#         reply_markup: Inline keyboard markup for the message.
+#         send_message: Boolean, True if it is bot.send_message, False if it is bot.reply_to.
+#         allow_voice: Boolean, True if it is allowed to send voice messages.
+#     """
+#     try:
+#         chat_id_full = get_topic_id(message)  # Assuming get_topic_id is defined elsewhere
+
+#         if not resp.strip():
+#             my_log.log2(f'tb:reply_to_long_message: empty message')
+#             return
+
+#         preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
+
+#         # In voice-only mode, responses are sent as voice messages without text
+#         if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:  # Assuming my_db is defined elsewhere
+#             message.text = '/tts ' + resp
+#             tts(message)  # Assuming tts is defined elsewhere
+#             return
+
+#         chunks = split_message(resp, 3800, parse_mode)  # Assuming split_message is defined elsewhere
+
+#         if len(resp) > 40000 or len(chunks) > 9:
+#             # Send as a file
+#             buf = io.BytesIO(resp.encode())
+#             buf.seek(0)
+#             m = bot.send_document(
+#                 message.chat.id,
+#                 document=buf,
+#                 message_thread_id=message.message_thread_id,
+#                 caption='resp.txt',
+#                 visible_file_name='resp.txt',
+#                 reply_markup=reply_markup,
+#             )
+#             log_message(m)  # Assuming log_message is defined elsewhere
+#             return
+
+#         for chunk in chunks:
+#             if not chunk.strip():
+#                 continue
+
+#             # Attempt to send the message
+#             if not send_with_retry(
+#                 bot.send_message if send_message else bot.reply_to,
+#                 message.chat.id if send_message else message,
+#                 chunk,
+#                 message_thread_id=message.message_thread_id if send_message else None,
+#                 parse_mode=parse_mode,
+#                 link_preview_options=preview,
+#                 reply_markup=reply_markup,
+#             ):
+#                 my_log.log2(f'tb:reply_to_long_message: Failed to send chunk')
+
+#         if resp in DEBUG_MD_TO_HTML:  # Assuming DEBUG_MD_TO_HTML is defined elsewhere
+#             del DEBUG_MD_TO_HTML[resp]
+
+#     except Exception as unknown:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:reply_to_long_message: {unknown}\n{traceback_error}')
+
+
+
+
+
 
 
 def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -> bool:

@@ -1120,6 +1120,12 @@ def drop_all_user_files_and_big_dialogs(max_dialog_size: int = 500000, delete_da
                     saved_file_name = NULL
                 ''')
 
+                # delete users with id starting with 'translate_doc_'
+                CUR.execute('''
+                    DELETE FROM users
+                    WHERE id LIKE 'translate_doc_%'
+                ''')
+
                 # Delete large Gemini dialogs individually
                 CUR.execute('''
                     SELECT id, LENGTH(dialog_gemini)

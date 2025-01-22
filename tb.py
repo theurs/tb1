@@ -18,7 +18,7 @@ import threading
 import time
 from flask import Flask, request, jsonify
 from decimal import Decimal, getcontext
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import langcodes
 import pendulum
@@ -667,7 +667,7 @@ def img2txt(text, lang: str,
         
         if text:
             thinking = 'gemini' in chat_mode and 'thinking' in chat_mode
-            not_thinking = 'gemini' in chat_mode and not 'thinking' in chat_mode
+            not_thinking = ('gemini' in chat_mode) and not ('thinking' in chat_mode)
 
             if thinking and thinking_model_used:
                 pass
@@ -3034,7 +3034,8 @@ def handle_document(message: telebot.types.Message):
                                     downloaded_file,
                                     lang,
                                     target_lang,
-                                    fname=new_fname)
+                                    fname = new_fname,
+                                    chat_id_full = chat_id_full)
                                 if new_data:
                                     new_fname2 = f'(translated by @{_bot_name}) {new_fname}'
                                     m = bot.send_document(

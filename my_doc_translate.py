@@ -67,6 +67,7 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
         temperature=0.3,
         max_tokens=int(len(chunk)/2),
         max_chat_lines=3,
+        do_not_update_history=True,
         )
 
     if not r:
@@ -78,6 +79,7 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
             temperature=0.3,
             max_tokens=int(len(chunk)/2),
             max_chat_lines=3,
+            do_not_update_history=True,
             )
 
     return r or chunk
@@ -165,7 +167,7 @@ def translate_file(data: bytes, src: str, dst: str, fname: str) -> bytes:
     return new_data
 
 
-def translate_file_in_dialog(data: bytes, src: str, dst: str, fname: str) -> bytes:
+def translate_file_in_dialog(data: bytes, src: str, dst: str, fname: str, chat_id_full: str) -> bytes:
     '''
     Translate document file in dialog mode.
     1. Convert to markdown with pandoc
@@ -188,6 +190,8 @@ def translate_file_in_dialog(data: bytes, src: str, dst: str, fname: str) -> byt
 
     for chunk in chunks:
         result += translate_text_in_dialog(chunk, dst, chat_id)
+        if result and result.strip():
+            my_db.add_msg(chat_id_full, 'gemini')
 
     my_gemini.reset(chat_id)
 

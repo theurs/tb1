@@ -318,14 +318,24 @@ def chat(query: str,
                 key_i += 1
                 continue
 
+            # import pprint
+            # pprint.pprint(chat_)
+            # pprint.pprint(resp)
+
             try:
                 result = chat_.history[-1].parts[-1].text
+            except IndexError:
+                try:
+                    result = chat_.history[-1].parts[0].text
+                except Exception as error3_2:
+                    my_log.log_gemini(f'my_gemini:chat3_2: {error3_2}\nchat history: {str(chat_.history)}')
+                    result = resp.text
             except Exception as error3:
                 my_log.log_gemini(f'my_gemini:chat3: {error3}\nchat history: {str(chat_.history)}')
                 result = resp.text
 
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
-            # куча пробелов, и возможно другие тоже. укарачиваем
+            # куча пробелов, и возможно другие тоже. укорачиваем
             result_ = re.sub(r" {1000,}", " " * 10, result) # очень много пробелов в ответе
             result_ = utils.shorten_all_repeats(result_)
             if len(result_)+100 < len(result): # удалось сильно уменьшить
@@ -1205,7 +1215,8 @@ if __name__ == '__main__':
 
     # print(list_models())
     # chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
-    chat_cli(model=cfg.gemini_flash_model)
+    # chat_cli(model=cfg.gemini_2_flash_thinking_exp_model)
+    chat_cli(model = 'gemini-2.0-flash-thinking-exp-1219')
 
     # with open('C:/Users/user/Downloads/3.txt','r', encoding='utf-8') as f:
     #     text = f.read()

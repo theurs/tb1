@@ -1209,7 +1209,7 @@ def authorized(message: telebot.types.Message) -> bool:
 
         # if this chat was forcibly left (banned), then when trying to enter it immediately exit
         # I don't know how to do that, so I have to leave only when receiving any event
-        if my_db.get_user_property(str(message.chat.id), 'auto_leave_chat') == True:
+        if my_db.get_user_property(str(message.chat.id), 'auto_leave_chat'):
             try:
                 bot.leave_chat(message.chat.id)
                 my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
@@ -1315,7 +1315,7 @@ def authorized_log(message: telebot.types.Message) -> bool:
 
         # if this chat was forcibly left (banned), then when trying to enter it immediately exit
         # I don't know how to do that, so I have to leave only when receiving any event
-        if my_db.get_user_property(str(message.chat.id), 'auto_leave_chat') == True:
+        if my_db.get_user_property(str(message.chat.id), 'auto_leave_chat'):
             try:
                 bot.leave_chat(message.chat.id)
                 my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))

@@ -7167,9 +7167,252 @@ def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str 
                           allow_voice=allow_voice)
 
 
-def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str = None,
+
+
+
+# def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str = None,
+#                           disable_web_page_preview: bool = None,
+#                           reply_markup: telebot.types.InlineKeyboardMarkup = None, send_message: bool = False,
+#                           allow_voice: bool = False):
+#     # отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл
+#     try:
+#         if not resp.strip():
+#             return
+
+#         chat_id_full = get_topic_id(message)
+
+#         preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
+
+#         if len(resp) < 45000:
+#             if parse_mode == 'HTML':
+#                 chunks = utils.split_html(resp, 3800)
+#             else:
+#                 chunks = utils.split_text(resp, 3800)
+
+#             counter = len(chunks)
+#             for chunk in chunks:
+#                 if not chunk.strip():
+#                     continue
+#                 # в режиме только голоса ответы идут голосом без текста
+#                 # скорее всего будет всего 1 чанк, не слишком длинный текст
+#                 if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:
+#                     message.text = '/tts ' + chunk
+#                     tts(message)
+#                 else:
+#                     try:
+#                         if send_message:
+#                             m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode=parse_mode,
+#                                             link_preview_options=preview, reply_markup=reply_markup)
+#                         else:
+#                             m = bot.reply_to(message, chunk, parse_mode=parse_mode,
+#                                     link_preview_options=preview, reply_markup=reply_markup)
+#                         log_message(m)
+#                     except Exception as error:
+#                         if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
+#                             error_traceback = traceback.format_exc()
+#                             my_log.log_parser_error(f'{str(error)}\n\n{error_traceback}\n\n{DEBUG_MD_TO_HTML.get(resp, "")}\n=====================================================\n{resp}')
+#                             my_log.log_parser_error2(DEBUG_MD_TO_HTML.get(resp, ""))
+#                         elif 'Bad Request: message to be replied not found' in str(error):
+#                             return
+#                         elif 'Bad Request: message is too long' in str(error):
+#                             # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
+#                             chunks2 = utils.split_text(chunk, 3500)
+#                             for chunk2 in chunks2:
+#                                 try:
+#                                     if send_message:
+#                                         m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,
+#                                                         link_preview_options=preview, reply_markup=reply_markup)
+#                                     else:
+#                                         m = bot.reply_to(message, chunk2,
+#                                                 link_preview_options=preview, reply_markup=reply_markup)
+#                                     log_message(m)
+#                                 except Exception as error_chunk2:
+#                                     my_log.log2(f'tb:reply_to_log_message: {error_chunk2}\n\n{chunk2}')
+
+#                         else:
+#                             my_log.log2(f'tb:reply_to_long_message: {error}\n\nresp: {resp[:500]}\n\nparse_mode: {parse_mode}')
+#                             my_log.log2(chunk)
+#                         if parse_mode == 'HTML':
+#                             chunk = utils.html.unescape(chunk)
+#                             chunk = chunk.replace('<b>', '')
+#                             chunk = chunk.replace('<i>', '')
+#                             chunk = chunk.replace('</b>', '')
+#                             chunk = chunk.replace('</i>', '')
+#                         try:
+#                             if send_message:
+#                                 m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
+#                                                     link_preview_options=preview, reply_markup=reply_markup)
+#                             else:
+#                                 m = bot.reply_to(message, chunk, parse_mode='', link_preview_options=preview, reply_markup=reply_markup)
+#                             log_message(m)
+#                         except Exception as error2:
+#                             if 'Bad Request: message to be replied not found' in str(error):
+#                                 return
+
+#                             elif 'Bad Request: message is too long' in str(error):
+#                                 # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
+#                                 chunks2 = utils.split_text(chunk, 3500)
+#                                 for chunk2 in chunks2:
+#                                     try:
+#                                         if send_message:
+#                                             m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,
+#                                                             link_preview_options=preview, reply_markup=reply_markup)
+#                                         else:
+#                                             m = bot.reply_to(message, chunk2,
+#                                                     link_preview_options=preview, reply_markup=reply_markup)
+#                                         log_message(m)
+#                                     except Exception as error_chunk2_2:
+#                                         my_log.log2(f'tb:reply_to_log_message2: {error_chunk2_2}\n\n{chunk2}')
+#                             else:
+#                                 my_log.log2(f'tb:reply_to_long_message3: {error2}')
+#                 counter -= 1
+#                 if counter < 0:
+#                     break
+#                 time.sleep(2)
+#         else:
+#             buf = io.BytesIO()
+#             buf.write(resp.encode())
+#             buf.seek(0)
+#             m = bot.send_document(message.chat.id, document=buf, message_thread_id=message.message_thread_id,
+#                                 caption='resp.txt', visible_file_name = 'resp.txt', reply_markup=reply_markup)
+#             log_message(m)
+#         if resp in DEBUG_MD_TO_HTML:
+#             del DEBUG_MD_TO_HTML[resp]
+#     except Exception as unknown:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:reply_to_long_message3: {unknown}\n{traceback_error}')
+
+
+
+
+
+
+def send_resp_as_file(message: telebot.types.Message,
+                      resp: str,
+                      reply_markup: telebot.types.InlineKeyboardMarkup = None,
+                      lang: str = 'en',
+                      ) -> None:
+    """Send response as a file.
+
+    Args:
+        message: The message object.
+        resp: The response string.
+        reply_markup: The reply markup.
+        lang: The language code.
+    """
+    with io.BytesIO() as buf:
+        buf.write(resp.encode())
+        buf.seek(0)
+        cap = tr('Too big file, sent as file', lang)
+        fname = f'{utils.get_full_time()}.txt'.replace(':', '-')
+        with bot.send_document(
+            message.chat.id,
+            document=buf,
+            message_thread_id=message.message_thread_id,
+            caption=cap,
+            visible_file_name=fname,
+            reply_markup=reply_markup
+        ) as m:
+            log_message(m)
+
+
+def _send_message(
+    message: telebot.types.Message,
+    chunk: str,
+    parse_mode: str,
+    preview: telebot.types.LinkPreviewOptions,
+    reply_markup: telebot.types.InlineKeyboardMarkup,
+    send_message: bool,
+    resp: str,
+    retry_times: int
+) -> None:
+    """Send message or reply to a message.
+
+    Args:
+        message: The message object.
+        chunk: The text chunk to send.
+        parse_mode: The parse mode for the message.
+        preview: Whether to show a link preview.
+        reply_markup: The reply markup for the message.
+        send_message: Whether to send a new message or reply to the existing one.
+        resp: The full response text (used for error logging).
+        retry_times: The number of retry attempts.
+    """
+
+    try:
+        retry_times -= 1
+        if retry_times == 0:
+            return
+
+        if send_message:
+            m = bot.send_message(
+                message.chat.id,
+                chunk,
+                message_thread_id=message.message_thread_id,
+                parse_mode=parse_mode,
+                link_preview_options=preview,
+                reply_markup=reply_markup
+            )
+        else:
+            m = bot.reply_to(
+                message,
+                chunk,
+                parse_mode=parse_mode,
+                link_preview_options=preview,
+                reply_markup=reply_markup
+            )
+        log_message(m)
+    except Exception as error:
+
+        if 'Bad Request: message to be replied not found' in str(error):
+            return
+
+        elif "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
+            error_traceback = traceback.format_exc()
+            my_log.log_parser_error(
+                f'{str(error)}\n\n{error_traceback}\n\n{DEBUG_MD_TO_HTML.get(resp, "")}\n'
+                f'=====================================================\n{resp}'
+            )
+            my_log.log_parser_error2(DEBUG_MD_TO_HTML.get(chunk, ""))
+            if parse_mode:
+                _send_message(message, chunk, '', preview, reply_markup, send_message, resp, retry_times)
+
+        elif "Too Many Requests: retry after" in str(error):
+            retry_after = utils.extract_retry_seconds(str(error))
+            if retry_after == 0:
+                retry_after = 10
+            time.sleep(retry_after)
+            _send_message(message, chunk, parse_mode, preview, reply_markup, send_message, resp, retry_times)
+
+        elif 'Bad Request: message is too long' in str(error):
+            # could not split into parts, splitting again and sending without formatting just in case
+            chunks2 = utils.split_text(chunk, 3500)
+            for chunk2 in chunks2:
+                if not chunk2.strip():
+                    continue
+                _send_message(message, chunk2, '', preview, reply_markup, send_message, resp, retry_times)
+        else:
+            if parse_mode == 'HTML':
+                chunk = utils.html.unescape(chunk)
+                chunk = chunk.replace('<b>', '')
+                chunk = chunk.replace('<i>', '')
+                chunk = chunk.replace('</b>', '')
+                chunk = chunk.replace('</i>', '')
+
+            my_log.log2(
+                f'tb:reply_to_long_message: {error}\n\nresp: {resp[:500]}\n\nparse_mode: {parse_mode}'
+            )
+            my_log.log2(chunk)
+
+            _send_message(message, chunk, '', preview, reply_markup, send_message, resp, retry_times)
+
+
+def reply_to_long_message(message: telebot.types.Message,
+                          resp: str,
+                          parse_mode: str = None,
                           disable_web_page_preview: bool = None,
-                          reply_markup: telebot.types.InlineKeyboardMarkup = None, send_message: bool = False,
+                          reply_markup: telebot.types.InlineKeyboardMarkup = None,
+                          send_message: bool = False,
                           allow_voice: bool = False):
     """
     Sends a message, splitting it into two parts if it's too long, or sending it as a text file.
@@ -7189,119 +7432,38 @@ def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode:
             return
 
         chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
 
         preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
 
-        if len(resp) < 45000:
-            if parse_mode == 'HTML':
-                chunks = utils.split_html(resp, 3800)
-            else:
-                chunks = utils.split_text(resp, 3800)
-
-            counter = len(chunks)
-            for chunk in chunks:
-                if not chunk.strip():
-                    counter -= 1
-                    continue
-                # в режиме только голоса ответы идут голосом без текста
-                # скорее всего будет всего 1 чанк, не слишком длинный текст
-                if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:
-                    message.text = '/tts ' + chunk
-                    tts(message)
-                else:
-                    try:
-                        if send_message:
-                            m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode=parse_mode,
-                                            link_preview_options=preview, reply_markup=reply_markup)
-                        else:
-                            m = bot.reply_to(message, chunk, parse_mode=parse_mode,
-                                    link_preview_options=preview, reply_markup=reply_markup)
-                        log_message(m)
-                    except Exception as error:
-                        if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
-                            error_traceback = traceback.format_exc()
-                            my_log.log_parser_error(f'{str(error)}\n\n{error_traceback}\n\n{DEBUG_MD_TO_HTML.get(resp, "")}\n=====================================================\n{resp}')
-                            my_log.log_parser_error2(DEBUG_MD_TO_HTML.get(resp, ""))
-                        elif 'Bad Request: message to be replied not found' in str(error):
-                            return
-                        elif 'Bad Request: message is too long' in str(error):
-                            # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
-                            chunks2 = utils.split_text(chunk, 3500)
-                            for chunk2 in chunks2:
-                                if not chunk2.strip():
-                                    continue
-                                try:
-                                    if send_message:
-                                        m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,
-                                                        link_preview_options=preview, reply_markup=reply_markup)
-                                    else:
-                                        m = bot.reply_to(message, chunk2,
-                                                link_preview_options=preview, reply_markup=reply_markup)
-                                    log_message(m)
-                                except Exception as error_chunk2:
-                                    my_log.log2(f'tb:reply_to_log_message: {error_chunk2}\n\n{chunk2}')
-
-                        else:
-                            my_log.log2(f'tb:reply_to_long_message: {error}\n\nresp: {resp[:500]}\n\nparse_mode: {parse_mode}')
-                            my_log.log2(chunk)
-                        if parse_mode == 'HTML':
-                            chunk = utils.html.unescape(chunk)
-                            chunk = chunk.replace('<b>', '')
-                            chunk = chunk.replace('<i>', '')
-                            chunk = chunk.replace('</b>', '')
-                            chunk = chunk.replace('</i>', '')
-                        try:
-                            if send_message:
-                                m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
-                                                    link_preview_options=preview, reply_markup=reply_markup)
-                            else:
-                                m = bot.reply_to(message, chunk, parse_mode='', link_preview_options=preview, reply_markup=reply_markup)
-                            log_message(m)
-                        except Exception as error2:
-                            if 'Bad Request: message to be replied not found' in str(error2):
-                                return
-
-                            elif 'Bad Request: message is too long' in str(error2):
-                                # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
-                                chunks2 = utils.split_text(chunk, 3500)
-                                for chunk2 in chunks2:
-                                    if not chunk2.strip():
-                                        continue
-                                    try:
-                                        if send_message:
-                                            m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,
-                                                            link_preview_options=preview, reply_markup=reply_markup)
-                                        else:
-                                            m = bot.reply_to(message, chunk2,
-                                                    link_preview_options=preview, reply_markup=reply_markup)
-                                        log_message(m)
-                                    except Exception as error_chunk2_2:
-                                        my_log.log2(f'tb:reply_to_log_message2: {error_chunk2_2}\n\n{chunk2}')
-                            else:
-                                my_log.log2(f'tb:reply_to_long_message3: {error2}')
-                counter -= 1
-                if counter < 0:
-                    break
-                time.sleep(2)
+        if parse_mode == 'HTML':
+            chunks = utils.split_html(resp, 3800)
         else:
-            buf = io.BytesIO()
-            buf.write(resp.encode())
-            buf.seek(0)
-            m = bot.send_document(
-                message.chat.id,
-                document=buf,
-                message_thread_id=message.message_thread_id,
-                caption='resp.txt',
-                visible_file_name = 'resp.txt',
-                reply_markup=reply_markup)
-            log_message(m)
+            chunks = utils.split_text(resp, 3800)
 
-        if resp in DEBUG_MD_TO_HTML:
-            del DEBUG_MD_TO_HTML[resp]
+        # в режиме только голоса ответы идут голосом без текста и разделения на части
+        if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:
+            message.text = '/tts ' + '\n'.join(chunks)
+            tts(message)
+        else:
+
+            if len(resp) > 40000 or len(chunks) > 9:
+                send_resp_as_file(message, resp, reply_markup, lang)
+            else:
+                for chunk in chunks:
+                    if not chunk.strip():
+                        my_log.log2(f'tb:reply_to_long_message: empty chunk')
+                        continue
+                    else:
+                        _send_message(message, chunk, parse_mode, preview, reply_markup, send_message, resp, 5)
+
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:reply_to_long_message3: {unknown}\n{traceback_error}')
 
+    # remove resp if any
+    if resp in DEBUG_MD_TO_HTML:
+        DEBUG_MD_TO_HTML.pop(resp)
 
 
 

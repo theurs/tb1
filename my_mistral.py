@@ -126,6 +126,8 @@ def ai(
                     messages.append({"role": "system", "content": system})
                 messages += mem[-4:]
                 continue
+            if 'Unauthorized' in str(error2):
+                my_log.log_mistral(f'ai: {error2} {key}')
             my_log.log_mistral(f'ai: {error2}')
             time.sleep(2)
 

@@ -7305,7 +7305,7 @@ def send_resp_as_file(message: telebot.types.Message,
     with io.BytesIO() as buf:
         buf.write(resp.encode())
         buf.seek(0)
-        cap = tr('Too big file, sent as file', lang)
+        cap = tr('Too big answer, sent as file', lang)
         fname = f'{utils.get_full_time()}.txt'.replace(':', '-')
         with bot.send_document(
             message.chat.id,

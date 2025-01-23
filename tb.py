@@ -5430,7 +5430,7 @@ def huggingface_image_gen(message: telebot.types.Message):
                             except telebot.apihelper.ApiTelegramException as error:
                                 if 'Bad Request: message to be replied not found' not in str(error):
                                     my_log.log2(f'tb:huggingface_image_gen:send_media_group1: {error}')
-                                bot_reply_tr(message, tr("Image generation failed.", lang))
+                                bot_reply_tr(message, tr("Image generation failed. May be you did not provide model.", lang))
                                 return
                             log_message(msgs_ids)
                             if pics_group:

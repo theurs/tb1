@@ -5525,50 +5525,50 @@ def image_bing_gen(message: telebot.types.Message):
         my_log.log2(f'tb:image_bing_gen: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['bing10', 'Bing10'], func=authorized)
-@async_run
-def image_bing_gen10(message: telebot.types.Message):
-    try:
-        chat_id_full = get_topic_id(message)
-        IMG_MODE_FLAG[chat_id_full] = 'bing10'
-        stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
-        if stars < 100:
-            lang = get_lang(chat_id_full, message)
-            msg = f"{tr('You need 100 stars in reserve to use this command.', lang)} /stars"
-            bot_reply(message, msg)
-            return
-        if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-            bot_reply_tr(message, 'Bing вас забанил.')
-            time.sleep(2)
-            return
-        message.text += BING10MARKER
-        image_gen(message)
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:image_bing_gen10: {unknown}\n{traceback_error}')
+# @bot.message_handler(commands=['bing10', 'Bing10'], func=authorized)
+# @async_run
+# def image_bing_gen10(message: telebot.types.Message):
+#     try:
+#         chat_id_full = get_topic_id(message)
+#         IMG_MODE_FLAG[chat_id_full] = 'bing10'
+#         stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+#         if stars < 100:
+#             lang = get_lang(chat_id_full, message)
+#             msg = f"{tr('You need 100 stars in reserve to use this command.', lang)} /stars"
+#             bot_reply(message, msg)
+#             return
+#         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
+#             bot_reply_tr(message, 'Bing вас забанил.')
+#             time.sleep(2)
+#             return
+#         message.text += BING10MARKER
+#         image_gen(message)
+#     except Exception as unknown:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:image_bing_gen10: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['bing20', 'Bing20'], func=authorized)
-@async_run
-def image_bing_gen20(message: telebot.types.Message):
-    try:
-        chat_id_full = get_topic_id(message)
-        IMG_MODE_FLAG[chat_id_full] = 'bing20'
-        stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
-        if stars < 200:
-            lang = get_lang(chat_id_full, message)
-            msg = f"{tr('You need 200 stars in reserve to use this command.', lang)} /stars"
-            bot_reply_tr(message, msg)
-            return
-        if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-            bot_reply_tr(message, 'Bing вас забанил.')
-            time.sleep(2)
-            return
-        message.text += BING20MARKER
-        image_gen(message)
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:image_bing_gen20: {unknown}\n{traceback_error}')
+# @bot.message_handler(commands=['bing20', 'Bing20'], func=authorized)
+# @async_run
+# def image_bing_gen20(message: telebot.types.Message):
+#     try:
+#         chat_id_full = get_topic_id(message)
+#         IMG_MODE_FLAG[chat_id_full] = 'bing20'
+#         stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+#         if stars < 200:
+#             lang = get_lang(chat_id_full, message)
+#             msg = f"{tr('You need 200 stars in reserve to use this command.', lang)} /stars"
+#             bot_reply_tr(message, msg)
+#             return
+#         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
+#             bot_reply_tr(message, 'Bing вас забанил.')
+#             time.sleep(2)
+#             return
+#         message.text += BING20MARKER
+#         image_gen(message)
+#     except Exception as unknown:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:image_bing_gen20: {unknown}\n{traceback_error}')
 
 
 @async_run
@@ -5671,6 +5671,8 @@ def send_images_to_pic_group(
         my_log.log2(f'tb:image:send_media_group_pics_group3: {unknown}\n\n{traceback_error}')
 
 
+@bot.message_handler(commands=['bing10', 'Bing10'], func=authorized)
+@bot.message_handler(commands=['bing20', 'Bing20'], func=authorized)
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):

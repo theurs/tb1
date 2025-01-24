@@ -29,6 +29,7 @@ def get_base_url() -> str:
             CFG_FILE_TIMESTAMP = os.path.getmtime('cfg_bing.py')
             module = importlib.import_module('cfg_bing')
             importlib.reload(module)
+            my_log.log_bing_api('cfg_bing.py reloaded ' + '\n'.join(cfg_bing.BING_URLS))
 
         if hasattr(cfg_bing, 'BING_URLS') and cfg_bing.BING_URLS:
             if not CURRENT_BING_APIS:

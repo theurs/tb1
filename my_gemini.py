@@ -1045,7 +1045,7 @@ def test_new_key(key: str) -> bool:
     return False
 
 
-def list_models():
+def list_models(include_context: bool = False):
     '''
     Lists all available models.
     '''
@@ -1055,7 +1055,10 @@ def list_models():
         # pprint.pprint(model)
         # result += f'{model.name}: {model.display_name} | in {model.input_token_limit} out {model.output_token_limit}\n{model.description}\n\n'
         if not model.name.startswith(('models/chat', 'models/text', 'models/embedding', 'models/aqa')):
-            result += [model.name,]
+            if include_context:
+                result += [f'{model.name} {model.input_token_limit}/{model.output_token_limit}',]
+            else:
+                result += [f'{model.name}',]
     # sort results
     result = sorted(result)
         
@@ -1213,10 +1216,10 @@ if __name__ == '__main__':
 
     # imagen()
 
-    # print(list_models())
+    print(list_models(include_context = True))
     # chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
     # chat_cli(model=cfg.gemini_2_flash_thinking_exp_model)
-    chat_cli(model = 'gemini-2.0-flash-thinking-exp-1219')
+    # chat_cli(model = 'gemini-2.0-flash-thinking-exp-1219')
 
     # with open('C:/Users/user/Downloads/3.txt','r', encoding='utf-8') as f:
     #     text = f.read()

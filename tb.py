@@ -2510,12 +2510,21 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
                 )
                 log_message(m3)
 
+                # сохранить как файл для дальнейших вопросв по нему субтитры или srt или vtt или чистый текст
+                saved_text = text
+                if cap_srt != 'EMPTY':
+                    saved_text = cap_srt
+                elif cap_vtt != 'EMPTY':
+                    saved_text = cap_vtt
+                my_db.set_user_property(chat_id_full, 'saved_file_name', f'transcribed audio file: captions_{utils.get_full_time().replace(":", "-")}.txt')
+                my_db.set_user_property(chat_id_full, 'saved_file', saved_text)
+
                 if price:
                     my_db.set_user_property(chat_id_full, 'telegram_stars', users_stars - price)
                     my_log.log_transcribe(f'Consumed {price} stars from user {chat_id_full} for audio file duration {audio_duration}')
-                    msg = tr('Transcription created successfully, telegram stars used:', lang) + ' ' + str(price)
+                    msg = tr('Transcription created successfully, telegram stars used:', lang) + ' ' + str(price) + ', ' + tr('use /ask command to query your text.', lang)
                 else:
-                    msg = tr('Transcription created successfully', lang)
+                    msg = tr('Transcription created successfully, use /ask command to query your text.', lang)
 
                 COMMAND_MODE[chat_id_full] = ''
 

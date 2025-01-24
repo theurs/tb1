@@ -1967,9 +1967,16 @@ def srt_to_text(cap_srt: str) -> str:
 if __name__ == '__main__':
     pass
 
-    with open('C:/Users/user/Downloads/1.srt', 'r', encoding='utf8') as f:
-        srt_text = f.read()
-    text = srt_to_text(srt_text)
-    print(text)
+    # with open('C:/Users/user/Downloads/1.srt', 'r', encoding='utf8') as f:
+    #     srt_text = f.read()
+    # text = srt_to_text(srt_text)
+    # print(text)
 
     # print(get_filename_from_url('https://youtu.be/1234567890.ogg'))
+
+
+    with open('C:/Users/user/Downloads/test.md', 'r', encoding='utf8') as f:
+        text = f.read()
+        html = bot_markdown_to_html(text)
+        print(html)
+

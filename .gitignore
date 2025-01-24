@@ -1,4 +1,5 @@
 cfg.py
+cfg_bing.py
 *.pem
 sync
 __pycache__

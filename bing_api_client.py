@@ -2,13 +2,12 @@
 
 
 import importlib
-import json
 import os
 import requests
 import traceback
 from typing import List, Dict, Any
 
-import cfg
+import cfg_bing
 import my_log
 
 
@@ -26,15 +25,14 @@ def get_base_url() -> str:
     try:
         global CFG_FILE_TIMESTAMP, CURRENT_BING_APIS
 
-        # кажется это вызывает проблемы в основном модуле, надо перенести эти настройки куда то в другой файл
-        # if os.path.exists('cfg.py') and os.path.getmtime('cfg.py') != CFG_FILE_TIMESTAMP:
-        #     CFG_FILE_TIMESTAMP = os.path.getmtime('cfg.py')
-        #     module = importlib.import_module('cfg')
-        #     importlib.reload(module)
+        if os.path.exists('cfg_bing.py') and os.path.getmtime('cfg_bing.py') != CFG_FILE_TIMESTAMP:
+            CFG_FILE_TIMESTAMP = os.path.getmtime('cfg_bing.py')
+            module = importlib.import_module('cfg_bing')
+            importlib.reload(module)
 
-        if hasattr(cfg, 'BING_URLS') and cfg.BING_URLS:
+        if hasattr(cfg_bing, 'BING_URLS') and cfg_bing.BING_URLS:
             if not CURRENT_BING_APIS:
-                CURRENT_BING_APIS = cfg.BING_URLS[:]
+                CURRENT_BING_APIS = cfg_bing.BING_URLS[:]
             BASE_URL = CURRENT_BING_APIS.pop(0)
 
         return BASE_URL

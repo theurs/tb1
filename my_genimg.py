@@ -593,7 +593,11 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
             if r:
                 result += r
             else:
-                break
+                # если не получилось рисовать то выходим на случай когда промпт плохой, но белому списку доверяем
+                if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(user_id) in cfg.ALLOW_PASS_NSFW_FILTER:
+                    continue
+                else:
+                    break
 
         return result
 

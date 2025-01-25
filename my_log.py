@@ -134,6 +134,9 @@ def log_transcribe(text: str) -> None:
     """для логов транскрибации аудио в субтитры"""
     log2(text, 'transcribe')
 
+def log3(text: str) -> None:
+    """для логов донатов (отладка)"""
+    log2(text, 'donate_debug')
 
 def log_donate(text: str) -> None:
     """для логов донатов"""

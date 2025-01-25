@@ -4,6 +4,7 @@
 import importlib
 import os
 import requests
+import threading
 import traceback
 from typing import List, Dict, Any
 
@@ -11,10 +12,10 @@ import cfg_bing
 import my_log
 
 
-CFG_FILE_TIMESTAMP = 0
-
 # round robin BING_URLS
 CURRENT_BING_APIS = []
+
+CFG_LOCK = threading.Lock()
 
 
 def get_base_url() -> str:
@@ -27,11 +28,10 @@ def get_base_url() -> str:
 
         BASE_URL = ''
 
-        if os.path.exists('cfg_bing.py') and os.path.getmtime('cfg_bing.py') != CFG_FILE_TIMESTAMP:
-            CFG_FILE_TIMESTAMP = os.path.getmtime('cfg_bing.py')
+        with CFG_LOCK:
             module = importlib.import_module('cfg_bing')
             importlib.reload(module)
-            my_log.log_bing_api('cfg_bing.py reloaded ' + '\n'.join(cfg_bing.BING_URLS))
+            # my_log.log_bing_api('cfg_bing.py reloaded ' + '\n'.join(cfg_bing.BING_URLS))
 
         if hasattr(cfg_bing, 'BING_URLS') and cfg_bing.BING_URLS:
             if not CURRENT_BING_APIS:

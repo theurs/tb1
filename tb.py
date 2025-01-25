@@ -2458,8 +2458,7 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
 
         engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
         if engine == 'assembly.ai':
-            cap_srt, cap_vtt = my_stt.assemblyai_to_caps(data, lang)
-            text = utils.srt_to_text(cap_srt)
+            cap_srt, cap_vtt, text = my_stt.assemblyai_to_caps(data, lang)
         else:
             cap_srt, cap_vtt, text = my_deepgram.transcribe(data, lang)
 

@@ -367,8 +367,8 @@ def assemblyai_to_caps(audio_file, language: str = 'ru') -> tuple[str | None, st
         language: The language code of the audio (e.g., 'ru' for Russian). Defaults to 'ru'.
 
     Returns:
-        A tuple containing the subtitles in SRT and VTT formats, respectively.
-        Returns (None, None) if an error occurs during transcription.
+        A tuple containing the subtitles in SRT and VTT formats and the transcribed text, respectively.
+        Returns (None, None, None) if an error occurs during transcription.
     '''
     try:
         aai.settings.api_key = random.choice(cfg.ASSEMBLYAI_KEYS)
@@ -382,21 +382,25 @@ def assemblyai_to_caps(audio_file, language: str = 'ru') -> tuple[str | None, st
 
         vtt_caps = assembly_response.export_subtitles_vtt()
         srt_caps = assembly_response.export_subtitles_srt()
+        text = assembly_response.text
 
-        return srt_caps, vtt_caps
+        return srt_caps, vtt_caps, text
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'Error in assemblyai_to_caps: {error}\n\n{traceback_error}')
 
-    return None, None
+    return None, None, None
 
 
 if __name__ == "__main__":
     pass
-    s, v = assemblyai_to_caps('C:/Users/user/Downloads/1.ogg')
+    s, v, t = assemblyai_to_caps('C:/Users/user/Downloads/1.m4a')
 
     with open('C:/Users/user/Downloads/1.srt', 'w', encoding='utf-8') as f:
         f.write(s)
 
     with open('C:/Users/user/Downloads/1.vtt', 'w', encoding='utf-8') as f:
         f.write(s)
+
+    with open('C:/Users/user/Downloads/1.txt', 'w', encoding='utf-8') as f:
+        f.write(t)

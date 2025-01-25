@@ -2,7 +2,6 @@
 
 
 import importlib
-import os
 import requests
 import threading
 import traceback

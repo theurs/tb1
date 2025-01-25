@@ -7511,10 +7511,10 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                     return True
 
                 # если за сутки было меньше 10 запросов то пропустить
-                msgs24h = my_db.count_msgs_last_24h(chat_id_full)
-                max_per_day = cfg.MAX_FREE_PER_DAY if hasattr(cfg, 'MAX_FREE_PER_DAY') else 10
-                if msgs24h <= max_per_day:
-                    return True
+                # msgs24h = my_db.count_msgs_last_24h(chat_id_full)
+                # max_per_day = cfg.MAX_FREE_PER_DAY if hasattr(cfg, 'MAX_FREE_PER_DAY') else 10
+                # if msgs24h <= max_per_day:
+                #     return True
 
                 # юзеры у которых есть 3 ключа не требуют подписки,
                 # но если есть звезды то их надо снимать чтоб не копились

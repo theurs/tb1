@@ -5508,6 +5508,8 @@ def huggingface_image_gen_fast(message: telebot.types.Message):
         my_log.log2(f'tb:huggingface_image_gen_fast: {unknown}\n{traceback_error}')
 
 
+@bot.message_handler(commands=['bing10', 'Bing10'], func=authorized)
+@bot.message_handler(commands=['bing20', 'Bing20'], func=authorized)
 @bot.message_handler(commands=['bing', 'Bing'], func=authorized)
 @async_run
 def image_bing_gen(message: telebot.types.Message):
@@ -5671,8 +5673,6 @@ def send_images_to_pic_group(
         my_log.log2(f'tb:image:send_media_group_pics_group3: {unknown}\n\n{traceback_error}')
 
 
-@bot.message_handler(commands=['bing10', 'Bing10'], func=authorized)
-@bot.message_handler(commands=['bing20', 'Bing20'], func=authorized)
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):

@@ -20,7 +20,6 @@ from PIL import Image
 
 import bing_api_client
 import cfg
-import cfg_bing
 import my_db
 import my_gemini
 import my_glm
@@ -133,7 +132,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
     try:
         with BING_LOCK:
             images = []
-            if hasattr(cfg_bing, 'BING_URLS') and cfg_bing.BING_URLS:
+            if os.path.exists('cfg_bing.py'):
                 images = bing_api_client.gen_images(prompt)
 
                 if images:

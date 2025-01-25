@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
 
-import importlib
 import requests
 import threading
 import traceback
 from typing import List, Dict, Any
 
-import cfg_bing
 import my_log
 
 
@@ -26,15 +24,16 @@ def get_base_url() -> str:
         global CFG_FILE_TIMESTAMP, CURRENT_BING_APIS
 
         BASE_URL = ''
+        ALL = []
 
         with CFG_LOCK:
-            module = importlib.import_module('cfg_bing')
-            importlib.reload(module)
-            # my_log.log_bing_api('cfg_bing.py reloaded ' + '\n'.join(cfg_bing.BING_URLS))
+            with open('cfg_bing.py', 'r') as f:
+                ALL = f.read().split('\n')
+                ALL = [x.strip() for x in ALL if not x.startswith('#') and x.strip()]
 
-        if hasattr(cfg_bing, 'BING_URLS') and cfg_bing.BING_URLS:
+        if ALL:
             if not CURRENT_BING_APIS:
-                CURRENT_BING_APIS = cfg_bing.BING_URLS[:]
+                CURRENT_BING_APIS = ALL[:]
             BASE_URL = CURRENT_BING_APIS.pop(0)
 
         return BASE_URL

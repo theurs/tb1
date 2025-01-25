@@ -25,6 +25,8 @@ def get_base_url() -> str:
     try:
         global CFG_FILE_TIMESTAMP, CURRENT_BING_APIS
 
+        BASE_URL = ''
+
         if os.path.exists('cfg_bing.py') and os.path.getmtime('cfg_bing.py') != CFG_FILE_TIMESTAMP:
             CFG_FILE_TIMESTAMP = os.path.getmtime('cfg_bing.py')
             module = importlib.import_module('cfg_bing')

@@ -4,6 +4,7 @@
 import io
 import os
 import subprocess
+import traceback
 
 import chardet
 import PyPDF2
@@ -381,6 +382,47 @@ def convert_html_to_bytes(html_data: str, output_filename: str) -> bytes:
         utils.remove_file(temp_output_file)  # Clean up the temporary file
 
 
+def convert_html_to_plain(html_data: str) -> str:
+    """
+    Converts HTML data to plain text using pandoc.
+
+    Args:
+        html_data: The HTML string to convert.
+
+    Returns:
+        The plain text representation of the HTML data.
+    """
+    result: str = html_data
+
+    try:
+        src_file: str = utils.get_tmp_fname() + '.html'
+        dst_file: str = utils.get_tmp_fname() + '.txt'
+
+        with open(src_file, 'w', encoding='utf-8', errors='replace') as f:
+            f.write(html_data)
+
+        process = subprocess.run(
+            ['pandoc', '-f', 'html', '-t', 'plain', '-o', dst_file, src_file],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+
+        if process.returncode != 0:
+            error_message = f"Pandoc failed with return code: {process.returncode}\nstderr: {process.stderr.decode('utf-8', errors='replace')}"
+            my_log.log2(f'my_pandoc:convert_html_to_plain: {error_message}')
+        else:
+            with open(dst_file, 'r', encoding='utf-8', errors='replace') as f:
+                result = f.read()
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'my_pandoc:convert_html_to_plain: {error}\n{traceback_error}') # Log other exceptions
+
+    utils.remove_file(src_file)
+    utils.remove_file(dst_file)
+
+    return result
+
+
 if __name__ == '__main__':
     pass
     # result = fb2_to_text(open('c:/Users/user/Downloads/1.xlsx', 'rb').read(), '.xlsx')
@@ -400,3 +442,5 @@ if __name__ == '__main__':
     #     with open('c:/Users/user/Downloads/3.docx', 'wb') as f:
     #         f.write(data)
 
+    t = '''Громаш, словно обезумев, начал колотить кулаками по каменной стене, словно он пытался разбить её в щепки, словно он пытался вырваться из этой тюрьмы. &quot;Я найду тебя, Максимус, и я заставлю тебя страдать! - ревел он, и его голос разносился по всему залу, - я отплачу тебе за все мои страдания, и я не успокоюсь, пока не увижу твою смерть! <i>А было это так… Я буду мучить тебя так, как ты мучил моих братьев, я буду терзать тебя до тех пор, пока не вырву твою душу, и я буду наслаждаться твоими страданиями, словно это самый вкусный нектар. Я хочу видеть боль в твоих глазах, я хочу слышать твои крики, и это будет моей местью, это будет моим искуплением, и я не отступлю, пока я не добьюсь своего!</i>&quot; Он посмотрел на своих соплеменников, и его глаза горели адским огнем, словно он был одержим демоном. &quot;Мы покажем всему миру, что такое сила орков, и мы заставим всех бояться нас, и мы будем править этим миром, и все будут подчиняться нам, и все будут преклоняться перед нами!&quot; Орки, слыша его слова, начали вопить и стучать оружием, готовясь к битве, словно стая диких зверей, готовых разорвать свою жертву на куски. Максимус, слушая его крики, повернулся к своим товарищам и сказал: &quot;Мы все пали, но мы не должны сдаваться, мы не должны позволить этой ненависти сломить нас. Мы должны сражаться вместе, чтобы выжить, и мы должны помнить, что мы не одни.&quot; Его голос был тихим, но в нем чувствовалась решимость и готовность бороться до конца, словно он знал, что они смогут справиться со всеми испытаниями. &quot;Я не верю в шансы,&quot; - сказала Лираэль, и ее голос был полон цинизма, - &quot;но я готова сражаться, если это будет нужно для достижения моих целей, я готова убивать, если это поможет мне выжить, но я не верю в то, что у нас есть шанс, я не верю в то, что мы сможем изменить свою судьбу. <i>А было это так… Я всегда сражалась в одиночку, я не доверяла никому, и я всегда полагалась только на себя, но сейчас я чувствую, что что-то меняется, словно я становлюсь частью чего-то большего, и я не понимаю, что это значит. Я вспоминаю свои прошлые победы, как я достигала всего самостоятельно, но сейчас всё по-другому, и я не знаю, что будет дальше.</i>&quot; Она посмотрела на остальных, и в её глазах можно было заметить искорку надежды, словно она хотела верить, что у них есть шанс. Борд, вздохнув, проговорил: &quot;Я создал много мечей, но ни один из них не спас меня от предательства, и я не знаю, почему я должен сражаться, зачем я должен помогать другим, когда никто не помог мне, я просто устал, и я не знаю, что делать дальше. *А было это так… Я вспоминаю свою кузницу, я её так любил, я отдавал ей всю свою жизнь, но судьба забрала у меня всё, и я не знаю, почему это случилось со мной.'''
+    print(convert_html_to_plain(t))

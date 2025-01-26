@@ -7460,7 +7460,10 @@ def reply_to_long_message(message: telebot.types.Message,
         else:
 
             if len(resp) > 40000 or len(chunks) > 9:
-                send_resp_as_file(message, resp, reply_markup, lang)
+                if parse_mode == 'HTML':
+                    send_resp_as_file(message, my_pandoc.convert_html_to_plain(resp), reply_markup, lang)
+                else:
+                    send_resp_as_file(message, resp, reply_markup, lang)
             else:
                 for chunk in chunks:
                     if not chunk.strip():

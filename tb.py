@@ -3777,6 +3777,7 @@ https://api.x.ai/v1 (ok)
 https://api.sambanova.ai/v1 (/list_model doesn't works)
 https://api.openai.com/v1 (ok? please report)
 
+/help2 for more info
 ''', lang)
             bot_reply(message, msg, disable_web_page_preview=True)
     except Exception as error:
@@ -6635,6 +6636,33 @@ def send_welcome_help(message: telebot.types.Message):
 
         if message.from_user.id in cfg.admins and len(args) != 2:
             bot_reply_tr(message, my_init.admin_help, disable_web_page_preview=True)
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:help: {unknown}\n{traceback_error}')
+
+
+@bot.message_handler(commands=['help2'], func = authorized_log)
+@async_run
+def send_welcome_help2(message: telebot.types.Message):
+    '''
+    Дополнительное объяснение по ключам и опенроутеру
+    '''
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+        COMMAND_MODE[chat_id_full] = ''
+        
+        args = message.text.split(maxsplit = 1)
+        if len(args) == 2:
+            if args[1] in my_init.supported_langs_trans+['pt-br',]:
+                lang = args[1]
+
+        help = tr(my_init.help_msg2, lang)
+
+        help = utils.bot_markdown_to_html(help)
+
+        bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
+
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:help: {unknown}\n{traceback_error}')

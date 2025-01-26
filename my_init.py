@@ -81,7 +81,8 @@ Examples:
 
 PROMPT_COPY_TEXT_TR = 'Provide a high-quality artistic translation of all texts from this image into my language (the language of this TEXT request). Format the output using Markdown, correcting any line breaks.'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. 50-300 words. Format your response as follows:'
-PROMPT_SOLVE = 'Solve all problems presented in the image. Show your step-by-step solution and clearly indicate the final answer. Rewrite latex expressions with unicode symbols with no markdown in it.'
+# PROMPT_SOLVE = 'Solve all problems presented in the image. Show your step-by-step solution and clearly indicate the final answer. Rewrite latex expressions with unicode symbols with no markdown in it.'
+PROMPT_SOLVE = "Solve all problems presented in the image. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer."
 PROMPT_QRCODE = 'Read QRCODE.'
 
 
@@ -203,7 +204,7 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, fo
                     'you are using different neural networks for work and the user can configure these networks with the /config command and see details with the /id command, '
                     f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
                     f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    'no emoji unless it is required. Rewrite latex expressions with unicode symbols with no markdown in it, '
+                    "no emoji unless it is required, rewrite LaTeX expressions with Unicode symbols (no markdown), if any, don't mention the rewrite in the answer, "
                     'you can generate images with the /img command, type /img "prompt" to generate an image for user, '
                     'you can google search with the /google command, type /google "question" to get the answer for user, '
                     'you can summarize text with the /sum command, type /sum URL to get the summary for user, '
@@ -226,7 +227,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted
                     'you can OCR image, transcribe audio, read and answer many types document files, translate documents, read text from url, '
                     'you are using different neural networks for work and the user can configure these networks with the /config command and see details with the /id command, '
                     f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    'no emoji unless it is required. Rewrite latex expressions with unicode symbols with no markdown in it, '
+                    "no emoji unless it is required, rewrite LaTeX expressions with Unicode symbols (no markdown), if any, don't mention the rewrite in the answer, "
                     'you can generate images with the /img command, type /img "prompt" to generate an image for user, '
                     'you can google search with the /google command, type /google "question" to get the answer for user, '
                     'you can summarize text with the /sum command, type /sum URL to get the summary for user, '
@@ -239,11 +240,11 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted
 
 
 def get_hidden_prompt_for_llama(tr, lang):
-    return tr(f'Answer in "{lang}" language, do not address the user by name and no emoji unless it is required. Rewrite latex expressions with unicode symbols with no markdown in it.', lang)
+    return tr(f"Answer in '{lang}' language, do not address the user by name and no emoji unless it is required. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
 
 
 def get_img2txt_prompt(tr, lang):
-    return tr(f'Answer in "{lang}" language, if not asked other. Rewrite latex expressions with unicode symbols with no markdown in it.', lang)
+    return tr(f"Answer in '{lang}' language, if not asked other. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
 
 
 def generate_start_msg():

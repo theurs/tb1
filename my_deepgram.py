@@ -148,7 +148,7 @@ def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = '') -> Tuple[
             # diarize=True  # Добавляем diarize=True для определения говорящих
         )
 
-        response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
+        response = deepgram.listen.rest.v("1").transcribe_file(payload, options, timeout=600)
 
         t = DeepgramConverter(response)
         captions_srt = srt(t)

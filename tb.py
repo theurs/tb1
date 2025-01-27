@@ -7554,7 +7554,7 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                 MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
                 DONATE_PRICE = cfg.DONATE_PRICE if hasattr(cfg, 'DONATE_PRICE') else 50
 
-                my_log.log3(f'{chat_id_full} have keys: {have_keys}, total messages: {total_messages} max total messages: {MAX_TOTAL_MESSAGES} donate price: {DONATE_PRICE}')
+                # my_log.log3(f'{chat_id_full} have keys: {have_keys}, total messages: {total_messages} max total messages: {MAX_TOTAL_MESSAGES} donate price: {DONATE_PRICE}')
 
                 if total_messages > MAX_TOTAL_MESSAGES:
                     last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0

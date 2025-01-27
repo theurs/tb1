@@ -15,6 +15,7 @@
 
 
 import random
+import re
 import time
 import traceback
 
@@ -30,6 +31,7 @@ import cfg
 import my_db
 import my_gemini
 import my_log
+import utils
 
 
 SAFETY_SETTINGS = [
@@ -210,9 +212,16 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
 
             if links:
                 links = '\n'.join(links)
-                return f'{response.candidates[0].content.parts[-1].text}\n\n{links}'
+                result = f'{response.candidates[0].content.parts[-1].text}\n\n{links}'
+            else:
+                result = response.text
 
-            return response.text
+            # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
+            # куча пробелов, и возможно другие тоже. укорачиваем
+            result = re.sub(r" {1000,}", " " * 10, result) # очень много пробелов в ответе
+            result = utils.shorten_all_repeats(result)
+
+            return result
         except Exception as error:
             traceback_error = traceback.format_exc()
             if str(error) != 'Resource has been exhausted (e.g. check quota).':

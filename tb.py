@@ -4067,7 +4067,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
 
         msg = tr('Usage: /keys API KEYS space separated (gemini, groq, huggingface)', lang) + '\n\n' + \
                  '<blockquote>/keys xxxxx yyyy zzz\n/keys xxxxx</blockquote>\n\n' + \
-                 tr('This bot requires free API keys.', lang) + '\n\n' + \
+                 tr('This bot requires free API keys. At least first 3 keys are required.', lang) + '\n\n' + \
                  tr('Please <b>use only FREE keys</b>. Do not use paid accounts. If you have a paid account, please create a new one.', lang)+'\n\n'+\
                  '0️⃣ Free VPN: https://www.vpnjantit.com/\n\n' + \
                  '1️⃣ https://www.youtube.com/watch?v=6aj5a7qGcb4\nhttps://ai.google.dev/\nhttps://aistudio.google.com/apikey\n\n' + \

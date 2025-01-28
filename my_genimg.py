@@ -629,6 +629,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         return []
 
     bing_prompt = original_prompt if original_prompt.startswith('!') else prompt
+    bing_prompt = re.sub(r'^!+', '', bing_prompt).strip()
 
     pool = ThreadPool(processes=9)
 

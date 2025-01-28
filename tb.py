@@ -61,6 +61,7 @@ import my_transcribe
 import my_tts
 import my_ytb
 import utils
+import utils_llm
 from utils import async_run
 
 try:
@@ -466,7 +467,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         # Updates the memory of the selected bot based on the chat mode.
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.update_mem(query, resp, chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b'):
             my_groq.update_mem(query, resp, chat_id_full)
         elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_openrouter.update_mem(query, resp, chat_id_full)
@@ -1807,6 +1808,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Llama-3.3 70b'
             button_llama3_70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
 
+            if chat_mode == 'deepseek_r1_distill_llama70b':
+                msg = '✅ deepseek_r1_distill_llama70b'
+            else:
+                msg = 'deepseek_r1_distill_llama70b'
+            button_deepseek_r1_distill_llama70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_deepseek_r1_distill_llama70b')
+
             if chat_mode == 'openrouter_llama405':
                 msg = '✅ Llama-3.1 405b'
             else:
@@ -1912,6 +1919,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                     markup.row(button_grok)
                 if chat_id_full in my_openrouter.KEYS:
                     markup.row(button_openrouter)
+
+            # markup.row(button_deepseek_r1_distill_llama70b)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2196,6 +2205,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'select_llama370':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.3 70b Groq.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
+            elif call.data == 'select_deepseek_r1_distill_llama70b':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель deepseek_r1_distill_llama70b.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1_distill_llama70b')
             elif call.data == 'select_llama405':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter_llama405')
@@ -4524,7 +4536,7 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
     try:
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.force(chat_id_full, text, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama370':
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b'):
             my_groq.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.force(chat_id_full, text)
@@ -4592,7 +4604,7 @@ def undo_cmd(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = ''
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.undo(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama370':
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b'):
             my_groq.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.undo(chat_id_full)
@@ -4648,7 +4660,7 @@ def reset_(message: telebot.types.Message, say: bool = True):
 
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.reset(chat_id_full, my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama370':
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b'):
             my_groq.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.reset(chat_id_full)
@@ -4781,7 +4793,7 @@ def save_history(message: telebot.types.Message):
         prompt = ''
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = my_gemini.get_mem_as_string(chat_id_full, md = True, model = my_db.get_user_property(chat_id_full, 'chat_mode')) or ''
-        if 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        if my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b'):
             prompt = my_groq.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
@@ -4856,6 +4868,9 @@ def send_debug_history(message: telebot.types.Message):
             prompt += my_gemini.get_mem_as_string(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode')) or tr('Empty', lang)
         elif 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = 'Groq llama 3.3 70b\n\n'
+            prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        elif 'deepseek_r1_distill_llama70b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            prompt = 'deepseek_r1_distill_llama70b\n\n'
             prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             prompt = 'Openrouter\n\n'
@@ -6842,6 +6857,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini-learn': cfg.gemini_learn_model,
             'gemini_2_flash_thinking': cfg.gemini_2_flash_thinking_exp_model,
             'llama370': 'Llama 3.3 70b',
+            'deepseek_r1_distill_llama70b': 'Deepseek R1 distill llama70b',
             'openrouter_llama405': 'Llama 3.1 405b',
             'qwen70': 'Qwen2.5-72B-Instruct',
             'mistral': my_mistral.DEFAULT_MODEL,
@@ -8121,6 +8137,56 @@ def do_task(message, custom_prompt: str = ''):
                                 try:
                                     if command_in_answer(answer, message):
                                         return
+                                    bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                            reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                                except Exception as error:
+                                    print(f'tb:do_task: {error}')
+                                    my_log.log2(f'tb:do_task: {error}')
+                                    bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                            reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error3:
+                                error_traceback = traceback.format_exc()
+                                my_log.log2(f'tb:do_task:llama370-groq {error3}\n{error_traceback}')
+                            return
+
+
+                    # если активирован режим общения с deepseek_r1_distill_llama70b
+                    if chat_mode_ == 'deepseek_r1_distill_llama70b':
+                        if len(msg) > my_groq.MAX_REQUEST_deepseek_r1_distill_llama70b:
+                            bot_reply(message, f'{tr("Слишком длинное сообщение для deepseek_r1_distill_llama70b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_deepseek_r1_distill_llama70b}')
+                            return
+
+                        with ShowAction(message, action):
+                            try:
+                                style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
+                                answer = my_groq.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    model=my_groq.DEEPSEEK_LLAMA70_MODEL,
+                                    style = style_,
+                                    temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    )
+
+                                if chat_id_full not in WHO_ANSWERED:
+                                    WHO_ANSWERED[chat_id_full] = my_groq.DEEPSEEK_LLAMA70_MODEL
+                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                                if not answer:
+                                    answer = f'{my_groq.DEEPSEEK_LLAMA70_MODEL} ' + tr('did not answered, try to /reset and start again', lang)
+
+                                thoughts, answer = utils_llm.split_thoughts(answer)
+                                # thoughts = utils.bot_markdown_to_html(thoughts)
+
+                                if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                    answer_ = utils.bot_markdown_to_html(answer)
+                                    DEBUG_MD_TO_HTML[answer_] = answer
+                                    answer = answer_
+
+                                my_log.log_echo(message, f'[{my_groq.DEEPSEEK_LLAMA70_MODEL}] {answer}')
+                                try:
+                                    if command_in_answer(answer, message):
+                                        return
+                                    # answer = utils_llm.reconstruct_html_answer_with_thoughts(thoughts, answer)
                                     bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                             reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
                                 except Exception as error:

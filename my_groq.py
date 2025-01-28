@@ -55,6 +55,13 @@ MAX_LINES = 20
 # limit for summarize
 MAX_SUM_REQUEST = MAX_MEM_LLAMA31
 
+
+# максимальный контекст для дипсик лламы
+MAX_deepseek_r1_distill_llama70b_chars = 10000
+MAX_REQUEST_deepseek_r1_distill_llama70b = 4000
+DEEPSEEK_LLAMA70_MODEL = 'deepseek-r1-distill-llama-70b'
+
+
 # {user_id:bool} в каких чатах добавлять разблокировку цензуры
 # CRACK_DB = SqliteDict('db/groq_crack.db', autocommit=True)
 MEM_UNCENSORED = [
@@ -227,6 +234,8 @@ def ai(prompt: str = '',
         max_mem = MAX_QUERY_LENGTH
         if 'llama-3.1' in model:
             max_mem = MAX_MEM_LLAMA31
+        elif model_ == 'deepseek-r1-distill-llama-70b':
+            max_mem = MAX_deepseek_r1_distill_llama70b_chars
         while token_count(mem) > max_mem + 100:
             mem = mem[2:]
 

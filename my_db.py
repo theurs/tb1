@@ -1161,6 +1161,12 @@ def drop_all_user_files_and_big_dialogs(max_dialog_size: int = 500000, delete_da
                 msg = f'my_db:drop_all_user_files_and_big_dialogs: User files and large dialogs have been deleted. Total deleted size: {total_deleted_size} bytes'
                 my_log.log2(msg)
 
+                # Clear the cache
+                try:
+                    USERS_CACHE.cache.cache_clear()
+                except Exception as clear_cache_error:
+                    my_log.log2(f'my_db:drop_all_user_files_and_big_dialogs {clear_cache_error}')
+
                 # Execute VACUUM to reduce the database size (outside the LOCK)
                 vacuum(lock_db = False)
 

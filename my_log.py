@@ -200,10 +200,6 @@ def log_openrouter_free(text: str) -> None:
     """для логов openrouter free"""
     log2(text[:2000], 'openrouter_free')
 
-def log_grok(text: str) -> None:
-    """для логов grok"""
-    log2(text[:2000], 'grok')
-
 def log_glm(text: str) -> None:
     """для логов glm"""
     log2(text[:2000], 'glm')
@@ -215,10 +211,6 @@ def log_deepgram(text: str) -> None:
 def log_mistral(text: str) -> None:
     """для логов openrouter mistral"""
     log2(text[:2000], 'mistral')
-
-def log_sambanova(text: str) -> None:
-    """для логов openrouter sambanova"""
-    log2(text[:2000], 'sambanova')
 
 def log_cohere(text: str) -> None:
     """для логов cohere"""

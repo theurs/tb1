@@ -151,7 +151,8 @@ def chat(query: str,
          json_output: bool = False,
          do_not_update_history=False,
          max_chat_lines: int = MAX_CHAT_LINES,
-         max_chat_mem_chars: int = MAX_CHAT_MEM_CHARS
+         max_chat_mem_chars: int = MAX_CHAT_MEM_CHARS,
+         timeout: int = TIMEOUT
          ) -> str:
     '''Chat with AI model.
     Args:
@@ -225,7 +226,7 @@ def chat(query: str,
             else:
                 key = get_next_key()
 
-            if time.time() > time_start + (TIMEOUT-1):
+            if time.time() > time_start + (timeout-1):
                 my_log.log_gemini(f'my_gemini:chat1: stop after timeout {round(time.time() - time_start, 2)}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 return ''
 
@@ -282,8 +283,8 @@ def chat(query: str,
                     system_instruction = system,
                 )
 
-            # request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=TIMEOUT))
-            request_options = RequestOptions(timeout=TIMEOUT)
+            # request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=timeout))
+            request_options = RequestOptions(timeout=timeout)
 
             chat_ = model_.start_chat(history=mem, enable_automatic_function_calling=True)
 
@@ -1249,13 +1250,13 @@ if __name__ == '__main__':
 
     # print(test_new_key(''))
 
-    os.environ['grpc_proxy'] = 'http://172.28.1.8:8888'
-    r=chat('привет', chat_id='[1651196] [0]')
-    print(r)
-    del os.environ['grpc_proxy']
+    # os.environ['grpc_proxy'] = 'http://172.28.1.8:3128'
+    # r=chat('привет', chat_id='[1651196] [0]')
+    # print(r)
+    # del os.environ['grpc_proxy']
 
-    r=chat('привет', chat_id='[1651196] [0]')
-    print(r)
+    # r=chat('привет', chat_id='[1651196] [0]')
+    # print(r)
 
 
     # update_mem('1+2', '3', '[1651196] [0]')
@@ -1273,14 +1274,11 @@ if __name__ == '__main__':
     # chat_cli(model=cfg.gemini_2_flash_thinking_exp_model)
     # chat_cli(model = 'gemini-2.0-flash-thinking-exp-1219')
 
-    # with open('C:/Users/user/Downloads/3.txt','r', encoding='utf-8') as f:
+    # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()
-
-    # print(ai('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы\n\n'+text))
-    # q = 'Что это?\n\n'+text
-    # print(ai(q[:100000]))
-
+    # print(chat(f'Сделай краткий пересказ текста\n\n{text}', model=cfg.gemini_2_flash_thinking_exp_model, timeout=600))
+    # print(chat(f'Сделай краткий пересказ текста\n\n{text}', timeout=600))
 
     # print(translate('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы', to_lang='en', help='не меняй кейс символов и форматирование'))
 
-    my_db.close()
+    # my_db.close()

@@ -41,7 +41,6 @@ import my_google
 import my_gemini
 import my_gemini_google
 import my_glm
-import my_grok
 import my_groq
 import my_log
 import my_mistral
@@ -51,7 +50,6 @@ import my_psd
 import my_openrouter
 import my_openrouter_free
 import my_pandoc
-import my_sambanova
 import my_stat
 import my_stt
 import my_sum
@@ -471,8 +469,6 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_groq.update_mem(query, resp, chat_id_full)
         elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_openrouter.update_mem(query, resp, chat_id_full)
-        elif 'openrouter_llama405' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_sambanova.update_mem(query, resp, chat_id_full)
         elif 'mistral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_mistral.update_mem(query, resp, chat_id_full)
         elif 'pixtral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -481,10 +477,6 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_mistral.update_mem(query, resp, chat_id_full)
         elif 'commandrplus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_cohere.update_mem(query, resp, chat_id_full)
-        elif 'grok' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_grok.update_mem(query, resp, chat_id_full)
-        elif 'qwen70' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_sambanova.update_mem(query, resp, chat_id_full)
         elif 'glm4plus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_glm.update_mem(query, resp, chat_id_full)
         elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -566,10 +558,7 @@ def img2txt(text, lang: str,
                     text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
-                elif chat_mode == 'grok':
-                    text = my_grok.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_grok.DEFAULT_MODEL
+
 
             # если модель не указана явно и не был получен ответ в предыдущем блоке то используем
             # стандартную модель (возможно что еще раз)
@@ -606,14 +595,7 @@ def img2txt(text, lang: str,
                 text = ''
 
 
-            # если не ответил gemini то попробовать grok
-            if not text:
-                text = my_grok.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_grok.DEFAULT_MODEL
-
-
-            # если не ответил grok то попробовать glm
+            # попробовать glm
             if not text:
                 text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
                 if text:
@@ -730,10 +712,7 @@ def img2txt(text, lang: str,
 #                     text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
 #                     if text:
 #                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
-#                 elif chat_mode == 'grok':
-#                     text = my_grok.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
-#                     if text:
-#                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_grok.DEFAULT_MODEL
+
 
 #             # if not model and not text:
 #             #     if check_vip_user_gemini(chat_id_full):
@@ -789,14 +768,7 @@ def img2txt(text, lang: str,
 #                 text = ''
 
 
-#             # если не ответил gemini то попробовать grok
-#             if not text:
-#                 text = my_grok.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_grok.DEFAULT_MODEL
-
-
-#             # если не ответил grok то попробовать glm
+#             # попробовать glm
 #             if not text:
 #                 text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
 #                 if text:
@@ -1769,30 +1741,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
 
-        elif kbd == 'openrouter_llama405_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='openrouter_llama405_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'qwen70_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='qwen70_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
         elif kbd == 'mistral_chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
@@ -1829,25 +1777,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
 
-
         elif kbd == 'commandrplus_chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
             markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
             button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
             button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='commandrplus_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'grok_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='grok_reset')
             button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
             button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
             button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
@@ -1975,18 +1910,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'deepseek_r1_distill_llama70b'
             button_deepseek_r1_distill_llama70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_deepseek_r1_distill_llama70b')
 
-            if chat_mode == 'openrouter_llama405':
-                msg = '✅ Llama-3.1 405b'
-            else:
-                msg = 'Llama-3.1 405b'
-            button_llama3_405b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama405')
-
-            if chat_mode == 'qwen70':
-                msg = '✅ Qwen2.5-72B-Instruct'
-            else:
-                msg = 'Qwen2.5-72B-Instruct'
-            button_qwen2_72b = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwen70')
-
             if chat_mode == 'gpt-4o-mini-ddg':
                 msg = '✅ GPT 4o mini'
             else:
@@ -2041,12 +1964,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Command R+'
             button_commandrplus = telebot.types.InlineKeyboardButton(msg, callback_data='select_commandrplus')
 
-            if chat_mode == 'grok':
-                msg = '✅ Grok 2'
-            else:
-                msg = 'Grok 2'
-            button_grok = telebot.types.InlineKeyboardButton(msg, callback_data='select_grok')
-
             if chat_mode == 'openrouter':
                 msg = '✅ OpenRouter'
             else:
@@ -2057,31 +1974,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(button_codestral, button_mistral)
             markup.row(button_gpt4o_mini, button_haiku)
 
-            # if hasattr(cfg, 'MISTRALAI_KEYS') and len(cfg.MISTRALAI_KEYS):
-            #     markup.row(button_mistral, button_pixtral)
-
-            if hasattr(cfg, 'SAMBANOVA_KEYS') and len(cfg.SAMBANOVA_KEYS):
-                markup.row(button_llama3_70b, button_llama3_405b)
-            else:
-                markup.row(button_llama3_70b)
             markup.row(button_gemini_exp, button_gemini_learnlm)
 
-            markup.row(button_commandrplus, button_qwen2_72b)
+            markup.row(button_commandrplus, button_llama3_70b)
 
             if hasattr(cfg, 'GLM4_KEYS'):
                 markup.row(button_glm4plus, button_gemini_pro)
             else:
                 markup.row(button_gemini_pro)
 
-            if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS and chat_id_full in my_openrouter.KEYS:
-                markup.row(button_grok, button_openrouter)
-            else:
-                if hasattr(cfg, 'GROK_KEYS') and cfg.GROK_KEYS:
-                    markup.row(button_grok)
-                if chat_id_full in my_openrouter.KEYS:
-                    markup.row(button_openrouter)
-
-            # markup.row(button_deepseek_r1_distill_llama70b)
+            if chat_id_full in my_openrouter.KEYS:
+                markup.row(button_openrouter)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2369,9 +2272,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'select_deepseek_r1_distill_llama70b':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель deepseek_r1_distill_llama70b.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1_distill_llama70b')
-            elif call.data == 'select_llama405':
-                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.1 405b.', lang))
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter_llama405')
             elif call.data == 'select_mistral':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Mistral Large.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')
@@ -2384,12 +2284,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'select_commandrplus':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Command R+.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'commandrplus')
-            elif call.data == 'select_grok':
-                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Grok 2.', lang))
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'grok')
-            elif call.data == 'select_qwen70':
-                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Qwen2.5-72B-Instruct.', lang))
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen70')
             elif call.data == 'select_glm4plus':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GLM 4 PLUS.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'glm4plus')
@@ -2435,9 +2329,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'openrouter_reset':
                 my_openrouter.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с openrouter очищена.')
-            elif call.data == 'openrouter_llama405_reset':
-                my_sambanova.reset(chat_id_full)
-                bot_reply_tr(message, 'История диалога с Llama 405b очищена.')
             elif call.data == 'mistral_reset':
                 my_mistral.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с Mistral Large очищена.')
@@ -2450,12 +2341,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'commandrplus_reset':
                 my_cohere.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с Command R+ очищена.')
-            elif call.data == 'grok_reset':
-                my_grok.reset(chat_id_full)
-                bot_reply_tr(message, 'История диалога с Grok 2 очищена.')
-            elif call.data == 'qwen70_reset':
-                my_sambanova.reset(chat_id_full)
-                bot_reply_tr(message, 'История диалога с Qwen2.5-72B-Instruct очищена.')
             elif call.data == 'glm4plus_reset':
                 my_glm.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с GLM 4 PLUS очищена.')
@@ -3947,8 +3832,7 @@ https://bothub.chat/api/v2/openai/v1 (ok)
 https://api.groq.com/openai/v1 (ok)
 https://api.mistral.ai/v1 (ok)
 https://api.x.ai/v1 (ok)
-https://api.sambanova.ai/v1 (/list_model doesn't works)
-https://api.openai.com/v1 (ok? please report)
+https://api.openai.com/v1 (ok)
 
 /help2 for more info
 ''', lang)
@@ -4701,8 +4585,6 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_groq.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-            my_sambanova.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             my_mistral.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
@@ -4711,10 +4593,6 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_mistral.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
-            my_grok.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
-            my_sambanova.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             my_glm.force(chat_id_full, text)
         elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -4769,10 +4647,6 @@ def undo_cmd(message: telebot.types.Message):
             my_groq.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-            my_sambanova.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
-            my_sambanova.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             my_mistral.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
@@ -4781,8 +4655,6 @@ def undo_cmd(message: telebot.types.Message):
             my_mistral.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
-            my_grok.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm3plus':
             my_glm.undo(chat_id_full)
         elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -4825,10 +4697,6 @@ def reset_(message: telebot.types.Message, say: bool = True):
             my_groq.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-            my_sambanova.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
-            my_sambanova.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             my_mistral.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
@@ -4837,8 +4705,6 @@ def reset_(message: telebot.types.Message, say: bool = True):
             my_mistral.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
-            my_grok.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             my_glm.reset(chat_id_full)
         elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -4958,10 +4824,6 @@ def save_history(message: telebot.types.Message):
             prompt = my_groq.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-            prompt = my_sambanova.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
-            prompt = my_sambanova.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
@@ -4970,8 +4832,6 @@ def save_history(message: telebot.types.Message):
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
-            prompt = my_grok.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             prompt = my_glm.get_mem_as_string(chat_id_full, md = True) or ''
         if 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -5036,12 +4896,6 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             prompt = 'Openrouter\n\n'
             prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter_llama405':
-            prompt = 'Llama 405b\n\n'
-            prompt += my_sambanova.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen70':
-            prompt = 'Qwen2.5-72B-Instruct\n\n'
-            prompt += my_sambanova.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             prompt = 'Mistral Large\n\n'
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -5054,9 +4908,6 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             prompt = 'Commandr R+\n\n'
             prompt += my_cohere.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'grok':
-            prompt = 'Grok 2\n\n'
-            prompt += my_grok.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             prompt = 'GLM 4 PLUS\n\n'
             prompt += my_glm.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -6455,8 +6306,7 @@ def ask_file(message: telebot.types.Message):
                 if not result:
                     result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
                 if not result:
-                    result = my_grok.ai(q[:my_grok.MAX_SUM_REQUEST], system=role)
-                # result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=1, tokens_limit=8000, model = 'gemini-1.5-pro', system=role)
+                    result = my_mistral.ai(q[:my_mistral.MAX_SUM_REQUEST], system=role)
                 if not result:
                     result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=1, max_tokens_ = 4000, system=role)
 
@@ -6939,10 +6789,8 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_gemini.reset(chat_id_full)
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
-            my_sambanova.reset(chat_id_full)
             my_mistral.reset(chat_id_full)
             my_cohere.reset(chat_id_full)
-            my_grok.reset(chat_id_full)
             my_glm.reset(chat_id_full)
             my_ddg.reset(chat_id_full)
 
@@ -7017,13 +6865,10 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini_2_flash_thinking': cfg.gemini_2_flash_thinking_exp_model,
             'llama370': 'Llama 3.3 70b',
             'deepseek_r1_distill_llama70b': 'Deepseek R1 distill llama70b',
-            'openrouter_llama405': 'Llama 3.1 405b',
-            'qwen70': 'Qwen2.5-72B-Instruct',
             'mistral': my_mistral.DEFAULT_MODEL,
             'pixtral': my_mistral.VISION_MODEL,
             'codestral': my_mistral.CODE_MODEL,
             'commandrplus': my_cohere.DEFAULT_MODEL,
-            'grok': my_grok.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
             'bothub': 'bothub.chat',
             'glm4plus': my_glm.DEFAULT_MODEL,
@@ -8413,98 +8258,6 @@ def do_task(message, custom_prompt: str = ''):
                             return
 
 
-                    # если активирован режим общения с llama 405b
-                    if chat_mode_ == 'openrouter_llama405':
-                        if len(msg) > my_sambanova.MAX_REQUEST:
-                            bot_reply(message, f'{tr("Слишком длинное сообщение для Llama 405b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_sambanova.MAX_REQUEST}')
-                            return
-
-                        with ShowAction(message, action):
-                            try:
-                                answer = my_sambanova.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                    system=hidden_text,
-                                    model = 'Meta-Llama-3.1-405B-Instruct',
-                                )
-
-                                WHO_ANSWERED[chat_id_full] = 'Meta-Llama-3.1-405B-Instruct'
-                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                                if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                    answer_ = utils.bot_markdown_to_html(answer)
-                                    DEBUG_MD_TO_HTML[answer_] = answer
-                                    answer = answer_
-
-                                answer = answer.strip()
-                                if not answer:
-                                    answer = 'Llama 405b ' + tr('did not answered, try to /reset and start again.', lang)
-
-                                my_log.log_echo(message, f'[Meta-Llama-3.1-405B-Instruct] {answer}')
-
-                                try:
-                                    if command_in_answer(answer, message):
-                                        return
-                                    bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                            reply_markup=get_keyboard('openrouter_llama405_chat', message), not_log=True, allow_voice = True)
-                                except Exception as error:
-                                    print(f'tb:do_task: {error}')
-                                    my_log.log2(f'tb:do_task: {error}')
-                                    bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                            reply_markup=get_keyboard('openrouter_llama405_chat', message), not_log=True, allow_voice = True)
-                            except Exception as error3:
-                                error_traceback = traceback.format_exc()
-                                my_log.log2(f'tb:do_task:openrouter_llama405 {error3}\n{error_traceback}')
-                            return
-
-
-                    # если активирован режим общения с Qwen2.5-72B-Instruct
-                    if chat_mode_ == 'qwen70':
-                        if len(msg) > my_sambanova.MAX_REQUEST:
-                            bot_reply(message, f'{tr("Слишком длинное сообщение для Qwen2.5-72B-Instruct, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_sambanova.MAX_REQUEST}')
-                            return
-
-                        with ShowAction(message, action):
-                            try:
-                                answer = my_sambanova.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                    system=hidden_text,
-                                    model = 'Qwen2.5-72B-Instruct',
-                                )
-
-                                WHO_ANSWERED[chat_id_full] = 'Qwen2.5-72B-Instruct'
-                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                                if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                    answer_ = utils.bot_markdown_to_html(answer)
-                                    DEBUG_MD_TO_HTML[answer_] = answer
-                                    answer = answer_
-
-                                answer = answer.strip()
-                                if not answer:
-                                    answer = 'Qwen2.5-72B-Instruct ' + tr('did not answered, try to /reset and start again.', lang)
-
-                                my_log.log_echo(message, f'[Qwen2.5-72B-Instruct] {answer}')
-
-                                try:
-                                    if command_in_answer(answer, message):
-                                        return
-                                    bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                            reply_markup=get_keyboard('qwen70_chat', message), not_log=True, allow_voice = True)
-                                except Exception as error:
-                                    print(f'tb:do_task: {error}')
-                                    my_log.log2(f'tb:do_task: {error}')
-                                    bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                            reply_markup=get_keyboard('qwen70_chat', message), not_log=True, allow_voice = True)
-                            except Exception as error3:
-                                error_traceback = traceback.format_exc()
-                                my_log.log2(f'tb:do_task:qwen70 {error3}\n{error_traceback}')
-                            return
-
-
                     # если активирован режим общения с Mistral Large
                     if chat_mode_ == 'mistral':
                         if len(msg) > my_mistral.MAX_REQUEST:
@@ -8695,53 +8448,6 @@ def do_task(message, custom_prompt: str = ''):
                             except Exception as error3:
                                 error_traceback = traceback.format_exc()
                                 my_log.log2(f'tb:do_task:commandrplus {error3}\n{error_traceback}')
-                            return
-
-
-                    # если активирован режим общения с Grok 2
-                    if chat_mode_ == 'grok':
-                        if len(msg) > my_grok.MAX_REQUEST:
-                            bot_reply(message, f'{tr("Слишком длинное сообщение для Grok 2, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_grok.MAX_REQUEST}')
-                            return
-
-                        with ShowAction(message, action):
-                            try:
-                                answer = my_grok.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                    system=hidden_text,
-                                    model = my_grok.DEFAULT_MODEL,
-                                )
-
-                                WHO_ANSWERED[chat_id_full] = 'Grok 2'
-                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                                if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                    answer_ = utils.bot_markdown_to_html(answer)
-                                    DEBUG_MD_TO_HTML[answer_] = answer
-                                    answer = answer_
-
-                                answer = answer.strip()
-                                if not answer:
-                                    answer = 'Grok 2 ' + tr('did not answered, try to /reset and start again.', lang)
-
-                                my_log.log_echo(message, f'[Grok 2] {answer}')
-
-                                try:
-                                    if command_in_answer(answer, message):
-                                        return
-                                    bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                            reply_markup=get_keyboard('grok_chat', message), not_log=True, allow_voice = True)
-
-                                except Exception as error:
-                                    print(f'tb:do_task: {error}')
-                                    my_log.log2(f'tb:do_task: {error}')
-                                    bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                            reply_markup=get_keyboard('grok_chat', message), not_log=True, allow_voice = True)
-                            except Exception as error3:
-                                error_traceback = traceback.format_exc()
-                                my_log.log2(f'tb:do_task:grok {error3}\n{error_traceback}')
                             return
 
 

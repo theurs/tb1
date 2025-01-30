@@ -208,7 +208,7 @@ default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
 # 'gemini', 'gemini15', 'gemini8', 'gemini-exp', 'gemini-learn', 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'haiku',
-# 'gpt-4o-mini-ddg', 'openrouter_llama405', 'glm4plus', 'qwen70', 'mistral', 'pixtral', 'commandrplus', 'grok', 'deepseek_r1_distill_llama70b'
+# 'gpt-4o-mini-ddg', 'glm4plus', 'mistral', 'pixtral', 'commandrplus', 'deepseek_r1_distill_llama70b'
 chat_mode_default = 'gemini15'
 
 img2_txt_model = 'gemini-1.5-flash'
@@ -400,13 +400,6 @@ OPEN_ROUTER_FREE_KEYS = [
 # OPENEXCHANGER_KEY = 'xxx'
 
 
-# https://cloud.sambanova.ai/apis llama 8-405
-# free 10 запросов в секунду для 405b, 20 для 70b
-#SAMBANOVA_KEYS = [
-#    'xxx', 'yyy'
-#]
-
-
 # https://bigmodel.cn/ 100kk tokens per account for free?
 #GLM4_KEYS = [
 #    'xxx',
@@ -427,13 +420,6 @@ COHERE_AI_KEYS = [
     'xxx',
     'yyy',
 ]
-
-# https://x.ai/api -> https://console.x.ai/
-#GROK_KEYS = [
-#    'xxx',
-#    'yyy',
-#]
-
 
 # https://huggingface.co/ ключи с доступом к спейсу в котором запущено клонирование голоса
 #CLONE_VOICE_HF_API_KEYS = [

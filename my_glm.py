@@ -31,6 +31,25 @@ DEFAULT_VISION_MODEL = 'glm-4v-plus'
 DEFAULT_PIC_MODEL = "cogView-3-plus"
 
 
+CURRENT_KEYS_SET = []
+
+
+def get_next_key() -> str:
+    '''
+    Выдает один ключ из всех, последовательно перебирает доступные ключи
+    '''
+    global CURRENT_KEYS_SET
+
+    if not CURRENT_KEYS_SET:
+        if hasattr(cfg, 'GLM4_KEYS') and len(cfg.GLM4_KEYS) > 0:
+            CURRENT_KEYS_SET = cfg.GLM4_KEYS[:]
+
+    if CURRENT_KEYS_SET:
+        return CURRENT_KEYS_SET.pop(0)
+    else:
+        raise Exception('GLM4_KEYS is empty')
+
+
 def count_tokens(mem) -> int:
     return sum([len(m['content']) for m in mem])
 
@@ -144,7 +163,7 @@ def ai(prompt: str = '',
 
     for _ in range(3):
         try:
-            client = ZhipuAI(api_key=random.choice(cfg.GLM4_KEYS))
+            client = ZhipuAI(api_key=get_next_key())
             response = client.chat.completions.create(
                 model = model, # glm-4-flash (free?), glm-4-plus, glm-4, glm-4v-plus
                 messages = mem_,
@@ -302,7 +321,7 @@ def img2txt(
 
     for _ in range(3):
         try:
-            client = ZhipuAI(api_key=random.choice(cfg.GLM4_KEYS))
+            client = ZhipuAI(api_key=get_next_key())
             response = client.chat.completions.create(
                 model = model,
                 temperature=temperature,
@@ -354,7 +373,7 @@ def txt2img(prompt: str, amount: int = 1, model: str = DEFAULT_PIC_MODEL, user_i
     try:
         if not hasattr(cfg, 'GLM4_KEYS') or len(cfg.GLM4_KEYS) < 1:
             return []
-        client = ZhipuAI(api_key=random.choice(cfg.GLM4_KEYS))  # Initialize ZhipuAI client with a randomly selected API key.
+        client = ZhipuAI(api_key=get_next_key())  # Initialize ZhipuAI client with a randomly selected API key.
 
         response = client.images.generations(
             model=model,
@@ -380,6 +399,8 @@ if __name__ == '__main__':
 
     # reset('test')
     # chat_cli()
+    r = ai('привет')
+    print(r)
 
     # print(img2txt('C:/Users/user/Downloads/1.jpg', 'извлеки весь текст с картинки, сохрани форматирование'))
     # print(img2txt('C:/Users/user/Downloads/2.jpg', 'реши все задачи, ответ по-русски'))

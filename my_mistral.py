@@ -56,6 +56,24 @@ FALLBACK_MODEL = 'pixtral-large-latest'
 VISION_MODEL = 'pixtral-large-latest'
 
 
+CURRENT_KEYS_SET = []
+
+
+def get_next_key() -> str:
+    '''
+    Return round robin key from ALL_KEYS
+    '''
+    global CURRENT_KEYS_SET
+    if not CURRENT_KEYS_SET:
+        if ALL_KEYS:
+            CURRENT_KEYS_SET = ALL_KEYS[:]
+
+    if CURRENT_KEYS_SET:
+        return CURRENT_KEYS_SET.pop(0)
+    else:
+        raise Exception('mistral_keys is empty')
+
+
 def ai(
     prompt: str = '',
     mem = None,
@@ -84,7 +102,7 @@ def ai(
     text = ''
     for _ in range(3):
         try:
-            key = random.choice(ALL_KEYS) if not key_ else key_
+            key = get_next_key() if not key_ else key_
             client = openai.OpenAI(
                 api_key = key,
                 base_url = BASE_URL,
@@ -175,7 +193,7 @@ def img2txt(
     for _ in range(3):
         try:
             client = openai.OpenAI(
-                api_key = random.choice(ALL_KEYS),
+                api_key = get_next_key(),
                 base_url = BASE_URL,
             )
             response = client.chat.completions.create(

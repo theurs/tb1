@@ -8006,10 +8006,11 @@ def do_task(message, custom_prompt: str = ''):
 
                         with ShowAction(message, action):
                             try:
+                                temp = my_db.get_user_property(chat_id_full, 'temperature') or 1
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,
-                                    my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                   temp,
                                     model = gmodel,
                                     system = hidden_text,
                                     use_skills=True)
@@ -8019,7 +8020,7 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = my_gemini.chat(
                                         message.text,
                                         chat_id_full,
-                                        my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                        temp,
                                         model = gmodel,
                                         system = hidden_text,
                                         use_skills=True)
@@ -8030,7 +8031,7 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = my_gemini.chat(
                                         message.text,
                                         chat_id_full,
-                                        my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                        temp,
                                         model = gmodel,
                                         system = hidden_text,
                                         use_skills=True)
@@ -8041,7 +8042,7 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = my_gemini.chat(
                                         message.text,
                                         chat_id_full,
-                                        my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                        temp,
                                         model = gmodel,
                                         system = hidden_text,
                                         use_skills=True)
@@ -8052,7 +8053,7 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = my_gemini.chat(
                                         message.text,
                                         chat_id_full,
-                                        my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                        temp,
                                         model = gmodel,
                                         system = hidden_text,
                                         use_skills=True)
@@ -8069,13 +8070,19 @@ def do_task(message, custom_prompt: str = ''):
 
                                 flag_gpt_help = False
                                 if not answer:
-                                    style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                                    mem__ = my_gemini.get_mem_for_llama(chat_id_full, lines_amount = 5, model = gmodel)
-                                    if style_:
-                                        answer = my_groq.ai(f'{message.text}', system=style_, mem_ = mem__, temperature=0.6)
-                                    else:
-                                        answer = my_groq.ai(message.text, mem_ = mem__, temperature=0.6)
-                                    my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)
+                                    # style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
+                                    mem__ = my_gemini.get_mem_for_llama(chat_id_full, lines_amount = 10, model = gmodel)
+                                    # if style_:
+                                    #     answer = my_groq.ai(f'{message.text}', system=style_, mem_ = mem__, temperature=0.6)
+                                    # else:
+                                    #     answer = my_groq.ai(message.text, mem_ = mem__, temperature=0.6)
+                                    answer = my_mistral.ai(
+                                        message.text,
+                                        mem = mem__,
+                                        user_id=chat_id_full,
+                                        system=hidden_text,
+                                        temperature=temp)
+                                    # my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)
                                     flag_gpt_help = True
                                     if not answer:
                                         answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -8088,8 +8095,8 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = answer_
 
                                 if flag_gpt_help:
-                                    WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + llama3.3-70b {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                    my_log.log_echo(message, f'[{gmodel} + llama3.3-70b] {answer}')
+                                    WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + mistral {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                    my_log.log_echo(message, f'[{gmodel} + mistral] {answer}')
                                 else:
                                     my_log.log_echo(message, f'[{gmodel}] {answer}')
                                 try:

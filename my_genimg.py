@@ -154,7 +154,10 @@ def remove_huggin_face_key(api_key: str):
     '''Remove an API key from the list of valid API keys'''
     try:
         global ALL_KEYS
-        ALL_KEYS.remove(api_key)
+        try:
+            ALL_KEYS.remove(api_key)
+        except ValueError:
+            my_log.log_huggin_face_api(f'remove_huggin_face_key: Invalid key {api_key} not found in ALL_KEYS')
         user = 'unknown'
         for user in USER_KEYS:
             if USER_KEYS[user] == api_key:

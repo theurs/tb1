@@ -191,9 +191,7 @@ Usage: /<command> <user_id>
 /downgrade - downgrade llm model for free users mandatory
 
 /disable_chat_mode - mandatory switch <b>all</b> users from one chatbot to another
-
-/kc - clear bing cookies
-/k - set bing cookies
+/restore_chat_mode - revert back to previous mode (disable_chat_mode)
 
 /restart - restart bot
 /reload - reload specific modules without restarting bot

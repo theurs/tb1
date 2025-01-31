@@ -4566,6 +4566,7 @@ def disable_chat_mode(message: telebot.types.Message):
         for x in my_db.get_all_users_ids():
             if my_db.get_user_property(x, 'chat_mode') == _from:
                 my_db.set_user_property(x, 'chat_mode', _to)
+                my_db.set_user_property(x, 'chat_mode_prev', _from) # save for ability to restore
                 n += 1
 
         msg = f'{tr("Changed: ", lang)} {n}.'
@@ -4574,6 +4575,45 @@ def disable_chat_mode(message: telebot.types.Message):
         n = '\n\n'
         msg = f"{tr('Example usage: /disable_chat_mode FROM TO{n}Available:', lang)} gemini15, gemini"
         bot_reply(message, msg, parse_mode='HTML')
+
+
+@bot.message_handler(commands=['restore_chat_mode'], func=authorized_admin)
+@async_run
+def restore_chat_mode(message: telebot.types.Message):
+    """
+    Восстанавливает предыдущие режимы чата для всех пользователей, у которых они были сохранены.
+
+    Используется для отмены действия команды /disable_chat_mode, которая принудительно меняет режим
+    чата пользователя и сохраняет предыдущий режим в базе данных.
+
+    Эта команда не принимает аргументов. Она перебирает всех пользователей в базе данных и для каждого пользователя:
+    1. Проверяет, сохранен ли у него предыдущий режим чата (в свойстве 'chat_mode_prev').
+    2. Если предыдущий режим сохранен, восстанавливает его в качестве текущего режима чата ('chat_mode') 
+       и удаляет запись о предыдущем режиме.
+    3. Если предыдущий режим не сохранен, ничего не делает для этого пользователя.
+
+    После обработки всех пользователей отправляет сообщение с количеством восстановленных режимов.
+
+    Доступ к команде есть только у администраторов бота.
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        n = 0
+        for user_id in my_db.get_all_users_ids():
+            prev_mode = my_db.get_user_property(user_id, 'chat_mode_prev')
+            if prev_mode:
+                my_db.set_user_property(user_id, 'chat_mode', prev_mode)
+                my_db.delete_user_property(user_id, 'chat_mode_prev')  # Удаляем сохраненный предыдущий режим
+                n += 1
+
+        msg = f'{tr("Reverted chat modes for", lang)} {n} {tr("users.", lang)}'
+        bot_reply(message, msg)
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'tb:restore_chat_mode: {error}\n{error_traceback}')
+        bot_reply_tr(message, "An error occurred while processing the command.")
 
 
 def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.Message):
@@ -6723,7 +6763,7 @@ def set_chat_mode_command(message: telebot.types.Message):
             mode = 'codestral'
         else:
             return  # Should not happen, but just in case
-        
+
         my_db.set_user_property(user_id, 'chat_mode', mode)
 
         msg = f'{tr("Chat mode changed for", lang)} {user_id} {tr("to", lang)} {mode}.'

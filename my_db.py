@@ -215,6 +215,7 @@ def init(backup: bool = True, vacuum: bool = False):
             voice_only_mode INTEGER,
             disabled_kbd INTEGER,
             chat_mode TEXT,
+            chat_mode_prev TEXT,
             role TEXT,
             memos BLOB,
             temperature REAL,

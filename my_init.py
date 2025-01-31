@@ -50,7 +50,7 @@ supported_langs_tts = [
 ]
 
 
-PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image. Break down long responses into easy-to-read paragraphs. Use markdown formatting to make it look good.'
+PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image. Break down long responses into easy-to-read paragraphs. Use markdown formatting to make it look good. Answer in language of the query.' 
 PROMPT_COPY_TEXT = 'Copy all the text from this image, save it as is - do not translate. Maintain the original formatting (except for line breaks, which should be corrected).'
 
 PROMPT_COPY_TEXT_TTS = '''Copy all the text from this image. Preserve the original formatting, including line breaks. Never translate the text, keep original languages in text! Rewrite the text for TTS reading:
@@ -82,7 +82,7 @@ Examples:
 PROMPT_COPY_TEXT_TR = 'Provide a high-quality artistic translation of all texts from this image into my language (the language of this TEXT request). Format the output using Markdown, correcting any line breaks.'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. 50-300 words. Format your response as follows:'
 # PROMPT_SOLVE = 'Solve all problems presented in the image. Show your step-by-step solution and clearly indicate the final answer. Rewrite latex expressions with unicode symbols with no markdown in it.'
-PROMPT_SOLVE = "Solve the problem presented in the image. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer."
+PROMPT_SOLVE = "Solve all problems presented in the image. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer."
 PROMPT_QRCODE = 'Read QRCODE.'
 
 

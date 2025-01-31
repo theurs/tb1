@@ -4353,7 +4353,7 @@ def memo_handler(message: telebot.types.Message):
     Попросить бота запомнить что то.
 
     Запомненное добавляется в системный промпт как список того что юзер просил запомнить.
-    
+
     Если вызвать команду без аргумента то показывать список запомненного с номерами по
     которым можно удалить их
     """
@@ -4404,6 +4404,74 @@ def memo_handler(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:memo_handler: {unknown}\n{traceback_error}')
+
+
+@bot.message_handler(commands=['memo_admin'], func=authorized_admin)
+@async_run
+def memo_admin_handler(message: telebot.types.Message):
+    """
+    Allows admins to manage memos for other users.
+
+    Example:
+    /memo_admin 76125467
+
+    memo1
+
+    memo2
+
+    memo3
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+
+        COMMAND_MODE[chat_id_full] = ''
+
+        args = message.text.split('\n')
+
+        if len(args) == 1: # Handle cases where only /memo_admin is provided or /memo_admin user_id
+            args = args[0].split()
+            if len(args) == 1:
+                bot_reply_tr(message, "Usage:\n/memo_admin <user_id> [<memo_1>\n<memo_2>\n...<memo_10>]\n/memo_admin <user_id> - View existing memos", parse_mode='')
+                return
+            else:
+                user_id_str = f'[{args[1].strip()}] [0]'
+                memos = my_db.blob_to_obj(my_db.get_user_property(user_id_str, 'memos')) or []
+                if memos:
+                    msg = ''
+                    n = 1
+                    for memo in memos:
+                        msg += f'\n\n[{n}] {memo}'
+                        n += 1
+                    bot_reply(message, msg)
+                return
+
+        user_id_str = args[0].split()[1].strip()
+        try:
+            user_id = int(user_id_str)
+        except ValueError:
+            bot_reply_tr(message, "Invalid user ID. Must be an integer.")
+            return
+
+        user_chat_id_full = f'[{user_id}] [0]'
+
+        args.pop(0) # remove command
+        new_memos = [line.strip() for line in args if line.strip()]
+
+        if new_memos: # Only set/add memos if new_memos were provided
+            # existing_memos = my_db.blob_to_obj(my_db.get_user_property(user_chat_id_full, 'memos')) or []
+            # combined_memos = existing_memos + new_memos
+            combined_memos = new_memos
+            if len(combined_memos) > 10:
+                combined_memos = combined_memos[-10:]
+                bot_reply_tr(message, "Too many memos. Only the last 10 will be saved.")
+
+            my_db.set_user_property(user_chat_id_full, 'memos', my_db.obj_to_blob(combined_memos))
+            bot_reply_tr(message, f"Memos saved for user {user_id}.")
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:memo_admin_handler: {unknown}\n{traceback_error}')
+        bot_reply_tr(message, "Usage:\n/memo_admin <user_id> [<memo_1>\n<memo_2>\n...<memo_10>]\n/memo_admin <user_id> - View existing memos", parse_mode='')
 
 
 @bot.message_handler(commands=['style'], func=authorized_owner)
@@ -8050,7 +8118,7 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,
-                                   temp,
+                                    temp,
                                     model = gmodel,
                                     system = hidden_text,
                                     use_skills=True)

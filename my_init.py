@@ -182,6 +182,7 @@ admin_help = '''
 /reset_gemini2 - reset gemini memory for specific chat
 /style2 - change style for specific chat
 /drop_subscription - drop user subscription
+/memo_admin - manage user`s memos
 
 /think, /th - `gemini_2_flash_thinking`
 /flash, /f - `gemini`

@@ -4571,7 +4571,7 @@ def change_mode(message: telebot.types.Message):
             msg += f'''
 
 {tr("Текущий стиль", lang)}
-<blockquote expandable><code>/style {my_db.get_user_property(chat_id_full, 'role') or tr('нет никакой роли', lang)}</code></blockquote>
+<blockquote expandable><code>/style {utils.html.escape(my_db.get_user_property(chat_id_full, 'role') or tr('нет никакой роли', lang))}</code></blockquote>
         '''
 
             bot_reply(message, msg, parse_mode='HTML')

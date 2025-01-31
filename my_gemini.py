@@ -16,7 +16,6 @@
 
 import cachetools.func
 import io
-import os
 import PIL
 import re
 import sys
@@ -1282,3 +1281,11 @@ if __name__ == '__main__':
     # print(translate('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы', to_lang='en', help='не меняй кейс символов и форматирование'))
 
     # my_db.close()
+
+
+    # for x in range(10):
+    #     with open(r'C:\Users\user\Downloads\samples for ai\мат задачи.jpg', 'rb') as f:
+    #         data = f.read()
+    #         p = 'Решите все задачи, представленные на изображении. Перепишите выражения LaTeX с использованием символов Unicode (без markdown), если таковые имеются. Не упоминайте переписывание в ответе.'
+    #         r = img2txt(data, p, model = cfg.gemini_2_flash_thinking_exp_model, temp = 0)
+    #         print(r)

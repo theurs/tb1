@@ -3090,6 +3090,7 @@ def handle_document(message: telebot.types.Message):
                     'application/x-subrip',
                     'application/yaml',
                     'application/x-perl',
+                    'application/binary',
                     )
 
         if not message.document.mime_type:

@@ -134,8 +134,9 @@ def ai(prompt: str = '',
             return ''
 
         try:
+            key = key_ or get_next_key()
             client = OpenAI(
-                api_key = key_ or get_next_key(),
+                api_key = key,
                 base_url = BASE_URL,
                 )
             response = client.chat.completions.create(
@@ -146,6 +147,9 @@ def ai(prompt: str = '',
                 timeout = timeout,
                 )
         except Exception as error_other:
+            if 'Bad credentials' in str(error_other):
+                remove_key(key)
+                continue
             my_log.log_github(f'ai: {error_other}')
             return ''
 
@@ -160,6 +164,24 @@ def ai(prompt: str = '',
             time.sleep(2)
 
     return text
+
+
+def remove_key(key: str):
+    '''
+    Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.
+    '''
+    try:
+        if key in ALL_KEYS:
+            del ALL_KEYS[ALL_KEYS.index(key)]
+        with USER_KEYS_LOCK:
+            # remove key from USER_KEYS
+            for user in USER_KEYS:
+                if USER_KEYS[user] == key:
+                    del USER_KEYS[user]
+                    my_log.log_keys(f'github: Invalid key {key} removed from user {user}')
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_github(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
 def update_mem(query: str, resp: str, chat_id: str):
@@ -422,8 +444,9 @@ def img2txt(
 
     for _ in range(3):
         try:
+            key = get_next_key()
             client = OpenAI(
-                api_key = get_next_key(),
+                api_key = key,
                 base_url = BASE_URL,
                 )
             response = client.chat.completions.create(
@@ -434,7 +457,10 @@ def img2txt(
                 timeout = timeout,
                 )
         except Exception as error_other:
-            my_log.log_openrouter(f'ai: {error_other}')
+            if 'Bad credentials' in str(error_other):
+                remove_key(key)
+                continue
+            my_log.log_github(f'ai: {error_other}')
             return ''
 
         try:
@@ -481,7 +507,7 @@ if __name__ == '__main__':
     load_users_keys()
 
     # reset('test')
-    # chat_cli()
+    chat_cli()
 
     # print(img2txt('C:/Users/user/Downloads/samples for ai/мат задачи.jpg', 'реши задачи, в ответе используй юникод символы для математики вместо latex выражений', model = 'gpt-4o', temperature=0))
     # print(voice2txt('C:/Users/user/Downloads/1.ogg'))

@@ -37,6 +37,7 @@ import my_cohere
 import my_db
 import my_ddg
 import my_doc_translate
+import my_github
 import my_google
 import my_gemini
 import my_gemini_google
@@ -475,6 +476,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_mistral.update_mem(query, resp, chat_id_full)
         elif 'codestral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_mistral.update_mem(query, resp, chat_id_full)
+        elif 'gpt-4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            my_github.update_mem(query, resp, chat_id_full)
         elif 'commandrplus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_cohere.update_mem(query, resp, chat_id_full)
         elif 'glm4plus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -538,6 +541,10 @@ def img2txt(text, lang: str,
                     text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
+                elif chat_mode == 'gpt-4o':
+                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL)
+                    if not text:
+                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL)
                 elif chat_mode == 'gemini-exp':
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
                     if text:
@@ -567,9 +574,20 @@ def img2txt(text, lang: str,
 
             # сначала попробовать с помощью дефолтной модели
             if not text:
-                text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
+                if 'gpt' in model:
+                    text = my_github.img2txt(data, query, chat_id=chat_id_full, model=model, temperature=temperature)
+                    if not text:
+                        text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
+                else:
+                    text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + model
+
+
+            # далее пробуем chatgpt из гитхаба
+            if not text:
+                text = my_github.img2txt(data, query, chat_id=chat_id_full, temperature=temperature)
+
 
             # если это была джемини про то пробуем ее фолбек
             if not text and model == cfg.gemini_pro_model:
@@ -1777,6 +1795,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
 
+        elif kbd == 'gpt-4o_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt-4o_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
+
         elif kbd == 'commandrplus_chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
@@ -1958,6 +1988,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Codestral'
             button_codestral = telebot.types.InlineKeyboardButton(msg, callback_data='select_codestral')
 
+            if chat_mode == 'gpt-4o':
+                msg = '✅ GPT-4o'
+            else:
+                msg = 'GPT-4o'
+            button_gpt_4o = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o')
+
             if chat_mode == 'commandrplus':
                 msg = '✅ Command R+'
             else:
@@ -1983,8 +2019,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             else:
                 markup.row(button_gemini_pro)
 
-            if chat_id_full in my_openrouter.KEYS:
-                markup.row(button_openrouter)
+            markup.row(button_openrouter, button_gpt_4o)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2281,6 +2316,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'select_codestral':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Codestral.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'codestral')
+            elif call.data == 'select_gpt-4o':
+                if chat_id_full in my_github.USER_KEYS:
+                    # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o.', lang))
+                    my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o')
+                else:
+                    bot_reply_tr(message, 'Insert your github key first. /keys')
             elif call.data == 'select_commandrplus':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Command R+.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'commandrplus')
@@ -2321,8 +2362,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_pro_model, lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
             elif call.data == 'select_openrouter':
-                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: openrouter', lang))
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+                if chat_id_full in my_openrouter.KEYS:
+                    # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: openrouter', lang))
+                    my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+                else:
+                    bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter')
             elif call.data == 'groq-llama370_reset':
                 my_groq.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с Groq llama 3.3 70b очищена.')
@@ -2338,6 +2382,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'codestral_reset':
                 my_mistral.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с Codestral очищена.')
+            elif call.data == 'gpt-4o_reset':
+                my_github.reset(chat_id_full)
+                bot_reply_tr(message, 'История диалога с GPT-4o очищена.')
             elif call.data == 'commandrplus_reset':
                 my_cohere.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с Command R+ очищена.')
@@ -3801,6 +3848,12 @@ def openrouter(message: telebot.types.Message):
                 bot_reply_tr(message, 'Base API URL changed!')
                 my_db.set_user_property(chat_id_full, 'base_api_url', key)
                 return
+            elif key.startswith('ghp_') and len(key) == 40: # GitHub PAT (https://github.com/settings/tokens)
+                my_openrouter.KEYS[chat_id_full] = key
+                my_db.set_user_property(chat_id_full, 'base_api_url', my_github.BASE_URL)
+                bot_reply_tr(message, 'Key added successfully!')
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+                return
             else: # treat as a key
                 my_openrouter.KEYS[chat_id_full] = key
                 bot_reply_tr(message, 'Key added successfully!')
@@ -4047,12 +4100,22 @@ def users_keys_for_gemini(message: telebot.types.Message):
                 bot_reply(message, msg)
 
             # cohere keys len = 40 and passed test
-            keys_cohere = [x.strip() for x in args[1].split() if len(x.strip()) == 40 and my_cohere.test_key(x)]
+            keys_cohere = [x.strip() for x in args[1].split() if len(x.strip()) == 40 and not x.strip().startswith('ghp_') and my_cohere.test_key(x)]
             already_exists = any(key in my_cohere.ALL_KEYS for key in keys_cohere)
             if already_exists:
                 keys_cohere = []
                 msg = f'{tr("This key has already been added by someone earlier.", lang)}'
                 bot_reply(message, msg)
+
+
+            # github keys len = 40 and passed test
+            keys_github = [x.strip() for x in args[1].split() if len(x.strip()) == 40 and x.strip().startswith('ghp_') and my_github.test_key(x)]
+            already_exists = any(key in my_github.ALL_KEYS for key in keys_github)
+            if already_exists:
+                keys_github = []
+                msg = f'{tr("This key has already been added by someone earlier.", lang)}'
+                bot_reply(message, msg)
+
 
             # groq keys len=56, starts with "gsk_"
             keys_groq = [x.strip() for x in args[1].split() if len(x.strip()) == 56]
@@ -4092,6 +4155,14 @@ def users_keys_for_gemini(message: telebot.types.Message):
                 my_log.log_keys(f'Added new API key for Cohere: {chat_id_full} {keys_cohere}')
                 bot_reply_tr(message, 'Added API key for Cohere successfully!')
 
+
+            if keys_github:
+                my_github.USER_KEYS[chat_id_full] = keys_github[0]
+                my_github.ALL_KEYS.append(keys_github[0])
+                my_log.log_keys(f'Added new API key for github: {chat_id_full} {keys_github}')
+                bot_reply_tr(message, 'Added API key for github successfully!')
+
+
             if keys_groq:
                 my_groq.USER_KEYS[chat_id_full] = keys_groq[0]
                 my_groq.ALL_KEYS.append(keys_groq[0])
@@ -4130,7 +4201,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
                  '1️⃣ https://www.youtube.com/watch?v=6aj5a7qGcb4\nhttps://ai.google.dev/\nhttps://aistudio.google.com/apikey\n\n' + \
                  '2️⃣ https://github.com/theurs/tb1/tree/master/pics/groq\nhttps://console.groq.com/keys\n\n' + \
                  '3️⃣ https://github.com/theurs/tb1/tree/master/pics/hf\nhttps://huggingface.co/settings/tokens' +\
-                 '\n\nhttps://console.mistral.ai/api-keys/\n\nhttps://dashboard.cohere.com/api-keys'
+                 '\n\nhttps://console.mistral.ai/api-keys/\n\nhttps://dashboard.cohere.com/api-keys\n\nhttps://github.com/settings/tokens (classic, unlimited time, empty rights)'
 
         bot_reply(message, msg, disable_web_page_preview = True, parse_mode='HTML', reply_markup = get_keyboard('donate_stars', message))
 
@@ -4139,9 +4210,10 @@ def users_keys_for_gemini(message: telebot.types.Message):
             if chat_id_full in my_gemini.USER_KEYS:
                 mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
                 cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
+                github_keys = [my_github.USER_KEYS[chat_id_full],] if chat_id_full in my_github.USER_KEYS else []
                 qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
                 huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
-                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + huggingface_keys + mistral_keys + cohere_keys
+                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + huggingface_keys + mistral_keys + cohere_keys + github_keys
                 msg = tr('Your keys:', lang) + '\n\n'
                 for key in keys:
                     msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
@@ -4699,6 +4771,8 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_mistral.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.force(chat_id_full, text)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+            my_github.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
@@ -4761,6 +4835,8 @@ def undo_cmd(message: telebot.types.Message):
             my_mistral.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.undo(chat_id_full)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+            my_github.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm3plus':
@@ -4811,6 +4887,8 @@ def reset_(message: telebot.types.Message, say: bool = True):
             my_mistral.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.reset(chat_id_full)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+            my_github.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
@@ -4938,6 +5016,8 @@ def save_history(message: telebot.types.Message):
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+            prompt = my_github.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
@@ -5013,6 +5093,9 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             prompt = 'Codestral\n\n'
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+            prompt = 'GPT-4o\n\n'
+            prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             prompt = 'Commandr R+\n\n'
             prompt += my_cohere.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -6079,6 +6162,7 @@ def stats(message: telebot.types.Message):
             msg += f'\nGroq keys: {len(my_groq.ALL_KEYS)}'
             msg += f'\nMistral keys: {len(my_mistral.ALL_KEYS)}'
             msg += f'\nCohere keys: {len(my_cohere.ALL_KEYS)}'
+            msg += f'\nGithub keys: {len(my_github.ALL_KEYS)}'
             msg += f'\nHuggingface keys: {len(my_genimg.ALL_KEYS)}'
             msg += f'\n\n Uptime: {get_uptime()}'
 
@@ -6976,6 +7060,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'mistral': my_mistral.DEFAULT_MODEL,
             'pixtral': my_mistral.VISION_MODEL,
             'codestral': my_mistral.CODE_MODEL,
+            'gpt-4o': my_github.BIG_GPT_MODEL,
             'commandrplus': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
             'bothub': 'bothub.chat',
@@ -7046,6 +7131,7 @@ def id_cmd_handler(message: telebot.types.Message):
         groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
         mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
         cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
+        github_keys = [my_github.USER_KEYS[chat_id_full],] if chat_id_full in my_github.USER_KEYS else []
         openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
         huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
 
@@ -7069,6 +7155,10 @@ def id_cmd_handler(message: telebot.types.Message):
             msg += '🔑️ Cohere\n'
         else:
             msg += '🔒 Cohere\n'
+        if github_keys:
+            msg += '🔑️ Github\n'
+        else:
+            msg += '🔒 Github\n'
         if huggingface_keys:
             msg += '🔑️ Huggingface\n'
         else:
@@ -7113,6 +7203,8 @@ def reload_module(message: telebot.types.Message):
             my_genimg.load_users_keys()
         elif module_name == 'my_mistral':
             my_mistral.load_users_keys()
+        elif module_name == 'my_github':
+            my_github.load_users_keys()
         elif module_name == 'my_cohere':
             my_cohere.load_users_keys()
         elif module_name == 'my_init':
@@ -8519,6 +8611,62 @@ def do_task(message, custom_prompt: str = ''):
                             return
 
 
+                    # если активирован режим общения с gpt-4o
+                    if chat_mode_ == 'gpt-4o':
+                        if len(msg) > my_github.MAX_REQUEST:
+                            bot_reply(message, f'{tr("Слишком длинное сообщение для GPT-4o, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_github.MAX_REQUEST}')
+                            return
+
+                        with ShowAction(message, action):
+                            try:
+                                answer = my_github.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_github.BIG_GPT_MODEL,
+                                )
+                                if not answer:
+                                    answer = my_github.chat(
+                                        message.text,
+                                        chat_id_full,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                        system=hidden_text,
+                                        model = my_github.DEFAULT_MODEL,
+                                    )
+                                    WHO_ANSWERED[chat_id_full] = 'GPT-4o-mini'
+                                else:
+                                    WHO_ANSWERED[chat_id_full] = 'GPT-4o'
+
+                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                                if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                    answer_ = utils.bot_markdown_to_html(answer)
+                                    DEBUG_MD_TO_HTML[answer_] = answer
+                                    answer = answer_
+
+                                answer = answer.strip()
+                                if not answer:
+                                    answer = 'GPT-4o ' + tr('did not answered, try to /reset and start again.', lang)
+
+                                my_log.log_echo(message, f'[GPT-4o] {answer}')
+
+                                try:
+                                    if command_in_answer(answer, message):
+                                        return
+                                    bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                            reply_markup=get_keyboard('gpt-4o_chat', message), not_log=True, allow_voice = True)
+                                except Exception as error:
+                                    print(f'tb:do_task: {error}')
+                                    my_log.log2(f'tb:do_task: {error}')
+                                    bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                            reply_markup=get_keyboard('gpt-4o_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error3:
+                                error_traceback = traceback.format_exc()
+                                my_log.log2(f'tb:do_task:gpt-4o {error3}\n{error_traceback}')
+                            return
+
+
                     # если активирован режим общения с Command R+
                     if chat_mode_ == 'commandrplus':
                         if len(msg) > my_cohere.MAX_REQUEST:
@@ -8865,6 +9013,7 @@ def main():
         my_groq.load_users_keys()
         my_mistral.load_users_keys()
         my_cohere.load_users_keys()
+        my_github.load_users_keys()
 
         one_time_shot()
 

@@ -40,6 +40,10 @@ BASE_URL = "https://openrouter.ai/api/v1"
 BASE_URL_BH = 'https://bothub.chat/api/v2/openai/v1'
 
 
+# если модель не хочет отвечать то возвращает это
+FILTERED_SIGN = '________________________________________________________________________--------_____________'
+
+
 # {user_id: (tokens_in, tokens_out)}
 PRICE = {}
 
@@ -113,7 +117,7 @@ def ai(prompt: str = '',
             # model = 'google/gemma-2-9b-it:free'
             model = 'mistralai/mistral-7b-instruct:free'
 
-    if 'llama' in model and temperature > 0:
+    if 'llama' in model.lower() and temperature > 0:
         temperature = temperature / 2
 
     mem_ = mem or []
@@ -141,6 +145,8 @@ def ai(prompt: str = '',
                 timeout = timeout,
                 )
         except Exception as error_other:
+            if 'filtered' in str(error_other).lower():
+                return 0, FILTERED_SIGN
             my_log.log_openrouter(f'ai: {error_other}')
             return 0, ''
     else:
@@ -247,6 +253,8 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
 
         status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+        if text == FILTERED_SIGN:
+            return 0, ''
 
         if not text:
             time.sleep(2)

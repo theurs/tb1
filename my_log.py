@@ -200,6 +200,10 @@ def log_openrouter_free(text: str) -> None:
     """для логов openrouter free"""
     log2(text[:2000], 'openrouter_free')
 
+def log_github(text: str) -> None:
+    """для логов github"""
+    log2(text[:2000], 'github')
+
 def log_glm(text: str) -> None:
     """для логов glm"""
     log2(text[:2000], 'glm')

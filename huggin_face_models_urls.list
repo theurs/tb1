@@ -55,7 +55,7 @@ https://api-inference.huggingface.co/models/Jovie/Midjourney
 
 https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large
 https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo
-https://api-inference.huggingface.co/models/stable-diffusion-v1-5/stable-diffusion-v1-5
+# плохо рисует https://api-inference.huggingface.co/models/stable-diffusion-v1-5/stable-diffusion-v1-5
 # плохо рисует https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0
 https://api-inference.huggingface.co/models/Shakker-Labs/SD3.5-LoRA-Linear-Red-Light
 

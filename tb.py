@@ -5975,9 +5975,13 @@ def image_gen(message: telebot.types.Message):
         if not check_donate(message, chat_id_full, lang):
             return
 
-        # не ставить в очередь рисование x10 x20 bing
-        if lock.locked() and BING_FLAG > 1:
+
+        # не ставить в очередь рисование
+        if lock.locked():
             return
+        # # не ставить в очередь рисование x10 x20 bing
+        # if lock.locked() and BING_FLAG > 1:
+        #     return
 
         with lock:
             with semaphore_talks:

@@ -6707,6 +6707,7 @@ def trans(message: telebot.types.Message):
             with ShowAction(message, 'typing'):
                 translated = tr(text, llang, save_cache=False, help = "Telegram bot's user used the /trans <lang> <text> command to translate this text.")
                 if translated and translated != text:
+                    my_db.add_msg(chat_id_full, cfg.gemini_flash_model)
                     html = utils.bot_markdown_to_html(translated)
                     bot_reply(message, html, parse_mode='HTML', reply_markup=get_keyboard('translate', message))
                     add_to_bots_mem(message.text, translated, chat_id_full)

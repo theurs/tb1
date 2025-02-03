@@ -8127,7 +8127,9 @@ def do_task(message, custom_prompt: str = ''):
                         message.text = '/sum ' + message.text
                         summ_text(message)
                     return
-
+            if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
+                COMMAND_MODE[chat_id_full] = ''
+                return
 
             # проверяем просят ли нарисовать что-нибудь
             translated_draw = tr('нарисуй', lang)

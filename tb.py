@@ -2692,6 +2692,7 @@ def handle_voice(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
+        COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
         if not check_donate(message, chat_id_full, lang):
             return
@@ -3076,6 +3077,7 @@ def handle_document(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
+        COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
         if not check_donate(message, chat_id_full, lang):
             return
@@ -3391,6 +3393,7 @@ def handle_photo(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
+        COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
         if not check_donate(message, chat_id_full, lang):
             return
@@ -5495,6 +5498,7 @@ def google(message: telebot.types.Message):
         lang = get_lang(chat_id_full, message)
         role = my_db.get_user_property(chat_id_full, 'role')
 
+        COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
         if not check_donate(message, chat_id_full, lang):
             return
@@ -5647,6 +5651,7 @@ def huggingface_image_gen(message: telebot.types.Message):
         #     bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw', disable_web_page_preview=True)        
         #     return
 
+        COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
         if not check_donate(message, chat_id_full, lang):
             return
@@ -6014,15 +6019,18 @@ def image_gen(message: telebot.types.Message):
             lock = threading.Lock()
             IMG_GEN_LOCKS[chat_id_full] = lock
 
-
+        COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
         if not check_donate(message, chat_id_full, lang):
             return
 
 
-        # не ставить в очередь рисование
+        # не ставить в очередь рисование, кроме белого списка
         if lock.locked():
-            return
+            if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER:
+                pass
+            else:
+                return
         # # не ставить в очередь рисование x10 x20 bing
         # if lock.locked() and BING_FLAG > 1:
         #     return
@@ -6592,6 +6600,7 @@ def summ_text(message: telebot.types.Message):
         lang = get_lang(chat_id_full, message)
         role = my_db.get_user_property(chat_id_full, 'role') or ''
 
+        COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
         if not check_donate(message, chat_id_full, lang):
             return

@@ -5429,7 +5429,7 @@ def tts(message: telebot.types.Message, caption = None):
                             m = bot.send_voice(message.chat.id, audio, caption=caption)
                         except telebot.apihelper.ApiTelegramException as error:
                             if 'Bad Request: VOICE_MESSAGES_FORBIDDEN' in str(error):
-                                bot_reply_tr(message, '⚠️ Voice messages are not allowed in this chat.')
+                                bot_reply_tr(message, '⚠️ You have disabled sending voice messages to you in Telegram settings.')
                                 return
 
                     log_message(m)

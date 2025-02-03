@@ -1819,6 +1819,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
 
+        elif kbd == 'deepseek_r1_distill_llama70b_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='deepseek_r1_distill_llama70b_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
+
         elif kbd == 'commandrplus_chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
@@ -1947,9 +1959,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_llama3_70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
 
             if chat_mode == 'deepseek_r1_distill_llama70b':
-                msg = '✅ deepseek_r1_distill_llama70b'
+                msg = '✅ Deepseek R1 llama70b'
             else:
-                msg = 'deepseek_r1_distill_llama70b'
+                msg = 'Deepseek R1 llama70b'
             button_deepseek_r1_distill_llama70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_deepseek_r1_distill_llama70b')
 
             if chat_mode == 'gpt-4o-mini-ddg':
@@ -2038,7 +2050,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 markup.row(button_gemini_pro)
 
             markup.row(button_openrouter, button_gpt_4o)
-            # markup.row(button_deepseek_r1)
+
+            markup.row(button_deepseek_r1_distill_llama70b, button_deepseek_r1)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2409,6 +2422,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot_reply_tr(message, 'История диалога с Codestral очищена.')
             elif call.data in ('gpt-4o_reset', 'deepseek_r1_reset'):
                 my_github.reset(chat_id_full)
+                bot_reply_tr(message, 'История очищена.')
+            elif call.data == 'deepseek_r1_distill_llama70b_reset':
+                my_groq.reset(chat_id_full)
                 bot_reply_tr(message, 'История очищена.')
             elif call.data == 'commandrplus_reset':
                 my_cohere.reset(chat_id_full)
@@ -8421,28 +8437,30 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = f'{my_groq.DEEPSEEK_LLAMA70_MODEL} ' + tr('did not answered, try to /reset and start again', lang)
 
                                 thoughts, answer = utils_llm.split_thoughts(answer)
-                                # thoughts = utils.bot_markdown_to_html(thoughts)
+                                thoughts = utils.bot_markdown_to_html(thoughts)
 
                                 if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                     answer_ = utils.bot_markdown_to_html(answer)
                                     DEBUG_MD_TO_HTML[answer_] = answer
                                     answer = answer_
 
+                                # answer = utils_llm.reconstruct_html_answer_with_thoughts(thoughts, answer)
+
                                 my_log.log_echo(message, f'[{my_groq.DEEPSEEK_LLAMA70_MODEL}] {answer}')
                                 try:
                                     if command_in_answer(answer, message):
                                         return
-                                    # answer = utils_llm.reconstruct_html_answer_with_thoughts(thoughts, answer)
+
                                     bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                            reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                                                            reply_markup=get_keyboard('deepseek_r1_distill_llama70b_chat', message), not_log=True, allow_voice = True)
                                 except Exception as error:
                                     print(f'tb:do_task: {error}')
                                     my_log.log2(f'tb:do_task: {error}')
                                     bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                            reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                                                            reply_markup=get_keyboard('deepseek_r1_distill_llama70b_chat', message), not_log=True, allow_voice = True)
                             except Exception as error3:
                                 error_traceback = traceback.format_exc()
-                                my_log.log2(f'tb:do_task:llama370-groq {error3}\n{error_traceback}')
+                                my_log.log2(f'tb:do_task:deepseek_r1_distill_llama70b {error3}\n{error_traceback}')
                             return
 
 
@@ -8744,7 +8762,7 @@ def do_task(message, custom_prompt: str = ''):
                                     DEBUG_MD_TO_HTML[answer_] = answer
                                     answer = answer_
 
-                                answer = utils_llm.reconstruct_html_answer_with_thoughts(thoughts, answer)
+                                # answer = utils_llm.reconstruct_html_answer_with_thoughts(thoughts, answer)
 
                                 my_log.log_echo(message, f'[DeepSeek R1] {answer}')
 

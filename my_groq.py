@@ -239,7 +239,7 @@ def ai(prompt: str = '',
         while token_count(mem) > max_mem + 100:
             mem = mem[2:]
 
-        if 'llama-3' in model_ or 'llama3' in model_:
+        if 'llama' in model_ or 'llama' in model_:
             temperature = temperature / 2
 
         for key in keys:

@@ -18,6 +18,7 @@ BASE_URL = 'https://models.inference.ai.azure.com'
 # сколько запросов хранить
 MAX_MEM_LINES = 20
 MAX_HIST_CHARS = 12000
+MAX_HIST_CHARS_4K = 6000
 
 # блокировка чатов что бы не испортить историю
 # {id:lock}
@@ -30,6 +31,8 @@ KEYS_LOCK = threading.Lock()
 
 DEFAULT_MODEL = 'gpt-4o-mini'
 BIG_GPT_MODEL = 'gpt-4o'
+DEEPSEEK_R1_MODEL = 'DeepSeek-R1'
+DEEPSEEK_R1_MODEL_FALLBACK = 'gpt-4o-mini'
 
 
 CURRENT_KEY_SET = []
@@ -78,6 +81,31 @@ def clear_mem(mem: list, user_id: str) -> list:
     while True:
         sizeofmem = count_tokens(mem)
         if sizeofmem <= MAX_HIST_CHARS:
+            break
+        try:
+            mem = mem[2:]
+        except IndexError:
+            mem = []
+            break
+
+    return mem[-MAX_MEM_LINES * 2 :]
+
+
+def clear_mem2(mem: list, user_id: str) -> list:
+    """
+    Clears the memory (chat history) for a given user, ensuring it does not exceed the maximum allowed size.
+    Version for 4k context (DeepSeek R1)
+
+    Args:
+        mem (list): The chat history list.
+        user_id (str): The user's ID.
+
+    Returns:
+        list: The trimmed chat history.
+    """
+    while True:
+        sizeofmem = count_tokens(mem)
+        if sizeofmem <= MAX_HIST_CHARS_4K:
             break
         try:
             mem = mem[2:]
@@ -150,6 +178,13 @@ def ai(prompt: str = '',
             if 'Bad credentials' in str(error_other):
                 remove_key(key)
                 continue
+            if 'tokens_limit_reached' in str(error_other):
+                # снять первые 2 записи из mem
+                try:
+                    mem__ = mem[2:]
+                except IndexError:
+                    return ''
+                return ai(prompt, mem__, user_id, system, model, temperature, max_tokens, timeout, key_)
             my_log.log_github(f'ai: {error_other}')
             return ''
 
@@ -215,7 +250,7 @@ def update_mem(query: str, resp: str, chat_id: str):
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
 
 
-def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = '', model: str = '') -> str:
+def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = '', model: str = '', max_tokens: int = 4000) -> str:
     """
     Handles chat interaction with the AI model.
 
@@ -237,13 +272,16 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
     with lock:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
 
-        text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+        text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, max_tokens=max_tokens)
 
         if text:
             my_db.add_msg(chat_id, model or DEFAULT_MODEL)
             mem += [{'role': 'user', 'content': query}]
             mem += [{'role': 'assistant', 'content': text}]
-            mem = clear_mem(mem, chat_id)
+            if model == DEEPSEEK_R1_MODEL:
+                mem = clear_mem2(mem, chat_id)
+            else:
+                mem = clear_mem(mem, chat_id)
             my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem))
         return text
     return ''

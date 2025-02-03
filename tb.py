@@ -476,7 +476,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_mistral.update_mem(query, resp, chat_id_full)
         elif 'codestral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_mistral.update_mem(query, resp, chat_id_full)
-        elif 'gpt-4o' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1'):
             my_github.update_mem(query, resp, chat_id_full)
         elif 'commandrplus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_cohere.update_mem(query, resp, chat_id_full)
@@ -1807,6 +1807,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
 
+        elif kbd == 'deepseek_r1_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='deepseek_r1_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
+
         elif kbd == 'commandrplus_chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
@@ -1994,6 +2006,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'GPT-4o'
             button_gpt_4o = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o')
 
+            if chat_mode == 'deepseek_r1':
+                msg = '✅ DeepSeek R1'
+            else:
+                msg = 'DeepSeek R1'
+            button_deepseek_r1 = telebot.types.InlineKeyboardButton(msg, callback_data='select_deepseek_r1')
+
             if chat_mode == 'commandrplus':
                 msg = '✅ Command R+'
             else:
@@ -2020,6 +2038,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 markup.row(button_gemini_pro)
 
             markup.row(button_openrouter, button_gpt_4o)
+            # markup.row(button_deepseek_r1)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2322,6 +2341,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o')
                 else:
                     bot_reply_tr(message, 'Insert your github key first. /keys')
+            elif call.data == 'select_deepseek_r1':
+                if chat_id_full in my_github.USER_KEYS:
+                    # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель DeepSeek R1.', lang))
+                    my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1')
+                else:
+                    bot_reply_tr(message, 'Insert your github key first. /keys')
             elif call.data == 'select_commandrplus':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Command R+.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'commandrplus')
@@ -2382,9 +2407,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'codestral_reset':
                 my_mistral.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с Codestral очищена.')
-            elif call.data == 'gpt-4o_reset':
+            elif call.data in ('gpt-4o_reset', 'deepseek_r1_reset'):
                 my_github.reset(chat_id_full)
-                bot_reply_tr(message, 'История диалога с GPT-4o очищена.')
+                bot_reply_tr(message, 'История очищена.')
             elif call.data == 'commandrplus_reset':
                 my_cohere.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с Command R+ очищена.')
@@ -4772,7 +4797,7 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_mistral.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1'):
             my_github.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.force(chat_id_full, text)
@@ -4836,7 +4861,7 @@ def undo_cmd(message: telebot.types.Message):
             my_mistral.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1'):
             my_github.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.undo(chat_id_full)
@@ -4888,7 +4913,7 @@ def reset_(message: telebot.types.Message, say: bool = True):
             my_mistral.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1'):
             my_github.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             my_cohere.reset(chat_id_full)
@@ -5017,7 +5042,7 @@ def save_history(message: telebot.types.Message):
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+        if my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1'):
             prompt = my_github.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
@@ -5096,6 +5121,9 @@ def send_debug_history(message: telebot.types.Message):
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
             prompt = 'GPT-4o\n\n'
+            prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'deepseek_r1':
+            prompt = 'DeepSeek R1\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
             prompt = 'Commandr R+\n\n'
@@ -7067,6 +7095,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'pixtral': my_mistral.VISION_MODEL,
             'codestral': my_mistral.CODE_MODEL,
             'gpt-4o': my_github.BIG_GPT_MODEL,
+            'deepseek_r1': my_github.DEEPSEEK_R1_MODEL,
             'commandrplus': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
             'bothub': 'bothub.chat',
@@ -8670,6 +8699,68 @@ def do_task(message, custom_prompt: str = ''):
                             except Exception as error3:
                                 error_traceback = traceback.format_exc()
                                 my_log.log2(f'tb:do_task:gpt-4o {error3}\n{error_traceback}')
+                            return
+
+
+                    # если активирован режим общения с DeepSeek R1
+                    if chat_mode_ == 'deepseek_r1':
+                        if len(msg) > my_github.MAX_REQUEST:
+                            bot_reply(message, f'{tr("Слишком длинное сообщение для DeepSeek R1, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_github.MAX_REQUEST}')
+                            return
+
+                        with ShowAction(message, action):
+                            try:
+                                answer = my_github.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_github.DEEPSEEK_R1_MODEL,
+                                )
+                                if not answer:
+                                    answer = my_github.chat(
+                                        message.text,
+                                        chat_id_full,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                        system=hidden_text,
+                                        model = my_github.DEEPSEEK_R1_MODEL_FALLBACK,
+                                        max_tokens = 2000,
+                                    )
+                                    WHO_ANSWERED[chat_id_full] = 'DeepSeek R1+GPT-4o-mini'
+                                else:
+                                    WHO_ANSWERED[chat_id_full] = 'DeepSeek R1'
+
+                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                                answer = answer.strip()
+                                if not answer:
+                                    answer = 'DeepSeek R1 ' + tr('did not answered, try to /reset and start again.', lang)
+
+                                thoughts, answer = utils_llm.split_thoughts(answer)
+                                thoughts = utils.bot_markdown_to_html(thoughts)
+
+                                if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                    answer_ = utils.bot_markdown_to_html(answer)
+                                    DEBUG_MD_TO_HTML[answer_] = answer
+                                    answer = answer_
+
+                                answer = utils_llm.reconstruct_html_answer_with_thoughts(thoughts, answer)
+
+                                my_log.log_echo(message, f'[DeepSeek R1] {answer}')
+
+                                try:
+                                    if command_in_answer(answer, message):
+                                        return
+                                    bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                            reply_markup=get_keyboard('deepseek_r1_chat', message), not_log=True, allow_voice = True)
+                                except Exception as error:
+                                    print(f'tb:do_task: {error}')
+                                    my_log.log2(f'tb:do_task: {error}')
+                                    bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                            reply_markup=get_keyboard('deepseek_r1_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error3:
+                                error_traceback = traceback.format_exc()
+                                my_log.log2(f'tb:do_task:deepseek_r1 {error3}\n{error_traceback}')
                             return
 
 

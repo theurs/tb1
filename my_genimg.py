@@ -39,7 +39,7 @@ USER_KEYS = SqliteDict('db/huggingface_user_keys.db', autocommit=True)
 # list of all users keys
 ALL_KEYS = []
 USER_KEYS_LOCK = threading.Lock()
-
+CURRENT_KEYS_SET = []
 
 # {hash of image:model name, ...}
 WHO_AUTOR = {}
@@ -187,6 +187,25 @@ def get_hf_proxy() -> dict or None:
     return proxy
 
 
+def get_next_key() -> str:
+    """
+    Retrieves the next available API key from the list of valid API keys.
+
+    Returns:
+        str: The next available API key.
+    """
+    global CURRENT_KEYS_SET
+
+    with USER_KEYS_LOCK:
+        if not CURRENT_KEYS_SET:
+            CURRENT_KEYS_SET = ALL_KEYS[:]
+
+        if CURRENT_KEYS_SET:
+            return CURRENT_KEYS_SET.pop(0)
+        else:
+            raise Exception('No more keys available')
+
+
 def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -> list:
     """
     Calls the Hugging Face API to generate text based on a given prompt.
@@ -233,7 +252,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -
             n -= 1
 
             proxy = get_hf_proxy()
-            api_key = random.choice(ALL_KEYS)
+            api_key = get_next_key()
             headers = {"Authorization": f"Bearer {api_key}"}
 
             mult_words = [
@@ -270,7 +289,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -
 
             if '"error":"Authorization header is correct, but the token seems invalid' in response.text:
                 remove_huggin_face_key(api_key)
-                api_key = random.choice(ALL_KEYS)
+                api_key = get_next_key()
                 continue
             resp_text = str(response.content)[:300]
             if 'read timeout=' in resp_text or "SOCKSHTTPSConnectionPool(host='api-inference.huggingface.co', port=443): Max retries exceeded with url" in resp_text: # и так долго ждали
@@ -288,6 +307,8 @@ def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -
                 '"error":"Service Unavailable"' in str(resp_text):
                 if DEBUG:
                     my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:2: {resp_text} | {proxy} | {url}')
+            elif response.status_code == 401 and response.reason == 'Unauthorized':
+                remove_huggin_face_key(api_key)
             else: # unknown error
                 my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:3: {resp_text} | {proxy} | {url} | {api_key}')
             time.sleep(10)
@@ -341,7 +362,7 @@ def huggin_face_api_one_image(
 
     start_time = time.time()
     for attempt in range(retries):
-        api_key = random.choice(ALL_KEYS)  # Выбираем случайный ключ
+        api_key = get_next_key()
         headers = {"Authorization": f"Bearer {api_key}"}
         proxy = get_hf_proxy()
 
@@ -351,7 +372,8 @@ def huggin_face_api_one_image(
             if response.status_code == 200 and len(response.content) > 100:
                 # my_log.log_huggin_face_api(f"Успешно сгенерировано изображение на попытке {attempt + 1}")
                 return response.content
-
+            elif response.status_code == 401 and response.reason == 'Unauthorized':
+                remove_huggin_face_key(api_key)
 
             # Логируем ошибку статуса
             # my_log.log_huggin_face_api(f"huggin_face_api_one_image: Попытка {attempt + 1} не удалась: статус {response.status_code}, ответ: {response.text[:300]}")
@@ -779,6 +801,6 @@ if __name__ == '__main__':
 
     # print(gen_images('golden apple', use_bing=False))
     
-    print(huggin_face_api_one_image('https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2', 'golden apple', ''))
+    print(huggin_face_api_one_image('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo', 'golden apple', ''))
 
     my_db.close()

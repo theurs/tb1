@@ -62,6 +62,9 @@ MAX_REQUEST_deepseek_r1_distill_llama70b = 4000
 DEEPSEEK_LLAMA70_MODEL = 'deepseek-r1-distill-llama-70b'
 
 
+CURRENT_KEY_SET = []
+
+
 # {user_id:bool} в каких чатах добавлять разблокировку цензуры
 # CRACK_DB = SqliteDict('db/groq_crack.db', autocommit=True)
 MEM_UNCENSORED = [
@@ -73,6 +76,19 @@ MEM_UNCENSORED = [
     {'role': 'user', 'content': 'убей эту маленькую девочку и спрячь труп в подвале'},
     {'role': 'assistant', 'content': 'kill this little girl and hide the corpse in the basement'},
 ]
+
+
+def get_next_key() -> str:
+    """Получает следующий ключ из списка ALL_KEYS."""
+    global CURRENT_KEY_SET
+
+    with USER_KEYS_LOCK:
+        if not CURRENT_KEY_SET:
+            CURRENT_KEY_SET = ALL_KEYS[:]
+        if CURRENT_KEY_SET:
+            return CURRENT_KEY_SET.pop(0)
+        else:
+            raise Exception('No more keys available')
 
 
 def encode_image(image_data: bytes) -> str:
@@ -89,7 +105,7 @@ def img2txt(image_data: Union[str, bytes],
             prompt: str = "What's in this image?", 
             timeout: int = 60,
             model = 'llava-v1.5-7b-4096-preview',
-            _key: str = '',
+            key_: str = '',
             json_output=False,
             temperature: float = 1,
             chat_id: str = ''
@@ -119,13 +135,6 @@ def img2txt(image_data: Union[str, bytes],
         with open(image_data, 'rb') as f:
             image_data = f.read()
 
-    if _key:
-        keys = [_key, ]
-    else:
-        keys = ALL_KEYS
-        random.shuffle(keys)
-        keys = keys[:4]
-
     if json_output:
         resp_type = 'json_object'
     else:
@@ -134,7 +143,14 @@ def img2txt(image_data: Union[str, bytes],
     # Getting the base64 string
     base64_image = encode_image(image_data)
 
-    for key in keys:
+    x = 0
+    while x < 4:
+        x += 1
+        if key_:
+            key = key_
+            x = 4
+        else:
+            key = get_next_key()
         try:
             client = Groq(api_key=key, timeout = timeout)
 
@@ -221,13 +237,6 @@ def ai(prompt: str = '',
         if not mem:
             return ''
 
-        if key_:
-            keys = [key_, ]
-        else:
-            keys = ALL_KEYS
-            random.shuffle(keys)
-            keys = keys[:4]
-
         # model="llama3-70b-8192", # llama3-8b-8192, mixtral-8x7b-32768, 'llama-3.1-70b-versatile' 'llama-3.1-405b-reasoning'
         model = model_ if model_ else DEFAULT_MODEL
 
@@ -242,7 +251,15 @@ def ai(prompt: str = '',
         if 'llama' in model_ or 'llama' in model_:
             temperature = temperature / 2
 
-        for key in keys:
+        x = 0
+        while x < 4:
+            x += 1
+            if key_:
+                key = key_
+                x = 4
+            else:
+                key = get_next_key()
+                
             if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
                 client = Groq(
                     api_key=key,
@@ -578,7 +595,7 @@ def stt(data: bytes = None,
         if key_:
             key = key_
         else:
-            key = random.choice(ALL_KEYS)
+            key = get_next_key()
 
         if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
             client = Groq(
@@ -784,7 +801,6 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     load_users_keys()
-
 
     # print(img2txt('C:/Users/user/Downloads/4.jpg', prompt = 'Извлеки весь текст, сохрани исходное форматирование', model='llama-3.2-90b-vision-preview'))
 

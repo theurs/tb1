@@ -187,7 +187,7 @@ def get_hf_proxy() -> dict or None:
     return proxy
 
 
-def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
+def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -> list:
     """
     Calls the Hugging Face API to generate text based on a given prompt.
     
@@ -263,7 +263,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "") -> list:
                     and any(word in url for word in ['flux_film_foto', 'Juggernaut_final', 'NSFW-gen-v2'])):
                     return []
 
-                response = requests.post(url, headers=headers, json=p, timeout=120, proxies=proxy)
+                response = requests.post(url, headers=headers, json=p, timeout=timeout, proxies=proxy)
             except Exception as error:
                 my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:1: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
                 continue

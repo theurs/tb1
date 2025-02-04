@@ -421,16 +421,29 @@ def remove_key(key: str):
     '''Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.'''
     try:
         if key in ALL_KEYS:
-            del ALL_KEYS[ALL_KEYS.index(key)]
+            try:
+                ALL_KEYS.remove(key)
+            except ValueError:
+                my_log.log_keys(f'remove_key: Invalid key {key} not found in ALL_KEYS list')
+
+        keys_to_delete = []
         with USER_KEYS_LOCK:
             # remove key from USER_KEYS
             for user in USER_KEYS:
                 if USER_KEYS[user] == key:
-                    del USER_KEYS[user]
-                    my_log.log_keys(f'mistral: Invalid key {key} removed from user {user}')
+                    keys_to_delete.append(user)
+
+            for user_key in keys_to_delete:
+                del USER_KEYS[user_key]
+
+            if keys_to_delete:
+                my_log.log_keys(f'mistral: Invalid key {key} removed from users {keys_to_delete}')
+            else:
+                my_log.log_keys(f'mistral: Invalid key {key} was not associated with any user in USER_KEYS')
+
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_mistral(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
+        my_log.log_mistral(f'mistral: Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
 def load_users_keys():

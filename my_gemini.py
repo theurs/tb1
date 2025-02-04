@@ -1049,22 +1049,31 @@ def load_users_keys():
 def remove_key(key: str):
     """
     Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.
-    
+
     Args:
         key (str): The key to be removed.
-        
+
     Returns:
         None
     """
     try:
         if key in ALL_KEYS:
-            del ALL_KEYS[ALL_KEYS.index(key)]
+            try:
+                ALL_KEYS.remove(key) # Использовать remove для более безопасного удаления из списка
+            except ValueError:
+                my_log.log_keys(f'remove_key: Invalid key {key} not found in ALL_KEYS list') # Логировать, если ключ не найден в ALL_KEYS
+
+        users_to_update = [] # Список для хранения пользователей, чьи записи нужно обновить
+
         with USER_KEYS_LOCK:
-            # remove key from USER_KEYS
             for user in USER_KEYS:
                 if key in USER_KEYS[user]:
-                    USER_KEYS[user] = [x for x in USER_KEYS[user] if x != key]
-                    my_log.log_keys(f'Invalid key {key} removed from user {user}')
+                    users_to_update.append(user) # Добавить пользователя в список на обновление
+
+            for user in users_to_update: # Выполнить обновление после основной итерации
+                USER_KEYS[user] = [x for x in USER_KEYS[user] if x != key] # Обновить список ключей для каждого пользователя
+                my_log.log_keys(f'Invalid key {key} removed from user {user}')
+
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')

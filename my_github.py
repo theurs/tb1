@@ -207,13 +207,26 @@ def remove_key(key: str):
     '''
     try:
         if key in ALL_KEYS:
-            del ALL_KEYS[ALL_KEYS.index(key)]
+            try:
+                ALL_KEYS.remove(key) # Use remove for safer deletion by value
+            except ValueError:
+                my_log.log_keys(f'remove_key: Invalid key {key} not found in ALL_KEYS list') # Log if key not found
+
+        keys_to_delete = [] # List to store user keys for deletion
         with USER_KEYS_LOCK:
             # remove key from USER_KEYS
             for user in USER_KEYS:
                 if USER_KEYS[user] == key:
-                    del USER_KEYS[user]
-                    my_log.log_keys(f'github: Invalid key {key} removed from user {user}')
+                    keys_to_delete.append(user) # Add user key to deletion list
+
+            for user_key in keys_to_delete: # Iterate over deletion list after initial iteration
+                del USER_KEYS[user_key] # Safely delete keys
+
+            if keys_to_delete:
+                my_log.log_keys(f'github: Invalid key {key} removed from users {keys_to_delete}') # Log removed keys with users
+            else:
+                my_log.log_keys(f'github: Invalid key {key} was not associated with any user in USER_KEYS') # Log if key not found in USER_KEYS
+
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_github(f'Failed to remove key {key}: {error}\n\n{error_traceback}')

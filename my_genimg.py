@@ -158,12 +158,20 @@ def remove_huggin_face_key(api_key: str):
             ALL_KEYS.remove(api_key)
         except ValueError:
             my_log.log_huggin_face_api(f'remove_huggin_face_key: Invalid key {api_key} not found in ALL_KEYS')
-        user = 'unknown'
+
+        keys_to_delete = [] # Список для хранения ключей на удаление
         for user in USER_KEYS:
             if USER_KEYS[user] == api_key:
-                del USER_KEYS[user]
-                break
-        my_log.log_keys(f'Invalid key {api_key} removed, user {user}')
+                keys_to_delete.append(user) # Добавляем ключ для удаления
+
+        for user_key in keys_to_delete: # Удаляем ключи после итерации
+            del USER_KEYS[user_key]
+
+        if keys_to_delete:
+            my_log.log_keys(f'Invalid key {api_key} removed, users {keys_to_delete}') # Логгируем удаление с указанием пользователей
+        else:
+            my_log.log_keys(f'Invalid key {api_key} was not associated with any user in USER_KEYS') # Логгируем, если ключ не был найден в USER_KEYS
+
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'Failed to remove key {api_key}: {error}\n\n{error_traceback}')

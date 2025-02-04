@@ -289,7 +289,7 @@ def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -
                 if DEBUG:
                     my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:2: {resp_text} | {proxy} | {url}')
             else: # unknown error
-                my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:3: {resp_text} | {proxy} | {url}')
+                my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:3: {resp_text} | {proxy} | {url}\n{str(p)}')
             time.sleep(10)
 
         return result

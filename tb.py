@@ -3624,7 +3624,7 @@ def gmodel(message: telebot.types.Message):
         prev_list = KV_STORAGE.get('gemini_models', '')
         KV_STORAGE['gemini_models'] = current_list
 
-        # Если предыдущий список существует и отличается от текущего:
+        # Если предыдущий список отличается от текущего:
         if prev_list != current_list:
             # Преобразуем списки в наборы строк (каждая строка – модель)
             prev_models = set(prev_list.splitlines())

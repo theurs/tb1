@@ -3642,7 +3642,7 @@ def gmodel(message: telebot.types.Message):
                     msg_lines.append(model)
             msg = "\n".join(msg_lines)
         else:
-            # Если изменений нет или предыдущего списка не было, просто возвращаем текущий список
+            # Если изменений нет, просто возвращаем текущий список
             msg = current_list
 
         bot_reply(message, msg, parse_mode='HTML')

@@ -133,6 +133,10 @@ DOCUMENT_LOCKS = {}
 VOICE_LOCKS = {}
 IMG_LOCKS = {}
 
+# key:value storage
+# used for any other key:value needs
+KV_STORAGE = SqliteDict('db/kv_storage.db', autocommit=True)
+
 # хранилище номеров тем в группе для логов {full_user_id as str: theme_id as int}
 # full_user_id - полный адрес места которое логируется, либо это юзер ип и 0 либо группа и номер в группе
 # theme_id - номер темы в группе для логов
@@ -3616,7 +3620,32 @@ def gmodel(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
-        bot_reply(message, my_gemini.list_models())
+        current_list = my_gemini.list_models()  # текущий список моделей (строка с переносами)
+        prev_list = KV_STORAGE.get('gemini_models', '')
+        KV_STORAGE['gemini_models'] = current_list
+
+        # Если предыдущий список существует и отличается от текущего:
+        if prev_list != current_list:
+            # Преобразуем списки в наборы строк (каждая строка – модель)
+            prev_models = set(prev_list.splitlines())
+            current_models = current_list.splitlines()
+
+            # Вычисляем новые модели
+            new_models = {model for model in current_models if model not in prev_models}
+
+            # Формируем итоговое сообщение, выделяя новые модели тегом <b>
+            msg_lines = []
+            for model in current_models:
+                if model in new_models:
+                    msg_lines.append(f"<b>{model}</b>")
+                else:
+                    msg_lines.append(model)
+            msg = "\n".join(msg_lines)
+        else:
+            # Если изменений нет или предыдущего списка не было, просто возвращаем текущий список
+            msg = current_list
+
+        bot_reply(message, msg, parse_mode='HTML')
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:gmodel: {unknown}\n{traceback_error}')

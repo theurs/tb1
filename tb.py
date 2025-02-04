@@ -2747,7 +2747,7 @@ def handle_voice(message: telebot.types.Message):
                         bot_reply_tr(message, 'Unknown message type')
                 except telebot.apihelper.ApiTelegramException as error:
                     if 'file is too big' in str(error):
-                        bot_reply_tr(message, 'Too big file.')
+                        bot_reply_tr(message, 'Too big file. Try /transcribe command.')
                         return
                     else:
                         raise error
@@ -8247,13 +8247,15 @@ def do_task(message, custom_prompt: str = ''):
 
                         if answer.startswith('```'):
                             answer = answer[3:]
-                        if answer.startswith(('/img ', '/bing', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc')):
+                        if answer.startswith(('/img ', '/bing', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc', '/ask')):
                             cmd = answer.split(maxsplit=1)[0]
                             message.text = answer
                             if cmd == '/img':
                                 image_gen(message)
-                            if cmd == '/bing':
+                            elif cmd == '/bing':
                                 image_bing_gen(message)
+                            elif cmd == '/ask':
+                                ask_file(message)
                             elif cmd == '/tts':
                                 tts(message)
                             elif cmd == '/google':

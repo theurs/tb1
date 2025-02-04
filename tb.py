@@ -4254,7 +4254,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
                                 my_gemini.ALL_KEYS.append(key)
                                 new_keys.append(key)
                                 added_flag = True
-                                my_log.log_keys(f'Added new api key for Gemini: {key}')
+                                my_log.log_keys(f'Added new api key for Gemini: {chat_id_full} {key}')
                                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
                                 msg = tr('Added new API key for Gemini:', lang) + f' {key}'
                                 bot_reply(message, msg)

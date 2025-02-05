@@ -5002,7 +5002,7 @@ def remove_keyboard(message: telebot.types.Message):
         kbd.row(button1)
         m = bot.reply_to(message, '777', reply_markup=kbd)
         bot.delete_message(m.chat.id, m.message_id)
-        bot_reply_tr(message, 'Keyboard removed.')
+        bot_reply_tr(message, 'Keyboard removed. Use /start to create a new keyboard.')
     except Exception as unknown:
         my_log.log2(f'tb:remove_keyboard: {unknown}')
 

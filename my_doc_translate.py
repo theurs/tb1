@@ -11,6 +11,10 @@ import my_db
 import my_gemini
 import my_groq
 from utils import async_run_with_limit
+from my_doc_translate_cache import TextCache
+
+
+TRANSLATE_CACHE = None
 
 
 def get_prompt_dialog(dst: str) -> str:
@@ -57,6 +61,15 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
     '''
     Translate text in dialog mode with gemini
     '''
+    global TRANSLATE_CACHE
+
+    if not TRANSLATE_CACHE:
+        TRANSLATE_CACHE = TextCache('db/translate_cache.db', 1000)
+
+    if chunk in TRANSLATE_CACHE and TRANSLATE_CACHE[chunk]:
+        return TRANSLATE_CACHE[chunk]
+
+
     help = get_prompt_dialog(dst)
 
     r = my_gemini.chat(
@@ -81,6 +94,9 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
             max_chat_lines=3,
             do_not_update_history=True,
             )
+
+    if r:
+        TRANSLATE_CACHE.add(chat_id, chunk, r)
 
     return r or chunk
 

@@ -3209,6 +3209,9 @@ def handle_document(message: telebot.types.Message):
                                         disable_notification=True)
                                     log_message(m)
                                     return
+                                else:
+                                    bot_reply_tr(message, 'Translation failed.')
+                                    return
 
 
 
@@ -7063,6 +7066,8 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_cohere.reset(chat_id_full)
             my_glm.reset(chat_id_full)
             my_ddg.reset(chat_id_full)
+            if my_doc_translate.TRANSLATE_CACHE:
+                my_doc_translate.TRANSLATE_CACHE.remove_by_owner(chat_id_full)
 
             my_db.delete_user_property(chat_id_full, 'role')
             my_db.delete_user_property(chat_id_full, 'persistant_memory')

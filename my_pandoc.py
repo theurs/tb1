@@ -9,6 +9,7 @@ import traceback
 import chardet
 import PyPDF2
 import pandas as pd
+from bs4 import BeautifulSoup
 from pptx import Presentation
 
 import my_log
@@ -193,6 +194,7 @@ def convert_file_to_html(data: bytes, filename: str) -> str:
         'gfm': 'gfm',
         'haddock': 'haddock',
         'html': 'html',
+        'htm': 'html',
         'xhtml': 'html',
         'ipynb': 'ipynb',
         'jats': 'jats',
@@ -259,6 +261,33 @@ def convert_file_to_html(data: bytes, filename: str) -> str:
     return result
 
 
+def ensure_utf8_meta(html_content: str) -> str:
+    """
+    Ensures the HTML content has a UTF-8 charset meta tag using BeautifulSoup,
+    replacing any existing charset declaration.
+
+    Args:
+        html_content: The HTML content as a string.
+
+    Returns:
+        The HTML content with a UTF-8 charset meta tag.
+    """
+    soup = BeautifulSoup(html_content, 'html.parser')
+    meta_charset = soup.find('meta', attrs={'charset': True})
+
+    if meta_charset:
+        meta_charset['charset'] = 'utf-8'
+    else:
+        meta_charset = soup.new_tag('meta', charset='utf-8')
+        head_tag = soup.find('head')
+        if head_tag:
+            head_tag.insert(0, meta_charset)
+        else:
+            soup.insert(0, meta_charset) # insert to the beginning if no <head> tag
+
+    return str(soup)
+
+
 def convert_html_to_bytes(html_data: str, output_filename: str) -> bytes:
     """
     Convert HTML content to bytes of a specified format, determining the output
@@ -271,6 +300,10 @@ def convert_html_to_bytes(html_data: str, output_filename: str) -> bytes:
     Returns:
         The converted content in bytes.
     """
+
+    # Гарантируем, что в HTML задана кодировка UTF-8
+    html_data = ensure_utf8_meta(html_data)
+
     _, file_extension = os.path.splitext(output_filename)
     output_format: str = file_extension[1:].lower()  # Remove the leading dot and convert to lowercase
 
@@ -299,6 +332,7 @@ def convert_html_to_bytes(html_data: str, output_filename: str) -> bytes:
         'gfm': 'gfm',
         'haddock': 'haddock',
         'html': 'html',
+        'htm': 'html',
         'html4': 'html4',
         'html5': 'html5',
         'icml': 'icml',

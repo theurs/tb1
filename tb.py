@@ -6062,7 +6062,8 @@ def image_gen(message: telebot.types.Message):
             with semaphore_talks:
 
                 # замедление для юзеров из черного списка
-                # случайное время от 2 до 4 минут
+                # случайное время от 1 до 4 минут
+                # пауза до включения отображения активности что бы не дрочить сервер телеграма зря
                 if hasattr(cfg, 'SLOW_MODE_BING') and utils.extract_user_id(chat_id_full) in cfg.SLOW_MODE_BING:
                     time.sleep(random.randint(60, 240))
 

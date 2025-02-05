@@ -254,7 +254,8 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                 result = tts_google(text, lang)
             except Exception as e:
                 if 'Language not supported' in str(e):
-                    my_log.log2(f'my_tts: tts_google: {e}')
+                    if 'he' not in str(e): # hebrew is not supported by google
+                        my_log.log2(f'my_tts:1: tts_google: {e}')
             if result:
                 return result
             else:
@@ -301,7 +302,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
             return None
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log2(f'my_tts:tts: {error}\n\n{error_traceback}')
+        my_log.log2(f'my_tts:tts:2: {error}\n\n{error_traceback}')
         result = tts_google(text, lang)
         if result:
             return result

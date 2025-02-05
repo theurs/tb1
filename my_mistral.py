@@ -100,6 +100,7 @@ def ai(
         messages.append({"role": "user", "content": prompt})
 
     text = ''
+    key = ''
     for _ in range(3):
         try:
             key = get_next_key() if not key_ else key_
@@ -145,6 +146,7 @@ def ai(
                 messages += mem[-4:]
                 continue
             if 'Unauthorized' in str(error2):
+                # remove_key(key)
                 my_log.log_mistral(f'ai: {error2} {key}')
             my_log.log_mistral(f'ai: {error2}')
             time.sleep(2)
@@ -189,11 +191,12 @@ def img2txt(
             image_data = f.read()
 
     img_base = base64.b64encode(image_data).decode('utf-8')
-
+    key = ''
     for _ in range(3):
         try:
+            key = get_next_key()
             client = openai.OpenAI(
-                api_key = get_next_key(),
+                api_key = key,
                 base_url = BASE_URL,
             )
             response = client.chat.completions.create(
@@ -222,6 +225,9 @@ def img2txt(
                 my_db.add_msg(chat_id, model)
             break
         except Exception as error:
+            if 'Unauthorized' in str(error):
+                # remove_key(key)
+                my_log.log_mistral(f'img2txt: {error} {key}')
             my_log.log_glm(f'img2txt: Failed to parse response: {error}')
             result = ''
             time.sleep(2)
@@ -420,6 +426,8 @@ def get_mem_as_string(chat_id: str, md: bool = False) -> str:
 def remove_key(key: str):
     '''Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.'''
     try:
+        if not key:
+            return
         if key in ALL_KEYS:
             try:
                 ALL_KEYS.remove(key)

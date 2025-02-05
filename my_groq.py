@@ -333,6 +333,9 @@ def ai(prompt: str = '',
 def remove_key(key: str):
     '''Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.'''
     try:
+        if not key:
+            return
+
         if key in ALL_KEYS:
             try:
                 ALL_KEYS.remove(key)
@@ -581,6 +584,7 @@ def stt(data: bytes = None,
         prompt: str = '',
         last_try: bool = False,
         model: str = 'whisper-large-v3-turbo',
+        retry: int = 4,
         ) -> str:
     """Speech to text function. Uses Groq API for speech recognition.
     Caches the results to avoid redundant API calls.
@@ -591,10 +595,15 @@ def stt(data: bytes = None,
         lang (str, optional): Language code. Defaults to '' = 'ru'.
         key_ (str, optional): API key. Defaults to '' = random.choice(ALL_KEYS).
         prompt (str, optional): Prompt for the speech recognition model. Defaults to 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.'.
+        retry (int, optional): Number of retries. Defaults to 4.
 
     Returns:
         str: Transcribed text.
     """
+    key = ''
+    retry -= 1
+    if retry < 0:
+        return ''
     try:
         if not data:
             with open('1.ogg', 'rb') as f:
@@ -627,6 +636,9 @@ def stt(data: bytes = None,
             )
         return remove_dimatorzok(transcription.text)
     except Exception as error:
+        if 'invalid_api_key' in str(error):
+            remove_key(key)
+            return stt(data, lang, key_, prompt, last_try, model, retry-1)
         error_traceback = traceback.format_exc()
         my_log.log_groq(f'my_groq:stt: {error}\n\n{error_traceback}\n\n{lang}\n{model}\n{key_}')
         if not last_try and "'type': 'internal_server_error'" in str(error):

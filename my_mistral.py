@@ -146,7 +146,7 @@ def ai(
                 messages += mem[-4:]
                 continue
             if 'Unauthorized' in str(error2):
-                # remove_key(key)
+                remove_key(key)
                 my_log.log_mistral(f'ai: {error2} {key}')
             my_log.log_mistral(f'ai: {error2}')
             time.sleep(2)
@@ -226,7 +226,7 @@ def img2txt(
             break
         except Exception as error:
             if 'Unauthorized' in str(error):
-                # remove_key(key)
+                remove_key(key)
                 my_log.log_mistral(f'img2txt: {error} {key}')
             my_log.log_glm(f'img2txt: Failed to parse response: {error}')
             result = ''

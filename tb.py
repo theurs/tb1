@@ -6065,7 +6065,8 @@ def image_gen(message: telebot.types.Message):
                 # случайное время от 1 до 4 минут
                 # пауза до включения отображения активности что бы не дрочить сервер телеграма зря
                 if hasattr(cfg, 'SLOW_MODE_BING') and utils.extract_user_id(chat_id_full) in cfg.SLOW_MODE_BING:
-                    time.sleep(random.randint(60, 240))
+                    if my_db.count_imaged_per24h(chat_id_full) > 500:
+                        time.sleep(random.randint(60, 240))
 
                 draw_text = tr('draw', lang)
                 if lang == 'ru':

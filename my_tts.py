@@ -249,9 +249,16 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         lang = voice
 
         if gender == 'google_female':
-            result = tts_google(text, lang)
+            result = ''
+            try:
+                result = tts_google(text, lang)
+            except Exception as e:
+                if 'Language not supported' in str(e):
+                    my_log.log2(f'my_tts: tts_google: {e}')
             if result:
                 return result
+            else:
+                gender = 'female'
 
         voice = get_voice(voice, gender)
         # if not voice:

@@ -172,6 +172,7 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
                 )
             except Exception as inner_error:
                 if "Quota exceeded for quota metric 'Generate Content API requests per minute' and limit" in str(inner_error):
+                    my_log.log_gemini_google(f'google_search:inner error: {inner_error}')
                     continue
                 if 'Resource has been exhausted (e.g. check quota)' in str(inner_error):
                     continue

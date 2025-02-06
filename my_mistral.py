@@ -128,7 +128,7 @@ def ai(
             try:
                 text = response.choices[0].message.content.strip()
             except Exception as error:
-                my_log.log_mistral(f'ai:Failed to parse response: {error}\n\n{str(response)}')
+                my_log.log_mistral(f'ai:1:Failed to parse response: {error}\n\n{str(response)} | {key} | {user_id}')
                 text = ''
             if text:
                 if user_id:
@@ -147,8 +147,8 @@ def ai(
                 continue
             if 'Unauthorized' in str(error2):
                 remove_key(key)
-                my_log.log_mistral(f'ai: {error2} {key}')
-            my_log.log_mistral(f'ai: {error2}')
+                my_log.log_mistral(f'ai:2: {error2} | {key} | {user_id}')
+            my_log.log_mistral(f'ai:3: {error2} | {key} | {user_id}')
             time.sleep(2)
 
     if not text and model == DEFAULT_MODEL:

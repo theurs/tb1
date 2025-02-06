@@ -1127,9 +1127,7 @@ def log_message_add(_type: str,
     """
     try:
         with LOG_GROUP_MESSAGES_LOCK:
-            current_time = time.time()
-            while current_time in LOG_GROUP_MESSAGES:
-                current_time += 0.001
+            current_time = time.perf_counter_ns()
             value = (_type, _text, _chat_full_id, _chat_name, _m_ids, _message_chat_id, _message_message_id)
             LOG_GROUP_MESSAGES[current_time] = value
     except Exception as unexpected_error:
@@ -8205,11 +8203,14 @@ def do_task(message, custom_prompt: str = ''):
 
 
                 user_role = my_db.get_user_property(chat_id_full, 'role') or ''
-                if message.chat.title:
+                max_last_messages = 20
+                if 'gemini' in chat_mode_:
+                    max_last_messages = 40
+                if is_private:
                     lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                    hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date)
+                    hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date, max_last_messages)
                 else:
-                    hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date)
+                    hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages)
 
                 memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
                 if memos:

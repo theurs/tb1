@@ -215,10 +215,10 @@ Usage: /block <add|add2|add3|del|del2|del3|list|list2|list3> <user_id>
 '''
 
 
-def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date):
+def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang_of_user, formatted_date, max_last_messages):
     hidden_text = (
                     f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
-                    f'you are working in chat named "{message.chat.title}", your memory limited to last 20 messages, '
+                    f'you are working in chat named "{message.chat.title}", your memory limited to last {max_last_messages} messages, '
                     'you need a user`s api keys or telegram stars for working (/keys for more info), '
                     'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /ask - query with saved file, /reset - clear chat context, '
                     '/trans - translate, /sum - summarize, /google - search, /ytb - download mp3 from youtube, you can answer voice messages, '
@@ -239,10 +239,10 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, fo
     return hidden_text
 
 
-def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date):
+def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages):
     hidden_text = (
                     f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
-                    f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last 20 messages, '
+                    f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last {max_last_messages} messages, '
                     'you need a user`s api keys or telegram stars for working (/keys for more info), '
                     'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /ask - query with saved file, /reset - clear chat context, '
                     '/trans - translate, /sum - summarize, /google - search, /ytb - download mp3 from youtube, you can answer voice messages, '

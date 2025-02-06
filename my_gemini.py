@@ -63,14 +63,14 @@ TIMEOUT = 120
 
 LOCKS = {}
 CHATS = {}
-MAX_CHAT_LINES = 20
+MAX_CHAT_LINES = 40 # 20
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
     MAX_CHAT_LINES = cfg.GEMINI_MAX_CHAT_LINES
 # MAX_CHAT_MEM_CHARS = 20000*3 # 20000 токенов по 3 символа на токен. +8000 токенов на ответ остается 4000 токенов на системный промпт и прочее
-MAX_CHAT_MEM_CHARS = 40000
+MAX_CHAT_MEM_CHARS = 80000 # 40000
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
-MAX_REQUEST = 20000
-MAX_SUM_REQUEST = 200000
+MAX_REQUEST = 40000 # 20000
+MAX_SUM_REQUEST = 300000 # 200000
 # MAX_SUM_REQUEST = 31000
 
 
@@ -155,36 +155,34 @@ def chat(query: str,
          max_chat_mem_chars: int = MAX_CHAT_MEM_CHARS,
          timeout: int = TIMEOUT
          ) -> str:
-    '''Chat with AI model.
+    """Interacts with a generative AI model (presumably Gemini) to process a user query.
+
+    This function sends a query to a generative AI model, manages the conversation history,
+    handles API key rotation, and provides options for using skills (external tools),
+    controlling output format, and managing memory.
+
     Args:
-        query (str): The query to be used for generating the response.
-        chat_id (str, optional): The ID of the chat. Defaults to ''.
-        temperature (float, optional): Controls the randomness of the output. Must be positive.
-                                       Typical values are in the range: [0.0,2.0]. Higher values
-                                       produce a more random and varied response.
-                                       A temperature of zero will be deterministic.
-                                       The temperature parameter for controlling the randomness of the response.
-                                       Defaults to 0.1.
-        model (str, optional): The model to use for generating the response. Defaults to '' = gemini-1.5-flash.
-                               gemini-1.5-flash-latest,
-                               gemini-1.0-pro,
-                               gemini-1.0-pro-001,
-                               gemini-1.0-pro-latest,
-                               gemini-1.5-flash-latest,
-                               gemini-1.5-pro,
-                               gemini-1.5-pro-latest,
-                               gemini-pro
-        system (str, optional): The system instruction to use for generating the response. Defaults to ''.
-        max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 8000. Range: [10,8000]
-        insert_mem: (list, optional): The history of the chat. Defaults to None.
-        json_output: (bool, optional): Return json STRING, require something
-        like this in prompt - Using this JSON schema: Recipe = {"recipe_name": str} Return a `list[Recipe]`
-        Defaults to False.
+        query: The user's input query string.
+        chat_id: An optional string identifier for the chat session.  Used for retrieving and updating conversation history.
+        temperature:  A float controlling the randomness of the response.  Should be between 0 and 2.
+        model: The name of the generative model to use. If empty, defaults to `cfg.gemini_flash_model`.
+        system: An optional string representing the system prompt or instructions for the model.
+        max_tokens: The maximum number of tokens allowed in the response.
+        insert_mem:  An optional list representing a pre-existing conversation history to use.
+        key__: An optional API key to use. If provided, this key is used for a single request, overriding key rotation.
+        use_skills: A boolean flag indicating whether to enable the use of external tools (skills).
+        json_output: A boolean flag indicating whether to request JSON output from the model.
+        do_not_update_history: If True the history of the dialog is not updated in the database.
+        max_chat_lines: The maximum number of conversation turns to store in history.
+        max_chat_mem_chars: The maximum number of characters to store in the conversation history.
+        timeout: The request timeout in seconds.
 
     Returns:
-        str: The generated response from the AI model.
-    '''
+        A string containing the model's response, or an empty string if an error occurs or the response is empty.
 
+    Raises:
+        None: The function catches and logs exceptions internally, returning an empty string on failure.
+    """
     try:
         query = query[:MAX_SUM_REQUEST]
         if temperature < 0:
@@ -300,6 +298,7 @@ def chat(query: str,
                     if len(chat_.history) == 0:
                         return ''
                     mem = chat_.history[2:]
+                    # тут нет key_i += 1, но цикл закончится если история опустеет
                     continue
                 if '429 Quota exceeded for quota metric' in str(error):
                     FROZEN_KEYS.append(key)

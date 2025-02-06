@@ -3895,6 +3895,32 @@ def list_models_command(message: telebot.types.Message):
         bot_reply_tr(message, "An error occurred while processing the request.")
 
 
+@bot.message_handler(commands=['set_timeout', 'timeout'], func=authorized_owner)
+@async_run
+def set_timeout(message: telebot.types.Message):
+    """Юзеры могут менять timeout для openrouter.ai"""
+    try:
+        chat_id_full = get_topic_id(message)
+
+        COMMAND_MODE[chat_id_full] = ''
+
+        try:
+            timeout_ = int(message.text.split(maxsplit=1)[1].strip())
+            if timeout_ < 2 or timeout_ > 1000:
+                bot_reply_tr(message, 'Invalid parameters, please use /set_timeout <seconds> 2-1000')
+                return
+            my_db.set_user_property(chat_id_full, 'openrouter_timeout', timeout_)  # Use the new function
+            bot_reply_tr(message, 'Timeout changed.')
+            return
+        except Exception as error:
+            error_tr = traceback.format_exc()
+            my_log.log2(f'tb:timeout:{error}\n\n{error_tr}')
+        bot_reply_tr(message, f'Usage: /set_timeout <seconds> 2-1000', disable_web_page_preview=True)
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:timeout: {unknown}\n{traceback_error}')
+
+
 @bot.message_handler(commands=['openrouter', 'bothub'], func=authorized_owner)
 @async_run
 def openrouter(message: telebot.types.Message):
@@ -3947,13 +3973,15 @@ def openrouter(message: telebot.types.Message):
                 currency = my_db.get_user_property(chat_id_full, 'openrouter_currency') or '$'
                 msg += f'{tr("Model price:", lang)} in {my_db.get_user_property(chat_id_full, "openrouter_in_price") or 0}{currency} / out {my_db.get_user_property(chat_id_full, "openrouter_out_price") or 0}{currency} /model_price'
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
-            msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]'
+            timeout_ = my_db.get_user_property(chat_id_full, 'openrouter_timeout') or my_openrouter.DEFAULT_TIMEOUT
+            msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]\n[timeout {timeout_}]\n'
             msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/models or https://bothub.chat/models
 /list_models - show all models scanned
 /temp <temperature> - 0.1 ... 2.0
 /maxtokens <max_tokens> - maximum response size, see model details
 /maxhistlines <maxhistlines> - how many lines in history
 /maxhistchars <maxhistchars> - how many chars in history
+/set_timeout <timeout> - 2-1000 seconds
 
 Usage: /openrouter <api key> or <api base url>
 /openrouter https://openrouter.ai/api/v1 (ok)
@@ -8513,10 +8541,14 @@ def do_task(message, custom_prompt: str = ''):
 
                     # если активирован режим общения с openrouter
                     if chat_mode_ == 'openrouter':
-
                         with ShowAction(message, action):
                             try:
-                                status, answer = my_openrouter.chat(message.text, chat_id_full, system=hidden_text)
+                                timeout_ = my_db.get_user_property(chat_id_full, 'openrouter_timeout') or my_openrouter.DEFAULT_TIMEOUT
+                                status, answer = my_openrouter.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    system=hidden_text,
+                                    timeout = timeout_)
                                 if answer:
                                     def float_to_string(num):
                                         getcontext().prec = 8  # устанавливаем точность

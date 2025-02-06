@@ -156,6 +156,9 @@ def init(backup: bool = True, vacuum: bool = False):
         CON = sqlite3.connect('db/main.db', check_same_thread=False)
         CUR = CON.cursor()
 
+        # переделать поле saved_file на blob
+        alter_saved_file_column()
+
         CUR.execute('''
             CREATE TABLE IF NOT EXISTS msg_counter (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -196,7 +199,7 @@ def init(backup: bool = True, vacuum: bool = False):
 
             image_generated_counter INTEGER,
 
-            saved_file TEXT,
+            saved_file BLOB,
             saved_file_name TEXT,
 
             blocked INTEGER,
@@ -220,6 +223,7 @@ def init(backup: bool = True, vacuum: bool = False):
             memos BLOB,
             temperature REAL,
             bot_name TEXT,
+            openrouter_timeout INTEGER,
 
             persistant_memory TEXT,
 
@@ -307,6 +311,59 @@ def close():
             # CON.close()
         except Exception as error:
             my_log.log2(f'my_db:close {error}')
+
+
+def alter_saved_file_column():
+    '''
+    Checks if the 'saved_file' column in the 'users' table exists and is of type TEXT.
+    If it is, the column is dropped and recreated as BLOB.
+    '''
+    with LOCK:
+        try:
+            # Check if the table 'users' exists
+            CUR.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+            table_exists = CUR.fetchone() is not None
+
+            if not table_exists:
+                my_log.log2('my_db:alter_saved_file_column: Table users does not exist.')
+                return
+
+            # Check the column type using PRAGMA table_info
+            CUR.execute("PRAGMA table_info(users)")
+            columns_info = CUR.fetchall()
+            saved_file_column_info = None
+            for column in columns_info:
+                if column[1] == 'saved_file':
+                    saved_file_column_info = column
+                    break
+
+            if saved_file_column_info:
+                column_type = saved_file_column_info[2].upper()
+                if column_type != 'BLOB':
+                    my_log.log2(f'my_db:alter_saved_file_column: saved_file column type is {column_type}')
+
+                if column_type == 'TEXT':
+                    # Drop the existing TEXT column
+                    my_log.log2('my_db:alter_saved_file_column: Dropping saved_file TEXT column...')
+                    CUR.execute("ALTER TABLE users DROP COLUMN saved_file")
+                    my_log.log2('my_db:alter_saved_file_column: saved_file TEXT column dropped.')
+
+                    # Add the new BLOB column
+                    my_log.log2('my_db:alter_saved_file_column: Adding saved_file BLOB column...')
+                    CUR.execute("ALTER TABLE users ADD COLUMN saved_file BLOB")
+                    my_log.log2('my_db:alter_saved_file_column: saved_file BLOB column added.')
+
+                    CON.commit()  # Commit the changes
+                else:
+                    # my_log.log2(f'my_db:alter_saved_file_column: Column type of saved_file is already {column_type}, no action taken.')
+                    pass
+
+            else:
+                my_log.log2('my_db:alter_saved_file_column: Column saved_file not found, no action taken.')
+
+        except sqlite3.Error as error:
+            my_log.log2(f'my_db:alter_saved_file_column {error}')
+            CON.rollback()
 
 
 @async_run
@@ -764,7 +821,11 @@ def get_user_property(user_id: str, property: str):
     '''
     cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
     if cache_key in USERS_CACHE.cache:
-        return USERS_CACHE.get(cache_key)
+        # saved_file сжимаем и распаковываем
+        if property == 'saved_file':
+            return blob_to_obj(USERS_CACHE.get(cache_key))
+        else:
+            return USERS_CACHE.get(cache_key)
     else:
         with LOCK:
             try:
@@ -774,8 +835,14 @@ def get_user_property(user_id: str, property: str):
                 ''', (user_id,))
                 result = CUR.fetchone()
                 if result:
-                    USERS_CACHE.set(cache_key, result[0])
-                    return result[0]
+                    # saved_file сжимаем и распаковываем
+                    if property == 'saved_file':
+                        r = blob_to_obj(result[0])
+                        USERS_CACHE.set(cache_key, result[0])
+                        return r
+                    else:
+                        USERS_CACHE.set(cache_key, result[0])
+                        return result[0]
                 else:
                     return None
             except Exception as error:
@@ -865,6 +932,7 @@ def set_user_property(user_id: str, property: str, value):
     # limit file save size
     if property == 'saved_file':
         value = value[:300000]
+        value = obj_to_blob(value)
 
     cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()
     USERS_CACHE.set(cache_key, value)

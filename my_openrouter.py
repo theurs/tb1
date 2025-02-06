@@ -27,6 +27,9 @@ PARAMS_DEFAULT = ['google/gemma-2-9b-it:free', 1, 4000, 20, 12000]
 MAX_MEM_LINES = 10
 
 
+DEFAULT_TIMEOUT = 120
+
+
 # блокировка чатов что бы не испортить историю 
 # {id:lock}
 LOCKS = {}
@@ -91,7 +94,7 @@ def ai(prompt: str = '',
        model = '',
        temperature: float = 1,
        max_tokens: int = 8000,
-       timeout: int = 120) -> str:
+       timeout: int = DEFAULT_TIMEOUT) -> str:
 
     if not prompt and not mem:
         return 0, ''
@@ -242,7 +245,7 @@ def update_mem(query: str, resp: str, chat_id: str):
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
 
 
-def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = '', model: str = '') -> str:
+def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = '', model: str = '', timeout: int = DEFAULT_TIMEOUT) -> str:
     global LOCKS
     if chat_id in LOCKS:
         lock = LOCKS[chat_id]
@@ -252,21 +255,21 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
     with lock:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
 
-        status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+        status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
         if text == FILTERED_SIGN:
             return 0, ''
 
         if not text:
             time.sleep(2)
-            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
 
         if not text:
             time.sleep(2)
-            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
 
         if not text:
             time.sleep(2)
-            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
+            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
 
         if text:
             my_db.add_msg(chat_id, 'openrouter')
@@ -551,7 +554,7 @@ def img2txt(
     model = '',
     temperature: float = 1,
     max_tokens: int = 4000,
-    timeout: int = 120,
+    timeout: int = DEFAULT_TIMEOUT,
     chat_id: str = '',
     ) -> str:
     """
@@ -563,7 +566,7 @@ def img2txt(
         model: The model to use for generating the description.
         temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
         max_tokens: The maximum number of tokens to generate. Defaults to 4000.
-        timeout: The timeout for the request in seconds. Defaults to 120.
+        timeout: The timeout for the request in seconds. Defaults to DEFAULT_TIMEOUT.
 
     Returns:
         A string containing the description of the image, or an empty string if an error occurs.

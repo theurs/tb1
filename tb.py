@@ -558,6 +558,10 @@ def img2txt(text, lang: str,
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
+                elif chat_mode == 'gemini-pro-15':
+                    text = my_gemini.img2txt(data, query, model=cfg.gemini_gemini_pro15_model, temp=temperature, chat_id=chat_id_full)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_gemini_pro15_model
                 elif chat_mode == 'gemini-lite':
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full)
                     if text:
@@ -2001,6 +2005,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Gemini exp'
             button_gemini_exp = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
 
+            if chat_mode == 'gemini-pro-15':
+                msg = '✅ Gemini Pro 1.5'
+            else:
+                msg = 'Gemini Pro 1.5'
+            button_gemini_pro15 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-pro-15')
+
             if chat_mode == 'gemini-learn':
                 msg = '✅ Gemini LearnLM'
             else:
@@ -2072,7 +2082,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_deepseek_r1_distill_llama70b, button_deepseek_r1)
 
-            markup.row(button_gemini_lite)
+            markup.row(button_gemini_lite, button_gemini_pro15)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2408,6 +2418,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'select_gemini-learn':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_learn_model, lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
+            elif call.data == 'select_gemini-pro-15':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_gemini_pro15_model, lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-pro-15')
             elif call.data == 'select_gemini_pro':
                 # have_keys = user_full_id in my_gemini.USER_KEYS or user_full_id in my_groq.USER_KEYS or\
                 #     user_full_id in my_genimg.USER_KEYS\
@@ -7191,6 +7204,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini-lite': cfg.gemini_flash_light_model,
             'gemini-exp': cfg.gemini_exp_model,
             'gemini-learn': cfg.gemini_learn_model,
+            'gemini-pro-15': cfg.gemini_gemini_pro15_model,
             'gemini_2_flash_thinking': cfg.gemini_2_flash_thinking_exp_model,
             'llama370': 'Llama 3.3 70b',
             'deepseek_r1_distill_llama70b': 'Deepseek R1 distill llama70b',
@@ -8025,7 +8039,7 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя
-        if chat_mode_ in ('gemini15', 'gemini-learn', 'gemini-exp') and my_db.count_msgs_last_24h(chat_id_full) > 300:
+        if chat_mode_ in ('gemini15', 'gemini-learn', 'gemini-exp', 'gemini-pro-15') and my_db.count_msgs_last_24h(chat_id_full) > 300:
             chat_mode_ = 'gemini'
 
 
@@ -8290,6 +8304,8 @@ def do_task(message, custom_prompt: str = ''):
                         gmodel = cfg.gemini_exp_model
                     elif chat_mode_ == 'gemini-learn':
                         gmodel = cfg.gemini_learn_model
+                    elif chat_mode_ == 'gemini-pro-15':
+                        gmodel = cfg.gemini_gemini_pro15_model
                     elif chat_mode_ == 'gemini_2_flash_thinking':
                         gmodel = cfg.gemini_2_flash_thinking_exp_model
 
@@ -8395,6 +8411,17 @@ def do_task(message, custom_prompt: str = ''):
 
                                 if not answer and gmodel == cfg.gemini_exp_model:
                                     gmodel = cfg.gemini_exp_model_fallback
+                                    answer = my_gemini.chat(
+                                        message.text,
+                                        chat_id_full,
+                                        temp,
+                                        model = gmodel,
+                                        system = hidden_text,
+                                        use_skills=True)
+                                    WHO_ANSWERED[chat_id_full] = gmodel
+
+                                if not answer and gmodel == cfg.gemini_gemini_pro15_model:
+                                    gmodel = cfg.gemini_gemini_pro15_model_fallback
                                     answer = my_gemini.chat(
                                         message.text,
                                         chat_id_full,

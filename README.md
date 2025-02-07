@@ -207,29 +207,34 @@ default_bot_name = 'бот'
 
 
 # какой бот отвечает по умолчанию
-# 'gemini', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'haiku',
+# 'gemini', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15', 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'haiku',
 # 'gpt-4o-mini-ddg', 'glm4plus', 'mistral', 'pixtral', 'commandrplus', 'deepseek_r1_distill_llama70b',  'gpt-4o', 'deepseek_r1'
 chat_mode_default = 'gemini15'
 
-img2_txt_model = 'gemini-1.5-flash'
+img2_txt_model = 'gemini-2.0-flash-001'
+
 # для ответов на математические задачи
-img2_txt_model_solve = 'gemini-exp-1206'
+img2_txt_model_solve = 'gemini-2.0-pro-exp-02-05'
 
-gemini_flash_model = 'gemini-2.0-flash-exp'
-gemini_flash_model_fallback = 'gemini-1.5-flash-latest'
+gemini_flash_model = 'gemini-2.0-flash-001'
+gemini_flash_model_fallback = 'gemini-2.0-flash-exp'
 
-gemini_flash_light_model = 'gemini-1.5-flash-8b-exp-0924'
+gemini_flash_light_model = 'gemini-2.0-flash-lite-preview-02-05'
+gemini_flash_light_model_fallback = 'gemini-2.0-flash-001'
 
-gemini_pro_model_fallback = 'gemini-1.5-pro'
-gemini_pro_model = 'gemini-exp-1121'
+gemini_pro_model = 'gemini-2.0-pro-exp-02-05'
+gemini_pro_model_fallback = 'gemini-1.5-pro-002'
 
-gemini_exp_model = 'gemini-exp-1121'
-gemini_exp_model_fallback = 'gemini-exp-1114'
+gemini_gemini_pro15_model = 'gemini-1.5-pro-002'
+gemini_gemini_pro15_model_fallback = 'gemini-1.5-pro-001'
+
+gemini_exp_model = 'gemini-exp-1206'
+gemini_exp_model_fallback = 'gemini-2.0-pro-exp-02-05'
 
 gemini_learn_model = 'learnlm-1.5-pro-experimental'
 
-gemini_2_flash_thinking_exp_model = 'gemini-2.0-flash-thinking-exp-1219'
-gemini_2_flash_thinking_exp_model_fallback = 'gemini-2.0-flash-thinking-exp'
+gemini_2_flash_thinking_exp_model = 'gemini-2.0-flash-thinking-exp-01-21'
+gemini_2_flash_thinking_exp_model_fallback = 'gemini-2.0-flash-thinking-exp-1219'
 
 
 # default locale, язык на который переводятся все сообщения

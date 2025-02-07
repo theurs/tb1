@@ -148,7 +148,7 @@ def ai(
             if 'Unauthorized' in str(error2):
                 remove_key(key)
                 my_log.log_mistral(f'ai:2: {error2} | {key} | {user_id}')
-            my_log.log_mistral(f'ai:3: {error2} | {key} | {user_id}')
+            my_log.log_mistral(f'ai:3: {error2} | {key} | {user_id}\n\n{messages}\n\n{model}\n\n{prompt}')
             time.sleep(2)
 
     if not text and model == DEFAULT_MODEL:

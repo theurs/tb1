@@ -39,6 +39,7 @@ gTTS
 langdetect
 langcodes[data]
 lxml[html_clean]
+markdownify
 matplotlib
 natsort
 

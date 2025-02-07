@@ -28,6 +28,7 @@ import platform as platform_module
 from typing import Any, Union, List, Tuple
 
 import json_repair
+import markdownify
 import PIL
 import telebot
 from bs4 import BeautifulSoup
@@ -970,6 +971,25 @@ def post_process_split_html(chunks: list) -> list:
 
     return processed_chunks
 
+
+
+def html_to_markdown(html: str) -> str:
+    """
+    Converts HTML to Markdown.
+
+    Args:
+        html (str): HTML code.
+
+    Returns:
+        str: Markdown code.
+    """
+    try:
+        markdown_text = markdownify.markdownify(html)
+        return markdown_text
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'utils:html_to_markdown {error}\n\n{traceback_error}\n\n{html}')
+        return html
 
 #######################################################################################
 

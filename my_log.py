@@ -12,6 +12,7 @@ from collections import defaultdict
 from unidecode import unidecode
 
 import cfg
+from utils import html_to_markdown
 
 
 lock = threading.Lock()
@@ -414,6 +415,9 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
 
     if topic_id:
         log_file_path = log_file_path[:-4] + f' [{topic_id}].log'
+
+    if reply_from_bot:
+        reply_from_bot = html_to_markdown(reply_from_bot)
 
     with lock:
         if LOG_MODE in (1,):

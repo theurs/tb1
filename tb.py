@@ -604,6 +604,12 @@ def img2txt(text, lang: str,
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
 
+            # если это была не джемини лайт то пробуем ее
+            if not text and model != cfg.gemini_flash_light_model:
+                text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
+
             # если это была думающая модель то пробуем вместо нее exp
             if not text and model == cfg.gemini_2_flash_thinking_exp_model:
                 text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)

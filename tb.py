@@ -1997,6 +1997,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Gemini LearnLM'
             button_gemini_learnlm = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
 
+            if chat_mode == 'gemini-lite':
+                msg = '✅ Gemini Flash Lite'
+            else:
+                msg = 'Gemini Flash Lite'
+            button_gemini_lite = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-lite')
+
             if chat_mode == 'mistral':
                 msg = '✅ Mistral'
             else:
@@ -2055,6 +2061,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(button_openrouter, button_gpt_4o)
 
             markup.row(button_deepseek_r1_distill_llama70b, button_deepseek_r1)
+
+            markup.row(button_gemini_lite)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2381,9 +2389,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'select_gemini_2_flash_thinking':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_2_flash_thinking_model, lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini_2_flash_thinking')
-            elif call.data == 'select_gemini8':
+            elif call.data == 'select_gemini-lite':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_flash_light_model, lang))
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini8')
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-lite')
             elif call.data == 'select_gemini-exp':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель: ' + cfg.gemini_exp_model, lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
@@ -7169,7 +7177,7 @@ def id_cmd_handler(message: telebot.types.Message):
         models = {
             'gemini': cfg.gemini_flash_model,
             'gemini15': cfg.gemini_pro_model,
-            'gemini8': cfg.gemini_flash_light_model,
+            'gemini-lite': cfg.gemini_flash_light_model,
             'gemini-exp': cfg.gemini_exp_model,
             'gemini-learn': cfg.gemini_learn_model,
             'gemini_2_flash_thinking': cfg.gemini_2_flash_thinking_exp_model,
@@ -8265,7 +8273,7 @@ def do_task(message, custom_prompt: str = ''):
                         gmodel = cfg.gemini_flash_model
                     elif chat_mode_ == 'gemini15':
                         gmodel = cfg.gemini_pro_model
-                    elif chat_mode_ == 'gemini8':
+                    elif chat_mode_ == 'gemini-lite':
                         gmodel = cfg.gemini_flash_light_model
                     elif chat_mode_ == 'gemini-exp':
                         gmodel = cfg.gemini_exp_model
@@ -8354,6 +8362,17 @@ def do_task(message, custom_prompt: str = ''):
 
                                 if not answer and gmodel == cfg.gemini_flash_model:
                                     gmodel = cfg.gemini_flash_model_fallback
+                                    answer = my_gemini.chat(
+                                        message.text,
+                                        chat_id_full,
+                                        temp,
+                                        model = gmodel,
+                                        system = hidden_text,
+                                        use_skills=True)
+                                    WHO_ANSWERED[chat_id_full] = gmodel
+
+                                if not answer and gmodel == cfg.gemini_flash_light_model:
+                                    gmodel = cfg.gemini_flash_light_model_fallback
                                     answer = my_gemini.chat(
                                         message.text,
                                         chat_id_full,

@@ -2006,9 +2006,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_gemini_exp = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
 
             if chat_mode == 'gemini-pro-15':
-                msg = '✅ Gemini Pro 1.5'
+                msg = '✅ Gemini 1.5 Pro'
             else:
-                msg = 'Gemini Pro 1.5'
+                msg = 'Gemini 1.5 Pro'
             button_gemini_pro15 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-pro-15')
 
             if chat_mode == 'gemini-learn':

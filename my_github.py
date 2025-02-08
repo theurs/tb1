@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# https://github.com/settings/tokens
+# https://github.com/marketplace/models/azure-openai/gpt-4o-mini/playground
+# https://docs.github.com/en/github-models/prototyping-with-ai-models#rate-limits
+
 
 import base64
 import time

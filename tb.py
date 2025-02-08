@@ -4481,7 +4481,7 @@ def calc_gemini(message: telebot.types.Message):
             else:
                 bot_reply_tr(message, 'Calculation failed.')
             # add_to_bots_mem(arg, f'{underground}\n\n{answer}', chat_id_full)
-            add_to_bots_mem(arg, f'{answer}', chat_id_full)
+            add_to_bots_mem(f'/calc {arg}', f'{answer}', chat_id_full)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:calc_gemini: {unknown}\n{traceback_error}')

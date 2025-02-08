@@ -7814,7 +7814,7 @@ def _send_message(
             my_log.log2(
                 f'tb:reply_to_long_message: {error}\n\nresp: {resp[:500]}\n\nparse_mode: {parse_mode}'
             )
-            my_log.log2(chunk)
+            # my_log.log2(chunk)
 
             _send_message(message, chunk, '', preview, reply_markup, send_message, resp, retry_times)
 

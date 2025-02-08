@@ -154,6 +154,7 @@ def decode_string(s: str) -> str:
 def calc(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
     Available modules: decimal, math, numbers, numpy, random, datetime.
+    Do not import them, they are already imported.
     Use only one letter variables.
     Avoid text in math expressions.
 
@@ -215,6 +216,7 @@ def calc(expression: str) -> str:
 def calc_admin(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
     Available modules: decimal, math, numbers, numpy, random, datetime.
+    Do not import them, they are already imported.
 
     return str(eval(expression))
     Examples: calc("56487*8731") -> '493187997'

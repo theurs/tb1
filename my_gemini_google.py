@@ -18,6 +18,7 @@ import random
 import re
 import time
 import traceback
+from typing import Tuple
 
 from google import genai
 from google.genai.types import (
@@ -88,13 +89,14 @@ def get_config(system_instruction: str = "", max_output_tokens: int = 8000, temp
     return gen_config
 
 
-def calc(query: str, chat_id: str = '') -> str:
-    '''Выполняет код и возвращает его результат
+def calc(query: str, chat_id: str = '') -> Tuple[str, str]:
+    """
+    Executes code based on a natural language query and returns the result.
 
-    Пример кода естественным языком:
+    Example natural language code query:
 
-    Вычислите 30-е число Фибоначчи. Затем найдите ближайший к нему палиндром. Краткий ответ.
-    '''
+    Calculate the 30th Fibonacci number. Then find the closest palindrome to it. Short answer.
+    """
     try:
         formatting = '\n\nResponse on language of the question.'
         query = f'''{query}{formatting}'''
@@ -117,7 +119,7 @@ def calc(query: str, chat_id: str = '') -> str:
             except Exception as inner_error:
                 if 'User location is not supported for the API use':
                     my_log.log2(f'calc:inner error: {inner_error}')
-                    return ''
+                    return '', ''
                 if 'Resource has been exhausted (e.g. check quota)' in str(inner_error):
                     continue
 
@@ -138,7 +140,7 @@ def calc(query: str, chat_id: str = '') -> str:
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log_gemini_google(f'calc: error: {error}\n{traceback_error}')
-    return ''
+    return '', ''
 
 
 def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en') -> str:

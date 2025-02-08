@@ -6948,24 +6948,24 @@ def send_welcome_start(message: telebot.types.Message):
         if chat_id_full not in NEW_KEYBOARD:
             NEW_KEYBOARD[chat_id_full] = True
 
-#         # показать выбор моделей новому юзеру
-#         if not my_db.get_user_property(chat_id_full, 'chat_mode') or my_db.get_user_property(chat_id_full, 'chat_mode') == 'test':
-#             my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
-#             bot_reply_tr(
-#                 message,
-#                 f"""Выберите подходящую модель
+        # показать выбор моделей новому юзеру
+        if not my_db.get_user_property(chat_id_full, 'chat_mode') or my_db.get_user_property(chat_id_full, 'chat_mode') == 'test':
+            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+            bot_reply_tr(
+                message,
+                f"""Выберите подходящую модель
 
-# Gemini Flash - стандартная модель
+Gemini Flash - стандартная модель
 
-# Gemini Thinking - модель для решения задач
+Gemini Thinking - модель для решения задач
 
-# Codestral - модель для программирования
+Codestral - модель для программирования
 
-# /config - все остальные модели""",
-#                 parse_mode='HTML',
-#                 reply_markup=get_keyboard('chat_mode', message),
-#                 send_message=True
-#             )
+/config - все остальные модели""",
+                parse_mode='HTML',
+                reply_markup=get_keyboard('chat_mode', message),
+                send_message=True
+            )
 
         # no language in user info, show language selector
         if not user_have_lang:

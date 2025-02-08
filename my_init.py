@@ -232,9 +232,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang_of_user, f
                     'you can generate images with the /img command, type /img "prompt" to generate an image for user, '
                     'you can google search with the /google command, type /google "question" to get the answer for user, '
                     'you can summarize text with the /sum command, type /sum URL to get the summary for user, '
-                    'you can do ANY math calculations with the /calc command, type /calc "expression" to get the answer for user, '
-                    'you have access to a wide range of mathematical knowledge and computational tools, you can answer questions about numbers, '
-                    'perform calculations, and find specific values within mathematical constants (such as the digits of Pi), '
+                    'you can request assistance from a mathematician with /calc command, type /calc "expression" to get the answer for user, '
                     'you can say your answer with voice message with the /tts command, type /tts <2 letter language code> TEXT to answer to user with voice, '
                     "provide the best possible answer to the user's request, improvising if needed, "
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
@@ -258,10 +256,7 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_
                     'you can generate images with the /img command, type /img "prompt" to generate an image for user, '
                     'you can google search with the /google command, type /google "question" to get the answer for user, '
                     'you can summarize text with the /sum command, type /sum URL to get the summary for user, '
-                    'you can do ANY math calculations with the /calc command, type /calc "expression" to get the answer for user, '
-                    'you have access to a wide range of mathematical knowledge and computational tools, you can answer questions about numbers, '
-                    'perform calculations, and find specific values within mathematical constants (such as the digits of Pi), '
-                    'you can say your answer with voice message with the /tts command, type /tts <2 letter language code> TEXT to answer to user with voice, '
+                    'you can request assistance from a mathematician with /calc command, type /calc "expression" to get the answer for user, '                    'you can say your answer with voice message with the /tts command, type /tts <2 letter language code> TEXT to answer to user with voice, '
                     "provide the best possible answer to the user's request, improvising if needed, "
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )

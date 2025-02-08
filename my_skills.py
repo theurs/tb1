@@ -5,6 +5,7 @@ import cachetools.func
 import math
 import datetime
 import decimal
+import mpmath
 import numbers
 import numpy
 import numpy as np
@@ -17,6 +18,7 @@ import subprocess
 import traceback
 from math import *
 from decimal import *
+from mpmath import *
 from numbers import *
 
 # it will import word random and broke code
@@ -153,7 +155,7 @@ def decode_string(s: str) -> str:
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def calc(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
-    Available modules: decimal, math, numbers, numpy, random, datetime.
+    Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
     Do not import them, they are already imported.
     Use only one letter variables.
     Avoid text in math expressions.
@@ -215,7 +217,7 @@ def calc(expression: str) -> str:
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def calc_admin(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
-    Available modules: decimal, math, numbers, numpy, random, datetime.
+    Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
     Do not import them, they are already imported.
 
     return str(eval(expression))

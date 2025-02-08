@@ -150,7 +150,7 @@ def ai(prompt: str = '',
         except Exception as error_other:
             if 'filtered' in str(error_other).lower():
                 return 0, FILTERED_SIGN
-            my_log.log_openrouter(f'ai: {error_other}')
+            my_log.log_openrouter(f'ai:1: {error_other} [user_id: {user_id}]')
             return 0, ''
     else:
         if not URL.endswith('/chat/completions'):

@@ -129,10 +129,16 @@ Use the command `/openrouter` to view settings and switch to this mode.
 
 Use the command `/model <model name>` to select a model, for example, `/model openai/o1-preview` will select the o1-preview model from OpenAI.
 
+"What do the buttons below my messages mean?"
+➡️ (Right Arrow): Prompts the bot to continue the conversation or generate the next response.
+♻️ (Circular Arrows): Clears the bot's memory and starts a new conversation.
+🙈 (Hands Covering Eyes): Hides or deletes the current message or response.
+📢 (Megaphone): Plays the text aloud using Text-to-Speech (TTS).
+📸 (Camera): Displays Google Images search results based on your request.
+🎤 (Microphone): Selects the voice AI engine for speech recognition. If Whisper (or another engine) doesn't understand your voice well, you can choose a different one.
 
 Report issues on Telegram:
 https://t.me/kun4_sun_bot_support
-
 """
 
 start_msg_file = 'msg_hello.dat'
@@ -235,6 +241,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang_of_user, f
                     'you can request assistance from a mathematician with /calc command, type /calc "expression" to get the answer for user, '
                     'you can say your answer with voice message with the /tts command, type /tts <2 letter language code> TEXT to answer to user with voice, '
                     "provide the best possible answer to the user's request, improvising if needed, "
+                    'you have buttons below your messages: ➡️: Continue the conversation. ♻️: Clear the chat and start over. 🙈: Hide or delete the message. 📢: TTS the text of message. ru/etc. (Language Code): Translate the message to your language, '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 
@@ -258,6 +265,7 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_
                     'you can summarize text with the /sum command, type /sum URL to get the summary for user, '
                     'you can request assistance from a mathematician with /calc command, type /calc "expression" to get the answer for user, '                    'you can say your answer with voice message with the /tts command, type /tts <2 letter language code> TEXT to answer to user with voice, '
                     "provide the best possible answer to the user's request, improvising if needed, "
+                    'you have buttons below your messages: ➡️: Continue the conversation. ♻️: Clear the chat and start over. 🙈: Hide or delete the message. 📢: TTS the text of message. ru/etc. (Language Code): Translate the message to your language, '
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 

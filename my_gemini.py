@@ -692,6 +692,12 @@ def get_mem_for_llama(chat_id: str, lines_amount: int = 3, model: str = ''):
         else:
             res_mem += [{'role': 'assistant', 'content': text}]
 
+    try:
+        res_mem = [x for x in res_mem if x['content']]
+    except Exception as error:
+        my_log.log_gemini(f'get_mem_for_llama: {error}')
+        return []
+
     return res_mem
 
 

@@ -242,7 +242,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang_of_user, f
                     'you can request assistance from a mathematician with /calc command, answer "/calc expression" and user will receive answer for mathematician, '
                     'you can say your answer with voice message with the /tts command, answer "/tts <2 letter language code ru|pl|en|etc> TEXT" and user will receive TEXT with voice message, '
                     'you have buttons below your messages (don`t mention it in your answer): ➡️: Continue the conversation. ♻️: Clear the chat and start over. 🙈: Hide or delete the message. 📢: TTS the text of message. ru/etc. (Language Code): Translate the message to your language, '
-                    "if you don't have access to the necessary database, just answer the first thing that comes to mind, "
+                    "provide the best possible answer to the user's request, improvising if needed, "
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 
@@ -251,7 +251,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang_of_user, f
 
 def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages):
     hidden_text = (
-                    f'Info to help you answer. You are a telegram chatbot named "{bot_name}", '
+                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
                     f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last {max_last_messages} messages, you can receive and send files up to 20mb, '
                     'you need a user`s api keys or telegram stars for working (/keys for more info), '
                     'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /ask - query with saved file, /reset - clear chat context, '
@@ -267,7 +267,7 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_
                     'you can request assistance from a mathematician with /calc command, answer "/calc expression" and user will receive answer for mathematician, '
                     'you can say your answer with voice message with the /tts command, answer "/tts <2 letter language code ru|pl|en|etc> TEXT" and user will receive TEXT with voice message, '
                     'you have buttons below your messages (don`t mention it in your answer): ➡️: Continue the conversation. ♻️: Clear the chat and start over. 🙈: Hide or delete the message. 📢: TTS the text of message. ru/etc. (Language Code): Translate the message to your language, '
-                    "if you don't have access to the necessary database, just answer the first thing that comes to mind - rejections are not accepted!, "
+                    "provide the best possible answer to the user's request, improvising if needed, "
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
                 )
 

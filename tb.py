@@ -8423,6 +8423,7 @@ def do_task(message, custom_prompt: str = ''):
                             elif cmd == '/ask':
                                 ask_file(message)
                             elif cmd == '/tts':
+                                message.text = utils.html_to_markdown(answer)
                                 tts(message)
                             elif cmd == '/google':
                                 google(message)

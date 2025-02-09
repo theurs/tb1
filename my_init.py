@@ -236,11 +236,11 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang_of_user, f
                     f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
                     f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
                     "no emoji unless it is required, rewrite LaTeX expressions with Unicode symbols (no markdown), if any, don't mention the rewrite in the answer, "
-                    'you can generate images with the /img command, type /img "prompt" to generate an image for user, '
-                    'you can google search with the /google command, type /google "question" to get the answer for user, '
-                    'you can summarize text with the /sum command, type /sum URL to get the summary for user, '
-                    'you can request assistance from a mathematician with /calc command, type /calc "expression" to get the answer for user, '
-                    'you can say your answer with voice message with the /tts command, type /tts <2 letter language code> TEXT to answer to user with voice, '
+                    'you can generate images with the /img command, answer "/img prompt" to generate an images for user, '
+                    'you can google search with the /google command, answer "/google query" and user will receive answer from AI Google service, '
+                    'you can summarize text with the /sum command, answer "/sum URL" and user will receive summary, '
+                    'you can request assistance from a mathematician with /calc command, answer "/calc expression" and user will receive answer for mathematician, '
+                    'you can say your answer with voice message with the /tts command, answer "/tts <2 letter language code ru|pl|en|etc> TEXT" and user will receive TEXT with voice message, '
                     'you have buttons below your messages (don`t mention it in your answer): ➡️: Continue the conversation. ♻️: Clear the chat and start over. 🙈: Hide or delete the message. 📢: TTS the text of message. ru/etc. (Language Code): Translate the message to your language, '
                     "provide the best possible answer to the user's request, improvising if needed, "
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
@@ -261,11 +261,11 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_
                     'you are using different neural networks for work and the user can configure these networks with the /config command and see details with the /id command, '
                     f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
                     "no emoji unless it is required, rewrite LaTeX expressions with Unicode symbols (no markdown), if any, don't mention the rewrite in the answer, "
-                    'you can generate images with the /img command, type /img "prompt" to generate an image for user, '
-                    'you can google search with the /google command, type /google "question" to get the answer for user, '
-                    'you can summarize text with the /sum command, type /sum URL to get the summary for user, '
-                    'you can request assistance from a mathematician with /calc command, type /calc "expression" to get the answer for user, '
-                    'you can say your answer with voice message with the /tts command, type /tts <2 letter language code> TEXT to answer to user with voice, '
+                    'you can generate images with the /img command, answer "/img prompt" to generate an images for user, '
+                    'you can google search with the /google command, answer "/google query" and user will receive answer from AI Google service, '
+                    'you can summarize text with the /sum command, answer "/sum URL" and user will receive summary, '
+                    'you can request assistance from a mathematician with /calc command, answer "/calc expression" and user will receive answer for mathematician, '
+                    'you can say your answer with voice message with the /tts command, answer "/tts <2 letter language code ru|pl|en|etc> TEXT" and user will receive TEXT with voice message, '
                     'you have buttons below your messages (don`t mention it in your answer): ➡️: Continue the conversation. ♻️: Clear the chat and start over. 🙈: Hide or delete the message. 📢: TTS the text of message. ru/etc. (Language Code): Translate the message to your language, '
                     "provide the best possible answer to the user's request, improvising if needed, "
                     f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'

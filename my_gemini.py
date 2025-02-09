@@ -36,7 +36,7 @@ import my_db
 import my_log
 import my_sum
 import utils
-from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, calc, calc_admin, run_script, get_time_in_timezone
+from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, calc, run_script, get_time_in_timezone
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -244,7 +244,8 @@ def chat(query: str,
                 )
 
             # use_skills = False
-            calc_tool = calc if utils.extract_user_id(chat_id) not in cfg.admins else calc_admin
+            # calc_tool = calc if utils.extract_user_id(chat_id) not in cfg.admins else calc_admin
+            calc_tool = calc
 
             # if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
             if use_skills and '-8b' not in model and 'thinking' not in model:

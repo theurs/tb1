@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pip install -U simpleeval
 
 
 import cachetools.func
@@ -12,15 +13,11 @@ import numpy as np
 import os
 import pytz
 import random
-import re
 import requests
 import subprocess
-import sys
 import traceback
-#from math import *
-#from decimal import *
-#from mpmath import *
-#from numbers import *
+
+from simpleeval import simple_eval
 from typing import Callable, Tuple, List, Union
 
 # it will import word random and broke code
@@ -173,59 +170,105 @@ def calc(expression: str) -> str:
               etc
     '''
     try:
-        my_log.log_gemini_skills(f'Calc: {expression}')
-        allowed_words = [
-            'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
-            'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
-            'round', 'pow', 'sum', 'min', 'max', 'divmod',
-            'for', 'not', 'in', 'and', 'if', 'or', 'next',
-            'digit',
-
-            'list','tuple','sorted','reverse','True','False',
-
-            'datetime', 'days', 'seconds', 'microseconds', 'milliseconds', 'minutes', 'hours', 'weeks',
-            ]
-        allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(datetime) + dir(datetime.date) + dir(mpmath) + dir(numpy) if not x.startswith('_')]
-        allowed_words = sorted(list(set(allowed_words)))
-        # get all words from expression
-        words = re.findall(r'[^\d\W]+', expression)
-        for word in words:
-            if len(word) == 1:
-                continue
-            if word not in allowed_words:
-                r1, r0 = my_gemini_google.calc(expression)
-                r = f'{r0}\n\n{r1}'.strip()
-                if r:
-                    my_log.log_gemini_skills(f'Calc result: {r}')
-                    return r
-                else:
-                    return f'Error: Invalid expression. Forbidden word: {word}'
-        try:
-            expression_ = expression.replace('math.factorial', 'my_factorial')
-            if '**' in expression_:
-                raise ValueError('** danger for eval()')
-            r = str(eval(expression_))
-
-            if not r:
-                r1, r0 = my_gemini_google.calc(expression)
-                r = f'{r0}\n\n{r1}'.strip()
-
-            my_log.log_gemini_skills(f'Calc result: {r}')
-
+        my_log.log_gemini_skills(f'New calc: {expression}')
+        # decimal, math, mpmath, numbers, numpy, random, datetime
+        allowed_functions = {
+            'math': math,
+            'decimal': decimal,
+            'mpmath': mpmath,
+            'numbers': numbers,
+            'numpy': numpy,
+            'np': np,
+            'random': random,
+            'datetime': datetime,
+        }
+        r = str(simple_eval(expression, functions=allowed_functions))
+        my_log.log_gemini_skills(f'New calc result: {r}')
+        return r
+    except Exception as error:
+        r1, r0 = my_gemini_google.calc(expression)
+        r = f'{r0}\n\n{r1}'.strip()
+        if r:
+            my_log.log_gemini_skills(f'Admin calc result: {r}')
             return r
+        else:
+            traceback_error = traceback.format_exc()
+            my_log.log_gemini_skills(f'Calc error: {expression}\n{error}\n\n{traceback_error}')
+            return f'Error: {error}\n\n{traceback_error}'
 
-        except Exception as error:
-            r1, r0 = my_gemini_google.calc(expression)
-            r = f'{r0}\n\n{r1}'.strip().strip()
-            if r:
-                my_log.log_gemini_skills(f'Calc result: {r}')
-                return r
-            else:
-                return f'Error: {error}'
-    except Exception as unknown_error:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'Calc unknown error: {unknown_error}\n\n{traceback_error}')
-        return f'Error, try again: {unknown_error}\n\n{traceback_error}'
+
+# @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
+# def calc(expression: str) -> str:
+#     '''Calculate expression with pythons eval(). Use it for all calculations.
+#     Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
+#     Do not import them, they are already imported.
+#     Use only one letter variables.
+#     Avoid text in math expressions.
+
+#     You can also make requests in natural language if you need to do more complex calculations, for example: What is the digit after the decimal point in the number pi at position 7864?
+
+#     return str(eval(expression))
+#     Examples: calc("56487*8731") -> '493187997'
+#               calc("pow(10, 2)") -> '100'
+#               calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
+#               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
+#               calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
+#               etc
+#     '''
+#     try:
+#         my_log.log_gemini_skills(f'Calc: {expression}')
+#         allowed_words = [
+#             'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
+#             'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
+#             'round', 'pow', 'sum', 'min', 'max', 'divmod',
+#             'for', 'not', 'in', 'and', 'if', 'or', 'next',
+#             'digit',
+
+#             'list','tuple','sorted','reverse','True','False',
+
+#             'datetime', 'days', 'seconds', 'microseconds', 'milliseconds', 'minutes', 'hours', 'weeks',
+#             ]
+#         allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(datetime) + dir(datetime.date) + dir(mpmath) + dir(numpy) if not x.startswith('_')]
+#         allowed_words = sorted(list(set(allowed_words)))
+#         # get all words from expression
+#         words = re.findall(r'[^\d\W]+', expression)
+#         for word in words:
+#             if len(word) == 1:
+#                 continue
+#             if word not in allowed_words:
+#                 r1, r0 = my_gemini_google.calc(expression)
+#                 r = f'{r0}\n\n{r1}'.strip()
+#                 if r:
+#                     my_log.log_gemini_skills(f'Calc result: {r}')
+#                     return r
+#                 else:
+#                     return f'Error: Invalid expression. Forbidden word: {word}'
+#         try:
+#             expression_ = expression.replace('math.factorial', 'my_factorial')
+#             if '**' in expression_:
+#                 raise ValueError('** danger for eval()')
+#             r = str(eval(expression_))
+
+#             if not r:
+#                 r1, r0 = my_gemini_google.calc(expression)
+#                 r = f'{r0}\n\n{r1}'.strip()
+
+#             my_log.log_gemini_skills(f'Calc result: {r}')
+
+#             return r
+
+#         except Exception as error:
+#             r1, r0 = my_gemini_google.calc(expression)
+#             r = f'{r0}\n\n{r1}'.strip().strip()
+#             if r:
+#                 my_log.log_gemini_skills(f'Calc result: {r}')
+#                 return r
+#             else:
+#                 return f'Error: {error}'
+#     except Exception as unknown_error:
+#         traceback_error = traceback.format_exc()
+#         my_log.log_gemini_skills(f'Calc unknown error: {unknown_error}\n\n{traceback_error}')
+#         return f'Error, try again: {unknown_error}\n\n{traceback_error}'
 
 
 def test_calc(func: Callable = calc) -> None:
@@ -244,11 +287,14 @@ def test_calc(func: Callable = calc) -> None:
         # ("1 + 2 * 3", "7"),
         # ("(1 + 2) * 3", "9"),
         # ("2 ++ 2", "4"), # 2 + (+2) = 4
+        # ("sqrt(16)", "4.0"),
         # ("math.sqrt(16)", "4.0"),
         # ("math.sin(0)", "0.0"),
         # ("math.factorial(5)", "120"),
         # # Пример с Decimal (если ваша функция calc поддерживает его)
         # ("decimal.Decimal('1.23') + decimal.Decimal('4.56')", "5.79"),
+        #date example
+        # ("datetime.datetime.now()", ""),
         # # Примеры, где мы не можем предсказать *точный* вывод, но все равно можем проверить:
         # ("random.randint(1, 10)", None),  # Мы не знаем точное число
         # ("x + y + z", None),  # Предполагая, что функция обрабатывает неопределенные переменные
@@ -259,10 +305,10 @@ def test_calc(func: Callable = calc) -> None:
         # ("2 + abc", ""),
         # ("print('hello')", ""),
         # ("os.system('ls -l')", ""),  # Если функция блокирует os.system
-        # ("1 / 0", ""),
+        ("1 / 0", ""),
         # ("math.unknown_function()", ""),
         # ("", ""),  # Пустое выражение тоже должно быть ошибкой.
-        ('89479**78346587', ''),
+        # ('89479**78346587', ''),
     ]
 
     for expression, expected_result in test_cases:
@@ -291,46 +337,46 @@ def test_calc(func: Callable = calc) -> None:
     print("Тесты завершены.")
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
-def calc_admin(expression: str) -> str:
-    '''Calculate expression with pythons eval(). Use it for all calculations.
-    Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
-    Do not import them, they are already imported.
-    You can also make requests in natural language if you need to do more complex calculations, for example: What is the digit after the decimal point in the number pi at position 7864?
+# @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
+# def calc_admin(expression: str) -> str:
+#     '''Calculate expression with pythons eval(). Use it for all calculations.
+#     Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
+#     Do not import them, they are already imported.
+#     You can also make requests in natural language if you need to do more complex calculations, for example: What is the digit after the decimal point in the number pi at position 7864?
 
-    return str(eval(expression))
-    Examples: calc("56487*8731") -> '493187997'
-              calc("pow(10, 2)") -> '100'
-              calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
-              calc("decimal.Decimal('0.234234')*2") -> '0.468468'
-              calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
-              etc
-    '''
-    my_log.log_gemini_skills(f'Admin calc: {expression}')
+#     return str(eval(expression))
+#     Examples: calc("56487*8731") -> '493187997'
+#               calc("pow(10, 2)") -> '100'
+#               calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
+#               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
+#               calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
+#               etc
+#     '''
+#     my_log.log_gemini_skills(f'Admin calc: {expression}')
 
-    try:
-        expression_ = expression.replace('math.factorial', 'my_factorial')
-        # print(sys.get_int_max_str_digits()) # тут показывает дефолт 4300 - OK
-        if '**' in expression_:
-            raise ValueError('** danger for eval()')
-        r = str(eval(expression_))
-        if not r:
-            r1, r0 = my_gemini_google.calc(expression)
-            r = f'{r0}\n\n{r1}'.strip()
-            if not r:
-                return f'Error: Invalid expression'
-        my_log.log_gemini_skills(f'Admin calc result: {r}')
-        return r
-    except Exception as error:
-        r1, r0 = my_gemini_google.calc(expression)
-        r = f'{r0}\n\n{r1}'.strip()
-        if r:
-            my_log.log_gemini_skills(f'Admin calc result: {r}')
-            return r
-        else:
-            traceback_error = traceback.format_exc()
-            my_log.log_gemini_skills(f'Admin calc error: {expression}\n{error}\n\n{traceback_error}')
-            return f'Error: {error}\n\n{traceback_error}'
+#     try:
+#         expression_ = expression.replace('math.factorial', 'my_factorial')
+#         # print(sys.get_int_max_str_digits()) # тут показывает дефолт 4300 - OK
+#         if '**' in expression_:
+#             raise ValueError('** danger for eval()')
+#         r = str(eval(expression_))
+#         if not r:
+#             r1, r0 = my_gemini_google.calc(expression)
+#             r = f'{r0}\n\n{r1}'.strip()
+#             if not r:
+#                 return f'Error: Invalid expression'
+#         my_log.log_gemini_skills(f'Admin calc result: {r}')
+#         return r
+#     except Exception as error:
+#         r1, r0 = my_gemini_google.calc(expression)
+#         r = f'{r0}\n\n{r1}'.strip()
+#         if r:
+#             my_log.log_gemini_skills(f'Admin calc result: {r}')
+#             return r
+#         else:
+#             traceback_error = traceback.format_exc()
+#             my_log.log_gemini_skills(f'Admin calc error: {expression}\n{error}\n\n{traceback_error}')
+#             return f'Error: {error}\n\n{traceback_error}'
 
 
 def my_factorial(n: int) -> int:
@@ -458,8 +504,8 @@ if __name__ == '__main__':
     # moscow_time = get_time_in_timezone("Europe/Moscow")
     # print(f"Time in Moscow: {moscow_time}")
 
-    # test_calc(calc)
-    test_calc(calc_admin)
+    test_calc()
+
     # print(sys.get_int_max_str_digits())
     # print(sys.set_int_max_str_digits())
 

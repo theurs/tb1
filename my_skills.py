@@ -161,6 +161,8 @@ def calc(expression: str) -> str:
     Use only one letter variables.
     Avoid text in math expressions.
 
+    You can also make requests in natural language if you need to do more complex calculations, for example: What is the digit after the decimal point in the number pi at position 7864?
+
     return str(eval(expression))
     Examples: calc("56487*8731") -> '493187997'
               calc("pow(10, 2)") -> '100'
@@ -291,6 +293,7 @@ def calc_admin(expression: str) -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
     Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
     Do not import them, they are already imported.
+    You can also make requests in natural language if you need to do more complex calculations, for example: What is the digit after the decimal point in the number pi at position 7864?
 
     return str(eval(expression))
     Examples: calc("56487*8731") -> '493187997'

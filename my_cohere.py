@@ -119,12 +119,15 @@ def ai(
                     response_format = {"type": resp_type},
                 )
             except Exception as error:
-                my_log.log_cohere(f'ai: {error}\n\n{prompt}\n\n{system}\n\n{mem_}\n{temperature}\n{model_}\n{max_tokens_}\n{key_}\n{key}')
+                if 'invalid api token' in str(error).lower():
+                    remove_key(key)
+                    continue
+                my_log.log_cohere(f'ai:1: {error}\n\nprompt: {prompt}\n\nsystem: {system}\n\nmem: {mem_}\ntemp: {temperature}\nmodel: {model_}\nmax_token: {max_tokens_}\nkey_: {key_}\nkey: {key}')
                 continue
             try:
                 resp = response.message.content[0].text.strip()
             except Exception as error2:
-                my_log.log_cohere(f'ai: {error2}\n\n{prompt}\n\n{system}\n\n{mem_}\n{temperature}\n{model_}\n{max_tokens_}\n{key_}\n{key}')
+                my_log.log_cohere(f'ai:1: {error2}\n\nprompt: {prompt}\n\nsystem: {system}\n\nmem: {mem_}\ntemp: {temperature}\nmodel: {model_}\nmax_token: {max_tokens_}\nkey_: {key_}\nkey: {key}')
                 resp = ''
             if resp:
                 if user_id:
@@ -133,9 +136,9 @@ def ai(
         if model == DEFAULT_MODEL:
             return ai(prompt, mem, user_id, system, FALLBACK_MODEL, temperature, max_tokens_, timeout, key_, json_output)
         return ''
-    except Exception as error2:
+    except Exception as error3:
         error_traceback = traceback.format_exc()
-        my_log.log_cohere(f'my_groq:ai: {error2}\n\n{error_traceback}\n\n{prompt}\n\n{system}\n\n{mem_}\n{temperature}\n{model_}\n{max_tokens_}\n{key_}')
+        my_log.log_cohere(f'ai:3: {error3}\n\n{error_traceback}\n\nprompt: {prompt}\n\nsystem: {system}\n\nmem_: {mem_}\ntemp: {temperature}\nmodel: {model_}\nmax_token: {max_tokens_}\nkey: {key_}')
 
     if model == DEFAULT_MODEL:
         return ai(prompt, mem, user_id, system, FALLBACK_MODEL, temperature, max_tokens_, timeout, key_, json_output)

@@ -268,6 +268,7 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_
                     'you can summarize text with the /sum command, answer "/sum URL" and user will receive summary, '
                     'you can request assistance from a mathematician with /calc command, answer "/calc expression" and user will receive answer for mathematician, '
                     'you can say your answer with voice message with the /tts command, answer "/tts <2 letter language code ru|pl|en|etc> TEXT" and user will receive TEXT with voice message, '
+                    'you can generate any other random data, '
                     # "you have to generate any data requested by the user; there's no need for functions or databases – your pre-trained data is sufficient for any answer, "
                     # "provide the best possible answer to the user's request, improvising if needed, "
                     # "provide a helpful and informative answer to the user's request, using your knowledge and improvising when necessary to give the best possible response, even if you're not completely sure, "

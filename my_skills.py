@@ -171,6 +171,7 @@ def calc(expression: str) -> str:
     '''
     try:
         my_log.log_gemini_skills(f'New calc: {expression}')
+        # expression = expression.replace('math.factorial', 'my_factorial')
         # decimal, math, mpmath, numbers, numpy, random, datetime
         allowed_functions = {
             'math': math,
@@ -181,6 +182,7 @@ def calc(expression: str) -> str:
             'np': np,
             'random': random,
             'datetime': datetime,
+            # 'my_factorial': my_factorial,
         }
         result = str(simple_eval(expression, functions=allowed_functions))
         my_log.log_gemini_skills(f'New calc result: {result}')
@@ -293,6 +295,8 @@ def test_calc(func: Callable = calc) -> None:
         # ("math.factorial(5)", "120"),
         # # Пример с Decimal (если ваша функция calc поддерживает его)
         # ("decimal.Decimal('1.23') + decimal.Decimal('4.56')", "5.79"),
+        ('math.factorial(10)', '3628800'),
+        ('math.factorial(1600)', ''),
         #date example
         # ("datetime.datetime.now()", ""),
         # # Примеры, где мы не можем предсказать *точный* вывод, но все равно можем проверить:
@@ -305,7 +309,7 @@ def test_calc(func: Callable = calc) -> None:
         # ("2 + abc", ""),
         # ("print('hello')", ""),
         # ("os.system('ls -l')", ""),  # Если функция блокирует os.system
-        ("1 / 0", ""),
+        # ("1 / 0", ""),
         # ("math.unknown_function()", ""),
         # ("", ""),  # Пустое выражение тоже должно быть ошибкой.
         # ('89479**78346587', ''),
@@ -379,13 +383,13 @@ def test_calc(func: Callable = calc) -> None:
 #             return f'Error: {error}\n\n{traceback_error}'
 
 
-def my_factorial(n: int) -> int:
-    '''Calculate factorial of n.
-    return int(math.factorial(n))
-    '''
-    if n > 1500:
-        raise ValueError('factorial > 1500, too big number')
-    return math.factorial(n)
+# def my_factorial(n: int) -> int:
+#     '''Calculate factorial of n.
+#     return int(math.factorial(n))
+#     '''
+#     if n > 1500:
+#         raise ValueError('factorial > 1500, too big number')
+#     return math.factorial(n)
 
 
 def get_time_in_timezone(timezone_str: str) -> str:

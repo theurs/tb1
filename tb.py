@@ -4275,7 +4275,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
                     my_log.log_keys(f'Added new API key for Huggingface: {chat_id_full} {huggingface_keys}')
                     bot_reply_tr(message, 'Added API key for Huggingface successfully!')
                 else:
-                    msg = tr('API key for Huggingface failed, check if it has permissions.', lang) + ' (Inference)'
+                    msg = tr('API key for Huggingface failed, check if it has write permissions.', lang)
                     bot_reply(message, msg)
 
             if keys_mistral:
@@ -4342,17 +4342,48 @@ def users_keys_for_gemini(message: telebot.types.Message):
 
         # показать юзеру его ключи
         if is_private:
-            if chat_id_full in my_gemini.USER_KEYS:
-                mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
-                cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
-                github_keys = [my_github.USER_KEYS[chat_id_full],] if chat_id_full in my_github.USER_KEYS else []
-                qroq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
-                huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
-                keys = my_gemini.USER_KEYS[chat_id_full] + qroq_keys + huggingface_keys + mistral_keys + cohere_keys + github_keys
-                msg = tr('Your keys:', lang) + '\n\n'
-                for key in keys:
-                    msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
-                bot_reply(message, msg, parse_mode='HTML')
+            gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
+            mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
+            cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
+            github_keys = [my_github.USER_KEYS[chat_id_full],] if chat_id_full in my_github.USER_KEYS else []
+            groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
+            huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
+            openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
+            msg = tr('Your keys:', lang) + '\n\n'
+            # keys = my_gemini.USER_KEYS[chat_id_full] + groq_keys + huggingface_keys + mistral_keys + cohere_keys + github_keys
+            # for key in keys:
+                # msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
+
+            if openrouter_keys:
+                msg += f'🔑️ Openrouter [...{openrouter_keys[0][-4:]}]\n'
+            else:
+                msg += '🔒 Openrouter\n'
+            if gemini_keys:
+                msg += f'🔑️ Gemini [...{gemini_keys[0][-4:]}]\n'
+            else:
+                msg += '🔒 Gemini\n'
+            if groq_keys:
+                msg += f'🔑️ Groq [...{groq_keys[0][-4:]}]\n'
+            else:
+                msg += '🔒 Groq\n'
+            if mistral_keys:
+                msg += f'🔑️ Mistral [...{groq_keys[0][-4:]}]\n'
+            else:
+                msg += '🔒 Mistral\n'
+            if cohere_keys:
+                msg += f'🔑️ Cohere [...{cohere_keys[0][-4:]}]\n'
+            else:
+                msg += '🔒 Cohere\n'
+            if github_keys:
+                msg += f'🔑️ Github [...{github_keys[0][-4:]}]\n'
+            else:
+                msg += '🔒 Github\n'
+            if huggingface_keys:
+                msg += f'🔑️ Huggingface [...{huggingface_keys[0][-4:]}]\n'
+            else:
+                msg += '🔒 Huggingface\n'
+
+            bot_reply(message, msg, parse_mode='HTML')
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'Error in /keys: {error}\n\n{message.text}\n\n{traceback_error}')

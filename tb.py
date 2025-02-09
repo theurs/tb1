@@ -7194,15 +7194,31 @@ def purge_cmd_handler(message: telebot.types.Message):
             if my_doc_translate.TRANSLATE_CACHE:
                 my_doc_translate.TRANSLATE_CACHE.remove_by_owner(chat_id_full)
 
+
+            # Delete User Properties
             my_db.delete_user_property(chat_id_full, 'role')
             my_db.delete_user_property(chat_id_full, 'persistant_memory')
+            my_db.delete_user_property(chat_id_full, 'bot_name')  # Reset bot name to default
+            my_db.delete_user_property(chat_id_full, 'temperature')
+            my_db.delete_user_property(chat_id_full, 'lang') # reset language to default
+            my_db.delete_user_property(chat_id_full, 'chat_mode')
+            my_db.delete_user_property(chat_id_full, 'chat_mode_prev')
+            my_db.delete_user_property(chat_id_full, 'saved_file_name')
+            my_db.delete_user_property(chat_id_full, 'saved_file')
+            my_db.delete_user_property(chat_id_full, 'speech_to_text_engine')
+            my_db.delete_user_property(chat_id_full, 'tts_gender')
+            my_db.delete_user_property(chat_id_full, 'voice_only_mode')
+            my_db.delete_user_property(chat_id_full, 'transcribe_only')
+            my_db.delete_user_property(chat_id_full, 'disabled_kbd')
+            my_db.delete_user_property(chat_id_full, 'openrouter_timeout') # added to delete
+
+            # Reset openrouter config
+            if chat_id_full in my_openrouter.PARAMS:
+                my_openrouter.PARAMS.pop(chat_id_full)
+
             if chat_id_full in UNCAPTIONED_IMAGES:
                 del UNCAPTIONED_IMAGES[chat_id_full]
 
-            my_db.set_user_property(chat_id_full, 'bot_name', BOT_NAME_DEFAULT)
-            if my_db.get_user_property(chat_id_full, 'saved_file_name'):
-                my_db.delete_user_property(chat_id_full, 'saved_file_name')
-                my_db.delete_user_property(chat_id_full, 'saved_file')
 
             # if chat_id_full in LOGS_GROUPS_DB:
             #     try:

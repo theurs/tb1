@@ -7926,8 +7926,21 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
 
                 # юзеры у которых есть 3 ключа не требуют подписки,
                 # но если есть звезды то их надо снимать чтоб не копились
-                have_keys = chat_id_full in my_gemini.USER_KEYS and chat_id_full in my_groq.USER_KEYS and \
-                            (chat_id_full in my_genimg.USER_KEYS or chat_id_full in my_mistral.USER_KEYS or chat_id_full in my_cohere.USER_KEYS or chat_id_full in my_github.USER_KEYS)
+                have_keys = 0
+                if chat_id_full in my_gemini.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_groq.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_genimg.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_mistral.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_cohere.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_github.USER_KEYS:
+                    have_keys += 1
+                have_keys = have_keys > 2
+
                 total_messages = my_db.count_msgs_total_user(chat_id_full)
                 MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
                 DONATE_PRICE = cfg.DONATE_PRICE if hasattr(cfg, 'DONATE_PRICE') else 50

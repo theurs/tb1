@@ -16,14 +16,15 @@ import re
 import requests
 import subprocess
 import traceback
-from math import *
-from decimal import *
-from mpmath import *
-from numbers import *
+#from math import *
+#from decimal import *
+#from mpmath import *
+#from numbers import *
+from typing import Callable, Tuple, List, Union
 
 # it will import word random and broke code
 # from random import *
-from random import betavariate, choice, choices, expovariate, gammavariate, gauss, getrandbits, getstate, lognormvariate, normalvariate, paretovariate, randbytes, randint, randrange, sample, seed, setstate, shuffle, triangular, uniform, vonmisesvariate, weibullvariate
+#from random import betavariate, choice, choices, expovariate, gammavariate, gauss, getrandbits, getstate, lognormvariate, normalvariate, paretovariate, randbytes, randint, randrange, sample, seed, setstate, shuffle, triangular, uniform, vonmisesvariate, weibullvariate
 
 from geopy.geocoders import Nominatim
 
@@ -166,52 +167,123 @@ def calc(expression: str) -> str:
               calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
               calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
+              etc
     '''
-    my_log.log_gemini_skills(f'Calc: {expression}')
-    allowed_words = [
-        'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
-        'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
-        'round', 'pow', 'sum', 'min', 'max', 'divmod',
-        'for', 'not', 'in', 'and', 'if', 'or', 'next',
-        'digit',
+    try:
+        my_log.log_gemini_skills(f'Calc: {expression}')
+        allowed_words = [
+            'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
+            'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
+            'round', 'pow', 'sum', 'min', 'max', 'divmod',
+            'for', 'not', 'in', 'and', 'if', 'or', 'next',
+            'digit',
 
-        'list','tuple','sorted','reverse','True','False',
+            'list','tuple','sorted','reverse','True','False',
 
-        'datetime', 'days', 'seconds', 'microseconds', 'milliseconds', 'minutes', 'hours', 'weeks',
-        ]
-    allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(datetime) + dir(datetime.date) + dir(numpy) if not x.startswith('_')]
-    allowed_words = sorted(list(set(allowed_words)))
-    # get all words from expression
-    words = re.findall(r'[^\d\W]+', expression)
-    for word in words:
-        if len(word) == 1:
-            continue
-        if word not in allowed_words:
-            r = my_gemini_google.calc(expression)
+            'datetime', 'days', 'seconds', 'microseconds', 'milliseconds', 'minutes', 'hours', 'weeks',
+            ]
+        allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(datetime) + dir(datetime.date) + dir(mpmath) + dir(numpy) if not x.startswith('_')]
+        allowed_words = sorted(list(set(allowed_words)))
+        # get all words from expression
+        words = re.findall(r'[^\d\W]+', expression)
+        for word in words:
+            if len(word) == 1:
+                continue
+            if word not in allowed_words:
+                r1, r0 = my_gemini_google.calc(expression)
+                r = f'{r0}\n\n{r1}'.strip()
+                if r:
+                    my_log.log_gemini_skills(f'Calc result: {r}')
+                    return r
+                else:
+                    return f'Error: Invalid expression. Forbidden word: {word}'
+        try:
+            expression_ = expression.replace('math.factorial', 'my_factorial')
+
+            r = str(eval(expression_))
+
+            if not r:
+                r1, r0 = my_gemini_google.calc(expression)
+                r = f'{r0}\n\n{r1}'.strip()
+
+            my_log.log_gemini_skills(f'Calc result: {r}')
+
+            return r
+
+        except Exception as error:
+            r1, r0 = my_gemini_google.calc(expression)
+            r = f'{r0}\n\n{r1}'.strip().strip()
             if r:
                 my_log.log_gemini_skills(f'Calc result: {r}')
                 return r
             else:
-                return f'Error: Invalid expression. Forbidden word: {word}'
-    try:
-        expression_ = expression.replace('math.factorial', 'my_factorial')
+                return f'Error: {error}'
+    except Exception as unknown_error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'Calc unknown error: {unknown_error}\n\n{traceback_error}')
+        return f'Error, try again: {unknown_error}\n\n{traceback_error}'
 
-        r = str(eval(expression_))
 
-        if not r:
-            r = my_gemini_google.calc(expression)
+def test_calc(func: Callable = calc) -> None:
+    """
+    Тестирует функцию calc (которая теперь не принимает chat_id и возвращает строку)
+    с набором предопределенных тестовых случаев.
+    """
 
-        my_log.log_gemini_skills(f'Calc result: {r}')
+    test_cases: List[Tuple[str, Union[str, None]]] = [
+        # Валидные выражения.
+        ('3.96140812E+28+3.96140812E+28', '7.92281624e+28'),
+        ("2 + 2", "4"),
+        ("10 * 5", "50"),
+        ("100 / 4", "25.0"),
+        ("2 ** 3", "8"),
+        ("1 + 2 * 3", "7"),
+        ("(1 + 2) * 3", "9"),
+        ("2 ++ 2", "4"), # 2 + (+2) = 4
+        ("math.sqrt(16)", "4.0"),
+        ("math.sin(0)", "0.0"),
+        ("math.factorial(5)", "120"),
+        # Пример с Decimal (если ваша функция calc поддерживает его)
+        ("decimal.Decimal('1.23') + decimal.Decimal('4.56')", "5.79"),
+        # Примеры, где мы не можем предсказать *точный* вывод, но все равно можем проверить:
+        ("random.randint(1, 10)", None),  # Мы не знаем точное число
+        ("x + y + z", None),  # Предполагая, что функция обрабатывает неопределенные переменные
+        ("a*2+b-c", None),
+        # Недопустимые выражения (ожидаем ошибки).
+        ("x = 5\ny = 10\nx + y", ""),
+        ("invalid_function(5)", ""),
+        ("2 + abc", ""),
+        ("print('hello')", ""),
+        ("os.system('ls -l')", ""),  # Если функция блокирует os.system
+        ("1 / 0", ""),
+        ("math.unknown_function()", ""),
+        ("", ""),  # Пустое выражение тоже должно быть ошибкой.
+    ]
 
-        return r
+    for expression, expected_result in test_cases:
+        result = func(expression)
 
-    except Exception as error:
-        r = my_gemini_google.calc(expression)
-        if r:
-            my_log.log_gemini_skills(f'Calc result: {r}')
-            return r
-        else:
-            return f'Error: {error}'
+        print(f"Запрос: {expression}")
+        print(f"Ответ: {result}")
+
+        if expected_result == "":  # Случай ошибки
+            if result == "" or result.startswith('Error'):
+                print(f"Результат: OK (Ожидалась ошибка) {result}")
+            else:
+                print(f"Результат: FAIL (Ожидалась ошибка, получено: {result})")
+        elif expected_result is None:  # Непредсказуемый результат
+            if result != "":
+                print("Результат: OK (Результат получен)")
+            else:
+                print("Результат: FAIL (Результат не получен)")
+        else:  # У нас есть конкретный ожидаемый результат
+            if result == expected_result:
+                print("Результат: OK")
+            else:
+                print(f"Результат: FAIL (Ожидалось: {expected_result}, Получено: {result})")
+        print("-" * 20)
+
+    print("Тесты завершены.")
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
@@ -226,6 +298,7 @@ def calc_admin(expression: str) -> str:
               calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
               calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
+              etc
     '''
     my_log.log_gemini_skills(f'Admin calc: {expression}')
 
@@ -233,18 +306,22 @@ def calc_admin(expression: str) -> str:
         expression_ = expression.replace('math.factorial', 'my_factorial')
         r = str(eval(expression_))
         if not r:
-            r = my_gemini_google.calc(expression)
+            r1, r0 = my_gemini_google.calc(expression)
+            r = f'{r0}\n\n{r1}'.strip()
             if not r:
                 return f'Error: Invalid expression'
         my_log.log_gemini_skills(f'Admin calc result: {r}')
         return r
     except Exception as error:
-        r = my_gemini_google.calc(expression)
+        r1, r0 = my_gemini_google.calc(expression)
+        r = f'{r0}\n\n{r1}'.strip()
         if r:
             my_log.log_gemini_skills(f'Admin calc result: {r}')
             return r
         else:
-            return f'Error: {error}'
+            traceback_error = traceback.format_exc()
+            my_log.log_gemini_skills(f'Admin calc error: {expression}\n{error}\n\n{traceback_error}')
+            return f'Error: {error}\n\n{traceback_error}'
 
 
 def my_factorial(n: int) -> int:
@@ -275,231 +352,6 @@ def get_time_in_timezone(timezone_str: str) -> str:
     except Exception as error:
         my_log.log_gemini_skills(f'get_time_in_timezone: Invalid timezone {timezone_str}\n{error}')
         return f"Error: Invalid timezone '{timezone_str}'"
-
-
-# # надо использовать стиль типа такого что бы он не отнекивался, не говорил что не может не умеет
-# # /style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску
-# def run_script(filename: str, body: str) -> str:
-#     '''Save and run script in shell, return its output. This script has full access to files and network, there are no any sandboxes.
-#     Allowed file ".py" for python and ".sh" for bash, do not add any shebang to body.
-#     It will run code for you - subprocess.check_output(f'./{filename}', shell=True, timeout=300)
-#     '''
-#     body = decode_string(body)
-#     filename = 'run_script_' + filename
-#     ext = utils.get_file_ext(filename)
-#     if ext.startswith('.'):
-#         ext = ext[1:]
-
-#     if ext == 'py':
-#         if not body.split()[0].startswith('#!/'):
-#             body = '#!/usr/bin/env python3\n\n' + body
-#     elif ext == 'sh':
-#         if not body.split()[0].startswith('#!/'):
-#             body = '#!/bin/bash\n\n' + body
-
-#     body = body.replace('\\n', '\n')
-
-#     # lines = body.splitlines()
-#     # if lines[0].startswith('#!/') and lines[0].endswith('\\'):
-#     #     lines[0] = lines[0][:-1]
-#     # body = '\n'.join(lines)
-
-#     my_log.log_gemini_skills(f'run_script {filename}\n\n{body}')
-#     try:
-#         with open(filename, 'w') as f:
-#             f.write(body)
-#         os.chmod(filename, 0o777)
-#         try:
-#             output = subprocess.check_output(f'./{filename}', shell=True, timeout=300, stderr=subprocess.STDOUT)
-#         except subprocess.CalledProcessError as error:
-#             if not error.output:
-#                 output = str(error).encode('utf-8', errors='replace')
-#             else:
-#                 output = error.output
-#         utils.remove_file(filename)
-#         result = output.decode('utf-8', errors='replace')
-#         my_log.log_gemini_skills(f'run_script: {result}')
-#         return result
-#     except Exception as error:
-#         utils.remove_file(filename)
-#         traceback_error = traceback.format_exc()
-#         my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{filename}\n{body}')
-#         return f'{error}\n\n{traceback_error}'
-
-
-# def run_script(filename: str, body: str) -> str:
-#     """
-#     Saves and runs a script in the shell, returning its output. This script has full access to files and network, there are no sandboxes.
-#     Allowed file extensions are ".py" for Python and ".sh" for Bash. Do not add any shebang to the body.
-#     The function will execute the code using: subprocess.check_output(f'./run_script_{filename}', shell=True, timeout=300)
-
-#     Args:
-#         filename: The name of the file to be created.
-#         body: The content of the script to be executed.
-
-#     Returns:
-#         The output of the executed script.
-
-#     Instructions:
-#         1. Pass the filename with the extension (.py or .sh) to the 'filename' argument.
-#         2. Pass the script content without the shebang (#!... ) to the 'body' argument.
-#         3. If 'filename' ends with .py, the 'body' will be executed as a Python script.
-#         4. If 'filename' ends with .sh, the 'body' will be executed as a Bash script.
-#         5. The function will save the script to disk, make it executable, run it, and return the output.
-#         6. If an error occurs during script execution, the function will return the error message.
-#         7. After executing the script, it will be deleted from the disk.
-
-#     Example:
-#         filename = 'script.py'
-#         body = '''
-# import os
-# print(os.getcwd())
-# '''
-#         result = run_script(filename, body)
-#         print(result)
-
-#     Or:
-
-#         filename = 'script.sh'
-#         body = '''
-# echo "Hello, world!"
-# ls -l
-# '''
-#         result = run_script(filename, body)
-#         print(result)
-
-#     Important:
-#     - Ensure the script content in `body` is properly formatted and does not contain syntax errors.
-#     - Be cautious when running scripts with network access, as they have full access to the network.
-#     - If the script generates files, make sure to handle them appropriately (e.g., delete them after use).
-#     - Double quotes inside the script body are escaped
-#     """
-#     body = decode_string(body)
-#     filename = 'run_script_' + filename
-#     ext = utils.get_file_ext(filename)
-#     if ext.startswith('.'):
-#         ext = ext[1:]
-
-#     if ext == 'py':
-#         if not body.split()[0].startswith('#!/'):
-#             body = '#!/usr/bin/env python3\n\n' + body
-#     elif ext == 'sh':
-#         if not body.split()[0].startswith('#!/'):
-#             body = '#!/bin/bash\n\n' + body
-
-#     # Escape only double quotes inside the string
-#     body = body.replace('"', '\\"')
-
-#     my_log.log_gemini_skills(f'run_script {filename}\n\n{body}')
-
-#     try:
-#         with open(filename, 'w') as f:
-#             f.write(body)
-#         os.chmod(filename, 0o777)
-#         try:
-#             output = subprocess.check_output(f'./{filename}', shell=True, timeout=300, stderr=subprocess.STDOUT)
-#         except subprocess.CalledProcessError as error:
-#             if not error.output:
-#                 output = str(error).encode('utf-8', errors='replace')
-#             else:
-#                 output = error.output
-#         utils.remove_file(filename)
-#         result = output.decode('utf-8', errors='replace')
-#         my_log.log_gemini_skills(f'run_script: {result}')
-#         return result
-#     except Exception as error:
-#         utils.remove_file(filename)
-#         traceback_error = traceback.format_exc()
-#         my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{filename}\n{body}')
-#         return f'{error}\n\n{traceback_error}'
-
-
-# def run_script(filename: str, body: str) -> str:
-#     """
-#     Saves and runs a script in the shell, returning its output. This script has full access to files and network, there are no sandboxes.
-#     Allowed file extensions are ".py" for Python and ".sh" for Bash. Do not add any shebang to the body.
-#     The function will execute the code using: subprocess.check_output(f'./run_script_{filename}', shell=True, timeout=300)
-
-#     Args:
-#         filename: The name of the file to be created.
-#         body: The content of the script to be executed.
-
-#     Returns:
-#         The output of the executed script.
-
-#     Instructions:
-#         1. Pass the filename with the extension (.py or .sh) to the 'filename' argument.
-#         2. Pass the script content without the shebang (#!... ) to the 'body' argument.
-#         3. If 'filename' ends with .py, the 'body' will be executed as a Python script.
-#         4. If 'filename' ends with .sh, the 'body' will be executed as a Bash script.
-#         5. The function will save the script to disk, make it executable, run it, and return the output.
-#         6. If an error occurs during script execution, the function will return the error message.
-#         7. After executing the script, it will be deleted from the disk.
-
-#     Example:
-#         filename = 'script.py'
-#         body = '''
-# import os
-# print(os.getcwd())
-# '''
-#         result = run_script(filename, body)
-#         print(result)
-
-#     Or:
-
-#         filename = 'script.sh'
-#         body = '''
-# echo "Hello, world!"
-# ls -l
-# '''
-#         result = run_script(filename, body)
-#         print(result)
-
-#     Important:
-#     - Ensure the script content in `body` is properly formatted and does not contain syntax errors.
-#     - Be cautious when running scripts with network access, as they have full access to the network.
-#     - If the script generates files, make sure to handle them appropriately (e.g., delete them after use).
-#     - Double quotes inside the script body are escaped
-#     """
-#     body = decode_string(body)
-#     filename = 'run_script_' + filename
-#     ext = utils.get_file_ext(filename)
-#     if ext.startswith('.'):
-#         ext = ext[1:]
-
-#     if ext == 'py':
-#         if not body.split()[0].startswith('#!/'):
-#             body = '#!/usr/bin/env python3\n\n' + body
-#         # Escape double quotes only for Python scripts
-#         body = body.replace('"', '\\"')
-#     elif ext == 'sh':
-#         if not body.split()[0].startswith('#!/'):
-#             body = '#!/bin/bash\n\n' + body
-#     # Replace \\n with \n after adding shebang
-#     body = body.replace('\\\\n', '\\n')
-
-#     my_log.log_gemini_skills(f'run_script {filename}\n\n{body}')
-
-#     try:
-#         with open(filename, 'w') as f:
-#             f.write(body)
-#         os.chmod(filename, 0o777)
-#         try:
-#             output = subprocess.check_output(f'./{filename}', shell=True, timeout=300, stderr=subprocess.STDOUT)
-#         except subprocess.CalledProcessError as error:
-#             if not error.output:
-#                 output = str(error).encode('utf-8', errors='replace')
-#             else:
-#                 output = error.output
-#         utils.remove_file(filename)
-#         result = output.decode('utf-8', errors='replace')
-#         my_log.log_gemini_skills(f'run_script: {result}')
-#         return result
-#     except Exception as error:
-#         utils.remove_file(filename)
-#         traceback_error = traceback.format_exc()
-#         my_log.log_gemini_skills(f'run_script: {error}\n{traceback_error}\n\n{filename}\n{body}')
-#         return f'{error}\n\n{traceback_error}'
 
 
 def run_script(filename: str, body: str) -> str:
@@ -597,11 +449,8 @@ if __name__ == '__main__':
     # moscow_time = get_time_in_timezone("Europe/Moscow")
     # print(f"Time in Moscow: {moscow_time}")
 
-    # print(calc("(datetime.date(2025, 6, 1) - datetime.date.today()).days"))
-    # print(calc("randint(10)+sqrt(1.4**2 + 1.5**2) * cos(pi/3)**2"))
-    # print(calc('[str(i) for i in range(5000, 100000) if "2" in str(i) and "9" in str(i)][0:5]'))
-    # print(calc("sum(int(digit) for digit in str(1420000000))"))
-    # print(calc("[str(i) + str(j) + str(k) + str(l) + str(m) for i in range(9, 0, -1) for j in range(i - 1, 0, -1) for k in range(j - 1, 0, -1) for l in range(k - 1, 0, -1) for m in range(l - 1, 0, -1) if i + j + k + l + m == 26 and 0 not in (i, j, k, l, m) and 8 not in (i, j, k, l, m)]"))
+    test_calc(calc)
+    # test_calc(calc_admin)
 
     # text='''ls -l'''
     # print(run_script('test.sh', text))

@@ -93,11 +93,20 @@ def calc(query: str, chat_id: str = '') -> Tuple[str, str]:
     """
     Executes code based on a natural language query and returns the result.
 
-    Example natural language code query:
+    Args:
+        query: The natural language query.
+        chat_id: The ID of the chat (optional).
 
+    Returns:
+        A tuple containing:
+            - The text response from the model.
+            - A string containing the executed code and its output (for debugging).
+
+    Example natural language code query:
     Calculate the 30th Fibonacci number. Then find the closest palindrome to it. Short answer.
     """
     try:
+        time.sleep(1)
         formatting = '\n\nResponse on language of the question.'
         query = f'''{query}{formatting}'''
         code_execution_tool = Tool(code_execution={})

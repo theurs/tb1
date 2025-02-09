@@ -251,7 +251,7 @@ def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang_of_user, f
 
 def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages):
     hidden_text = (
-                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
+                    f'Info to help you answer. You are a telegram chatbot named "{bot_name}", '
                     f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last {max_last_messages} messages, you can receive and send files up to 20mb, '
                     'you need a user`s api keys or telegram stars for working (/keys for more info), '
                     'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /ask - query with saved file, /reset - clear chat context, '

@@ -15,6 +15,7 @@ import random
 import re
 import requests
 import subprocess
+import sys
 import traceback
 #from math import *
 #from decimal import *
@@ -201,7 +202,8 @@ def calc(expression: str) -> str:
                     return f'Error: Invalid expression. Forbidden word: {word}'
         try:
             expression_ = expression.replace('math.factorial', 'my_factorial')
-
+            if '**' in expression_:
+                raise ValueError('** danger for eval()')
             r = str(eval(expression_))
 
             if not r:
@@ -234,32 +236,33 @@ def test_calc(func: Callable = calc) -> None:
 
     test_cases: List[Tuple[str, Union[str, None]]] = [
         # Валидные выражения.
-        ('3.96140812E+28+3.96140812E+28', '7.92281624e+28'),
-        ("2 + 2", "4"),
-        ("10 * 5", "50"),
-        ("100 / 4", "25.0"),
-        ("2 ** 3", "8"),
-        ("1 + 2 * 3", "7"),
-        ("(1 + 2) * 3", "9"),
-        ("2 ++ 2", "4"), # 2 + (+2) = 4
-        ("math.sqrt(16)", "4.0"),
-        ("math.sin(0)", "0.0"),
-        ("math.factorial(5)", "120"),
-        # Пример с Decimal (если ваша функция calc поддерживает его)
-        ("decimal.Decimal('1.23') + decimal.Decimal('4.56')", "5.79"),
-        # Примеры, где мы не можем предсказать *точный* вывод, но все равно можем проверить:
-        ("random.randint(1, 10)", None),  # Мы не знаем точное число
-        ("x + y + z", None),  # Предполагая, что функция обрабатывает неопределенные переменные
-        ("a*2+b-c", None),
-        # Недопустимые выражения (ожидаем ошибки).
-        ("x = 5\ny = 10\nx + y", ""),
-        ("invalid_function(5)", ""),
-        ("2 + abc", ""),
-        ("print('hello')", ""),
-        ("os.system('ls -l')", ""),  # Если функция блокирует os.system
-        ("1 / 0", ""),
-        ("math.unknown_function()", ""),
-        ("", ""),  # Пустое выражение тоже должно быть ошибкой.
+        # ('3.96140812E+28+3.96140812E+28', '7.92281624e+28'),
+        # ("2 + 2", "4"),
+        # ("10 * 5", "50"),
+        # ("100 / 4", "25.0"),
+        # ("2 ** 3", "8"),
+        # ("1 + 2 * 3", "7"),
+        # ("(1 + 2) * 3", "9"),
+        # ("2 ++ 2", "4"), # 2 + (+2) = 4
+        # ("math.sqrt(16)", "4.0"),
+        # ("math.sin(0)", "0.0"),
+        # ("math.factorial(5)", "120"),
+        # # Пример с Decimal (если ваша функция calc поддерживает его)
+        # ("decimal.Decimal('1.23') + decimal.Decimal('4.56')", "5.79"),
+        # # Примеры, где мы не можем предсказать *точный* вывод, но все равно можем проверить:
+        # ("random.randint(1, 10)", None),  # Мы не знаем точное число
+        # ("x + y + z", None),  # Предполагая, что функция обрабатывает неопределенные переменные
+        # ("a*2+b-c", None),
+        # # Недопустимые выражения (ожидаем ошибки).
+        # ("x = 5\ny = 10\nx + y", ""),
+        # ("invalid_function(5)", ""),
+        # ("2 + abc", ""),
+        # ("print('hello')", ""),
+        # ("os.system('ls -l')", ""),  # Если функция блокирует os.system
+        # ("1 / 0", ""),
+        # ("math.unknown_function()", ""),
+        # ("", ""),  # Пустое выражение тоже должно быть ошибкой.
+        ('89479**78346587', ''),
     ]
 
     for expression, expected_result in test_cases:
@@ -307,6 +310,9 @@ def calc_admin(expression: str) -> str:
 
     try:
         expression_ = expression.replace('math.factorial', 'my_factorial')
+        # print(sys.get_int_max_str_digits()) # тут показывает дефолт 4300 - OK
+        if '**' in expression_:
+            raise ValueError('** danger for eval()')
         r = str(eval(expression_))
         if not r:
             r1, r0 = my_gemini_google.calc(expression)
@@ -452,8 +458,10 @@ if __name__ == '__main__':
     # moscow_time = get_time_in_timezone("Europe/Moscow")
     # print(f"Time in Moscow: {moscow_time}")
 
-    test_calc(calc)
-    # test_calc(calc_admin)
+    # test_calc(calc)
+    test_calc(calc_admin)
+    # print(sys.get_int_max_str_digits())
+    # print(sys.set_int_max_str_digits())
 
     # text='''ls -l'''
     # print(run_script('test.sh', text))

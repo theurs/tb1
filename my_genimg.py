@@ -52,6 +52,10 @@ BING_LOCK = threading.Lock()
 BING_SWITCH = 0
 
 
+# removed keys
+BAD_KEYS = []
+
+
 def load_users_keys():
     """
     Load users' keys into memory and update the list of all keys available.
@@ -153,6 +157,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
 def remove_huggin_face_key(api_key: str):
     '''Remove an API key from the list of valid API keys'''
     try:
+        BAD_KEYS.append(api_key)
         global ALL_KEYS
         try:
             ALL_KEYS.remove(api_key)
@@ -699,6 +704,10 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
 def test_hkey(key: str):
     '''test huggingface key'''
+
+    if key in BAD_KEYS:
+        return False
+
     API_URL = [
         "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
         "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",

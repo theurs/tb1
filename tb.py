@@ -5375,6 +5375,59 @@ def set_new_temperature(message: telebot.types.Message):
         my_log.log2(f'tb:temperature: {unknown}\n{traceback_error}')
 
 
+@bot.message_handler(commands=['atemp'], func=authorized_admin)
+@async_run
+def atemp_command(message: telebot.types.Message):
+    """
+    Admin command to set or view a new temperature for a specific user.
+    Usage: /atemp <user_id as int> [new temperature]
+    If no temperature is provided, shows the current temperature.
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        parts = message.text.split()
+        if len(parts) < 2 or len(parts) > 3:
+            bot_reply_tr(message, "Usage: /atemp <user_id as int> [new temperature]. If temperature is not provided, shows the current temperature.")
+            return
+
+        user_id = int(parts[1])
+        user_chat_id_full = f'[{user_id}] [0]'
+
+        if len(parts) == 2:
+            # Show the current temperature
+            current_temp = my_db.get_user_property(user_chat_id_full, 'temperature')
+            if current_temp is not None:
+                bot_reply_tr(message, f"Current temperature for user {user_id} is {current_temp}.")
+            else:
+                bot_reply_tr(message, f"Temperature not set for user {user_id}.")
+            return
+
+        new_temp = float(parts[2])
+
+        if not (0 <= new_temp <= 2):
+            raise ValueError("Temperature must be between 0 and 2 (inclusive).")
+
+
+        # Store the temperature directly in the user's properties.
+        my_db.set_user_property(user_chat_id_full, 'temperature', new_temp)
+
+        # If openrouter is used, update the temperature parameter
+        if user_chat_id_full in my_openrouter.PARAMS:
+            model, _, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[user_chat_id_full]
+            my_openrouter.PARAMS[user_chat_id_full] = [model, new_temp, max_tokens, maxhistlines, maxhistchars]
+
+        bot_reply_tr(message, f"Temperature for user {user_id} set to {new_temp}.")
+
+    except ValueError as ve:
+        bot_reply_tr(message, str(ve))
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:atemp_command: {e}\n{traceback_error}')
+        bot_reply_tr(message, f"An error occurred: {str(e)}")
+
+
 @bot.message_handler(commands=['alang'], func=authorized_admin)
 def change_user_language(message):
     '''set lang for specific user'''
@@ -7004,7 +7057,7 @@ def send_welcome_help(message: telebot.types.Message):
         bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
 
         if message.from_user.id in cfg.admins and len(args) != 2:
-            bot_reply_tr(message, my_init.admin_help, disable_web_page_preview=True)
+            bot_reply_tr(message, my_init.admin_help, parse_mode='HTML', disable_web_page_preview=True)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:help: {unknown}\n{traceback_error}')

@@ -183,6 +183,7 @@ admin_help = '''
 
 /reset <id> - reset mem for user
 /alang - set language for specific user
+/atemp - <user_id as int> [new temperature]
 /set_stt_mode - mandatory switch user from one stt engine to another
 /set_chat_mode - mandatory switch user from one chatbot to another
 /addkeys - add gemini API keys for a user for them

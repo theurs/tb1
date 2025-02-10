@@ -533,9 +533,6 @@ def img2txt(
 
 
 def load_users_keys():
-    '''
-    Load keys system and users
-    '''
     """
     Load users' keys into memory and update the list of all keys available.
     """

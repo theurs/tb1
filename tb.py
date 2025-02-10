@@ -46,6 +46,7 @@ import my_glm
 import my_groq
 import my_log
 import my_mistral
+import my_nebius
 import my_pdf
 import my_fish_speech
 import my_psd
@@ -2386,11 +2387,15 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 else:
                     bot_reply_tr(message, 'Insert your github key first. /keys')
             elif call.data == 'select_deepseek_r1':
-                if chat_id_full in my_github.USER_KEYS:
-                    # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель DeepSeek R1.', lang))
-                    my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1')
-                else:
-                    bot_reply_tr(message, 'Insert your github key first. /keys')
+                # if chat_id_full in my_github.USER_KEYS:
+                #     # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель DeepSeek R1.', lang))
+                #     my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1')
+                # else:
+                #     bot_reply_tr(message, 'Insert your github key first. /keys')
+
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель DeepSeek R1.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1')
+
             elif call.data == 'select_commandrplus':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Command R+.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'commandrplus')
@@ -7529,6 +7534,8 @@ def reload_module(message: telebot.types.Message):
             my_mistral.load_users_keys()
         elif module_name == 'my_github':
             my_github.load_users_keys()
+        elif module_name == 'my_nebius':
+            my_nebius.load_users_keys()
         elif module_name == 'my_cohere':
             my_cohere.load_users_keys()
         elif module_name == 'my_init':
@@ -9048,26 +9055,26 @@ def do_task(message, custom_prompt: str = ''):
 
                     # если активирован режим общения с DeepSeek R1
                     if chat_mode_ == 'deepseek_r1':
-                        if len(msg) > my_github.MAX_REQUEST:
-                            bot_reply(message, f'{tr("Слишком длинное сообщение для DeepSeek R1, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_github.MAX_REQUEST}')
+                        if len(msg) > my_nebius.MAX_REQUEST:
+                            bot_reply(message, f'{tr("Слишком длинное сообщение для DeepSeek R1, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_nebius.MAX_REQUEST}')
                             return
 
                         with ShowAction(message, action):
                             try:
-                                answer = my_github.chat(
+                                answer = my_nebius.chat(
                                     message.text,
                                     chat_id_full,
                                     temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                     system=hidden_text,
-                                    model = my_github.DEEPSEEK_R1_MODEL,
+                                    model = my_nebius.DEFAULT_MODEL,
                                 )
                                 if not answer:
-                                    answer = my_github.chat(
+                                    answer = my_nebius.chat(
                                         message.text,
                                         chat_id_full,
                                         temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                         system=hidden_text,
-                                        model = my_github.DEEPSEEK_R1_MODEL_FALLBACK,
+                                        model = my_nebius.DEFAULT_MODEL_FALLBACK,
                                         max_tokens = 2000,
                                     )
                                     WHO_ANSWERED[chat_id_full] = 'DeepSeek R1+GPT-4o-mini'
@@ -9455,6 +9462,7 @@ def main():
         my_mistral.load_users_keys()
         my_cohere.load_users_keys()
         my_github.load_users_keys()
+        my_nebius.load_users_keys()
 
         one_time_shot()
 

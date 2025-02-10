@@ -27,6 +27,7 @@ import my_groq
 import my_log
 import my_mistral
 import utils
+from my_nebius import txt2img as flux_nebius
 
 
 DEBUG = cfg.DEBUG if hasattr(cfg, 'DEBUG') else False
@@ -642,6 +643,26 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
     return []
 
 
+def flux_nebius_gen1(prompt: str, negative_prompt: str, model: str):
+    '''
+    Generate images with Flux Nebius model. Flux dev
+    '''
+    return [] # нет никакой разницы с бесплатными флюксами
+    try:
+        image = flux_nebius(prompt, negative_prompt, model)
+        if image:
+            results = []
+            WHO_AUTOR[utils.fast_hash(image)] = 'nebius.ai black-forest-labs/flux-dev'
+            results.append(image)
+            return results
+        else:
+            return []
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_huggin_face_api(f'flux_nebius_gen1: {error}\n{traceback_error}')
+        return []
+
+
 def gen_images(prompt: str, moderation_flag: bool = False,
                user_id: str = '',
                conversation_history: str = '',
@@ -681,11 +702,14 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result9 = pool.apply_async(glm, (prompt, negative))
 
+        async_result10 = pool.apply_async(flux_nebius_gen1, (prompt,negative,"black-forest-labs/flux-dev"))
+
         result = (async_result1.get() or []) + \
                 (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
                 (async_result4.get() or []) + \
-                (async_result9.get() or [])
+                (async_result9.get() or []) + \
+                (async_result10.get() or [])
     else:
         async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
         async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
@@ -694,10 +718,13 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result9 = pool.apply_async(glm, (prompt, negative))
 
+        async_result10 = pool.apply_async(flux_nebius_gen1, (prompt,negative,"black-forest-labs/flux-dev"))
+
         result = (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
                 (async_result4.get() or []) + \
-                (async_result9.get() or [])
+                (async_result9.get() or []) + \
+                (async_result10.get() or [])
 
     return result
 

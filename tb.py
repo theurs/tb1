@@ -7304,6 +7304,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_db.delete_user_property(chat_id_full, 'bot_name')  # Reset bot name to default
             my_db.delete_user_property(chat_id_full, 'temperature')
             my_db.delete_user_property(chat_id_full, 'lang') # reset language to default
+            my_db.delete_user_property(chat_id_full, 'memos')
             my_db.delete_user_property(chat_id_full, 'chat_mode')
             my_db.delete_user_property(chat_id_full, 'chat_mode_prev')
             my_db.delete_user_property(chat_id_full, 'saved_file_name')

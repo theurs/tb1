@@ -8387,7 +8387,7 @@ def do_task(message, custom_prompt: str = ''):
                 if 'gemini' in chat_mode_:
                     max_last_messages = 40
                 if chat_mode_ == 'gemini':
-                    hidden_text = f'{my_db.get_user_property(chat_id_full, "role") or ""}'
+                    hidden_text = f'{my_init.BASIC_SYSTEM_PROMPT}\n\nYour role here: {my_db.get_user_property(chat_id_full, "role") or ""}'
                 else:
                     if is_private:
                         lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
@@ -8397,7 +8397,7 @@ def do_task(message, custom_prompt: str = ''):
 
                 memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
                 if memos:
-                    hidden_text += '\n\nUser asked you to keep in mind this memos:'
+                    hidden_text += '\n\nUser asked you to keep in mind this memos: '
                     hidden_text += '\n'.join(memos)
 
                 hidden_text_for_llama370 = my_init.get_hidden_prompt_for_llama(tr, lang) + ', ' + user_role

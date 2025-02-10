@@ -3,18 +3,37 @@
 
 
 import base64
+import time
+import threading
 import traceback
-from openai import OpenAI
 
+from openai import OpenAI
+from sqlitedict import SqliteDict
 
 import cfg
+import my_db
 import my_log
 
 
 BASE_URL = "https://api.studio.nebius.ai/v1/"
 
 
-CURRENT_KEYS_SET = []
+# сколько запросов хранить
+MAX_MEM_LINES = 40
+MAX_HIST_CHARS = 60000
+
+
+# блокировка чатов что бы не испортить историю
+# {id:lock}
+LOCKS = {}
+
+# не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
+MAX_REQUEST = 40000
+KEYS_LOCK = threading.Lock()
+
+
+DEFAULT_MODEL = 'deepseek-ai/DeepSeek-R1'
+DEFAULT_MODEL_FALLBACK = 'deepseek-ai/DeepSeek-V3'
 
 
 def get_next_key():
@@ -31,6 +50,7 @@ def get_next_key():
 
 def txt2img(
     prompt: str,
+    model: str = "black-forest-labs/flux-dev", # black-forest-labs/flux-schnell, stability-ai/sdxl
     width: int = 1024,
     height: int = 1024,
     output_format: str = 'webp',
@@ -43,6 +63,8 @@ def txt2img(
 
     Args:
         prompt (str): The text prompt to generate an image from.
+        model (str, optional): The model to use for generating the image. Defaults to "black-forest-labs/flux-dev"
+                               also available black-forest-labs/flux-schnell, stability-ai/sdxl
         width (int, optional): The width of the generated image. Defaults to 1024.
         height (int, optional): The height of the generated image. Defaults to 1024.
         output_format (str, optional): The format of the generated image. Defaults to 'webp'.
@@ -61,7 +83,7 @@ def txt2img(
         )
 
         response = client.images.generate(
-            model="black-forest-labs/flux-dev",
+            model=model,
             response_format="b64_json",
             extra_body={
                 "response_extension": output_format,

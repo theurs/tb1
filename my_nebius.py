@@ -32,6 +32,7 @@ MAX_REQUEST = 40000
 KEYS_LOCK = threading.Lock()
 
 
+DEFAULT_TIMEOUT = 300
 DEFAULT_MODEL = 'deepseek-ai/DeepSeek-R1'
 DEFAULT_MODEL_FALLBACK = 'deepseek-ai/DeepSeek-V3'
 
@@ -112,7 +113,7 @@ def ai(prompt: str = '',
        model = DEFAULT_MODEL,
        temperature: float = 1,
        max_tokens: int = 4000,
-       timeout: int = 120,
+       timeout: int = DEFAULT_TIMEOUT,
        key_: str = None) -> str:
 
     temperature = temperature/2

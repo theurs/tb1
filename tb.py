@@ -8461,7 +8461,8 @@ def do_task(message, custom_prompt: str = ''):
                 if 'gemini' in chat_mode_:
                     max_last_messages = 40
                 if chat_mode_ == 'gemini':
-                    hidden_text = f'{my_init.BASIC_SYSTEM_PROMPT}\n\nYour role here: {my_db.get_user_property(chat_id_full, "role") or ""}'
+                    # hidden_text = f'{my_init.BASIC_SYSTEM_PROMPT}\n\nYour role here: {my_db.get_user_property(chat_id_full, "role") or ""}'
+                    hidden_text = f'{my_db.get_user_property(chat_id_full, "role") or ""}'
                 else:
                     if is_private:
                         lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang

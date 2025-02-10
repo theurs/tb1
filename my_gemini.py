@@ -647,7 +647,7 @@ def reset(chat_id: str, model: str = ''):
         None
     """
     mem = []
-    if 'thinking' in model:
+    if model and 'thinking' in model:
         my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
     else:
         my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))

@@ -205,6 +205,10 @@ def log_github(text: str) -> None:
     """для логов github"""
     log2(text[:2000], 'github')
 
+def log_nebius(text: str) -> None:
+    """для логов nebius"""
+    log2(text[:2000], 'nebius')
+
 def log_glm(text: str) -> None:
     """для логов glm"""
     log2(text[:2000], 'glm')

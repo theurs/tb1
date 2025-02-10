@@ -8386,11 +8386,14 @@ def do_task(message, custom_prompt: str = ''):
                 max_last_messages = 20
                 if 'gemini' in chat_mode_:
                     max_last_messages = 40
-                if is_private:
-                    lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                    hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date, max_last_messages)
+                if chat_mode_ == 'gemini':
+                    hidden_text = f'{my_db.get_user_property(chat_id_full, "role") or ""}'
                 else:
-                    hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages)
+                    if is_private:
+                        lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
+                        hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date, max_last_messages)
+                    else:
+                        hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages)
 
                 memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
                 if memos:

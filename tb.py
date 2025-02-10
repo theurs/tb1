@@ -8454,29 +8454,30 @@ def do_task(message, custom_prompt: str = ''):
                 else:
                     action = 'typing'
 
-                formatted_date = utils.get_full_time()
 
-
+                # formatted_date = utils.get_full_time()
                 user_role = my_db.get_user_property(chat_id_full, 'role') or ''
-                max_last_messages = 20
-                if 'gemini' in chat_mode_:
-                    max_last_messages = 40
-                if chat_mode_ == 'gemini':
-                    # hidden_text = f'{my_init.BASIC_SYSTEM_PROMPT}\n\nYour role here: {my_db.get_user_property(chat_id_full, "role") or ""}'
-                    hidden_text = f'{my_db.get_user_property(chat_id_full, "role") or ""}'
-                else:
-                    if is_private:
-                        lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-                        hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date, max_last_messages)
-                    else:
-                        hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages)
+                hidden_text = f'{my_db.get_user_property(chat_id_full, "role") or ""}'
+                # max_last_messages = 20
+                # if 'gemini' in chat_mode_:
+                #     max_last_messages = 40
+                # if chat_mode_ == 'gemini':
+                #     # hidden_text = f'{my_init.BASIC_SYSTEM_PROMPT}\n\nYour role here: {my_db.get_user_property(chat_id_full, "role") or ""}'
+                #     hidden_text = f'{my_db.get_user_property(chat_id_full, "role") or ""}'
+                # else:
+                #     if is_private:
+                #         lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
+                #         hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date, max_last_messages)
+                #     else:
+                #         hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages)
 
                 memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
                 if memos:
                     hidden_text += '\n\nUser asked you to keep in mind this memos: '
                     hidden_text += '\n'.join(memos)
 
-                hidden_text_for_llama370 = my_init.get_hidden_prompt_for_llama(tr, lang) + ', ' + user_role
+                # hidden_text_for_llama370 = my_init.get_hidden_prompt_for_llama(tr, lang) + ', ' + user_role
+                hidden_text_for_llama370 = hidden_text
 
                 # for DDG who dont support system_prompt
                 helped_query = f'{hidden_text} {message.text}'
@@ -8487,6 +8488,7 @@ def do_task(message, custom_prompt: str = ''):
                     hidden_text_for_llama370 = user_role
                     hidden_text = hidden_text_for_llama370
                     helped_query = f'({hidden_text}) {message.text}'
+
 
                 if chat_id_full not in CHAT_LOCKS:
                     CHAT_LOCKS[chat_id_full] = threading.Lock()

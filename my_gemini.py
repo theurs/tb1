@@ -250,7 +250,8 @@ def chat(query: str,
             # if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
             if use_skills and '-8b' not in model and 'thinking' not in model:
                 # id в системный промпт надо добавлять что бы бот мог юзать его в скилах
-                system = f'user_id: {chat_id}\n\n{str(system)}'
+                # в каких скилах?
+                # system = f'user_id: {chat_id}\n\n{str(system)}'
                 SKILLS = [
                     search_google,
                     download_text_from_url,

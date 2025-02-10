@@ -440,6 +440,21 @@ COHERE_AI_KEYS = [
 #    'socks5://127.0.0.1:9050', # tor
 #]
 
+# github 150 requests per day for small llms and 50 requests per day for large llms
+# https://github.com/settings/tokens (no any rights required)
+#GITHUB_TOKENS = [
+#    'xxx',
+#    'yyy',
+#]
+
+
+# https://studio.nebius.ai/billing -> Add funds -> Add voucher -> google it
+# https://studio.nebius.ai/settings/api-keys
+#NEBIUS_AI_KEYS = [
+#    'xxx',
+#    'yyy',
+#]
+
 
 
 # string for /donate command html parsing

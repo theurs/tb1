@@ -169,7 +169,7 @@ help_msg2 = '''В этом боте есть 2 разных режима раб�
 '''
 
 # команды для администратора
-admin_help = '''
+ADMIN_HELP = '''
 /ping - ping bot no dependency
 /gmodels - list of gemini models
 
@@ -199,7 +199,7 @@ Usage: /<command> <user_id>
 
 /downgrade - downgrade llm model for free users mandatory
 
-/disable_chat_mode - mandatory switch <b>all</b> users from one chatbot to another
+/disable_chat_mode - mandatory switch all users from one chatbot to another
 /restore_chat_mode - revert back to previous mode (disable_chat_mode)
 
 /restart - restart bot

@@ -4808,22 +4808,89 @@ def change_mode(message: telebot.types.Message):
         my_log.log2(f'tb:set_style: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['set_stt_mode'], func=authorized_admin)
+# @bot.message_handler(commands=['set_stt_mode'], func=authorized_admin)
+# @async_run
+# def set_stt_mode(message: telebot.types.Message):
+#     """mandatory switch user from one stt engine to another"""
+#     try:
+#         chat_id_full = get_topic_id(message)
+#         lang = get_lang(chat_id_full, message)
+
+#         _user = f'[{message.text.split(maxsplit=3)[1].strip()}] [0]'
+#         _mode = message.text.split(maxsplit=3)[2].strip()
+#         my_db.set_user_property(_user, 'speech_to_text_engine', _mode)
+#         msg = f'{tr("Changed: ", lang)} {_user} -> {_mode}.'
+#         bot_reply(message, msg)
+#     except:
+#         msg = f"{tr('Example usage: /set_stt_mode user_id_as_int new_mode', lang)} whisper, gemini, google, assembly.ai"
+#         bot_reply(message, msg, parse_mode='HTML')
+
+
+@bot.message_handler(commands=['set_stt_mode', 'stt'], func=authorized_admin)
 @async_run
 def set_stt_mode(message: telebot.types.Message):
-    """mandatory switch user from one stt engine to another"""
+    """
+    Allows admins to set or view the Speech-to-Text (STT) engine for a specific user.
+
+    Usage:
+    /set_stt_mode <user_id as int> [new_mode]
+
+    Available STT Engines:
+    - whisper
+    - gemini
+    - google
+    - assembly.ai
+    - deepgram_nova2
+
+    Example:
+    /set_stt_mode 123456789 whisper  # Sets the STT engine for user 123456789 to 'whisper'
+    /set_stt_mode 123456789 # Show current mode
+    """
     try:
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
-        _user = f'[{message.text.split(maxsplit=3)[1].strip()}] [0]'
-        _mode = message.text.split(maxsplit=3)[2].strip()
-        my_db.set_user_property(_user, 'speech_to_text_engine', _mode)
-        msg = f'{tr("Changed: ", lang)} {_user} -> {_mode}.'
-        bot_reply(message, msg)
-    except:
-        msg = f"{tr('Example usage: /set_stt_mode user_id_as_int new_mode', lang)} whisper, gemini, google, assembly.ai"
-        bot_reply(message, msg, parse_mode='HTML')
+        parts = message.text.split()
+        if len(parts) < 2 or len(parts) > 3:  # Correctly handle the command format
+            user_id = extract_user_id(message) or message.from_user.id
+            # Show user's current STT engine and available options
+            current_stt_engine = my_db.get_user_property(f'[{user_id}] [0]', 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+            msg = f"🎤 {tr('Current STT engine for user', lang)} {user_id}: **{current_stt_engine}**\n\n"
+            msg += f"🗣️ {tr('Available STT engines:', lang)} whisper, gemini, google, assembly.ai, deepgram_nova2\n\n"
+            msg += f"ℹ️ {tr('Usage:', lang)} /set_stt_mode <{tr('user_id', lang)} (int)> [<{tr('new_mode', lang)}>]\n"
+            msg += f"Example:\n/set_stt_mode {user_id} whisper"
+            msg = utils.bot_markdown_to_html(msg)
+            bot_reply(message, msg, parse_mode='HTML')
+            return
+
+        user_id_str = parts[1]  # Get user ID as a string
+        try:
+            user_id = int(user_id_str)
+        except ValueError:
+            bot_reply_tr(message, "Invalid user ID.  Please provide an integer.")
+            return
+
+        user_chat_id_full = f'[{user_id}] [0]'
+        if len(parts) == 2:
+            # No new mode specified, show current mode
+            current_stt_engine = my_db.get_user_property(user_chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+            bot_reply_tr(message, f"🎤 {tr('Current STT engine for user', lang)} {user_id}: <b>{current_stt_engine}</b>", parse_mode='HTML')
+            return
+
+        new_mode = parts[2].lower()
+
+        if new_mode not in ('whisper', 'gemini', 'google', 'assembly.ai', 'deepgram_nova2'):
+            bot_reply_tr(message, f"Invalid STT engine: {new_mode}.  {tr('Available engines are', lang)} whisper, gemini, google, assembly.ai, deepgram_nova2")
+            return
+
+        my_db.set_user_property(user_chat_id_full, 'speech_to_text_engine', new_mode)
+
+        bot_reply_tr(message, f"✅ {tr('STT engine for user', lang)} {user_id} {tr('set to', lang)} {new_mode}.")
+
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:set_stt_mode: {e}\n{traceback_error}')
+        bot_reply_tr(message, f"❌ An error occurred: {str(e)}")
 
 
 @bot.message_handler(commands=['set_chat_mode'], func=authorized_admin)
@@ -7074,7 +7141,7 @@ def send_welcome_help(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
-        
+
         args = message.text.split(maxsplit = 1)
         if len(args) == 2:
             if args[1] in my_init.supported_langs_trans+['pt-br',]:
@@ -7088,7 +7155,7 @@ def send_welcome_help(message: telebot.types.Message):
         bot_reply(message, help, parse_mode='HTML', disable_web_page_preview=True)
 
         if message.from_user.id in cfg.admins and len(args) != 2:
-            bot_reply_tr(message, my_init.admin_help, parse_mode='HTML', disable_web_page_preview=True)
+            bot_reply_tr(message, utils.bot_markdown_to_html(my_init.ADMIN_HELP), parse_mode='HTML', disable_web_page_preview=True)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:help: {unknown}\n{traceback_error}')

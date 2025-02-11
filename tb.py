@@ -6508,6 +6508,10 @@ def image_gen(message: telebot.types.Message):
                         else:
                             if BING_FLAG:
                                 images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)
+                                if not images:
+                                    image_flux_gen(message)
+                                    bot_reply_tr(message, 'Bing не смог ничего нарисовать, у него строгие ограничения.')
+                                    return
                             else:
                                 images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
 

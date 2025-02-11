@@ -185,13 +185,13 @@ def calc(expression: str) -> str:
             # 'my_factorial': my_factorial,
         }
         result = str(simple_eval(expression, functions=allowed_functions))
-        my_log.log_gemini_skills(f'New calc result: {result}')
+        my_log.log_gemini_skills(f'Internal calc result: {result}')
         return result
     except Exception as error:
         r1, r0 = my_gemini_google.calc(expression)
         result = f'{r0}\n\n{r1}'.strip()
         if result:
-            my_log.log_gemini_skills(f'Admin calc result: {result}')
+            my_log.log_gemini_skills(f'Google calc result: {result}')
             return result
         else:
             traceback_error = traceback.format_exc()

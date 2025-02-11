@@ -75,7 +75,7 @@ def blob_to_obj(blob) -> object:
 
 
 class SmartCache:
-    def __init__(self, max_size = 1000, max_value_size = 1024*10): # 1000*10kb=10mb!
+    def __init__(self, max_size = 10000, max_value_size = 1024*10): # 1000*10kb=10mb!
         self.cache = LRUCache(maxsize=max_size)
         self.max_value_size = max_value_size
         self.lock = threading.Lock()

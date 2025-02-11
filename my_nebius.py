@@ -551,6 +551,9 @@ def txt2img(
         bytes: The generated image data in bytes format.
     '''
     try:
+        if not model:
+            model = "black-forest-labs/flux-dev"
+
         key = get_next_key()
         client = OpenAI(
             base_url=BASE_URL,

@@ -643,11 +643,10 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
     return []
 
 
-def flux_nebius_gen1(prompt: str, negative_prompt: str, model: str):
+def flux_nebius_gen1(prompt: str, negative_prompt: str, model: str = None):
     '''
     Generate images with Flux Nebius model. Flux dev
     '''
-    return [] # нет никакой разницы с бесплатными флюксами
     try:
         image = flux_nebius(prompt, negative_prompt, model)
         if image:
@@ -702,14 +701,11 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result9 = pool.apply_async(glm, (prompt, negative))
 
-        async_result10 = pool.apply_async(flux_nebius_gen1, (prompt,negative,"black-forest-labs/flux-dev"))
-
         result = (async_result1.get() or []) + \
                 (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
                 (async_result4.get() or []) + \
-                (async_result9.get() or []) + \
-                (async_result10.get() or [])
+                (async_result9.get() or [])
     else:
         async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
         async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
@@ -718,13 +714,10 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result9 = pool.apply_async(glm, (prompt, negative))
 
-        async_result10 = pool.apply_async(flux_nebius_gen1, (prompt,negative,"black-forest-labs/flux-dev"))
-
         result = (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
                 (async_result4.get() or []) + \
-                (async_result9.get() or []) + \
-                (async_result10.get() or [])
+                (async_result9.get() or [])
 
     return result
 

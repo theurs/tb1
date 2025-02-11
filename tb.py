@@ -6012,6 +6012,81 @@ def huggingface_image_gen_fast(message: telebot.types.Message):
         my_log.log2(f'tb:huggingface_image_gen_fast: {unknown}\n{traceback_error}')
 
 
+@bot.message_handler(commands=['flux'], func=authorized)
+@async_run
+def image_flux_gen(message: telebot.types.Message):
+    """Generates an image using the Flux Nebius model."""
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        # Check for donations
+        if not check_donate(message, chat_id_full, lang):
+            return
+
+        # Lock to prevent concurrent requests
+        if chat_id_full in IMG_GEN_LOCKS:
+            lock = IMG_GEN_LOCKS[chat_id_full]
+        else:
+            lock = threading.Lock()
+            IMG_GEN_LOCKS[chat_id_full] = lock
+
+        COMMAND_MODE[chat_id_full] = ''
+
+        with lock:
+            with semaphore_talks:
+                # Get prompt
+                try:
+                    prompt = message.text.split(maxsplit=1)[1].strip()
+                except IndexError:
+                    bot_reply(message, "/flux <prompt>")
+                    return
+
+                # Get English prompt and negative prompt using the function
+                reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
+                if reprompt == 'MODERATION':
+                    bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+                    return
+                if not reprompt:
+                    bot_reply_tr(message, 'Could not translate your prompt. Try again.')
+                    return
+
+                with ShowAction(message, 'upload_photo'):
+                    try:
+                        images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt)
+                        medias = []
+                        for i in images:
+                            caption_ = f'Flux dev\n\nPrompt: {reprompt}\nNegative: {negative_prompt}'[:900]
+                            medias.append(telebot.types.InputMediaPhoto(i, caption=caption_))
+
+                        if medias:
+                            # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
+                            chunk_size = 10
+                            chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
+
+                            # Send images to user
+                            send_images_to_user(chunks, message, chat_id_full, medias, images)
+
+                            # Send images to pics group (if enabled)
+                            if pics_group:
+                                send_images_to_pic_group(
+                                    chunks=chunks,
+                                    message=message,
+                                    chat_id_full=chat_id_full,
+                                    prompt=reprompt,
+                                )
+                        else:
+                            bot_reply_tr(message, tr("Image generation failed. (no images generated)", lang))
+
+                    except Exception as e:
+                        error_traceback = traceback.format_exc()
+                        my_log.log2(f"tb:image_flux_gen: {e}\n{error_traceback}")
+                        bot_reply_tr(message, tr("An error occurred during image generation.", lang))
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:image_flux_gen: {unknown}\n{traceback_error}')
+
+
 @bot.message_handler(commands=['bing10', 'Bing10'], func=authorized)
 @bot.message_handler(commands=['bing20', 'Bing20'], func=authorized)
 @bot.message_handler(commands=['bing', 'Bing'], func=authorized)
@@ -6294,6 +6369,8 @@ def image_gen(message: telebot.types.Message):
 <b>{draw_text}</b> {tr('красивый сад с цветами и фонтаном', lang)}
 
 {tr('Use /bing command for Bing only.', lang)}
+
+{tr('Use /flux command for black-forest-labs/flux-dev only.', lang)}
 
 {tr('Use /hf and /hff command for HuggingFace only.', lang)}
 

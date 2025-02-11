@@ -47,7 +47,6 @@
 
 /openrouter - выбрать openrouter.ai поставщик разнообразных платных ИИ (тут же поддерживается и bothub.chat)
 
-/haiku /gpt (4o mini ddg) /llama (llama 3 70b) /flash (gemini1.5flash) /pro (gemini1.5pro) - обращение напрямую к этим моделям без изменения настроек
 
 ### Команды для администратора
 
@@ -207,7 +206,7 @@ default_bot_name = 'бот'
 
 
 # какой бот отвечает по умолчанию
-# 'gemini', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15', 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'haiku',
+# 'gemini', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15', 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'o3-mini',
 # 'gpt-4o-mini-ddg', 'glm4plus', 'mistral', 'pixtral', 'commandrplus', 'deepseek_r1_distill_llama70b',  'gpt-4o', 'deepseek_r1'
 chat_mode_default = 'gemini15'
 

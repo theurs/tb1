@@ -151,7 +151,8 @@ def chat(query: str,
          chat_id: str,
          model: str = '',
          ) -> str:
-    '''model = 'claude-3-haiku' | 'gpt-3.5' | 'llama-3-70b' | 'mixtral-8x7b' | 'gpt-4o-mini'
+    '''
+    model = "gpt-4o-mini", "llama-3.3-70b", "claude-3-haiku", "o3-mini", "mixtral-8x7b"
     '''
 
     if chat_id not in CHATS_OBJ:

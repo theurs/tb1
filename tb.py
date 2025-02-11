@@ -488,7 +488,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_cohere.update_mem(query, resp, chat_id_full)
         elif 'glm4plus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_glm.update_mem(query, resp, chat_id_full)
-        elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_ddg.update_mem(query, resp, chat_id_full)
         elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_ddg.update_mem(query, resp, chat_id_full)
@@ -1873,12 +1873,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
 
-        elif kbd == 'haiku_chat':
+        elif kbd == 'o3_mini_ddg_chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
             markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
             button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='haiku_reset')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='o3_mini_ddg_reset')
             button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
             button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
             button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
@@ -1988,11 +1988,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'GPT 4o mini'
             button_gpt4o_mini = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o-mini-ddg')
 
-            if chat_mode == 'haiku':
-                msg = '✅ Haiku'
+            if chat_mode == 'o3_mini_ddg':
+                msg = '✅ GPT o3 mini'
             else:
-                msg = 'Haiku'
-            button_haiku = telebot.types.InlineKeyboardButton(msg, callback_data='select_haiku')
+                msg = 'GPT o3 mini'
+            button_o3_mini_ddg = telebot.types.InlineKeyboardButton(msg, callback_data='select_o3_mini_ddg')
 
             if chat_mode == 'glm4plus':
                 msg = '✅ GLM 4 PLUS'
@@ -2068,7 +2068,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_gemini_flash_thinking, button_gemini_flash20)
             markup.row(button_codestral, button_mistral)
-            markup.row(button_gpt4o_mini, button_haiku)
+            markup.row(button_gpt4o_mini, button_o3_mini_ddg)
 
             markup.row(button_gemini_exp, button_gemini_learnlm)
 
@@ -2402,9 +2402,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'select_glm4plus':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GLM 4 PLUS.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'glm4plus')
-            elif call.data == 'select_haiku':
-                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Claude 3 Haiku from DuckDuckGo.', lang))
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'haiku')
+            elif call.data == 'select_o3_mini_ddg':
+                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT o3 mini from DuckDuckGo.', lang))
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'o3_mini_ddg')
             elif call.data == 'select_gpt-4o-mini-ddg':
                 # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o mini from DuckDuckGo.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o-mini-ddg')
@@ -2474,9 +2474,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             elif call.data == 'gpt-4o-mini-ddg_reset':
                 my_ddg.reset(chat_id_full)
                 bot_reply_tr(message, 'История диалога с GPT 4o mini очищена.')
-            elif call.data == 'haiku_reset':
+            elif call.data == 'o3_mini_ddg_reset':
                 my_ddg.reset(chat_id_full)
-                bot_reply_tr(message, 'История диалога с haiku очищена.')
+                bot_reply_tr(message, 'История диалога с GPT o3 mini очищена.')
             elif call.data == 'gemini_reset':
                 my_gemini.reset(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
                 bot_reply_tr(message, 'История диалога с Gemini очищена.')
@@ -5013,8 +5013,8 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_cohere.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             my_glm.force(chat_id_full, text)
-        elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            bot_reply_tr(message, 'DuckDuckGo haiku do not support /force command')
+        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            bot_reply_tr(message, 'DuckDuckGo GPT o3 mini do not support /force command')
             return
         elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             bot_reply_tr(message, 'DuckDuckGo GPT 4o mini do not support /force command')
@@ -5077,8 +5077,8 @@ def undo_cmd(message: telebot.types.Message):
             my_cohere.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm3plus':
             my_glm.undo(chat_id_full)
-        elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            bot_reply_tr(message, 'DuckDuckGo haiku do not support /undo command')
+        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            bot_reply_tr(message, 'DuckDuckGo GPT o3 mini do not support /undo command')
         elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             bot_reply_tr(message, 'DuckDuckGo GPT 4o mini do not support /undo command')
         else:
@@ -5129,7 +5129,7 @@ def reset_(message: telebot.types.Message, say: bool = True):
             my_cohere.reset(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             my_glm.reset(chat_id_full)
-        elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_ddg.reset(chat_id_full)
         elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_ddg.reset(chat_id_full)
@@ -5258,7 +5258,7 @@ def save_history(message: telebot.types.Message):
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             prompt = my_glm.get_mem_as_string(chat_id_full, md = True) or ''
-        if 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        if 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
         if 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt += my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
@@ -5341,8 +5341,8 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             prompt = 'GLM 4 PLUS\n\n'
             prompt += my_glm.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif 'haiku' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = tr('DuckDuckGo haiku do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
+        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            prompt = tr('DuckDuckGo GPT o3 mini do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
             prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = tr('DuckDuckGo GPT 4o mini do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
@@ -7538,7 +7538,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'openrouter': 'openrouter.ai',
             'bothub': 'bothub.chat',
             'glm4plus': my_glm.DEFAULT_MODEL,
-            'haiku': 'Claude 3 Haiku',
+            'o3_mini_ddg': 'GPT o3 mini',
             'gpt35': 'GPT 3.5',
             'gpt-4o-mini-ddg': 'GPT 4o mini',
         }
@@ -8380,25 +8380,25 @@ def do_task(message, custom_prompt: str = ''):
             chat_mode_ = 'gemini'
 
 
-        chat_modes = {
-            '/haiku':     'haiku',
-            '/flash':     'gemini',
-            '/pro':       'gemini15',
-            '/llama':     'llama370',
-            '/gpt':       'gpt-4o-mini-ddg',
-        }
-        for command, mode in chat_modes.items():
-            if msg.startswith(command):
-                try:
-                    l = len(command) + 1
-                    message.text = message.text[l:]
-                    msg = msg[l:]
-                    chat_mode_ = mode
-                except IndexError:
-                    pass
-                if not msg.strip():
-                    return
-                break
+        # chat_modes = {
+        #     '/o3mini':     'o3_mini_ddg',
+        #     '/flash':     'gemini',
+        #     '/pro':       'gemini15',
+        #     '/llama':     'llama370',
+        #     '/gpt':       'gpt-4o-mini-ddg',
+        # }
+        # for command, mode in chat_modes.items():
+        #     if msg.startswith(command):
+        #         try:
+        #             l = len(command) + 1
+        #             message.text = message.text[l:]
+        #             msg = msg[l:]
+        #             chat_mode_ = mode
+        #         except IndexError:
+        #             pass
+        #         if not msg.strip():
+        #             return
+        #         break
 
 
         # обработка \image это неправильное /image
@@ -9356,23 +9356,22 @@ def do_task(message, custom_prompt: str = ''):
                             return
 
 
-                    # если активирован режим общения с haiku (duckduckgo)
-                    if chat_mode_ == 'haiku':
+                    # если активирован режим общения с o3_mini_ddg (duckduckgo)
+                    if chat_mode_ == 'o3_mini_ddg':
                         if len(msg) > my_ddg.MAX_REQUEST:
-                            bot_reply(message, f'{tr("Слишком длинное сообщение для haiku, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
+                            bot_reply(message, f'{tr("Слишком длинное сообщение для GPT o3 mini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
                             return
 
                         with ShowAction(message, action):
                             try:
-                                # answer = my_ddg.chat(message.text, chat_id_full)
-                                answer = my_ddg.chat(helped_query, chat_id_full, model='claude-3-haiku').strip()
+                                answer = my_ddg.chat(helped_query, chat_id_full, model='o3-mini').strip()
                                 if not answer:
                                     reset(message)
                                     time.sleep(2)
-                                    answer = my_ddg.chat(helped_query, chat_id_full, model='claude-3-haiku').strip()
+                                    answer = my_ddg.chat(helped_query, chat_id_full, model='o3-mini').strip()
                                     if not answer:
-                                        answer = 'Haiku ' + tr('did not answered, try to /reset and start again', lang)
-                                WHO_ANSWERED[chat_id_full] = 'haiku-ddg'
+                                        answer = 'GPT o3 mini ' + tr('did not answered, try to /reset and start again', lang)
+                                WHO_ANSWERED[chat_id_full] = 'o3_mini_ddg'
                                 WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                                 if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -9380,20 +9379,20 @@ def do_task(message, custom_prompt: str = ''):
                                     DEBUG_MD_TO_HTML[answer_] = answer
                                     answer = answer_
 
-                                my_log.log_echo(message, f'[haiku-ddg] {answer}')
+                                my_log.log_echo(message, f'[o3_mini_ddg] {answer}')
                                 try:
                                     if command_in_answer(answer, message):
                                         return
                                     bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                            reply_markup=get_keyboard('haiku_chat', message), not_log=True, allow_voice = True)
+                                                            reply_markup=get_keyboard('o3_mini_ddg_chat', message), not_log=True, allow_voice = True)
                                 except Exception as error:
                                     print(f'tb:do_task: {error}')
                                     my_log.log2(f'tb:do_task: {error}')
                                     bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                            reply_markup=get_keyboard('haiku_chat', message), not_log=True, allow_voice = True)
+                                                            reply_markup=get_keyboard('o3_mini_ddg_chat', message), not_log=True, allow_voice = True)
                             except Exception as error3:
                                 error_traceback = traceback.format_exc()
-                                my_log.log2(f'tb:do_task:haiku {error3}\n{error_traceback}')
+                                my_log.log2(f'tb:do_task:o3_mini_ddg {error3}\n{error_traceback}')
                             return
 
 

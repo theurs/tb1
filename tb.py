@@ -6042,17 +6042,17 @@ def image_flux_gen(message: telebot.types.Message):
                     bot_reply(message, "/flux <prompt>")
                     return
 
-                # Get English prompt and negative prompt using the function
-                reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
-                if reprompt == 'MODERATION':
-                    bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
-                    return
-                if not reprompt:
-                    bot_reply_tr(message, 'Could not translate your prompt. Try again.')
-                    return
-
                 with ShowAction(message, 'upload_photo'):
                     try:
+                        # Get English prompt and negative prompt using the function
+                        reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
+                        if reprompt == 'MODERATION':
+                            bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+                            return
+                        if not reprompt:
+                            bot_reply_tr(message, 'Could not translate your prompt. Try again.')
+                            return
+
                         images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt)
                         medias = []
                         for i in images:

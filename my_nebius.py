@@ -554,6 +554,9 @@ def txt2img(
         if not model:
             model = "black-forest-labs/flux-dev"
 
+        if model == 'black-forest-labs/flux-schnell' and num_interence_steps > 16:
+            num_interence_steps = 16
+
         key = get_next_key()
         client = OpenAI(
             base_url=BASE_URL,

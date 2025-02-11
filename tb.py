@@ -6015,10 +6015,17 @@ def huggingface_image_gen_fast(message: telebot.types.Message):
 @bot.message_handler(commands=['flux'], func=authorized)
 @async_run
 def image_flux_gen(message: telebot.types.Message):
-    """Generates an image using the Flux Nebius model."""
+    """Generates an image using the Flux Nebius model.
+    /flux [1|2|3] <prompt>
+    1 - модель "black-forest-labs/flux-dev" (указывается как третий параметр в функции flux_nebius_gen1)
+    2 - black-forest-labs/flux-schnell
+    3 - stability-ai/sdxl
+    """
     try:
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
+
+        COMMAND_MODE[chat_id_full] = ''
 
         # Check for donations
         if not check_donate(message, chat_id_full, lang):
@@ -6031,16 +6038,52 @@ def image_flux_gen(message: telebot.types.Message):
             lock = threading.Lock()
             IMG_GEN_LOCKS[chat_id_full] = lock
 
-        COMMAND_MODE[chat_id_full] = ''
+        # не ставить запросы от одного юзера в очередь
+        if lock.locked():
+            if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER:
+                pass
+            else:
+                return
 
         with lock:
             with semaphore_talks:
                 # Get prompt
-                try:
-                    prompt = message.text.split(maxsplit=1)[1].strip()
-                except IndexError:
-                    bot_reply(message, "/flux <prompt>")
+                parts = message.text.split(maxsplit=2)  # Split into command, model number, and prompt
+                if len(parts) < 2:
+                    help_text = f"""/flux [1|2|3] <prompt>
+
+1 - black-forest-labs/flux-dev
+/flux 1 {tr('cat in space', lang)}
+
+2 - black-forest-labs/flux-schnell
+/flux 2 {tr('cat in space', lang)}
+
+3 - stability-ai/sdxl
+/flux 3 {tr('cat in space', lang)}
+
+/flux {tr('cat in space', lang)} - {tr('same as /flux 1', lang)}
+"""
+                    bot_reply(message, help_text)
                     return
+
+                try:
+                    model_choice = parts[1].strip()
+                    prompt = parts[2].strip()
+                except IndexError:
+                    prompt = ''
+                    bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
+                    return
+
+                if not prompt:
+                    bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
+                    return
+
+                # Parse model choice, default to 1 if not specified or invalid
+                if model_choice in ('1', '2', '3'):
+                    model_index = int(model_choice)
+                else:
+                    model_index = 1  # Default to model 1
+                    prompt = f'{model_choice} {prompt}'
 
                 with ShowAction(message, 'upload_photo'):
                     try:
@@ -6053,10 +6096,21 @@ def image_flux_gen(message: telebot.types.Message):
                             bot_reply_tr(message, 'Could not translate your prompt. Try again.')
                             return
 
-                        images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt)
+                        # Select the appropriate model based on model_index
+                        if model_index == 1:
+                            images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-dev') # Explicitly pass the model name
+                        elif model_index == 2:
+                            images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-schnell')
+                        elif model_index == 3:
+                            images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'stability-ai/sdxl')
+                        else:
+                            bot_reply_tr(message, "Invalid model number. Use 1, 2 or 3.")
+                            return
+
+
                         medias = []
                         for i in images:
-                            caption_ = f'Flux dev\n\nPrompt: {reprompt}\nNegative: {negative_prompt}'[:900]
+                            caption_ = f'Flux dev model {model_index}\n\n{prompt}'[:900]
                             medias.append(telebot.types.InputMediaPhoto(i, caption=caption_))
 
                         if medias:

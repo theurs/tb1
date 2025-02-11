@@ -465,9 +465,9 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         resp = resp.strip()
         if not query or not resp:
             return
-        # Checks if there is a chat mode for the given chat, if not, sets the default value.
-        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+        # # Checks if there is a chat mode for the given chat, if not, sets the default value.
+        # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         # Updates the memory of the selected bot based on the chat mode.
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -528,17 +528,17 @@ def img2txt(text, lang: str,
         if 'markdown' not in query.lower() and 'latex' not in query.lower():
             query = query + '\n\n' + my_init.get_img2txt_prompt(tr, lang)
 
-        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+        # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         text = ''
         time_to_answer_start = time.time()
 
         try:
             # попробовать с помощью openrouter
-            # кто по умолчанию отвечает
-            if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-                my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+            # # кто по умолчанию отвечает
+            # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+            #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
             # если модель не указана явно то определяем по режиму чата
@@ -1269,6 +1269,9 @@ def authorized_callback(call: telebot.types.CallbackQuery) -> bool:
         if my_db.get_user_property(chat_id_full, 'blocked'):
             return False
 
+        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+
         # check for blocking and throttling
         try:
             check_blocked_user(chat_id_full, call.from_user.id, check_trottle=False)
@@ -1346,6 +1349,9 @@ def authorized(message: telebot.types.Message) -> bool:
         from_user_id = f'[{message.from_user.id}] [0]'
         if my_db.get_user_property(chat_id_full, 'blocked_totally') or my_db.get_user_property(from_user_id, 'blocked_totally'):
             return False
+
+        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         # do not process commands to another bot /cmd@botname args
         if is_for_me(message)[0]:
@@ -1464,6 +1470,9 @@ def authorized_log(message: telebot.types.Message) -> bool:
         chat_id_full = get_topic_id(message)
         if my_db.get_user_property(chat_id_full, 'blocked_totally'):
             return False
+
+        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         # do not process commands to another bot /cmd@botname args
         if is_for_me(message)[0]:
@@ -1952,9 +1961,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                     }
             voice_title = voices[voice]
 
-            # кто по умолчанию
-            if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-                my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+            # # кто по умолчанию
+            # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+            #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
             markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
@@ -5135,8 +5144,8 @@ def reset_(message: telebot.types.Message, say: bool = True):
             except IndexError:
                 pass
 
-        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+        # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.reset(chat_id_full, my_db.get_user_property(chat_id_full, 'chat_mode'))
@@ -7293,11 +7302,9 @@ def send_welcome_start(message: telebot.types.Message):
             NEW_KEYBOARD[chat_id_full] = True
 
         # показать выбор моделей новому юзеру
-        if not my_db.get_user_property(chat_id_full, 'chat_mode') or my_db.get_user_property(chat_id_full, 'chat_mode') == 'test':
-            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
-            bot_reply_tr(
-                message,
-                f"""Выберите подходящую модель
+        bot_reply_tr(
+            message,
+            f"""Выберите подходящую модель
 
 Gemini Flash - стандартная модель
 
@@ -7306,10 +7313,10 @@ Gemini Thinking - модель для решения задач
 Codestral - модель для программирования
 
 /config - все остальные модели""",
-                parse_mode='HTML',
-                reply_markup=get_keyboard('chat_mode', message),
-                send_message=True
-            )
+            parse_mode='HTML',
+            reply_markup=get_keyboard('chat_mode', message),
+            send_message=True
+        )
 
         # no language in user info, show language selector
         if not user_have_lang:
@@ -8383,9 +8390,9 @@ def do_task(message, custom_prompt: str = ''):
         if custom_prompt:
             message.text = custom_prompt
 
-        # кто по умолчанию отвечает
-        if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+        # # кто по умолчанию отвечает
+        # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'

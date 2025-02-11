@@ -4616,7 +4616,7 @@ def memo_handler(message: telebot.types.Message):
                 if arg <= len(memos):
                     memos.pop(arg - 1)
                     my_db.set_user_property(chat_id_full, 'memos', my_db.obj_to_blob(memos))
-                    bot_reply_tr(message, 'OK')
+                    bot_reply_tr(message, 'Memo was deleted.')
                 elif len(memos) > 10:
                     bot_reply_tr(message, 'Too many memos. Delete some before add new.')
                 else:
@@ -4630,19 +4630,25 @@ def memo_handler(message: telebot.types.Message):
                     else:
                         memos.append(arg)
                         my_db.set_user_property(chat_id_full, 'memos', my_db.obj_to_blob(memos))
-                        bot_reply_tr(message, 'OK')
+                        bot_reply_tr(message, 'New memo was added.')
                 else:
                     bot_reply_tr(message, 'Too short memo.')
 
         else:
-            msg = tr(f"""Usage : /memo <text> or <number to delete> - попросить бота запомнить что то, например /memo если речь зайдет про аниме отвечай как кавайная девочка а если про мангу как оттаку""", lang)
+            msg = tr("""
+Usage : /memo &lt;text&gt; or &lt;number to delete&gt; - попросить бота запомнить что то
+
+<code>/memo когда я говорю тебе нарисовать что то ты должен придумать профессиональный промпт для рисования на английском языке и ответить мне /flux your prompt</code>
+
+<code>/memo когда пишешь код на питоне пиши комментарии в коде на английском а вне кода на русском, и соблюдай все правила оформления кода</code>
+""", lang)
             memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
             i = 1
             for memo in memos:
-                msg += f'\n\n[❌ {i}] {memo}'
+                msg += f'\n\n[❌ {i}] {utils.html.escape(memo)}'
                 i += 1
             COMMAND_MODE[chat_id_full] = 'memo'
-            bot_reply(message, msg, reply_markup=get_keyboard('command_mode', message))
+            bot_reply(message, msg, reply_markup=get_keyboard('command_mode', message), parse_mode='HTML')
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -8659,13 +8665,15 @@ def do_task(message, custom_prompt: str = ''):
 
                         if answer.startswith('```'):
                             answer = answer[3:]
-                        if answer.startswith(('/img ', '/bing', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc', '/ask')):
+                        if answer.startswith(('/img ', '/bing', '/flux', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc', '/ask')):
                             cmd = answer.split(maxsplit=1)[0]
                             message.text = answer
                             if cmd == '/img':
                                 image_gen(message)
                             elif cmd == '/bing':
                                 image_bing_gen(message)
+                            elif cmd == '/flux':
+                                image_flux_gen(message)
                             elif cmd == '/ask':
                                 ask_file(message)
                             elif cmd == '/tts':

@@ -6099,10 +6099,13 @@ def image_flux_gen(message: telebot.types.Message):
                         # Select the appropriate model based on model_index
                         if model_index == 1:
                             images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-dev') # Explicitly pass the model name
+                            caption_model = 'black-forest-labs/flux-dev'
                         elif model_index == 2:
                             images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-schnell')
+                            caption_model = 'black-forest-labs/flux-schnell'
                         elif model_index == 3:
                             images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'stability-ai/sdxl')
+                            caption_model = 'stability-ai/sdxl'
                         else:
                             bot_reply_tr(message, "Invalid model number. Use 1, 2 or 3.")
                             return
@@ -6110,7 +6113,7 @@ def image_flux_gen(message: telebot.types.Message):
 
                         medias = []
                         for i in images:
-                            caption_ = f'Flux dev model {model_index}\n\n{prompt}'[:900]
+                            caption_ = f'{caption_model}\n\n{prompt}'[:900]
                             medias.append(telebot.types.InputMediaPhoto(i, caption=caption_))
 
                         if medias:
@@ -6130,7 +6133,7 @@ def image_flux_gen(message: telebot.types.Message):
                                     prompt=reprompt,
                                 )
                         else:
-                            bot_reply_tr(message, tr("Image generation failed. (no images generated)", lang))
+                            bot_reply_tr(message, tr("Image generation failed. (No images generated.)\n\nA prompt that is too long can cause this error. You can try using '!' before the prompt to fix it. In this case, the prompt must be in English only.", lang))
 
                     except Exception as e:
                         error_traceback = traceback.format_exc()

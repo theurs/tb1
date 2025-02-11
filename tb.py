@@ -6054,11 +6054,10 @@ def image_flux_gen(message: telebot.types.Message):
                 return
 
         with lock:
-            with semaphore_talks:
-                # Get prompt
-                parts = message.text.split(maxsplit=2)  # Split into command, model number, and prompt
-                if len(parts) < 2:
-                    help_text = f"""/flux [1|2|3] <prompt>
+            # Get prompt
+            parts = message.text.split(maxsplit=2)  # Split into command, model number, and prompt
+            if len(parts) < 2:
+                help_text = f"""/flux [1|2|3] <prompt>
 
 1 - black-forest-labs/flux-dev
 /flux 1 {tr('cat in space', lang)}
@@ -6071,82 +6070,84 @@ def image_flux_gen(message: telebot.types.Message):
 
 /flux {tr('cat in space', lang)} - {tr('same as /flux 1', lang)}
 """
-                    bot_reply(message, help_text)
-                    return
+                bot_reply(message, help_text)
+                return
 
+            try:
+                model_choice = parts[1].strip()
+                prompt = parts[2].strip()
+            except IndexError:
+                prompt = ''
+                bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
+                return
+
+            if not prompt:
+                bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
+                return
+
+            # Parse model choice, default to 1 if not specified or invalid
+            if model_choice in ('1', '2', '3'):
+                model_index = int(model_choice)
+            else:
+                model_index = 1  # Default to model 1
+                prompt = f'{model_choice} {prompt}'
+
+            with ShowAction(message, 'upload_photo'):
                 try:
-                    model_choice = parts[1].strip()
-                    prompt = parts[2].strip()
-                except IndexError:
-                    prompt = ''
-                    bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
-                    return
+                    # Get English prompt and negative prompt using the function
+                    reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
+                    if reprompt == 'MODERATION':
+                        bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+                        return
+                    if not reprompt:
+                        bot_reply_tr(message, 'Could not translate your prompt. Try again.')
+                        return
 
-                if not prompt:
-                    bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
-                    return
-
-                # Parse model choice, default to 1 if not specified or invalid
-                if model_choice in ('1', '2', '3'):
-                    model_index = int(model_choice)
-                else:
-                    model_index = 1  # Default to model 1
-                    prompt = f'{model_choice} {prompt}'
-
-                with ShowAction(message, 'upload_photo'):
-                    try:
-                        # Get English prompt and negative prompt using the function
-                        reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
-                        if reprompt == 'MODERATION':
-                            bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
-                            return
-                        if not reprompt:
-                            bot_reply_tr(message, 'Could not translate your prompt. Try again.')
-                            return
-
-                        # Select the appropriate model based on model_index
-                        if model_index == 1:
-                            images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-dev') # Explicitly pass the model name
-                            caption_model = 'black-forest-labs/flux-dev'
-                        elif model_index == 2:
-                            images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-schnell')
-                            caption_model = 'black-forest-labs/flux-schnell'
-                        elif model_index == 3:
-                            images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'stability-ai/sdxl')
-                            caption_model = 'stability-ai/sdxl'
-                        else:
-                            bot_reply_tr(message, "Invalid model number. Use 1, 2 or 3.")
-                            return
+                    # Select the appropriate model based on model_index
+                    if model_index == 1:
+                        images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-dev') # Explicitly pass the model name
+                        caption_model = 'black-forest-labs/flux-dev'
+                    elif model_index == 2:
+                        images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-schnell')
+                        caption_model = 'black-forest-labs/flux-schnell'
+                    elif model_index == 3:
+                        images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'stability-ai/sdxl')
+                        caption_model = 'stability-ai/sdxl'
+                    else:
+                        bot_reply_tr(message, "Invalid model number. Use 1, 2 or 3.")
+                        return
 
 
-                        medias = []
-                        for i in images:
-                            caption_ = f'{caption_model}\n\n{prompt}'[:900]
-                            medias.append(telebot.types.InputMediaPhoto(i, caption=caption_))
+                    medias = []
+                    for i in images:
+                        caption_ = f'{caption_model}\n\n{prompt}'[:900]
+                        medias.append(telebot.types.InputMediaPhoto(i, caption=caption_))
 
-                        if medias:
-                            # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
-                            chunk_size = 10
-                            chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
+                    if medias:
+                        # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
+                        chunk_size = 10
+                        chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
 
-                            # Send images to user
-                            send_images_to_user(chunks, message, chat_id_full, medias, images)
+                        # Send images to user
+                        send_images_to_user(chunks, message, chat_id_full, medias, images)
 
-                            # Send images to pics group (if enabled)
-                            if pics_group:
-                                send_images_to_pic_group(
-                                    chunks=chunks,
-                                    message=message,
-                                    chat_id_full=chat_id_full,
-                                    prompt=reprompt,
-                                )
-                        else:
-                            bot_reply_tr(message, tr("Image generation failed. (No images generated.)\n\nA prompt that is too long can cause this error. You can try using '!' before the prompt to fix it. In this case, the prompt must be in English only.", lang))
+                        # Send images to pics group (if enabled)
+                        if pics_group:
+                            send_images_to_pic_group(
+                                chunks=chunks,
+                                message=message,
+                                chat_id_full=chat_id_full,
+                                prompt=reprompt,
+                            )
 
-                    except Exception as e:
-                        error_traceback = traceback.format_exc()
-                        my_log.log2(f"tb:image_flux_gen: {e}\n{error_traceback}")
-                        bot_reply_tr(message, tr("An error occurred during image generation.", lang))
+                        add_to_bots_mem(message.text, 'OK', chat_id_full)
+                    else:
+                        bot_reply_tr(message, tr("Image generation failed. (No images generated.)\n\nA prompt that is too long can cause this error. You can try using '!' before the prompt to fix it. In this case, the prompt must be in English only.", lang))
+
+                except Exception as e:
+                    error_traceback = traceback.format_exc()
+                    my_log.log2(f"tb:image_flux_gen: {e}\n{error_traceback}")
+                    bot_reply_tr(message, tr("An error occurred during image generation.", lang))
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:image_flux_gen: {unknown}\n{traceback_error}')

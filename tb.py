@@ -6136,12 +6136,18 @@ def image_flux_gen(message: telebot.types.Message):
                     # Select the appropriate model based on model_index
                     if model_index == 1:
                         images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-dev') # Explicitly pass the model name
+                        if images:
+                            my_db.add_msg(chat_id_full, 'img Flux-dev Nebius')
                         caption_model = 'black-forest-labs/flux-dev'
                     elif model_index == 2:
                         images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-schnell')
+                        if images:
+                            my_db.add_msg(chat_id_full, 'img Flux-schnell Nebius')
                         caption_model = 'black-forest-labs/flux-schnell'
                     elif model_index == 3:
                         images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'stability-ai/sdxl')
+                        if images:
+                            my_db.add_msg(chat_id_full, 'img SDXL Nebius')
                         caption_model = 'stability-ai/sdxl'
                     else:
                         bot_reply_tr(message, "Invalid model number. Use 1, 2 or 3.")

@@ -230,13 +230,13 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
                     else:
                         t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
                 except Exception as download_error:
-                    my_log.log2(f'get_text_from_youtube: {download_error}\n\nProxy: {proxy}')
+                    my_log.log2(f'get_text_from_youtube:1: {download_error}\n\nProxy: {proxy}\nURL: {url}')
                 if t:
                     break
             except Exception as error:
                 if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
-                    my_log.log2(f'get_text_from_youtube: {error}')
-                # my_log.log2(f'get_text_from_youtube: {error}')
+                    my_log.log2(f'get_text_from_youtube:2: {error}')
+                # my_log.log2(f'get_text_from_youtube:3: {error}')
                 # print(error)
                 t = ''
 
@@ -250,7 +250,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
         return text
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'get_text_from_youtube: {url} {transcribe} {language}\n\n{error}\n\n{traceback_error}')
+        my_log.log2(f'get_text_from_youtube::4: {url} {transcribe} {language}\n\n{error}\n\n{traceback_error}')
         return ''
 
 

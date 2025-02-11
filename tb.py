@@ -8631,7 +8631,7 @@ def do_task(message, custom_prompt: str = ''):
                     hidden_text_for_llama370 = user_role
                     hidden_text = hidden_text_for_llama370
                     helped_query = f'({hidden_text}) {message.text}'
-
+                helped_query = helped_query.strip()
 
                 if chat_id_full not in CHAT_LOCKS:
                     CHAT_LOCKS[chat_id_full] = threading.Lock()

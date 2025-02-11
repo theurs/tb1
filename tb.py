@@ -4880,30 +4880,30 @@ def set_stt_mode(message: telebot.types.Message):
         try:
             user_id = int(user_id_str)
         except ValueError:
-            bot_reply_tr(message, "Invalid user ID.  Please provide an integer.")
+            bot_reply(message, "Invalid user ID.  Please provide an integer.")
             return
 
         user_chat_id_full = f'[{user_id}] [0]'
         if len(parts) == 2:
             # No new mode specified, show current mode
             current_stt_engine = my_db.get_user_property(user_chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
-            bot_reply_tr(message, f"🎤 {tr('Current STT engine for user', lang)} {user_id}: <b>{current_stt_engine}</b>", parse_mode='HTML')
+            bot_reply(message, f"🎤 {tr('Current STT engine for user', lang)} {user_id}: <b>{current_stt_engine}</b>", parse_mode='HTML')
             return
 
         new_mode = parts[2].lower()
 
         if new_mode not in ('whisper', 'gemini', 'google', 'assembly.ai', 'deepgram_nova2'):
-            bot_reply_tr(message, f"Invalid STT engine: {new_mode}.  {tr('Available engines are', lang)} whisper, gemini, google, assembly.ai, deepgram_nova2")
+            bot_reply(message, f"Invalid STT engine: {new_mode}. Available engines are whisper, gemini, google, assembly.ai, deepgram_nova2")
             return
 
         my_db.set_user_property(user_chat_id_full, 'speech_to_text_engine', new_mode)
 
-        bot_reply_tr(message, f"✅ {tr('STT engine for user', lang)} {user_id} {tr('set to', lang)} {new_mode}.")
+        bot_reply(message, f"✅ {tr('STT engine for user', lang)} {user_id} {tr('set to', lang)} {new_mode}.")
 
     except Exception as e:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:set_stt_mode: {e}\n{traceback_error}')
-        bot_reply_tr(message, f"❌ An error occurred: {str(e)}")
+        bot_reply(message, f"❌ An error occurred: {str(e)}")
 
 
 @bot.message_handler(commands=['set_chat_mode'], func=authorized_admin)

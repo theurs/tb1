@@ -438,6 +438,11 @@ COHERE_AI_KEYS = [
 #YTB_PROXY = [
 #    'socks5://127.0.0.1:9050', # tor
 #]
+# отдельно список для скачивания (первый для субтитров, второй для других данных)
+#YTB_PROXY2 = [
+#    # 'socks5://127.0.0.1:9050', # tor
+#    'socks5://172.28.1.8:9050',
+#]
 
 # github 150 requests per day for small llms and 50 requests per day for large llms
 # https://github.com/settings/tokens (no any rights required)

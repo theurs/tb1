@@ -1097,8 +1097,8 @@ def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
     """
     try:
         # Use yt-dlp to extract video information
-        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
-            proxy = random.choice(cfg.YTB_PROXY)
+        if hasattr(cfg, 'YTB_PROXY2') and cfg.YTB_PROXY2:
+            proxy = random.choice(cfg.YTB_PROXY2)
             process = subprocess.run([
                 'yt-dlp',
                 '--dump-json',
@@ -1152,8 +1152,8 @@ def download_audio(url: str, limit_duration: int = 4 * 60 * 60) -> str | None:
             quality = 'bestaudio'
         else:
             quality = 'bestaudio[abr<=128]/bestaudio'
-        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
-            proxy = random.choice(cfg.YTB_PROXY)
+        if hasattr(cfg, 'YTB_PROXY2') and cfg.YTB_PROXY2:
+            proxy = random.choice(cfg.YTB_PROXY2)
             subprocess.run([
                 'yt-dlp',
                 '-f', quality,
@@ -1205,9 +1205,9 @@ def valid_youtube_url(url: str) -> str:
             return ''
 
         # Check if a proxy is configured
-        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+        if hasattr(cfg, 'YTB_PROXY2') and cfg.YTB_PROXY2:
             # Use a random proxy from the list
-            proxy = random.choice(cfg.YTB_PROXY)
+            proxy = random.choice(cfg.YTB_PROXY2)
             process = subprocess.run([
                 'yt-dlp',
                 '--print', '%(id)s',

@@ -201,12 +201,12 @@ def get_hf_proxy() -> dict or None:
     return proxy
 
 
-def get_next_key() -> str:
+def get_random_key() -> str:
     """
-    Retrieves the next available API key from the list of valid API keys.
+    Retrieves a random API key from the list of valid API keys.
 
     Returns:
-        str: The next available API key.
+        str: A random API key.
     """
     global CURRENT_KEYS_SET
 
@@ -215,7 +215,9 @@ def get_next_key() -> str:
             CURRENT_KEYS_SET = ALL_KEYS[:]
 
         if CURRENT_KEYS_SET:
-            return CURRENT_KEYS_SET.pop(0)
+            random_key = random.choice(CURRENT_KEYS_SET)  # Выбираем случайный ключ
+            CURRENT_KEYS_SET.remove(random_key)           # Удаляем выбранный ключ из списка
+            return random_key
         else:
             raise Exception('No more keys available')
 
@@ -329,10 +331,10 @@ def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -
 
         return result
 
-    random.shuffle(API_URL)
+    # random.shuffle(API_URL)
     pool = ThreadPool(processes=len(API_URL))
     async_results = []
-    for x in API_URL[:10]:
+    for x in API_URL:
         async_results.append(pool.apply_async(request_img, (prompt, x, payload,)))
 
     result = []

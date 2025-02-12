@@ -2554,7 +2554,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     speech_to_text_engine = 'assembly.ai'
                 elif speech_to_text_engine == 'assembly.ai':
                     speech_to_text_engine = 'deepgram_nova3'
-                elif speech_to_text_engine == 'deepgram_nova3':
+                elif 'deepgram_nova' in speech_to_text_engine:
                     speech_to_text_engine = 'whisper'
                 else: # в базе записно что то другое, то что было раньше а теперь нет
                     speech_to_text_engine = 'whisper'

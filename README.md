@@ -239,7 +239,7 @@ gemini_2_flash_thinking_exp_model_fallback = 'gemini-2.0-flash-thinking-exp-1219
 # default locale, язык на который переводятся все сообщения
 DEFAULT_LANGUAGE = 'ru'
 
-# default text to speech engine 'whisper' 'gemini', 'google', 'assembly.ai', 'deepgram_nova2'
+# default text to speech engine 'whisper' 'gemini', 'google', 'assembly.ai', 'deepgram_nova3'
 # DEFAULT_STT_ENGINE = 'whisper'
 
 # список админов, кому можно использовать команды /restart и вкл-выкл автоответы в чатах

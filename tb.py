@@ -2553,8 +2553,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 elif speech_to_text_engine == 'google':
                     speech_to_text_engine = 'assembly.ai'
                 elif speech_to_text_engine == 'assembly.ai':
-                    speech_to_text_engine = 'deepgram_nova2'
-                elif speech_to_text_engine == 'deepgram_nova2':
+                    speech_to_text_engine = 'deepgram_nova3'
+                elif speech_to_text_engine == 'deepgram_nova3':
                     speech_to_text_engine = 'whisper'
                 else: # в базе записно что то другое, то что было раньше а теперь нет
                     speech_to_text_engine = 'whisper'
@@ -4889,7 +4889,7 @@ def set_stt_mode(message: telebot.types.Message):
     - gemini
     - google
     - assembly.ai
-    - deepgram_nova2
+    - deepgram_nova3
 
     Example:
     /set_stt_mode 123456789 whisper  # Sets the STT engine for user 123456789 to 'whisper'
@@ -4905,7 +4905,7 @@ def set_stt_mode(message: telebot.types.Message):
             # Show user's current STT engine and available options
             current_stt_engine = my_db.get_user_property(f'[{user_id}] [0]', 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
             msg = f"🎤 {tr('Current STT engine for user', lang)} {user_id}: **{current_stt_engine}**\n\n"
-            msg += f"🗣️ {tr('Available STT engines:', lang)} whisper, gemini, google, assembly.ai, deepgram_nova2\n\n"
+            msg += f"🗣️ {tr('Available STT engines:', lang)} whisper, gemini, google, assembly.ai, deepgram_nova3\n\n"
             msg += f"ℹ️ {tr('Usage:', lang)} /set_stt_mode <{tr('user_id', lang)} (int)> [<{tr('new_mode', lang)}>]\n"
             msg += f"Example:\n/set_stt_mode {user_id} whisper"
             msg = utils.bot_markdown_to_html(msg)
@@ -4928,8 +4928,8 @@ def set_stt_mode(message: telebot.types.Message):
 
         new_mode = parts[2].lower()
 
-        if new_mode not in ('whisper', 'gemini', 'google', 'assembly.ai', 'deepgram_nova2'):
-            bot_reply(message, f"Invalid STT engine: {new_mode}. Available engines are whisper, gemini, google, assembly.ai, deepgram_nova2")
+        if new_mode not in ('whisper', 'gemini', 'google', 'assembly.ai', 'deepgram_nova3'):
+            bot_reply(message, f"Invalid STT engine: {new_mode}. Available engines are whisper, gemini, google, assembly.ai, deepgram_nova3")
             return
 
         my_db.set_user_property(user_chat_id_full, 'speech_to_text_engine', new_mode)

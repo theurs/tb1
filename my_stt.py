@@ -122,7 +122,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                         if text and not done_flag:
                             done_flag = True
                             my_db.add_msg(chat_id, 'STT whisper-large-v3')
-                    elif speech_to_text_engine == 'deepgram_nova2':
+                    elif 'deepgram_nova' in speech_to_text_engine:
                         text = my_deepgram.stt(input_file2, lang, prompt)
                         if text and not done_flag:
                             done_flag = True

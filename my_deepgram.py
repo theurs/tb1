@@ -21,7 +21,10 @@ import my_log
 import utils
 
 
-def stt(buffer_data: bytes, lang: str = 'ru', prompt: str = '') -> str:
+DEFAULT_MODEL = 'nova-3' # nova-2, nova, whisper
+
+
+def stt(buffer_data: bytes, lang: str = 'ru', prompt: str = '', model: str = DEFAULT_MODEL) -> str:
     '''
     Convert audio data to text using Deepgram API.
     buffer_data: bytes or str - audio data or path to audio file
@@ -44,7 +47,7 @@ def stt(buffer_data: bytes, lang: str = 'ru', prompt: str = '') -> str:
         }
 
         options = PrerecordedOptions(
-            model="nova-2",
+            model=model,
             smart_format=True,
             detect_language=True,
         )
@@ -111,7 +114,7 @@ def tts(text: str, lang: str = 'ru', voice: str = 'aura-zeus-en') -> bytes:
     return b''
 
 
-def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = '') -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = '', model: str = DEFAULT_MODEL) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     '''
     Transcribes audio data and returns subtitles in SRT and VTT formats, and the transcribed text.
 
@@ -142,7 +145,7 @@ def transcribe(buffer_data: bytes, lang: str = 'ru', prompt: str = '') -> Tuple[
         }
 
         options = PrerecordedOptions(
-            model="nova-2",
+            model=model,
             smart_format=True,
             detect_language=True,
             # diarize=True  # Добавляем diarize=True для определения говорящих
@@ -177,7 +180,7 @@ def save_caps(cap_srt: str, cap_vtt: str, text: str, fname: str):
 
 if __name__ == "__main__":
     pass
-    # print(stt('C:/Users/user/Downloads/1.ogg'))
+    print(stt('C:/Users/user/Downloads/samples for ai/короткий диалог 3 голоса.m4a'))
     # print(stt('C:/Users/user/Downloads/2.m4a'))
 
     # text_to_say = 'In 2021, Microsoft and OpenAI introduced the AI-powered assistant for programmers, GitHub Copilot.'

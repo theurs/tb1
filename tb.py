@@ -6524,6 +6524,10 @@ def image_gen(message: telebot.types.Message):
                             if BING_FLAG:
                                 images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)
                                 if not images:
+                                    prompt = prompt.strip()
+                                    # remove trailing !
+                                    prompt = re.sub(r'^!+', '', prompt).strip()
+                                    message.text = f'/flux {prompt}'
                                     image_flux_gen(message)
                                     bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
                                     return

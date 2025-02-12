@@ -329,9 +329,10 @@ def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -
 
         return result
 
+    random.shuffle(API_URL)
     pool = ThreadPool(processes=len(API_URL))
     async_results = []
-    for x in API_URL:
+    for x in API_URL[:10]:
         async_results.append(pool.apply_async(request_img, (prompt, x, payload,)))
 
     result = []

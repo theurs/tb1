@@ -26,7 +26,7 @@ def generate_images_as_bytes(
 
     Args:
         prompt: The text prompt to generate the images from.  (e.g., "A cat wearing a hat")
-        model: The name of the model to use for image generation.  Defaults to 'imagen-3.0-generate-002'. (e.g., 'imagen-3.0-generate-002', 'another-image-model')
+        model: The name of the model to use for image generation.  Defaults to 'imagen-3.0-generate-002'. (e.g., 'imagen-3.0-generate-002',)
         number_of_images: The number of images to generate. Defaults to 4. (e.g., 1, 2, 5)
         aspect_ratio: The aspect ratio of the generated images. Defaults to "3:4". (e.g., "1:1", "9:16", "16:9", "3:4", "4:3")
         safety_filter_level: The level of safety filtering to apply. Defaults to "BLOCK_LOW_AND_ABOVE". (e.g., "BLOCK_NONE", "BLOCK_LOW_AND_ABOVE", "BLOCK_MEDIUM_AND_ABOVE", "BLOCK_HIGH_AND_ABOVE")
@@ -63,9 +63,7 @@ def generate_images_as_bytes(
     return image_bytes_list
 
 
-if __name__ == '__main__':
-    load_users_keys()
-
+def test_imagen():
     # Example usage:
     image_bytes_list = generate_images_as_bytes(prompt="A beautiful sunset over the ocean", number_of_images=2)
 
@@ -85,3 +83,9 @@ if __name__ == '__main__':
 
         except Exception as e:
             print(f"Error saving images: {e}")
+
+
+if __name__ == '__main__':
+    load_users_keys()
+
+    # test_imagen()

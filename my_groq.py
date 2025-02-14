@@ -59,7 +59,9 @@ MAX_SUM_REQUEST = MAX_MEM_LLAMA31
 # максимальный контекст для дипсик лламы
 MAX_deepseek_r1_distill_llama70b_chars = 10000
 MAX_REQUEST_deepseek_r1_distill_llama70b = 4000
+MAX_REQUEST_deepseek_r1_distill_qwen32b = 4000
 DEEPSEEK_LLAMA70_MODEL = 'deepseek-r1-distill-llama-70b'
+DEEPSEEK_QWEN32B_MODEL = 'deepseek-r1-distill-qwen-32b'
 
 
 CURRENT_KEY_SET = []
@@ -243,12 +245,12 @@ def ai(prompt: str = '',
         max_mem = MAX_QUERY_LENGTH
         if 'llama-3.1' in model:
             max_mem = MAX_MEM_LLAMA31
-        elif model_ == 'deepseek-r1-distill-llama-70b':
+        elif model_ in  ('deepseek-r1-distill-llama-70b', 'deepseek-r1-distill-qwen-32b'):
             max_mem = MAX_deepseek_r1_distill_llama70b_chars
         while token_count(mem) > max_mem + 100:
             mem = mem[2:]
 
-        if 'llama' in model_ or 'llama' in model_:
+        if 'llama' in model_.lower() or 'llama' in model_.lower() or 'qwen' in model_.lower():
             temperature = temperature / 2
 
         x = 0

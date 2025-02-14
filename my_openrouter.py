@@ -678,9 +678,53 @@ def img2txt(
         return text
 
 
+def txt2img(
+    prompt: str,
+    model = '',
+    temperature: float = 1,
+    max_tokens: int = 4000,
+    timeout: int = DEFAULT_TIMEOUT,
+    chat_id: str = '',
+    ) -> List[bytes]:
+
+    key = KEYS[chat_id]
+
+    if chat_id not in PARAMS:
+        PARAMS[chat_id] = PARAMS_DEFAULT
+
+    model_, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[chat_id]
+    if not model:
+        model = model_
+
+    URL = my_db.get_user_property(chat_id, 'base_api_url') or BASE_URL
+
+    client = OpenAI(
+    api_key=key,
+    base_url=URL
+    )
+
+    params = {
+        'model': model,
+        'prompt': prompt,
+        'n': 1,
+        'size': '1024x1024',
+    }
+
+    req = client.images.generate(**params)
+
+    image_url = json.loads(req.model_dump_json())['data'][0]['url']
+    print(image_url)
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
+
+    txt2img(
+        'Girl, portrait, European appearance, long black messy straight hair, dark red sunglasses with a faint red glow coming out from behind it, thin lips, cheekbones, frowning, cyberpunk style, realistic style, dark style, cyberpunk, wearing a red satin waistcoat vest and a necktie over a white satin shirt',
+        'dall-e-3',
+        chat_id='[11111] [0]'
+        )
 
     # reset('test')
     # with open('C:/Users/user/Downloads/1.txt', 'r', encoding='utf-8') as f:

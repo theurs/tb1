@@ -3270,11 +3270,18 @@ def handle_document(message: telebot.types.Message):
                                 raise error
                         downloaded_file = bot.download_file(file_info.file_path)
 
-
-
-
                         caption = message.caption or ''
                         caption = caption.strip()
+
+                        # если подпись начинается на load то это запрос на загрузку сохраненной памяти
+                        if caption == 'load':
+                            # bytes to string
+                            mem_dict = utils_llm.text_to_mem_dict(downloaded_file)
+                            reset_(message, say = False)
+                            for k, v in mem_dict.items():
+                                add_to_bots_mem(k, v, chat_id_full)
+                            bot_reply_tr(message, 'Память загруженна из файла.')
+                            return
 
                         # если подпись к документу начинается на !tr то это запрос на перевод
                         # и через пробел должен быть указан язык например !tr ru
@@ -5157,11 +5164,12 @@ def reset_(message: telebot.types.Message, say: bool = True):
             chat_id_full = get_topic_id(message)
             try:
                 if message.from_user.id in cfg.admins:
-                    arg = message.text.split(maxsplit=1)[1].strip()
-                    if arg:
-                        if '[' not in arg:
-                            arg = f'[{arg}] [0]'
-                        chat_id_full = arg
+                    if message.text:
+                        arg = message.text.split(maxsplit=1)[1].strip()
+                        if arg:
+                            if '[' not in arg:
+                                arg = f'[{arg}] [0]'
+                            chat_id_full = arg
             except IndexError:
                 pass
 

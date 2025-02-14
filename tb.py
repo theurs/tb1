@@ -131,6 +131,7 @@ LOCK_PICS_GROUP = threading.Lock()
 GOOGLE_LOCKS = {}
 SUM_LOCKS = {}
 IMG_GEN_LOCKS = {}
+IMG_GEN_LOCKS_FLUX = {}
 DOCUMENT_LOCKS = {}
 VOICE_LOCKS = {}
 IMG_LOCKS = {}
@@ -6111,11 +6112,11 @@ def image_flux_gen(message: telebot.types.Message):
             return
 
         # Lock to prevent concurrent requests
-        if chat_id_full in IMG_GEN_LOCKS:
-            lock = IMG_GEN_LOCKS[chat_id_full]
+        if chat_id_full in IMG_GEN_LOCKS_FLUX:
+            lock = IMG_GEN_LOCKS_FLUX[chat_id_full]
         else:
             lock = threading.Lock()
-            IMG_GEN_LOCKS[chat_id_full] = lock
+            IMG_GEN_LOCKS_FLUX[chat_id_full] = lock
 
         # не ставить запросы от одного юзера в очередь
         if lock.locked():

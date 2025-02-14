@@ -201,7 +201,7 @@ def get_hf_proxy() -> dict or None:
     return proxy
 
 
-def get_random_key() -> str:
+def get_next_key() -> str:
     """
     Retrieves a random API key from the list of valid API keys.
 

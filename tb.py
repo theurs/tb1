@@ -105,7 +105,7 @@ pics_group = cfg.pics_group if hasattr(cfg, 'pics_group') else None
 # до 500 одновременных потоков для чата с гпт
 semaphore_talks = threading.Semaphore(500)
 
-# {id: 'img'|'bing'|'bing10'|'bing20'|'hf'|None}
+# {id: 'img'|'bing'|'hf'|None}
 # когда юзер нажимает на кнопку /img то ожидается ввод промпта для рисования всеми способами
 # но когда юзер вводит команду /bing то ожидается ввод промпта для рисования толлько бинга
 # /hf - только huggingface
@@ -222,11 +222,6 @@ UNCAPTIONED_IMAGES_LOCK = threading.Lock()
 
 # {message.from_user.id: threading.Lock(), }
 CHECK_DONATE_LOCKS = {}
-
-
-# при каждом запуске маркер будет уникальным никому кроме бота не известным
-BING10MARKER = str(hash('[{(BING10)}]'))[:12]
-BING20MARKER = str(hash('[{(BING20)}]'))[:12]
 
 
 class RequestCounter:
@@ -922,6 +917,61 @@ def get_topic_id(message: telebot.types.Message) -> str:
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:get_topic_id:{unexpected_error}\n\n{traceback_error}')
+
+
+def get_id_parameters_for_function(message: telebot.types.Message, chat_id_full: str = None) -> str:
+    '''
+    Пытается получить единственный параметр у функции - id, возвращает либо chat_id_full
+    id - либо int либо пара int-ов с скобками или без
+    если int то результат [int] [0]
+    если пара интов то результат [int1] [int2]
+    Используется в командах типа /reset <id> /purge <id> /mem <id> /save <id>
+    где требуются админские полномочия
+    '''
+    if chat_id_full is None:
+        chat_id_full = get_topic_id(message)
+
+    args = message.text.split(maxsplit=1)
+    if len(args) > 1: # Проверка на наличие аргументов после /reset
+        potential_id = args[1].strip()
+        if message.from_user.id in cfg.admins: # Проверка, является ли пользователь админом
+            # Попытка разобрать potential_id как форматы ID пользователя/чата
+            target_chat_id_full = None
+            try:
+                user_id = int(potential_id) # Попытка преобразовать в целое число (user_id)
+                target_chat_id_full = f'[{user_id}] [0]'
+            except ValueError:
+                try:
+                    parts = potential_id.replace('[','').replace(']','').split() # Попытка формата '[int] [int]'
+                    if len(parts) == 2:
+                        chat_id = int(parts[0])
+                        topic_id = int(parts[1])
+                        target_chat_id_full = f'[{chat_id}] [{topic_id}]'
+                except ValueError:
+                    pass # Если разбор не удался, считать командой пользователя без ID
+
+            if target_chat_id_full: # Если был разобран валидный ID цели
+                chat_id_full = target_chat_id_full
+    return chat_id_full
+
+
+def extract_user_id(message: telebot.types.Message) -> int:
+    """
+    Extracts the user ID from the message text.
+
+    Args:
+        message: The message object.
+
+    Returns:
+        The user ID, or None if not found.
+    """
+    try:
+        user_ids = utils.extract_large_ids(message.text)
+        return user_ids[0] if user_ids else None
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:extract_user_id {error}\n\n{traceback_error}')
+        return None
 
 
 def check_blocked_user(id_: str, from_user_id: int, check_trottle = True):
@@ -2648,6 +2698,7 @@ def handle_successful_payment(message: telebot.types.Message):
         my_log.log_donate(f'tb:handle_successful_payment: {error}\n\n{str(message)}\n\n{traceback_error}')
         msg = tr("❌ Error while processing payment.", lang) + "\n\n" + str(error)
         bot.send_message(message.chat.id, msg)
+
 
 # Обработчик команды /paysupport
 @bot.message_handler(commands=['paysupport'])
@@ -4886,24 +4937,6 @@ def change_mode(message: telebot.types.Message):
         my_log.log2(f'tb:set_style: {unknown}\n{traceback_error}')
 
 
-# @bot.message_handler(commands=['set_stt_mode'], func=authorized_admin)
-# @async_run
-# def set_stt_mode(message: telebot.types.Message):
-#     """mandatory switch user from one stt engine to another"""
-#     try:
-#         chat_id_full = get_topic_id(message)
-#         lang = get_lang(chat_id_full, message)
-
-#         _user = f'[{message.text.split(maxsplit=3)[1].strip()}] [0]'
-#         _mode = message.text.split(maxsplit=3)[2].strip()
-#         my_db.set_user_property(_user, 'speech_to_text_engine', _mode)
-#         msg = f'{tr("Changed: ", lang)} {_user} -> {_mode}.'
-#         bot_reply(message, msg)
-#     except:
-#         msg = f"{tr('Example usage: /set_stt_mode user_id_as_int new_mode', lang)} whisper, gemini, google, assembly.ai"
-#         bot_reply(message, msg, parse_mode='HTML')
-
-
 @bot.message_handler(commands=['set_stt_mode', 'stt'], func=authorized_admin)
 @async_run
 def set_stt_mode(message: telebot.types.Message):
@@ -5211,30 +5244,13 @@ def reset(message: telebot.types.Message):
         lang = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
 
-        args = message.text.split(maxsplit=1)
-        if len(args) > 1: # Проверка на наличие аргументов после /reset
-            potential_id = args[1].strip()
-            if message.from_user.id in cfg.admins: # Проверка, является ли пользователь админом
-                # Попытка разобрать potential_id как форматы ID пользователя/чата
-                target_chat_id_full = None
-                try:
-                    user_id = int(potential_id) # Попытка преобразовать в целое число (user_id)
-                    target_chat_id_full = f'[{user_id}] [0]'
-                except ValueError:
-                    try:
-                        parts = potential_id.replace('[','').replace(']','').split() # Попытка формата '[int] [int]'
-                        if len(parts) == 2:
-                            chat_id = int(parts[0])
-                            topic_id = int(parts[1])
-                            target_chat_id_full = f'[{chat_id}] [{topic_id}]'
-                    except ValueError:
-                        pass # Если разбор не удался, считать командой пользователя без ID
+        target_chat_id_full = get_id_parameters_for_function(message, chat_id_full)
 
-                if target_chat_id_full: # Если был разобран валидный ID цели
-                    reset_(message, say=False, chat_id_full=target_chat_id_full) # Сброс истории админом, без ответа "History cleared"
-                    msg = f'{tr("History cleared for:", lang)} {target_chat_id_full}'
-                    bot_reply(message, msg) # Подтверждение админу
-                    return # Выход, чтобы избежать сброса истории для текущего пользователя
+        if target_chat_id_full: # Если был разобран валидный ID цели
+            reset_(message, say=False, chat_id_full=target_chat_id_full) # Сброс истории админом, без ответа "History cleared"
+            msg = f'{tr("History cleared for:", lang)} {target_chat_id_full}'
+            bot_reply(message, msg) # Подтверждение админу
+            return # Выход, чтобы избежать сброса истории для текущего пользователя
 
         reset_(message, say=True) # Сброс истории пользователем самому себе
     except Exception as unknown:
@@ -5294,15 +5310,7 @@ def save_history(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
 
-        try:
-            if message.from_user.id in cfg.admins:
-                arg = message.text.split(maxsplit=1)[1].strip()
-                if arg:
-                    if '[' not in arg:
-                        arg = f'[{arg}] [0]'
-                    chat_id_full = arg
-        except IndexError:
-            pass
+        chat_id_full = get_id_parameters_for_function(message, chat_id_full)
 
         prompt = ''
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -5363,15 +5371,7 @@ def send_debug_history(message: telebot.types.Message):
         lang = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
 
-        try:
-            if message.from_user.id in cfg.admins:
-                arg = message.text.split(maxsplit=1)[1].strip()
-                if arg:
-                    if '[' not in arg:
-                        arg = f'[{arg}] [0]'
-                    chat_id_full = arg
-        except IndexError:
-            pass
+        chat_id_full = get_id_parameters_for_function(message, chat_id_full)
 
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = 'Gemini ' + my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
@@ -6230,8 +6230,6 @@ def image_flux_gen(message: telebot.types.Message):
         my_log.log2(f'tb:image_flux_gen: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['bing10', 'Bing10'], func=authorized)
-@bot.message_handler(commands=['bing20', 'Bing20'], func=authorized)
 @bot.message_handler(commands=['bing', 'Bing'], func=authorized)
 @async_run
 def image_bing_gen(message: telebot.types.Message):
@@ -6247,52 +6245,6 @@ def image_bing_gen(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:image_bing_gen: {unknown}\n{traceback_error}')
-
-
-# @bot.message_handler(commands=['bing10', 'Bing10'], func=authorized)
-# @async_run
-# def image_bing_gen10(message: telebot.types.Message):
-#     try:
-#         chat_id_full = get_topic_id(message)
-#         IMG_MODE_FLAG[chat_id_full] = 'bing10'
-#         stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
-#         if stars < 100:
-#             lang = get_lang(chat_id_full, message)
-#             msg = f"{tr('You need 100 stars in reserve to use this command.', lang)} /stars"
-#             bot_reply(message, msg)
-#             return
-#         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-#             bot_reply_tr(message, 'Bing вас забанил.')
-#             time.sleep(2)
-#             return
-#         message.text += BING10MARKER
-#         image_gen(message)
-#     except Exception as unknown:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:image_bing_gen10: {unknown}\n{traceback_error}')
-
-
-# @bot.message_handler(commands=['bing20', 'Bing20'], func=authorized)
-# @async_run
-# def image_bing_gen20(message: telebot.types.Message):
-#     try:
-#         chat_id_full = get_topic_id(message)
-#         IMG_MODE_FLAG[chat_id_full] = 'bing20'
-#         stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
-#         if stars < 200:
-#             lang = get_lang(chat_id_full, message)
-#             msg = f"{tr('You need 200 stars in reserve to use this command.', lang)} /stars"
-#             bot_reply_tr(message, msg)
-#             return
-#         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-#             bot_reply_tr(message, 'Bing вас забанил.')
-#             time.sleep(2)
-#             return
-#         message.text += BING20MARKER
-#         image_gen(message)
-#     except Exception as unknown:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:image_bing_gen20: {unknown}\n{traceback_error}')
 
 
 @async_run
@@ -6455,14 +6407,7 @@ def image_gen(message: telebot.types.Message):
         if message.text.endswith('[{(BING)}]'):
             message.text = message.text[:-10]
             BING_FLAG = 1
-        elif message.text.endswith(BING10MARKER):
-            message.text = message.text[:-12]
-            BING_FLAG = 10
-            show_timeout = 20
-        elif message.text.endswith(BING20MARKER):
-            message.text = message.text[:-12]
-            BING_FLAG = 20
-            show_timeout = 30
+
 
         # 10х и 20х отключены пока
         # BING_FLAG = 0
@@ -6533,11 +6478,6 @@ def image_gen(message: telebot.types.Message):
                         if chat_id_full in IMG_MODE_FLAG:
                             if IMG_MODE_FLAG[chat_id_full] == 'bing':
                                 BING_FLAG = 1
-                            elif IMG_MODE_FLAG[chat_id_full] == 'bing10':
-                                BING_FLAG = 10
-                            elif IMG_MODE_FLAG[chat_id_full] == 'bing20':
-                                BING_FLAG = 20
-                            del IMG_MODE_FLAG[chat_id_full]
 
                     # get chat history for content
                     conversation_history = ''
@@ -6774,25 +6714,6 @@ def shell_command(message: telebot.types.Message):
         my_log.log2(f'tb:shell_command {error}\n\n{traceback_error}')
 
 
-def extract_user_id(message: telebot.types.Message) -> int:
-    """
-    Extracts the user ID from the message text.
-
-    Args:
-        message: The message object.
-
-    Returns:
-        The user ID, or None if not found.
-    """
-    try:
-        user_ids = utils.extract_large_ids(message.text)
-        return user_ids[0] if user_ids else None
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:extract_user_id {error}\n\n{traceback_error}')
-        return None
-
-
 @bot.message_handler(commands=['block'], func=authorized_admin)
 @async_run
 def block_command_handler(message: telebot.types.Message):
@@ -6966,6 +6887,7 @@ def ask_file(message: telebot.types.Message):
         lang = get_lang(chat_id_full, message)
         role = my_db.get_user_property(chat_id_full, 'role')
 
+        chat_id_full_target = get_id_parameters_for_function(message, chat_id_full)
         try:
             command_parts = message.text.split(maxsplit=2)
             if command_parts:
@@ -7503,6 +7425,8 @@ def purge_cmd_handler(message: telebot.types.Message):
 
         COMMAND_MODE[chat_id_full] = ''
 
+        chat_id_full = get_id_parameters_for_function(message, chat_id_full)
+
         if my_log.purge(message.chat.id):
             lang = get_lang(chat_id_full, message)
 
@@ -7986,127 +7910,6 @@ def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str 
                           allow_voice=allow_voice)
 
 
-
-
-
-
-# def reply_to_long_message(message: telebot.types.Message, resp: str, parse_mode: str = None,
-#                           disable_web_page_preview: bool = None,
-#                           reply_markup: telebot.types.InlineKeyboardMarkup = None, send_message: bool = False,
-#                           allow_voice: bool = False):
-#     # отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл
-#     try:
-#         if not resp.strip():
-#             return
-
-#         chat_id_full = get_topic_id(message)
-
-#         preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
-
-#         if len(resp) < 45000:
-#             if parse_mode == 'HTML':
-#                 chunks = utils.split_html(resp, 3800)
-#             else:
-#                 chunks = utils.split_text(resp, 3800)
-
-#             counter = len(chunks)
-#             for chunk in chunks:
-#                 if not chunk.strip():
-#                     continue
-#                 # в режиме только голоса ответы идут голосом без текста
-#                 # скорее всего будет всего 1 чанк, не слишком длинный текст
-#                 if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:
-#                     message.text = '/tts ' + chunk
-#                     tts(message)
-#                 else:
-#                     try:
-#                         if send_message:
-#                             m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode=parse_mode,
-#                                             link_preview_options=preview, reply_markup=reply_markup)
-#                         else:
-#                             m = bot.reply_to(message, chunk, parse_mode=parse_mode,
-#                                     link_preview_options=preview, reply_markup=reply_markup)
-#                         log_message(m)
-#                     except Exception as error:
-#                         if "Error code: 400. Description: Bad Request: can't parse entities" in str(error):
-#                             error_traceback = traceback.format_exc()
-#                             my_log.log_parser_error(f'{str(error)}\n\n{error_traceback}\n\n{DEBUG_MD_TO_HTML.get(resp, "")}\n=====================================================\n{resp}')
-#                             my_log.log_parser_error2(DEBUG_MD_TO_HTML.get(resp, ""))
-#                         elif 'Bad Request: message to be replied not found' in str(error):
-#                             return
-#                         elif 'Bad Request: message is too long' in str(error):
-#                             # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
-#                             chunks2 = utils.split_text(chunk, 3500)
-#                             for chunk2 in chunks2:
-#                                 try:
-#                                     if send_message:
-#                                         m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,
-#                                                         link_preview_options=preview, reply_markup=reply_markup)
-#                                     else:
-#                                         m = bot.reply_to(message, chunk2,
-#                                                 link_preview_options=preview, reply_markup=reply_markup)
-#                                     log_message(m)
-#                                 except Exception as error_chunk2:
-#                                     my_log.log2(f'tb:reply_to_log_message: {error_chunk2}\n\n{chunk2}')
-
-#                         else:
-#                             my_log.log2(f'tb:reply_to_long_message: {error}\n\nresp: {resp[:500]}\n\nparse_mode: {parse_mode}')
-#                             my_log.log2(chunk)
-#                         if parse_mode == 'HTML':
-#                             chunk = utils.html.unescape(chunk)
-#                             chunk = chunk.replace('<b>', '')
-#                             chunk = chunk.replace('<i>', '')
-#                             chunk = chunk.replace('</b>', '')
-#                             chunk = chunk.replace('</i>', '')
-#                         try:
-#                             if send_message:
-#                                 m = bot.send_message(message.chat.id, chunk, message_thread_id=message.message_thread_id, parse_mode='',
-#                                                     link_preview_options=preview, reply_markup=reply_markup)
-#                             else:
-#                                 m = bot.reply_to(message, chunk, parse_mode='', link_preview_options=preview, reply_markup=reply_markup)
-#                             log_message(m)
-#                         except Exception as error2:
-#                             if 'Bad Request: message to be replied not found' in str(error):
-#                                 return
-
-#                             elif 'Bad Request: message is too long' in str(error):
-#                                 # не смог порезать на части, режем снова и отправляем без форматирования на свякий случай
-#                                 chunks2 = utils.split_text(chunk, 3500)
-#                                 for chunk2 in chunks2:
-#                                     try:
-#                                         if send_message:
-#                                             m = bot.send_message(message.chat.id, chunk2, message_thread_id=message.message_thread_id,
-#                                                             link_preview_options=preview, reply_markup=reply_markup)
-#                                         else:
-#                                             m = bot.reply_to(message, chunk2,
-#                                                     link_preview_options=preview, reply_markup=reply_markup)
-#                                         log_message(m)
-#                                     except Exception as error_chunk2_2:
-#                                         my_log.log2(f'tb:reply_to_log_message2: {error_chunk2_2}\n\n{chunk2}')
-#                             else:
-#                                 my_log.log2(f'tb:reply_to_long_message3: {error2}')
-#                 counter -= 1
-#                 if counter < 0:
-#                     break
-#                 time.sleep(2)
-#         else:
-#             buf = io.BytesIO()
-#             buf.write(resp.encode())
-#             buf.seek(0)
-#             m = bot.send_document(message.chat.id, document=buf, message_thread_id=message.message_thread_id,
-#                                 caption='resp.txt', visible_file_name = 'resp.txt', reply_markup=reply_markup)
-#             log_message(m)
-#         if resp in DEBUG_MD_TO_HTML:
-#             del DEBUG_MD_TO_HTML[resp]
-#     except Exception as unknown:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:reply_to_long_message3: {unknown}\n{traceback_error}')
-
-
-
-
-
-
 def send_resp_as_file(message: telebot.types.Message,
                       resp: str,
                       reply_markup: telebot.types.InlineKeyboardMarkup = None,
@@ -8287,13 +8090,6 @@ def reply_to_long_message(message: telebot.types.Message,
     # remove resp if any
     if resp in DEBUG_MD_TO_HTML:
         DEBUG_MD_TO_HTML.pop(resp)
-
-
-
-
-
-
-
 
 
 def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -> bool:

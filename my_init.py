@@ -181,6 +181,7 @@ ADMIN_HELP = '''
 /sdonate - add or remove stars for a user, it will only be visible in the log that they are virtual
 
 /reset <id>|<id thread> - reset mem for user /reset 123 /reset 12123 123
+/purge <id>|<id thread> - purge dato for user /reset 123 /reset 12123 123
 /alang - set language for specific user
 /atemp - <user_id as int> [new temperature]
 /set_stt_mode - mandatory switch user from one stt engine to another

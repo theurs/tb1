@@ -113,7 +113,7 @@ def ai(prompt: str = '',
        model = DEFAULT_MODEL,
        temperature: float = 1,
        max_tokens: int = 4000,
-       timeout: int = DEFAULT_TIMEOUT,
+       timeout: float = DEFAULT_TIMEOUT,
        key_: str = None) -> str:
 
     temperature = temperature/2
@@ -161,7 +161,7 @@ def ai(prompt: str = '',
                     mem__ = mem[2:]
                 except IndexError:
                     return ''
-                return ai(prompt, mem__, user_id, system, model, temperature, max_tokens, timeout, key_)
+                return ai(prompt, mem__, user_id, system, model, temperature, max_tokens, timeout - (time.time() - start_time), key_)
             my_log.log_nebius(f'ai: {error_other}')
             return ''
 

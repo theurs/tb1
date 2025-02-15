@@ -5246,7 +5246,7 @@ def reset(message: telebot.types.Message):
 
         target_chat_id_full = get_id_parameters_for_function(message, chat_id_full)
 
-        if target_chat_id_full: # Если был разобран валидный ID цели
+        if target_chat_id_full != chat_id_full: # Если был разобран валидный ID цели
             reset_(message, say=False, chat_id_full=target_chat_id_full) # Сброс истории админом, без ответа "History cleared"
             msg = f'{tr("History cleared for:", lang)} {target_chat_id_full}'
             bot_reply(message, msg) # Подтверждение админу

@@ -5155,58 +5155,48 @@ def undo_cmd(message: telebot.types.Message):
         my_log.log2(f'tb:undo: {unknown}\n{traceback_error}')
 
 
-def reset_(message: telebot.types.Message, say: bool = True):
+def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str = None):
     """Clear chat history (bot's memory)
-    message - is chat id or message object"""
+    message - is message object (optional)
+    say - bool, send message 'history cleared' or not (optional, default True)
+    chat_id_full - is chat_id_full string (optional, if None then get_topic_id(message))
+    """
     try:
-        if isinstance(message, str):
-            chat_id_full = message    
-        else:
+        if chat_id_full is None: # Определяем chat_id_full, если он не передан явно
             chat_id_full = get_topic_id(message)
-            try:
-                if message.from_user.id in cfg.admins:
-                    if message.text:
-                        arg = message.text.split(maxsplit=1)[1].strip()
-                        if arg:
-                            if '[' not in arg:
-                                arg = f'[{arg}] [0]'
-                            chat_id_full = arg
-            except IndexError:
-                pass
 
-        # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
+        chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')
 
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_gemini.reset(chat_id_full, my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b', 'deepseek_r1_distill_qwen32b'):
-            my_groq.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
-            my_openrouter.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
-            my_mistral.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
-            my_mistral.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
-            my_mistral.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
-            my_github.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
-            my_cohere.reset(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
-            my_glm.reset(chat_id_full)
-        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_ddg.reset(chat_id_full)
-        elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_ddg.reset(chat_id_full)
-        else:
-            if isinstance(message, telebot.types.Message):
-                if say:
+        if chat_mode_:
+            if 'gemini' in chat_mode_:
+                my_gemini.reset(chat_id_full, chat_mode_)
+            elif chat_mode_ in ('llama370', 'deepseek_r1_distill_llama70b', 'deepseek_r1_distill_qwen32b'):
+                my_groq.reset(chat_id_full)
+            elif chat_mode_ == 'openrouter':
+                my_openrouter.reset(chat_id_full)
+            elif chat_mode_ == 'mistral':
+                my_mistral.reset(chat_id_full)
+            elif chat_mode_ == 'pixtral':
+                my_mistral.reset(chat_id_full)
+            elif chat_mode_ == 'codestral':
+                my_mistral.reset(chat_id_full)
+            elif chat_mode_ in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
+                my_github.reset(chat_id_full)
+            elif chat_mode_ == 'commandrplus':
+                my_cohere.reset(chat_id_full)
+            elif chat_mode_ == 'glm4plus':
+                my_glm.reset(chat_id_full)
+            elif 'o3_mini_ddg' in chat_mode_:
+                my_ddg.reset(chat_id_full)
+            elif 'gpt-4o-mini-ddg' in chat_mode_:
+                my_ddg.reset(chat_id_full)
+            else:
+                if say and message: # Отправлять сообщение только если пользователь инициировал и say=True
                     bot_reply_tr(message, 'History WAS NOT cleared.')
-            return
-        if isinstance(message, telebot.types.Message):
-            if say:
-                bot_reply_tr(message, 'History cleared.')
+                return
+
+        if say and message: # Отправлять сообщение только если пользователь инициировал и say=True
+            bot_reply_tr(message, 'History cleared.')
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:reset_: {unknown}\n{traceback_error}')
@@ -5217,9 +5207,36 @@ def reset_(message: telebot.types.Message, say: bool = True):
 def reset(message: telebot.types.Message):
     """Clear chat history (bot's memory)"""
     try:
-        chat_id_full = get_topic_id(message)
+        chat_id_full = get_topic_id(message) # По умолчанию - текущий чат
+        lang = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
-        reset_(message)
+
+        args = message.text.split(maxsplit=1)
+        if len(args) > 1: # Проверка на наличие аргументов после /reset
+            potential_id = args[1].strip()
+            if message.from_user.id in cfg.admins: # Проверка, является ли пользователь админом
+                # Попытка разобрать potential_id как форматы ID пользователя/чата
+                target_chat_id_full = None
+                try:
+                    user_id = int(potential_id) # Попытка преобразовать в целое число (user_id)
+                    target_chat_id_full = f'[{user_id}] [0]'
+                except ValueError:
+                    try:
+                        parts = potential_id.replace('[','').replace(']','').split() # Попытка формата '[int] [int]'
+                        if len(parts) == 2:
+                            chat_id = int(parts[0])
+                            topic_id = int(parts[1])
+                            target_chat_id_full = f'[{chat_id}] [{topic_id}]'
+                    except ValueError:
+                        pass # Если разбор не удался, считать командой пользователя без ID
+
+                if target_chat_id_full: # Если был разобран валидный ID цели
+                    reset_(message, say=False, chat_id_full=target_chat_id_full) # Сброс истории админом, без ответа "History cleared"
+                    msg = f'{tr("History cleared for:", lang)} {target_chat_id_full}'
+                    bot_reply(message, msg) # Подтверждение админу
+                    return # Выход, чтобы избежать сброса истории для текущего пользователя
+
+        reset_(message, say=True) # Сброс истории пользователем самому себе
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:reset: {unknown}\n{traceback_error}')
@@ -5240,24 +5257,6 @@ def remove_keyboard(message: telebot.types.Message):
         bot_reply_tr(message, 'Keyboard removed. Use /start to create a new keyboard.')
     except Exception as unknown:
         my_log.log2(f'tb:remove_keyboard: {unknown}')
-
-
-@bot.message_handler(commands=['reset_gemini2'], func=authorized_admin)
-@async_run
-def reset_gemini2(message: telebot.types.Message):
-    '''reset gemini memory for specific chat'''
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-
-        arg1 = message.text.split(maxsplit=3)[1]+' '+message.text.split(maxsplit=3)[2]
-        my_gemini.reset(arg1)
-        msg = f'{tr("История Gemini в чате очищена", lang)} {arg1}'
-        bot_reply(message, msg)
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:reset_gemini2: {unknown}\n{traceback_error}')
-        bot_reply_tr(message, 'Usage: /reset_gemini2 <chat_id_full!>')
 
 
 @bot.message_handler(commands=['style2'], func=authorized_admin)

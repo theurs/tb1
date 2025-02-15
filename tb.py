@@ -6311,12 +6311,12 @@ def send_images_to_pic_group(
             translated_prompt = tr(prompt, 'ru', save_cache=False)
 
             hashtag = 'H' + chat_id_full.replace('[', '').replace(']', '')
-            bot.send_message(pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
+            bot.send_message(pics_group, f'{utils.html.unescape(prompt[:800])} | #{hashtag} {message.from_user.id}',
                             link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
             ratio = fuzz.ratio(translated_prompt, prompt)
             if ratio < 70:
-                bot.send_message(pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
+                bot.send_message(pics_group, f'{utils.html.unescape(translated_prompt[:800])} | #{hashtag} {message.from_user.id}',
                                 link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
             retry_counter = 0 # retry on internal error

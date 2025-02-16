@@ -6496,15 +6496,18 @@ def image_gen(message: telebot.types.Message):
                             if BING_FLAG:
                                 images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)
                                 if not images:
-                                    prompt = prompt.strip()
-                                    # remove trailing !
-                                    prompt = re.sub(r'^!+', '', prompt).strip()
-                                    message.text = f'/flux {prompt}'
-                                    image_flux_gen(message)
                                     bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
-                                    return
                             else:
                                 images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
+
+                        # try flux if no results
+                        if not images:
+                            prompt = prompt.strip()
+                            # remove trailing !
+                            prompt = re.sub(r'^!+', '', prompt).strip()
+                            message.text = f'/flux {prompt}'
+                            image_flux_gen(message)
+                            return
 
                         medias = []
                         has_good_images = False
@@ -9554,6 +9557,15 @@ def images_api_post() -> Dict[str, Any]:
         # Generate images using available APIs, the result can be a list of strings (URLs) or bytes (image data)
         image_results: List[Union[str, bytes]] = my_genimg.gen_images(prompt, user_id='api_images')
         # image_results: List[Union[str, bytes]] = ['url1', b'image_data_1', 'url2', b'image_data_2']
+
+        if not image_results:
+            prompt = prompt.strip()
+            # remove trailing !
+            prompt = re.sub(r'^!+', '', prompt).strip()
+            # Get English prompt and negative prompt using the function
+            reprompt, negative_prompt = my_genimg.get_reprompt(prompt)
+            if reprompt != 'MODERATION':
+                image_results = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-dev')
 
         if not image_results:
             return jsonify({"error": "No images generated"}), 404

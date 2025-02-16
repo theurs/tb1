@@ -71,6 +71,7 @@ def ai(
         Exception: If an error occurs during the generation of the response. The error message and traceback are logged.
     """
     try:
+        temperature = temperature / 2
         mem = []
         if mem_:
             if system:

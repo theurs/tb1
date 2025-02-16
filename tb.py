@@ -4488,7 +4488,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
             else:
                 msg += '🔒 Groq\n'
             if mistral_keys:
-                msg += f'🔑️ Mistral [...{groq_keys[0][-4:]}]\n'
+                msg += f'🔑️ Mistral [...{mistral_keys[0][-4:]}]\n'
             else:
                 msg += '🔒 Mistral\n'
             if cohere_keys:

@@ -101,7 +101,12 @@ def ai(
 
     text = ''
     key = ''
+    start_time = time.time()
     for _ in range(3):
+        time_left = timeout - (time.time() - start_time)
+        if time_left < 0:
+            my_log.log_mistral(f'ai:0: timeout | {key} | {user_id}\n\n{messages}\n\n{model}\n\n{prompt}')
+            break
         try:
             key = get_next_key() if not key_ else key_
             client = openai.OpenAI(
@@ -152,7 +157,7 @@ def ai(
             time.sleep(2)
 
     if not text and model == DEFAULT_MODEL:
-        text = ai(prompt, mem, user_id, system, FALLBACK_MODEL, temperature, max_tokens, timeout, key_, json_output)
+        text = ai(prompt, mem, user_id, system, FALLBACK_MODEL, temperature, max_tokens, timeout - (time.time() - start_time), key_, json_output)
 
     return text
 

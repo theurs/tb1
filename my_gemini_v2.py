@@ -14,6 +14,7 @@
 # 50.7.85.220 o.pki.goog
 
 
+import io
 import random
 import re
 import time
@@ -29,6 +30,7 @@ from google.genai.types import (
     GoogleSearch,
     SafetySetting,
     Tool,
+    Part,
 )
 from sqlitedict import SqliteDict
 
@@ -136,7 +138,18 @@ def chat2(
     ) -> str:
 
     try:
-        query = query[:MAX_REQUEST]
+        image = None
+        if isinstance(query, str):
+            query = query[:MAX_REQUEST]
+        elif isinstance(query, list):
+            for i in range(len(query)):
+                if isinstance(query[i], str):
+                    query[i] = query[i][:MAX_REQUEST]
+                elif isinstance(query[i], bytes): # image
+                    image = io.BytesIO(query[i])
+                    break
+            query = [x for x in query if isinstance(x, str)]
+
         if temperature < 0:
             temperature = 0
         if temperature > 2:
@@ -176,6 +189,9 @@ def chat2(
                 return ''
 
             client = get_client(chat_id)
+            if image:
+                file_ = client.files.upload(file = image, config = {'mime_type': 'image/jpg'})
+                query.append(Part.from_uri(file_uri=file_.uri, mime_type='image/jpg'))
             chat = client.chats.create(
                 model=DEFAULT_MODEL,
                 config=get_config(
@@ -308,7 +324,7 @@ def chat_cli(user_id: str = '', model: str = ''):
         if q == 'mem':
             print(get_mem_as_string(user_id, model = model))
             continue
-        if '.jpg' in q or '.png' in q or '.webp' in q:
+        elif '.jpg' in q or '.png' in q or '.webp' in q:
             img = PIL.Image.open(open(q, 'rb'))
             q = ['опиши картинку', img]
 
@@ -320,7 +336,13 @@ if __name__ == "__main__":
     my_db.init(backup=False)
 
     # print(chat2('привет как дела'))
-    chat_cli()
+    # chat_cli()
+
+    q = [
+        'опиши картинку',
+        open(r"C:\Users\user\Downloads\samples for ai\мат задачи 2.jpg" , 'rb').read()
+    ]
+    print(chat2(q))
 
     # chat._curated_history = [Content[]]
     # Content.role = 'user'|'model'

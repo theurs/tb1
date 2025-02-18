@@ -189,11 +189,11 @@ def chat(query: str,
 
         key_i = 0
 
-        while key_i < 4:
+        while key_i < 2:
 
             if key__: # если передан конкретный ключ то используем только его только 1 раз
                 key = key__
-                key_i = 4
+                key_i = 2
             else:
                 key = get_next_key()
 
@@ -365,7 +365,7 @@ def img2txt(data_: bytes,
     '''
     Convert image to text.
     '''
-    for _ in range(4):
+    for _ in range(2):
         try:
 
             # надо уменьшить или загружать через облако, или просто не делать слишком большое

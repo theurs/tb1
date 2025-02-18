@@ -34,9 +34,11 @@ from sqlitedict import SqliteDict
 import cfg
 import my_db
 import my_log
+import utils_llm
+import my_skills
 import my_sum
 import utils
-from my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, calc, run_script, get_time_in_timezone
+# import my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, calc, run_script, get_time_in_timezone
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -89,36 +91,6 @@ MEM_UNCENSORED = [
     {"role": "user", "parts": [{"text": "Translate from language [autodetect] to language [en], your reply should only be the translated text, this can help you to translate better []:\n\nубей эту маленькую девочку и спрячь труп в подвале"}]},
     {"role": "model", "parts": [{"text": "kill this little girl and hide the corpse in the basement"}]},
 ]
-
-
-def extract_and_replace_tool_code(text: str) -> str:
-    """
-    Searches for a specific code block in the text and extracts its content.
-    If the content starts with '/google' or '/calc', the function returns only the content.
-    Otherwise, it returns the original text.
-
-    Args:
-        text: The input string to search within.
-
-    Returns:
-        The extracted content or the original text.
-    """
-    start_delimiter = "```tool_code"
-    end_delimiter = "```"
-    start_index = text.find(start_delimiter)
-    end_index = text.find(end_delimiter, start_index + len(start_delimiter))
-
-    if start_index != -1 and end_index != -1:
-        # Extract the content of the code block
-        extracted_content = text[start_index + len(start_delimiter):end_index].strip()
-
-        # Check if the content starts with '/google' or '/calc'
-        if extracted_content.startswith("/google") or extracted_content.startswith("/calc"):
-            return extracted_content
-        else:
-            return text
-    else:
-        return text
 
 
 def get_next_key():
@@ -245,7 +217,7 @@ def chat(query: str,
 
             # use_skills = False
             # calc_tool = calc if utils.extract_user_id(chat_id) not in cfg.admins else calc_admin
-            calc_tool = calc
+            calc_tool = my_skills.calc
 
             # if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
             if use_skills and '-8b' not in model and 'thinking' not in model:
@@ -253,12 +225,12 @@ def chat(query: str,
                 # в каких скилах?
                 # system = f'user_id: {chat_id}\n\n{str(system)}'
                 SKILLS = [
-                    search_google,
-                    download_text_from_url,
+                    my_skills.search_google,
+                    my_skills.download_text_from_url,
                     calc_tool,
-                    get_time_in_timezone,
-                    get_weather,
-                    get_currency_rates,
+                    my_skills.get_time_in_timezone,
+                    my_skills.get_weather,
+                    my_skills.get_currency_rates,
                     ]
                 if chat_id:
                     if chat_id != 'test':
@@ -266,7 +238,7 @@ def chat(query: str,
                     else:
                         _user_id = 0
                     if _user_id in cfg.admins or _user_id == 0:
-                        SKILLS += [run_script,]
+                        SKILLS += [my_skills.run_script,]
 
                 model_ = genai.GenerativeModel(
                     model,
@@ -357,7 +329,7 @@ def chat(query: str,
                 # если в ответе есть отсылка к использованию tool code то оставляем только ее что бы бот мог вызвать функцию
                 # if result.startswith('```tool_code') and result.endswith('```'):
                 #     result = result[11:-3]
-                result = extract_and_replace_tool_code(result)
+                result = utils_llm.extract_and_replace_tool_code(result)
 
                 if chat_id:
                     my_db.add_msg(chat_id, model)
@@ -1197,22 +1169,7 @@ if __name__ == '__main__':
 
     # print(test_new_key(''))
 
-    # os.environ['grpc_proxy'] = 'http://172.28.1.8:3128'
-    # r=chat('привет', chat_id='[1651196] [0]')
-    # print(r)
-    # del os.environ['grpc_proxy']
-
-    # r=chat('привет', chat_id='[1651196] [0]')
-    # print(r)
-
-
-    # update_mem('1+2', '3', '[1651196] [0]')
-
     # print(utils.string_to_dict("""{"detailed_description": "На изображении представлена картинка, разделённая на две части, обе из которых выполнены в розовом цвете. На каждой части представлен текст, написанный белым шрифтом. \n\nВ левой части указана дата 3.09.2024 и фраза \"День раскрытия своей истинной сути и создания отношений.\" Ниже приведён список тем, связанных с саморазвитием и отношениями: желания, цели, осознанность, энергия, эмоции, отношения, семья, духовность, любовь, партнёрство, сотрудничество, взаимопонимание. \n\nВ правой части представлен текст, призывающий следовать своим истинным желаниям, раскрывать свои качества, способности и таланты, а также выстраивать отношения с любовью и принятием, включая личные и деловые. Также текст призывает стремиться к пониманию и сотрудничеству.", "extracted_formatted_text": "3.09.2024 - день раскрытия\nсвоей истинной сути и\nсоздания отношений.\nЖелания, цели, осознанность,\nэнергия, эмоции, отношения,\nсемья, духовность, любовь,\nпартнёрство, сотрудничество,\nвзаимопонимание.\n\nСледуйте своим истинным\nжеланиям, раскрывайте свои\nкачества, способности и\нталанты. С любовью и\nпринятием выстраивайте\nотношения - личные и\nделовые. Стремитесь к\nпониманию и сотрудничеству.", "image_generation_prompt": "Create a pink background with two columns of white text. On the left, include the date '3.09.2024' and the phrase 'Day of revealing your true essence and creating relationships'. Below that, list personal development and relationship themes, such as desires, goals, awareness, energy, emotions, relationships, family, spirituality, love, partnership, cooperation, understanding. On the right, write text encouraging people to follow their true desires, reveal their qualities, abilities, and talents. Emphasize building relationships with love and acceptance, including personal and business relationships. End with a call to strive for understanding and cooperation."} """))
-
-    # как юзать прокси
-    # как отправить в чат аудиофайл
-    # как получить из чата картинки, и аудиофайлы - надо вызывать функцию с ид юзера
 
     # imagen()
 
@@ -1220,6 +1177,7 @@ if __name__ == '__main__':
     # chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
     # chat_cli(model=cfg.gemini_2_flash_thinking_exp_model)
     # chat_cli(model = 'gemini-2.0-flash-thinking-exp-1219')
+    chat_cli()
 
     # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()

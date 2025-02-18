@@ -103,6 +103,36 @@ def text_to_mem_dict(downloaded_file) -> dict:
     return mem_dict
 
 
+def extract_and_replace_tool_code(text: str) -> str:
+    """
+    Searches for a specific code block in the text and extracts its content.
+    If the content starts with '/google' or '/calc', the function returns only the content.
+    Otherwise, it returns the original text.
+
+    Args:
+        text: The input string to search within.
+
+    Returns:
+        The extracted content or the original text.
+    """
+    start_delimiter = "```tool_code"
+    end_delimiter = "```"
+    start_index = text.find(start_delimiter)
+    end_index = text.find(end_delimiter, start_index + len(start_delimiter))
+
+    if start_index != -1 and end_index != -1:
+        # Extract the content of the code block
+        extracted_content = text[start_index + len(start_delimiter):end_index].strip()
+
+        # Check if the content starts with '/google' or '/calc'
+        if extracted_content.startswith("/google") or extracted_content.startswith("/calc"):
+            return extracted_content
+        else:
+            return text
+    else:
+        return text
+
+
 if __name__ == '__main__':
     # test_split_thoughts()
 

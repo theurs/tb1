@@ -41,6 +41,7 @@ langcodes[data]
 lxml[html_clean]
 markdownify
 matplotlib
+mpmath
 natsort
 
 openai

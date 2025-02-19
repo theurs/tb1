@@ -4841,8 +4841,7 @@ def memo_admin_handler(message: telebot.types.Message):
         bot_reply_tr(message, "Usage:\n/memo_admin <user_id> [<memo_1>\n<memo_2>\n...<memo_10>]\n/memo_admin <user_id> - View existing memos", parse_mode='')
 
 
-@bot.message_handler(regexp='(?i)^(/(style|role))(\s*.*)?$', func=authorized_owner)
-# @bot.message_handler(commands=['style', 'role'], func=authorized_owner)
+@bot.message_handler(commands=['style', 'role'], func=authorized_owner)
 @async_run
 def change_mode(message: telebot.types.Message):
     """

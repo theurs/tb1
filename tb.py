@@ -4841,7 +4841,9 @@ def memo_admin_handler(message: telebot.types.Message):
         bot_reply_tr(message, "Usage:\n/memo_admin <user_id> [<memo_1>\n<memo_2>\n...<memo_10>]\n/memo_admin <user_id> - View existing memos", parse_mode='')
 
 
+# вариант с такой лямбдой вызывает проблемы в функции is_for_me, туда почему то приходит команда без имени бота
 # @bot.message_handler(func=lambda message: authorized_owner(message) and message.text.split()[0].lower() in ['/style', '/role'])
+
 @bot.message_handler(commands=['style', 'role'], func=authorized_owner)
 @async_run
 def change_mode(message: telebot.types.Message):
@@ -6348,7 +6350,9 @@ def send_images_to_pic_group(
         my_log.log2(f'tb:image:send_media_group_pics_group3: {unknown}\n\n{traceback_error}')
 
 
+# вариант с такой лямбдой вызывает проблемы в функции is_for_me, туда почему то приходит команда без имени бота
 # @bot.message_handler(func=lambda message: authorized(message) and message.text.split()[0].lower() in ['/image', '/img', '/i', '/imagine', '/generate', '/gen', '/art', '/picture', '/pic'])
+
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):

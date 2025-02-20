@@ -452,6 +452,8 @@ def LOAD_FROZEN():
             with open('db/gemini_frozen_keys.txt', 'r') as f:
                 FROZEN_KEYS = f.readlines()
                 FROZEN_KEYS = [x.strip() for x in FROZEN_KEYS if x.strip() and len(x.strip()) == 39]
+    except FileNotFoundError:
+        pass
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'my_gemini:LOAD_FROZEN: {error}\n{error_traceback}')
@@ -462,6 +464,8 @@ def SAVE_FROZEN():
         with FROZEN_KEYS_LOCK:
             with open('db/gemini_frozen_keys.txt', 'w') as f:
                 f.write('\n'.join(sorted(FROZEN_KEYS)))
+    except FileNotFoundError:
+        pass
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'my_gemini:SAVE_FROZEN: {error}\n{error_traceback}')

@@ -1709,9 +1709,20 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                     markup.row(button6)
             else:
                 if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
-                    markup.add(button1, button2, button2_2, button3, button4, button4_2, button6)
+                    markup.row(button1)
+                    markup.row(button2, button2_1)
+                    markup.row(button2_2)
+                    markup.row(button3)
+                    markup.row(button4)
+                    markup.row(button4_2)
+                    markup.row(button6)
                 else:
-                    markup.add(button1, button2, button2_2, button3, button4, button6)
+                    markup.row(button1)
+                    markup.row(button2, button2_1)
+                    markup.row(button2_2)
+                    markup.row(button3)
+                    markup.row(button4)
+                    markup.row(button6)
             return markup
 
         elif kbd == 'remove_uploaded_voice':

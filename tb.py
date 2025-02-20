@@ -2272,7 +2272,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
             if call.data == 'clear_history':
                 # обработка нажатия кнопки "Стереть историю"
-                reset_(chat_id_full)
+                reset_(message)
                 bot.delete_message(message.chat.id, message.message_id)
 
             elif call.data == 'remove_uploaded_voice':

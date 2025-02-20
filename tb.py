@@ -1465,19 +1465,22 @@ def authorized(message: telebot.types.Message) -> bool:
 
         is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
 
+
+        bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+
+        bot_name_used = False
+        if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
+            bot_name_used = True
+
+        bot_name2 = f'@{_bot_name}'
+        if msg.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
+            bot_name_used = True
+
+
         if message.text:
             if msg.startswith('.'):
                 msg = msg[1:]
 
-            bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-
-            bot_name_used = False
-            if msg.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
-                bot_name_used = True
-
-            bot_name2 = f'@{_bot_name}'
-            if msg.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
-                bot_name_used = True
 
             if is_reply or is_private or bot_name_used:
                 # check for blocking and throttling

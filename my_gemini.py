@@ -232,13 +232,14 @@ def chat(query: str,
                     my_skills.get_weather,
                     my_skills.get_currency_rates,
                     ]
-                if chat_id:
-                    if chat_id != 'test':
-                        _user_id = utils.extract_user_id(chat_id)
-                    else:
-                        _user_id = 0
-                    if _user_id in cfg.admins or _user_id == 0:
-                        SKILLS += [my_skills.run_script,]
+
+                # if chat_id:
+                #     if chat_id != 'test':
+                #         _user_id = utils.extract_user_id(chat_id)
+                #     else:
+                #         _user_id = 0
+                #     if _user_id in cfg.admins or _user_id == 0:
+                #         SKILLS += [my_skills.run_script,]
 
                 model_ = genai.GenerativeModel(
                     model,

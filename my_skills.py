@@ -75,15 +75,17 @@ def get_weather(location: str) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
-def get_currency_rates() -> str:
-    '''
-    Return json all currencies rates from https://openexchangerates.org
-    '''
+def get_currency_rates(date: str = '') -> str:
+    '''Return json all currencies rates from https://openexchangerates.org
+    date in YYYY-MM-DD format, if absent than latest'''
     try:
         if hasattr(cfg, 'OPENEXCHANGER_KEY') and cfg.OPENEXCHANGER_KEY:
             # https://openexchangerates.org/api/latest.json?app_id=APIKEY
-            my_log.log_gemini_skills(f'Currency: "latest"')
-            url = f'https://openexchangerates.org/api/latest.json?app_id={cfg.OPENEXCHANGER_KEY}'
+            my_log.log_gemini_skills(f'Currency: {date or "latest"}')
+            if date:
+                url = f'https://openexchangerates.org/api/historical/{date}.json?app_id={cfg.OPENEXCHANGER_KEY}'
+            else:
+                url = f'https://openexchangerates.org/api/latest.json?app_id={cfg.OPENEXCHANGER_KEY}'
             responses = requests.get(url, timeout = 20)
             my_log.log_gemini_skills(f'Currency: {responses.text[:300]}')
             return responses.text
@@ -97,20 +99,20 @@ def get_currency_rates() -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def search_google(query: str, lang: str) -> str:
+def search_google(query: str, lang: str = 'ru') -> str:
     """
     Searches Google for the given query and returns the search results.
 
     Args:
         query: The search query string.
-        lang: The language for the search. Example: 'ru'
+        lang: The language for the search (defaults to 'ru').
 
     Returns:
         A string containing the search results.
         In case of an error, returns a string 'ERROR' with the error description.
     """
     query = decode_string(query)
-    my_log.log_gemini_skills(f'Google: [{lang}] {query}')
+    my_log.log_gemini_skills(f'Google: {query}')
     try:
         r = my_google.search_v3(query, lang)[0]
         my_log.log_gemini_skills(f'Google: {r}')
@@ -121,10 +123,10 @@ def search_google(query: str, lang: str) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def download_text_from_url(url: str, language: str) -> str:
+def download_text_from_url(url: str, language: str = 'ru') -> str:
     '''Download text from url if user asked to.
     Accept web pages and youtube urls (it can read subtitles)
-    language code is 2 letters code, use language of the user or language of query
+    language code is 2 letters code, it is used for youtube subtitle download
     '''
     my_log.log_gemini_skills(f'Download URL: {url} {language}')
     try:
@@ -195,6 +197,9 @@ def calc(expression: str) -> str:
             traceback_error = traceback.format_exc()
             my_log.log_gemini_skills(f'Calc error: {expression}\n{error}\n\n{traceback_error}')
             return f'Error: {error}\n\n{traceback_error}'
+
+
+calc_tool = calc
 
 
 # @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)

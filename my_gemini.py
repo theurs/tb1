@@ -355,14 +355,15 @@ def chat(query: str,
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 10 * 60)
-def img2txt(data_: bytes,
-            prompt: str = "Что на картинке?",
-            temp: float = 1,
-            model: str = cfg.gemini_flash_model,
-            json_output: bool = False,
-            chat_id: str = '',
-            use_skills: str = False
-            ) -> str:
+def img2txt(
+    data_: bytes,
+    prompt: str = "Что на картинке?",
+    temp: float = 1,
+    model: str = cfg.gemini_flash_model,
+    json_output: bool = False,
+    chat_id: str = '',
+    use_skills: str = False
+    ) -> str:
     '''
     Convert image to text.
     '''

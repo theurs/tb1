@@ -548,27 +548,27 @@ def img2txt(text, lang: str,
                     if not text:
                         text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL)
                 elif chat_mode == 'gemini-exp':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
+                    text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
                 elif chat_mode == 'gemini-learn':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full)
+                    text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
                 elif chat_mode == 'gemini-pro-15':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_gemini_pro15_model, temp=temperature, chat_id=chat_id_full)
+                    text = my_gemini.img2txt(data, query, model=cfg.gemini_gemini_pro15_model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_gemini_pro15_model
                 elif chat_mode == 'gemini-lite':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full)
+                    text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
                 elif chat_mode == 'gemini':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
+                    text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
                 elif chat_mode == 'gemini_2_flash_thinking':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_2_flash_thinking_exp_model, temp=temperature, chat_id=chat_id_full)
+                    text = my_gemini.img2txt(data, query, model=cfg.gemini_2_flash_thinking_exp_model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_2_flash_thinking_exp_model
                 elif chat_mode == 'pixtral':
@@ -587,9 +587,9 @@ def img2txt(text, lang: str,
                 if 'gpt' in model:
                     text = my_github.img2txt(data, query, chat_id=chat_id_full, model=model, temperature=temperature)
                     if not text:
-                        text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
+                        text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                 else:
-                    text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
+                    text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + model
 
@@ -601,25 +601,25 @@ def img2txt(text, lang: str,
 
             # если это была джемини про то пробуем ее фолбек
             if not text and model == cfg.gemini_pro_model:
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full)
+                text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
 
             # если это была не джемини лайт то пробуем ее
             if not text and model != cfg.gemini_flash_light_model:
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full)
+                text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
 
             # если это была думающая модель то пробуем вместо нее exp
             if not text and model == cfg.gemini_2_flash_thinking_exp_model:
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
+                text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, use_skills=True)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
 
             # флеш фолбек
             if not text and model == cfg.gemini_flash_model:
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
+                text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model_fallback
 

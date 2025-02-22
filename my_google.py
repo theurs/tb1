@@ -24,15 +24,20 @@ def search_v3(query: str,
               download_only = False,
               chat_id: str = '',
               role: str = ''):
-    # сначала пробуем спросить в гугле
-    google_response = my_gemini_google.google_search(query, chat_id, role=role, lang=lang)
-    if google_response:
-        if download_only:
-            return google_response
-        else:
-            return google_response, google_response
+    
+    query = query.strip()
+    if not query.startswith('!'):
+        # сначала пробуем спросить в гугле
+        google_response = my_gemini_google.google_search(query, chat_id, role=role, lang=lang)
+        if google_response:
+            if download_only:
+                return google_response
+            else:
+                return google_response, google_response
 
-    ## Если гугол не ответил то ищем самостоятельно
+    query = query.lstrip('!')
+
+    ## Если гугол не ответил или был маркер ! в запросе то ищем самостоятельно
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп

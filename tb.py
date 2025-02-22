@@ -5846,12 +5846,13 @@ def google(message: telebot.types.Message):
             try:
                 q = message.text.split(maxsplit=1)[1]
             except Exception as error2:
-                print(error2)
                 help = f"""/google {tr('текст запроса', lang)}
 
 /google {tr('сколько на земле людей, точные цифры и прогноз', lang)}
 
 {tr('гугл, сколько на земле людей, точные цифры и прогноз', lang)}
+
+{tr('используйте знак ! в начале запроса что бы использовать другой механизм поиска /google !самый глубокий бункер в мире', lang)}
 
 {tr('Напишите запрос в гугл', lang)}
 """

@@ -562,6 +562,8 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
+    # test_key('')
+
     # reset('test')
     chat_cli()
 

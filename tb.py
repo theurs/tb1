@@ -4671,6 +4671,7 @@ def download_ytb_audio(message: telebot.types.Message):
                         bot_reply_tr(message, 'Too big video for me.')
                         return
                     source_file = my_ytb.download_audio(url)
+                    files = []
                     if source_file:
                         bot_reply_tr(message, 'Downloaded successfully, sending file.')
                         files = my_ytb.split_audio(source_file, 45)
@@ -4716,7 +4717,7 @@ def download_ytb_audio(message: telebot.types.Message):
         bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube (and other video sites).')
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:download_ytb_audio2:{error}\n\n{traceback_error}')
+        my_log.log2(f'tb:download_ytb_audio2: {error}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['memo', 'memos'], func=authorized_owner)

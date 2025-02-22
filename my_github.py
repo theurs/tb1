@@ -192,7 +192,7 @@ def ai(prompt: str = '',
                     return ''
                 return ai(prompt, mem__, user_id, system, model, temperature, max_tokens, timeout, key_)
 
-            my_log.log_github(f'ai:1: {error_other} | {key}')
+            my_log.log_github(f'ai:1: {error_other}\n{key}')
             return ''
 
         try:
@@ -200,7 +200,7 @@ def ai(prompt: str = '',
             break
         except Exception as error:
             traceback_error = traceback.format_exc()
-            my_log.log_github(f'Failed to parse response: {error}\n\n{str(response)}  | {key}\n\n{traceback_error}')
+            my_log.log_github(f'Failed to parse response: {error}\n\n{str(response)}\n{key}\n\n{traceback_error}')
             text = ''
             if key_:
                 break

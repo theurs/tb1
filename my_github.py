@@ -161,6 +161,8 @@ def ai(prompt: str = '',
 
     start_time = time.time()
 
+    key = ''
+
     for _ in range(3):
         if time.time() - start_time > timeout:
             return ''
@@ -189,14 +191,16 @@ def ai(prompt: str = '',
                 except IndexError:
                     return ''
                 return ai(prompt, mem__, user_id, system, model, temperature, max_tokens, timeout, key_)
-            my_log.log_github(f'ai: {error_other}')
+
+            my_log.log_github(f'ai:1: {error_other} | {key}')
             return ''
 
         try:
             text = response.choices[0].message.content
             break
         except Exception as error:
-            my_log.log_github(f'Failed to parse response: {error}\n\n{str(response)}')
+            traceback_error = traceback.format_exc()
+            my_log.log_github(f'Failed to parse response: {error}\n\n{str(response)}  | {key}\n\n{traceback_error}')
             text = ''
             if key_:
                 break
@@ -515,7 +519,7 @@ def img2txt(
             if 'Bad credentials' in str(error_other):
                 remove_key(key)
                 continue
-            my_log.log_github(f'ai: {error_other}')
+            my_log.log_github(f'ai:2: {error_other}')
             return ''
 
         try:

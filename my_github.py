@@ -181,7 +181,7 @@ def ai(prompt: str = '',
                 timeout = timeout,
                 )
         except Exception as error_other:
-            if 'Bad credentials' in str(error_other):
+            if 'Bad credentials' in str(error_other) or 'Your account type is not currently supported' in str(error_other):
                 remove_key(key)
                 continue
             if 'tokens_limit_reached' in str(error_other):
@@ -516,7 +516,7 @@ def img2txt(
                 timeout = timeout,
                 )
         except Exception as error_other:
-            if 'Bad credentials' in str(error_other):
+            if 'Bad credentials' in str(error_other) or 'Your account type is not currently supported' in str(error_other):
                 remove_key(key)
                 continue
             my_log.log_github(f'ai:2: {error_other}')

@@ -88,4 +88,4 @@ def test_imagen():
 if __name__ == '__main__':
     load_users_keys()
 
-    # test_imagen()
+    test_imagen()

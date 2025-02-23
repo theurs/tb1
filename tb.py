@@ -299,7 +299,7 @@ class ShowAction(threading.Thread):
             while self.is_running:
                 if time.time() - self.started_time > 60 * self.max_timeout:
                     self.stop()
-                    # my_log.log2(f'tb:show_action:stoped after 5min [{self.chat_id}] [{self.thread_id}] is topic: {self.is_topic} action: {self.action}')
+                    # my_log.log2(f'tb:1:show_action:stoped after 5min [{self.chat_id}] [{self.thread_id}] is topic: {self.is_topic} action: {self.action}')
                     return
                 try:
                     if self.is_topic:
@@ -311,8 +311,7 @@ class ShowAction(threading.Thread):
                         if 'Forbidden: bot was blocked by the user' in str(error):
                             self.stop()
                             return
-                        if 'Forbidden: bot was blocked by the user' not in str(error):
-                            my_log.log2(f'tb:show_action:run: {str(error)}')
+                        my_log.log2(f'tb:show_action:2:run: {str(error)} | {self.full_chat_id}')
                 n = 50
                 while n > 0:
                     time.sleep(0.1)
@@ -324,7 +323,10 @@ class ShowAction(threading.Thread):
         try:
             bot.send_chat_action(self.chat_id, 'cancel', message_thread_id = self.thread_id)
         except Exception as error:
-            my_log.log2(f'tb:show_action: {error}')
+            if 'Forbidden: bot was blocked by the user' in str(error):
+                self.stop()
+                return
+            my_log.log2(f'tb:show_action:stop:3: {str(error)} | {self.full_chat_id}')
 
     def __enter__(self):
         self.start()

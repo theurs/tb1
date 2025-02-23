@@ -1639,11 +1639,7 @@ def get_config_msg(chat_id_full: str, lang: str) -> str:
 
 <b>{tr('Bot style(role):', lang)}</b> /style {role_}
 
-<b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang
-
-{tr('Disable/enable the context, the bot will not know who it is, where it is, who it is talking to, it will work as on the original website', lang)}
-
-/original_mode"""
+<b>{tr('User language:', lang)}</b> {tr(langcodes.Language.make(language=lang).display_name(language='en'), lang)} /lang"""
         return MSG_CONFIG
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -3772,29 +3768,6 @@ def config(message: telebot.types.Message):
         my_log.log2(f'tb:config: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['original_mode'], func=authorized_owner)
-@async_run
-def original_mode(message: telebot.types.Message):
-    """
-    Handles the 'original_mode' command for authorized owners. 
-    Toggles the original mode for the chat based on the current state.
-    """
-    try:
-        chat_id_full = get_topic_id(message)
-        COMMAND_MODE[chat_id_full] = ''
-        omode = my_db.get_user_property(chat_id_full, 'original_mode') or False
-
-        if omode:
-            my_db.set_user_property(chat_id_full, 'original_mode', False)
-            bot_reply_tr(message, 'Original mode disabled. Bot will be informed about place, names, roles etc.')
-        else:
-            my_db.set_user_property(chat_id_full, 'original_mode', True)
-            bot_reply_tr(message, 'Original mode enabled. Bot will not be informed about place, names, roles etc. It will work same as original chatbot.')
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:original_mode: {unknown}\n{traceback_error}')
-
-
 @bot.message_handler(commands=['gmodels','gmodel','gm'], func=authorized_admin)
 @async_run
 def gmodel(message: telebot.types.Message):
@@ -4920,7 +4893,7 @@ def change_mode(message: telebot.types.Message):
             else:
                 new_prompt = arg
             my_db.set_user_property(chat_id_full, 'role', new_prompt)
-            # my_db.set_user_property(chat_id_full, 'original_mode', False)
+
             if new_prompt:
                 msg =  f'{tr("New role was set.", lang)}'
             else:
@@ -8554,13 +8527,6 @@ def do_task(message, custom_prompt: str = ''):
 
                 # for DDG who dont support system_prompt
                 helped_query = f'{hidden_text} {message.text}'
-
-                omode = my_db.get_user_property(chat_id_full, 'original_mode') or False
-                # if original mode enabled - use only user's role
-                if omode:
-                    hidden_text_for_llama370 = user_role
-                    hidden_text = hidden_text_for_llama370
-                    helped_query = f'({hidden_text}) {message.text}'
                 helped_query = helped_query.strip()
 
                 if chat_id_full not in CHAT_LOCKS:
@@ -9524,10 +9490,10 @@ def one_time_shot():
 
             queries = [
                 # '''ALTER TABLE users DROP COLUMN suggest_enabled;''',
+                '''ALTER TABLE users DROP COLUMN original_mode;''',
                 # '''DELETE FROM translations;''',
                 # '''DROP TABLE IF EXISTS im_suggests;''',
-                '''UPDATE users SET saved_file = NULL, saved_file_name = NULL;''',
-                ''';''',
+                # '''UPDATE users SET saved_file = NULL, saved_file_name = NULL;''',
                  ]
             for q in queries:
                 try:

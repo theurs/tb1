@@ -211,7 +211,6 @@ def init(backup: bool = True, vacuum: bool = False):
             tts_gender TEXT,
             speech_to_text_engine TEXT,
             chat_enabled INTEGER,
-            original_mode INTEGER,
             superchat INTEGER,
             transcribe_only INTEGER,
             command_mode TEXT,

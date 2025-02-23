@@ -292,6 +292,7 @@ def img2txt(
     max_tokens: int = 2000,
     timeout: int = 120,
     chat_id: str = '',
+    system: str = '',
     ) -> str:
     """
     Describes an image using the specified model and parameters.
@@ -330,6 +331,26 @@ def img2txt(
 
     base64_image = base64.b64encode(image_data).decode()
 
+    mem = [
+        {
+        "role": "user",
+        "content": [
+            {
+                "type": "text",
+                "text": prompt
+            },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{base64_image}"
+                }
+            }
+        ]
+        }
+    ]
+    if system:
+        mem.insert(0, {'role': 'system', 'content': system})
+
     YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
     YOUR_APP_NAME = 'kun4sun_bot'
 
@@ -347,23 +368,7 @@ def img2txt(
 
                 "model": model,
                 "temperature": temperature,
-                "messages": [
-                    {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": prompt
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
-                    }
-                ],
+                "messages": mem,
                 "max_tokens": max_tokens
 
             }),

@@ -556,6 +556,7 @@ def img2txt(
     max_tokens: int = 4000,
     timeout: int = DEFAULT_TIMEOUT,
     chat_id: str = '',
+    system: str = '',
     ) -> str:
     """
     Describes an image using the specified model and parameters.
@@ -600,6 +601,8 @@ def img2txt(
             ],
         }
     ]
+    if system:
+        mem.insert(0, {'role': 'system', 'content': system})
 
     if not 'openrouter' in URL:
         try:

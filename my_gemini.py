@@ -362,7 +362,8 @@ def img2txt(
     model: str = cfg.gemini_flash_model,
     json_output: bool = False,
     chat_id: str = '',
-    use_skills: str = False
+    use_skills: str = False,
+    system: str = '',
     ) -> str:
     '''
     Convert image to text.
@@ -381,7 +382,7 @@ def img2txt(
             # тут не передает chat_id что бы в истории не сохранялись картинки
             # много картинок в истории диалога раздувает его непомерно и создает проблемы 
             # с базой и возможно с самими запросами
-            res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills)
+            res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills, system=system)
             # надо вручную добавлять запрос в счетчик
             my_db.add_msg(chat_id, model)
 

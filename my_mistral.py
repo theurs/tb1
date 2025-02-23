@@ -170,6 +170,7 @@ def img2txt(
     max_tokens: int = 8000,
     timeout: int = 120,
     chat_id: str = '',
+    system: str = '',
     ) -> str:
     """
     Describes an image using the specified model and parameters.
@@ -196,6 +197,25 @@ def img2txt(
             image_data = f.read()
 
     img_base = base64.b64encode(image_data).decode('utf-8')
+
+    mem = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": prompt
+                },
+                {
+                    "type": "image_url",
+                    "image_url": f"data:image/jpeg;base64,{img_base}" 
+                }
+            ]
+        }
+    ]
+    if system:
+        mem.insert(0, {'role': 'system', 'content': system})
+
     key = ''
     for _ in range(3):
         try:
@@ -209,21 +229,7 @@ def img2txt(
                 temperature=temperature,
                 max_tokens=max_tokens,
                 timeout=timeout,
-                messages = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": prompt
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": f"data:image/jpeg;base64,{img_base}" 
-                            }
-                        ]
-                    }
-                ]
+                messages = mem,
             )
             result = response.choices[0].message.content
             if chat_id:

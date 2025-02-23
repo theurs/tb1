@@ -458,6 +458,7 @@ def img2txt(
     max_tokens: int = 2000,
     timeout: int = 120,
     chat_id: str = '',
+    system: str = '',
     ) -> str:
     """
     Describes an image using the specified model and parameters.
@@ -498,6 +499,8 @@ def img2txt(
             ],
         }
     ]
+    if system:
+        mem.insert(0, {'role': 'system', 'content': system})
 
     result = ''
 

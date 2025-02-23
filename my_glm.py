@@ -292,6 +292,7 @@ def img2txt(
     max_tokens: int = 4000,
     timeout: int = 120,
     chat_id: str = '',
+    system: str = '',
     ) -> str:
     """
     Describes an image using the specified model and parameters.
@@ -316,6 +317,26 @@ def img2txt(
 
     img_base = base64.b64encode(image_data).decode('utf-8')
 
+    mem = [
+        {
+            "role": "user",
+            "content": [
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": img_base
+                }
+            },
+            {
+                "type": "text",
+                "text": prompt
+            }
+            ]
+        }
+        ]
+    if system:
+        mem.insert(0, {'role': 'system', 'content': system})
+
     if not model:
         model = DEFAULT_VISION_MODEL
 
@@ -327,23 +348,7 @@ def img2txt(
                 temperature=temperature,
                 # max_tokens=max_tokens, # не работает
                 timeout=timeout,
-                messages=[
-                {
-                    "role": "user",
-                    "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": img_base
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                    ]
-                }
-                ]
+                messages=mem,
             )
             result = response.choices[0].message.content
             my_db.add_msg(chat_id, model)

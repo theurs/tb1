@@ -110,7 +110,8 @@ def img2txt(image_data: Union[str, bytes],
             key_: str = '',
             json_output=False,
             temperature: float = 1,
-            chat_id: str = ''
+            chat_id: str = '',
+            system: str = '',
             ) -> str:
     """
     Отправляет изображение в модель LLaVA и получает текстовое описание.
@@ -144,6 +145,22 @@ def img2txt(image_data: Union[str, bytes],
 
     # Getting the base64 string
     base64_image = encode_image(image_data)
+    mem = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_image}",
+                    },
+                },
+            ],
+        }
+    ]
+    if system:
+        mem.insert(0, {'role': 'system', 'content': system})
 
     x = 0
     while x < 4:
@@ -157,20 +174,7 @@ def img2txt(image_data: Union[str, bytes],
             client = Groq(api_key=key, timeout = timeout)
 
             chat_completion = client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}",
-                                },
-                            },
-                        ],
-                    }
-                ],
+                messages=mem,
                 model=model,
                 response_format = ResponseFormat(type = resp_type),
                 temperature = temperature,

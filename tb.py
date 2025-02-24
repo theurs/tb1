@@ -3490,7 +3490,7 @@ def handle_document(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:handle_document: {unknown}\n{traceback_error}')
-        bot_reply_tr(message, 'Unknown error.')
+        bot_reply_tr(message, 'Unknown error. It may be a password in the file.')
         return
 
     my_log.log2(f'tb:handle_document: Unknown type of file: {message.document.mime_type}')

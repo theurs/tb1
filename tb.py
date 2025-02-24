@@ -1621,7 +1621,7 @@ def bot_reply(message: telebot.types.Message,
                             reply_markup=reply_markup, allow_voice=allow_voice)
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:bot_reply:{unexpected_error}\n\n{traceback_error}')
+        my_log.log2(f'tb:bot_reply: {unexpected_error}\n\n{traceback_error}')
 
 
 def get_config_msg(chat_id_full: str, lang: str) -> str:

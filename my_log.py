@@ -424,6 +424,9 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
         reply_from_bot = html_to_markdown(reply_from_bot)
 
     with lock:
+        if not message.text:
+            message.text = ''
+
         if LOG_MODE in (1,):
             with open(log_file_path, 'a', encoding="utf-8") as log_file:
                 if reply_from_bot:

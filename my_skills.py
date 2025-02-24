@@ -99,13 +99,13 @@ def get_currency_rates(date: str = '') -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def search_google(query: str, lang: str = 'ru') -> str:
+def search_google(query: str) -> str:
     """
     Searches Google for the given query and returns the search results.
+    You are able to mix this functions with other functions and your own ability to get best results for your needs.
 
     Args:
         query: The search query string.
-        lang: The language for the search (defaults to 'ru').
 
     Returns:
         A string containing the search results.
@@ -114,7 +114,7 @@ def search_google(query: str, lang: str = 'ru') -> str:
     query = decode_string(query)
     my_log.log_gemini_skills(f'Google: {query}')
     try:
-        r = my_google.search_v3(query, lang)[0]
+        r = my_google.search_v3(query, 'ru')[0]
         my_log.log_gemini_skills(f'Google: {r}')
         return r
     except Exception as error:
@@ -123,11 +123,12 @@ def search_google(query: str, lang: str = 'ru') -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def download_text_from_url(url: str, language: str = 'ru') -> str:
+def download_text_from_url(url: str) -> str:
     '''Download text from url if user asked to.
     Accept web pages and youtube urls (it can read subtitles)
-    language code is 2 letters code, it is used for youtube subtitle download
+    You are able to mix this functions with other functions and your own ability to get best results for your needs.
     '''
+    language = 'ru'
     my_log.log_gemini_skills(f'Download URL: {url} {language}')
     try:
         result = my_sum.summ_url(url, download_only = True, lang = language)
@@ -202,80 +203,6 @@ def calc(expression: str) -> str:
 calc_tool = calc
 
 
-# @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
-# def calc(expression: str) -> str:
-#     '''Calculate expression with pythons eval(). Use it for all calculations.
-#     Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
-#     Do not import them, they are already imported.
-#     Use only one letter variables.
-#     Avoid text in math expressions.
-
-#     You can also make requests in natural language if you need to do more complex calculations, for example: What is the digit after the decimal point in the number pi at position 7864?
-
-#     return str(eval(expression))
-#     Examples: calc("56487*8731") -> '493187997'
-#               calc("pow(10, 2)") -> '100'
-#               calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
-#               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
-#               calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
-#               etc
-#     '''
-#     try:
-#         my_log.log_gemini_skills(f'Calc: {expression}')
-#         allowed_words = [
-#             'math', 'decimal', 'random', 'numbers', 'numpy', 'np',
-#             'print', 'str', 'int', 'float', 'bool', 'type', 'len', 'range',
-#             'round', 'pow', 'sum', 'min', 'max', 'divmod',
-#             'for', 'not', 'in', 'and', 'if', 'or', 'next',
-#             'digit',
-
-#             'list','tuple','sorted','reverse','True','False',
-
-#             'datetime', 'days', 'seconds', 'microseconds', 'milliseconds', 'minutes', 'hours', 'weeks',
-#             ]
-#         allowed_words += [x for x in dir(random) + dir(math) + dir(decimal) + dir(numbers) + dir(datetime) + dir(datetime.date) + dir(mpmath) + dir(numpy) if not x.startswith('_')]
-#         allowed_words = sorted(list(set(allowed_words)))
-#         # get all words from expression
-#         words = re.findall(r'[^\d\W]+', expression)
-#         for word in words:
-#             if len(word) == 1:
-#                 continue
-#             if word not in allowed_words:
-#                 r1, r0 = my_gemini_google.calc(expression)
-#                 r = f'{r0}\n\n{r1}'.strip()
-#                 if r:
-#                     my_log.log_gemini_skills(f'Calc result: {r}')
-#                     return r
-#                 else:
-#                     return f'Error: Invalid expression. Forbidden word: {word}'
-#         try:
-#             expression_ = expression.replace('math.factorial', 'my_factorial')
-#             if '**' in expression_:
-#                 raise ValueError('** danger for eval()')
-#             r = str(eval(expression_))
-
-#             if not r:
-#                 r1, r0 = my_gemini_google.calc(expression)
-#                 r = f'{r0}\n\n{r1}'.strip()
-
-#             my_log.log_gemini_skills(f'Calc result: {r}')
-
-#             return r
-
-#         except Exception as error:
-#             r1, r0 = my_gemini_google.calc(expression)
-#             r = f'{r0}\n\n{r1}'.strip().strip()
-#             if r:
-#                 my_log.log_gemini_skills(f'Calc result: {r}')
-#                 return r
-#             else:
-#                 return f'Error: {error}'
-#     except Exception as unknown_error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log_gemini_skills(f'Calc unknown error: {unknown_error}\n\n{traceback_error}')
-#         return f'Error, try again: {unknown_error}\n\n{traceback_error}'
-
-
 def test_calc(func: Callable = calc) -> None:
     """
     Тестирует функцию calc (которая теперь не принимает chat_id и возвращает строку)
@@ -342,57 +269,6 @@ def test_calc(func: Callable = calc) -> None:
         print("-" * 20)
 
     print("Тесты завершены.")
-
-
-# @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
-# def calc_admin(expression: str) -> str:
-#     '''Calculate expression with pythons eval(). Use it for all calculations.
-#     Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
-#     Do not import them, they are already imported.
-#     You can also make requests in natural language if you need to do more complex calculations, for example: What is the digit after the decimal point in the number pi at position 7864?
-
-#     return str(eval(expression))
-#     Examples: calc("56487*8731") -> '493187997'
-#               calc("pow(10, 2)") -> '100'
-#               calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
-#               calc("decimal.Decimal('0.234234')*2") -> '0.468468'
-#               calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
-#               etc
-#     '''
-#     my_log.log_gemini_skills(f'Admin calc: {expression}')
-
-#     try:
-#         expression_ = expression.replace('math.factorial', 'my_factorial')
-#         # print(sys.get_int_max_str_digits()) # тут показывает дефолт 4300 - OK
-#         if '**' in expression_:
-#             raise ValueError('** danger for eval()')
-#         r = str(eval(expression_))
-#         if not r:
-#             r1, r0 = my_gemini_google.calc(expression)
-#             r = f'{r0}\n\n{r1}'.strip()
-#             if not r:
-#                 return f'Error: Invalid expression'
-#         my_log.log_gemini_skills(f'Admin calc result: {r}')
-#         return r
-#     except Exception as error:
-#         r1, r0 = my_gemini_google.calc(expression)
-#         r = f'{r0}\n\n{r1}'.strip()
-#         if r:
-#             my_log.log_gemini_skills(f'Admin calc result: {r}')
-#             return r
-#         else:
-#             traceback_error = traceback.format_exc()
-#             my_log.log_gemini_skills(f'Admin calc error: {expression}\n{error}\n\n{traceback_error}')
-#             return f'Error: {error}\n\n{traceback_error}'
-
-
-# def my_factorial(n: int) -> int:
-#     '''Calculate factorial of n.
-#     return int(math.factorial(n))
-#     '''
-#     if n > 1500:
-#         raise ValueError('factorial > 1500, too big number')
-#     return math.factorial(n)
 
 
 def get_time_in_timezone(timezone_str: str) -> str:

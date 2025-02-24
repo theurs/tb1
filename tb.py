@@ -6921,7 +6921,7 @@ def ask_file(message: telebot.types.Message):
         try:
             query = message.text.split(maxsplit=1)[1].strip()
         except IndexError:
-            bot_reply_tr(message, 'Usage: /ask <query saved text>\n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.')
+            bot_reply_tr(message, 'Usage: /ask <query saved text>\n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.\n\nExamples:\n/ask What is the main topic of the text?\n/ask Summarize the text in 3 sentences.')
             if my_db.get_user_property(chat_id_full, 'saved_file_name'):
                 msg = f'{tr("Загружен файл/ссылка:", lang)} {my_db.get_user_property(chat_id_full, "saved_file_name")}\n\n{tr("Размер текста:", lang)} {len(my_db.get_user_property(chat_id_full, "saved_file")) or 0}'
                 bot_reply(message, msg, disable_web_page_preview = True, reply_markup=get_keyboard('download_saved_text', message))

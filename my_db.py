@@ -137,7 +137,8 @@ def sync_daemon():
             with LOCK:
                 CON.commit()
         except Exception as error:
-            my_log.log2(f'my_db:sync_daemon {error}')
+            traceback_error = traceback.format_exc()
+            my_log.log2(f'my_db:sync_daemon {error}\n\n{traceback_error}')
 
 
 def init(backup: bool = True, vacuum: bool = False):

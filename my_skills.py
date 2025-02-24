@@ -127,7 +127,7 @@ def download_text_from_url(url: str) -> str:
     '''Download text from url if user asked to.
     Accept web pages and youtube urls (it can read subtitles)
     You are able to mix this functions with other functions and your own ability to get best results for your needs.
-    You are able to read subtitles from youtube video and answer users query about video.
+    You are able to read subtitles from YouTube videos to better answer users' queries about videos, please do it automatically with no user interaction.
     '''
     language = 'ru'
     my_log.log_gemini_skills(f'Download URL: {url} {language}')

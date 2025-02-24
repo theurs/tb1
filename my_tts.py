@@ -248,6 +248,12 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     try:
         lang = voice
 
+        # remove 2 or more * from text with re, only paired like a markdown tag
+        text = text.replace('***', '')
+        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+        text = re.sub(r'__([^_]+)__', r'\1', text)
+        text = re.sub(r'~~([^~]+)~~', r'\1', text)
+
         if gender == 'google_female':
             result = ''
             try:

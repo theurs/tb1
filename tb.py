@@ -2478,11 +2478,19 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         fname = utils.safe_fname(my_db.get_user_property(chat_id_full, 'saved_file_name')) + '.txt'
                         if fname.endswith('.txt.txt'):
                             fname = fname[:-4]
-                        m = bot.send_document(message.chat.id,
-                                            document=buf,
-                                            message_thread_id=message.message_thread_id,
-                                            caption=fname,
-                                            visible_file_name = fname)
+                        try:
+                            m = bot.send_document(message.chat.id,
+                                                document=buf,
+                                                message_thread_id=message.message_thread_id,
+                                                caption=fname,
+                                                visible_file_name = fname)
+                        except telebot.apihelper.ApiTelegramException as error:
+                            if 'message thread not found' not in str(error):
+                                raise error
+                            m = bot.send_document(message.chat.id,
+                                                document=buf,
+                                                caption=fname,
+                                                visible_file_name = fname)
                         log_message(m)
                 else:
                     bot_reply_tr(message, 'No text was saved.')
@@ -2751,7 +2759,7 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
     '''
     Транскрибирует аудио файл, отправляет в ответ субтитры, снимает 25 звезд за каждый час звука
     Если аудио короткое, до 5 минут то не снимает звезды
-    
+
     Args: 
         data: Аудио файл в байтовом формате
         file_name: Название файла
@@ -2925,7 +2933,7 @@ def handle_voice(message: telebot.types.Message):
                         bot_reply_tr(message, 'Unknown message type')
                 except telebot.apihelper.ApiTelegramException as error:
                     if 'file is too big' in str(error):
-                        bot_reply_tr(message, 'Too big file. Try /transcribe command.')
+                        bot_reply_tr(message, 'Too big file. Try /transcribe command. (Button - [Too big file])')
                         return
                     else:
                         raise error
@@ -7254,7 +7262,7 @@ def send_welcome_start(message: telebot.types.Message):
             if args[1].isdigit():
                 if args[1].lower() in [x.lower() for x in my_init.supported_langs_trans+['pt-br',]]:
                     lang = args[1].lower()
-            else: # if file link for transcibe?
+            else: # if file link for transcribe?
                 arg = args[1]
                 if arg and len(arg) == 30 and hasattr(cfg, 'PATH_TO_UPLOAD_FILES'):
                     p = os.path.join(cfg.PATH_TO_UPLOAD_FILES, arg)

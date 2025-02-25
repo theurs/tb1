@@ -364,6 +364,7 @@ def img2txt(
     chat_id: str = '',
     use_skills: str = False,
     system: str = '',
+    timeout: int = TIMEOUT,
     ) -> str:
     '''
     Convert image to text.
@@ -382,7 +383,7 @@ def img2txt(
             # тут не передает chat_id что бы в истории не сохранялись картинки
             # много картинок в истории диалога раздувает его непомерно и создает проблемы 
             # с базой и возможно с самими запросами
-            res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills, system=system)
+            res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills, system=system, timeout=timeout)
             # надо вручную добавлять запрос в счетчик
             my_db.add_msg(chat_id, model)
 

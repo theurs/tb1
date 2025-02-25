@@ -1409,10 +1409,14 @@ def authorized(message: telebot.types.Message) -> bool:
         bool: True if the user is authorized, False otherwise.
     """
     try:
+        text = message.text or ''
+        caption = message.caption or ''
+
         # full block, no logs
         chat_id_full = get_topic_id(message)
         from_user_id = f'[{message.from_user.id}] [0]'
         if my_db.get_user_property(chat_id_full, 'blocked_totally') or my_db.get_user_property(from_user_id, 'blocked_totally'):
+            my_log.log_auth(f'tb:authorized:1: User {chat_id_full} is blocked totally. Text: {text} Caption: {caption}')
             return False
 
         if not my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -1422,6 +1426,7 @@ def authorized(message: telebot.types.Message) -> bool:
         if is_for_me(message)[0]:
             message.text = is_for_me(message)[1]
         else:
+            my_log.log_auth(f'tb:authorized:2: User {chat_id_full} is not authorized. Do not process commands to another bot /cmd@botname args. Text: {text} Caption: {caption}')
             return False
 
         if message.text:
@@ -1446,6 +1451,7 @@ def authorized(message: telebot.types.Message) -> bool:
         # banned users do nothing
         chat_id_full = get_topic_id(message)
         if my_db.get_user_property(chat_id_full, 'blocked'):
+            my_log.log_auth(f'tb:authorized:3: user {chat_id_full} is blocked. Text: {text} Caption: {caption}')
             return False
 
         # if this chat was forcibly left (banned), then when trying to enter it immediately exit
@@ -1453,9 +1459,9 @@ def authorized(message: telebot.types.Message) -> bool:
         if my_db.get_user_property(str(message.chat.id), 'auto_leave_chat'):
             try:
                 bot.leave_chat(message.chat.id)
-                my_log.log2('tb:leave_chat: auto leave ' + str(message.chat.id))
+                my_log.log_auth('tb:authorized:4:leave_chat: auto leave ' + str(message.chat.id))
             except Exception as leave_chat_error:
-                my_log.log2(f'tb:auth:live_chat_error: {leave_chat_error}')
+                my_log.log_auth(f'tb:authorized:5:live_chat_error: {leave_chat_error}')
             return False
 
         my_db.set_user_property(chat_id_full, 'last_time_access', time.time())
@@ -1501,12 +1507,14 @@ def authorized(message: telebot.types.Message) -> bool:
                 try:
                     check_blocked_user(chat_id_full, message.from_user.id)
                 except:
+                    my_log.log_auth(f'tb:authorized:6: User {chat_id_full} is blocked. Text: {text} Caption: {caption}')
                     return False
         else:
             try:
                 if is_reply or is_private or bot_name_used:
                     check_blocked_user(chat_id_full, message.from_user.id)
             except:
+                my_log.log_auth(f'tb:authorized:7: User {chat_id_full} is blocked. Text: {text} Caption: {caption}')
                 return False
 
         if message.text:
@@ -1515,17 +1523,18 @@ def authorized(message: telebot.types.Message) -> bool:
                     bot_reply(message, f'Not enabled here. Use /enable@{_bot_name} to enable in this chat.')
                 return False
         if not check_subscription(message):
+            my_log.log_auth(f'tb:authorized:8: User {chat_id_full} is not subscribed. Text: {text} Caption: {caption}')
             return False
 
         # этого тут быть не должно но яхз что пошло не так, дополнительная проверка
         if my_db.get_user_property(chat_id_full, 'blocked'):
-            my_log.log2(f'tb:authorized: User {chat_id_full} is blocked')
+            my_log.log_auth(f'tb:authorized:9:  User {chat_id_full} is blocked')
             return False
 
         return True
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:authorized:{unexpected_error}\n\n{traceback_error}')
+        my_log.log_auth(f'tb:authorized:10: {unexpected_error}\n\n{traceback_error}')
         return False
 
 
@@ -1769,7 +1778,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup  = telebot.types.InlineKeyboardMarkup()
             button1 = telebot.types.InlineKeyboardButton(tr("Отмена", lang), callback_data='cancel_command')
             if hasattr(cfg, 'UPLOADER_URL') and cfg.UPLOADER_URL:
-                button2 = telebot.types.InlineKeyboardButton(tr("Файл больше чем 20мб?", lang), url=cfg.UPLOADER_URL)
+                button2 = telebot.types.InlineKeyboardButton(tr("Too big file?", lang), url=cfg.UPLOADER_URL)
                 markup.add(button1)
                 markup.add(button2)
             else:
@@ -7794,6 +7803,8 @@ def set_default_commands(message: telebot.types.Message):
         bot_reply_tr(message, "Localization will take a long time, do not repeat this command.")
 
         most_used_langs = [x for x in my_init.supported_langs_trans if len(x) == 2]
+        if hasattr(cfg, 'INIT_LANGS') and cfg.INIT_LANGS:
+            most_used_langs = cfg.INIT_LANGS
 
         msg_commands = ''
         for lang in most_used_langs:

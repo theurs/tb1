@@ -76,10 +76,6 @@ MAX_SUM_REQUEST = 300000 # 200000
 # MAX_SUM_REQUEST = 31000
 
 
-FROZEN_KEYS = []
-FROZEN_KEYS_LOCK = threading.Lock()
-
-
 ROUND_ROBIN_KEYS = []
 
 
@@ -101,7 +97,6 @@ def get_next_key():
     
     if not ROUND_ROBIN_KEYS:
         keys = cfg.gemini_keys[:] + ALL_KEYS[:]
-        keys = [x for x in keys if x not in FROZEN_KEYS]
         badkeys = ['b3470eb3b2055346b76f2ce3b11aadf2f6fdccf5703ad853b4a5b0cf46f1cf16',]
         for key in keys[:]:
             if utils.fast_hash(key) in badkeys:
@@ -276,14 +271,7 @@ def chat(query: str,
                     # тут нет key_i += 1, но цикл закончится если история опустеет
                     continue
                 if '429 Quota exceeded for quota metric' in str(error):
-                    FROZEN_KEYS.append(key)
-                    SAVE_FROZEN()
-                    all_keys_len = len(cfg.gemini_keys[:] + ALL_KEYS[:])
-                    frozen_keys_len = len(FROZEN_KEYS)
-                    if all_keys_len - frozen_keys_len < 20:
-                        FROZEN_KEYS.clear()
-                        SAVE_FROZEN()
-                    my_log.log_gemini(f'my_gemini:chat2:1: {str(error)[:120]} {chat_id} {model[-10:]} {key[-10:]} {all_keys_len - frozen_keys_len} left')
+                    pass
                 else:
                     # traceback_error = traceback.format_exc()
                     # my_log.log_gemini(f'my_gemini:chat2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}\n\n{traceback_error}')
@@ -446,33 +434,6 @@ def ai(q: str,
                 max_tokens=tokens_limit,
                 system=system,
                 insert_mem=mem)
-
-
-def LOAD_FROZEN():
-    try:
-        global FROZEN_KEYS
-
-        with FROZEN_KEYS_LOCK:
-            with open('db/gemini_frozen_keys.txt', 'r') as f:
-                FROZEN_KEYS = f.readlines()
-                FROZEN_KEYS = [x.strip() for x in FROZEN_KEYS if x.strip() and len(x.strip()) == 39]
-    except FileNotFoundError:
-        pass
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log_gemini(f'my_gemini:LOAD_FROZEN: {error}\n{error_traceback}')
-
-
-def SAVE_FROZEN():
-    try:
-        with FROZEN_KEYS_LOCK:
-            with open('db/gemini_frozen_keys.txt', 'w') as f:
-                f.write('\n'.join(sorted(FROZEN_KEYS)))
-    except FileNotFoundError:
-        pass
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log_gemini(f'my_gemini:SAVE_FROZEN: {error}\n{error_traceback}')
 
 
 def chat_cli(user_id: str = 'test', model: str = ''):
@@ -993,7 +954,6 @@ def load_users_keys():
             for key in USER_KEYS[user]:
                 if key not in ALL_KEYS:
                     ALL_KEYS.append(key)
-    LOAD_FROZEN()
 
 
 def remove_key(key: str):

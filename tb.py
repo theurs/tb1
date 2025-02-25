@@ -8067,7 +8067,7 @@ def _send_message(
                 chunk = chunk.replace('</i>', '')
 
             my_log.log2(
-                f'tb:reply_to_long_message: {error}\n\nresp: {resp[:500]}\n\nparse_mode: {parse_mode}'
+                f'tb:reply_to_long_message:1: {error}\n\nresp: {resp[:500]}\n\nparse_mode: {parse_mode}'
             )
             # my_log.log2(chunk)
 
@@ -8095,7 +8095,7 @@ def reply_to_long_message(message: telebot.types.Message,
     """
     try:
         if not resp.strip():
-            my_log.log2(f'tb:reply_to_long_message: empty message')
+            my_log.log2(f'tb:reply_to_long_message:2: empty message')
             return
 
         chat_id_full = get_topic_id(message)
@@ -8122,7 +8122,7 @@ def reply_to_long_message(message: telebot.types.Message,
             else:
                 for chunk in chunks:
                     if not chunk.strip():
-                        my_log.log2(f'tb:reply_to_long_message: empty chunk')
+                        my_log.log2(f'tb:reply_to_long_message:3: empty chunk')
                         continue
                     else:
                         _send_message(message, chunk, parse_mode, preview, reply_markup, send_message, resp, 5)

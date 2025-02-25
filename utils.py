@@ -177,7 +177,6 @@ def bot_markdown_to_tts(text: str) -> str:
 
 # гребаный маркдаун ###################################################################
 
-
 def replace_math_byte_sequences(text: str) -> str:
     """
     Replaces byte sequences like <0xXX><0xYY><0xZZ> with their corresponding Unicode characters.
@@ -970,7 +969,6 @@ def post_process_split_html(chunks: list) -> list:
     processed_chunks = [chunk for chunk in processed_chunks if chunk.strip() and chunk.strip() != '</code>']
 
     return processed_chunks
-
 
 
 def html_to_markdown(html: str) -> str:

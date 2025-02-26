@@ -7533,6 +7533,11 @@ def id_cmd_handler(message: telebot.types.Message):
         chat_id_full = f'[{message.from_user.id}] [0]'
         group_id_full = f'[{message.chat.id}] [{message.message_thread_id or 0}]'
         is_private = message.chat.type == 'private'
+
+        if not is_private: # show only id in group
+            bot_reply(message, f'Title: {message.chat.title or ""}\n\nID: `{message.chat.id}`\n\nThread: `{message.message_thread_id or 0}`', parse_mode='MarkdownV2')
+            return
+
         if is_private:
             lang = get_lang(chat_id_full, message)
         else:

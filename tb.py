@@ -7535,7 +7535,7 @@ def id_cmd_handler(message: telebot.types.Message):
         is_private = message.chat.type == 'private'
 
         if not is_private: # show only id in group
-            msg = utils.bot_markdown_to_html(f'Title: `{message.chat.title or ""}`\n\nID: `{message.chat.id}`\n\nThread: `{message.message_thread_id or 0}`\n\n`{chat_id_full}`')
+            msg = utils.bot_markdown_to_html(f'Title: `{message.chat.title or ""}`\n\nID: `{message.chat.id}`\n\nThread: `{message.message_thread_id or 0}`')
             bot_reply(message, msg, parse_mode='HTML')
             return
 

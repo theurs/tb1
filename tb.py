@@ -1426,7 +1426,7 @@ def authorized(message: telebot.types.Message) -> bool:
         if is_for_me(message)[0]:
             message.text = is_for_me(message)[1]
         else:
-            my_log.log_auth(f'tb:authorized:2: User {chat_id_full} is not authorized. Do not process commands to another bot /cmd@botname args. Text: {text} Caption: {caption}')
+            # my_log.log_auth(f'tb:authorized:2: User {chat_id_full} is not authorized. Do not process commands to another bot /cmd@botname args. Text: {text} Caption: {caption}')
             return False
 
         if message.text:

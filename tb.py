@@ -5803,7 +5803,7 @@ def tts(message: telebot.types.Message, caption = None):
                     llang = re.sub(r'\d+', '', llang)
                 audio = my_tts.tts(text, llang, rate, gender=gender)
                 if not audio and llang != 'de':
-                    my_log.log2(f'tb:tts1:error: trying universal voice for {llang} {rate} {gender} {text}')
+                    my_log.log2(f'tb:tts:1:error: trying universal voice for {llang} {rate} {gender} {text}')
                     audio = my_tts.tts(text, 'de', rate, gender=gender)
                 if audio:
                     if message.chat.type != 'private':
@@ -5826,7 +5826,7 @@ def tts(message: telebot.types.Message, caption = None):
                     bot_reply_tr(message, 'Could not dub. You may have mixed up the language, for example, the German voice does not read in Russian.')
     except Exception as unknown:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:tts2: {unknown}\n{traceback_error}')
+        my_log.log2(f'tb:tts:2: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['google','Google'], func=authorized)

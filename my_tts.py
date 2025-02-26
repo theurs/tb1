@@ -260,8 +260,9 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                 result = tts_google(text, lang)
             except Exception as e:
                 if 'Language not supported' in str(e):
-                    if 'he' not in str(e): # hebrew is not supported by google
-                        my_log.log2(f'my_tts:1: tts_google: {e}')
+                    if str(e) not in ('he', 'uz'): # hebrew, uzbek are not supported by google
+                        # my_log.log2(f'my_tts:1: tts_google: {e}')
+                        pass
             if result:
                 return result
             else:

@@ -6628,9 +6628,9 @@ def stats(message: telebot.types.Message):
     """Функция, показывающая статистику использования бота."""
     try:
         with ShowAction(message, 'typing'):
-            model_usage1 = my_db.get_model_usage(1)
-            model_usage7 = my_db.get_model_usage(7)
             model_usage30 = my_db.get_model_usage(30)
+            model_usage7 = my_db.get_model_usage(7)
+            model_usage1 = my_db.get_model_usage(1)
 
             msg = f'Total messages in DB: {my_db.count_msgs_all()}'
 

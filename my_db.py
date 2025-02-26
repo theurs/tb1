@@ -103,6 +103,38 @@ class SmartCache:
 USERS_CACHE = SmartCache()
 
 
+def unpack_db(from_file: str, to_file: str):
+    '''
+    Unpack db copy (zstd compressed) with chunk reading and writing.
+    '''
+    try:
+        with open(from_file, 'rb') as f_in:
+            with open(to_file, 'wb') as f_out:
+                zstd_decompressor = zstandard.ZstdDecompressor()
+                decompressor = zstd_decompressor.stream_reader(f_in)
+                chunk_size = 1024 * 1024 * 10 # 10 MB chunks
+
+                while True:
+                    chunk = decompressor.read(chunk_size)
+                    if not chunk:
+                        break
+                    f_out.write(chunk)
+        my_log.log2(f'my_db:unpack_db restored from {from_file} to {to_file}')
+    except Exception as error:
+        my_log.log2(f'my_db:unpack_db {error}')
+
+
+def check_db():
+    '''
+    If not exists db/main.db check if there are files main.db.zst or main.db.zst.1 and restore
+    '''
+    if not os.path.exists('db/main.db'):
+        if os.path.exists('db/main.db.zst'):
+            unpack_db('db/main.db.zst', 'db/main.db')
+        elif os.path.exists('db/main.db.zst.1'):
+            unpack_db('db/main.db.zst.1', 'db/main.db')
+
+
 def backup_db():
     try:
         # if exists db/main.db.zst move to db/main.db.zst.1 and copy
@@ -151,6 +183,9 @@ def init(backup: bool = True, vacuum: bool = False):
     keep_files_seconds = 1 * week_seconds
     keep_messages_seconds = 2 * week_seconds # 1 * month_seconds
     keep_global_messages_seconds = 10 * year_seconds
+
+    check_db()
+
     try:
         if backup:
             backup_db()

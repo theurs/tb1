@@ -1416,7 +1416,7 @@ def authorized(message: telebot.types.Message) -> bool:
         chat_id_full = get_topic_id(message)
         from_user_id = f'[{message.from_user.id}] [0]'
         if my_db.get_user_property(chat_id_full, 'blocked_totally') or my_db.get_user_property(from_user_id, 'blocked_totally'):
-            my_log.log_auth(f'tb:authorized:1: User {chat_id_full} is blocked totally. Text: {text} Caption: {caption}')
+            # my_log.log_auth(f'tb:authorized:1: User {chat_id_full} is blocked totally. Text: {text} Caption: {caption}')
             return False
 
         if not my_db.get_user_property(chat_id_full, 'chat_mode'):

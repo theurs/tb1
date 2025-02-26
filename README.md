@@ -210,22 +210,20 @@ default_bot_name = 'бот'
 # 'gpt-4o-mini-ddg', 'glm4plus', 'mistral', 'pixtral', 'commandrplus', 'deepseek_r1_distill_llama70b', 'deepseek_r1_distill_qwen32b', 'gpt-4o', 'deepseek_r1', 'deepseek_v3'
 chat_mode_default = 'gemini15'
 
-img2_txt_model = 'gemini-2.0-flash-001'
-
-# для ответов на математические задачи
+img2_txt_model = 'gemini-2.0-flash'
 img2_txt_model_solve = 'gemini-2.0-pro-exp-02-05'
 
-gemini_flash_model = 'gemini-2.0-flash-001'
-gemini_flash_model_fallback = 'gemini-2.0-flash-exp'
+gemini_flash_model = 'gemini-2.0-flash'
+gemini_flash_model_fallback = 'gemini-2.0-flash-lite'
 
-gemini_flash_light_model = 'gemini-2.0-flash-lite-preview-02-05'
-gemini_flash_light_model_fallback = 'gemini-2.0-flash-001'
+gemini_flash_light_model = 'gemini-2.0-flash-lite'
+gemini_flash_light_model_fallback = 'gemini-2.0-flash'
 
 gemini_pro_model = 'gemini-2.0-pro-exp-02-05'
-gemini_pro_model_fallback = 'gemini-1.5-pro-002'
+gemini_pro_model_fallback = 'gemini-1.5-pro'
 
-gemini_gemini_pro15_model = 'gemini-1.5-pro-002'
-gemini_gemini_pro15_model_fallback = 'gemini-1.5-pro-001'
+gemini_gemini_pro15_model = 'gemini-1.5-pro'
+gemini_gemini_pro15_model_fallback = 'gemini-1.5-pro-latest'
 
 gemini_exp_model = 'gemini-exp-1206'
 gemini_exp_model_fallback = 'gemini-2.0-pro-exp-02-05'

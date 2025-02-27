@@ -326,8 +326,8 @@ def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -
             elif response.status_code == 401 and response.reason == 'Unauthorized':
                 remove_huggin_face_key(api_key)
             else: # unknown error
-                if "Your auth method doesn't allow you to make inference requests" in resp_text or \
-                   "We're on a journey to ad" in resp_text:
+                if "allow you to make inference requests" in resp_text or \
+                   "on a journey to ad" in resp_text:
                     pass
                 else:
                     my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:3: {resp_text} | {proxy} | {url} | {api_key}')

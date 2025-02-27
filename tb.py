@@ -6453,15 +6453,21 @@ def image_gen(message: telebot.types.Message):
             return
 
 
+
         # не ставить в очередь рисование, кроме белого списка
-        if lock.locked():
-            if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER:
-                pass
-            else:
-                return
+        # if lock.locked():
+        #     if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER:
+        #         pass
+        #     else:
+        #         return
+
+
+
+
         # # не ставить в очередь рисование x10 x20 bing
         # if lock.locked() and BING_FLAG > 1:
         #     return
+
 
         with lock:
             with semaphore_talks:

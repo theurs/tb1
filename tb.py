@@ -2211,7 +2211,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_openrouter, button_gpt_4o)
 
-            markup.row(button_deepseek_v3, button_deepseek_r1)
+            # markup.row(button_deepseek_v3, button_deepseek_r1)
 
             markup.row(button_gemini_lite, button_gemini_pro15)
 

@@ -19,6 +19,7 @@
 import cachetools.func
 import io
 import PIL
+import random
 import re
 import sys
 import time
@@ -51,6 +52,7 @@ USER_KEYS = SqliteDict('db/gemini_user_keys.db', autocommit=True)
 
 ALL_KEYS = []
 USER_KEYS_LOCK = threading.Lock()
+REMOVED_KEYS = []
 
 SAFETY_SETTINGS = {
     HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
@@ -272,6 +274,7 @@ def chat(query: str,
                     continue
                 if '429 Quota exceeded for quota metric' in str(error):
                     pass
+                    remove_key(key)
                 else:
                     # traceback_error = traceback.format_exc()
                     # my_log.log_gemini(f'my_gemini:chat2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}\n\n{traceback_error}')
@@ -359,7 +362,6 @@ def img2txt(
     '''
     for _ in range(2):
         try:
-
             # надо уменьшить или загружать через облако, или просто не делать слишком большое
             if len(data_) > 20000000:
                 data_ = utils.resize_image(data_, 20000000)
@@ -970,6 +972,8 @@ def remove_key(key: str):
         if key in ALL_KEYS:
             try:
                 ALL_KEYS.remove(key) # Использовать remove для более безопасного удаления из списка
+                if key not in REMOVED_KEYS:
+                    REMOVED_KEYS.append(key)
             except ValueError:
                 my_log.log_keys(f'remove_key: Invalid key {key} not found in ALL_KEYS list') # Логировать, если ключ не найден в ALL_KEYS
 
@@ -1000,6 +1004,9 @@ def test_new_key(key: str) -> bool:
         bool: True if the key is valid, False otherwise.
     """
     try:
+        if key in REMOVED_KEYS:
+            return False
+
         result = chat('1+1= answer very short', key__=key)
         if result.strip():
             return True
@@ -1008,6 +1015,31 @@ def test_new_key(key: str) -> bool:
         my_log.log2(f'my_gemini:test_new_key: {error}\n\n{error_traceback}')
 
     return False
+
+
+def test_all_keys():
+    '''
+    Tests all keys in the ALL_KEYS list.
+
+    This function iterates over each key stored in the global list ALL_KEYS and tests its validity 
+    using the `test_new_key` function. If a key is found to be invalid, it prints a message indicating 
+    the invalid key and pauses for a random interval between 2 to 5 seconds before continuing. This 
+    pause helps in managing the rate of requests and avoiding potential throttling or rate limiting 
+    issues with the service being tested.
+    
+    Note:
+    - The `test_new_key` function is expected to return a boolean indicating the validity of a key.
+    - Invalid keys are identified by the `test_new_key` function returning False.
+    - The random sleep interval is introduced to simulate human-like interaction and reduce the 
+      likelihood of triggering automated request detection by the service.
+    '''
+    print('Invalid keys:')
+    keys = cfg.gemini_keys[:] + ALL_KEYS[:]
+    for key in keys:
+        r = test_new_key(key)
+        if not r:
+            print(key)
+            time.sleep(random.randint(2, 5))
 
 
 def list_models(include_context: bool = False):
@@ -1134,6 +1166,8 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     load_users_keys()
+
+    test_all_keys()
 
     # print(test_new_key(''))
 

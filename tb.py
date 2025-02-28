@@ -3652,6 +3652,7 @@ def handle_photo(message: telebot.types.Message):
 
             if is_private:
                 # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку
+                # Если картинок больше 4 то вытаскиваем из каждой текст отдельно и пытаемся собрать в 1 большой текст
                 if len(MESSAGES) > 1:
                     # найти сообщение у которого есть caption
                     caption = ''
@@ -3661,55 +3662,96 @@ def handle_photo(message: telebot.types.Message):
                             break
                     with ShowAction(message, 'typing'):
                         images = [download_image_from_message(msg) for msg in MESSAGES]
-                        if sys.getsizeof(images) > 10 * 1024 *1024:
-                            bot_reply_tr(message, 'Too big files.')
+                        if len(images) > 4:
+                            big_text = ''
+                            for image in images:
+                                if image:
+                                    try:
+                                        text = img2txt(
+                                            text = image,
+                                            lang = lang,
+                                            chat_id_full = chat_id_full,
+                                            query=tr('text', lang),
+                                            model = cfg.gemini_flash_light_model,
+                                            temperature=0.1,
+                                            system_message=tr('Give me all text from image, no any other words but text from this image', lang),
+                                            timeout=60,
+                                            )
+                                        if text:
+                                            big_text += text + '\n\n'
+                                    except Exception as bunch_of_images_error1:
+                                        my_log.log2(f'tb:handle_photo1: {bunch_of_images_error1}')
+                            if big_text:
+                                try:
+                                    bot_reply(
+                                        message,
+                                        big_text,
+                                        disable_web_page_preview=True,
+                                        )
+                                    if caption:
+                                        message.text = f'{tr("User sent a bunch of images with text and caption:", lang)} {caption}\n\n{big_text}'
+                                        do_task(message)
+                                    else:
+                                        add_to_bots_mem(
+                                            query=tr('User sent images.', lang),
+                                            resp = f"{tr('Got text from images:', lang)}\n\n{big_text}",
+                                            chat_id_full=chat_id_full,
+                                        )
+                                except Exception as bunch_of_images_error2:
+                                    my_log.log2(f'tb:handle_photo2: {bunch_of_images_error2}')
+                            else:
+                                bot_reply_tr(message, 'No any text in images.')
                             return
-                        try:
-                            result_image_as_bytes = utils.make_collage(images)
-                        except Exception as make_collage_error:
-                            # my_log.log2(f'tb:handle_photo1: {make_collage_error}')
-                            bot_reply_tr(message, 'Too big files.')
-                            return
-                        if len(result_image_as_bytes) > 10 * 1024 *1024:
-                            result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
-                        try:
-                            m = bot.send_photo( message.chat.id,
-                                                result_image_as_bytes,
-                                                disable_notification=True,
-                                                reply_to_message_id=message.message_id,
-                                                reply_markup=get_keyboard('hide', message))
-                            log_message(m)
-                        except Exception as send_img_error:
-                            my_log.log2(f'tb:handle_photo2: {send_img_error}')
-                        width, height = utils.get_image_size(result_image_as_bytes)
-                        if width >= 1280 or height >= 1280:
-                            try:
-                                m = bot.send_document(
-                                    message.chat.id,
-                                    result_image_as_bytes,
-                                    # caption='images.jpg',
-                                    visible_file_name='images.jpg',
-                                    disable_notification=True,
-                                    reply_to_message_id=message.message_id,
-                                    reply_markup=get_keyboard('hide', message)
-                                    )
-                                log_message(m)
-                            except Exception as send_doc_error:
-                                my_log.log2(f'tb:handle_photo3: {send_doc_error}')
-                        my_log.log_echo(message, f'Made collage of {len(images)} images.')
-                        if not caption:
-                            proccess_image(chat_id_full, result_image_as_bytes, message)
-                            return
-                        text = img2txt(result_image_as_bytes, lang, chat_id_full, caption)
-                        if text:
-                            text = utils.bot_markdown_to_html(text)
-                            # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                            bot_reply(message, text, parse_mode='HTML',
-                                                reply_markup=get_keyboard('translate', message),
-                                                disable_web_page_preview=True)
                         else:
-                            bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                        return
+                            if sys.getsizeof(images) > 10 * 1024 *1024:
+                                bot_reply_tr(message, 'Too big files.')
+                                return
+                            try:
+                                result_image_as_bytes = utils.make_collage(images)
+                            except Exception as make_collage_error:
+                                # my_log.log2(f'tb:handle_photo1: {make_collage_error}')
+                                bot_reply_tr(message, 'Too big files.')
+                                return
+                            if len(result_image_as_bytes) > 10 * 1024 *1024:
+                                result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
+                            try:
+                                m = bot.send_photo( message.chat.id,
+                                                    result_image_as_bytes,
+                                                    disable_notification=True,
+                                                    reply_to_message_id=message.message_id,
+                                                    reply_markup=get_keyboard('hide', message))
+                                log_message(m)
+                            except Exception as send_img_error:
+                                my_log.log2(f'tb:handle_photo2: {send_img_error}')
+                            width, height = utils.get_image_size(result_image_as_bytes)
+                            if width >= 1280 or height >= 1280:
+                                try:
+                                    m = bot.send_document(
+                                        message.chat.id,
+                                        result_image_as_bytes,
+                                        # caption='images.jpg',
+                                        visible_file_name='images.jpg',
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message)
+                                        )
+                                    log_message(m)
+                                except Exception as send_doc_error:
+                                    my_log.log2(f'tb:handle_photo3: {send_doc_error}')
+                            my_log.log_echo(message, f'Made collage of {len(images)} images.')
+                            if not caption:
+                                proccess_image(chat_id_full, result_image_as_bytes, message)
+                                return
+                            text = img2txt(result_image_as_bytes, lang, chat_id_full, caption)
+                            if text:
+                                text = utils.bot_markdown_to_html(text)
+                                # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
+                                bot_reply(message, text, parse_mode='HTML',
+                                                    reply_markup=get_keyboard('translate', message),
+                                                    disable_web_page_preview=True)
+                            else:
+                                bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                            return
 
 
             if chat_id_full in IMG_LOCKS:

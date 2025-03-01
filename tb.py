@@ -6265,7 +6265,9 @@ def image_flux_gen(message: telebot.types.Message):
 
                     medias = []
                     for i in images:
-                        caption_ = f'{caption_model}\n\n{prompt}'[:900]
+                        bot_addr = f'https://t.me/{_bot_name}'
+                        caption_ = f'{bot_addr} {caption_model}\n\n{prompt}'
+                        caption_ = re.sub(r"(\s)\1+", r"\1\1", caption_)[:900]
                         medias.append(telebot.types.InputMediaPhoto(i, caption=caption_))
 
                     if medias:
@@ -7580,10 +7582,17 @@ def id_cmd_handler(message: telebot.types.Message):
     try:
         chat_id_full = f'[{message.from_user.id}] [0]'
         group_id_full = f'[{message.chat.id}] [{message.message_thread_id or 0}]'
+        gr_lang = get_lang(group_id_full, message)
         is_private = message.chat.type == 'private'
 
         if not is_private: # show only id in group
-            msg = utils.bot_markdown_to_html(f'Title: `{message.chat.title or ""}`\n\nID: `{message.chat.id}`\n\nThread: `{message.message_thread_id or 0}`')
+            activated = my_db.get_user_property(group_id_full, 'chat_enabled') or False
+            activated = tr('Yes', gr_lang) if activated else tr('No', gr_lang)
+            bot_name = my_db.get_user_property(group_id_full, 'bot_name') or BOT_NAME_DEFAULT
+            chat_title = tr('Chat title:', gr_lang)
+            bot_name_here = tr('Bot name here:', gr_lang)
+            chat_activated = tr('Chat activated:', gr_lang)
+            msg = utils.bot_markdown_to_html(f'{chat_title} `{message.chat.title or ""}`\n\nID: `{message.chat.id}`\n\n{tr("Thread:", gr_lang)} `{message.message_thread_id or 0}`\n\n{bot_name_here} `{bot_name}`\n\n{chat_activated} `{activated}`')
             bot_reply(message, msg, parse_mode='HTML')
             return
 

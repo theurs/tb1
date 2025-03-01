@@ -50,7 +50,10 @@ opencv-python
 openpyxl
 odfpy
 pandas
+
+# install https://rustup.rs/ in windows
 pendulum
+
 Pillow
 pillow-heif
 prettytable

@@ -275,6 +275,25 @@ def chat(query: str,
                 if '429 Quota exceeded for quota metric' in str(error):
                     pass
                     remove_key(key)
+                if 'MALFORMED_FUNCTION_CALL' in str(error):
+                    if use_skills:
+                        return chat(
+                            query,
+                            chat_id, 
+                            temperature=temperature, 
+                            model = model, 
+                            system=system, 
+                            max_tokens=max_tokens, 
+                            insert_mem=mem, 
+                            key__=key__, 
+                            use_skills=False, 
+                            json_output=json_output, 
+                            do_not_update_history=do_not_update_history,
+                            max_chat_lines=max_chat_lines,
+                            max_chat_mem_chars=max_chat_mem_chars,
+                            timeout=timeout)
+                    else:
+                        my_log.log_gemini(f'my_gemini:chat2:2:0: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')   
                 else:
                     # traceback_error = traceback.format_exc()
                     # my_log.log_gemini(f'my_gemini:chat2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}\n\n{traceback_error}')

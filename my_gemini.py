@@ -294,6 +294,8 @@ def chat(query: str,
                             timeout=timeout)
                     else:
                         my_log.log_gemini(f'my_gemini:chat2:2:0: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')   
+                if 'list index out of range':
+                    return ''
                 else:
                     # traceback_error = traceback.format_exc()
                     # my_log.log_gemini(f'my_gemini:chat2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}\n\n{traceback_error}')

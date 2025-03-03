@@ -532,6 +532,7 @@ def txt2img(
     output_format: str = 'webp',
     seed: int = -1,
     num_interence_steps: int = 28,
+    timeout: int = 60
     ) -> bytes:
     '''
     Generate image from text
@@ -546,6 +547,7 @@ def txt2img(
         negative_prompt (str, optional): The negative prompt to generate an image from. Defaults to ''.
         seed (int, optional): The seed to generate an image from. Defaults to -1.
         num_interence_steps (int, optional): The number of inference steps to generate an image. Defaults to 28.
+        timeout (int, optional): The timeout for the request in seconds. Defaults to 60.
 
     Returns:
         bytes: The generated image data in bytes format.
@@ -575,7 +577,8 @@ def txt2img(
                 "seed": seed,
                 "num_images": 1,
             },
-            prompt=prompt
+            prompt=prompt,
+            timeout=timeout,
         )
 
         image_data = response.data[0]

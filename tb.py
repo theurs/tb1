@@ -6580,13 +6580,13 @@ def image_gen(message: telebot.types.Message):
                                 images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
 
                         # try flux if no results
-                        # if not images:
-                        #     prompt = prompt.strip()
-                        #     # remove trailing !
-                        #     prompt = re.sub(r'^!+', '', prompt).strip()
-                        #     message.text = f'/flux {prompt}'
-                        #     image_flux_gen(message)
-                        #     return
+                        if not images and hasattr(cfg, 'USE_FLUX_IF_EMPTY_IMAGES') and cfg.USE_FLUX_IF_EMPTY_IMAGES:
+                            prompt = prompt.strip()
+                            # remove trailing !
+                            prompt = re.sub(r'^!+', '', prompt).strip()
+                            message.text = f'/flux {prompt}'
+                            image_flux_gen(message)
+                            return
 
                         medias = []
                         has_good_images = False

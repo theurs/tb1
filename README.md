@@ -459,7 +459,8 @@ COHERE_AI_KEYS = [
 #    'xxx',
 #    'yyy',
 #]
-
+# use flux images if other fails
+# USE_FLUX_IF_EMPTY_IMAGES = False
 
 
 # string for /donate command html parsing

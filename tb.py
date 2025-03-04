@@ -3780,11 +3780,13 @@ def handle_photo(message: telebot.types.Message):
                     if state == 'describe':
                         with ShowAction(message, 'typing'):
                             image = download_image_from_message(message)
-                            if len(image) > 10 * 1024 *1024:
-                                image = utils.resize_image(image, 10 * 1024 *1024)
+
                             if not image:
                                 # my_log.log2(f'tb:handle_photo4: не удалось распознать документ или фото {str(message)}')
                                 return
+
+                            if len(image) > 10 * 1024 *1024:
+                                image = utils.resize_image(image, 10 * 1024 *1024)
 
                             image = utils.heic2jpg(image)
                             if not message.caption:

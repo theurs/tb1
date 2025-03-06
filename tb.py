@@ -2318,11 +2318,17 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
             elif call.data == 'chat_mode_select_gemini':
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+                # set temp = 1 for regular mode
+                my_db.set_user_property(chat_id_full, 'temperature', 1)
                 bot.delete_message(message.chat.id, message.message_id)
             elif call.data == 'chat_mode_select_gemini_thinking':
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini_2_flash_thinking')
+                # set temp = 0.1 for thinking
+                my_db.set_user_property(chat_id_full, 'temperature', 0.1)
                 bot.delete_message(message.chat.id, message.message_id)
             elif call.data == 'chat_mode_select_codestral':
+                # set temp = 0.1 for thinking
+                my_db.set_user_property(chat_id_full, 'temperature', 0.1)
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'codestral')
                 bot.delete_message(message.chat.id, message.message_id)
 

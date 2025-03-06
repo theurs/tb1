@@ -3475,7 +3475,7 @@ def handle_document(message: telebot.types.Message):
 
                                 my_db.set_user_property(chat_id_full, 'saved_file_name', 'group of files')
 
-                                text = f'{prev_text}\n\n{message.document.file_name if hasattr(message, "document") else "noname.txt"}:\n{text}'
+                                text = f'{prev_text}\n\n<FILE>\n<NAME>\n{message.document.file_name if hasattr(message, "document") else "noname.txt"}\n</NAME>\n<TEXT>\n{text}\n</TEXT>\n</FILE>\n\n'
                                 if len(text) > 1000000:
                                     text = text[-1000000:]
                                 my_db.set_user_property(chat_id_full, 'saved_file', text.strip())

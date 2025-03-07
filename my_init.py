@@ -16,6 +16,38 @@ from utils import async_run_with_limit
 PRINT_LOCK = threading.Lock()
 
 
+SIMPLE_TEXT_LIST = (
+    'application/x-bat',
+    'application/xml',
+    'application/javascript',
+    'application/json',
+    'application/x-sh',
+    'application/xhtml+xml',
+    'application/atom+xml',
+    'application/x-subrip',
+    'application/yaml',
+    'application/x-perl',
+    'application/x-php',
+    'application/binary',
+    )
+
+PANDOC_SUPPORT_LIST = (
+    'application/vnd.ms-excel',
+    'application/vnd.oasis.opendocument.spreadsheet',
+    'application/vnd.oasis.opendocument.text',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/octet-stream',
+    'application/epub+zip',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/rtf',
+    'application/msword',
+    'application/x-msexcel',
+    'application/x-fictionbook+xml',
+    'image/vnd.djvu+multipage', # hack
+    )
+
+
 supported_langs_trans = [
     "af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de",
     "el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha",

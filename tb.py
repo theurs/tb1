@@ -3307,33 +3307,8 @@ def handle_document(message: telebot.types.Message):
             lock = threading.Lock()
             DOCUMENT_LOCKS[chat_id_full] = lock
 
-        pandoc_support = ('application/vnd.ms-excel',
-            'application/vnd.oasis.opendocument.spreadsheet',
-            'application/vnd.oasis.opendocument.text',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/octet-stream',
-            'application/epub+zip',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'application/rtf',
-            'application/msword',
-            'application/x-msexcel',
-            'application/x-fictionbook+xml',
-            'image/vnd.djvu+multipage', # hack
-        )
-        simple_text = ('application/x-bat',
-                    'application/xml',
-                    'application/javascript',
-                    'application/json',
-                    'application/x-sh',
-                    'application/xhtml+xml',
-                    'application/atom+xml',
-                    'application/x-subrip',
-                    'application/yaml',
-                    'application/x-perl',
-                    'application/x-php',
-                    'application/binary',
-                    )
+        pandoc_support = my_init.PANDOC_SUPPORT_LIST
+        simple_text = my_init.SIMPLE_TEXT_LIST
 
         if not message.document.mime_type:
             message.document.mime_type = 'application/xml'

@@ -3331,6 +3331,7 @@ def handle_document(message: telebot.types.Message):
                     'application/x-subrip',
                     'application/yaml',
                     'application/x-perl',
+                    'application/x-php',
                     'application/binary',
                     )
 

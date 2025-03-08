@@ -7758,6 +7758,19 @@ def id_cmd_handler(message: telebot.types.Message):
         if my_db.get_user_property(chat_id_full, 'persistant_memory'):
             msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_db.get_user_property(chat_id_full, "persistant_memory")}'
 
+        # показать имя бота, стиль, и мемо юзера админу
+        if message.from_user.id in cfg.admins and chat_id_full != f'[{message.from_user.id}] [0]':
+            style = utils.bot_markdown_to_html(my_db.get_user_property(chat_id_full, "role") or '').strip()
+            bname = utils.bot_markdown_to_html(my_db.get_user_property(chat_id_full, "bot_name") or '').strip()
+            memos = my_db.get_user_property(chat_id_full, "memos") or []
+            memos_str = utils.bot_markdown_to_html('\n'.join(memos)).strip()
+            if bname:
+                msg += f'\n\n<b>{tr("Bot name:", lang)}</b> {bname}'
+            if style:
+                msg += f'\n\n<b>{tr("Style:", lang)}</b> {style}'
+            if memos_str:
+                msg += f'\n\n<b>{tr("User memo:", lang)}</b> {memos_str}'
+
         bot_reply(message, msg, parse_mode = 'HTML')
     except Exception as error:
         error_traceback = traceback.format_exc()

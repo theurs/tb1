@@ -3404,9 +3404,15 @@ def handle_document(message: telebot.types.Message):
                         file_bytes = io.BytesIO(downloaded_file)
                         text = ''
                         if message.document.mime_type == 'application/pdf':
-                            text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
-                            if not text:
+                            if message.caption and message.caption.startswith('!') and not message.caption.startswith('!tr '):
+                                message.caption = message.caption[1:].strip()
+                                caption = message.caption or ''
+                                caption = caption.strip()
                                 text = my_pdf.get_text(downloaded_file)
+                            else:
+                                text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
+                                if not text:
+                                    text = my_pdf.get_text(downloaded_file)
                         elif message.document.mime_type in pandoc_support:
                             ext = utils.get_file_ext(file_info.file_path)
                             text = my_pandoc.fb2_to_text(file_bytes.read(), ext)

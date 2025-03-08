@@ -7,6 +7,7 @@ import threading
 import traceback
 
 import openai
+from mistralai import Mistral
 from sqlitedict import SqliteDict
 
 import cfg
@@ -54,6 +55,7 @@ CODE_MODEL_FALLBACK = 'codestral-2405'
 FALLBACK_MODEL = 'pixtral-large-latest'
 VISION_MODEL = 'pixtral-large-latest'
 SMALL_MODEL = 'mistral-small-latest'
+OCR_MODEL = 'mistral-ocr-latest'
 
 
 CURRENT_KEYS_SET = []
@@ -244,6 +246,125 @@ def img2txt(
             time.sleep(2)
 
     return result
+
+
+def ocr_image(
+    image_data: bytes,
+    timeout: int = 120,
+    ) -> str:
+    '''
+    Use OCR to extract text from an image
+
+    Args:
+        image_data: The image data as bytes or file name.
+        timeout: The timeout for the request in seconds. Defaults to 120.
+
+    Returns:
+        A string containing the description of the image, or an empty string if an error occurs.
+    '''
+
+    try:
+        if not len(ALL_KEYS):
+            return ''
+
+        if isinstance(image_data, str):
+            with open(image_data, 'rb') as f:
+                image_data = f.read()
+
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+
+        api_key = get_next_key()
+        client = Mistral(api_key=api_key)
+
+        ocr_response = client.ocr.process(
+            timeout_ms=timeout * 1000,
+            include_image_base64=False,
+            model="mistral-ocr-latest",
+            document={
+                "type": "image_url",
+                "image_url": f"data:image/jpeg;base64,{base64_image}" 
+            }
+        )
+        resp = ''
+        for page in ocr_response.pages:
+            resp += page.markdown.strip()
+            resp += '\n'
+        return resp.strip()
+
+    except Exception as error:
+        my_log.log_mistral(f'ocr_image: {error}')
+        return ''
+
+
+def ocr_pdf(
+    image_data: bytes,
+    timeout: int = 300,
+    ) -> str:
+    '''
+    Use OCR to extract text from an image
+
+    Args:
+        image_data: The pdf data as bytes or file name.
+        timeout: The timeout for the request in seconds. Defaults to 120.
+
+    Returns:
+        A string containing the description of the image, or an empty string if an error occurs.
+    '''
+    tmp_fname = ''
+    client = None
+    uploaded_pdf = None
+    try:
+        if not len(ALL_KEYS):
+            return ''
+
+        if isinstance(image_data, str):
+            with open(image_data, 'rb') as f:
+                image_data = f.read()
+
+        tmp_fname = utils.get_tmp_fname() + '.pdf'
+        with open(tmp_fname, 'wb') as f:
+            f.write(image_data)
+
+        api_key = get_next_key()
+        client = Mistral(api_key=api_key)
+
+        uploaded_pdf = client.files.upload(
+            timeout_ms = 60 * 1000, # минуту на загрузку
+            file={
+                "file_name": tmp_fname,
+                "content": open(tmp_fname, "rb"),
+            },
+            purpose="ocr"
+        )  
+
+        signed_url = client.files.get_signed_url(file_id=uploaded_pdf.id)
+
+        ocr_response = client.ocr.process(
+            model="mistral-ocr-latest",
+            include_image_base64 = False,
+            timeout_ms=timeout * 1000,
+            document={
+                "type": "document_url",
+                "document_url": signed_url.url,
+            }
+        )
+
+        client.files.delete(file_id=uploaded_pdf.id, timeout_ms = 30 * 1000)
+        utils.remove_file(tmp_fname)
+
+        resp = ''
+        for page in ocr_response.pages:
+            resp += page.markdown.strip()
+            resp += '\n'
+        return resp.strip()
+
+    except Exception as error:
+        if tmp_fname:
+            utils.remove_file(tmp_fname)
+        if client and uploaded_pdf:
+            client.files.delete(file_id=uploaded_pdf.id, timeout_ms = timeout * 1000)
+        my_log.log_mistral(f'ocr_image: {error}')
+        return ''
 
 
 def clear_mem(mem, user_id: str):
@@ -561,6 +682,9 @@ if __name__ == '__main__':
     # print(img2txt('C:/Users/user/Downloads/3.jpg', 'извлеки весь текст с картинки, сохрани форматирование'))
     # print(img2txt('C:/Users/user/Downloads/2.jpg', 'реши все задачи, ответ по-русски'))
     # print(img2txt('C:/Users/user/Downloads/3.png', 'какой ответ и почему, по-русски'))
+
+    # print(ocr_image(r'C:/Users/user/Downloads/samples for ai/мат задачи 2.jpg'))
+    print(ocr_pdf(r'C:/Users/user/Downloads/samples for ai/20220816043638.pdf'))
 
     # with open('C:/Users/user/Downloads/1.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()

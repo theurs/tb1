@@ -548,8 +548,17 @@ def img2txt(text, lang: str,
             #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
+
+            # # запрос на OCR?
+            # if query == tr(my_init.PROMPT_COPY_TEXT, lang):
+            #     if not text:
+            #         text = my_mistral.ocr_image(data, timeout=timeout)
+            #         if text:
+            #             WHO_ANSWERED[chat_id_full] = 'img2txt_mistral_ocr'
+
+
             # если модель не указана явно то определяем по режиму чата
-            if not model:
+            if not model and not text:
                 if chat_mode == 'openrouter':
                     text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
@@ -3395,7 +3404,9 @@ def handle_document(message: telebot.types.Message):
                         file_bytes = io.BytesIO(downloaded_file)
                         text = ''
                         if message.document.mime_type == 'application/pdf':
-                            text = my_pdf.get_text(downloaded_file)
+                            text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
+                            if not text:
+                                text = my_pdf.get_text(downloaded_file)
                         elif message.document.mime_type in pandoc_support:
                             ext = utils.get_file_ext(file_info.file_path)
                             text = my_pandoc.fb2_to_text(file_bytes.read(), ext)

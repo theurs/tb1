@@ -7759,12 +7759,16 @@ def id_cmd_handler(message: telebot.types.Message):
             bname = utils.bot_markdown_to_html(my_db.get_user_property(chat_id_full, "bot_name") or '').strip()
             memos = my_db.get_user_property(chat_id_full, "memos") or []
             memos_str = utils.bot_markdown_to_html('\n'.join(memos)).strip()
+            temperature = my_db.get_user_property(chat_id_full, 'temperature')
+
             if bname:
                 msg += f'\n\n<b>{tr("Bot name:", lang)}</b> {bname}'
             if style:
                 msg += f'\n\n<b>{tr("Style:", lang)}</b> {style}'
             if memos_str:
                 msg += f'\n\n<b>{tr("User memo:", lang)}</b> {memos_str}'
+            if temperature and temperature != GEMIMI_TEMP_DEFAULT:
+                msg += f'\n\n<b>{tr("Temperature:", lang)}</b> {temperature}'
 
         bot_reply(message, msg, parse_mode = 'HTML')
     except Exception as error:

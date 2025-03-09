@@ -3,6 +3,7 @@
 
 import base64
 import io
+import importlib
 import json
 import os
 import random
@@ -31,6 +32,10 @@ from my_nebius import txt2img as flux_nebius
 
 
 DEBUG = cfg.DEBUG if hasattr(cfg, 'DEBUG') else False
+
+
+# config file timestamp
+CONFIG_TIMESTAMP = 0
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
@@ -232,122 +237,137 @@ def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -
     Returns:
         bytes: The generated text as bytes.
     """
-    if not hasattr(cfg, 'huggin_face_api'):
-        return []
+    try:
+        # reread config if changed
+        global CONFIG_TIMESTAMP
+        if os.path.exists('cfg.py'):
+            if os.path.getmtime('cfg.py') > CONFIG_TIMESTAMP:
+                if CONFIG_TIMESTAMP:
+                    my_log.log_huggin_face_api('cfg.py changed')
+                importlib.reload(cfg)
+                CONFIG_TIMESTAMP = os.path.getmtime('cfg.py')
 
-    if hasattr(cfg, 'huggin_face_models_urls') and cfg.huggin_face_models_urls:
-        API_URL = cfg.huggin_face_models_urls
-    else:
-        if os.path.exists('huggin_face_models_urls.list'):
-            with open('huggin_face_models_urls.list', 'r') as f:
-                API_URL = f.read().splitlines()
-            API_URL = [x.strip() for x in API_URL if x.strip() and not x.strip().startswith('#')]
+        if not hasattr(cfg, 'huggin_face_api'):
+            return []
+
+        if hasattr(cfg, 'huggin_face_models_urls') and cfg.huggin_face_models_urls:
+            API_URL = cfg.huggin_face_models_urls
         else:
-            API_URL = [
-            "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
-            "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
-            "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
-            "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
-            "https://api-inference.huggingface.co/models/UnfilteredAI/NSFW-gen-v2",
+            if os.path.exists('huggin_face_models_urls.list'):
+                with open('huggin_face_models_urls.list', 'r') as f:
+                    API_URL = f.read().splitlines()
+                API_URL = [x.strip() for x in API_URL if x.strip() and not x.strip().startswith('#')]
+            else:
+                API_URL = [
+                "https://api-inference.huggingface.co/models/ehristoforu/dalle-3-xl-v2",
+                "https://api-inference.huggingface.co/models/digiplay/Juggernaut_final",
+                "https://api-inference.huggingface.co/models/RunDiffusion/Juggernaut-X-v10",
+                "https://api-inference.huggingface.co/models/dataautogpt3/TempestV0.1",
+                "https://api-inference.huggingface.co/models/UnfilteredAI/NSFW-gen-v2",
 
-            # new test
-            "https://api-inference.huggingface.co/models/Corcelio/mobius",
-            "https://api-inference.huggingface.co/models/sd-community/sdxl-flash",
-            "https://api-inference.huggingface.co/models/fluently/Fluently-XL-v4",
-            "https://api-inference.huggingface.co/models/Corcelio/openvision",
+                # new test
+                "https://api-inference.huggingface.co/models/Corcelio/mobius",
+                "https://api-inference.huggingface.co/models/sd-community/sdxl-flash",
+                "https://api-inference.huggingface.co/models/fluently/Fluently-XL-v4",
+                "https://api-inference.huggingface.co/models/Corcelio/openvision",
 
-        ]
+            ]
 
-    payload = json.dumps({"inputs": prompt, "negative_prompt": negative_prompt,})
+        payload = json.dumps({"inputs": prompt, "negative_prompt": negative_prompt,})
 
-    def request_img(prompt, url, p):
+        def request_img(prompt, url, p):
 
-        n = 1
-        result = []
-        while n > 0:
-            n -= 1
+            n = 1
+            result = []
+            while n > 0:
+                n -= 1
 
-            proxy = get_hf_proxy()
-            api_key = get_next_key()
-            headers = {"Authorization": f"Bearer {api_key}"}
-
-            mult_words = [
-                '2D', '3D', 'CGI', 'VFX', 'abstract', 'animate', 'animated', 'animatic',
-                'animation', 'animation_studio', 'animator', 'anime', 'art', 'asset', 'assets', 'background',
-                'blurry', 'bright colors', 'cartoon', 'cartoonish', 'cel', 'celanimation', 'cels', 'character',
-                'character_design', 'characters', 'chibi', 'childish', 'claymation', 'comic', 'compositing', 'concept_art',
-                'concept_design', 'design', 'digital', 'doujinshi', 'draw', 'drawing', 'dreamlike', 'ecchi',
-                'editing', 'effects', 'fanart', 'fantasy', 'film', 'filmmaking', 'frame', 'frames',
-                'genre', 'graphicnovel', 'graphics', 'hentai', 'illustrate', 'illustration', 'inbetween', 'kawaii',
-                'keyframe', 'lighting', 'lineart', 'loli', 'loop', 'low-contrast', 'low-resolution', 'manga',
-                'mecha', 'mocap', 'model', 'modeling', 'models', 'modern', 'motion', 'motion_capture',
-                'movie', 'narrative', 'paint', 'painting', 'palette', 'pipeline', 'pixelated', 'post-production',
-                'pre-production', 'production', 'program', 'puppet', 'puppets', 'render', 'rendering', 'rigging',
-                'rotoscoping', 'scene', 'scenes', 'script', 'scripting', 'sequence', 'sequences', 'shading',
-                'short', 'shota', 'simple', 'simplistic', 'sketch', 'software', 'stop_motion', 'stopmotion',
-                'story', 'storyboard', 'storyboards', 'style', 'sunny', 'surreal', 'technique', 'texturing',
-                'timeline', 'tool', 'tween', 'urban', 'vibrant', 'vibrant colors', 'visual', 'visual_development',
-                ]
-
-            try:
-                if (any(word in negative_prompt for word in mult_words)
-                    and any(word in url for word in ['m3lt', 'midsommarcartoon', 'FLUX.1-dev-LoRA-One-Click-Creative-Template', 'flux-ghibsky-illustration'])):
-                    return []
-
-                if (any(word in prompt for word in mult_words)
-                    and any(word in url for word in ['flux_film_foto', 'Juggernaut_final', 'NSFW-gen-v2'])):
-                    return []
-
-                response = requests.post(url, headers=headers, json=p, timeout=timeout, proxies=proxy)
-            except Exception as error:
-                my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:1: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
-                continue
-
-            if '"error":"Authorization header is correct, but the token seems invalid' in response.text:
-                remove_huggin_face_key(api_key)
+                proxy = get_hf_proxy()
                 api_key = get_next_key()
-                continue
-            resp_text = str(response.content)[:300]
-            if 'read timeout=' in resp_text or "SOCKSHTTPSConnectionPool(host='api-inference.huggingface.co', port=443): Max retries exceeded with url" in resp_text: # и так долго ждали
-                return []
-            if response.content and '{"error"' not in resp_text and len(response.content) > 10000:
-                # resize small images, upscale
-                upscaled = upscale(response.content)
-                result.append(upscaled)
-                WHO_AUTOR[utils.fast_hash(upscaled)] = url.split('/')[-1]
-                return result
+                headers = {"Authorization": f"Bearer {api_key}"}
 
-            if 'is currently loading","estimated_time":' in str(resp_text) or \
-                '"error":"Internal Server Error"' in str(resp_text) or \
-                '"CUDA out of memory' in str(resp_text) or \
-                '"error":"Service Unavailable"' in str(resp_text):
-                if DEBUG:
-                    my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:2: {resp_text} | {proxy} | {url}')
-            elif response.status_code == 401 and response.reason == 'Unauthorized':
-                remove_huggin_face_key(api_key)
-            else: # unknown error
-                if "allow you to make inference requests" in resp_text or \
-                   "on a journey to ad" in resp_text:
-                    pass
-                else:
-                    my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:3: {resp_text} | {proxy} | {url} | {api_key}')
-            time.sleep(10)
+                mult_words = [
+                    '2D', '3D', 'CGI', 'VFX', 'abstract', 'animate', 'animated', 'animatic',
+                    'animation', 'animation_studio', 'animator', 'anime', 'art', 'asset', 'assets', 'background',
+                    'blurry', 'bright colors', 'cartoon', 'cartoonish', 'cel', 'celanimation', 'cels', 'character',
+                    'character_design', 'characters', 'chibi', 'childish', 'claymation', 'comic', 'compositing', 'concept_art',
+                    'concept_design', 'design', 'digital', 'doujinshi', 'draw', 'drawing', 'dreamlike', 'ecchi',
+                    'editing', 'effects', 'fanart', 'fantasy', 'film', 'filmmaking', 'frame', 'frames',
+                    'genre', 'graphicnovel', 'graphics', 'hentai', 'illustrate', 'illustration', 'inbetween', 'kawaii',
+                    'keyframe', 'lighting', 'lineart', 'loli', 'loop', 'low-contrast', 'low-resolution', 'manga',
+                    'mecha', 'mocap', 'model', 'modeling', 'models', 'modern', 'motion', 'motion_capture',
+                    'movie', 'narrative', 'paint', 'painting', 'palette', 'pipeline', 'pixelated', 'post-production',
+                    'pre-production', 'production', 'program', 'puppet', 'puppets', 'render', 'rendering', 'rigging',
+                    'rotoscoping', 'scene', 'scenes', 'script', 'scripting', 'sequence', 'sequences', 'shading',
+                    'short', 'shota', 'simple', 'simplistic', 'sketch', 'software', 'stop_motion', 'stopmotion',
+                    'story', 'storyboard', 'storyboards', 'style', 'sunny', 'surreal', 'technique', 'texturing',
+                    'timeline', 'tool', 'tween', 'urban', 'vibrant', 'vibrant colors', 'visual', 'visual_development',
+                    ]
+
+                try:
+                    if (any(word in negative_prompt for word in mult_words)
+                        and any(word in url for word in ['m3lt', 'midsommarcartoon', 'FLUX.1-dev-LoRA-One-Click-Creative-Template', 'flux-ghibsky-illustration'])):
+                        return []
+
+                    if (any(word in prompt for word in mult_words)
+                        and any(word in url for word in ['flux_film_foto', 'Juggernaut_final', 'NSFW-gen-v2'])):
+                        return []
+
+                    response = requests.post(url, headers=headers, json=p, timeout=timeout, proxies=proxy)
+                except Exception as error:
+                    my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:1: {error}\nPrompt: {prompt}\nAPI key: {api_key}\nProxy: {proxy}\nURL: {url}')
+                    continue
+
+                if '"error":"Authorization header is correct, but the token seems invalid' in response.text:
+                    remove_huggin_face_key(api_key)
+                    api_key = get_next_key()
+                    continue
+                resp_text = str(response.content)[:300]
+                if 'read timeout=' in resp_text or "SOCKSHTTPSConnectionPool(host='api-inference.huggingface.co', port=443): Max retries exceeded with url" in resp_text: # и так долго ждали
+                    return []
+                if response.content and '{"error"' not in resp_text and len(response.content) > 10000:
+                    # resize small images, upscale
+                    upscaled = upscale(response.content)
+                    result.append(upscaled)
+                    WHO_AUTOR[utils.fast_hash(upscaled)] = url.split('/')[-1]
+                    return result
+
+                if 'is currently loading","estimated_time":' in str(resp_text) or \
+                    '"error":"Internal Server Error"' in str(resp_text) or \
+                    '"CUDA out of memory' in str(resp_text) or \
+                    '"error":"Service Unavailable"' in str(resp_text):
+                    if DEBUG:
+                        my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:2: {resp_text} | {proxy} | {url}')
+                elif response.status_code == 401 and response.reason == 'Unauthorized':
+                    remove_huggin_face_key(api_key)
+                else: # unknown error
+                    if "allow you to make inference requests" in resp_text or \
+                    "on a journey to ad" in resp_text:
+                        pass
+                    else:
+                        my_log.log_huggin_face_api(f'my_genimg:huggin_face_api:3: {resp_text} | {proxy} | {url} | {api_key}')
+                time.sleep(10)
+
+            return result
+
+        # random.shuffle(API_URL)
+        pool = ThreadPool(processes=len(API_URL))
+        async_results = []
+        for x in API_URL:
+            async_results.append(pool.apply_async(request_img, (prompt, x, payload,)))
+
+        result = []
+        for x in async_results:
+            result += x.get()
+
+        result = list(set(result))
 
         return result
 
-    # random.shuffle(API_URL)
-    pool = ThreadPool(processes=len(API_URL))
-    async_results = []
-    for x in API_URL:
-        async_results.append(pool.apply_async(request_img, (prompt, x, payload,)))
-
-    result = []
-    for x in async_results:
-        result += x.get()
-
-    result = list(set(result))
-
-    return result
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:huggin_face_api: {unknown}\n{traceback_error}')
+        return []
 
 
 def huggin_face_api_one_image(

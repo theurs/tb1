@@ -369,7 +369,6 @@ def bot_markdown_to_html(text: str) -> str:
 
     text = process_quotes(text)
 
-
     # заменить двойные и тройные пробелы в тексте (только те что между буквами и знаками препинания)
     text = re.sub(r"(?<=\S) {2,}(?=\S)", " ", text)
 

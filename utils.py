@@ -373,6 +373,8 @@ def bot_markdown_to_html(text: str) -> str:
     # заменить двойные и тройные пробелы в тексте (только те что между буквами и знаками препинания)
     text = re.sub(r"(?<=\S) {2,}(?=\S)", " ", text)
 
+    # заменить записи типа \boxed{1.7} на 【1.7】
+    text = re.sub(r"\\boxed\{([^}]*)\}", r"【\1】", text)
 
     # First handle _*text*_ pattern (italic-bold combined)
     text = re.sub(r"(?<!\w)_\*([^\n\s].*?[^\n\s])\*_(?!\w)", r"<i><b>\1</b></i>", text)

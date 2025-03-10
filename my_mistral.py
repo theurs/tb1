@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import cachetools.func
 import base64
 import time
 import threading
@@ -248,6 +249,7 @@ def img2txt(
     return result
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 def ocr_image(
     image_data: bytes,
     timeout: int = 120,
@@ -296,6 +298,7 @@ def ocr_image(
         return ''
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 def ocr_pdf(
     image_data: bytes,
     timeout: int = 300,

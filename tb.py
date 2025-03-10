@@ -555,12 +555,12 @@ def img2txt(text, lang: str,
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
 
-            # # запрос на OCR?
-            # if query == tr(my_init.PROMPT_COPY_TEXT, lang):
-            #     if not text:
-            #         text = my_mistral.ocr_image(data, timeout=timeout)
-            #         if text:
-            #             WHO_ANSWERED[chat_id_full] = 'img2txt_mistral_ocr'
+            # запрос на OCR?
+            if query.startswith('OCR\n\n'):
+                if not text:
+                    text = my_mistral.ocr_image(data, timeout=timeout)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_mistral_ocr'
 
 
             # если модель не указана явно то определяем по режиму чата
@@ -1721,6 +1721,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button2 = telebot.types.InlineKeyboardButton(tr("Extract text", lang), callback_data='image_prompt_text')
             button2_1 = telebot.types.InlineKeyboardButton(tr("Read aloud text", lang), callback_data='image_prompt_text_tts')
             button2_2 = telebot.types.InlineKeyboardButton(tr("Translate all text from image", lang), callback_data='image_prompt_text_tr')
+            button2_3 = telebot.types.InlineKeyboardButton(tr("OCR", lang), callback_data='image_prompt_ocr')
             button3 = telebot.types.InlineKeyboardButton(tr("Create image generation prompt", lang), callback_data='image_prompt_generate')
             button4 = telebot.types.InlineKeyboardButton(tr("Solve the problem shown in the image", lang), callback_data='image_prompt_solve')
             button4_2 = telebot.types.InlineKeyboardButton(tr("Read QRCODE", lang), callback_data='image_prompt_qrcode')
@@ -1730,7 +1731,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 if chat_id_full in UNCAPTIONED_IMAGES and (my_qrcode.get_text(UNCAPTIONED_IMAGES[chat_id_full][1])):
                     markup.row(button1)
                     markup.row(button2, button2_1)
-                    markup.row(button2_2)
+                    markup.row(button2_2, button2_3)
                     markup.row(button3)
                     markup.row(button4)
                     markup.row(button4_2)
@@ -1739,7 +1740,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 else:
                     markup.row(button1)
                     markup.row(button2, button2_1)
-                    markup.row(button2_2)
+                    markup.row(button2_2, button2_3)
                     markup.row(button3)
                     markup.row(button4)
                     markup.row(button5)
@@ -2323,6 +2324,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'image_prompt_text':
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_COPY_TEXT, lang)
+            process_image_stage_2(image_prompt, chat_id_full, lang, message)
+
+        elif call.data == 'image_prompt_ocr':
+            COMMAND_MODE[chat_id_full] = ''
+            image_prompt = 'OCR'
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
 
         elif call.data == 'image_prompt_text_tts':
@@ -3145,13 +3151,14 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
         my_log.log2(f'tb:proccess_image: {unknown}\n{traceback_error}')
 
 
-def process_image_stage_2(image_prompt: str,
-                          chat_id_full: str,
-                          lang: str,
-                          message: telebot.types.Message,
-                          model: str = '',
-                          temp: float = 1,
-                          timeout: int = 120):
+def process_image_stage_2(
+    image_prompt: str,
+    chat_id_full: str,
+    lang: str,
+    message: telebot.types.Message,
+    model: str = '',
+    temp: float = 1,
+    timeout: int = 120):
     '''Processes the user's chosen action for the uncaptioned image.
 
     Args:

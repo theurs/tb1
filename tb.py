@@ -4689,7 +4689,11 @@ def calc_gemini(message: telebot.types.Message):
             return
 
         chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
+        # проверка на подписку
+        if not check_donate(message, chat_id_full, lang):
+            return
 
         with ShowAction(message, "typing"):
             answer, underground = my_gemini_google.calc(arg, chat_id_full)
@@ -4718,6 +4722,15 @@ def download_ytb_audio(message: telebot.types.Message):
     Download, split and send chunks to user.
     """
     try:
+
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        COMMAND_MODE[chat_id_full] = ''
+        # проверка на подписку
+        if not check_donate(message, chat_id_full, lang):
+            return
+
         url = message.text.split(maxsplit=1)
         if len(url) == 2:
             url = url[1]

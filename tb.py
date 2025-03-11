@@ -3503,7 +3503,7 @@ def handle_document(message: telebot.types.Message):
                             bot_reply(message, summary_html, parse_mode='HTML',
                                                 disable_web_page_preview = True,
                                                 reply_markup=get_keyboard('translate', message))
-                            bot_reply_tr(message, 'Use /ask command to query or delete this file. Example /ask generate a short version of part 1.')
+                            bot_reply_tr(message, 'Use /ask command to query or delete this file. Example:\n/ask generate a short version of part 1.\n? How many persons was invited.')
 
                             caption_ = tr("юзер попросил ответить по содержанию файла", lang)
                             if caption:
@@ -7009,7 +7009,7 @@ def ask_file(message: telebot.types.Message):
         try:
             query = message.text.split(maxsplit=1)[1].strip()
         except IndexError:
-            bot_reply_tr(message, 'Usage: /ask <query saved text>\n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.\n\nExamples:\n/ask What is the main topic of the text?\n/ask Summarize the text in 3 sentences.')
+            bot_reply_tr(message, 'Usage:\n/ask <query saved text>\n? <query saved text> \n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.\n\nExamples:\n/ask What is the main topic of the text?\n/ask Summarize the text in 3 sentences\n? How many persons was invited.')
             if my_db.get_user_property(chat_id_full, 'saved_file_name'):
                 msg = f'{tr("Загружен файл/ссылка:", lang)} {my_db.get_user_property(chat_id_full, "saved_file_name")}\n\n{tr("Размер текста:", lang)} {len(my_db.get_user_property(chat_id_full, "saved_file")) or 0}'
                 bot_reply(message, msg, disable_web_page_preview = True, reply_markup=get_keyboard('download_saved_text', message))
@@ -7068,7 +7068,7 @@ def ask_file(message: telebot.types.Message):
                     bot_reply_tr(message, 'No reply from AI')
                     return
         else:
-            bot_reply_tr(message, 'Usage: /ask <query saved text>')
+            bot_reply_tr(message, 'Usage:\n/ask <query saved text>\n? <query saved text> \n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.\n\nExamples:\n/ask What is the main topic of the text?\n/ask Summarize the text in 3 sentences\n? How many persons was invited.')
             bot_reply_tr(message, 'No text was saved')
             return
     except Exception as unknown:
@@ -7131,7 +7131,7 @@ def summ_text(message: telebot.types.Message):
                                 text = my_sum.summ_url(url, lang = lang, deep = False, download_only=True, role=role)
                                 my_db.set_user_property(chat_id_full, 'saved_file', text)
                                 rr = utils.bot_markdown_to_html(r)
-                                ask = tr('Use /ask command to query or delete this file. Example /ask generate a short version of part 1.', lang)
+                                ask = tr('Use /ask command to query or delete this file. Example:\n/ask generate a short version of part 1.\n? How many persons was invited.', lang)
                                 bot_reply(message, rr + '\n' + ask, disable_web_page_preview = True,
                                                     parse_mode='HTML',
                                                     reply_markup=get_keyboard('translate', message))
@@ -7161,7 +7161,7 @@ def summ_text(message: telebot.types.Message):
                                 return
                             if res:
                                 rr = utils.bot_markdown_to_html(res)
-                                ask = tr('Use /ask command to query or delete this file. Example /ask generate a short version of part 1.', lang)
+                                ask = tr('Use /ask command to query or delete this file. Example:\n/ask generate a short version of part 1.\n? How many persons was invited.', lang)
                                 bot_reply(message, rr + '\n' + ask, parse_mode='HTML',
                                                     disable_web_page_preview = True,
                                                     reply_markup=get_keyboard('translate', message))
@@ -8580,6 +8580,14 @@ def do_task(message, custom_prompt: str = ''):
         if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
             COMMAND_MODE[chat_id_full] = ''
             return
+
+
+        # проверяем не начинается ли на вопросик и если да и в памяти есть файл то перенаправляем в команду /ask
+        if msg.startswith('?') and my_db.get_user_property(chat_id_full, 'saved_file_name'):
+            message.text = '/ask ' + message.text[1:]
+            ask_file(message)
+            return
+
 
         # проверяем просят ли нарисовать что-нибудь
         translated_draw = tr('нарисуй', lang)

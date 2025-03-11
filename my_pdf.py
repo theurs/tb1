@@ -121,7 +121,7 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
     return text_content
 
 
-@async_run_with_limit(1)
+@async_run_with_limit(2)
 def process_image_ocr(image: bytes, index: int, results) -> Tuple[str, int]:
     """
     Performs OCR on a single image using my_gemini.ocr_page.
@@ -141,7 +141,7 @@ def process_image_ocr(image: bytes, index: int, results) -> Tuple[str, int]:
 def get_text(data: bytes) -> str:
     """
     Extract text from pdf
-    if no text, OCR images with gemini using 8 threads
+    if no text, OCR images with gemini
     """
     text = ''
 
@@ -176,6 +176,6 @@ def get_text(data: bytes) -> str:
 
 if __name__ == "__main__":
     my_gemini.load_users_keys()
-    with open("c:/Users/User/Downloads/1.pdf", "rb") as f:
+    with open(r"C:\Users\user\Downloads\samples for ai\скан документа.pdf", "rb") as f:
         data = f.read()
         print(get_text(data))

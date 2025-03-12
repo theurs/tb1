@@ -111,6 +111,10 @@ def log2(text: str, fname: str = '') -> None:
         trancate_log_file(log_file_path)
 
 
+def log_zip(text: str) -> None:
+    """для логов zip"""
+    log2(text, 'zip')
+
 def log_bing_api(text: str) -> None:
     """для логов bingapi"""
     log2(text, 'bing_api')

@@ -61,6 +61,7 @@ import my_trans
 import my_transcribe
 import my_tts
 import my_ytb
+import my_zip
 import utils
 import utils_llm
 from utils import async_run
@@ -3342,6 +3343,7 @@ def handle_document(message: telebot.types.Message):
             if is_private and \
                 (message.document.mime_type in ('application/pdf',
                                                 'image/svg+xml',
+                                                'application/zip',
                                                 )+pandoc_support+simple_text or \
                                                 message.document.mime_type.startswith('text/') or \
                                                 message.document.mime_type.startswith('video/') or \
@@ -3425,6 +3427,8 @@ def handle_document(message: telebot.types.Message):
                             text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
                             if not text:
                                 text = my_pdf.get_text(downloaded_file)
+                    elif message.document.mime_type == 'application/zip':
+                        text = my_zip.extract_and_concatenate(downloaded_file)
                     elif message.document.mime_type in pandoc_support:
                         ext = utils.get_file_ext(file_info.file_path)
                         text = my_pandoc.fb2_to_text(file_bytes.read(), ext)

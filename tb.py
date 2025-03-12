@@ -2214,7 +2214,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_gemini_flash_thinking, button_gemini_flash20)
             markup.row(button_codestral, button_mistral)
-            markup.row(button_gpt4o_mini, button_o3_mini_ddg)
+
+            if hasattr(cfg, 'DDG_ENABLED') and cfg.DDG_ENABLED:
+                markup.row(button_gpt4o_mini, button_o3_mini_ddg)
 
             markup.row(button_gemini_exp, button_gemini_learnlm)
 

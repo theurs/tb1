@@ -390,6 +390,7 @@ OPEN_ROUTER_FREE_KEYS = [
 #]
 
 
+# DDG_ENABLED = False
 # proxy for DuckDuckGo Chat
 #DDG_PROXY = [
 #    'socks5://user:pass@host:port',

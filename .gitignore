@@ -1,5 +1,6 @@
 .venv/*
 cfg.py
+-cfg.py
 cfg_bing.py
 *.pem
 sync

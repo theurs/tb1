@@ -217,7 +217,7 @@ def chat(query: str,
             calc_tool = my_skills.calc
 
             # if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
-            if use_skills and '-8b' not in model and 'thinking' not in model:
+            if use_skills and '-8b' not in model and 'thinking' not in model and 'gemma-3' not in model:
                 # id в системный промпт надо добавлять что бы бот мог юзать его в скилах
                 # в каких скилах?
                 # system = f'user_id: {chat_id}\n\n{str(system)}'
@@ -246,6 +246,8 @@ def chat(query: str,
                     system_instruction = system,
                 )
             else:
+                if 'gemma-3' in model:
+                    system = None
                 model_ = genai.GenerativeModel(
                     model,
                     # tools="code_execution",
@@ -1192,7 +1194,7 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
-    test_all_keys()
+    # test_all_keys()
 
     # print(test_new_key(''))
 
@@ -1204,6 +1206,7 @@ if __name__ == '__main__':
     # chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
     # chat_cli(model=cfg.gemini_2_flash_thinking_exp_model)
     # chat_cli(model = 'gemini-2.0-flash-thinking-exp-1219')
+    # chat_cli(model = 'gemma-3-27b-it')
     chat_cli()
 
     # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:

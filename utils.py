@@ -376,7 +376,7 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r"\\boxed\{([^}]*)\}", r"【\1】", text)
 
     # удалить странные записи вида <binary data, 1 bytes>
-    text = text.replace('<binary data, 1 bytes>', '')
+    text = text.replace('&lt;binary data, 1 bytes&gt;', '')
 
     # First handle _*text*_ pattern (italic-bold combined)
     text = re.sub(r"(?<!\w)_\*([^\n\s].*?[^\n\s])\*_(?!\w)", r"<i><b>\1</b></i>", text)

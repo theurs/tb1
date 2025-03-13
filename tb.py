@@ -4721,80 +4721,80 @@ def calc_gemini(message: telebot.types.Message):
         my_log.log2(f'tb:calc_gemini: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['ytb'], func=authorized_owner)
-@async_run
-def download_ytb_audio(message: telebot.types.Message):
-    """
-    Download, split and send chunks to user.
-    """
-    try:
+# @bot.message_handler(commands=['ytb'], func=authorized_owner)
+# @async_run
+# def download_ytb_audio(message: telebot.types.Message):
+#     """
+#     Download, split and send chunks to user.
+#     """
+#     try:
 
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
+#         chat_id_full = get_topic_id(message)
+#         lang = get_lang(chat_id_full, message)
 
-        COMMAND_MODE[chat_id_full] = ''
-        # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
-            return
+#         COMMAND_MODE[chat_id_full] = ''
+#         # проверка на подписку
+#         if not check_donate(message, chat_id_full, lang):
+#             return
 
-        url = message.text.split(maxsplit=1)
-        if len(url) == 2:
-            url = url[1]
+#         url = message.text.split(maxsplit=1)
+#         if len(url) == 2:
+#             url = url[1]
 
-            with ShowAction(message, "upload_audio"):            
-                if my_ytb.valid_youtube_url(url):
-                    title, pic, desc, size = my_ytb.get_title_and_poster(url)
-                    if size == 0 or size > 6*60*60:
-                        bot_reply_tr(message, 'Too big video for me.')
-                        return
-                    source_file = my_ytb.download_audio(url)
-                    files = []
-                    if source_file:
-                        bot_reply_tr(message, 'Downloaded successfully, sending file.')
-                        files = my_ytb.split_audio(source_file, 45)
-                        bot_reply(message, desc[:4090], send_message=True, disable_web_page_preview=True)
-                        if files:
-                            image_stream = io.BytesIO(utils.download_image_for_thumb(pic))
-                            try:
-                                tmb = telebot.types.InputFile(image_stream)
-                            except:
-                                tmb = None
+#             with ShowAction(message, "upload_audio"):            
+#                 if my_ytb.valid_youtube_url(url):
+#                     title, pic, desc, size = my_ytb.get_title_and_poster(url)
+#                     if size == 0 or size > 6*60*60:
+#                         bot_reply_tr(message, 'Too big video for me.')
+#                         return
+#                     source_file = my_ytb.download_audio(url)
+#                     files = []
+#                     if source_file:
+#                         bot_reply_tr(message, 'Downloaded successfully, sending file.')
+#                         files = my_ytb.split_audio(source_file, 45)
+#                         bot_reply(message, desc[:4090], send_message=True, disable_web_page_preview=True)
+#                         if files:
+#                             image_stream = io.BytesIO(utils.download_image_for_thumb(pic))
+#                             try:
+#                                 tmb = telebot.types.InputFile(image_stream)
+#                             except:
+#                                 tmb = None
 
-                            for fn in files:
-                                with open(fn, 'rb') as f:
-                                    data = f.read()
-                                caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}'
-                                caption = f'{caption[:900]}\n\n{url}'
+#                             for fn in files:
+#                                 with open(fn, 'rb') as f:
+#                                     data = f.read()
+#                                 caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}'
+#                                 caption = f'{caption[:900]}\n\n{url}'
 
-                                try:
-                                    m = bot.send_audio(
-                                        message.chat.id,
-                                        data,
-                                        title = f'{os.path.splitext(os.path.basename(fn))[0]}.mp3',
-                                        caption = f'@{_bot_name} {caption}',
-                                        disable_notification = True,
-                                        thumbnail=tmb,
-                                    )
-                                    log_message(m)
-                                except Exception as faild_upload_audio:
-                                    my_log.log2(f'tb:download_ytb_audio1: {faild_upload_audio}')
-                                    bot_reply_tr(message, 'Upload failed.')
-                                    my_ytb.remove_folder_or_parent(source_file)
-                                    if files and files[0] and source_file and files[0] != source_file:
-                                        my_ytb.remove_folder_or_parent(files[0])
-                                    return
-                    else:
-                        bot_reply_tr(message, 'Download failed.')
+#                                 try:
+#                                     m = bot.send_audio(
+#                                         message.chat.id,
+#                                         data,
+#                                         title = f'{os.path.splitext(os.path.basename(fn))[0]}.mp3',
+#                                         caption = f'@{_bot_name} {caption}',
+#                                         disable_notification = True,
+#                                         thumbnail=tmb,
+#                                     )
+#                                     log_message(m)
+#                                 except Exception as faild_upload_audio:
+#                                     my_log.log2(f'tb:download_ytb_audio1: {faild_upload_audio}')
+#                                     bot_reply_tr(message, 'Upload failed.')
+#                                     my_ytb.remove_folder_or_parent(source_file)
+#                                     if files and files[0] and source_file and files[0] != source_file:
+#                                         my_ytb.remove_folder_or_parent(files[0])
+#                                     return
+#                     else:
+#                         bot_reply_tr(message, 'Download failed.')
 
-                    my_ytb.remove_folder_or_parent(source_file)
-                    if files and files[0] and source_file and files[0] != source_file:
-                        my_ytb.remove_folder_or_parent(files[0])
-                    return
+#                     my_ytb.remove_folder_or_parent(source_file)
+#                     if files and files[0] and source_file and files[0] != source_file:
+#                         my_ytb.remove_folder_or_parent(files[0])
+#                     return
 
-        bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube (and other video sites).')
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:download_ytb_audio2: {error}\n\n{traceback_error}')
+#         bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube (and other video sites).')
+#     except Exception as error:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:download_ytb_audio2: {error}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['memo', 'memos'], func=authorized_owner)

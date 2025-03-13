@@ -163,6 +163,10 @@ def chat(query: str,
         if max_tokens > 8000:
             max_tokens = 8000
 
+        if 'gemma-3' in model:
+            if temperature:
+                temperature = temperature/2
+
         if not model:
             model = cfg.gemini_flash_model
 

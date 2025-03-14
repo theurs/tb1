@@ -23,6 +23,7 @@ import bing_api_client
 import cfg
 import my_db
 import my_gemini
+import my_gemini_genimg
 import my_glm
 import my_groq
 import my_log
@@ -112,6 +113,42 @@ def upscale(image_bytes: bytes) -> bytes:
         error_traceback = traceback.format_exc()
         my_log.log_huggin_face_api(f'my_genimg:upscale: {error}\n\n{error_traceback}')
         return image_bytes
+
+
+def gemini_flash(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = "", user_id: str = ''):
+    """
+    Generates images based on a prompt using the bigmodel.cn API.
+
+    Args:
+        prompt (str): The prompt for generating the images.
+        width (int, optional): The width of the images. Defaults to 1024.
+        height (int, optional): The height of the images. Defaults to 1024.
+        num (int, optional): The number of images to generate. Defaults to 1.
+
+    Returns:
+        list: A list of generated images in bytes format.
+    """
+    try:
+        if num > 1:
+            results = []
+            for _ in range(num):
+                images = gemini_flash(prompt, width, height, 1, negative_prompt)
+                image = images[0]
+                results.append(image)
+            return results
+
+        data = my_gemini_genimg.generate_image(prompt, user_id=user_id)
+        results = []
+        if data:
+            WHO_AUTOR[utils.fast_hash(data)] = 'Gemini 2.0 Flash Experimental'
+            results.append(data)
+            return results
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_huggin_face_api(f'gemini 2.0 flash exp: {error}\n\n{error_traceback}')
+
+    return []
 
 
 def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
@@ -728,11 +765,14 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result9 = pool.apply_async(glm, (prompt, negative))
 
+        async_result10 = pool.apply_async(gemini_flash, (prompt, 1024, 1024, 2, negative, user_id))
+
         result = (async_result1.get() or []) + \
                 (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
                 (async_result4.get() or []) + \
-                (async_result9.get() or [])
+                (async_result9.get() or []) + \
+                (async_result10.get() or [])
     else:
         async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
         async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
@@ -741,10 +781,13 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result9 = pool.apply_async(glm, (prompt, negative))
 
+        async_result10 = pool.apply_async(gemini_flash, (prompt, 1024, 1024, 2, negative, user_id))
+
         result = (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
                 (async_result4.get() or []) + \
-                (async_result9.get() or [])
+                (async_result9.get() or []) + \
+                (async_result10.get() or [])
 
     return result
 
@@ -865,6 +908,9 @@ if __name__ == '__main__':
 
     # print(gen_images('golden apple', use_bing=False))
     
-    print(huggin_face_api_one_image('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo', 'golden apple', ''))
+    # print(huggin_face_api_one_image('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo', 'golden apple', ''))
+
+    # r = gemini_flash('golden apple', num = 2)
+    # print(r)
 
     my_db.close()

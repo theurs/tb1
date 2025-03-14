@@ -131,6 +131,7 @@ GOOGLE_LOCKS = {}
 SUM_LOCKS = {}
 IMG_GEN_LOCKS = {}
 IMG_GEN_LOCKS_FLUX = {}
+IMG_GEN_LOCKS_GEM_IMG = {}
 DOCUMENT_LOCKS = {}
 VOICE_LOCKS = {}
 IMG_LOCKS = {}
@@ -6185,6 +6186,120 @@ def huggingface_image_gen_fast(message: telebot.types.Message):
         my_log.log2(f'tb:huggingface_image_gen_fast: {unknown}\n{traceback_error}')
 
 
+@bot.message_handler(commands=['gem'], func=authorized)
+@async_run
+def image_gemini_gen(message: telebot.types.Message):
+    """Generates an image using the Gemini 2.0 Flash Experimental model.
+    /flux <[1|2|3|4]> <prompt> - up to 4 pictures per request, default 1
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        COMMAND_MODE[chat_id_full] = ''
+
+        # Check for donations
+        if not check_donate(message, chat_id_full, lang):
+            return
+
+        # Lock to prevent concurrent requests
+        if chat_id_full in IMG_GEN_LOCKS_GEM_IMG:
+            lock = IMG_GEN_LOCKS_GEM_IMG[chat_id_full]
+        else:
+            lock = threading.Lock()
+            IMG_GEN_LOCKS_GEM_IMG[chat_id_full] = lock
+
+        # не ставить запросы от одного юзера в очередь
+        if lock.locked():
+            if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER:
+                pass
+            else:
+                return
+
+        with lock:
+            # Get prompt
+            parts = message.text.split(maxsplit=2)  # Split into command, model number, and prompt
+            if len(parts) < 2:
+                help_text = f"""/gem <[1|2|3]> <prompt>
+
+{tr('Generate 1-4 images with the Gemini 2.0 Flash Experimental model', lang)}
+"""
+                bot_reply(message, help_text)
+                return
+
+            try:
+                num = parts[1].strip()
+                prompt = parts[2].strip()
+            except IndexError:
+                prompt = ''
+                bot_reply_tr(message, help_text)
+                return
+
+            if not prompt:
+                bot_reply_tr(message, help_text)
+                return
+
+            # Parse model choice, default to 1 if not specified or invalid
+            if num in ('1', '2', '3', '4'):
+                num = int(num)
+            else:
+                num = 1  # Default to model 1
+
+            with ShowAction(message, 'upload_photo'):
+                try:
+                    # Get English prompt and negative prompt using the function
+                    reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
+                    if reprompt == 'MODERATION':
+                        bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+                        return
+                    if not reprompt:
+                        bot_reply_tr(message, 'Could not translate your prompt. Try again.')
+                        return
+
+                    images = my_genimg.gemini_flash(reprompt, num = num, user_id=chat_id_full)
+                    if images:
+                        caption_model = 'Gemini 2.0 Flash Experimental'
+                    else:
+                        bot_reply_tr(message, "Generation failed.")
+                        return
+
+                    medias = []
+                    for i in images:
+                        bot_addr = f'https://t.me/{_bot_name}'
+                        caption_ = f'{bot_addr} {caption_model}\n\n{prompt}'
+                        caption_ = re.sub(r"(\s)\1+", r"\1\1", caption_)[:900]
+                        medias.append(telebot.types.InputMediaPhoto(i, caption=caption_))
+
+                    if medias:
+                        # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
+                        chunk_size = 10
+                        chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
+
+                        # Send images to user
+                        send_images_to_user(chunks, message, chat_id_full, medias, images)
+
+                        # Send images to pics group (if enabled)
+                        if pics_group:
+                            send_images_to_pic_group(
+                                chunks=chunks,
+                                message=message,
+                                chat_id_full=chat_id_full,
+                                prompt=reprompt,
+                            )
+
+                        add_to_bots_mem(message.text, 'OK', chat_id_full)
+                    else:
+                        bot_reply_tr(message, tr("Image generation failed. (No images generated.)\n\nA prompt that is too long can cause this error. You can try using '!' before the prompt to fix it. In this case, the prompt must be in English only.", lang))
+
+                except Exception as e:
+                    error_traceback = traceback.format_exc()
+                    my_log.log2(f"tb:image_gemini_gen: {e}\n{error_traceback}")
+                    bot_reply_tr(message, tr("An error occurred during image generation.", lang))
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:image_gemini_gen: {unknown}\n{traceback_error}')
+
+
 @bot.message_handler(commands=['flux'], func=authorized)
 @async_run
 def image_flux_gen(message: telebot.types.Message):
@@ -6563,7 +6678,7 @@ def image_gen(message: telebot.types.Message):
 
 {tr('Use /flux command for black-forest-labs/flux-dev only.', lang)}
 
-{tr('Use /hf and /hff command for HuggingFace only.', lang)}
+{tr('Use /gem command for Gemini only.', lang)}
 
 {tr('Write what to draw, what it looks like.', lang)}
 """

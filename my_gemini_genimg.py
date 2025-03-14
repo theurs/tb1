@@ -7,14 +7,14 @@ from typing import Optional
 from google import genai
 from google.genai import types
 
-import cfg
 import my_db
 import my_gemini
 import my_log
 import utils
 
 
-MODEL = "gemini-2.0-flash-exp"
+# MODEL = "gemini-2.0-flash-exp"
+MODEL = "gemini-2.0-flash-exp-image-generation"
 
 
 SAFETY_SETTINGS = [

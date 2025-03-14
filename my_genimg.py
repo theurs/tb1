@@ -133,6 +133,8 @@ def gemini_flash(prompt: str, width: int = 1024, height: int = 1024, num: int = 
             results = []
             for _ in range(num):
                 images = gemini_flash(prompt, width, height, 1, negative_prompt)
+                if not images:
+                    return []
                 image = images[0]
                 results.append(image)
             return results

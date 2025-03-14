@@ -41,6 +41,7 @@ import my_doc_translate
 import my_github
 import my_google
 import my_gemini
+import my_gemini_genimg
 import my_gemini_google
 import my_glm
 import my_groq
@@ -503,7 +504,87 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_log.log2(f'tb:add_to_bots_mem:{unexpected_error}\n\n{traceback_error}')
 
 
-def img2txt(text, lang: str,
+def img2img(text,
+            lang: str,
+            chat_id_full: str,
+            query: str = '',
+            model: str = '',
+            temperature: float = None,
+            system_message: str = None,
+            timeout: int = 120,
+            ) -> str:
+    """
+    Regenerate the image using query.
+
+    Args:
+        text (str): The image file URL or downloaded data(bytes).
+        lang (str): The language code for the image description.
+        chat_id_full (str): The full chat ID.
+        query (str): The user's query text.
+        model (str): gemini model
+        temperature (float): temperature
+        system_message (str): system message (role/style)
+        timeout (int): timeout
+
+    Returns:
+        str: new image as jpg bytes.
+    """
+    images = [text,]
+    return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
+
+
+def user_want_to_change_picture(query: str, chat_id_full: str) -> bool:
+    '''
+    Определяет намерение юзера, что он хочет сделать с картинкой, какой результат получить,
+    ответ по картинке в виде текста, или новую картинку сделанную из старой.
+    Возвращает True если юзер хочет сделать картинку, в противном случае False
+    '''
+    intent = False
+    prompt = f'''
+Юзер отправил телеграм боту изображение (или изображение) и текст запроса,
+ты должен определить намерение юзера, что он хочет сделать с картинкой,
+1 - ответ должен быть текстом (ответ на вопрос по картинке)
+2 - ответ должен быть изображением (юзер хочет нарисовать новую картинку на основе старой)
+напиши в своем ответе цифру 1 или 2, ничего кроме одной цифры не пиши
+
+<user query>
+{query}
+</user query>
+'''
+    intent = False
+    try:
+        intent = my_gemini.chat(
+            prompt,
+            chat_id=chat_id_full,
+            temperature=0.1,
+            model = cfg.gemini_flash_light_model,
+            max_tokens=10,
+            do_not_update_history = True,
+            timeout=10
+            ).strip()
+        if not intent or not intent in ('1', '2'):
+            intent = my_gemini.chat(
+                prompt,
+                chat_id=chat_id_full,
+                temperature=0.1,
+                model = cfg.gemini_flash_light_model_fallback,
+                max_tokens=10,
+                do_not_update_history = True,
+                timeout=10
+                ).strip()
+
+        if intent == '2':
+            return True
+        else:
+            return False
+    except Exception as unexpected_error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:user_want_to_change_picture:{unexpected_error}\n\n{traceback_error}')
+        return intent
+
+
+def img2txt(text,
+            lang: str,
             chat_id_full: str,
             query: str = '',
             model: str = '',
@@ -518,14 +599,20 @@ def img2txt(text, lang: str,
         text (str): The image file URL or downloaded data(bytes).
         lang (str): The language code for the image description.
         chat_id_full (str): The full chat ID.
+        query (str): The user's query text.
         model (str): gemini model
         temperature (float): temperature
         system_message (str): system message (role/style)
+        timeout (int): timeout
 
     Returns:
         str: The text description of the image.
     """
     try:
+        intent = user_want_to_change_picture(query, chat_id_full)
+        if intent:
+            return img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
+
         if temperature is None:
             temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
         if system_message is None:
@@ -690,7 +777,6 @@ def img2txt(text, lang: str,
             traceback_error = traceback.format_exc()
             my_log.log2(f'tb:img2txt1: {img_from_link_error}\n\n{traceback_error}')
 
-        
         if text:
             add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
 
@@ -3182,10 +3268,21 @@ def process_image_stage_2(
                 )
                 # Send the processed text to the user.
                 if text:
-                    bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
-                    if image_prompt == tr(my_init.PROMPT_COPY_TEXT_TTS, lang):
-                        message.text = f'/tts {my_gemini.detect_lang(text)} {text}'
-                        tts(message)
+                    if isinstance(text, str):
+                        bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
+                        if image_prompt == tr(my_init.PROMPT_COPY_TEXT_TTS, lang):
+                            message.text = f'/tts {my_gemini.detect_lang(text)} {text}'
+                            tts(message)
+                    elif isinstance(text, bytes):
+                        m = bot.send_photo(
+                            message.chat.id,
+                            text,
+                            disable_notification=True,
+                            reply_to_message_id=message.message_id,
+                            reply_markup=get_keyboard('hide', message),
+                            )
+                        log_message(m)
+                        return
                 else:
                     # Send an error message if the image processing fails.
                     bot_reply_tr(message, "I'm sorry, I wasn't able to process that image or understand your request.")
@@ -3738,11 +3835,22 @@ def handle_photo(message: telebot.types.Message):
                                 return
                             text = img2txt(result_image_as_bytes, lang, chat_id_full, caption)
                             if text:
-                                text = utils.bot_markdown_to_html(text)
-                                # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                                bot_reply(message, text, parse_mode='HTML',
-                                                    reply_markup=get_keyboard('translate', message),
-                                                    disable_web_page_preview=True)
+                                if isinstance(text, str):
+                                    text = utils.bot_markdown_to_html(text)
+                                    # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
+                                    bot_reply(message, text, parse_mode='HTML',
+                                                        reply_markup=get_keyboard('translate', message),
+                                                        disable_web_page_preview=True)
+                                elif isinstance(text, bytes):
+                                    m = bot.send_photo(
+                                        message.chat.id,
+                                        text,
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message),
+                                        )
+                                    log_message(m)
+                                    return
                             else:
                                 bot_reply_tr(message, 'Sorry, I could not answer your question.')
                             return
@@ -3792,11 +3900,22 @@ def handle_photo(message: telebot.types.Message):
                         else:
                             text = img2txt(image, lang, chat_id_full, message.caption)
                         if text:
-                            text = utils.bot_markdown_to_html(text)
-                            # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                            bot_reply(message, text, parse_mode='HTML',
-                                                reply_markup=get_keyboard('translate', message),
-                                                disable_web_page_preview=True)
+                            if isinstance(text, str):
+                                text = utils.bot_markdown_to_html(text)
+                                # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
+                                bot_reply(message, text, parse_mode='HTML',
+                                                    reply_markup=get_keyboard('translate', message),
+                                                    disable_web_page_preview=True)
+                            elif isinstance(text, bytes):
+                                m = bot.send_photo(
+                                    message.chat.id,
+                                    text,
+                                    disable_notification=True,
+                                    reply_to_message_id=message.message_id,
+                                    reply_markup=get_keyboard('hide', message)
+                                    )
+                                log_message(m)
+                                return
                         else:
                             bot_reply_tr(message, 'Sorry, I could not answer your question.')
                     return

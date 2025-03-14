@@ -476,7 +476,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         # Updates the memory of the selected bot based on the chat mode.
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.update_mem(query, resp, chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
         elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
             my_groq.update_mem(query, resp, chat_id_full)
@@ -5168,7 +5168,7 @@ def restore_chat_mode(message: telebot.types.Message):
 def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.Message):
     '''изменяет последний ответ от бота на text'''
     try:
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.force(chat_id_full, text, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
         elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
             my_groq.force(chat_id_full, text)
@@ -5232,7 +5232,7 @@ def undo_cmd(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.undo(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
         elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
             my_groq.undo(chat_id_full)
@@ -5276,7 +5276,7 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
         chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')
 
         if chat_mode_:
-            if 'gemini' in chat_mode_:
+            if 'gemini' in chat_mode_ or 'gemma' in chat_mode_ or 'gemma' in chat_mode_ or 'gemma' in chat_mode_:
                 my_gemini.reset(chat_id_full, chat_mode_)
             elif chat_mode_ in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
                 my_groq.reset(chat_id_full)
@@ -5388,7 +5388,7 @@ def save_history(message: telebot.types.Message):
         chat_id_full = get_id_parameters_for_function(message, chat_id_full)
 
         prompt = ''
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = my_gemini.get_mem_as_string(chat_id_full, md = True, model = my_db.get_user_property(chat_id_full, 'chat_mode')) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
             prompt = my_groq.get_mem_as_string(chat_id_full, md = True) or ''
@@ -5448,8 +5448,11 @@ def send_debug_history(message: telebot.types.Message):
 
         chat_id_full = get_id_parameters_for_function(message, chat_id_full)
 
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = 'Gemini ' + my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
+        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+            if 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+                prompt = my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
+            else:
+                prompt = 'Gemini ' + my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
             prompt += my_gemini.get_mem_as_string(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode')) or tr('Empty', lang)
         elif 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = 'Groq llama 3.3 70b\n\n'
@@ -8777,7 +8780,7 @@ def do_task(message, custom_prompt: str = ''):
                 WHO_ANSWERED[chat_id_full] = chat_mode_
                 if chat_mode_ == 'llama370':
                     WHO_ANSWERED[chat_id_full] = 'groq llama 3.3 70b'
-                if chat_mode_.startswith('gemini'):
+                if chat_mode_.startswith(('gemini', 'gemma')):
                     WHO_ANSWERED[chat_id_full] = gmodel
                 time_to_answer_start = time.time()
 

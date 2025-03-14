@@ -609,9 +609,13 @@ def img2txt(text,
         str: The text description of the image.
     """
     try:
-        intent = user_want_to_change_picture(query, chat_id_full)
-        if intent:
-            return img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
+        query = query.strip()
+        # если запрос начинается на ! то надо редактировать картинку а не отвечать на вопрос
+        if query.startswith('!'):
+            return img2img(text, lang, chat_id_full, query[1:], model, temperature, system_message, timeout)
+        # intent = user_want_to_change_picture(query, chat_id_full)
+        # if intent:
+            # return img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
 
         if temperature is None:
             temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
@@ -3207,7 +3211,7 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
             # Get the user's language.
             lang = get_lang(chat_id_full, message)
             # Create the message to send to the user.
-            msg = tr('What would you like to do with this image?', lang)
+            msg = tr('What would you like to do with this image?\n\nStart query with symbol ! to edit picture, Example: !change the color of the clothes to red', lang)
             msg += '\n\n' + image_info(image, lang)
             # Append the last prompt to the message, if available.
             if user_prompt:

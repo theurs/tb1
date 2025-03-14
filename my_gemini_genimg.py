@@ -1,5 +1,8 @@
 import os
+from io import BytesIO
+from PIL import Image
 from typing import Optional
+
 from google import genai
 from google.genai import types
 
@@ -7,6 +10,31 @@ import cfg
 import my_db
 import my_gemini
 import my_log
+
+
+def convert_png_to_jpg(png_bytes: bytes, quality: int = 60) -> bytes:
+    """Converts PNG bytes to JPG bytes with specified quality.
+
+    Args:
+        png_bytes: The PNG image data as bytes.
+        quality: The desired JPG quality (0-100).
+
+    Returns:
+        The JPG image data as bytes.
+    """
+    try:
+        print(len(png_bytes))
+        img = Image.open(BytesIO(png_bytes))
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
+        jpg_bytes = BytesIO()
+        img.save(jpg_bytes, "JPEG", quality=quality, optimize=True)
+        result = jpg_bytes.getvalue()
+        print(len(result))
+        return result
+    except Exception as e:
+        my_log.log_gemini_error(f"Error converting PNG to JPG: {e}")
+        return None
 
 
 def save_binary_file(file_name: str, data: bytes) -> None:
@@ -30,7 +58,7 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
         api_key: The API key for accessing the Gemini API.
 
     Returns:
-        The image data as bytes (PNG) if successful, otherwise None.
+        The image data as bytes (jpg) if successful, otherwise None.
     """
     try:
         if not api_key:
@@ -60,23 +88,23 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
             safety_settings=[
                 types.SafetySetting(
                     category="HARM_CATEGORY_HARASSMENT",
-                    threshold="BLOCK_NONE",  # Block none
+                    threshold="OFF",  # Block none
                 ),
                 types.SafetySetting(
                     category="HARM_CATEGORY_HATE_SPEECH",
-                    threshold="BLOCK_NONE",  # Block none
+                    threshold="OFF",  # Block none
                 ),
                 types.SafetySetting(
                     category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    threshold="BLOCK_NONE",  # Block none
+                    threshold="OFF",  # Block none
                 ),
                 types.SafetySetting(
                     category="HARM_CATEGORY_DANGEROUS_CONTENT",
-                    threshold="BLOCK_NONE",  # Block none
+                    threshold="OFF",  # Block none
                 ),
                 types.SafetySetting(
                     category="HARM_CATEGORY_CIVIC_INTEGRITY",
-                    threshold="BLOCK_NONE",  # Block none
+                    threshold="OFF",  # Block none
                 ),
             ],
             response_mime_type="text/plain",
@@ -93,7 +121,7 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                 image_data: bytes = chunk.candidates[0].content.parts[0].inline_data.data
                 if user_id:
                     my_db.add_msg(user_id, 'img ' + model)
-                return image_data # Return image bytes
+                return convert_png_to_jpg(image_data)
             else:
                 my_log.log_gemini(text=chunk.text) # Use my_log for text responses
 
@@ -108,27 +136,20 @@ if __name__ == "__main__":
     my_db.init(backup=False)
     my_gemini.load_users_keys()
 
-    prompt_text = "нарисуй лицо со шрамом, реалистичная фотография терминатора"
+    prompt_text = "нарисуй лицо, профессиональная фотография"
 
     api_key = my_gemini.get_next_key()
     if cfg.gemini_keys:
         api_key = cfg.gemini_keys[0] # Use API key from cfg.gemini_keys
-    elif os.environ.get("GEMINI_API_KEY"):
-        api_key = os.environ.get("GEMINI_API_KEY") # Fallback to environment variable if cfg.gemini_keys is empty or not available
 
-    if not api_key:
-        my_log.log_gemini(text="API key is not set. Please configure cfg.gemini_keys or set GEMINI_API_KEY environment variable.")
+    image_bytes = generate_image(prompt_text, api_key)
+
+    if image_bytes:
+        file_extension = "jpg"
+        file_name = os.path.join(r"C:\Users\user\Downloads", f"test.{file_extension}")
+        save_binary_file(file_name, image_bytes)
+        my_log.log_gemini(text=f"Image saved to: {file_name}")
     else:
-        image_bytes = generate_image(prompt_text, api_key)
+        my_log.log_gemini(text="Failed to generate or save image.")
 
-        if image_bytes:
-            file_mime_type = "image/png" # Default mime type, could be webp depending on model response, you might need to inspect chunk.candidates[0].content.parts[0].inline_data.mime_type for accurate type
-            file_extension = "png" # Default extension
-            if "webp" in file_mime_type:
-                file_extension = "webp" # Adjust extension if mime type suggests webp
-
-            file_name = os.path.join(r"C:\Users\user\Downloads", f"test.{file_extension}") # Construct file path
-            save_binary_file(file_name, image_bytes)
-            my_log.log_gemini(text=f"Image saved to: {file_name}") # Use my_log for success message
-        else:
-            my_log.log_gemini(text="Failed to generate or save image.") # Use my_log for failure message
+    my_db.close()

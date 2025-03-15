@@ -121,7 +121,7 @@ PROMPT_QRCODE = 'Read QRCODE.'
 start_msg = '''Hello, I'm an AI chat bot. I'm here to help you with anything you need.
 
 ✨ Access to all text AIs
-🎨 Picture drawing
+🎨 Picture drawing, edit
 🗣 Voice recognition and subtitles creation
 🖼 Answers to questions about pictures
 🌐 Internet search using AI
@@ -140,6 +140,8 @@ help_msg = f"""🔭 If you send a link or text file in a private message, the bo
 After the file or link is downloaded, you can ask questions about file using the `/ask` command.
 
 Send document with caption `!tr lang` to translate document to this language
+
+Send pictures with caption starting with ! to edit them. Example: !change her outfit to look cool
 
 🎙️ You can issue commands and make requests using voice messages.
 
@@ -365,41 +367,43 @@ def generate_start_msg():
             msg = my_groq.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
         if not msg:
             msg = start_msg
-        if msg:
+        if msg and msg.strip() != start_msg.strip():
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
         if not msg:
             print(f'google translate failed {x}')
+        time.sleep(20)
 
     with open(start_msg_file, 'wb') as f:
         pickle.dump(msgs, f)
 
 
-@async_run_with_limit(1)
-def translate_help_msg(msg_source: str, source: str, target: str, container: dict):
+def translate_help_msg(msg_source: str, source: str, target: str) -> str:
     msg = my_gemini.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.')
-    if not msg:
+    if not msg or msg.strip() == msg_source.strip():
+        msg = my_gemini.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.', model=cfg.gemini_flash_light_model)
+    if not msg or msg.strip() == msg_source.strip():
         msg = my_groq.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.')
-    if msg:
-        container[target] = msg
+    if msg.strip() and msg.strip() != msg_source.strip():
+        return msg
     else:
-        with PRINT_LOCK:
-            print(f'google translate failed {target}')
-        container[target] = msg_source
-    time.sleep(5)
+        return ''
 
 
 def generate_help_msg():
-    container = {}
+    try:
+        with open(help_msg_file, 'rb') as f:
+            container = pickle.load(f)
+    except:
+        container = {}
 
     for x in supported_langs_trans:
-        translate_help_msg(help_msg, 'en', x, container)
-
-    while len(container) < len(supported_langs_trans):
-        time.sleep(1)
-
-    with open(help_msg_file, 'wb') as f:
-        pickle.dump(container, f)
+        translation = translate_help_msg(help_msg, 'en', x)
+        if translation:
+            container[x] = translation
+            with open(help_msg_file, 'wb') as f:
+                pickle.dump(container, f)
+            time.sleep(30)
 
 
 def regenerate_help_msg(langs):
@@ -533,7 +537,7 @@ if __name__ == '__main__':
 
     # generate_start_msg()
 
-    # generate_help_msg()
+    generate_help_msg()
 
     # regenerate_help_msg(('zu', 'sw'))
     # regenerate_start_msg('en')

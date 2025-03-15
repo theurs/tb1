@@ -38,19 +38,19 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
     book_type = ext
 
     if 'epub' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'epub', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '+RTS', '-M256M', '-RTS', '-f', 'epub', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'pptx' in book_type:
         text = read_pptx(input_file)
         utils.remove_file(input_file)
         return text
     elif 'docx' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'docx', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'docx', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'html' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'html', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'html', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'odt' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'odt', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'odt', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'rtf' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'rtf', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'rtf', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'doc' in book_type:
         proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
     elif 'pdf' in book_type or 'djvu' in book_type:
@@ -77,7 +77,7 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
         # return buffer.getvalue()
         return result
     elif 'fb2' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', 'fb2', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        proc = subprocess.run([pandoc_cmd, '+RTS', '-M256M', '-RTS', '-f', 'fb2', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     else:
         utils.remove_file(input_file)
         try:
@@ -118,7 +118,7 @@ def convert_text_to_docx(text: str) -> bytes:
     output_file = utils.get_tmp_fname() + '.docx'
     html = utils.bot_markdown_to_html(text)
     html = html.replace('\n', '<br>')
-    subprocess.run(['pandoc', '-f', 'html', '-t', 'docx', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
+    subprocess.run(['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', 'docx', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
     with open(output_file, 'rb') as f:
         data = f.read()
     utils.remove_file(output_file)
@@ -130,7 +130,7 @@ def convert_text_to_odt(text: str) -> bytes:
     output_file = utils.get_tmp_fname() + '.odt'
     html = utils.bot_markdown_to_html(text)
     html = html.replace('\n', '<br>')
-    subprocess.run(['pandoc', '-f', 'html', '-t', 'odt', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
+    subprocess.run(['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', 'odt', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
     with open(output_file, 'rb') as f:
         data = f.read()
     utils.remove_file(output_file)
@@ -142,7 +142,7 @@ def convert_text_to_pdf(text: str) -> bytes:
     output_file = utils.get_tmp_fname() + '.pdf'
     html = utils.bot_markdown_to_html(text)
     html = html.replace('\n', '<br>')
-    subprocess.run(['pandoc', '-f', 'html', '-t', 'pdf', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
+    subprocess.run(['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', 'pdf', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
     with open(output_file, 'rb') as f:
         data = f.read()
     utils.remove_file(output_file)
@@ -237,7 +237,7 @@ def convert_file_to_html(data: bytes, filename: str) -> str:
     try:
         # Execute the pandoc command to convert the file
         process = subprocess.run(
-            ['pandoc', '-f', pandoc_format, '-t', 'html', '-o', output_file, '-'],
+            ['pandoc', '+RTS', '-M256M', '-RTS', '-f', pandoc_format, '-t', 'html', '-o', output_file, '-'],
             input=data,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,  # Capture standard error for potential issues
@@ -389,7 +389,7 @@ def convert_html_to_bytes(html_data: str, output_filename: str) -> bytes:
     try:
         # Execute the pandoc command to convert the HTML to a temporary file
         process = subprocess.run(
-            ['pandoc', '-f', 'html', '-t', pandoc_format_out, '-o', temp_output_file, '-'],
+            ['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', pandoc_format_out, '-o', temp_output_file, '-'],
             input=html_data.encode('utf-8', 'replace'),  # Encode HTML string to bytes
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,  # Capture standard error for potential issues
@@ -436,7 +436,7 @@ def convert_html_to_plain(html_data: str) -> str:
             f.write(html_data)
 
         process = subprocess.run(
-            ['pandoc', '-f', 'html', '-t', 'plain', '-o', dst_file, src_file],
+            ['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', 'plain', '-o', dst_file, src_file],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
 

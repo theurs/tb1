@@ -48,7 +48,7 @@ def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
         return ''
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def stt_google(audio_file: str, language: str = 'ru') -> str:
     """
     Speech-to-text using Google's speech recognition API.
@@ -245,7 +245,7 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language:
         utils.remove_file(f'{fname}_{n}.ogg')
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def stt_genai(audio_file: str, language: str = 'ru') -> str:
     """
     Converts the given audio file to text using the Gemini API.
@@ -300,7 +300,7 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
     return result
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def assemblyai(audio_file: str, language: str = 'ru'):
     '''Converts the given audio file to text using the AssemblyAI API.'''
     try:
@@ -327,6 +327,7 @@ def miliseconds_to_str(miliseconds: int) -> str:
     return f'{hours:02}:{minutes:02}:{seconds:02}'
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def assemblyai_2(audio_file: str, language: str = 'ru') -> str:
     '''
     Converts the given audio file to text using the AssemblyAI API.
@@ -358,6 +359,7 @@ def assemblyai_2(audio_file: str, language: str = 'ru') -> str:
         return ''
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def assemblyai_to_caps(audio_file, language: str = 'ru') -> tuple[str | None, str | None]:
     '''
     Transcribes an audio file to subtitle formats (SRT and VTT) using the AssemblyAI API.

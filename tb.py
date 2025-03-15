@@ -491,7 +491,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_mistral.update_mem(query, resp, chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
             my_github.update_mem(query, resp, chat_id_full)
-        elif 'commandrplus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'cohere' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_cohere.update_mem(query, resp, chat_id_full)
         elif 'glm4plus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_glm.update_mem(query, resp, chat_id_full)
@@ -2074,12 +2074,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
 
-        elif kbd == 'commandrplus_chat':
+        elif kbd == 'cohere_chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
             markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
             button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='commandrplus_reset')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='cohere_reset')
             button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
             button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
             button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
@@ -2292,11 +2292,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'DeepSeek R1'
             button_deepseek_r1 = telebot.types.InlineKeyboardButton(msg, callback_data='select_deepseek_r1')
 
-            if chat_mode == 'commandrplus':
-                msg = '✅ Command R+'
+            if chat_mode == 'cohere':
+                msg = '✅ Command A'
             else:
-                msg = 'Command R+'
-            button_commandrplus = telebot.types.InlineKeyboardButton(msg, callback_data='select_commandrplus')
+                msg = 'Command A'
+            button_cohere = telebot.types.InlineKeyboardButton(msg, callback_data='select_cohere')
 
             if chat_mode == 'openrouter':
                 msg = '✅ OpenRouter'
@@ -2312,7 +2312,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_gemini_exp, button_gemini_learnlm)
 
-            markup.row(button_commandrplus, button_llama3_70b)
+            markup.row(button_cohere, button_llama3_70b)
 
             if hasattr(cfg, 'GLM4_KEYS'):
                 markup.row(button_glm4plus, button_gemini_pro)
@@ -2665,8 +2665,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_v3')
 
 
-        elif call.data == 'select_commandrplus':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'commandrplus')
+        elif call.data == 'select_cohere':
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'cohere')
         elif call.data == 'select_glm4plus':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'glm4plus')
         elif call.data == 'select_o3_mini_ddg':
@@ -2713,9 +2713,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data in ('deepseek_r1_distill_llama70b_reset', 'qwq32b_reset'):
             my_groq.reset(chat_id_full)
             bot_reply_tr(message, 'История очищена.')
-        elif call.data == 'commandrplus_reset':
+        elif call.data == 'cohere_reset':
             my_cohere.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Command R+ очищена.')
+            bot_reply_tr(message, 'История диалога с Command A очищена.')
         elif call.data == 'glm4plus_reset':
             my_glm.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с GLM 4 PLUS очищена.')
@@ -5334,7 +5334,7 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_mistral.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
             my_github.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             my_cohere.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             my_glm.force(chat_id_full, text)
@@ -5398,7 +5398,7 @@ def undo_cmd(message: telebot.types.Message):
             my_mistral.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
             my_github.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             my_cohere.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm3plus':
             my_glm.undo(chat_id_full)
@@ -5442,7 +5442,7 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
                 my_mistral.reset(chat_id_full)
             elif chat_mode_ in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
                 my_github.reset(chat_id_full)
-            elif chat_mode_ == 'commandrplus':
+            elif chat_mode_ == 'cohere':
                 my_cohere.reset(chat_id_full)
             elif chat_mode_ == 'glm4plus':
                 my_glm.reset(chat_id_full)
@@ -5554,7 +5554,7 @@ def save_history(message: telebot.types.Message):
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
             prompt = my_github.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
+        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             prompt = my_glm.get_mem_as_string(chat_id_full, md = True) or ''
@@ -5636,8 +5636,8 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'deepseek_v3':
             prompt = 'DeepSeek V3\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'commandrplus':
-            prompt = 'Commandr R+\n\n'
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
+            prompt = 'Command A\n\n'
             prompt += my_cohere.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
             prompt = 'GLM 4 PLUS\n\n'
@@ -7910,7 +7910,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gpt-4o': my_github.BIG_GPT_MODEL,
             'deepseek_r1': my_github.DEEPSEEK_R1_MODEL,
             'deepseek_v3': my_nebius.DEFAULT_MODEL_FALLBACK,
-            'commandrplus': my_cohere.DEFAULT_MODEL,
+            'cohere': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
             'bothub': 'bothub.chat',
             'glm4plus': my_glm.DEFAULT_MODEL,
@@ -9655,10 +9655,10 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
 
-                # если активирован режим общения с Command R+
-                if chat_mode_ == 'commandrplus':
+                # если активирован режим общения с Command A
+                if chat_mode_ == 'cohere':
                     if len(msg) > my_cohere.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Command R+, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_cohere.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Command A, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_cohere.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
@@ -9671,7 +9671,7 @@ def do_task(message, custom_prompt: str = ''):
                                 model = my_cohere.DEFAULT_MODEL,
                             )
 
-                            WHO_ANSWERED[chat_id_full] = 'Command R+'
+                            WHO_ANSWERED[chat_id_full] = 'Command A'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -9681,24 +9681,24 @@ def do_task(message, custom_prompt: str = ''):
 
                             answer = answer.strip()
                             if not answer:
-                                answer = 'Command R+ ' + tr('did not answered, try to /reset and start again.', lang)
+                                answer = 'Command A ' + tr('did not answered, try to /reset and start again.', lang)
 
-                            my_log.log_echo(message, f'[Command R+] {answer}')
+                            my_log.log_echo(message, f'[Command A] {answer}')
 
                             try:
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                        reply_markup=get_keyboard('commandrplus_chat', message), not_log=True, allow_voice = True)
+                                        reply_markup=get_keyboard('cohere_chat', message), not_log=True, allow_voice = True)
                                 
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('commandrplus_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('cohere_chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:commandrplus {error3}\n{error_traceback}')
+                            my_log.log2(f'tb:do_task:cohere {error3}\n{error_traceback}')
                         return
 
 

@@ -18,8 +18,10 @@ import my_log
 MAX_QUERY_LENGTH = 100000
 MAX_SUM_REQUEST = 100000
 MAX_REQUEST = 20000
-DEFAULT_MODEL = 'command-r-plus'
-FALLBACK_MODEL = 'command-r'
+# DEFAULT_MODEL = 'command-r-plus'
+DEFAULT_MODEL = 'command-a-03-2025'
+FALLBACK_MODEL = 'command-r-plus'
+#FALLBACK_MODEL = 'command-r'
 MAX_MEM_LINES = 20
 MAX_HIST_CHARS = 60000
 
@@ -402,14 +404,31 @@ def test_key(key: str) -> bool:
     return bool(r)
 
 
+def list_models():
+    keys = ALL_KEYS
+    random.shuffle(keys)
+    keys = keys[:4]
+
+    co = cohere.Client(api_key=keys[0], timeout=20)
+
+    response = co.models.list()
+
+    for m in response.models:
+        print(m.name)
+
+
+
 if __name__ == '__main__':
     pass
     load_users_keys()
 
     # r = ai('привет как дела')
     # print(r)
+    print(test_key(input('Enter key: ')))
 
-    chat_cli()
+    # chat_cli()
+
+    # list_models()
 
     # with open('C:/Users/user/Downloads/2.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()

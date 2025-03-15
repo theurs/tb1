@@ -2947,10 +2947,10 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
 
                 # сохранить как файл для дальнейших вопросв по нему субтитры или srt или vtt или чистый текст
                 saved_text = text
-                if cap_srt != 'EMPTY':
-                    saved_text = cap_srt
-                elif cap_vtt != 'EMPTY':
-                    saved_text = cap_vtt
+                # if cap_srt != 'EMPTY':
+                #     saved_text = cap_srt
+                # elif cap_vtt != 'EMPTY':
+                #     saved_text = cap_vtt
                 my_db.set_user_property(chat_id_full, 'saved_file_name', f'transcribed audio file: captions_{utils.get_full_time().replace(":", "-")}.txt')
                 my_db.set_user_property(chat_id_full, 'saved_file', saved_text)
 

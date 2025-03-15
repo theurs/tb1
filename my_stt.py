@@ -327,7 +327,7 @@ def miliseconds_to_str(miliseconds: int) -> str:
     return f'{hours:02}:{minutes:02}:{seconds:02}'
 
 
-def assemblyai_2(audio_file: str, language: str = 'ru'):
+def assemblyai_2(audio_file: str, language: str = 'ru') -> str:
     '''
     Converts the given audio file to text using the AssemblyAI API.
     Multivoice version
@@ -336,10 +336,11 @@ def assemblyai_2(audio_file: str, language: str = 'ru'):
         aai.settings.api_key = random.choice(cfg.ASSEMBLYAI_KEYS)
         transcriber = aai.Transcriber()
         audio_url = (audio_file)
-        config = aai.TranscriptionConfig(speaker_labels=True,
-                                         language_code = language,
-                                         entity_detection=True,
-                                         )
+        config = aai.TranscriptionConfig(
+            speaker_labels=True,
+            language_code = language,
+            entity_detection=True,
+        )
         transcript = transcriber.transcribe(audio_url, config)
         # my_log.log2(f'my_stt:assemblyai:DEBUG: {transcript.text}')
         result = ''
@@ -382,7 +383,8 @@ def assemblyai_to_caps(audio_file, language: str = 'ru') -> tuple[str | None, st
 
         vtt_caps = assembly_response.export_subtitles_vtt()
         srt_caps = assembly_response.export_subtitles_srt()
-        text = assembly_response.text
+        # text = assembly_response.text
+        text = assemblyai_2(audio_file, language)
 
         return srt_caps, vtt_caps, text
     except Exception as error:
@@ -392,15 +394,22 @@ def assemblyai_to_caps(audio_file, language: str = 'ru') -> tuple[str | None, st
     return None, None, None
 
 
-if __name__ == "__main__":
-    pass
+def test_assemblyai_caps():
     s, v, t = assemblyai_to_caps('C:/Users/user/Downloads/1.m4a')
-
     with open('C:/Users/user/Downloads/1.srt', 'w', encoding='utf-8') as f:
         f.write(s)
-
     with open('C:/Users/user/Downloads/1.vtt', 'w', encoding='utf-8') as f:
         f.write(s)
-
     with open('C:/Users/user/Downloads/1.txt', 'w', encoding='utf-8') as f:
         f.write(t)
+
+
+def test_assemblyai_to_text():
+    t = assemblyai_2('C:/Users/user/Downloads/samples for ai/кусок радио-т подкаста несколько голосов.mp3')
+    with open('C:/Users/user/Downloads/1.txt', 'w', encoding='utf-8') as f:
+        f.write(t)
+
+
+if __name__ == "__main__":
+    pass
+    test_assemblyai_to_text()

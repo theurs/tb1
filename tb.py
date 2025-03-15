@@ -2896,6 +2896,7 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
             cap_srt, cap_vtt, text = my_stt.assemblyai_to_caps(data, lang)
         else:
             cap_srt, cap_vtt, text = my_deepgram.transcribe(data, lang)
+            text = my_stt.assemblyai_2(data, lang)
 
         if cap_srt.strip() or cap_vtt.strip():
             if not cap_srt.strip():
@@ -2935,7 +2936,7 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
                     message.chat.id,
                     text.encode('utf-8', 'replace'),
                     reply_to_message_id=message.message_id,
-                    caption = tr(f'Transcription generated at @{_bot_name}', lang),
+                    caption = tr(f'Multi-voice transcription generated at @{_bot_name}', lang),
                     reply_markup=kbd,
                     parse_mode='HTML',
                     disable_notification = True,
@@ -2981,7 +2982,9 @@ def handle_voice(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
-        COMMAND_MODE[chat_id_full] = ''
+        # рано
+        # COMMAND_MODE[chat_id_full] = ''
+
         # проверка на подписку
         if not check_donate(message, chat_id_full, lang):
             return
@@ -3093,6 +3096,9 @@ def handle_voice(message: telebot.types.Message):
                 transcribe_file(downloaded_file, file_name, message)
                 return
             ## /transcribe ###################################################################################
+
+
+            COMMAND_MODE[chat_id_full] = ''
 
 
             with open(file_path, 'wb') as new_file:

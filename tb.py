@@ -3755,8 +3755,31 @@ def handle_photo(message: telebot.types.Message):
                         if msg.caption:
                             caption = msg.caption
                             break
+                    caption = caption.strip()
                     with ShowAction(message, 'typing'):
                         images = [download_image_from_message(msg) for msg in MESSAGES]
+
+                        # Если прислали группу картинок и запрос начинается на ! то перенаправляем запрос в редактирование картинок
+                        if caption.startswith('!'):
+                            caption = caption[1:]
+                            image = my_gemini_genimg.regenerate_image(
+                                prompt = caption,
+                                sources_images=images,
+                                user_id=chat_id_full)
+                            if image:
+                                m = bot.send_photo(
+                                    message.chat.id,
+                                    disable_notification=True,
+                                    photo=image,
+                                    reply_to_message_id=message.message_id,
+                                    reply_markup=get_keyboard('hide', message)
+                                )
+                                log_message(m)
+                                return
+                            else:
+                                bot_reply_tr(message, 'Failed to edit images.')
+                                return
+
                         if len(images) > 4:
                             big_text = ''
                             for image in images:

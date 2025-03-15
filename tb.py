@@ -6253,7 +6253,7 @@ def huggingface_image_gen(message: telebot.types.Message):
                             except Exception as error2:
                                 my_log.log2(f'tb:huggingface_image_gen:send to pics_group: {error2}')
                         update_user_image_counter(chat_id_full, len(medias))
-                        add_to_bots_mem(message.text, 'OK', chat_id_full)
+                        add_to_bots_mem(message.text, f'The bot successfully generated images on the external service <service>HuggingFace</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
                     else:
                         bot_reply_tr(message, tr("Image generation failed.", lang))
                 except Exception as e:
@@ -6392,7 +6392,7 @@ def image_gemini_gen(message: telebot.types.Message):
                                 prompt=reprompt,
                             )
 
-                        add_to_bots_mem(message.text, 'OK', chat_id_full)
+                        add_to_bots_mem(message.text, f'The bot successfully generated images on the external service <service>Gemini 2.0 Flash Experimental</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
                     else:
                         bot_reply_tr(message, tr("Image generation failed. (No images generated.)\n\nA prompt that is too long can cause this error. You can try using '!' before the prompt to fix it. In this case, the prompt must be in English only.", lang))
 
@@ -6533,7 +6533,7 @@ def image_flux_gen(message: telebot.types.Message):
                                 prompt=reprompt,
                             )
 
-                        add_to_bots_mem(message.text, 'OK', chat_id_full)
+                        add_to_bots_mem(message.text, f'The bot successfully generated images on the external service <service>Nebius</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
                     else:
                         bot_reply_tr(message, tr("Image generation failed. (No images generated.)\n\nA prompt that is too long can cause this error. You can try using '!' before the prompt to fix it. In this case, the prompt must be in English only.", lang))
 
@@ -6891,7 +6891,7 @@ def image_gen(message: telebot.types.Message):
                         else:
                             IMG = '/img'
                         MSG = tr(f"user used {IMG} command to generate", lang)
-                        add_to_bots_mem(message.text, 'OK', chat_id_full)
+                        add_to_bots_mem(message.text, f'The bot successfully generated images on the external services <service>bing, huggingface, fusion, flux, nebius, gemini</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
                         # have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
                         #             chat_id_full in my_genimg.USER_KEYS or \
                         #             message.from_user.id in cfg.admins or \

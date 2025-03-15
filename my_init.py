@@ -359,15 +359,22 @@ def generate_start_msg():
     msgs = {}
     for x in supported_langs_trans:
     # for x in ['ru', 'uk', 'de']:
+        if x == 'en':
+            msg = start_msg
+            msgs[x] = msg
+            print('\n\n', x, '\n\n', msg)
+            continue
+
         msg = ''
+        msg = my_gemini.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
+
+        if msg == start_msg:
+            msg = my_groq.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
 
         if not msg:
-            msg = my_gemini.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
-        if not msg:
-            msg = my_groq.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
-        if not msg:
             msg = start_msg
-        if msg and msg.strip() != start_msg.strip():
+
+        if msg:
             msgs[x] = msg
             print('\n\n', x, '\n\n', msg)
         if not msg:
@@ -398,7 +405,11 @@ def generate_help_msg():
         container = {}
 
     for x in supported_langs_trans:
-        translation = translate_help_msg(help_msg, 'en', x)
+    # for x in ['en',]:
+        if x == 'en':
+            translation = help_msg
+        else:
+            translation = translate_help_msg(help_msg, 'en', x)
         if translation:
             container[x] = translation
             with open(help_msg_file, 'wb') as f:

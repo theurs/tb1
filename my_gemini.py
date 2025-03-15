@@ -278,7 +278,7 @@ def chat(query: str,
                     mem = chat_.history[2:]
                     # тут нет key_i += 1, но цикл закончится если история опустеет
                     continue
-                if '429 Quota exceeded for quota metric' in str(error):
+                if '429 Quota exceeded for quota metric' in str(error) or 'API key expired. Please renew the API key.' in str(error):
                     pass
                     remove_key(key)
                 if 'MALFORMED_FUNCTION_CALL' in str(error):

@@ -2547,8 +2547,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 detected_lang = my_tts.detect_lang_carefully(text)
                 if not detected_lang:
                     detected_lang = lang or "de"
-                rewrited_text = my_gemini.rewrite_for_tts(text, chat_id_full, lang)
-                # rewrited_text = text
+                # rewrited_text = my_gemini.rewrite_for_tts(text, chat_id_full, lang)
+                rewrited_text = text
                 message.text = f'/tts {detected_lang} {rewrited_text}'
                 tts(message)
         elif call.data.startswith('select_lang-'):
@@ -3745,16 +3745,29 @@ def handle_photo(message: telebot.types.Message):
                 state = 'describe'
                 message.caption = message.caption[1:]
 
-            elif is_private or is_reply:
+
+            bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+            bot_name_was_used = False
+            # убираем из запроса кодовое слово
+            if msglower.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
+                bot_name_was_used = True
+                message.caption = message.caption[len(f'{bot_name} '):].strip()
+
+            bot_name2 = f'@{_bot_name}'
+            # убираем из запроса имя бота в телеграме
+            if msglower.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
+                bot_name_was_used = True
+                message.caption = message.caption[len(f'{bot_name2} '):].strip()
+
+
+            elif is_private or is_reply or bot_name_was_used:
                 state = 'describe'
             else:
                 state = ''
 
-            bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
             if not is_private and not state == 'describe':
                 if not message.caption or not message.caption.startswith('?') or \
-                    not message.caption.startswith(f'@{_bot_name}') or \
-                        not message.caption.startswith(bot_name):
+                    not bot_name_was_used:
                     return
 
             if is_private:

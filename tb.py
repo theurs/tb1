@@ -2507,6 +2507,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'continue_gpt':
             # обработка нажатия кнопки "Продолжай GPT"
             message.dont_check_topic = True
+            message.next_button_pressed = True
             echo_all(message, tr('Продолжай', lang))
             return
         elif call.data == 'cancel_command':
@@ -3733,6 +3734,7 @@ def handle_photo(message: telebot.types.Message):
         try:
             is_private = message.chat.type == 'private'
             supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+            is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
             if supch == 1:
                 is_private = True
 
@@ -3743,7 +3745,7 @@ def handle_photo(message: telebot.types.Message):
                 state = 'describe'
                 message.caption = message.caption[1:]
 
-            elif is_private:
+            elif is_private or is_reply:
                 state = 'describe'
             else:
                 state = ''
@@ -8885,7 +8887,7 @@ def do_task(message, custom_prompt: str = ''):
 
 
         # так же надо реагировать если это ответ в чате на наше сообщение или диалог происходит в привате
-        elif is_reply or is_private or bot_name_used or chat_bot_cmd_was_used:
+        elif is_reply or is_private or bot_name_used or chat_bot_cmd_was_used or (hasattr(message, 'next_button_pressed') and message.next_button_pressed):
             if len(msg) > cfg.max_message_from_user:
                 my_db.set_user_property(chat_id_full, 'saved_file_name', 'big_request_auto_saved_to_file.txt')
                 my_db.set_user_property(chat_id_full, 'saved_file', message.text)

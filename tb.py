@@ -112,7 +112,7 @@ pics_group = cfg.pics_group if hasattr(cfg, 'pics_group') else None
 IMG_MODE_FLAG = {}
 
 # {user_id: (fail counter, datetime)}
-# запоминаем сколько раз подряд бинг не смог ничего нарисовать для этого юзера, если больше 5 то блокируем на пол часа
+# запоминаем сколько раз подряд бинг не смог ничего нарисовать для этого юзера, если больше 5 то блокируем на 5 минут
 BING_FAILS = {}
 
 # сообщения приветствия и помощи
@@ -6853,7 +6853,7 @@ def image_gen(message: telebot.types.Message):
                         if BING_FLAG:
                             bf = BING_FAILS[chat_id_full] if chat_id_full in BING_FAILS else [0, 0]
                             if bf[0] >= 5:
-                                if time.time() - bf[1] > 30*60:
+                                if time.time() - bf[1] > 5 * 60:
                                     bf = [0, 0]
                             if bf[0] < 5:
                                 images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)

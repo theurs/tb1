@@ -60,7 +60,7 @@ def convert_png_to_jpg(png_bytes: bytes, quality: int = 60) -> bytes:
         result = jpg_bytes.getvalue()
         return result
     except Exception as e:
-        my_log.log_gemini_error(f"Error converting PNG to JPG: {e}")
+        my_log.log_gemini(f"Error converting PNG to JPG: {e}")
         return None
 
 

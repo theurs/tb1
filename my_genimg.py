@@ -389,7 +389,10 @@ def huggin_face_api(prompt: str, negative_prompt: str = "", timeout: int = 60) -
 
             return result
 
-        # random.shuffle(API_URL)
+        # ограничиваем до 2 случайных
+        random.shuffle(API_URL)
+        API_URL = API_URL[:2]
+
         pool = ThreadPool(processes=len(API_URL))
         async_results = []
         for x in API_URL:

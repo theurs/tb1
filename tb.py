@@ -111,6 +111,10 @@ pics_group = cfg.pics_group if hasattr(cfg, 'pics_group') else None
 # /hf - только huggingface
 IMG_MODE_FLAG = {}
 
+# {user_id: (fail counter, datetime)}
+# запоминаем сколько раз подряд бинг не смог ничего нарисовать для этого юзера, если больше 5 то блокируем на пол часа
+BING_FAILS = {}
+
 # сообщения приветствия и помощи
 HELLO_MSG = {}
 HELP_MSG = {}
@@ -6695,6 +6699,7 @@ def send_images_to_pic_group(
 # вариант с такой лямбдой вызывает проблемы в функции is_for_me, туда почему то приходит команда без имени бота
 # @bot.message_handler(func=lambda message: authorized(message) and message.text.split()[0].lower() in ['/image', '/img', '/i', '/imagine', '/generate', '/gen', '/art', '/picture', '/pic'])
 
+
 @bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):
@@ -6846,9 +6851,21 @@ def image_gen(message: telebot.types.Message):
                         images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
                     else:
                         if BING_FLAG:
-                            images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)
+                            bf = BING_FAILS[chat_id_full] if chat_id_full in BING_FAILS else [0, 0]
+                            if bf[0] >= 5:
+                                if time.time() - bf[1] > 30*60:
+                                    bf = [0, 0]
+                            if bf[0] < 5:
+                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)
+                                if not images:
+                                    bf[0] += 1
+                                    bf[1] = time.time()
+                            else:
+                                images = []
+                                time.sleep(random.randint(5,10))
                             if not images:
                                 bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
+                            BING_FAILS[chat_id_full] = bf
                         else:
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
 
@@ -8945,7 +8962,7 @@ def do_task(message, custom_prompt: str = ''):
 
                     if answer.startswith('```'):
                         answer = answer[3:]
-                    if answer.startswith(('/img ', '/bing', '/flux', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc', '/ask')):
+                    if answer.startswith(('/img ', '/bing', '/flux', '/gem', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc', '/ask')):
                         cmd = answer.split(maxsplit=1)[0]
                         message.text = answer
                         if cmd == '/img':
@@ -8954,6 +8971,8 @@ def do_task(message, custom_prompt: str = ''):
                             image_bing_gen(message)
                         elif cmd == '/flux':
                             image_flux_gen(message)
+                        elif cmd == '/gem':
+                            image_gemini_gen(message)
                         elif cmd == '/ask':
                             ask_file(message)
                         elif cmd == '/tts':

@@ -159,7 +159,7 @@ def chat(query: str,
         CHATS_OBJ[chat_id] = chat_new_connection()
 
     if not model:
-        model='claude-3-haiku'
+        model='o3-mini'
 
     if chat_id not in LOCKS:
         LOCKS[chat_id] = threading.Lock()
@@ -170,7 +170,7 @@ def chat(query: str,
                 resp = CHATS_OBJ[chat_id].chat(query, model)
             except Exception as error:
                 if model == 'gpt-4o-mini':
-                    model = 'claude-3-haiku'
+                    model = 'o3-mini'
                 else:
                     model = 'gpt-4o-mini'
                 resp = CHATS_OBJ[chat_id].chat(query, model)

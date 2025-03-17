@@ -1134,6 +1134,70 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
     return None
 
 
+
+def get_reprompt_for_edit_image(prompt: str, images: list, chat_id: str = '') -> tuple[str, bool, bool] | None:
+    """
+    Generates a detailed prompt for image editing based on user query and image.
+
+    Args:
+        prompt: User's query for image generation.
+        images: List of image bytes.
+    Returns:
+        A tuple of 3 elements: (reprompt, moderation_sexual, moderation_hate)
+        or None if an error occurred.
+    """
+
+    # магия плохо работает по-этому отключено пока
+    return (prompt, False, False)
+
+    prompt_ = f'''
+User want to edit image.
+Repromt user's PROMPT.
+Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
+Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
+
+</USER PROMPT>{prompt}</USER PROMPT>.
+
+Using this JSON schema:
+  reprompt = {{"reprompt": str, "moderation_sexual": bool, "moderation_hate": bool}}
+Return a `reprompt`
+'''
+
+    query = [prompt_,]
+
+    for image in images:
+        data = io.BytesIO(image)
+        img = PIL.Image.open(data)
+        query.append(img)
+
+    result = chat(query,
+                  temperature=1.5,
+                  json_output=True,
+                  model=cfg.gemini_flash_model,
+                  chat_id=chat_id,
+                  do_not_update_history=True
+                  )
+    result_dict = utils.string_to_dict(result)
+    if result_dict:
+        reprompt = ''
+        moderation_sexual = False
+        moderation_hate = False
+        if 'reprompt' in result_dict:
+            reprompt = result_dict['reprompt']
+        if 'moderation_sexual' in result_dict:
+            moderation_sexual = result_dict['moderation_sexual']
+            if moderation_sexual:
+                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+        if 'moderation_hate' in result_dict:
+            moderation_hate = result_dict['moderation_hate']
+            if moderation_hate:
+                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+
+        if reprompt:
+            return reprompt, moderation_sexual, moderation_hate
+    return None
+
+
 def ocr_page(data: bytes, prompt: str = None) -> str:
     '''
     OCRs the image and returns the text in markdown.

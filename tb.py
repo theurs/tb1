@@ -534,7 +534,18 @@ def img2img(text,
         str: new image as jpg bytes.
     """
     images = [text,]
-    return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
+
+    reprompt, m_sex, m_hate = my_gemini.get_reprompt_for_edit_image(
+        query,
+        images,
+        chat_id=chat_id_full
+        )
+    if not reprompt:
+        reprompt = query
+    else:
+        if m_sex or m_hate:
+            pass
+    return my_gemini_genimg.regenerate_image(reprompt, sources_images=images, user_id=chat_id_full)
 
 
 def img2txt(text,
@@ -1818,10 +1829,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             return markup
 
         elif kbd == 'download_saved_text':
-            markup  = telebot.types.InlineKeyboardMarkup()
-            button1 = telebot.types.InlineKeyboardButton(tr("Скачать", lang), callback_data='download_saved_text')
-            button2 = telebot.types.InlineKeyboardButton(tr("Удалить", lang), callback_data='delete_saved_text')
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=2)
+            button1 = telebot.types.InlineKeyboardButton('⬇️ ' + tr("Скачать", lang), callback_data='download_saved_text')
+            button2 = telebot.types.InlineKeyboardButton('🗑️ ' + tr("Удалить", lang), callback_data='delete_saved_text')
+            button3 = telebot.types.InlineKeyboardButton('❌ ' + tr("Отмена", lang), callback_data='cancel_command')
             markup.add(button1, button2)
+            markup.add(button3)
             return markup
 
         elif kbd == 'hide':
@@ -3739,8 +3752,19 @@ def handle_photo(message: telebot.types.Message):
                         # Если прислали группу картинок и запрос начинается на ! то перенаправляем запрос в редактирование картинок
                         if caption.startswith('!'):
                             caption = caption[1:]
+                            reprompt, m_sex, m_hate = my_gemini.get_reprompt_for_edit_image(
+                                caption,
+                                images,
+                                chat_id=chat_id_full
+                                )
+                            if not reprompt:
+                                reprompt = caption
+                            else:
+                                if m_sex or m_hate:
+                                    pass
+
                             image = my_gemini_genimg.regenerate_image(
-                                prompt = caption,
+                                prompt = reprompt,
                                 sources_images=images,
                                 user_id=chat_id_full)
                             if image:
@@ -7229,6 +7253,8 @@ def ask_file(message: telebot.types.Message):
         lang = get_lang(chat_id_full, message)
         role = my_db.get_user_property(chat_id_full, 'role')
 
+        COMMAND_MODE[chat_id_full] = ''
+
         chat_id_full_target = get_id_parameters_for_function(message, chat_id_full)
         try:
             command_parts = message.text.split(maxsplit=2)
@@ -7251,10 +7277,19 @@ def ask_file(message: telebot.types.Message):
         try:
             query = message.text.split(maxsplit=1)[1].strip()
         except IndexError:
-            bot_reply_tr(message, 'Usage:\n/ask <query saved text>\n? <query saved text> \n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.\n\nExamples:\n/ask What is the main topic of the text?\n/ask Summarize the text in 3 sentences\n? How many persons was invited.')
+            bot_reply_tr(
+                message,
+                'Usage:\n/ask <query saved text>\n? <query saved text> \n\nWhen you send a text document or link to the bot, it remembers the text, and in the future you can ask questions about the saved text.\n\nExamples:\n/ask What is the main topic of the text?\n/ask Summarize the text in 3 sentences\n? How many persons was invited.',
+                )
             if my_db.get_user_property(chat_id_full, 'saved_file_name'):
-                msg = f'{tr("Загружен файл/ссылка:", lang)} {my_db.get_user_property(chat_id_full, "saved_file_name")}\n\n{tr("Размер текста:", lang)} {len(my_db.get_user_property(chat_id_full, "saved_file")) or 0}'
-                bot_reply(message, msg, disable_web_page_preview = True, reply_markup=get_keyboard('download_saved_text', message))
+                msg = f'{tr("Загружен файл/ссылка:", lang)} {my_db.get_user_property(chat_id_full, "saved_file_name")}\n\n{tr("Размер текста:", lang)} {len(my_db.get_user_property(chat_id_full, "saved_file")) or 0}\n\n{tr("Напишите запрос к этому файлу или нажмите [Отмена]", lang)}'
+                bot_reply(
+                    message,
+                    msg,
+                    disable_web_page_preview = True,
+                    reply_markup=get_keyboard('download_saved_text', message)
+                    )
+                COMMAND_MODE[chat_id_full] = 'ask'
                 return
 
         if my_db.get_user_property(chat_id_full, 'saved_file_name'):
@@ -8725,6 +8760,12 @@ def do_task(message, custom_prompt: str = ''):
                     else:
                         message.text = f'/img {message.text}'
                     image_gen(message)
+                if COMMAND_MODE[chat_id_full] == 'ask':
+                    message.text = f'/ask {message.text}'
+                    ask_file(message)
+                if COMMAND_MODE[chat_id_full] == 'ask2':
+                    message.text = f'/ask2 {message.text}'
+                    ask_file2(message)
                 if COMMAND_MODE[chat_id_full] == 'gem':
                     message.text = f'/gem {message.text}'
                     image_gemini_gen(message)

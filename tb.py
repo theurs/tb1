@@ -6351,7 +6351,7 @@ def image_gemini_gen(message: telebot.types.Message):
             # Get prompt
             parts = message.text.split(maxsplit=2)  # Split into command, model number, and prompt
             if len(parts) < 2:
-                help_text = f"""/gem <[1|2|3]> <prompt>
+                help_text = f"""/gem <[1|2|3|4]> <prompt>
 
 {tr('Generate 1-4 images with the Gemini 2.0 Flash Experimental model', lang)}
 """

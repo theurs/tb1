@@ -8569,8 +8569,8 @@ def do_task(message, custom_prompt: str = ''):
     try:
         message.text = my_log.restore_message_text(message.text, message.entities)
         if message.forward_date:
-            full_name_forwarded_from = message.forward_from.full_name or 'Noname'
-            username_forwarded_from = message.forward_from.username or 'Noname'
+            full_name_forwarded_from = message.forward_from.full_name if hasattr(message.forward_from, 'full_name') else 'Noname'
+            username_forwarded_from = message.forward_from.username if hasattr(message.forward_from, 'username') else 'Noname'
             message.text = f'forward sender name {full_name_forwarded_from} (@{username_forwarded_from}): {message.text}'
         message.text += '\n\n'
 

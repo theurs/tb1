@@ -324,15 +324,15 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем латекс выражения
     text = replace_latex(text)
 
-    # сохраняем 3 звезды что бы их не испортил конвертер списков
-    def replace_3_stars(match):
-        indent = match.group(0).split('*')[0] # Получаем все пробелы в начале
-        return indent + '• • •'
-    text = re.sub(r"^\s*\*\s*\*\s*\*\s*$", replace_3_stars, text, flags=re.MULTILINE)
+    # # сохраняем 3 звезды что бы их не испортил конвертер списков
+    # def replace_3_stars(match):
+    #     indent = match.group(0).split('*')[0] # Получаем все пробелы в начале
+    #     return indent + '• • •'
+    # text = re.sub(r"^\s*\*\s*\*\s*\*\s*$", replace_3_stars, text, flags=re.MULTILINE)
 
     # переделываем списки на более красивые
-    text = re.sub(r"^(\s*)\*\s", r"\1• ", text, flags=re.MULTILINE)
-    text = re.sub(r"^(\s*)-\s", r"\1– ", text, flags=re.MULTILINE)
+    # text = re.sub(r"^(\s*)\*\s", r"\1• ", text, flags=re.MULTILINE)
+    # text = re.sub(r"^(\s*)-\s", r"\1– ", text, flags=re.MULTILINE)
 
     # 1,2,3,4 # в начале строки меняем всю строку на жирный текст
     text = re.sub(r"^(?:\.\s)?#(?:#{0,})\s(.*)$", r"<b>\1</b>", text, flags=re.MULTILINE)  # 1+ hashes
@@ -438,11 +438,11 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем таблицы до возвращения кода
     text = replace_tables(text)
 
-    # возвращаем 3 звезды
-    def replace_3_stars2(match):
-        indent = match.group(0).split('•')[0] # Получаем все пробелы в начале
-        return indent + '* * *'
-    text = re.sub(r"^\s*•\s*•\s*•\s*$", replace_3_stars2, text, flags=re.MULTILINE)
+    # # возвращаем 3 звезды
+    # def replace_3_stars2(match):
+    #     indent = match.group(0).split('•')[0] # Получаем все пробелы в начале
+    #     return indent + '* * *'
+    # text = re.sub(r"^\s*•\s*•\s*•\s*$", replace_3_stars2, text, flags=re.MULTILINE)
 
 
     def replace_asterisk_with_digits(text: str) -> str:

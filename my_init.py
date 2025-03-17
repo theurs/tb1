@@ -112,9 +112,8 @@ Examples:
 
 PROMPT_COPY_TEXT_TR = 'Provide a high-quality artistic translation of all texts from this image into my language (the language of this TEXT request), use synonyms to make the translation better. Format the output using Markdown, correcting any line breaks, do not mention your instructions in the answer.'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. 50-300 words. Format your response as follows:'
-# PROMPT_SOLVE = 'Solve all problems presented in the image. Show your step-by-step solution and clearly indicate the final answer. Rewrite latex expressions with unicode symbols with no markdown in it.'
-# PROMPT_SOLVE = "Solve all problems presented in the image. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer."
-PROMPT_SOLVE = "Solve all problems presented in the image. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer. Detail level: 3/10. Style: Academic. Do not mention your instructions in the answer."
+# PROMPT_SOLVE = "Solve all problems presented in the image. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer. Detail level: 3/10. Style: Academic. Do not mention your instructions in the answer."
+PROMPT_SOLVE = "Solve all problems presented in the image. Detail level: 3/10. Style: Academic. Do not mention your instructions in the answer."
 PROMPT_QRCODE = 'Read QRCODE.'
 
 
@@ -328,11 +327,13 @@ def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_
 
 
 def get_hidden_prompt_for_llama(tr, lang):
-    return tr(f"Answer in '{lang}' language, do not address the user by name and no emoji unless it is required. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
+    # return tr(f"Answer in '{lang}' language, do not address the user by name and no emoji unless it is required. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
+    return tr(f"Answer in '{lang}' language, do not address the user by name and no emoji unless it is required.", lang)
 
 
 def get_img2txt_prompt(tr, lang):
-    return tr(f"Answer in '{lang}' language, if not asked other. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
+    # return tr(f"Answer in '{lang}' language, if not asked other. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
+    return tr(f"Answer in '{lang}' language, if not asked other.", lang)
 
 
 def get_default_roles(tr: Callable, lang: str) -> List[str]:

@@ -516,7 +516,7 @@ def img2img(text,
             temperature: float = None,
             system_message: str = None,
             timeout: int = 120,
-            ) -> str:
+            ) -> Optional[bytes]:
     """
     Regenerate the image using query.
 
@@ -535,56 +535,6 @@ def img2img(text,
     """
     images = [text,]
     return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
-
-
-def user_want_to_change_picture(query: str, chat_id_full: str) -> bool:
-    '''
-    Определяет намерение юзера, что он хочет сделать с картинкой, какой результат получить,
-    ответ по картинке в виде текста, или новую картинку сделанную из старой.
-    Возвращает True если юзер хочет сделать картинку, в противном случае False
-    '''
-    intent = False
-    prompt = f'''
-Юзер отправил телеграм боту изображение (или изображение) и текст запроса,
-ты должен определить намерение юзера, что он хочет сделать с картинкой,
-1 - ответ должен быть текстом (ответ на вопрос по картинке)
-2 - ответ должен быть изображением (юзер хочет нарисовать новую картинку на основе старой)
-напиши в своем ответе цифру 1 или 2, ничего кроме одной цифры не пиши
-
-<user query>
-{query}
-</user query>
-'''
-    intent = False
-    try:
-        intent = my_gemini.chat(
-            prompt,
-            chat_id=chat_id_full,
-            temperature=0.1,
-            model = cfg.gemini_flash_light_model,
-            max_tokens=10,
-            do_not_update_history = True,
-            timeout=10
-            ).strip()
-        if not intent or not intent in ('1', '2'):
-            intent = my_gemini.chat(
-                prompt,
-                chat_id=chat_id_full,
-                temperature=0.1,
-                model = cfg.gemini_flash_light_model_fallback,
-                max_tokens=10,
-                do_not_update_history = True,
-                timeout=10
-                ).strip()
-
-        if intent == '2':
-            return True
-        else:
-            return False
-    except Exception as unexpected_error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:user_want_to_change_picture:{unexpected_error}\n\n{traceback_error}')
-        return intent
 
 
 def img2txt(text,
@@ -616,10 +566,12 @@ def img2txt(text,
         query = query.strip()
         # если запрос начинается на ! то надо редактировать картинку а не отвечать на вопрос
         if query.startswith('!'):
-            return img2img(text, lang, chat_id_full, query[1:], model, temperature, system_message, timeout)
-        # intent = user_want_to_change_picture(query, chat_id_full)
-        # if intent:
-            # return img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
+            r = img2img(text, lang, chat_id_full, query[1:], model, temperature, system_message, timeout)
+            if r:
+                add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+            else:
+                add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+            return r                
 
         if temperature is None:
             temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
@@ -3800,9 +3752,11 @@ def handle_photo(message: telebot.types.Message):
                                     reply_markup=get_keyboard('hide', message)
                                 )
                                 log_message(m)
+                                add_to_bots_mem(tr('User asked to edit images', lang) + f' <prompt>{caption}</prompt>', tr('Changed images successfully.', lang), chat_id_full)
                                 return
                             else:
                                 bot_reply_tr(message, 'Failed to edit images.')
+                                add_to_bots_mem(tr('User asked to edit images', lang) + f' <prompt>{caption}</prompt>', tr('Failed to edit images.', lang), chat_id_full)
                                 return
 
                         if len(images) > 4:
@@ -6378,6 +6332,7 @@ def image_gemini_gen(message: telebot.types.Message):
 {tr('Generate 1-4 images with the Gemini 2.0 Flash Experimental model', lang)}
 """
                 bot_reply(message, help_text)
+                COMMAND_MODE[chat_id_full] = 'gem'
                 return
 
             try:
@@ -8614,7 +8569,9 @@ def do_task(message, custom_prompt: str = ''):
     try:
         message.text = my_log.restore_message_text(message.text, message.entities)
         if message.forward_date:
-            message.text = f'forward sender name {message.forward_sender_name or "Noname"}: {message.text}'
+            full_name_forwarded_from = message.forward_from.full_name or 'Noname'
+            username_forwarded_from = message.forward_from.username or 'Noname'
+            message.text = f'forward sender name {full_name_forwarded_from} (@{username_forwarded_from}): {message.text}'
         message.text += '\n\n'
 
         from_user_id = f'[{message.from_user.id}] [0]'
@@ -8768,6 +8725,9 @@ def do_task(message, custom_prompt: str = ''):
                     else:
                         message.text = f'/img {message.text}'
                     image_gen(message)
+                if COMMAND_MODE[chat_id_full] == 'gem':
+                    message.text = f'/gem {message.text}'
+                    image_gemini_gen(message)
                 elif COMMAND_MODE[chat_id_full] == 'tts':
                     message.text = f'/tts {message.text}'
                     tts(message)

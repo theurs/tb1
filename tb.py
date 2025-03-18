@@ -3471,7 +3471,6 @@ def handle_document(message: telebot.types.Message):
                                 return
 
 
-
                     file_bytes = io.BytesIO(downloaded_file)
                     text = ''
                     if message.document.mime_type == 'application/pdf':
@@ -3481,9 +3480,16 @@ def handle_document(message: telebot.types.Message):
                             caption = caption.strip()
                             text = my_pdf.get_text(downloaded_file)
                         else:
-                            text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
-                            if not text:
+                            LIMIT = cfg.LIMIT_PDF_OCR if hasattr(cfg, 'LIMIT_PDF_OCR') else 20
+                            amount_of_pages = my_pdf.count_pages_in_pdf(downloaded_file) or 0
+                            if amount_of_pages > LIMIT:
+                                text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
+                            else:
                                 text = my_pdf.get_text(downloaded_file)
+                            if not text and amount_of_pages > LIMIT:
+                                text = my_pdf.get_text(downloaded_file)
+                            elif not text and amount_of_pages < LIMIT:
+                                text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
                     elif message.document.mime_type == 'application/zip':
                         text = my_zip.extract_and_concatenate(downloaded_file)
                     elif message.document.mime_type in pandoc_support:
@@ -7589,6 +7595,8 @@ def send_name(message: telebot.types.Message):
 def send_welcome_start(message: telebot.types.Message):
     # Отправляем приветственное сообщение
     try:
+        load_msgs()
+        # проверить не изменился ли файл содержащий сообщения /start
         user_have_lang = None
         try:
             user_have_lang = message.from_user.language_code
@@ -7667,6 +7675,7 @@ Codestral - модель для программирования
 def send_welcome_help(message: telebot.types.Message):
     # Отправляем приветственное сообщение
     try:
+        load_msgs()
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
@@ -9867,7 +9876,9 @@ def do_task(message, custom_prompt: str = ''):
         my_log.log2(f'tb:do_task: {unknown}\n{traceback_error}')
 
 
-@async_run
+TIMESTAMP_START_FILE = 0
+TIMESTAMP_HELP_FILE = 0
+# @async_run
 def load_msgs():
     """
     Load the messages from the start and help message files into the HELLO_MSG and HELP_MSG global variables.
@@ -9879,21 +9890,35 @@ def load_msgs():
         None
     """
     try:
-        global HELLO_MSG, HELP_MSG
-        
-        try:
-            with open(my_init.start_msg_file, 'rb') as f:
-                HELLO_MSG = pickle.load(f)
-        except Exception as error:
-            my_log.log2(f'tb:load_msgs:hello {error}')
-            HELLO_MSG = {}
+        global HELLO_MSG, HELP_MSG, TIMESTAMP_START_FILE, TIMESTAMP_HELP_FILE
 
-        try:
-            with open(my_init.help_msg_file, 'rb') as f:
-                HELP_MSG = pickle.load(f)
-        except Exception as error:
-            my_log.log2(f'tb:load_msgs:help {error}')
-            HELP_MSG = {}
+        changed_start = False
+        changed_help = False
+
+        timestamp_start = os.path.getmtime(my_init.start_msg_file)
+        timestamp_help = os.path.getmtime(my_init.help_msg_file)
+
+        if timestamp_start > TIMESTAMP_START_FILE or not HELLO_MSG:
+            changed_start = True
+
+        if timestamp_help > TIMESTAMP_HELP_FILE or not HELP_MSG:
+            changed_help = True
+
+        if changed_start:
+            try:
+                with open(my_init.start_msg_file, 'rb') as f:
+                    HELLO_MSG = pickle.load(f)
+            except Exception as error:
+                my_log.log2(f'tb:load_msgs:hello {error}')
+                HELLO_MSG = {}
+
+        if changed_help:
+            try:
+                with open(my_init.help_msg_file, 'rb') as f:
+                    HELP_MSG = pickle.load(f)
+            except Exception as error:
+                my_log.log2(f'tb:load_msgs:help {error}')
+                HELP_MSG = {}
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:log_msgs: {unknown}\n{traceback_error}')

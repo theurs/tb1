@@ -142,6 +142,8 @@ Send document with caption `!tr lang` to translate document to this language
 
 Send pictures with caption starting with ! to edit them. Example: !change her outfit to look cool
 
+Send PDF with caption starting with ! for more accurate scanning (slower).
+
 🎙️ You can issue commands and make requests using voice messages.
 
 👻 `/purge` command to remove all your data

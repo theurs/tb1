@@ -8,12 +8,14 @@
 
 
 import fitz
+import io
 import os
+import PyPDF2
 import re
 import time
 import traceback
 import subprocess
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import cfg
 import my_log
@@ -174,8 +176,38 @@ def get_text(data: bytes) -> str:
     return text
 
 
+def count_pages_in_pdf(file_path: Union[str, bytes]) -> int:
+    """
+    Counts the number of pages in a PDF file.
+
+    Args:
+        file_path (Union[str, bytes]): The path to the PDF file or the file bytes.
+
+    Returns:
+        int: The number of pages in the PDF file or None.
+    """
+    try:
+        if isinstance(file_path, bytes):
+            file_path = io.BytesIO(file_path)
+
+        reader = PyPDF2.PdfReader(file_path)
+        return len(reader.pages)
+    except Exception as unknown:
+        my_log.log2(f"my_pdf:count_pages_in_pdf: Error processing PDF: {unknown}")
+        return None
+
+
+def test_count_pages_in_pdf():
+    p = r'C:\Users\user\Downloads\samples for ai\20220816043638.pdf'
+    pages = 9
+    assert count_pages_in_pdf(open(p, 'rb').read()) == pages
+    assert count_pages_in_pdf(p) == pages
+
+
 if __name__ == "__main__":
     my_gemini.load_users_keys()
-    with open(r"C:\Users\user\Downloads\samples for ai\скан документа.pdf", "rb") as f:
-        data = f.read()
-        print(get_text(data))
+    # with open(r"C:\Users\user\Downloads\samples for ai\скан документа.pdf", "rb") as f:
+    #     data = f.read()
+    #     print(get_text(data))
+
+    # test_count_pages_in_pdf()

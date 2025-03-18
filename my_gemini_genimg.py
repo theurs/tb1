@@ -128,7 +128,8 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                     my_db.add_msg(user_id, 'img ' + model)
                 return convert_png_to_jpg(image_data)
             else:
-                my_log.log_gemini(text=chunk.text)
+                pass
+                # my_log.log_gemini(text=chunk.text)
 
         return None
 

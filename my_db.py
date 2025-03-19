@@ -29,7 +29,7 @@ CUR = None
 DAEMON_RUN = True
 DAEMON_TIME = 30
 
-LAST_BACKUP_TIMESTAMP = 0
+LAST_BACKUP_TIMESTAMP = time.time()
 ONLINE_BACKUP_INTERVAL = 24 * 60 * 60  # 24 hours
 
 
@@ -173,10 +173,12 @@ def online_backup(target_file: str = ''):
 
     if LAST_BACKUP_TIMESTAMP + ONLINE_BACKUP_INTERVAL < time.time():
         LAST_BACKUP_TIMESTAMP = time.time()
-    if not target_file:
-        target_file = f'db/main_backup.db'
-    with sqlite3.Connection(target_file) as target:
-        CON.backup(target)
+
+        if not target_file:
+            target_file = f'db/main_backup.db'
+
+        with sqlite3.Connection(target_file) as target:
+            CON.backup(target)
 
 
 @async_run

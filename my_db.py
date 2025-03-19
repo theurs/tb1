@@ -29,6 +29,9 @@ CUR = None
 DAEMON_RUN = True
 DAEMON_TIME = 30
 
+LAST_BACKUP_TIMESTAMP = 0
+ONLINE_BACKUP_INTERVAL = 24 * 60 * 60  # 24 hours
+
 
 def obj_to_blob(obj) -> bytes:
     """
@@ -161,6 +164,21 @@ def backup_db():
         my_log.log2(f'my_db:compress_backup_db {error}')
 
 
+def online_backup(target_file: str = ''):
+    '''
+    Создает бекап базы, каждые ONLINE_BACKUP_INTERVAL секунд
+    вызывать надо из sync_daemon после комита внутри замка
+    '''
+    global LAST_BACKUP_TIMESTAMP
+
+    if LAST_BACKUP_TIMESTAMP + ONLINE_BACKUP_INTERVAL < time.time():
+        LAST_BACKUP_TIMESTAMP = time.time()
+    if not target_file:
+        target_file = f'db/main_backup.db'
+    with sqlite3.Connection(target_file) as target:
+        CON.backup(target)
+
+
 @async_run
 def sync_daemon():
     while DAEMON_RUN:
@@ -168,6 +186,7 @@ def sync_daemon():
         try:
             with LOCK:
                 CON.commit()
+                online_backup()
         except Exception as error:
             traceback_error = traceback.format_exc()
             my_log.log2(f'my_db:sync_daemon {error}\n\n{traceback_error}')
@@ -1364,6 +1383,8 @@ def count_imaged_per24h(chat_id_full: str) -> int:
 if __name__ == '__main__':
     pass
     init(backup=False)
+
+    online_backup()
 
     # print(find_users_with_many_messages())
     # fix_tts_model_used()

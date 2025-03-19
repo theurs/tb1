@@ -3711,12 +3711,6 @@ def handle_photo(message: telebot.types.Message):
 
             msglower = message.caption.lower() if message.caption else ''
 
-            # if (tr('что', lang) in msglower and len(msglower) < 30) or msglower == '':
-            if msglower.startswith('?'):
-                state = 'describe'
-                message.caption = message.caption[1:]
-
-
             bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
             bot_name_was_used = False
             # убираем из запроса кодовое слово
@@ -3733,6 +3727,9 @@ def handle_photo(message: telebot.types.Message):
 
             elif is_private or is_reply or bot_name_was_used:
                 state = 'describe'
+            elif msglower.startswith('?'):
+                state = 'describe'
+                message.caption = message.caption[1:]
             else:
                 state = ''
 

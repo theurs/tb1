@@ -213,7 +213,8 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
                     my_db.add_msg(user_id, 'img ' + model)
                 return convert_png_to_jpg(image_data)
             else:
-                my_log.log_gemini(text=chunk.text)
+                # my_log.log_gemini(text=chunk.text)
+                pass
 
         return None
 

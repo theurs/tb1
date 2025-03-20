@@ -1648,6 +1648,68 @@ def string_to_dict(input_string: str):
     return None
 
 
+def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 2000, jpg_quality: int = 60) -> bytes:
+    """
+    Resizes an image to a maximum size in either dimension,
+    converts it to JPG format (if it's not already), and compresses it.
+    If the image is already JPG and within the size limits, it returns the original data.
+
+    Args:
+        image_data: The image data as bytes or a file path to the image.
+        max_size: The maximum size (in pixels) for the width or height of the image. Defaults to 2000.
+        jpg_quality: The quality of the JPG compression (0-100). Defaults to 60.
+
+    Returns:
+        The processed JPG image data as bytes, or the original data if no changes were needed.
+    """
+    try:
+        # Открываем изображение, если передали путь к файлу, то читаем файл
+        if isinstance(image_data, str):
+            with open(image_data, 'rb') as f:
+                image_data = f.read()
+
+        print(len(image_data))
+
+        # Открываем изображение из байтов
+        img = PIL.Image.open(io.BytesIO(image_data))
+
+        # Получаем ширину и высоту
+        width, height = img.size
+
+        # Если размеры меньше max_size и формат JPG, возвращаем исходные данные
+        if width <= max_size and height <= max_size and img.format == 'JPEG':
+            return image_data
+
+        # Определяем, нужно ли изменять размер
+        if width > max_size or height > max_size:
+            # Вычисляем коэффициент масштабирования
+            if width > height:
+                scale = max_size / width
+            else:
+                scale = max_size / height
+
+            # Рассчитываем новые размеры
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+
+            # Изменяем размер изображения
+            img = img.resize((new_width, new_height))
+
+        # Конвертируем в JPG и сжимаем только если это необходимо
+        with io.BytesIO() as output:
+            img = img.convert('RGB')  # Конвертируем в RGB если это необходимо
+            img.save(output, format='JPEG', quality=jpg_quality, optimize=True)
+            jpg_data = output.getvalue()
+
+        print(len(jpg_data))
+
+        return jpg_data
+
+    except Exception as e:
+        my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
+        return b''  # Возвращаем пустые байты в случае ошибки
+
+
 def heic2jpg(data: Union[bytes, str]) -> bytes:
     """Converts HEIC/HEIF image data (bytes or filepath) to JPEG bytes.
 
@@ -1997,8 +2059,10 @@ if __name__ == '__main__':
     # print(get_filename_from_url('https://youtu.be/1234567890.ogg'))
 
 
-    with open('C:/Users/user/Downloads/test.md', 'r', encoding='utf8') as f:
-        text = f.read()
-        html = bot_markdown_to_html(text)
-        print(html)
+    # with open('C:/Users/user/Downloads/test.md', 'r', encoding='utf8') as f:
+    #     text = f.read()
+    #     html = bot_markdown_to_html(text)
+    #     print(html)
 
+    with open(r'c:\Users\user\Downloads\большая фотография (пережато).jpg', 'wb') as f:
+        f.write(resize_and_convert_to_jpg(r'c:\Users\user\Downloads\samples for ai\большая фотография.jpg'))

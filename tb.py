@@ -3635,11 +3635,16 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
             fp = io.BytesIO(file)
             image = fp.read()
 
-        h,w = utils.get_image_size(image)
-        if h > 5000 or w > 5000:
-            # my_log.log2(f'tb:download_image_from_message: too big image {h}x{w}')
-            return b''
-        return utils.heic2jpg(image)
+        # h,w = utils.get_image_size(image)
+        # if h > 5000 or w > 5000:
+        #     # my_log.log2(f'tb:download_image_from_message: too big image {h}x{w}')
+        #     return b''
+
+        # уменьшить до 2000 пикселей и пережать в jpg 60% если еще не меньше 2000 и jpg
+
+        # return utils.heic2jpg(image)
+        # уменьшаем картинку до 2000 пикселей и переделываем в жпг
+        return utils.resize_and_convert_to_jpg(image, 2000, 60)
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:download_image_from_message2: {error} {traceback_error}')

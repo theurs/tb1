@@ -1547,7 +1547,7 @@ def get_codepage():
         return result.lower()
 
 
-def make_collage(images: list) -> bytes:
+def make_collage(images: list, quality: int = 60) -> bytes:
     """Создает коллаж из списка изображений, располагая их по 2 картинки в ряд.
     Учитывает разный размер картинок, приводя их к одному размеру перед склейкой,
     сохраняя пропорции. Фон коллажа белый.
@@ -1602,7 +1602,7 @@ def make_collage(images: list) -> bytes:
 
     # Сохраняем результат в буфер
     result_image_as_bytes = io.BytesIO()
-    collage.save(result_image_as_bytes, format='JPEG', quality=95, optimize=True, subsampling=0)
+    collage.save(result_image_as_bytes, format='JPEG', quality=quality, optimize=True, subsampling=0)
     result_image_as_bytes.seek(0)
     return result_image_as_bytes.read()
 

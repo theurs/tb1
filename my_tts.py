@@ -13,6 +13,7 @@ from langdetect import detect
 
 import utils
 import my_log
+import my_openai_voice
 
 
 VOICES = {
@@ -254,8 +255,9 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         text = re.sub(r'__([^_]+)__', r'\1', text)
         text = re.sub(r'~~([^~]+)~~', r'\1', text)
 
+        result = ''
+
         if gender == 'google_female':
-            result = ''
             try:
                 result = tts_google(text, lang)
             except Exception as e:
@@ -267,6 +269,14 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                 return result
             else:
                 gender = 'female'
+        elif gender.startswith('openai_') and len(text) < 4 * 1024:
+            try:
+                result = my_openai_voice.openai_get_audio_bytes(text, voice = gender[7:])
+                if result:
+                    return result
+            except Exception as e:
+
+                pass
 
         voice = get_voice(voice, gender)
         # if not voice:
@@ -328,7 +338,7 @@ if __name__ == "__main__":
     pass
 
     with open('C:/Users/user/Downloads/1.mp3', 'wb') as f:
-        f.write(tts('привет', 'ja'))
+        f.write(tts('привет как тебя зовут?', 'ru', '+0%', 'openai_nova'))
 
     # l = []
     # for k in VOICES:

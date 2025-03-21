@@ -918,4 +918,7 @@ if __name__ == '__main__':
     # r = gemini_flash('golden apple', num = 2)
     # print(r)
 
+
+    r = kandinski('golden apple')
+
     my_db.close()

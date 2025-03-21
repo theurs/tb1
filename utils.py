@@ -94,22 +94,49 @@ def get_file_ext(fname: str) -> str:
         return ''
 
 
-def split_text(text: str, chunk_limit: int = 1500):
-    """ Splits one string into multiple strings, with a maximum amount of chars_per_string
-        characters per string. This is very useful for splitting one giant message into multiples.
-        If chars_per_string > 4096: chars_per_string = 4096. Splits by '\n', '. ' or ' ' in exactly
-        this priority.
-
-        :param text: The text to split
-        :type text: str
-
-        :param chars_per_string: The number of maximum characters per part the text is split to.
-        :type chars_per_string: int
-
-        :return: The splitted text as a list of strings.
-        :rtype: list of str
+def split_text(text: str, chunk_limit: int = 1500) -> list[str]:
     """
-    return telebot.util.smart_split(text, chunk_limit)
+    Разбивает текст на части, не превышающие max_length символов,
+    с учетом возможности очень длинных строк (без переносов).
+
+    Args:
+        text: Входной текст.
+        max_length: Максимальная длина чанка.
+
+    Returns:
+        Список чанков.
+    """
+    # return telebot.util.smart_split(text, chunk_limit)
+
+    result = []
+    current_chunk = []
+
+    lines = text.splitlines(keepends=True)
+    for line in lines:
+        if len("".join(current_chunk) + line) > chunk_limit:  # Исправлено: убрали [ ]
+            result.append("".join(current_chunk))
+            current_chunk = []
+
+        if len(line) > chunk_limit:
+            # Длинная строка, разбиваем на подстроки
+            i = 0
+            while i < len(line):
+                chunk_end = min(i + chunk_limit, len(line))
+                current_chunk.append(line[i:chunk_end])
+                i = chunk_end
+                if len("".join(current_chunk)) >= chunk_limit:
+                    result.append("".join(current_chunk))
+                    current_chunk = []
+        else:
+            # Короткая строка, добавляем к текущему чанку
+            current_chunk.append(line)
+
+
+    # Последний чанк
+    if current_chunk:
+        result.append("".join(current_chunk))
+
+    return result
 
 
 def split_text_my(text: str, chunk_limit: int = 1500):

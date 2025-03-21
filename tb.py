@@ -2131,8 +2131,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             voices = {'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
                     'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
                     'tts_google_female': 'Google',
+                    'tts_openai_ash': 'OpenAI Ash',
+                    'tts_openai_coral': 'OpenAI Coral',
                     }
-            voice_title = voices[voice]
+            if voice in voices:
+                voice_title = voices[voice]
+            else:
+                my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
+                voice_title = voices['tts_female']
 
             # # кто по умолчанию
             # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -2706,10 +2712,23 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'google_female')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
         elif call.data == 'tts_google_female' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_ash')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_ash' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_coral')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_coral' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+
         elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'voice_only_mode', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 

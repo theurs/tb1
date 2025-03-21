@@ -271,7 +271,15 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                 gender = 'female'
         elif gender.startswith('openai_') and len(text) < 4 * 1024:
             try:
-                result = my_openai_voice.openai_get_audio_bytes(text, voice = gender[7:])
+                # если в начале текста есть <инструкция как надо произносить текст> то
+                # вырезать ее из текста и сохранить в переменную prompt. искать в начале регэкспом
+                # <инструкция как надо произносить текст> и вырезать ее.
+                prompt = re.search(r'^<(.*?)>', text.strip(), re.DOTALL)
+                instruction = ''
+                if prompt:
+                    instruction = prompt.group(1)
+                    text = text[prompt.end():].strip()  # Обрезаем инструкцию и пробелы
+                result = my_openai_voice.openai_get_audio_bytes(text, voice = gender[7:], prompt=instruction)
                 if result:
                     return result
             except Exception as e:

@@ -2131,8 +2131,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             voices = {'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
                     'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
                     'tts_google_female': 'Google',
+                    'tts_openai_alloy': 'OpenAI Alloy',
                     'tts_openai_ash': 'OpenAI Ash',
+                    'tts_openai_ballad': 'OpenAI Ballad',
                     'tts_openai_coral': 'OpenAI Coral',
+                    'tts_openai_echo': 'OpenAI Echo',
+                    'tts_openai_fable': 'OpenAI Fable',
+                    'tts_openai_onyx': 'OpenAI Onyx',
+                    'tts_openai_nova': 'OpenAI Nova',
+                    'tts_openai_sage': 'OpenAI Sage',
+                    'tts_openai_shimmer': 'OpenAI Shimmer',
+                    'tts_openai_verse': 'OpenAI Verse',
                     }
             if voice in voices:
                 voice_title = voices[voice]
@@ -2704,28 +2713,74 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
             bot_reply_tr(message, 'История диалога с Gemini очищена.')
+
         elif call.data == 'tts_female' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'male')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
         elif call.data == 'tts_male' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'google_female')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
         elif call.data == 'tts_google_female' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_alloy')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_alloy' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_ash')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
         elif call.data == 'tts_openai_ash' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_ballad')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_ballad' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_coral')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
         elif call.data == 'tts_openai_coral' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_echo')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_echo' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_fable')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_fable' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_onyx')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+        elif call.data == 'tts_openai_onyx' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_nova')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_nova' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_sage')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_sage' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_shimmer')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_shimmer' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_verse')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data == 'tts_openai_verse' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
 
@@ -6002,6 +6057,8 @@ def tts(message: telebot.types.Message, caption = None):
 (/tts ru привет) and (/tts fr привет) will say hello in russian with 2 different voices''', lang)}
 
 {tr('Supported languages:', lang)} https://telegra.ph/Golosa-dlya-TTS-06-29
+
+{tr('Для OpenAI голосов можно передать инструкцию как говорить, для этого в начале текста укажите инструкцию между знаками <>\n/tts <говори капризным голосом как у маленького ребенка> привет как дела', lang)}
 
 {tr('Write what to say to get a voice message.', lang)}
 """

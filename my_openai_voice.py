@@ -55,7 +55,8 @@ def openai_get_audio_bytes(text: str, voice: str = "ash", prompt: str = '') -> b
     """
     def openai_get_audio_bytes_(text: str, voice: str = "ash", prompt: str = '') -> bytes | None:
         with OPEANAI_API_LOCK:
-
+            if not prompt:
+                prompt = 'Patient Teacher'
             if prompt == 'Connoisseur':
                 prompt = '''Accent/Affect: slight French accent; sophisticated yet friendly, clearly understandable with a charming touch of French intonation.
 

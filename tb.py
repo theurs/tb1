@@ -4624,6 +4624,10 @@ def users_keys_for_gemini(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = ''
         is_private = message.chat.type == 'private'
 
+        if not is_private:
+            bot_reply_tr(message, "This command is only available in private chat.")
+            return
+
         args = message.text.split(maxsplit=1)
         if len(args) > 1:
 

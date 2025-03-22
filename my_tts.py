@@ -269,7 +269,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                 return result
             else:
                 gender = 'female'
-        elif gender.startswith('openai_') and len(text) < 4 * 1024:
+        elif gender.startswith('openai_') and len(text) < 8 * 1024:
             try:
                 # если в начале текста есть <инструкция как надо произносить текст> то
                 # вырезать ее из текста и сохранить в переменную prompt. искать в начале регэкспом

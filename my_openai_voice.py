@@ -25,7 +25,7 @@ def concatenate_wav_with_pydub(wav_bytes_list: list[bytes]) -> bytes | None:
         try:
             audio = pydub.AudioSegment.from_file(io.BytesIO(wav_bytes), format="wav")
             # Remove silence from the beginning and end of the audio segment
-            audio = audio.strip_silence(silence_len=1000, silence_thresh=-40)  # Adjust parameters as needed
+            audio = audio.strip_silence(silence_len=2000, silence_thresh=-40)  # Adjust parameters as needed
             combined += audio
         except Exception as e:
 

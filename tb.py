@@ -2128,21 +2128,23 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             else:
                 voice = 'tts_female'
 
-            voices = {'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
-                    'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
-                    'tts_google_female': 'Google',
-                    'tts_openai_alloy': 'OpenAI Alloy',
-                    'tts_openai_ash': 'OpenAI Ash',
-                    'tts_openai_ballad': 'OpenAI Ballad',
-                    'tts_openai_coral': 'OpenAI Coral',
-                    'tts_openai_echo': 'OpenAI Echo',
-                    'tts_openai_fable': 'OpenAI Fable',
-                    'tts_openai_onyx': 'OpenAI Onyx',
-                    'tts_openai_nova': 'OpenAI Nova',
-                    'tts_openai_sage': 'OpenAI Sage',
-                    'tts_openai_shimmer': 'OpenAI Shimmer',
-                    'tts_openai_verse': 'OpenAI Verse',
-                    }
+            voices = {
+                'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
+                'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
+                'tts_google_female': 'Google',
+                'tts_openai_alloy': 'OpenAI',
+                'tts_openai_ash': 'OpenAI',
+                'tts_openai_ballad': 'OpenAI',
+                'tts_openai_coral': 'OpenAI',
+                'tts_openai_echo': 'OpenAI',
+                'tts_openai_fable': 'OpenAI',
+                'tts_openai_onyx': 'OpenAI',
+                'tts_openai_nova': 'OpenAI',
+                'tts_openai_sage': 'OpenAI',
+                'tts_openai_shimmer': 'OpenAI',
+                'tts_openai_verse': 'OpenAI',
+            }
+
             if voice in voices:
                 voice_title = voices[voice]
             else:
@@ -2296,20 +2298,22 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_gemini_exp, button_gemini_learnlm)
 
-            markup.row(button_cohere, button_llama3_70b)
+            # markup.row(button_cohere, button_llama3_70b)
 
-            if hasattr(cfg, 'GLM4_KEYS'):
-                markup.row(button_glm4plus, button_gemini_pro)
-            else:
-                markup.row(button_gemini_pro)
+            # if hasattr(cfg, 'GLM4_KEYS'):
+            #     markup.row(button_glm4plus, button_gemini_pro)
+            # else:
+            #     markup.row(button_gemini_pro)
 
-            markup.row(button_openrouter, button_gpt_4o)
+            markup.row(button_cohere, button_gemini_pro)
+
+            # markup.row(button_openrouter, button_gpt_4o)
 
             # markup.row(button_deepseek_v3, button_deepseek_r1)
 
-            markup.row(button_gemini_lite, button_gemini_pro15)
+            # markup.row(button_gemini_lite, button_gemini_pro15)
 
-            markup.row(button_deepseek_r1_distill_llama70b, button_qwq32b)
+            markup.row(button_openrouter, button_qwq32b)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2317,6 +2321,55 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             else:
                 button2 = telebot.types.InlineKeyboardButton(tr('☑️Только голос', lang), callback_data='voice_only_mode_enable')
             markup.row(button1, button2)
+            if voice_title == 'OpenAI':
+                if 'alloy' in voice:
+                    button1 = telebot.types.InlineKeyboardButton('✅ Alloy', callback_data='switch_do_nothing')
+                else:
+                    button1 = telebot.types.InlineKeyboardButton('Alloy', callback_data='switch_openai_alloy')
+                if 'ash' in voice:
+                    button2 = telebot.types.InlineKeyboardButton('✅ Ash', callback_data='switch_do_nothing')
+                else:
+                    button2 = telebot.types.InlineKeyboardButton('Ash', callback_data='switch_openai_ash')
+                if 'ballad' in voice:
+                    button3 = telebot.types.InlineKeyboardButton('✅ Ballad', callback_data='switch_do_nothing')
+                else:
+                    button3 = telebot.types.InlineKeyboardButton('Ballad', callback_data='switch_openai_ballad')
+                if 'coral' in voice:
+                    button4 = telebot.types.InlineKeyboardButton('✅ Coral', callback_data='switch_do_nothing')
+                else:
+                    button4 = telebot.types.InlineKeyboardButton('Coral', callback_data='switch_openai_coral')
+                if 'echo' in voice:
+                    button5 = telebot.types.InlineKeyboardButton('✅ Echo', callback_data='switch_do_nothing')
+                else:
+                    button5 = telebot.types.InlineKeyboardButton('Echo', callback_data='switch_openai_echo')
+                if 'fable' in voice:
+                    button6 = telebot.types.InlineKeyboardButton('✅ Fable', callback_data='switch_do_nothing')
+                else:
+                    button6 = telebot.types.InlineKeyboardButton('Fable', callback_data='switch_openai_fable')
+                if 'onyx' in voice:
+                    button7 = telebot.types.InlineKeyboardButton('✅ Onyx', callback_data='switch_do_nothing')
+                else:
+                    button7 = telebot.types.InlineKeyboardButton('Onyx', callback_data='switch_openai_onyx')
+                if 'nova' in voice:
+                    button8 = telebot.types.InlineKeyboardButton('✅ Nova', callback_data='switch_do_nothing')
+                else:
+                    button8 = telebot.types.InlineKeyboardButton('Nova', callback_data='switch_openai_nova')
+                if 'sage' in voice:
+                    button9 = telebot.types.InlineKeyboardButton('✅ Sage', callback_data='switch_do_nothing')
+                else:
+                    button9 = telebot.types.InlineKeyboardButton('Sage', callback_data='switch_openai_sage')
+                if 'shimmer' in voice:
+                    button10 = telebot.types.InlineKeyboardButton('✅ Shimmer', callback_data='switch_do_nothing')
+                else:
+                    button10 = telebot.types.InlineKeyboardButton('Shimmer', callback_data='switch_openai_shimmer')
+                if 'verse' in voice:
+                    button11 = telebot.types.InlineKeyboardButton('✅ Verse', callback_data='switch_do_nothing')
+                else:
+                    button11 = telebot.types.InlineKeyboardButton('Verse', callback_data='switch_openai_verse')
+
+                markup.row(button1, button2, button3, button4)
+                markup.row(button5, button6, button7, button8)
+                markup.row(button9, button10, button11)
 
             speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
             button1 = telebot.types.InlineKeyboardButton(tr('🎤Speech-to-text:', lang) + ' ' + speech_to_text_engine, callback_data='switch_speech_to_text')
@@ -2729,60 +2782,19 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
-        elif call.data == 'tts_openai_alloy' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_ash')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_ash' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_ballad')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_ballad' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_coral')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_coral' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_echo')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_echo' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_fable')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_fable' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_onyx')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-        elif call.data == 'tts_openai_onyx' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_nova')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_nova' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_sage')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_sage' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_shimmer')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_shimmer' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_verse')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'tts_openai_verse' and is_admin_member(call):
+        elif call.data.startswith('tts_openai') and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
+        elif call.data.startswith('switch_openai_') and is_admin_member(call):
+            voice = call.data.split('_')[-1]
+            my_db.set_user_property(chat_id_full, 'tts_gender', f'openai_{voice}')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data.startswith('switch_do_nothing') and is_admin_member(call):
+            pass
 
         elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'voice_only_mode', False)

@@ -249,6 +249,15 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     try:
         lang = voice
 
+        # если в начале текста есть <инструкция как надо произносить текст> то
+        # вырезать ее из текста и сохранить в переменную prompt. искать в начале регэкспом
+        # <инструкция как надо произносить текст> и вырезать ее.
+        prompt = re.search(r'^<(.*?)>', text.strip(), re.DOTALL)
+        instruction = ''
+        if prompt:
+            instruction = prompt.group(1)
+            text = text[prompt.end():].strip()  # Обрезаем инструкцию и пробелы
+
         # remove 2 or more * from text with re, only paired like a markdown tag
         text = text.replace('***', '')
         text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
@@ -256,6 +265,14 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         text = re.sub(r'~~([^~]+)~~', r'\1', text)
 
         result = ''
+
+        if instruction:
+            if gender == 'male':
+                gender = 'openai_alloy'
+            elif gender == 'female':
+                gender = 'openai_coral'
+            elif gender == 'google_female':
+                gender = 'openai_'
 
         if gender == 'google_female':
             try:
@@ -271,14 +288,6 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                 gender = 'female'
         elif gender.startswith('openai_') and len(text) < 8 * 1024:
             try:
-                # если в начале текста есть <инструкция как надо произносить текст> то
-                # вырезать ее из текста и сохранить в переменную prompt. искать в начале регэкспом
-                # <инструкция как надо произносить текст> и вырезать ее.
-                prompt = re.search(r'^<(.*?)>', text.strip(), re.DOTALL)
-                instruction = ''
-                if prompt:
-                    instruction = prompt.group(1)
-                    text = text[prompt.end():].strip()  # Обрезаем инструкцию и пробелы
                 result = my_openai_voice.openai_get_audio_bytes(text, voice = gender[7:], prompt=instruction)
                 if result:
                     return result

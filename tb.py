@@ -2323,47 +2323,47 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(button1, button2)
             if voice_title == 'OpenAI':
                 if 'alloy' in voice:
-                    button1 = telebot.types.InlineKeyboardButton('✅ Alloy', callback_data='switch_do_nothing')
+                    button1 = telebot.types.InlineKeyboardButton('📢 Alloy', callback_data='switch_do_nothing')
                 else:
                     button1 = telebot.types.InlineKeyboardButton('Alloy', callback_data='switch_openai_alloy')
                 if 'ash' in voice:
-                    button2 = telebot.types.InlineKeyboardButton('✅ Ash', callback_data='switch_do_nothing')
+                    button2 = telebot.types.InlineKeyboardButton('📢 Ash', callback_data='switch_do_nothing')
                 else:
                     button2 = telebot.types.InlineKeyboardButton('Ash', callback_data='switch_openai_ash')
                 if 'ballad' in voice:
-                    button3 = telebot.types.InlineKeyboardButton('✅ Ballad', callback_data='switch_do_nothing')
+                    button3 = telebot.types.InlineKeyboardButton('📢 Ballad', callback_data='switch_do_nothing')
                 else:
                     button3 = telebot.types.InlineKeyboardButton('Ballad', callback_data='switch_openai_ballad')
                 if 'coral' in voice:
-                    button4 = telebot.types.InlineKeyboardButton('✅ Coral', callback_data='switch_do_nothing')
+                    button4 = telebot.types.InlineKeyboardButton('📢 Coral', callback_data='switch_do_nothing')
                 else:
                     button4 = telebot.types.InlineKeyboardButton('Coral', callback_data='switch_openai_coral')
                 if 'echo' in voice:
-                    button5 = telebot.types.InlineKeyboardButton('✅ Echo', callback_data='switch_do_nothing')
+                    button5 = telebot.types.InlineKeyboardButton('📢 Echo', callback_data='switch_do_nothing')
                 else:
                     button5 = telebot.types.InlineKeyboardButton('Echo', callback_data='switch_openai_echo')
                 if 'fable' in voice:
-                    button6 = telebot.types.InlineKeyboardButton('✅ Fable', callback_data='switch_do_nothing')
+                    button6 = telebot.types.InlineKeyboardButton('📢 Fable', callback_data='switch_do_nothing')
                 else:
                     button6 = telebot.types.InlineKeyboardButton('Fable', callback_data='switch_openai_fable')
                 if 'onyx' in voice:
-                    button7 = telebot.types.InlineKeyboardButton('✅ Onyx', callback_data='switch_do_nothing')
+                    button7 = telebot.types.InlineKeyboardButton('📢 Onyx', callback_data='switch_do_nothing')
                 else:
                     button7 = telebot.types.InlineKeyboardButton('Onyx', callback_data='switch_openai_onyx')
                 if 'nova' in voice:
-                    button8 = telebot.types.InlineKeyboardButton('✅ Nova', callback_data='switch_do_nothing')
+                    button8 = telebot.types.InlineKeyboardButton('📢 Nova', callback_data='switch_do_nothing')
                 else:
                     button8 = telebot.types.InlineKeyboardButton('Nova', callback_data='switch_openai_nova')
                 if 'sage' in voice:
-                    button9 = telebot.types.InlineKeyboardButton('✅ Sage', callback_data='switch_do_nothing')
+                    button9 = telebot.types.InlineKeyboardButton('📢 Sage', callback_data='switch_do_nothing')
                 else:
                     button9 = telebot.types.InlineKeyboardButton('Sage', callback_data='switch_openai_sage')
                 if 'shimmer' in voice:
-                    button10 = telebot.types.InlineKeyboardButton('✅ Shimmer', callback_data='switch_do_nothing')
+                    button10 = telebot.types.InlineKeyboardButton('📢 Shimmer', callback_data='switch_do_nothing')
                 else:
                     button10 = telebot.types.InlineKeyboardButton('Shimmer', callback_data='switch_openai_shimmer')
                 if 'verse' in voice:
-                    button11 = telebot.types.InlineKeyboardButton('✅ Verse', callback_data='switch_do_nothing')
+                    button11 = telebot.types.InlineKeyboardButton('📢 Verse', callback_data='switch_do_nothing')
                 else:
                     button11 = telebot.types.InlineKeyboardButton('Verse', callback_data='switch_openai_verse')
 
@@ -2371,14 +2371,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 markup.row(button5, button6, button7, button8)
                 markup.row(button9, button10, button11)
 
-            speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
-            button1 = telebot.types.InlineKeyboardButton(tr('🎤Speech-to-text:', lang) + ' ' + speech_to_text_engine, callback_data='switch_speech_to_text')
+
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                button2 = telebot.types.InlineKeyboardButton(tr('☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
+                button1 = telebot.types.InlineKeyboardButton(tr('☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
             else:
-                button2 = telebot.types.InlineKeyboardButton(tr('✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
+                button1 = telebot.types.InlineKeyboardButton(tr('✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
             markup.row(button1)
-            markup.row(button2)
 
 
             if my_db.get_user_property(chat_id_full, 'transcribe_only'):
@@ -2386,6 +2384,32 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             else:
                 button2 = telebot.types.InlineKeyboardButton(tr('☑️Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
             markup.row(button2)
+
+
+            speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+            if speech_to_text_engine == 'whisper':
+                button1 = telebot.types.InlineKeyboardButton('🎤Whisper', callback_data='switch_do_nothing')
+            else:
+                button1 = telebot.types.InlineKeyboardButton('Whisper', callback_data='switch_speech_to_text_whisper')
+            if speech_to_text_engine == 'gemini':
+                button2 = telebot.types.InlineKeyboardButton('🎤Gemini', callback_data='switch_do_nothing')
+            else:
+                button2 = telebot.types.InlineKeyboardButton('Gemini', callback_data='switch_speech_to_text_gemini')
+            if speech_to_text_engine == 'google':
+                button3 = telebot.types.InlineKeyboardButton('🎤Google', callback_data='switch_do_nothing')
+            else:
+                button3 = telebot.types.InlineKeyboardButton('Google', callback_data='switch_speech_to_text_google')
+            if speech_to_text_engine == 'assembly.ai':
+                button4 = telebot.types.InlineKeyboardButton('🎤AssemblyAI', callback_data='switch_do_nothing')
+            else:
+                button4 = telebot.types.InlineKeyboardButton('AssemblyAI', callback_data='switch_speech_to_text_assembly.ai')
+            if speech_to_text_engine == 'deepgram_nova3':
+                button5 = telebot.types.InlineKeyboardButton('🎤Deepgram', callback_data='switch_do_nothing')
+            else:
+                button5 = telebot.types.InlineKeyboardButton('Deepgram', callback_data='switch_speech_to_text_deepgram_nova3')
+            markup.row(button1, button2, button3)
+            markup.row(button4, button5)
+
 
             is_private = message.chat.type == 'private'
             is_admin_of_group = False
@@ -2812,23 +2836,33 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'transcribe_only', True)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-        elif call.data == 'switch_speech_to_text' and is_admin_member(call):
-            speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
-            if speech_to_text_engine == 'whisper':
-                speech_to_text_engine = 'gemini'
-            elif speech_to_text_engine == 'gemini':
-                speech_to_text_engine = 'google'
-            elif speech_to_text_engine == 'google':
-                speech_to_text_engine = 'assembly.ai'
-            elif speech_to_text_engine == 'assembly.ai':
-                speech_to_text_engine = 'deepgram_nova3'
-            elif 'deepgram_nova' in speech_to_text_engine:
-                speech_to_text_engine = 'whisper'
-            else: # в базе записно что то другое, то что было раньше а теперь нет
-                speech_to_text_engine = 'whisper'
+
+
+        elif call.data.startswith('switch_speech_to_text_') and is_admin_member(call):
+            speech_to_text_engine = call.data.split('_')[-1]
+            if '_nova3' in call.data:
+                speech_to_text_engine = call.data.split('_')[-2] + '_' + call.data.split('_')[-1]
             my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        # elif call.data == 'switch_speech_to_text' and is_admin_member(call):
+        #     speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+        #     if speech_to_text_engine == 'whisper':
+        #         speech_to_text_engine = 'gemini'
+        #     elif speech_to_text_engine == 'gemini':
+        #         speech_to_text_engine = 'google'
+        #     elif speech_to_text_engine == 'google':
+        #         speech_to_text_engine = 'assembly.ai'
+        #     elif speech_to_text_engine == 'assembly.ai':
+        #         speech_to_text_engine = 'deepgram_nova3'
+        #     elif 'deepgram_nova' in speech_to_text_engine:
+        #         speech_to_text_engine = 'whisper'
+        #     else: # в базе записно что то другое, то что было раньше а теперь нет
+        #         speech_to_text_engine = 'whisper'
+        #     my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
+        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+        #                         text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
         elif call.data == 'disable_chat_kbd' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'disabled_kbd', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 

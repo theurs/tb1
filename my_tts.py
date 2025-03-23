@@ -272,7 +272,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
             elif gender == 'female':
                 gender = 'openai_coral'
             elif gender == 'google_female':
-                gender = 'openai_'
+                gender = 'openai_nova'
 
         if gender == 'google_female':
             try:

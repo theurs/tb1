@@ -2441,7 +2441,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(b1, b2, b3)
             return markup
         else:
-            raise f"Неизвестная клавиатура '{kbd}'"
+            raise Exception(f"Неизвестная клавиатура '{kbd}'")
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:get_keyboard: {unknown}\n\n{traceback_error}')
@@ -3621,6 +3621,9 @@ def handle_document(message: telebot.types.Message):
                                 image = my_psd.convert_psd_to_jpg(file_bytes.read())
                             elif message.document.mime_type == 'image/svg+xml':
                                 image = cairosvg.svg2png(file_bytes.read(), output_width=2048)
+                            else:
+                                bot_reply_tr(message, f'Unknown image type {message.document.mime_type}')
+                                return
                             image = utils.resize_image_dimention(image)
                             image = utils.resize_image(image)
                             #send converted image back

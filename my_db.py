@@ -855,7 +855,7 @@ def drop_long_translations():
 def get_first_meet(user_id):
     '''Get first meet time of user'''
     try:
-        pass
+        # тут лок нельзя ставить, функцию вызывают из другого лока
         # надо найти самое первое сообщение от юзера в таблице msg_counter
         CUR.execute('''
             SELECT MIN(access_time) FROM msg_counter

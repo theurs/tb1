@@ -743,6 +743,13 @@ def img2txt(text,
                 text = ''
 
 
+            # попробовать openrouter qwen/qwen2.5-vl-32b-instruct:free
+            if not text:
+                text = my_openrouter.img2txt(data, query, model = 'qwen/qwen2.5-vl-32b-instruct:free', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter qwen/qwen2.5-vl-32b-instruct:free'
+
+
             # попробовать glm
             if not text:
                 text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)

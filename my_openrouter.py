@@ -562,7 +562,7 @@ def img2txt(
     Describes an image using the specified model and parameters.
 
     Args:
-        image_data: The image data as bytes.
+        image_data: The image data as bytes, or the path to the image file.
         prompt: The prompt to guide the description. Defaults to 'Describe picture'.
         model: The model to use for generating the description.
         temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
@@ -572,14 +572,24 @@ def img2txt(
     Returns:
         A string containing the description of the image, or an empty string if an error occurs.
     """
-    
-    key = KEYS[chat_id]
+
+    if isinstance(image_data, str):
+        with open(image_data, 'rb') as f:
+            image_data = f.read()
+
+    if not chat_id:
+        key = cfg.OPEN_ROUTER_KEY
+    else:
+        key = KEYS[chat_id]
 
 
     if chat_id not in PARAMS:
         PARAMS[chat_id] = PARAMS_DEFAULT
 
     model_, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[chat_id]
+
+    if model:
+        model_ = model
 
     if 'llama' in model_ and temperature > 0:
         temperature = temperature / 2
@@ -723,11 +733,14 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
-    txt2img(
-        'Girl, portrait, European appearance, long black messy straight hair, dark red sunglasses with a faint red glow coming out from behind it, thin lips, cheekbones, frowning, cyberpunk style, realistic style, dark style, cyberpunk, wearing a red satin waistcoat vest and a necktie over a white satin shirt',
-        'dall-e-3',
-        chat_id='[11111] [0]'
-        )
+    print(img2txt(r'C:\Users\user\Downloads\samples for ai\большая фотография.jpg', 'извлеки весь текст с картинки, сохрани форматирование', model = 'qwen/qwen2.5-vl-32b-instruct:free'))
+
+
+    # txt2img(
+    #     'Girl, portrait, European appearance, long black messy straight hair, dark red sunglasses with a faint red glow coming out from behind it, thin lips, cheekbones, frowning, cyberpunk style, realistic style, dark style, cyberpunk, wearing a red satin waistcoat vest and a necktie over a white satin shirt',
+    #     'dall-e-3',
+    #     chat_id='[11111] [0]'
+    #     )
 
     # reset('test')
     # with open('C:/Users/user/Downloads/1.txt', 'r', encoding='utf-8') as f:

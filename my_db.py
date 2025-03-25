@@ -280,6 +280,7 @@ def init(backup: bool = True, vacuum: bool = False):
             temperature REAL,
             bot_name TEXT,
             openrouter_timeout INTEGER,
+            action_style TEXT,
 
             persistant_memory TEXT,
 

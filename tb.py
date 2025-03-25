@@ -299,11 +299,32 @@ class ShowAction(threading.Thread):
         self.chat_id = message.chat.id
         self.full_chat_id = get_topic_id(message)
         self.thread_id = message.message_thread_id
+        self.lang = get_lang(self.full_chat_id, message)
         self.is_topic = True if message.is_topic_message else False
         self.action = action
         self.is_running = True
         self.timerseconds = 1
         self.started_time = time.time()
+
+        # '' - отображение стандартным для телеграма стилем
+        # 'message' - отображение в виде сообщения о том что бот что то пишет, сообщение удаляется автоматически
+        self.action_style = my_db.get_user_property(self.full_chat_id, 'action_style') or ''
+
+        if self.action_style == 'message':
+            if self.action in ("typing", "upload_document", "find_location"):
+                MSG = tr('Creating a response...', self.lang)
+            elif self.action in ("upload_photo",):
+                MSG = tr('Creating an image...', self.lang)
+            elif self.action in ("record_video", "record_video_note"):
+                MSG = tr('Creating a video...', self.lang)
+            elif self.action in ("record_audio", "upload_audio"):
+                MSG = tr('Creating an audio file...', self.lang)
+
+            self.action_message = bot.send_message(
+                self.chat_id, MSG,
+                message_thread_id = self.thread_id,
+                disable_notification=True,
+                )
 
     def run(self):
         if self.full_chat_id not in SHOW_ACTION_LOCKS:
@@ -315,10 +336,11 @@ class ShowAction(threading.Thread):
                     # my_log.log2(f'tb:1:show_action:stoped after 5min [{self.chat_id}] [{self.thread_id}] is topic: {self.is_topic} action: {self.action}')
                     return
                 try:
-                    if self.is_topic:
-                        bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)
-                    else:
-                        bot.send_chat_action(self.chat_id, self.action)
+                    if not self.action_style:
+                        if self.is_topic:
+                            bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)
+                        else:
+                            bot.send_chat_action(self.chat_id, self.action)
                 except Exception as error:
                     if 'A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests' not in str(error):
                         if 'Forbidden: bot was blocked by the user' in str(error):
@@ -334,7 +356,10 @@ class ShowAction(threading.Thread):
         self.timerseconds = 50
         self.is_running = False
         try:
-            bot.send_chat_action(self.chat_id, 'cancel', message_thread_id = self.thread_id)
+            if not self.action_style:
+                bot.send_chat_action(self.chat_id, 'cancel', message_thread_id = self.thread_id)
+            elif self.action_style == 'message':
+                bot.delete_message(self.chat_id, self.action_message.message_id)
         except Exception as error:
             if 'Forbidden: bot was blocked by the user' in str(error):
                 self.stop()
@@ -2378,7 +2403,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 button1 = telebot.types.InlineKeyboardButton(tr('☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
             else:
                 button1 = telebot.types.InlineKeyboardButton(tr('✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
-            markup.row(button1)
+            
+            other_notification = my_db.get_user_property(chat_id_full, 'action_style') or ''
+            if not other_notification:
+                button2 = telebot.types.InlineKeyboardButton(tr('☑️Other notification', lang), callback_data='switch_action_style')
+            else:
+                button2 = telebot.types.InlineKeyboardButton(tr('✅Other notification', lang), callback_data='switch_action_style')
+            markup.row(button1, button2)
 
 
             if my_db.get_user_property(chat_id_full, 'transcribe_only'):
@@ -2821,6 +2852,15 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data.startswith('switch_do_nothing') and is_admin_member(call):
             pass
+
+        elif call.data == 'switch_action_style':
+            action_style = my_db.get_user_property(chat_id_full, 'action_style') or ''
+            if not action_style:
+                my_db.set_user_property(chat_id_full, 'action_style', 'message')
+            else:
+                my_db.set_user_property(chat_id_full, 'action_style', '')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
         elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'voice_only_mode', False)

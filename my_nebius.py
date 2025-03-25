@@ -34,7 +34,7 @@ KEYS_LOCK = threading.Lock()
 
 DEFAULT_TIMEOUT = 300
 DEFAULT_MODEL = 'deepseek-ai/DeepSeek-R1'
-DEFAULT_MODEL_FALLBACK = 'deepseek-ai/DeepSeek-V3'
+DEFAULT_MODEL_FALLBACK = 'deepseek-ai/DeepSeek-V3-0324' # 'deepseek-ai/DeepSeek-V3'
 
 
 CURRENT_KEY_SET = []

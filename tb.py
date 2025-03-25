@@ -312,13 +312,13 @@ class ShowAction(threading.Thread):
 
         if self.action_style == 'message':
             if self.action in ("typing", "upload_document", "find_location"):
-                MSG = tr('Creating a response...', self.lang)
+                MSG = '⌛ ' + tr('Creating a response...', self.lang)
             elif self.action in ("upload_photo",):
-                MSG = tr('Creating an image...', self.lang)
+                MSG = '⌛ ' + tr('Creating an image...', self.lang)
             elif self.action in ("record_video", "record_video_note"):
-                MSG = tr('Creating a video...', self.lang)
+                MSG = '⌛ ' + tr('Creating a video...', self.lang)
             elif self.action in ("record_audio", "upload_audio"):
-                MSG = tr('Creating an audio file...', self.lang)
+                MSG = '⌛ ' + tr('Creating an audio file...', self.lang)
 
             self.action_message = bot.send_message(
                 self.chat_id, MSG,

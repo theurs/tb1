@@ -319,17 +319,18 @@ def chat(query: str,
             # pprint.pprint(chat_)
             # pprint.pprint(resp)
 
-            try:
-                result = chat_.history[-1].parts[-1].text
-            except IndexError:
-                try:
-                    result = chat_.history[-1].parts[0].text
-                except Exception as error3_2:
-                    my_log.log_gemini(f'my_gemini:chat3_2: {error3_2}\nchat history: {str(chat_.history)}')
-                    result = resp.text
-            except Exception as error3:
-                my_log.log_gemini(f'my_gemini:chat3: {error3}\nchat history: {str(chat_.history)}')
-                result = resp.text
+            result = resp.text
+            # try:
+            #     result = chat_.history[-1].parts[-1].text
+            # except IndexError:
+            #     try:
+            #         result = chat_.history[-1].parts[0].text
+            #     except Exception as error3_2:
+            #         my_log.log_gemini(f'my_gemini:chat3_2: {error3_2}\nchat history: {str(chat_.history)}')
+            #         result = resp.text
+            # except Exception as error3:
+            #     my_log.log_gemini(f'my_gemini:chat3: {error3}\nchat history: {str(chat_.history)}')
+            #     result = resp.text
 
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
             # куча пробелов, и возможно другие тоже. укорачиваем

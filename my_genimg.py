@@ -520,80 +520,190 @@ def glm(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negati
     return []
 
 
-def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
-    """
-    Generates images based on a prompt using the KANDINSKI_API.
+# def kandinski_old(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
+#     """
+#     Generates images based on a prompt using the KANDINSKI_API.
 
-    Args:
-        prompt (str): The prompt for generating the images.
-        width (int, optional): The width of the images. Defaults to 1024.
-        height (int, optional): The height of the images. Defaults to 1024.
-        num (int, optional): The number of images to generate. Defaults to 1.
+#     Args:
+#         prompt (str): The prompt for generating the images.
+#         width (int, optional): The width of the images. Defaults to 1024.
+#         height (int, optional): The height of the images. Defaults to 1024.
+#         num (int, optional): The number of images to generate. Defaults to 1.
 
-    Returns:
-        list: A list of generated images in bytes format.
-    """
-    try:
-        if not hasattr(cfg, 'KANDINSKI_API') or not cfg.KANDINSKI_API:
-            return []
-        keys = cfg.KANDINSKI_API[:]
-        key = random.choice(keys)
-        AUTH_HEADERS = {
-            'X-Key': f'Key {key[0]}',
-            'X-Secret': f'Secret {key[1]}',
+#     Returns:
+#         list: A list of generated images in bytes format.
+#     """
+#     try:
+#         if not hasattr(cfg, 'KANDINSKI_API') or not cfg.KANDINSKI_API:
+#             return []
+#         keys = cfg.KANDINSKI_API[:]
+#         key = random.choice(keys)
+#         AUTH_HEADERS = {
+#             'X-Key': f'Key {key[0]}',
+#             'X-Secret': f'Secret {key[1]}',
+#         }
+#         params = {
+#             "type": "GENERATE",
+#             "numImages": num,
+#             "width": width,
+#             "height": height,
+#             "generateParams": {
+#             "query": f"{prompt}"
+# 		    }
+# 	    }
+#         def get_model():
+#             response = requests.get('https://api-key.fusionbrain.ai/key/api/v1/models', headers=AUTH_HEADERS)
+#             data = response.json()
+#             return data[0]['id']
+
+#         data = {
+#             'model_id': (None, get_model()),
+#             'params': (None, json.dumps(params), 'application/json')
+#         }
+#         response = requests.post('https://api-key.fusionbrain.ai/key/api/v1/text2image/run', headers=AUTH_HEADERS, files=data, timeout=120)
+#         data = response.json()
+#         try:
+#             uuid = data['uuid']
+#         except KeyError:
+#             return []
+
+#         def check_generation(request_id, attempts=10, delay=10):
+#             while attempts > 0:
+#                 response = requests.get('https://api-key.fusionbrain.ai/key/api/v1/text2image/status/' + request_id, headers=AUTH_HEADERS)
+#                 data = response.json()
+#                 if  data['censored']:
+#                     return []
+#                 if data['status'] == 'DONE':
+#                     return data['images']
+#                 attempts -= 1
+#                 time.sleep(delay)
+
+#         images = check_generation(uuid)
+#         if images:
+#             results = []
+#             for image in images:
+#                 data = base64.b64decode(image)
+#                 WHO_AUTOR[utils.fast_hash(data)] = 'fusionbrain.ai'
+#                 results.append(data)
+#             return results
+#         else:
+#             return []
+
+#     except Exception as error:
+#         error_traceback = traceback.format_exc()
+#         my_log.log_huggin_face_api(f'my_genimg:kandinski: {error}\n\n{error_traceback}')
+
+#     return []
+
+
+class FusionBrainAPI:
+
+    def __init__(self, url, api_key, secret_key):
+        self.URL = url
+        self.AUTH_HEADERS = {
+            'X-Key': f'Key {api_key}',
+            'X-Secret': f'Secret {secret_key}',
         }
+
+    def get_pipeline(self):
+        response = requests.get(self.URL + 'key/api/v1/pipelines', headers=self.AUTH_HEADERS)
+        data = response.json()
+        return data[0]['id']
+
+    def generate(self, prompt, pipeline, images=1, width=1024, height=1024, negative_prompt=""):
         params = {
             "type": "GENERATE",
-            "numImages": num,
+            "numImages": images,
             "width": width,
             "height": height,
             "generateParams": {
-            "query": f"{prompt}"
-		    }
-	    }
-        def get_model():
-            response = requests.get('https://api-key.fusionbrain.ai/key/api/v1/models', headers=AUTH_HEADERS)
-            data = response.json()
-            return data[0]['id']
-
-        data = {
-            'model_id': (None, get_model()),
-            'params': (None, json.dumps(params), 'application/json')
+                "query": f"{prompt}"
+            }
         }
-        response = requests.post('https://api-key.fusionbrain.ai/key/api/v1/text2image/run', headers=AUTH_HEADERS, files=data, timeout=120)
+        if negative_prompt:
+            params["negativePromptDecoder"] = negative_prompt
+        # Add style here if needed, e.g., params["style"] = "ANIME"
+        data = {
+            'pipeline_id': (None, pipeline),
+            'params': (None, json.dumps(params), 'application/json'),
+            'number_of_files': (None, str(images))
+        }
+        response = requests.post(self.URL + 'key/api/v1/pipeline/run', headers=self.AUTH_HEADERS, files=data)
         data = response.json()
-        try:
-            uuid = data['uuid']
-        except KeyError:
+        return data['uuid']
+
+    def check_generation(self, request_id, attempts=10, delay=10):
+        while attempts > 0:
+            response = requests.get(self.URL + 'key/api/v1/pipeline/status/' + request_id, headers=self.AUTH_HEADERS)
+            data = response.json()
+            if data['status'] == 'DONE':
+                return base64.b64decode(data['result']['files'][0])
+
+            attempts -= 1
+            time.sleep(delay)
+
+        return None
+
+
+def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
+    """
+    Generates images based on a prompt using the Fusion Brain Kandinsky API (aligned with provided docs).
+
+    Args:
+        prompt (str): The prompt for generating the images.
+        width (int, optional): The width of the images. Defaults to 1024. Recommended multiple of 64.
+        height (int, optional): The height of the images. Defaults to 1024. Recommended multiple of 64.
+        num (int, optional): The number of images to generate. NOTE: API docs state only 1 is supported. Defaults to 1.
+        negative_prompt (str, optional): Negative prompt to guide the generation away from certain elements. Defaults to "".
+
+    Returns:
+        list: A list of generated images in bytes format, or an empty list on failure/censorship.
+    """
+    if num != 1:
+        print(f"Warning: Kandinsky API documentation states only num=1 is supported. Forcing num=1.")
+        num = 1 # Enforce API limitation
+
+    # игнорируем негативный промпт потому что бот его не так как надо делает
+    negative_prompt = ''
+
+    try:
+        if not hasattr(cfg, 'KANDINSKI_API') or not cfg.KANDINSKI_API:
+            my_log.log_huggin_face_api('my_genimg:kandinski: KANDINSKI_API not configured in cfg.')
             return []
 
-        def check_generation(request_id, attempts=10, delay=10):
-            while attempts > 0:
-                response = requests.get('https://api-key.fusionbrain.ai/key/api/v1/text2image/status/' + request_id, headers=AUTH_HEADERS)
-                data = response.json()
-                if  data['censored']:
-                    return []
-                if data['status'] == 'DONE':
-                    return data['images']
-                attempts -= 1
-                time.sleep(delay)
+        keys = cfg.KANDINSKI_API[:]
+        if not keys:
+             my_log.log_huggin_face_api('my_genimg:kandinski: No API keys found in cfg.KANDINSKI_API.')
+             return []
 
-        images = check_generation(uuid)
-        if images:
-            results = []
-            for image in images:
-                data = base64.b64decode(image)
-                WHO_AUTOR[utils.fast_hash(data)] = 'fusionbrain.ai'
-                results.append(data)
-            return results
-        else:
+        key_pair = random.choice(keys)
+        api_key = key_pair[0]
+        secret_key = key_pair[1]
+
+
+        api = FusionBrainAPI('https://api-key.fusionbrain.ai/', api_key, secret_key)
+        pipeline_id = api.get_pipeline()
+        uuid = api.generate(
+            prompt,
+            pipeline_id,
+            width=width,
+            height=height,
+            negative_prompt=negative_prompt
+            )
+        data = api.check_generation(uuid)
+        if not data:
             return []
+
+        results = []
+        WHO_AUTOR[utils.fast_hash(data)] = 'fusionbrain.ai'
+        results.append(data)
+        return results
 
     except Exception as error:
+        # Catch-all for unexpected errors
         error_traceback = traceback.format_exc()
-        my_log.log_huggin_face_api(f'my_genimg:kandinski: {error}\n\n{error_traceback}')
-
-    return []
+        my_log.log_huggin_face_api(f'my_genimg:kandinski: Unhandled exception: {error}\n\n{error_traceback}')
+        return []
 
 
 def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> tuple[str, str] | None:
@@ -912,13 +1022,15 @@ if __name__ == '__main__':
     # print(get_reprompt('картину где бабушка сидит во рту с огурцами  рядом сидит ее внучка пишет математику,а сверху бог летает'))
 
     # print(gen_images('golden apple', use_bing=False))
-    
+
     # print(huggin_face_api_one_image('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo', 'golden apple', ''))
 
     # r = gemini_flash('golden apple', num = 2)
     # print(r)
 
 
-    r = kandinski('golden apple')
+    r = kandinski('рука ладонью вверх все пальцы отчетливо видно', 1024, 1024, 1, negative_prompt = 'ugly')
+    with open(r'C:\Users\user\Downloads\1.jpg', 'wb') as f:
+        f.write(r[0])
 
     my_db.close()

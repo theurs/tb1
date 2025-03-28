@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+
 import base64
 import chardet
 import concurrent.futures
@@ -73,6 +74,29 @@ except Exception as error:
     # no library called "cairo" was found
     # cannot load library 'C:\Program Files\Tesseract-OCR\libcairo-2.dll': error 0x7f
     my_log.log2(f'Error importing cairosvg: {error}')
+
+
+
+
+################################################################################
+if hasattr(cfg, 'FAULTHANDLER') and cfg.FAULTHANDLER:
+    import atexit
+    import faulthandler
+
+    try:
+        log_file = open('./logs/faulthandler_log.txt', 'a', encoding='utf-8')
+        # записать время
+        log_file.write('\n\n========================================\n\n' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()) + '\n\n========================================\n\n')
+        # Регистрируем функцию закрытия файла при выходе из программы
+        atexit.register(log_file.close)
+    except IOError as e:
+        print(f"Не удалось открыть лог-файл: {e}", file=sys.stderr)
+        sys.exit(1) # Выходим, если не можем писать лог
+    faulthandler.enable(file=log_file)
+    faulthandler.dump_traceback_later(120, exit=True, file=log_file)
+################################################################################
+
+
 
 
 START_TIME = time.time()

@@ -1706,6 +1706,9 @@ def bot_reply_tr(message: telebot.types.Message,
               allow_voice: bool = False,
               save_cache: bool = True,
               help: str = ''):
+    """Translate and send message from bot and log it
+    send_message - send message or reply (ignored, used value from db)
+    """
     try:
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
@@ -1724,13 +1727,17 @@ def bot_reply(message: telebot.types.Message,
               send_message: bool = False,
               not_log: bool = False,
               allow_voice: bool = False):
-    """Send message from bot and log it"""
+    """Send message from bot and log it
+    send_message - send message or reply (ignored, used value from db)
+    """
     try:
         if reply_markup is None:
             reply_markup = get_keyboard('hide', message)
 
         if not not_log:
             my_log.log_echo(message, msg)
+
+        send_message = my_db.get_user_property(get_topic_id(message), 'send_message') or False
 
         if send_message:
             send_long_message(message, msg, parse_mode=parse_mode,
@@ -2424,10 +2431,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
 
             if my_db.get_user_property(chat_id_full, 'transcribe_only'):
-                button2 = telebot.types.InlineKeyboardButton(tr('✅Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
+                button1 = telebot.types.InlineKeyboardButton(tr('✅ Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
             else:
-                button2 = telebot.types.InlineKeyboardButton(tr('☑️Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
-            markup.row(button2)
+                button1 = telebot.types.InlineKeyboardButton(tr('☑️ Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
+            if my_db.get_user_property(chat_id_full, 'send_message'):
+                button2 = telebot.types.InlineKeyboardButton(tr('✅ Do not reply', lang), callback_data='send_message_chat_switch')
+            else:
+                button2 = telebot.types.InlineKeyboardButton(tr('☑️ Do not reply', lang), callback_data='send_message_chat_switch')
+            markup.row(button1, button2)
 
 
             speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
@@ -2863,6 +2874,15 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data.startswith('switch_do_nothing') and is_admin_member(call):
             pass
+
+        elif call.data == 'send_message_chat_switch' and is_admin_member(call):
+            send_message = my_db.get_user_property(chat_id_full, 'send_message') or False
+            if send_message:
+                my_db.set_user_property(chat_id_full, 'send_message', False)
+            else:
+                my_db.set_user_property(chat_id_full, 'send_message', True)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
         elif call.data == 'switch_action_style':
             action_style = my_db.get_user_property(chat_id_full, 'action_style') or ''

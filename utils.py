@@ -183,7 +183,7 @@ def bot_markdown_to_tts(text: str) -> str:
     text = new_text.strip()
 
     # 1 или 2 * в 0 звездочек *bum* -> bum
-    text = re.sub('\*\*?(.*?)\*\*?', '\\1', text)
+    text = re.sub(r'\*\*?(.*?)\*\*?', '\\1', text)
 
     # tex в unicode
     matches = re.findall(r"(?:\$\$?|\\\[|\\\(|\\\[)(.*?)(?:\$\$?|\\\]|\\\)|\\\])", text, flags=re.DOTALL)
@@ -191,8 +191,8 @@ def bot_markdown_to_tts(text: str) -> str:
         new_match = LatexNodes2Text().latex_to_text(match.replace('\\\\', '\\'))
         text = text.replace(f'$${match}$$', new_match)
         text = text.replace(f'${match}$', new_match)
-        text = text.replace(f'\[{match}\]', new_match)
-        text = text.replace(f'\({match}\)', new_match)
+        text = text.replace(fr'\[{match}\]', new_match)
+        text = text.replace(fr'\({match}\)', new_match)
 
     # Регулярное выражение для поиска всех символов, кроме букв, цифр и знаков препинания
     pattern = regex.compile(r'[^\p{L}\p{N}\p{P} ]', re.UNICODE)
@@ -375,9 +375,9 @@ def bot_markdown_to_html(text: str) -> str:
         
         for line in lines:
             # Проверяем, является ли строка цитатой (с учетом пробелов в начале)
-            if re.match('^\s*&gt;\s*(.*)$', line):
+            if re.match(r'^\s*&gt;\s*(.*)$', line):
                 # Извлекаем текст после &gt;
-                quote_content = re.sub('^\s*&gt;\s*(.*)$', '\\1', line)
+                quote_content = re.sub(r'^\s*&gt;\s*(.*)$', '\\1', line)
                 quote_lines.append(quote_content)
             else:
                 # Если накопились цитаты, добавляем их в результат
@@ -428,7 +428,7 @@ def bot_markdown_to_html(text: str) -> str:
 
 
     # 2 _ в <i></i>
-    text = re.sub('\_\_(.+?)\_\_', '<i>\\1</i>', text)
+    text = re.sub(r'\_\_(.+?)\_\_', '<i>\\1</i>', text)
     text = re.sub(r'^\_\_(.*?)\_\_$', r'<i>\1</i>', text, flags=re.MULTILINE | re.DOTALL)
 
     # Замена _*текст*_ на <i>текст</i>
@@ -448,7 +448,7 @@ def bot_markdown_to_html(text: str) -> str:
     text = re.sub(r'\$(\S[^\$\n]*?\S)\$', r'\1', text)
 
     # меняем маркдаун ссылки на хтмл
-    text = re.sub('''\[(.*?)\]\((https?://\S+)\)''', r'<a href="\2">\1</a>', text)
+    text = re.sub(r'''\[(.*?)\]\((https?://\S+)\)''', r'<a href="\2">\1</a>', text)
 
     # меняем все ссылки на ссылки в хтмл теге кроме тех кто уже так оформлен
     # а зачем собственно? text = re.sub(r'(?<!<a href=")(https?://\S+)(?!">[^<]*</a>)', r'<a href="\1">\1</a>', text)
@@ -473,7 +473,7 @@ def bot_markdown_to_html(text: str) -> str:
 
 
     def replace_asterisk_with_digits(text: str) -> str:
-        """
+        r"""
         Заменяет символ \* на * в строках, где есть цифры.
 
         Args:

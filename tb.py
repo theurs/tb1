@@ -5299,7 +5299,7 @@ def change_mode(message: telebot.types.Message):
 
         if arg:
             arg = arg[0]
-            if arg in ('<0>', '<1>', '<2>', '<3>', '<4>', '<5>', '<6>', '<7>'):
+            if arg in ('<0>', '<1>', '<2>', '<3>', '<4>', '<5>', '<6>', '<7>', '<8>'):
                 arg = arg[1:2]
             if arg == '1':
                 new_prompt = DEFAULT_ROLES[0]
@@ -5315,6 +5315,8 @@ def change_mode(message: telebot.types.Message):
                 new_prompt = DEFAULT_ROLES[5]
             elif arg == '7':
                 new_prompt = DEFAULT_ROLES[6]
+            elif arg == '8':
+                new_prompt = DEFAULT_ROLES[7]
             elif arg == '0':
                 new_prompt = ''
             else:
@@ -5329,7 +5331,7 @@ def change_mode(message: telebot.types.Message):
         else:
             msg = f"""{tr('Меняет роль бота, строку с указаниями что и как говорить', lang)}
 
-`/style <0|1|2|3|4|5|6|{tr('свой текст', lang)}>`
+`/style <0|1|2|3|4|5|6|7|8|{tr('свой текст', lang)}>`
 
 {tr('Сброс, нет никакой роли', lang)}
 `/style 0`

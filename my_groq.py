@@ -654,6 +654,44 @@ def stt(data: bytes = None,
     return ''
 
 
+def tts(text: str, lang: str = 'en', voice: str = 'Mikail-PlayAI') -> bytes:
+    '''
+    Недоделано.
+
+    Convert text to audio data using Groq API.
+    text: str - text to convert
+    lang: str - language code
+    voice: str - voice name
+    Returns audio data as ogg bytes
+    '''
+    # client = Groq(api_key=get_next_key())
+    client = Groq(api_key=cfg.GROQ_API_KEY[0])
+
+    speech_file_path = utils.get_tmp_fname() + '.wav'
+    model = "playai-tts"
+    response_format = "wav"
+
+    try:
+        response = client.audio.speech.create(
+            model=model,
+            voice=voice,
+            input=text,
+            response_format=response_format
+        )
+
+        response.write_to_file(speech_file_path)
+
+        with open(speech_file_path, 'rb') as f:
+            return f.read()
+    except Exception as error:
+        my_log.log_groq(f'my_groq:tts: {error}')
+    finally:
+        client.close()
+        utils.remove_file(speech_file_path)
+
+    return b''
+
+
 def translate(text: str,
               from_lang: str = '',
               to_lang: str = '',
@@ -839,8 +877,11 @@ if __name__ == '__main__':
 
     # print(translate('Привет как дела!', to_lang='en', model = '', censored=False))
 
+    # with open('C:/Users/user/Downloads/1.wav', 'wb') as f:
+    #     f.write(tts('Мы к вам заехали на час, а ну скорей любите нас!'))
+
     # reset('test')
-    chat_cli()
+    # chat_cli()
 
     # print(stt('d:\\downloads\\1.ogg', 'en'))
 

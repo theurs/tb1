@@ -20,7 +20,7 @@ import threading
 import time
 from flask import Flask, request, jsonify
 from decimal import Decimal, getcontext
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import langcodes
 import pendulum
@@ -273,6 +273,7 @@ class RequestCounter:
 
 request_counter = RequestCounter()
 
+LOCK_FOR_SHOW_ACTION_LOCKS = threading.Lock()
 # {chat_id:lock}
 SHOW_ACTION_LOCKS = {}
 
@@ -311,6 +312,7 @@ class ShowAction(threading.Thread):
         # 'message' - отображение в виде сообщения о том что бот что то пишет, сообщение удаляется автоматически
         self.action_style = my_db.get_user_property(self.full_chat_id, 'action_style') or ''
 
+        MSG = '...'
         if self.action_style == 'message':
             if self.action in ("typing", "upload_document", "find_location"):
                 MSG = '⌛ ' + tr('Creating a response...', self.lang)
@@ -322,14 +324,16 @@ class ShowAction(threading.Thread):
                 MSG = '⌛ ' + tr('Creating an audio file...', self.lang)
 
             self.action_message = bot.send_message(
-                self.chat_id, MSG,
+                self.chat_id,
+                MSG,
                 message_thread_id = self.thread_id,
                 disable_notification=True,
                 )
 
     def run(self):
-        if self.full_chat_id not in SHOW_ACTION_LOCKS:
-            SHOW_ACTION_LOCKS[self.full_chat_id] = threading.Lock()
+        with LOCK_FOR_SHOW_ACTION_LOCKS:
+            if self.full_chat_id not in SHOW_ACTION_LOCKS:
+                SHOW_ACTION_LOCKS[self.full_chat_id] = threading.Lock()
         with SHOW_ACTION_LOCKS[self.full_chat_id]:
             while self.is_running:
                 if time.time() - self.started_time > 60 * self.max_timeout:
@@ -339,9 +343,9 @@ class ShowAction(threading.Thread):
                 try:
                     if not self.action_style:
                         if self.is_topic:
-                            bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id)
+                            bot.send_chat_action(self.chat_id, self.action, message_thread_id = self.thread_id, timeout=30)
                         else:
-                            bot.send_chat_action(self.chat_id, self.action)
+                            bot.send_chat_action(self.chat_id, self.action, timeout=30)
                 except Exception as error:
                     if 'A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests' not in str(error):
                         if 'Forbidden: bot was blocked by the user' in str(error):
@@ -358,7 +362,7 @@ class ShowAction(threading.Thread):
         self.is_running = False
         try:
             if not self.action_style:
-                bot.send_chat_action(self.chat_id, 'cancel', message_thread_id = self.thread_id)
+                bot.send_chat_action(self.chat_id, 'cancel', message_thread_id = self.thread_id, timeout=30)
             elif self.action_style == 'message':
                 bot.delete_message(self.chat_id, self.action_message.message_id)
         except Exception as error:
@@ -4253,7 +4257,7 @@ def transcribe(message: telebot.types.Message):
         my_log.log2(f'tb:transcribe: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['model',], func=authorized_owner)
+@bot.message_handler(commands=['model','Model'], func=authorized_owner)
 @async_run
 def model(message: telebot.types.Message):
     """Юзеры могут менять модель для openrouter.ai"""
@@ -10165,6 +10169,18 @@ def one_time_shot():
 
 
 ## rest api #######################################################################
+
+
+@FLASK_APP.route('/ping', methods=['GET'])
+def ping_api_get() -> Tuple[Dict[str, str], int]:
+    """
+    API endpoint for checking service availability.
+
+    :return: A JSON response indicating the service is running and the HTTP status code.
+    """
+    # This endpoint is intentionally simple. If it responds, the service is up.
+    # No complex logic or external dependencies should be checked here.
+    return jsonify({"message": "pong"}), 200
 
 
 @FLASK_APP.route('/bing', methods=['POST'])

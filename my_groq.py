@@ -664,8 +664,8 @@ def tts(text: str, lang: str = 'en', voice: str = 'Mikail-PlayAI') -> bytes:
     voice: str - voice name
     Returns audio data as ogg bytes
     '''
-    # client = Groq(api_key=get_next_key())
-    client = Groq(api_key=cfg.GROQ_API_KEY[0])
+    client = Groq(api_key=get_next_key())
+    # client = Groq(api_key=cfg.GROQ_API_KEY[0])
 
     speech_file_path = utils.get_tmp_fname() + '.wav'
     model = "playai-tts"

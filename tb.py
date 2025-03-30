@@ -4609,12 +4609,15 @@ def upload_voice(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = 'recieve_voice'
 
         if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:
-            bot.send_voice(message.chat.id,
-                           UPLOADED_VOICES[chat_id_full],
-                           caption = tr('Current voice was uploaded', lang),
-                           reply_markup=get_keyboard('remove_uploaded_voice', message),
-                           message_thread_id=message.message_thread_id,
-                           )
+            m = send_voice(
+                message,
+                message.chat.id,
+                UPLOADED_VOICES[chat_id_full],
+                caption = tr('Current voice was uploaded', lang),
+                reply_markup=get_keyboard('remove_uploaded_voice', message),
+                message_thread_id=message.message_thread_id,
+            )
+            log_message(m)
 
         bot_reply_tr(
             message,
@@ -6285,13 +6288,23 @@ def tts(message: telebot.types.Message, caption = None):
                 audio = my_tts.tts(text, 'de', rate, gender=gender)
             if audio:
                 if message.chat.type != 'private':
-                    m = bot.send_voice(message.chat.id, audio, reply_to_message_id = message.message_id,
-                                reply_markup=get_keyboard('hide', message), caption=caption)
+                    m = send_voice(
+                        message,
+                        message.chat.id,
+                        audio,
+                        reply_to_message_id = message.message_id,
+                        reply_markup=get_keyboard('hide', message), caption=caption
+                    )
                 else:
                     # In private, you don't need to add a keyboard with a delete button,
                     # you can delete it there without it, and accidental deletion is useless
                     try:
-                        m = bot.send_voice(message.chat.id, audio, caption=caption)
+                        m = send_voice(
+                            message,
+                            message.chat.id,
+                            audio,
+                            caption=caption
+                        )
                     except telebot.apihelper.ApiTelegramException as error:
                         if 'Bad Request: VOICE_MESSAGES_FORBIDDEN' in str(error):
                             bot_reply_tr(message, '⚠️ You have disabled sending voice messages to you in Telegram settings.')
@@ -9097,9 +9110,9 @@ def send_audio(
     allow_paid_broadcast: bool | None = None
 ) -> telebot.types.Message:
     '''
-    bot.send_photo wrapper
+    bot.send_voice wrapper
 
-    посылает картинку, возвращает сообщение или None
+    посылает аудио, возвращает сообщение или None
     при ошибке пытается сделать это несколько раз
 
     даже если указан reply_to_message_id всё равно смотрит в базу и если у юзера отключены
@@ -9185,6 +9198,112 @@ def send_audio(
             else:
                 traceback_error = traceback.format_exc()
                 my_log.log2(f'tb:send_audio:2: {error}\n\n{traceback_error}')
+                break
+
+    return None
+
+
+def send_voice(
+    message: telebot.types.Message,
+    chat_id: int | str,
+    voice: Any | str,
+    caption: str | None = None,
+    duration: int | None = None,
+    reply_to_message_id: int | None = None,
+    reply_markup: telebot.REPLY_MARKUP_TYPES | None = None,
+    parse_mode: str | None = None,
+    disable_notification: bool | None = True,
+    timeout: int | None = 120,
+    caption_entities: List[telebot.types.MessageEntity] | None = None,
+    allow_sending_without_reply: bool | None = None,
+    protect_content: bool | None = None,
+    message_thread_id: int | None = None,
+    reply_parameters: telebot.types.ReplyParameters | None = None,
+    business_connection_id: str | None = None,
+    message_effect_id: str | None = None,
+    allow_paid_broadcast: bool | None = None
+) -> telebot.types.Message:
+    '''
+    bot.send_voice wrapper
+
+    посылает голосовое сообщение, возвращает сообщение или None
+    при ошибке пытается сделать это несколько раз
+
+    даже если указан reply_to_message_id всё равно смотрит в базу и если у юзера отключены
+    реплаи то не испольует его
+    '''
+
+    full_chat_id = get_topic_id(message)
+    reply = my_db.get_user_property(full_chat_id, 'send_message') or ''
+
+    n = 5
+    while n >= 0:
+        n -= 1
+
+        try:
+            if not reply:
+                r = bot.send_voice(
+                    chat_id=chat_id,
+                    voice=voice,
+                    caption=caption,
+                    duration=duration,
+                    parse_mode=parse_mode,
+                    caption_entities=caption_entities,
+                    disable_notification=disable_notification,
+                    protect_content=protect_content,
+                    reply_to_message_id=reply_to_message_id,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    reply_markup=reply_markup,
+                    timeout=timeout,
+                    message_thread_id=message_thread_id,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+            else:
+                r = bot.send_voice(
+                    chat_id=chat_id,
+                    voice=voice,
+                    caption=caption,
+                    duration=duration,
+                    parse_mode=parse_mode,
+                    caption_entities=caption_entities,
+                    disable_notification=disable_notification,
+                    protect_content=protect_content,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    reply_markup=reply_markup,
+                    timeout=timeout,
+                    message_thread_id=message_thread_id,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+            return r
+
+        except Exception as error:
+
+            if 'Error code: 500. Description: Internal Server Error' in str(error):
+                my_log.log2(f'tb:send_voice:1: {error}')
+                time.sleep(10)
+                continue
+
+            # попробовать отправить не ответ на удаленное сообщение а просто сообщение
+            if 'Bad Request: message to be replied not found' not in str(error):
+                reply = not reply
+                continue
+
+            # если в ответе написано подождите столько то секунд то ждем столько то + 5
+            seconds = utils.extract_retry_seconds(str(error))
+            if seconds:
+                time.sleep(seconds + 5)
+                continue
+
+            # неизвестная ошибка
+            else:
+                traceback_error = traceback.format_exc()
+                my_log.log2(f'tb:send_voice:2: {error}\n\n{traceback_error}')
                 break
 
     return None

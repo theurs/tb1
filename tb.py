@@ -3469,13 +3469,14 @@ def process_image_stage_2(
                             message.text = f'/tts {my_gemini.detect_lang(text)} {text}'
                             tts(message)
                     elif isinstance(text, bytes):
-                        m = bot.send_photo(
+                        m = send_photo(
+                            message,
                             message.chat.id,
                             text,
                             disable_notification=True,
                             reply_to_message_id=message.message_id,
                             reply_markup=get_keyboard('hide', message),
-                            )
+                        )
                         log_message(m)
                         return
                 else:
@@ -3724,12 +3725,15 @@ def handle_document(message: telebot.types.Message):
                             image = utils.resize_image_dimention(image)
                             image = utils.resize_image(image)
                             #send converted image back
-                            bot.send_photo(message.chat.id,
-                                        image,
-                                        reply_to_message_id=message.message_id,
-                                        message_thread_id=message.message_thread_id,
-                                        caption=message.document.file_name + '.png',
-                                        disable_notification=True)
+                            m = send_photo(
+                                message,
+                                message.chat.id,
+                                image,
+                                reply_to_message_id=message.message_id,
+                                message_thread_id=message.message_thread_id,
+                                caption=message.document.file_name + '.png',
+                            )
+                            log_message(m)
                             if not message.caption:
                                 proccess_image(chat_id_full, image, message)
                                 return
@@ -3996,7 +4000,8 @@ def handle_photo(message: telebot.types.Message):
                                 sources_images=images,
                                 user_id=chat_id_full)
                             if image:
-                                m = bot.send_photo(
+                                m = send_photo(
+                                    message,
                                     message.chat.id,
                                     disable_notification=True,
                                     photo=image,
@@ -4064,11 +4069,13 @@ def handle_photo(message: telebot.types.Message):
                             if len(result_image_as_bytes) > 10 * 1024 *1024:
                                 result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
                             try:
-                                m = bot.send_photo( message.chat.id,
-                                                    result_image_as_bytes,
-                                                    disable_notification=True,
-                                                    reply_to_message_id=message.message_id,
-                                                    reply_markup=get_keyboard('hide', message))
+                                m = send_photo(
+                                    message,
+                                    message.chat.id,
+                                    result_image_as_bytes,
+                                    reply_to_message_id=message.message_id,
+                                    reply_markup=get_keyboard('hide', message)
+                                )
                                 log_message(m)
                             except Exception as send_img_error:
                                 my_log.log2(f'tb:handle_photo2: {send_img_error}')
@@ -4101,13 +4108,13 @@ def handle_photo(message: telebot.types.Message):
                                                         reply_markup=get_keyboard('translate', message),
                                                         disable_web_page_preview=True)
                                 elif isinstance(text, bytes):
-                                    m = bot.send_photo(
+                                    m = send_photo(
+                                        message,
                                         message.chat.id,
                                         text,
-                                        disable_notification=True,
                                         reply_to_message_id=message.message_id,
                                         reply_markup=get_keyboard('hide', message),
-                                        )
+                                    )
                                     log_message(m)
                                     return
                             else:
@@ -4166,13 +4173,13 @@ def handle_photo(message: telebot.types.Message):
                                                     reply_markup=get_keyboard('translate', message),
                                                     disable_web_page_preview=True)
                             elif isinstance(text, bytes):
-                                m = bot.send_photo(
+                                m = send_photo(
+                                    message,
                                     message.chat.id,
                                     text,
-                                    disable_notification=True,
                                     reply_to_message_id=message.message_id,
                                     reply_markup=get_keyboard('hide', message)
-                                    )
+                                )
                                 log_message(m)
                                 return
                         else:
@@ -7238,33 +7245,36 @@ def stats(message: telebot.types.Message):
             bot_reply(message, msg)
 
             if usage_plots_image:
-                m = bot.send_photo(
+                m = send_photo(
+                    message,
                     message.chat.id,
                     usage_plots_image,
                     disable_notification=True,
                     reply_to_message_id=message.message_id,
                     reply_markup=get_keyboard('hide', message),
-                    )
+                )
                 log_message(m)
 
             if usage_plots_image2:
-                m = bot.send_photo(
+                m = send_photo(
+                    message,
                     message.chat.id,
                     usage_plots_image2,
                     disable_notification=True,
                     reply_to_message_id=message.message_id,
                     reply_markup=get_keyboard('hide', message),
-                    )
+                )
                 log_message(m)
 
             if usage_plots_image3:
-                m = bot.send_photo(
+                m = send_photo(
+                    message,
                     message.chat.id,
                     usage_plots_image3,
                     disable_notification=True,
                     reply_to_message_id=message.message_id,
                     reply_markup=get_keyboard('hide', message),
-                    )
+                )
                 log_message(m)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -8806,13 +8816,13 @@ def send_media_group(
         except Exception as error:
 
             if 'Error code: 500. Description: Internal Server Error' in str(error):
-                my_log.log2(f'tb:image:send_media_group:1: {error}')
+                my_log.log2(f'tb:send_media_group:1: {error}')
                 time.sleep(10)
                 continue
 
             # попробовать отправить не ответ на удаленное сообщение а просто сообщение
             if 'Bad Request: message to be replied not found' not in str(error):
-                reply = True
+                reply = not reply
                 continue
 
             # если в ответе написано подождите столько то секунд то ждем столько то + 5
@@ -8925,13 +8935,13 @@ def send_document(
         except Exception as error:
 
             if 'Error code: 500. Description: Internal Server Error' in str(error):
-                my_log.log2(f'tb:image:send_document:1: {error}')
+                my_log.log2(f'tb:send_document:1: {error}')
                 time.sleep(10)
                 continue
 
             # попробовать отправить не ответ на удаленное сообщение а просто сообщение
             if 'Bad Request: message to be replied not found' not in str(error):
-                reply = True
+                reply = not reply
                 continue
 
             # если в ответе написано подождите столько то секунд то ждем столько то + 5
@@ -8944,6 +8954,115 @@ def send_document(
             else:
                 traceback_error = traceback.format_exc()
                 my_log.log2(f'tb:send_document:2: {error}\n\n{traceback_error}')
+                break
+
+    return None
+
+
+def send_photo(
+    message: telebot.types.Message,
+    chat_id: int | str,
+    photo: Any | str,
+    caption: str | None = None,
+    parse_mode: str | None = None,
+    caption_entities: List[telebot.types.MessageEntity] | None = None,
+    disable_notification: bool | None = None,
+    protect_content: bool | None = None,
+    reply_to_message_id: int | None = None,
+    allow_sending_without_reply: bool | None = None,
+    reply_markup: telebot.REPLY_MARKUP_TYPES | None = None,
+    timeout: int | None = None,
+    message_thread_id: int | None = None,
+    has_spoiler: bool | None = None,
+    reply_parameters: telebot.types.ReplyParameters | None = None,
+    business_connection_id: str | None = None,
+    message_effect_id: str | None = None,
+    show_caption_above_media: bool | None = None,
+    allow_paid_broadcast: bool | None = None
+) -> telebot.types.Message:
+    '''
+    bot.send_photo wrapper
+
+    посылает картинку, возвращает сообщение или None
+    при ошибке пытается сделать это несколько раз
+
+    даже если указан reply_to_message_id всё равно смотрит в базу и если у юзера отключены
+    реплаи то не испольует его
+    '''
+
+    full_chat_id = get_topic_id(message)
+    reply = my_db.get_user_property(full_chat_id, 'send_message') or ''
+
+    n = 5
+    while n >= 0:
+        n -= 1
+
+        try:
+            if not reply:
+                r = bot.send_photo(
+                    chat_id=chat_id,
+                    photo=photo,
+                    caption=caption,
+                    parse_mode=parse_mode,
+                    caption_entities=caption_entities,
+                    disable_notification=disable_notification,
+                    protect_content=protect_content,
+                    reply_to_message_id=reply_to_message_id,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    reply_markup=reply_markup,
+                    timeout=timeout,
+                    message_thread_id=message_thread_id,
+                    has_spoiler=has_spoiler,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    show_caption_above_media=show_caption_above_media,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+            else:
+                r = bot.send_photo(
+                    chat_id=chat_id,
+                    photo=photo,
+                    caption=caption,
+                    parse_mode=parse_mode,
+                    caption_entities=caption_entities,
+                    disable_notification=disable_notification,
+                    protect_content=protect_content,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    reply_markup=reply_markup,
+                    timeout=timeout,
+                    message_thread_id=message_thread_id,
+                    has_spoiler=has_spoiler,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    show_caption_above_media=show_caption_above_media,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+            return r
+
+        except Exception as error:
+
+            if 'Error code: 500. Description: Internal Server Error' in str(error):
+                my_log.log2(f'tb:send_photo:1: {error}')
+                time.sleep(10)
+                continue
+
+            # попробовать отправить не ответ на удаленное сообщение а просто сообщение
+            if 'Bad Request: message to be replied not found' not in str(error):
+                reply = not reply
+                continue
+
+            # если в ответе написано подождите столько то секунд то ждем столько то + 5
+            seconds = utils.extract_retry_seconds(str(error))
+            if seconds:
+                time.sleep(seconds + 5)
+                continue
+
+            # неизвестная ошибка
+            else:
+                traceback_error = traceback.format_exc()
+                my_log.log2(f'tb:send_photo:2: {error}\n\n{traceback_error}')
                 break
 
     return None

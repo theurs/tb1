@@ -6933,7 +6933,8 @@ def send_images_to_pic_group(
 
             for x in chunks:
                 msgs = send_media_group(message, pics_group, x)
-                log_message(msgs)
+                # не посылать логи при отправке картинок в группу для логов Ж)
+                # log_message(msgs)
 
 
     except Exception as unknown:

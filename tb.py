@@ -8925,7 +8925,7 @@ def send_document(
         except Exception as error:
 
             if 'Error code: 500. Description: Internal Server Error' in str(error):
-                my_log.log2(f'tb:image:send_document: {error}')
+                my_log.log2(f'tb:image:send_document:1: {error}')
                 time.sleep(10)
                 continue
 
@@ -8943,7 +8943,7 @@ def send_document(
             # неизвестная ошибка
             else:
                 traceback_error = traceback.format_exc()
-                my_log.log2(f'tb:send_media_group: {error}\n\n{traceback_error}')
+                my_log.log2(f'tb:send_document:2: {error}\n\n{traceback_error}')
                 break
 
     return None

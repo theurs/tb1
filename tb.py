@@ -1342,6 +1342,9 @@ def log_message(message: telebot.types.Message):
         message (telebot.types.Message or list): The message or list of messages to log.
     """
     try:
+        if not message:
+            return
+
         if isinstance(message, telebot.types.Message) and hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
             return
         if isinstance(message, list) and hasattr(cfg, 'DO_NOT_LOG') and message[0].chat.id in cfg.DO_NOT_LOG:
@@ -2726,18 +2729,24 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                     if fname.endswith('.txt.txt'):
                         fname = fname[:-4]
                     try:
-                        m = bot.send_document(message.chat.id,
-                                            document=buf,
-                                            message_thread_id=message.message_thread_id,
-                                            caption=fname,
-                                            visible_file_name = fname)
+                        m = send_document(
+                            message,
+                            message.chat.id,
+                            document=buf,
+                            message_thread_id=message.message_thread_id,
+                            caption=fname,
+                            visible_file_name = fname
+                        )
                     except telebot.apihelper.ApiTelegramException as error:
                         if 'message thread not found' not in str(error):
                             raise error
-                        m = bot.send_document(message.chat.id,
-                                            document=buf,
-                                            caption=fname,
-                                            visible_file_name = fname)
+                        m = send_document(
+                            message,
+                            message.chat.id,
+                            document=buf,
+                            caption=fname,
+                            visible_file_name = fname
+                        )
                     log_message(m)
             else:
                 bot_reply_tr(message, 'No text was saved.')
@@ -3081,7 +3090,8 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
             # send captions
             kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
             try:
-                m1 = bot.send_document(
+                m1 = send_document(
+                    message,
                     message.chat.id,
                     cap_srt.encode('utf-8', 'replace'),
                     reply_to_message_id=message.message_id,
@@ -3093,7 +3103,8 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
                     message_thread_id = message.message_thread_id,
                 )
                 log_message(m1)
-                m2 = bot.send_document(
+                m2 = send_document(
+                    message,
                     message.chat.id,
                     cap_vtt.encode('utf-8', 'replace'),
                     reply_to_message_id=message.message_id,
@@ -3105,7 +3116,8 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
                     message_thread_id = message.message_thread_id,
                 )
                 log_message(m2)
-                m3 = bot.send_document(
+                m3 = send_document(
+                    message,
                     message.chat.id,
                     text.encode('utf-8', 'replace'),
                     reply_to_message_id=message.message_id,
@@ -3659,14 +3671,16 @@ def handle_document(message: telebot.types.Message):
                                 chat_id_full = chat_id_full)
                             if new_data:
                                 new_fname2 = f'(translated by @{_bot_name}) {new_fname}'
-                                m = bot.send_document(
+                                m = send_document(
+                                    message,
                                     message.chat.id,
                                     new_data,
                                     reply_to_message_id=message.message_id,
                                     message_thread_id=message.message_thread_id,
                                     caption=new_fname2,
                                     visible_file_name=new_fname2,
-                                    disable_notification=True)
+                                    disable_notification=True
+                                )
                                 log_message(m)
                                 return
                             else:
@@ -4061,7 +4075,8 @@ def handle_photo(message: telebot.types.Message):
                             width, height = utils.get_image_size(result_image_as_bytes)
                             if width >= 1280 or height >= 1280:
                                 try:
-                                    m = bot.send_document(
+                                    m = send_document(
+                                        message,
                                         message.chat.id,
                                         result_image_as_bytes,
                                         # caption='images.jpg',
@@ -4069,7 +4084,7 @@ def handle_photo(message: telebot.types.Message):
                                         disable_notification=True,
                                         reply_to_message_id=message.message_id,
                                         reply_markup=get_keyboard('hide', message)
-                                        )
+                                    )
                                     log_message(m)
                                 except Exception as send_doc_error:
                                     my_log.log2(f'tb:handle_photo3: {send_doc_error}')
@@ -5781,20 +5796,49 @@ def save_history(message: telebot.types.Message):
             prompt += my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
 
         if prompt:
-            m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_docx(prompt), message_thread_id=message.message_thread_id,
-                                caption='resp.docx', visible_file_name = 'resp.docx', reply_markup=get_keyboard('hide', message))
-            log_message(m)
-            m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_odt(prompt), message_thread_id=message.message_thread_id,
-                                caption='resp.odt', visible_file_name = 'resp.odt', reply_markup=get_keyboard('hide', message))
+            m = send_document(
+                message,
+                message.chat.id,
+                document=my_pandoc.convert_text_to_docx(prompt),
+                message_thread_id=message.message_thread_id,
+                caption='resp.docx',
+                visible_file_name = 'resp.docx',
+                reply_markup=get_keyboard('hide', message)
+            )
             log_message(m)
 
-            m = bot.send_document(message.chat.id, document=prompt.encode('utf-8'), message_thread_id=message.message_thread_id,
-                                caption='resp.md', visible_file_name = 'resp.md', reply_markup=get_keyboard('hide', message))
+            m = send_document(
+                message,
+                message.chat.id,
+                document=my_pandoc.convert_text_to_odt(prompt),
+                message_thread_id=message.message_thread_id,
+                caption='resp.odt',
+                visible_file_name = 'resp.odt',
+                reply_markup=get_keyboard('hide', message)
+            )
+            log_message(m)
+
+            m = send_document(
+                message,
+                message.chat.id,
+                document=prompt.encode('utf-8'),
+                message_thread_id=message.message_thread_id,
+                caption='resp.md',
+                visible_file_name = 'resp.md',
+                reply_markup=get_keyboard('hide', message)
+            )
             log_message(m)
 
             # конвертер пдф тут почему то не работает, хотя работает в своём модуле
-            # m = bot.send_document(message.chat.id, document=my_pandoc.convert_text_to_pdf(prompt), message_thread_id=message.message_thread_id,
-            #                     caption='resp.pdf', visible_file_name = 'resp.pdf', reply_markup=get_keyboard('hide', message))
+            # m = send_document(
+            #     message,
+            #     message.chat.id,
+            #     document=my_pandoc.convert_text_to_pdf(prompt),
+            #     message_thread_id=message.message_thread_id,
+            #     caption='resp.pdf',
+            #     visible_file_name = 'resp.pdf',
+            #     reply_markup=get_keyboard('hide', message)
+            # )
             # log_message(m)
         else:
             bot_reply_tr(message, 'Memory is empty, nothing to save.')
@@ -8532,7 +8576,8 @@ def send_resp_as_file(message: telebot.types.Message,
         buf.seek(0)
         cap = tr('Too big answer, sent as file', lang)
         fname = f'{utils.get_full_time()}.txt'.replace(':', '-')
-        m = bot.send_document(
+        m = send_document(
+            message,
             message.chat.id,
             document=buf,
             message_thread_id=message.message_thread_id,
@@ -8712,7 +8757,7 @@ def send_media_group(
     allow_paid_broadcast: bool | None = None
 ) -> list[telebot.types.Message]:
     '''
-    bot.send_media_group wraper
+    bot.send_media_group wrapper
     посылает группу картинок, возвращает список сообщений
     при ошибке пытается сделать это несколько раз
 
@@ -8761,13 +8806,132 @@ def send_media_group(
         except Exception as error:
 
             if 'Error code: 500. Description: Internal Server Error' in str(error):
-                my_log.log2(f'tb:image:send_media_group_pics_group1: {error}')
+                my_log.log2(f'tb:image:send_media_group:1: {error}')
                 time.sleep(10)
                 continue
 
             # попробовать отправить не ответ на удаленное сообщение а просто сообщение
             if 'Bad Request: message to be replied not found' not in str(error):
-                reply = 'send_message'
+                reply = True
+                continue
+
+            # если в ответе написано подождите столько то секунд то ждем столько то + 5
+            seconds = utils.extract_retry_seconds(str(error))
+            if seconds:
+                time.sleep(seconds + 5)
+                continue
+
+            # неизвестная ошибка
+            else:
+                traceback_error = traceback.format_exc()
+                my_log.log2(f'tb:send_media_group:2: {error}\n\n{traceback_error}')
+                break
+
+    return []
+
+
+def send_document(
+    message: telebot.types.Message,
+    chat_id: int | str,
+    document: Any | str,
+    reply_to_message_id: int | None = None,
+    caption: str | None = None,
+    reply_markup: telebot.REPLY_MARKUP_TYPES | None = None,
+    parse_mode: str | None = None,
+    disable_notification: bool | None = True,
+    timeout: int | None = 60,
+    thumbnail: Any | str | None = None,
+    caption_entities: List[telebot.types.MessageEntity] | None = None,
+    allow_sending_without_reply: bool | None = None,
+    visible_file_name: str | None = None,
+    disable_content_type_detection: bool | None = None,
+    data: Any | str | None = None,
+    protect_content: bool | None = None,
+    message_thread_id: int | None = None,
+    thumb: Any | str | None = None,
+    reply_parameters: telebot.types.ReplyParameters | None = None,
+    business_connection_id: str | None = None,
+    message_effect_id: str | None = None,
+    allow_paid_broadcast: bool | None = None
+) -> telebot.types.Message | None:
+    '''
+    bot.send_document wrapper
+
+    посылает документ, возвращает сообщение или None
+    при ошибке пытается сделать это несколько раз
+
+    даже если указан reply_to_message_id всё равно смотрит в базу и если у юзера отключены
+    реплаи то не испольует его
+    '''
+
+    full_chat_id = get_topic_id(message)
+    reply = my_db.get_user_property(full_chat_id, 'send_message') or ''
+
+    n = 5
+    while n >= 0:
+        n -= 1
+
+        try:
+            if not reply:
+                r = bot.send_document(
+                    chat_id=chat_id,
+                    document=document,
+                    reply_to_message_id=reply_to_message_id,
+                    caption=caption,
+                    reply_markup=reply_markup,
+                    parse_mode=parse_mode,
+                    disable_notification=disable_notification,
+                    timeout=timeout,
+                    thumbnail = thumbnail,
+                    caption_entities = caption_entities,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    visible_file_name=visible_file_name,
+                    disable_content_type_detection=disable_content_type_detection,
+                    data=data,
+                    protect_content=protect_content,
+                    message_thread_id=message_thread_id,
+                    thumb=thumb,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+            else:
+                r = bot.send_document(
+                    chat_id=chat_id,
+                    document=document,
+                    caption=caption,
+                    reply_markup=reply_markup,
+                    parse_mode=parse_mode,
+                    disable_notification=disable_notification,
+                    timeout=timeout,
+                    thumbnail = thumbnail,
+                    caption_entities = caption_entities,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    visible_file_name=visible_file_name,
+                    disable_content_type_detection=disable_content_type_detection,
+                    data=data,
+                    protect_content=protect_content,
+                    message_thread_id=message_thread_id,
+                    thumb=thumb,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+
+            return r
+
+        except Exception as error:
+
+            if 'Error code: 500. Description: Internal Server Error' in str(error):
+                my_log.log2(f'tb:image:send_document: {error}')
+                time.sleep(10)
+                continue
+
+            # попробовать отправить не ответ на удаленное сообщение а просто сообщение
+            if 'Bad Request: message to be replied not found' not in str(error):
+                reply = True
                 continue
 
             # если в ответе написано подождите столько то секунд то ждем столько то + 5
@@ -8782,7 +8946,7 @@ def send_media_group(
                 my_log.log2(f'tb:send_media_group: {error}\n\n{traceback_error}')
                 break
 
-    return []
+    return None
 
 
 def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -> bool:

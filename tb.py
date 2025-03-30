@@ -2707,7 +2707,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         images = my_ddg.get_images(query)
                         medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
                         if medias:
-                            msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id, disable_notification=True)
+                            msgs_ids = send_media_group(
+                                message,
+                                message.chat.id,
+                                medias,
+                                reply_to_message_id=message.message_id,
+                            )
                             log_message(msgs_ids)
 
         elif call.data == 'download_saved_text':
@@ -6460,12 +6465,13 @@ def huggingface_image_gen(message: telebot.types.Message):
                             model_ = model_[44:]
                         cap = (bot_addr + '\n\n' + model_ + '\n\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
                         medias = [telebot.types.InputMediaPhoto(x, caption = cap) for x in images5]
-                        try:
-                            msgs_ids = bot.send_media_group(message.chat.id, medias, reply_to_message_id=message.message_id)
-                        except telebot.apihelper.ApiTelegramException as error:
-                            if 'Bad Request: message to be replied not found' not in str(error):
-                                my_log.log2(f'tb:huggingface_image_gen:send_media_group1: {error}')
-                            bot_reply_tr(message, tr("Image generation failed. May be you did not provide model.", lang))
+                        msgs_ids = send_media_group(
+                            message,
+                            message.chat.id,
+                            medias,
+                            reply_to_message_id=message.message_id
+                        )
+                        if not msgs_ids:
                             return
                         log_message(msgs_ids)
                         if pics_group:
@@ -6481,18 +6487,9 @@ def huggingface_image_gen(message: telebot.types.Message):
                                     bot.send_message(pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
                                                     link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
-                                while 1:
-                                    try:
-                                        bot.send_media_group(pics_group, medias)
-                                        break
-                                    except Exception as error:
-                                        # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
-                                        seconds = utils.extract_retry_seconds(str(error))
-                                        if seconds:
-                                            time.sleep(seconds + 5)
-                                        else:
-                                            my_log.log2(f'tb:huggingface_image_gen:send to pics_group: {error}')
-                                            break
+                                msgs = send_media_group(message, pics_group, medias)
+                                log_message(msgs)
+
                             except Exception as error2:
                                 my_log.log2(f'tb:huggingface_image_gen:send to pics_group: {error2}')
                         update_user_image_counter(chat_id_full, len(medias))
@@ -6818,25 +6815,12 @@ def send_images_to_user(
     '''
     try:
         for x in chunks:
-            try:
-                msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
-            except Exception as error:
-                # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
-                seconds = utils.extract_retry_seconds(str(error))
-                if seconds:
-                    time.sleep(seconds + 5)
-                    try:
-                        msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
-                    except Exception as error2:
-                        # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
-                        seconds = utils.extract_retry_seconds(str(error2))
-                        if seconds:
-                            time.sleep(seconds + 5)
-                            try:
-                                msgs_ids = bot.send_media_group(message.chat.id, x, reply_to_message_id=message.message_id)
-                            except Exception as error3:
-                                my_log.log2(f'tb:image:send_media_group: {error3}')
-                                continue
+            msgs_ids = send_media_group(
+                message,
+                message.chat.id,
+                x,
+                reply_to_message_id=message.message_id
+            )
 
         try:
             log_message(msgs_ids)
@@ -6879,28 +6863,10 @@ def send_images_to_pic_group(
                 bot.send_message(pics_group, f'{utils.html.unescape(translated_prompt[:800])} | #{hashtag} {message.from_user.id}',
                                 link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
 
-            retry_counter = 0 # retry on internal error
             for x in chunks:
-                seconds = 1
-                while seconds:
-                    try:
-                        bot.send_media_group(pics_group, x)
-                        break
-                    except Exception as error:
-                        # "telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after 10"
-                        seconds = utils.extract_retry_seconds(str(error))
-                        if seconds:
-                            time.sleep(seconds + 5)
-                            continue
-                        elif 'Error code: 500. Description: Internal Server Error' in str(error):
-                            my_log.log2(f'tb:image:send_media_group_pics_group1: {error}')
-                            retry_counter += 1
-                            if retry_counter > 5:
-                                break
-                            time.sleep(30)
-                            continue
-                        my_log.log2(f'tb:image:send_media_group_pics_group2: {error}')
-                        break
+                msgs = send_media_group(message, pics_group, x)
+                log_message(msgs)
+
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -8728,6 +8694,95 @@ def reply_to_long_message(message: telebot.types.Message,
     # remove resp if any
     if resp in DEBUG_MD_TO_HTML:
         DEBUG_MD_TO_HTML.pop(resp)
+
+
+def send_media_group(
+    message: telebot.types.Message,
+    chat_id: int | str,
+    media: List[telebot.types.InputMediaAudio | telebot.types.InputMediaDocument | telebot.types.InputMediaPhoto | telebot.types.InputMediaVideo],
+    disable_notification: bool | None = True,
+    protect_content: bool | None = None,
+    reply_to_message_id: int | None = None,
+    timeout: int | None = 60,
+    allow_sending_without_reply: bool | None = None,
+    message_thread_id: int | None = None,
+    reply_parameters: telebot.types.ReplyParameters | None = None,
+    business_connection_id: str | None = None,
+    message_effect_id: str | None = None,
+    allow_paid_broadcast: bool | None = None
+) -> list[telebot.types.Message]:
+    '''
+    bot.send_media_group wraper
+    посылает группу картинок, возвращает список сообщений
+    при ошибке пытается сделать это несколько раз
+
+    даже если указан reply_to_message_id всё равно смотрит в базу и если у юзера отключены
+    реплаи то не испольует его
+    '''
+    full_chat_id = get_topic_id(message)
+    reply = my_db.get_user_property(full_chat_id, 'send_message') or ''
+
+    n = 5
+    while n >= 0:
+        n -= 1
+
+        try:
+            if not reply:
+                r = bot.send_media_group(
+                    chat_id=chat_id,
+                    media=media,
+                    disable_notification=disable_notification,
+                    protect_content=protect_content,
+                    reply_to_message_id=reply_to_message_id,
+                    timeout=timeout,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    message_thread_id=message_thread_id,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+            else:
+                r = bot.send_media_group(
+                    chat_id=chat_id,
+                    media=media,
+                    disable_notification=disable_notification,
+                    protect_content=protect_content,
+                    timeout=timeout,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    message_thread_id=message_thread_id,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+            return r
+
+        except Exception as error:
+
+            if 'Error code: 500. Description: Internal Server Error' in str(error):
+                my_log.log2(f'tb:image:send_media_group_pics_group1: {error}')
+                time.sleep(10)
+                continue
+
+            # попробовать отправить не ответ на удаленное сообщение а просто сообщение
+            if 'Bad Request: message to be replied not found' not in str(error):
+                reply = 'send_message'
+                continue
+
+            # если в ответе написано подождите столько то секунд то ждем столько то + 5
+            seconds = utils.extract_retry_seconds(str(error))
+            if seconds:
+                time.sleep(seconds + 5)
+                continue
+
+            # неизвестная ошибка
+            else:
+                traceback_error = traceback.format_exc()
+                my_log.log2(f'tb:send_media_group: {error}\n\n{traceback_error}')
+                break
+
+    return []
 
 
 def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -> bool:

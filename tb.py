@@ -3254,14 +3254,16 @@ def handle_voice(message: telebot.types.Message):
                         COMMAND_MODE[chat_id_full] = 'clone_voice'
                         if result:
                             kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
-                            m = bot.send_audio(
+                            m = send_audio(
+                                message,
                                 message.chat.id,
                                 result,
                                 caption= f'@{_bot_name}',
                                 title = 'Voice message',
                                 performer = 'XTTSv2',
                                 reply_markup=kbd,
-                                message_thread_id=message.message_thread_id)
+                                message_thread_id=message.message_thread_id
+                            )
                             log_message(m)
                             my_db.add_msg(chat_id_full, 'TTS xtts_clone_audio')
                             COMMAND_MODE[chat_id_full] = ''
@@ -4651,14 +4653,16 @@ def clone_voice(message: telebot.types.Message):
                 if audio_data:
                     try:
                         kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
-                        m = bot.send_audio(
+                        m = send_audio(
+                            message,
                             message.chat.id,
                             audio_data,
                             caption= f'@{_bot_name}',
                             title = 'Voice message',
                             performer = 'Fish speech',
                             reply_markup=kbd,
-                            message_thread_id=message.message_thread_id)
+                            message_thread_id=message.message_thread_id
+                        )
                         log_message(m)
                         my_db.add_msg(chat_id_full, 'TTS fish_speech')
                         if chat_id_full in COMMAND_MODE:
@@ -5136,12 +5140,12 @@ def download_ytb_audio(message: telebot.types.Message):
                                 caption = f'{caption[:900]}\n\n{url}'
 
                                 try:
-                                    m = bot.send_audio(
+                                    m = send_audio(
+                                        message,
                                         message.chat.id,
                                         data,
                                         title = f'{os.path.splitext(os.path.basename(fn))[0]}.mp3',
                                         caption = f'@{_bot_name} {caption}',
-                                        disable_notification = True,
                                         thumbnail=tmb,
                                     )
                                     log_message(m)
@@ -8966,12 +8970,12 @@ def send_photo(
     caption: str | None = None,
     parse_mode: str | None = None,
     caption_entities: List[telebot.types.MessageEntity] | None = None,
-    disable_notification: bool | None = None,
+    disable_notification: bool | None = True,
     protect_content: bool | None = None,
     reply_to_message_id: int | None = None,
     allow_sending_without_reply: bool | None = None,
     reply_markup: telebot.REPLY_MARKUP_TYPES | None = None,
-    timeout: int | None = None,
+    timeout: int | None = 60,
     message_thread_id: int | None = None,
     has_spoiler: bool | None = None,
     reply_parameters: telebot.types.ReplyParameters | None = None,
@@ -9063,6 +9067,124 @@ def send_photo(
             else:
                 traceback_error = traceback.format_exc()
                 my_log.log2(f'tb:send_photo:2: {error}\n\n{traceback_error}')
+                break
+
+    return None
+
+
+def send_audio(
+    message: telebot.types.Message,
+    chat_id: int | str,
+    audio: Any | str,
+    caption: str | None = None,
+    duration: int | None = None,
+    performer: str | None = None,
+    title: str | None = None,
+    reply_to_message_id: int | None = None,
+    reply_markup: telebot.REPLY_MARKUP_TYPES | None = None,
+    parse_mode: str | None = None,
+    disable_notification: bool | None = True,
+    timeout: int | None = 120,
+    thumbnail: Any | str | None = None,
+    caption_entities: List[telebot.types.MessageEntity] | None = None,
+    allow_sending_without_reply: bool | None = None,
+    protect_content: bool | None = None,
+    message_thread_id: int | None = None,
+    thumb: Any | str | None = None,
+    reply_parameters: telebot.types.ReplyParameters | None = None,
+    business_connection_id: str | None = None,
+    message_effect_id: str | None = None,
+    allow_paid_broadcast: bool | None = None
+) -> telebot.types.Message:
+    '''
+    bot.send_photo wrapper
+
+    посылает картинку, возвращает сообщение или None
+    при ошибке пытается сделать это несколько раз
+
+    даже если указан reply_to_message_id всё равно смотрит в базу и если у юзера отключены
+    реплаи то не испольует его
+    '''
+
+    full_chat_id = get_topic_id(message)
+    reply = my_db.get_user_property(full_chat_id, 'send_message') or ''
+
+    n = 5
+    while n >= 0:
+        n -= 1
+
+        try:
+            if not reply:
+                r = bot.send_audio(
+                    chat_id=chat_id,
+                    audio=audio,
+                    caption=caption,
+                    duration=duration,
+                    performer=performer,
+                    title=title,
+                    parse_mode=parse_mode,
+                    caption_entities=caption_entities,
+                    disable_notification=disable_notification,
+                    protect_content=protect_content,
+                    reply_to_message_id=reply_to_message_id,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    reply_markup=reply_markup,
+                    timeout=timeout,
+                    thumbnail = thumbnail,
+                    message_thread_id=message_thread_id,
+                    thumb=thumb,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+            else:
+                r = bot.send_audio(
+                    chat_id=chat_id,
+                    audio=audio,
+                    caption=caption,
+                    duration=duration,
+                    performer=performer,
+                    title=title,
+                    parse_mode=parse_mode,
+                    caption_entities=caption_entities,
+                    disable_notification=disable_notification,
+                    protect_content=protect_content,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    reply_markup=reply_markup,
+                    timeout=timeout,
+                    thumbnail = thumbnail,
+                    message_thread_id=message_thread_id,
+                    thumb=thumb,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    allow_paid_broadcast=allow_paid_broadcast
+                )
+            return r
+
+        except Exception as error:
+
+            if 'Error code: 500. Description: Internal Server Error' in str(error):
+                my_log.log2(f'tb:send_audio:1: {error}')
+                time.sleep(10)
+                continue
+
+            # попробовать отправить не ответ на удаленное сообщение а просто сообщение
+            if 'Bad Request: message to be replied not found' not in str(error):
+                reply = not reply
+                continue
+
+            # если в ответе написано подождите столько то секунд то ждем столько то + 5
+            seconds = utils.extract_retry_seconds(str(error))
+            if seconds:
+                time.sleep(seconds + 5)
+                continue
+
+            # неизвестная ошибка
+            else:
+                traceback_error = traceback.format_exc()
+                my_log.log2(f'tb:send_audio:2: {error}\n\n{traceback_error}')
                 break
 
     return None

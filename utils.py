@@ -1695,7 +1695,7 @@ def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 200
             with open(image_data, 'rb') as f:
                 image_data = f.read()
 
-        print(len(image_data))
+        # print(len(image_data))
 
         # Открываем изображение из байтов
         img = PIL.Image.open(io.BytesIO(image_data))
@@ -1728,7 +1728,7 @@ def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 200
             img.save(output, format='JPEG', quality=jpg_quality, optimize=True)
             jpg_data = output.getvalue()
 
-        print(len(jpg_data))
+        # print(len(jpg_data))
 
         return jpg_data
 

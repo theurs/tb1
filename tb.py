@@ -2612,8 +2612,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             try:
                 bot.send_invoice(
                     call.message.chat.id,
-                    title=tr(f'Donate {amount} stars', lang),
-                    description = tr(f'Donate {amount} stars', lang),
+                    title=tr(f'Donate stars amount:', lang) + ' ' + str(amount),
+                    description = tr(f'Donate stars amount:', lang) + ' ' + str(amount),
                     invoice_payload="stars_donate_payload",
                     provider_token = "",  # Для XTR этот токен может быть пустым
                     currency = "XTR",
@@ -9603,8 +9603,8 @@ def do_task(message, custom_prompt: str = ''):
                         try:
                             bot.send_invoice(
                                 message.chat.id,
-                                title=tr(f'Donate {amount} stars', lang),
-                                description = tr(f'Donate {amount} stars', lang),
+                                title=tr(f'Donate stars amount:', lang) + ' ' + str(amount),
+                                description = tr(f'Donate stars amount:', lang) + ' ' + str(amount),
                                 invoice_payload="stars_donate_payload",
                                 provider_token = "",  # Для XTR этот токен может быть пустым
                                 currency = "XTR",

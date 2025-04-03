@@ -612,7 +612,7 @@ def img2txt(text,
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
             else:
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-            return r                
+            return r
 
         if temperature is None:
             temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1

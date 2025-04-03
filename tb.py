@@ -1813,7 +1813,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         elif kbd.startswith('pay_stars_'):
             amount = int(kbd.split('_')[-1])
             keyboard = telebot.types.InlineKeyboardMarkup()
-            button1 = telebot.types.InlineKeyboardButton(text=tr(f"Donate {amount} stars", lang), pay = True)
+            button1 = telebot.types.InlineKeyboardButton(text=tr(f"Donate stars amount:", lang) + ' ' + str(amount), pay = True)
             keyboard.add()
             return keyboard
         elif kbd == 'donate_stars':

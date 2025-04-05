@@ -3908,7 +3908,7 @@ def handle_photo(message: telebot.types.Message):
         if not check_donate(message, chat_id_full, lang):
             return
 
-        # catch groups of images up to 10
+        # catch groups of images
         if chat_id_full not in MESSAGE_QUEUE_IMG:
             MESSAGE_QUEUE_IMG[chat_id_full] = [message,]
             last_state = MESSAGE_QUEUE_IMG[chat_id_full]

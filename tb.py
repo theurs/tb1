@@ -6525,8 +6525,8 @@ def huggingface_image_gen(message: telebot.types.Message):
                     while not all([images1, images2, images3, images4]):
                         time.sleep(1)
 
-                    images5 = images1 + images2 + images3 + images4
-                    images5 = [x for x in images5 if x != b'1']
+                    images = images1 + images2 + images3 + images4
+                    images5 = [x for x in images if x != b'1']
 
                     if images5:
                         bot_addr = f'https://t.me/{_bot_name}'
@@ -6535,33 +6535,14 @@ def huggingface_image_gen(message: telebot.types.Message):
                             model_ = model_[44:]
                         cap = (bot_addr + '\n\n' + model_ + '\n\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
                         medias = [telebot.types.InputMediaPhoto(x, caption = cap) for x in images5]
-                        msgs_ids = send_media_group(
-                            message,
-                            message.chat.id,
-                            medias,
-                            reply_to_message_id=message.message_id
-                        )
-                        if not msgs_ids:
-                            return
-                        log_message(msgs_ids)
+
+                        chunk_size = 10
+                        chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
+                        send_images_to_user(chunks, message, chat_id_full, medias, images)
+
                         if pics_group:
-                            try:
-                                translated_prompt = tr(prompt, 'ru', save_cache=False)
+                            send_images_to_pic_group(chunks, message, chat_id_full, prompt)
 
-                                hashtag = 'H' + chat_id_full.replace('[', '').replace(']', '')
-                                bot.send_message(pics_group, f'{utils.html.unescape(prompt)} | #{hashtag} {message.from_user.id}',
-                                                link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
-
-                                ratio = fuzz.ratio(translated_prompt, prompt)
-                                if ratio < 70:
-                                    bot.send_message(pics_group, f'{utils.html.unescape(translated_prompt)} | #{hashtag} {message.from_user.id}',
-                                                    link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=False))
-
-                                msgs = send_media_group(message, pics_group, medias)
-                                log_message(msgs)
-
-                            except Exception as error2:
-                                my_log.log2(f'tb:huggingface_image_gen:send to pics_group: {error2}')
                         update_user_image_counter(chat_id_full, len(medias))
                         add_to_bots_mem(message.text, f'The bot successfully generated images on the external service <service>HuggingFace</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
                     else:

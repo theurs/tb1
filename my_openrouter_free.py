@@ -111,6 +111,10 @@ def ai(prompt: str = '',
             except Exception as error:
                 my_log.log_openrouter_free(f'Failed to parse response: {error}\n\n{str(response)}')
                 result = ''
+                if response.text.startswith("""{"error":{"message":"This endpoint\'s maximum context length is"""):
+                    return ''
+                if not result and model == DEFAULT_MODEL:
+                    return ai(prompt, mem, user_id, system, DEFAULT_MODEL_FALLBACK, temperature, max_tokens, timeout)
                 time.sleep(2)
         else:
             my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response)[:2000]}')
@@ -508,8 +512,16 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
-    reset('test')
-    chat_cli('')
+    # reset('test')
+    # chat_cli('')
+
+
+    # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:
+    #     text = f.read()
+    # q = f'Кратко перескажи 32 главу\n\n {text[:600000]}'
+    # r = ai(q, model = DEFAULT_MODEL_FALLBACK)
+    # print(r)
+
 
     # print(img2txt('C:/Users/user/Downloads/1.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-3.2-11b-vision-instruct:free'))
     # print(voice2txt('C:/Users/user/Downloads/1.ogg'))

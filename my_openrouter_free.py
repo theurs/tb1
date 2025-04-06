@@ -15,7 +15,7 @@ import my_log
 
 # сколько запросов хранить
 MAX_MEM_LINES = 20
-MAX_HIST_CHARS = 40000
+MAX_HIST_CHARS = 100000
 
 # блокировка чатов что бы не испортить историю
 # {id:lock}
@@ -24,6 +24,8 @@ LOCKS = {}
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 50000
 
+DEFAULT_MODEL = 'meta-llama/llama-4-maverick:free'
+DEFAULT_MODEL_FALLBACK = 'meta-llama/llama-4-scout:free'
 
 def clear_mem(mem, user_id: str):
     while 1:
@@ -47,15 +49,15 @@ def ai(prompt: str = '',
        mem = None,
        user_id: str = '',
        system: str = '',
-       model = 'nousresearch/hermes-3-llama-3.1-405b:free',
+       model = DEFAULT_MODEL,
        temperature: float = 1,
        max_tokens: int = 4000,
        timeout: int = 120) -> str:
 
     if not model:
-        model = 'nousresearch/hermes-3-llama-3.1-405b:free'
+        model = DEFAULT_MODEL
 
-    if not model.endswith(':free') and 'google/gemini-flash-1.5-exp' not in model:
+    if not model.endswith(':free'):
         return ''
 
     if not prompt and not mem:
@@ -89,11 +91,11 @@ def ai(prompt: str = '',
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {random.choice(cfg.OPEN_ROUTER_FREE_KEYS)}",
-                "HTTP-Referer": f"{YOUR_SITE_URL}", # Optional, for including your app on openrouter.ai rankings.
-                "X-Title": f"{YOUR_APP_NAME}", # Optional. Shows in rankings on openrouter.ai.
+                "HTTP-Referer": f"{YOUR_SITE_URL}",
+                "X-Title": f"{YOUR_APP_NAME}",
             },
             data=json.dumps({
-                "model": model, # Optional
+                "model": model,
                 "messages": mem_,
                 "max_tokens": max_tokens,
                 "temperature": temperature,
@@ -113,6 +115,9 @@ def ai(prompt: str = '',
         else:
             my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response)[:2000]}')
             time.sleep(2)
+
+    if not result and model == DEFAULT_MODEL:
+        result = ai(prompt, mem, user_id, system, DEFAULT_MODEL_FALLBACK, temperature, max_tokens, timeout)
 
     return result
 
@@ -137,7 +142,13 @@ def update_mem(query: str, resp: str, chat_id: str):
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
 
 
-def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = '', model: str = '') -> str:
+def chat(
+    query: str,
+    chat_id: str = '',
+    temperature: float = 1,
+    system: str = '',
+    model: str = ''
+    ) -> str:
     global LOCKS
     if chat_id in LOCKS:
         lock = LOCKS[chat_id]
@@ -150,10 +161,10 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
         text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model)
 
         if text:
-            if 'llama-3.1-405b' in model:
-                my_db.add_msg(chat_id, 'llama405')
-            elif 'llama-3.1-8b' in model:
-                my_db.add_msg(chat_id, 'llama31-8b')
+            if DEFAULT_MODEL in model:
+                my_db.add_msg(chat_id, 'llama-4-maverick')
+            elif DEFAULT_MODEL_FALLBACK in model:
+                my_db.add_msg(chat_id, 'llama-4-scout')
             mem += [{'role': 'user', 'content': query}]
             mem += [{'role': 'assistant', 'content': text}]
             mem = clear_mem(mem, chat_id)
@@ -252,7 +263,7 @@ def get_last_mem(chat_id: str) -> str:
         return ''
 
 
-def get_mem_as_string(chat_id: str) -> str:
+def get_mem_as_string(chat_id: str, md: bool = False) -> str:
     """
     Returns the chat history as a string for the given ID.
 
@@ -274,13 +285,19 @@ def get_mem_as_string(chat_id: str) -> str:
             if text.startswith('[Info to help you answer'):
                 end = text.find(']') + 1
                 text = text[end:].strip()
-            result += f'{role}: {text}\n'
+            if md:
+                result += f'{role}:\n\n{text}\n\n'
+            else:
+                result += f'{role}: {text}\n'
             if role == '𝐁𝐎𝐓':
-                result += '\n'
+                if md:
+                    result += '\n\n'
+                else:
+                    result += '\n'
         return result 
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_openrouter_free(f'my_openrouter:get_mem_as_string: {error}\n\n{error_traceback}')
+        my_log.log_openrouter_free(f'get_mem_as_string: {error}\n\n{error_traceback}')
         return ''
 
 
@@ -300,7 +317,7 @@ def img2txt(
     Args:
         image_data: The image data as bytes.
         prompt: The prompt to guide the description. Defaults to 'Describe picture'.
-        model: The model to use for generating the description. Defaults to 'mistralai/pixtral-12b:free'.
+        model: The model to use for generating the description. Defaults to DEFAULT_MODEL.
         temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
         max_tokens: The maximum number of tokens to generate. Defaults to 2000.
         timeout: The timeout for the request in seconds. Defaults to 120.
@@ -314,7 +331,7 @@ def img2txt(
             image_data = f.read()
 
     if not model:
-        model = 'mistralai/pixtral-12b:free'
+        model = DEFAULT_MODEL
 
     if not model.endswith(':free'):
         return ''
@@ -389,6 +406,10 @@ def img2txt(
             time.sleep(2)
     if chat_id:
         my_db.add_msg(chat_id, model)
+
+    if not result and model == DEFAULT_MODEL:
+        result = img2txt(image_data, prompt, DEFAULT_MODEL_FALLBACK, temperature, max_tokens, timeout, chat_id, system)
+
     return result
 
 
@@ -487,10 +508,10 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
-    # reset('test')
-    # chat_cli()
+    reset('test')
+    chat_cli('')
 
-    print(img2txt('C:/Users/user/Downloads/1.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-3.2-11b-vision-instruct:free'))
+    # print(img2txt('C:/Users/user/Downloads/1.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-3.2-11b-vision-instruct:free'))
     # print(voice2txt('C:/Users/user/Downloads/1.ogg'))
 
     my_db.close()

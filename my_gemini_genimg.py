@@ -1,5 +1,6 @@
 import os
 import time
+import traceback
 from io import BytesIO
 from PIL import Image
 from typing import Optional
@@ -152,6 +153,7 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
     '''
     files = []
     client = None
+    
     try:
         if not api_key:
             api_key = my_gemini.get_next_key()
@@ -200,26 +202,35 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
             response_mime_type="text/plain",
         )
 
-        for chunk in client.models.generate_content_stream(
-            model=model,
-            contents=contents,
-            config=generate_content_config,
-        ):
-            if not chunk.candidates or not chunk.candidates[0].content or not chunk.candidates[0].content.parts:
-                continue
-            if chunk.candidates[0].content.parts[0].inline_data:
-                image_data: bytes = chunk.candidates[0].content.parts[0].inline_data.data
-                if user_id:
-                    my_db.add_msg(user_id, 'img ' + model)
-                return convert_png_to_jpg(image_data)
-            else:
-                # my_log.log_gemini(text=chunk.text)
-                pass
+        for _ in range(5):
+            try:
+                for chunk in client.models.generate_content_stream(
+                    model=model,
+                    contents=contents,
+                    config=generate_content_config,
+                ):
+                    if not chunk.candidates or not chunk.candidates[0].content or not chunk.candidates[0].content.parts:
+                        continue
+                    if chunk.candidates[0].content.parts[0].inline_data:
+                        image_data: bytes = chunk.candidates[0].content.parts[0].inline_data.data
+                        if user_id:
+                            my_db.add_msg(user_id, 'img ' + model)
+                        return convert_png_to_jpg(image_data)
+                    else:
+                        # my_log.log_gemini(text=chunk.text)
+                        pass
+            except Exception as e:
+                if "503 Service Unavailable. {'message': 'Response not read', 'status': 'Service Unavailable'}" in str(e):
+                    time.sleep(5)
+                    continue
+                else:
+                    raise(e)
 
         return None
 
     except Exception as e:
-        my_log.log_gemini(text=f"Error generating image: {e}")
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini(text=f"Error generating image:2: {e}\n\n{traceback_error}")
         return None
     finally:
         if client and files:

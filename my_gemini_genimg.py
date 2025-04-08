@@ -134,8 +134,8 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                         pass
                         # my_log.log_gemini(text=chunk.text)
             except Exception as e:
+                my_log.log_gemini(f'[error genimg] {str(e)}')
                 if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e):
-                    my_log.log_gemini(f'[error genimg] {str(e)}')
                     time.sleep(20)
                     continue
                 else:
@@ -229,8 +229,8 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
                         # my_log.log_gemini(text=chunk.text)
                         pass
             except Exception as e:
+                my_log.log_gemini(f'[error regenimg] {str(e)}')
                 if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e):
-                    my_log.log_gemini(f'[error regenimg] {str(e)}')
                     time.sleep(20)
                     continue
                 else:

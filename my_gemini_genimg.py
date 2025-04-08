@@ -221,7 +221,8 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
                         pass
             except Exception as e:
                 if "503 Service Unavailable. {'message': 'Response not read', 'status': 'Service Unavailable'}" in str(e):
-                    time.sleep(5)
+                    my_log.log_gemini(f'[error regenimg] {str(e)}')
+                    time.sleep(10)
                     continue
                 else:
                     raise(e)

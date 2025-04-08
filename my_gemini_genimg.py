@@ -116,21 +116,30 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
             response_mime_type="text/plain",
         )
 
-        for chunk in client.models.generate_content_stream(
-            model=model,
-            contents=contents,
-            config=generate_content_config,
-        ):
-            if not chunk.candidates or not chunk.candidates[0].content or not chunk.candidates[0].content.parts:
-                continue
-            if chunk.candidates[0].content.parts[0].inline_data:
-                image_data: bytes = chunk.candidates[0].content.parts[0].inline_data.data
-                if user_id:
-                    my_db.add_msg(user_id, 'img ' + model)
-                return convert_png_to_jpg(image_data)
-            else:
-                pass
-                # my_log.log_gemini(text=chunk.text)
+        for _ in range(5):
+            try:
+                for chunk in client.models.generate_content_stream(
+                    model=model,
+                    contents=contents,
+                    config=generate_content_config,
+                ):
+                    if not chunk.candidates or not chunk.candidates[0].content or not chunk.candidates[0].content.parts:
+                        continue
+                    if chunk.candidates[0].content.parts[0].inline_data:
+                        image_data: bytes = chunk.candidates[0].content.parts[0].inline_data.data
+                        if user_id:
+                            my_db.add_msg(user_id, 'img ' + model)
+                        return convert_png_to_jpg(image_data)
+                    else:
+                        pass
+                        # my_log.log_gemini(text=chunk.text)
+            except Exception as e:
+                if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e):
+                    my_log.log_gemini(f'[error genimg] {str(e)}')
+                    time.sleep(20)
+                    continue
+                else:
+                    raise(e)
 
         return None
 

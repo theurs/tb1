@@ -116,7 +116,7 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
             response_mime_type="text/plain",
         )
 
-        for _ in range(5):
+        for x in range(2):
             try:
                 for chunk in client.models.generate_content_stream(
                     model=model,

@@ -46,7 +46,7 @@ async def generate_audio_bytes(
         response_modalities=["AUDIO"],
         system_instruction=types.Content(
             parts = [
-                types.Part(text=f"Отвечай эхом на все запросы юзера, просто произноси всё точно так как он тебе написал, цифры произноси на языке [{lang}]"),
+                types.Part(text=f"Отвечай эхом на все запросы юзера, просто произноси всё точно так как он тебе написал, текст и цифры произноси на языке [{lang}]"),
                 types.Part(text=f"Запрос юзера надо предварительно переписать, исправить опечатки, исправить ошибки оформления"),
             ]
         ),
@@ -108,7 +108,7 @@ def convert_raw_pcm_to_ogg_bytes(
             ogg_buffer,
             format="ogg",
             codec="libvorbis",
-            parameters=["-q:a", "5"],
+            parameters=["-q:a", "4"],
         )
 
         # Get the bytes from the in-memory buffer
@@ -191,7 +191,7 @@ def generate_and_convert_to_ogg_sync_chunked(
 
     try:
         # Iterate through the text in chunks
-        chunks = utils.split_text(text, chunk_limit=8000)
+        chunks = utils.split_text(text, chunk_limit=chunk_limit)
         chunk_num = 0
         for chunk in chunks:
             chunk_num += 1

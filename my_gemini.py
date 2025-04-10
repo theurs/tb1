@@ -1281,7 +1281,7 @@ if __name__ == '__main__':
     # chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
     # chat_cli(model=cfg.gemini_2_flash_thinking_exp_model)
     # chat_cli(model = 'gemini-2.0-flash-thinking-exp-1219')
-    chat_cli(model = 'gemini-2.5-pro-preview-03-25')
+    chat_cli(model = 'gemini-2.0-flash-live-001')
     # chat_cli()
 
     # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:

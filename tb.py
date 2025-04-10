@@ -2206,6 +2206,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
                 'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
                 'tts_google_female': 'Google',
+
                 'tts_openai_alloy': 'OpenAI',
                 'tts_openai_ash': 'OpenAI',
                 'tts_openai_ballad': 'OpenAI',
@@ -2217,6 +2218,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 'tts_openai_sage': 'OpenAI',
                 'tts_openai_shimmer': 'OpenAI',
                 'tts_openai_verse': 'OpenAI',
+
+                'tts_gemini_Puck': 'Gemini',
+                'tts_gemini_Charon': 'Gemini',
+                'tts_gemini_Kore': 'Gemini',
+                'tts_gemini_Fenrir': 'Gemini',
+                'tts_gemini_Aoede': 'Gemini',
+                'tts_gemini_Leda': 'Gemini',
+                'tts_gemini_Orus': 'Gemini',
+                'tts_gemini_Zephyr': 'Gemini',
             }
 
             if voice in voices:
@@ -2453,6 +2463,43 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 markup.row(button1, button2, button3, button4)
                 markup.row(button5, button6, button7, button8)
                 markup.row(button9, button10, button11)
+
+            if voice_title == 'Gemini':
+                if 'Puck' in voice:
+                    button1 = telebot.types.InlineKeyboardButton('📢 Puck', callback_data='switch_do_nothing')
+                else:
+                    button1 = telebot.types.InlineKeyboardButton('Puck', callback_data='switch_gemini_Puck')
+                if 'Charon' in voice:
+                    button2 = telebot.types.InlineKeyboardButton('📢 Charon', callback_data='switch_do_nothing')
+                else:
+                    button2 = telebot.types.InlineKeyboardButton('Charon', callback_data='switch_gemini_Charon')
+                if 'Kore' in voice:
+                    button3 = telebot.types.InlineKeyboardButton('📢 Kore', callback_data='switch_do_nothing')
+                else:
+                    button3 = telebot.types.InlineKeyboardButton('Kore', callback_data='switch_gemini_Kore')
+                if 'Fenrir' in voice:
+                    button4 = telebot.types.InlineKeyboardButton('📢 Fenrir', callback_data='switch_do_nothing')
+                else:
+                    button4 = telebot.types.InlineKeyboardButton('Fenrir', callback_data='switch_gemini_Fenrir')
+                if 'Aoede' in voice:
+                    button5 = telebot.types.InlineKeyboardButton('📢 Aoede', callback_data='switch_do_nothing')
+                else:
+                    button5 = telebot.types.InlineKeyboardButton('Aoede', callback_data='switch_gemini_Aoede')
+                if 'Leda' in voice:
+                    button6 = telebot.types.InlineKeyboardButton('📢 Leda', callback_data='switch_do_nothing')
+                else:
+                    button6 = telebot.types.InlineKeyboardButton('Leda', callback_data='switch_gemini_Leda')
+                if 'Orus' in voice:
+                    button7 = telebot.types.InlineKeyboardButton('📢 Orus', callback_data='switch_do_nothing')
+                else:
+                    button7 = telebot.types.InlineKeyboardButton('Orus', callback_data='switch_gemini_Orus')
+                if 'Zephyr' in voice:
+                    button8 = telebot.types.InlineKeyboardButton('📢 Zephyr', callback_data='switch_do_nothing')
+                else:
+                    button8 = telebot.types.InlineKeyboardButton('Zephyr', callback_data='switch_gemini_Zephyr')
+
+                markup.row(button1, button2, button3, button4)
+                markup.row(button5, button6, button7, button8)
 
 
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
@@ -2924,6 +2971,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
         elif call.data.startswith('tts_openai') and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'gemini_Puck')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data.startswith('tts_gemini') and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
@@ -2931,6 +2983,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data.startswith('switch_openai_') and is_admin_member(call):
             voice = call.data.split('_')[-1]
             my_db.set_user_property(chat_id_full, 'tts_gender', f'openai_{voice}')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data.startswith('switch_gemini_') and is_admin_member(call):
+            voice = call.data.split('_')[-1]
+            my_db.set_user_property(chat_id_full, 'tts_gender', f'gemini_{voice}')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 

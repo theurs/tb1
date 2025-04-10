@@ -14,6 +14,7 @@ from langdetect import detect
 import utils
 import my_log
 import my_openai_voice
+import my_gemini_voice
 
 
 VOICES = {
@@ -292,7 +293,13 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                 if result:
                     return result
             except Exception as e:
-
+                pass
+        elif gender.startswith('gemini_') and len(text) < 8 * 1024:
+            try:
+                result = my_gemini_voice.generate_and_convert_to_ogg_sync_chunked(text, voice = gender[7:])
+                if result:
+                    return result
+            except Exception as e:
                 pass
 
         voice = get_voice(voice, gender)

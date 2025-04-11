@@ -273,10 +273,10 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
                         genai.delete_file(your_file.name)
                         break
                     except Exception as error:
-                        my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
+                        my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file:1:{error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
                         time.sleep(4)
         except Exception as error:
-            my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
+            my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file:2: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
 
         if response and response.text.strip():
             if detect_repetitiveness(response.text.strip()):

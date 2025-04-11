@@ -132,10 +132,9 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                         return convert_png_to_jpg(image_data)
                     else:
                         pass
-                        # my_log.log_gemini(text=chunk.text)
             except Exception as e:
-                my_log.log_gemini(f'[error genimg] {str(e)}')
-                if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e):
+                my_log.log_gemini(f'my_gemini_genimg: [error genimg] {str(e)}')
+                if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e) or 'SSL: UNEXPECTED_EOF_WHILE_READING' in str(e):
                     time.sleep(20)
                     continue
                 else:
@@ -144,7 +143,7 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
         return None
 
     except Exception as e:
-        my_log.log_gemini(text=f"Error generating image: {e}")
+        my_log.log_gemini(text=f"my_gemini_genimg: Error generating image: {e}")
         return None
 
 
@@ -178,7 +177,7 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
                 uploaded_file = client.files.upload(file=tmpfname)
                 files.append(uploaded_file)
             except Exception as error:
-                my_log.log_gemini(f"Error uploading image: {error}")
+                my_log.log_gemini(f"my_gemini_genimg: Error uploading image: {error}")
                 continue
             finally:
                 utils.remove_file(tmpfname)
@@ -229,7 +228,7 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
                         # my_log.log_gemini(text=chunk.text)
                         pass
             except Exception as e:
-                my_log.log_gemini(f'[error regenimg] {str(e)}')
+                my_log.log_gemini(f'my_gemini_genimg: [error regenimg] {str(e)}')
                 if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e):
                     time.sleep(20)
                     continue
@@ -240,7 +239,7 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
 
     except Exception as e:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini(text=f"Error generating image:2: {e}\n\n{traceback_error}")
+        my_log.log_gemini(text=f"my_gemini_genimg: Error generating image:2: {e}\n\n{traceback_error}")
         return None
     finally:
         if client and files:
@@ -248,22 +247,22 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
                 try:
                     client.files.delete(name = _file.name)
                 except Exception as error:
-                    my_log.log_gemini(f"Error deleting image: {error}")
+                    my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error}")
                     time.sleep(5)
                     try:
                         client.files.delete(name = _file.name)
                     except Exception as error2: 
-                        my_log.log_gemini(f"Error deleting image: {error2}")
+                        my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error2}")
                         time.sleep(10)
                         try:
                             client.files.delete(name = _file.name)
                         except Exception as error3:
-                            my_log.log_gemini(f"Error deleting image: {error3}")
+                            my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error3}")
                             time.sleep(20)
                             try:
                                 client.files.delete(name = _file.name)
                             except Exception as error4:
-                                my_log.log_gemini(f"Error deleting image: {error4}")
+                                my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error4}")
 
 
 def test_generate_image():

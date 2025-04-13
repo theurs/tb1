@@ -39,7 +39,6 @@ async def generate_audio_bytes(
         bytes: A bytes object containing the raw audio data received from the API.
                Returns empty bytes if no audio data is received or an error occurs.
     """
-    text = text.replace('-', '–')
     client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'api_version': 'v1alpha'})
 
     config = types.LiveConnectConfig(
@@ -74,6 +73,8 @@ async def generate_audio_bytes(
             )
         ),
     )
+
+    text = text.replace('-', '–')
 
     audio_data = bytearray()
     try:

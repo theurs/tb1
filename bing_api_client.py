@@ -63,17 +63,17 @@ def send_image_generation_request(prompt: str) -> List[str]:
 
     try:
         # Send the POST request
-        response: requests.Response = requests.post(url, headers=headers, json=data, timeout=70)
-        
+        response: requests.Response = requests.post(url, headers=headers, json=data, timeout=120)
+
         # Raise an exception for bad status codes
         response.raise_for_status()
-        
+
         # Parse the JSON response
         json_response: Dict[str, Any] = response.json()
-        
+
         # Extract the list of URLs
         image_urls: List[str] = json_response.get("urls", [])
-        
+
         return image_urls
 
     except Exception as error:
@@ -94,15 +94,15 @@ def gen_images(prompt: str) -> List[str]:
 if __name__ == "__main__":
     # Example prompt in Russian
     prompt: str = "Нарисуй закат на море с яркими оранжевыми и розовыми оттенками на небе а на переднем плане пусть будет одинокая лодка покачивающаяся на волнах"
-    
+
     try:
         # Send the request and get the URLs
         urls: List[str] = gen_images(prompt)
-        
+
         # Print the URLs
         for url in urls:
             print(url)
-    
+
     except Exception as e:
         print(f"An error occurred: {e}")
 

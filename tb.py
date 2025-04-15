@@ -5734,7 +5734,7 @@ def force_cmd(message: telebot.types.Message):
 
 @bot.message_handler(commands=['undo', 'u', 'U', 'Undo'], func=authorized_log)
 @async_run
-def undo_cmd(message: telebot.types.Message):
+def undo_cmd(message: telebot.types.Message, show_message: bool = True):
     """Clear chat history last message (bot's memory)"""
     try:
         chat_id_full = get_topic_id(message)
@@ -5770,7 +5770,8 @@ def undo_cmd(message: telebot.types.Message):
         else:
             bot_reply_tr(message, 'History WAS NOT undone.')
 
-        bot_reply_tr(message, 'Last message was cancelled.')
+        if show_message:
+            bot_reply_tr(message, 'Last message was cancelled.')
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:undo: {unknown}\n{traceback_error}')
@@ -10046,6 +10047,12 @@ def do_task(message, custom_prompt: str = ''):
                                     # return
                                 my_gemini.update_mem(message.text, answer, chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
 
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
@@ -10096,6 +10103,12 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = 'Groq llama 3.3 70b ' + tr('did not answered, try to /reset and start again', lang)
 
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
@@ -10144,6 +10157,12 @@ def do_task(message, custom_prompt: str = ''):
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -10196,6 +10215,12 @@ def do_task(message, custom_prompt: str = ''):
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -10258,6 +10283,12 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = 'Openrouter ' + tr('did not answered, try to /reset and start again. Check your balance or /help2', lang)
 
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
@@ -10298,6 +10329,12 @@ def do_task(message, custom_prompt: str = ''):
 
                             WHO_ANSWERED[chat_id_full] = 'Mistral Large'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -10346,6 +10383,12 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = 'Llama4 Maverick'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
@@ -10391,6 +10434,12 @@ def do_task(message, custom_prompt: str = ''):
 
                             WHO_ANSWERED[chat_id_full] = 'Pixtral Large'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -10445,6 +10494,12 @@ def do_task(message, custom_prompt: str = ''):
 
                             WHO_ANSWERED[chat_id_full] = 'Codestral'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -10501,6 +10556,12 @@ def do_task(message, custom_prompt: str = ''):
                                 WHO_ANSWERED[chat_id_full] = 'GPT-4o'
 
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -10566,6 +10627,12 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
@@ -10628,6 +10695,12 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
@@ -10671,6 +10744,12 @@ def do_task(message, custom_prompt: str = ''):
 
                             WHO_ANSWERED[chat_id_full] = 'Command A'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -10722,6 +10801,12 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = 'GLM 4 PLUS ' + tr('did not answered, try to /reset and start again.', lang)
 
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
                                 DEBUG_MD_TO_HTML[answer_] = answer
@@ -10762,6 +10847,12 @@ def do_task(message, custom_prompt: str = ''):
                                     answer = 'GPT o3 mini ' + tr('did not answered, try to /reset and start again', lang)
                             WHO_ANSWERED[chat_id_full] = 'o3_mini_ddg'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -10804,6 +10895,12 @@ def do_task(message, custom_prompt: str = ''):
 
                             WHO_ANSWERED[chat_id_full] = 'gpt-4o-mini-ddg'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)

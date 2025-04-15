@@ -8446,6 +8446,9 @@ def id_cmd_handler(message: telebot.types.Message):
 @async_run
 def reload_module(message: telebot.types.Message):
     '''command for reload imported module on the fly'''
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
+
     try:
         module_name = message.text.split(' ', 1)[1].strip()
 
@@ -8483,10 +8486,12 @@ def reload_module(message: telebot.types.Message):
             db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
             my_db.init(db_backup, db_vacuum)
 
-        bot_reply_tr(message, f"Модуль '{module_name}' успешно перезагружен.")
+        msg = f'{tr("Модуль успешно перезагружен:", lang)} {module_name}'
+        bot_reply(message, msg)
     except Exception as e:
         my_log.log2(f"Ошибка при перезагрузке модуля: {e}")
-        bot_reply_tr(message, f"Ошибка при перезагрузке модуля:\n\n```{e}```", parse_mode = 'MarkdownV2')
+        msg = f'{tr("Ошибка при перезагрузке модуля:", lang)}```ERROR\n{e}```'
+        bot_reply(message, msg, parse_mode = 'MarkdownV2')
 
 
 @bot.message_handler(commands=['enable'], func=authorized_owner)

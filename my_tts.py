@@ -312,6 +312,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         # заменить ! на точку, с восклицательным знаком очень плохие переходы получаются
         if lang == 'ru':
             text = text.replace('!', '.')
+            text = text.replace('«', '').replace('»', '')
 
         # Создаем временный файл для записи аудио
         with tempfile.NamedTemporaryFile(suffix=".mp3", delete=True) as f: 

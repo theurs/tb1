@@ -33,8 +33,12 @@ MAX_REQUEST = 8000
 KEYS_LOCK = threading.Lock()
 
 
-DEFAULT_MODEL = 'gpt-4o-mini'
 BIG_GPT_MODEL = 'gpt-4o'
+DEFAULT_MODEL = 'gpt-4o-mini'
+
+BIG_GPT_41_MODEL = 'gpt-4.1'
+DEFAULT_41_MINI_MODEL = 'gpt-4.1-mini'
+
 DEEPSEEK_R1_MODEL = 'DeepSeek-R1'
 DEEPSEEK_R1_MODEL_FALLBACK = 'gpt-4o-mini'
 

@@ -208,6 +208,7 @@ default_bot_name = 'бот'
 # какой бот отвечает по умолчанию
 # 'gemini', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15', 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'o3-mini',
 # 'gpt-4o-mini-ddg', 'glm4plus', 'mistral', 'pixtral', 'cohere', 'deepseek_r1_distill_llama70b', 'qwq32b', 'gpt-4o', 'deepseek_r1', 'deepseek_v3', 'llama4_maverick'
+# 'gpt_41', 'gpt_41_mini'
 chat_mode_default = 'gemini15'
 
 img2_txt_model = 'gemini-2.0-flash-001'

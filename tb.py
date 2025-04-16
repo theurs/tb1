@@ -527,7 +527,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_mistral.update_mem(query, resp, chat_id_full)
         elif 'codestral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_mistral.update_mem(query, resp, chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.update_mem(query, resp, chat_id_full)
         elif 'cohere' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_cohere.update_mem(query, resp, chat_id_full)
@@ -673,6 +673,17 @@ def img2txt(text,
                     text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
                     if not text:
                         text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
+
+                elif chat_mode == 'gpt_41':
+                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_41_MODEL, system=system_message, timeout=timeout)
+                    if not text:
+                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
+
+                elif chat_mode == 'gpt_41_mini':
+                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
+                    if not text:
+                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT, system=system_message, timeout=timeout)
+
                 elif chat_mode == 'gemini15':
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
@@ -2069,6 +2080,30 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
 
+        elif kbd == 'gpt_41_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt_41_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
+
+        elif kbd == 'gpt_41_mini_chat':
+            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
+                return None
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
+            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt_41_mini_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
+            return markup
+
         elif kbd == 'deepseek_v3_chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
@@ -2349,6 +2384,17 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'GPT-4o'
             button_gpt_4o = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o')
 
+            if chat_mode == 'gpt_41':
+                msg = '✅ GPT 4.1'
+            else:
+                msg = 'GPT 4.1'
+            button_gpt_41 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt_41')
+
+            if chat_mode == 'gpt_41_mini':
+                msg = '✅ GPT 4.1 mini'
+            else:
+                msg = 'GPT 4.1 mini'
+            button_gpt_41_mini = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt_41_mini')
 
             if chat_mode == 'deepseek_v3':
                 msg = '✅ DeepSeek V3'
@@ -2404,6 +2450,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             # markup.row(button_gemini_lite, button_gemini_pro15)
             
             markup.row(button_gpt_4o, button_deepseek_v3)
+
+            markup.row(button_gpt_41, button_gpt_41_mini)
 
             # markup.row(button_openrouter, button_qwq32b)
             markup.row(button_openrouter, button_llama4_maverick)
@@ -2839,45 +2887,36 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot_reply_tr(message, 'No text was saved.')
 
         elif call.data == 'select_llama370':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Llama-3.3 70b Groq.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
         elif call.data == 'select_deepseek_r1_distill_llama70b':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель deepseek_r1_distill_llama70b.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1_distill_llama70b')
         elif call.data == 'select_qwq32b':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель qwq32b.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'qwq32b')
         elif call.data == 'select_mistral':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Mistral Large.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')
         elif call.data == 'select_pixtral':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Pixtral Large.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'pixtral')
         elif call.data == 'select_codestral':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель Codestral.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'codestral')
         elif call.data == 'select_gpt-4o':
             if chat_id_full in my_github.USER_KEYS:
-                # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель GPT 4o.', lang))
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o')
             else:
                 bot_reply_tr(message, 'Insert your github key first. /keys')
+        elif call.data == 'select_gpt_41':
+            if chat_id_full in my_github.USER_KEYS:
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41')
+            else:
+                bot_reply_tr(message, 'Insert your github key first. /keys')
+        elif call.data == 'select_gpt_41_mini':
+            if chat_id_full in my_github.USER_KEYS:
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41_mini')
+            else:
+                bot_reply_tr(message, 'Insert your github key first. /keys')
         elif call.data == 'select_deepseek_r1':
-            # if chat_id_full in my_github.USER_KEYS:
-            #     # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель DeepSeek R1.', lang))
-            #     my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1')
-            # else:
-            #     bot_reply_tr(message, 'Insert your github key first. /keys')
-
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель DeepSeek R1.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1')
-
-
         elif call.data == 'select_deepseek_v3':
-            # bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=tr('Выбрана модель DeepSeek V3.', lang))
             my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_v3')
-
-
         elif call.data == 'select_cohere':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'cohere')
         elif call.data == 'select_glm4plus':
@@ -2933,7 +2972,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'codestral_reset':
             my_mistral.reset(chat_id_full)
             bot_reply_tr(message, 'История диалога с Codestral очищена.')
-        elif call.data in ('gpt-4o_reset', 'deepseek_r1_reset', 'deepseek_v3_reset'):
+        elif call.data in ('gpt-4o_reset', 'gpt_41_reset', 'gpt_41_mini_reset', 'deepseek_r1_reset', 'deepseek_v3_reset'):
             my_github.reset(chat_id_full)
             bot_reply_tr(message, 'История очищена.')
         elif call.data in ('deepseek_r1_distill_llama70b_reset', 'qwq32b_reset'):
@@ -5687,7 +5726,7 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_mistral.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             my_cohere.force(chat_id_full, text)
@@ -5757,7 +5796,7 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
             my_mistral.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             my_cohere.undo(chat_id_full)
@@ -5806,7 +5845,7 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
                 my_mistral.reset(chat_id_full)
             elif chat_mode_ == 'codestral':
                 my_mistral.reset(chat_id_full)
-            elif chat_mode_ in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
+            elif chat_mode_ in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
                 my_github.reset(chat_id_full)
             elif chat_mode_ == 'cohere':
                 my_cohere.reset(chat_id_full)
@@ -5922,7 +5961,7 @@ def save_history(message: telebot.types.Message):
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'deepseek_r1', 'deepseek_v3'):
+        if my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             prompt = my_github.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
@@ -6034,6 +6073,14 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
             prompt = 'GPT-4o\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt_41':
+            prompt = 'GPT 4.1\n\n'
+            prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt_41_mini':
+            prompt = 'GPT 4.1 mini\n\n'
+            prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'deepseek_r1':
             prompt = 'DeepSeek R1\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -8299,6 +8346,8 @@ def id_cmd_handler(message: telebot.types.Message):
             'pixtral': my_mistral.VISION_MODEL,
             'codestral': my_mistral.CODE_MODEL,
             'gpt-4o': my_github.BIG_GPT_MODEL,
+            'gpt_41': my_github.BIG_GPT_41_MODEL,
+            'gpt_41_mini': my_github.DEFAULT_41_MINI_MODEL,
             'deepseek_r1': my_github.DEEPSEEK_R1_MODEL,
             'deepseek_v3': my_nebius.DEFAULT_MODEL_FALLBACK,
             'cohere': my_cohere.DEFAULT_MODEL,
@@ -10587,6 +10636,130 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt-4o {error3}\n{error_traceback}')
+                        return
+
+
+                # если активирован режим общения с gpt_41
+                if chat_mode_ == 'gpt_41':
+                    if len(msg) > my_github.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 4.1, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_github.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            answer = my_github.chat(
+                                message.text,
+                                chat_id_full,
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                system=hidden_text,
+                                model = my_github.BIG_GPT_41_MODEL,
+                            )
+                            if not answer:
+                                answer = my_github.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_github.DEFAULT_41_MINI_MODEL,
+                                )
+                                WHO_ANSWERED[chat_id_full] = 'GPT 4.1 mini'
+                            else:
+                                WHO_ANSWERED[chat_id_full] = 'GPT 4.1'
+
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            answer = answer.strip()
+                            if not answer:
+                                answer = 'GPT 4.1 ' + tr('did not answered, try to /reset and start again.', lang)
+
+                            my_log.log_echo(message, f'[GPT 4.1] {answer}')
+
+                            try:
+                                if command_in_answer(answer, message):
+                                    return
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('gpt_41_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('gpt_41_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:gpt_41 {error3}\n{error_traceback}')
+                        return
+
+
+                # если активирован режим общения с gpt_41_mini
+                if chat_mode_ == 'gpt_41_mini':
+                    if len(msg) > my_github.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 4.1 mini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_github.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            answer = my_github.chat(
+                                message.text,
+                                chat_id_full,
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                system=hidden_text,
+                                model = my_github.DEFAULT_41_MINI_MODEL,
+                            )
+                            if not answer:
+                                answer = my_github.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_github.DEFAULT,
+                                )
+                                WHO_ANSWERED[chat_id_full] = 'GPT 4.1 mini'
+                            else:
+                                WHO_ANSWERED[chat_id_full] = 'GPT 4.1 mini'
+
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            answer = answer.strip()
+                            if not answer:
+                                answer = 'GPT 4.1 mini ' + tr('did not answered, try to /reset and start again.', lang)
+
+                            my_log.log_echo(message, f'[GPT 4.1 mini] {answer}')
+
+                            try:
+                                if command_in_answer(answer, message):
+                                    return
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('gpt_41_mini_chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('gpt_41_mini_chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:gpt_41_mini {error3}\n{error_traceback}')
                         return
 
 

@@ -682,7 +682,7 @@ def img2txt(text,
                 elif chat_mode == 'gpt_41_mini':
                     text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
                     if not text:
-                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT, system=system_message, timeout=timeout)
+                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
 
                 elif chat_mode == 'gemini15':
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
@@ -10722,7 +10722,7 @@ def do_task(message, custom_prompt: str = ''):
                                     chat_id_full,
                                     temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                     system=hidden_text,
-                                    model = my_github.DEFAULT,
+                                    model = my_github.DEFAULT_MODEL,
                                 )
                                 WHO_ANSWERED[chat_id_full] = 'GPT 4.1 mini'
                             else:

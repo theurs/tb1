@@ -204,9 +204,37 @@ def bot_markdown_to_tts(text: str) -> str:
 
 # гребаный маркдаун ###################################################################
 
+
+# def replace_math_byte_sequences(text: str) -> str:
+#     """
+#     Replaces byte sequences like <0xXX><0xYY><0xZZ> with their corresponding Unicode characters.
+
+#     Args:
+#         text: The input string containing the byte sequences.
+
+#     Returns:
+#         The string with the byte sequences replaced by Unicode characters.
+#     """
+#     def replace(match: re.Match) -> str:
+#         hex_byte1 = match.group(1)
+#         hex_byte2 = match.group(2)
+#         hex_byte3 = match.group(3)
+#         byte_values = [int(hex_byte1, 16), int(hex_byte2, 16), int(hex_byte3, 16)]
+#         try:
+#             return bytes(byte_values).decode('utf-8')
+#         except UnicodeDecodeError:
+#             return match.group(0)
+
+#     pattern = r'<0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})>'
+#     replaced_text = re.sub(pattern, replace, text)
+#     return replaced_text
+
+
 def replace_math_byte_sequences(text: str) -> str:
     """
-    Replaces byte sequences like <0xXX><0xYY><0xZZ> with their corresponding Unicode characters.
+    Replaces byte sequences like <0xXX><0xYY><0xZZ> or <0xXX><0xYY>
+    with their corresponding Unicode characters (UTF-8 decoding).
+    Processes 3-byte sequences first, then 2-byte sequences.
 
     Args:
         text: The input string containing the byte sequences.
@@ -214,19 +242,43 @@ def replace_math_byte_sequences(text: str) -> str:
     Returns:
         The string with the byte sequences replaced by Unicode characters.
     """
-    def replace(match: re.Match) -> str:
+
+    # --- Handler for 3-byte sequences ---
+    def replace3(match: re.Match) -> str:
         hex_byte1 = match.group(1)
         hex_byte2 = match.group(2)
         hex_byte3 = match.group(3)
         byte_values = [int(hex_byte1, 16), int(hex_byte2, 16), int(hex_byte3, 16)]
         try:
+            # Попытка декодировать как UTF-8
             return bytes(byte_values).decode('utf-8')
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, ValueError):
+            # Если не удалось (невалидный байт или не UTF-8), вернуть как было
             return match.group(0)
 
-    pattern = r'<0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})>'
-    replaced_text = re.sub(pattern, replace, text)
-    return replaced_text
+    # Паттерн для 3-байтовых последовательностей
+    pattern3 = r'<0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})>'
+    # Первый проход: заменяем 3-байтовые
+    processed_text = re.sub(pattern3, replace3, text)
+
+    # --- Handler for 2-byte sequences ---
+    def replace2(match: re.Match) -> str:
+        hex_byte1 = match.group(1)
+        hex_byte2 = match.group(2)
+        byte_values = [int(hex_byte1, 16), int(hex_byte2, 16)]
+        try:
+            # Попытка декодировать как UTF-8
+            return bytes(byte_values).decode('utf-8')
+        except (UnicodeDecodeError, ValueError):
+             # Если не удалось, вернуть как было
+            return match.group(0)
+
+    # Паттерн для 2-байтовых последовательностей
+    pattern2 = r'<0x([0-9a-fA-F]{2})><0x([0-9a-fA-F]{2})>'
+    # Второй проход: заменяем 2-байтовые на результате первого прохода
+    final_text = re.sub(pattern2, replace2, processed_text)
+
+    return final_text
 
 
 def bot_markdown_to_html(text: str) -> str:

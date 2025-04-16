@@ -8313,8 +8313,10 @@ def id_cmd_handler(message: telebot.types.Message):
 
         COMMAND_MODE[chat_id_full] = ''
 
+        is_admin = message.from_user.id in cfg.admins
+
         try:
-            if message.from_user.id in cfg.admins:
+            if is_admin:
                 arg = message.text.split(maxsplit=1)[1].strip()
                 if arg:
                     if '[' not in arg:
@@ -8390,12 +8392,11 @@ def id_cmd_handler(message: telebot.types.Message):
             last_donate_time = 0
 
         msg = ''
-        if message.from_user.id in cfg.admins:
+        if is_admin:
             msg += f'Uptime: {get_uptime()}\n\n'
+            msg += f'''{tr("Дата встречи:", lang)} {first_meet_str}
+{delta_time_str}\n\n'''
         msg += f'''{tr("ID пользователя:", lang)} {user_id}
-
-{tr("Дата встречи:", lang)} {first_meet_str}
-{delta_time_str}
 
 {tr("Количество сообщений/изображений:", lang)} {total_msgs-totals_pics}/{totals_pics}
 

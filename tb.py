@@ -6537,7 +6537,12 @@ def google(message: telebot.types.Message):
 
             with ShowAction(message, 'typing'):
                 COMMAND_MODE[chat_id_full] = ''
-                r, text = my_google.search_v3(q, lang, chat_id=chat_id_full, role=role)
+                r, text = my_google.search_v3(
+                    q,
+                    lang,
+                    chat_id=chat_id_full,
+                    role=role
+                )
                 if not r.strip():
                     bot_reply_tr(message, 'Search failed.')
                     return

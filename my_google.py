@@ -24,8 +24,18 @@ def search_v3(query: str,
               download_only = False,
               chat_id: str = '',
               role: str = ''):
-    
+
     query = query.strip()
+
+    if not query.startswith('!'):
+        # сначала пробуем спросить в гроке
+        groq_response = my_groq.search(query, lang, system = role, user_id = chat_id)
+        if groq_response:
+            if download_only:
+                return groq_response
+            else:
+                return groq_response, groq_response
+
     if not query.startswith('!'):
         # сначала пробуем спросить в гугле
         google_response = my_gemini_google.google_search(query, chat_id, role=role, lang=lang)

@@ -2146,9 +2146,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_gemini_pro15 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemma3_27b')
 
             if chat_mode == 'gemini-learn':
-                msg = '✅ Gemini LearnLM'
+                msg = '✅ Gemini LearnLM 2.0 Flash'
             else:
-                msg = 'Gemini LearnLM'
+                msg = 'Gemini LearnLM 2.0 Flash'
             button_gemini_learnlm = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
 
             if chat_mode == 'gemini-lite':
@@ -2229,29 +2229,15 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             if hasattr(cfg, 'DDG_ENABLED') and cfg.DDG_ENABLED:
                 markup.row(button_gpt4o_mini, button_o3_mini_ddg)
 
-            # markup.row(button_gemini_exp, button_gemini_learnlm)
-
-            # markup.row(button_cohere, button_llama3_70b)
-
-            # if hasattr(cfg, 'GLM4_KEYS'):
-            #     markup.row(button_glm4plus, button_gemini_pro)
-            # else:
-            #     markup.row(button_gemini_pro)
-
             markup.row(button_cohere, button_gemini_pro)
 
-            # markup.row(button_openrouter, button_gpt_4o)
-
-            # markup.row(button_deepseek_v3, button_deepseek_r1)
-
-            # markup.row(button_gemini_lite, button_gemini_pro15)
-            
             markup.row(button_gpt_4o, button_deepseek_v3)
 
             markup.row(button_gpt_41, button_gpt_41_mini)
 
-            # markup.row(button_openrouter, button_qwq32b)
             markup.row(button_openrouter, button_llama4_maverick)
+
+            markup.row(button_gemini_learnlm, button_gemini_lite)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -9400,7 +9386,7 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя
-        if chat_mode_ in ('gemini15', 'gemini-learn', 'gemini-exp') and my_db.count_msgs_last_24h(chat_id_full) > 300:
+        if chat_mode_ in ('gemini15', 'gemini-exp') and my_db.count_msgs_last_24h(chat_id_full) > 300:
             chat_mode_ = 'gemini'
 
 
@@ -9781,6 +9767,17 @@ def do_task(message, custom_prompt: str = ''):
 
                             if not answer and gmodel == cfg.gemini_flash_light_model:
                                 gmodel = cfg.gemini_flash_light_model_fallback
+                                answer = my_gemini.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temp,
+                                    model = gmodel,
+                                    system = hidden_text,
+                                    use_skills=True)
+                                WHO_ANSWERED[chat_id_full] = gmodel
+
+                            if not answer and gmodel == cfg.gemini_learn_model:
+                                gmodel = cfg.gemini_learn_model_fallback
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,

@@ -223,10 +223,8 @@ def chat(query: str,
                 )
 
             # use_skills = False
-            # calc_tool = calc if utils.extract_user_id(chat_id) not in cfg.admins else calc_admin
             calc_tool = my_skills.calc
 
-            # if use_skills and '-8b' not in model and 'gemini-exp' not in model and 'learn' not in model and 'thinking' not in model:
             if use_skills and '-8b' not in model and 'thinking' not in model and 'gemma-3' not in model:
                 # id в системный промпт надо добавлять что бы бот мог юзать его в скилах
                 # в каких скилах?
@@ -239,14 +237,6 @@ def chat(query: str,
                     my_skills.get_weather,
                     my_skills.get_currency_rates,
                     ]
-
-                # if chat_id:
-                #     if chat_id != 'test':
-                #         _user_id = utils.extract_user_id(chat_id)
-                #     else:
-                #         _user_id = 0
-                #     if _user_id in cfg.admins or _user_id == 0:
-                #         SKILLS += [my_skills.run_script,]
 
                 model_ = genai.GenerativeModel(
                     model,
@@ -306,7 +296,7 @@ def chat(query: str,
                             timeout=timeout)
                     else:
                         my_log.log_gemini(f'my_gemini:chat2:2:0: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')   
-                if 'list index out of range':
+                if 'list index out of range' in str(error):
                     return ''
                 else:
                     # traceback_error = traceback.format_exc()
@@ -321,22 +311,7 @@ def chat(query: str,
                 key_i += 1
                 continue
 
-            # import pprint
-            # pprint.pprint(chat_)
-            # pprint.pprint(resp)
-
             result = resp.text
-            # try:
-            #     result = chat_.history[-1].parts[-1].text
-            # except IndexError:
-            #     try:
-            #         result = chat_.history[-1].parts[0].text
-            #     except Exception as error3_2:
-            #         my_log.log_gemini(f'my_gemini:chat3_2: {error3_2}\nchat history: {str(chat_.history)}')
-            #         result = resp.text
-            # except Exception as error3:
-            #     my_log.log_gemini(f'my_gemini:chat3: {error3}\nchat history: {str(chat_.history)}')
-            #     result = resp.text
 
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
             # куча пробелов, и возможно другие тоже. укорачиваем
@@ -1277,11 +1252,11 @@ if __name__ == '__main__':
 
     # imagen()
 
-    # print(list_models(True))
+    print(list_models(True))
     # chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
     # chat_cli(model=cfg.gemini_2_flash_thinking_exp_model)
     # chat_cli(model = 'gemini-2.0-flash-thinking-exp-1219')
-    chat_cli(model = 'gemini-2.0-flash-live-001')
+    # chat_cli(model = 'gemini-2.0-flash-live-001')
     # chat_cli()
 
     # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:

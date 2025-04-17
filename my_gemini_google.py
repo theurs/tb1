@@ -227,6 +227,8 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
             else:
                 result = response.text
 
+            if not result:
+                return ''
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
             # куча пробелов, и возможно другие тоже. укорачиваем
             result = re.sub(r" {1000,}", " " * 10, result) # очень много пробелов в ответе

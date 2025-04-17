@@ -229,7 +229,8 @@ gemma3_27b_model_fallback = 'gemini-2.0-flash-lite'
 gemini_exp_model = 'gemini-exp-1206'
 gemini_exp_model_fallback = 'gemini-2.0-pro-exp-02-05'
 
-gemini_learn_model = 'learnlm-1.5-pro-experimental'
+gemini_learn_model = 'learnlm-2.0-flash-experimental'
+gemini_learn_model_fallback = 'gemini-2.0-flash-001'
 
 gemini_2_flash_thinking_exp_model = 'gemini-2.0-flash-thinking-exp-01-21'
 gemini_2_flash_thinking_exp_model_fallback = 'gemini-2.0-flash-thinking-exp-1219'

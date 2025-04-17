@@ -32,7 +32,7 @@ MAX_REQUEST = 40000
 KEYS_LOCK = threading.Lock()
 
 
-DEFAULT_TIMEOUT = 300
+DEFAULT_TIMEOUT = 120
 DEFAULT_MODEL = 'deepseek-ai/DeepSeek-R1'
 DEFAULT_MODEL_FALLBACK = 'deepseek-ai/DeepSeek-V3-0324' # 'deepseek-ai/DeepSeek-V3'
 

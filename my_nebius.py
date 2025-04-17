@@ -175,6 +175,8 @@ def ai(prompt: str = '',
                 break
             time.sleep(2)
 
+        timeout = timeout - (time.time() - start_time)
+
     return text
 
 

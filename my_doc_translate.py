@@ -22,11 +22,12 @@ def get_prompt_dialog(dst: str) -> str:
     Get prompt for ai
     '''
     help = (
-        f'Делаем качественный художественный перевод текста на язык [{dst}]. '
-        'Можешь использовать синонимы что бы сделать текст более художественным. '
-        'Я посылаю тебе куски текста один за другим а ты делаешь перевод и показываешь мне '
-        'только перевод без комментариев и лишних слов. '
-        'Сохраняй оригинальное форматирование, абзацы, переносы строк итп.'
+        f'Задача: Художественный перевод на язык [{dst}].\n'
+        'Требования:\n'
+        '1. Стиль: Используй синонимы, делай текст живым и естественным для носителя [{dst}]. Не просто дословно.\n'
+        '2. Процесс: Я шлю куски текста. Ты в ответ — **только** перевод этого куска.\n'
+        '3. Чистый вывод: Без приветствий, без комментариев, без пояснений. Только голый текст перевода.\n'
+        '4. Форматирование: **Сохраняй HTML-теги как в оригинале (например, <b>, <i>, <p>). НЕ конвертируй их в Markdown (`**`, `*`).** Также сохраняй абзацы, переносы строк, списки. Структура 1-в-1 с оригиналом.'
     )
     return help
 
@@ -223,11 +224,11 @@ if __name__ == '__main__':
     my_gemini.load_users_keys()
     my_db.init(backup=False)
 
-    with open('c:/Users/user/Downloads/1.epub', 'rb') as f:
+    with open(r'C:\Users\user\Downloads\samples for ai\короткий текст с богатым форматированием.docx', 'rb') as f:
         data = f.read()
-        # new_data = translate_file_in_dialog(data, 'en', 'ru', '1.epub')
-        new_data = translate_file(data, 'en', 'ru', '1.epub')
-        with open('c:/Users/user/Downloads/2.epub', 'wb') as f:
+        new_data = translate_file_in_dialog(data, 'ru', 'en', 'короткий текст с богатым форматированием.docx', 'test')
+        # new_data = translate_file(data, 'en', 'ru', '1.epub')
+        with open('c:/Users/user/Downloads/2.docx', 'wb') as f:
             f.write(new_data)
 
     my_db.close()

@@ -2224,12 +2224,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button0, button1, button2, button3, button4)
             return markup
         elif kbd.startswith('search_pics_'):
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=4)
+            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
             button0 = telebot.types.InlineKeyboardButton('📸', callback_data=f'search_pics_{kbd[12:]}')
-            button1 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button3 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3)
+            button1 = telebot.types.InlineKeyboardButton("♻️", callback_data='general_reset')
+            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
+            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
+            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
+            markup.add(button0, button1, button2, button3, button4)
             return markup
         elif kbd == 'config':
             if my_db.get_user_property(chat_id_full, 'tts_gender'):
@@ -2993,6 +2994,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'gemini_reset':
             my_gemini.reset(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
             bot_reply_tr(message, 'История диалога с Gemini очищена.')
+
+        elif call.data == 'general_reset':
+            reset_(message, say = True, chat_id_full = chat_id_full)
 
         elif call.data == 'tts_female' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'male')
@@ -5835,10 +5839,8 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
                 my_groq.reset(chat_id_full)
             elif chat_mode_ == 'openrouter':
                 my_openrouter.reset(chat_id_full)
-
             elif chat_mode_ == 'llama4_maverick':
                 my_openrouter_free.reset(chat_id_full)
-
             elif chat_mode_ == 'mistral':
                 my_mistral.reset(chat_id_full)
             elif chat_mode_ == 'pixtral':

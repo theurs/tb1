@@ -6668,8 +6668,12 @@ def image_flux_gen(message: telebot.types.Message):
                 return
 
             try:
-                model_choice = parts[1].strip()
-                prompt = parts[2].strip()
+                if len(parts) > 2:
+                    model_choice = parts[1].strip()
+                    prompt = parts[2].strip()
+                else:
+                    model_choice = '1'
+                    prompt = parts[1].strip()
             except IndexError:
                 prompt = ''
                 bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))

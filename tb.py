@@ -2075,9 +2075,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
             if chat_mode == 'gemini':
-                msg = '✅ Gemini 2.0 Flash'
+                msg = '✅ Gemini 2.5 Flash'
             else:
-                msg = 'Gemini 2.0 Flash'
+                msg = 'Gemini 2.5 Flash'
             button_gemini_flash20 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_flash')
 
             if chat_mode == 'gemini15':
@@ -2223,8 +2223,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Llama 4 Maverick'
             button_llama4_maverick = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama4_maverick')
 
-            markup.row(button_gemini_flash_thinking, button_gemini_flash20)
-            markup.row(button_codestral, button_mistral)
+            # markup.row(button_gemini_flash_thinking, button_gemini_flash20)
+            # markup.row(button_codestral, button_mistral)
+            markup.row(button_gemini_flash20, button_mistral)
 
             if hasattr(cfg, 'DDG_ENABLED') and cfg.DDG_ENABLED:
                 markup.row(button_gpt4o_mini, button_o3_mini_ddg)
@@ -2237,7 +2238,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_openrouter, button_llama4_maverick)
 
-            markup.row(button_gemini_learnlm, button_gemini_lite)
+            # markup.row(button_gemini_learnlm, button_gemini_lite)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -7791,22 +7792,22 @@ def send_welcome_start(message: telebot.types.Message):
         if chat_id_full not in NEW_KEYBOARD:
             NEW_KEYBOARD[chat_id_full] = True
 
-        # показать выбор моделей новому юзеру
-        bot_reply_tr(
-            message,
-            f"""Выберите подходящую модель
+#         # показать выбор моделей новому юзеру
+#         bot_reply_tr(
+#             message,
+#             f"""Выберите подходящую модель
 
-Gemini Flash - стандартная модель
+# Gemini Flash - стандартная модель
 
-Gemini Thinking - модель для решения задач
+# Gemini Thinking - модель для решения задач
 
-Codestral - модель для программирования
+# Codestral - модель для программирования
 
-/config - все остальные модели""",
-            parse_mode='HTML',
-            reply_markup=get_keyboard('chat_mode', message),
-            send_message=True
-        )
+# /config - все остальные модели""",
+#             parse_mode='HTML',
+#             reply_markup=get_keyboard('chat_mode', message),
+#             send_message=True
+#         )
 
         # no language in user info, show language selector
         if not user_have_lang:

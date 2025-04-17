@@ -212,9 +212,9 @@ default_bot_name = 'бот'
 chat_mode_default = 'gemini15'
 
 img2_txt_model = 'gemini-2.0-flash-001'
-img2_txt_model_solve = 'gemini-2.0-pro-exp-02-05'
+img2_txt_model_solve = 'gemini-2.5-flash-preview-04-17' # 'gemini-2.0-pro-exp-02-05'
 
-gemini_flash_model = 'gemini-2.0-flash-001'
+gemini_flash_model = 'gemini-2.0-flash-lite-preview-02-05' # 'gemini-2.0-flash-001'
 gemini_flash_model_fallback = 'gemini-2.0-flash-exp'
 
 gemini_flash_light_model = 'gemini-2.0-flash-lite-preview-02-05'

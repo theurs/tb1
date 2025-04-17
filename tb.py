@@ -2008,216 +2008,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(button4, button5, button6)
             return markup
 
-        elif kbd == 'llama4_maverick_chat':
+        elif kbd == 'chat':
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
             markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
             button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='llama4_maverick_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'openrouter_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='openrouter_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'mistral_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='mistral_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'pixtral_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='pixtral_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'codestral_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='codestral_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'gpt-4o_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt-4o_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'gpt_41_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt_41_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'gpt_41_mini_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt_41_mini_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'deepseek_v3_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='deepseek_v3_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'deepseek_r1_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='deepseek_r1_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'qwq32b_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='qwq32b_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'deepseek_r1_distill_llama70b_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='deepseek_r1_distill_llama70b_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'cohere_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='cohere_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'glm4plus_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='glm4plus_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'o3_mini_ddg_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='o3_mini_ddg_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'gpt-4o-mini-ddg_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gpt-4o-mini-ddg_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'groq_groq-llama370_chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='groq-llama370_reset')
-            button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
-            button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
-            markup.add(button0, button1, button2, button3, button4)
-            return markup
-
-        elif kbd == 'gemini_chat' or kbd == 'chat':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=5)
-            button0 = telebot.types.InlineKeyboardButton("➡", callback_data='continue_gpt')
-            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='gemini_reset')
+            button1 = telebot.types.InlineKeyboardButton('♻️', callback_data='general_reset')
             button2 = telebot.types.InlineKeyboardButton("🙈", callback_data='erase_answer')
             button3 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
             button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
@@ -2945,55 +2741,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
             else:
                 bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter')
-
-
         elif call.data == 'select_llama4_maverick':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'llama4_maverick')
-
-
-        elif call.data == 'groq-llama370_reset':
-            my_groq.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Groq llama 3.3 70b очищена.')
-        elif call.data == 'openrouter_reset':
-            my_openrouter.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с openrouter очищена.')
-
-
-        elif call.data == 'llama4_maverick_reset':
-            my_openrouter_free.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Llama4 Maverick очищена.')
-
-
-        elif call.data == 'mistral_reset':
-            my_mistral.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Mistral Large очищена.')
-        elif call.data == 'pixtral_reset':
-            my_mistral.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Pixtral Large очищена.')
-        elif call.data == 'codestral_reset':
-            my_mistral.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Codestral очищена.')
-        elif call.data in ('gpt-4o_reset', 'gpt_41_reset', 'gpt_41_mini_reset', 'deepseek_r1_reset', 'deepseek_v3_reset'):
-            my_github.reset(chat_id_full)
-            bot_reply_tr(message, 'История очищена.')
-        elif call.data in ('deepseek_r1_distill_llama70b_reset', 'qwq32b_reset'):
-            my_groq.reset(chat_id_full)
-            bot_reply_tr(message, 'История очищена.')
-        elif call.data == 'cohere_reset':
-            my_cohere.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с Command A очищена.')
-        elif call.data == 'glm4plus_reset':
-            my_glm.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с GLM 4 PLUS очищена.')
-        elif call.data == 'gpt-4o-mini-ddg_reset':
-            my_ddg.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с GPT 4o mini очищена.')
-        elif call.data == 'o3_mini_ddg_reset':
-            my_ddg.reset(chat_id_full)
-            bot_reply_tr(message, 'История диалога с GPT o3 mini очищена.')
-        elif call.data == 'gemini_reset':
-            my_gemini.reset(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
-            bot_reply_tr(message, 'История диалога с Gemini очищена.')
 
         elif call.data == 'general_reset':
             reset_(message, say = True, chat_id_full = chat_id_full)
@@ -10124,12 +9873,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gemini_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:{gmodel} {error3}\n{error_traceback}')
@@ -10176,12 +9925,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('groq_groq-llama370_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:llama370-groq {error3}\n{error_traceback}')
@@ -10234,12 +9983,12 @@ def do_task(message, custom_prompt: str = ''):
                                     return
 
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('deepseek_r1_distill_llama70b_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('deepseek_r1_distill_llama70b_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:deepseek_r1_distill_llama70b {error3}\n{error_traceback}')
@@ -10292,12 +10041,12 @@ def do_task(message, custom_prompt: str = ''):
                                     return
 
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('qwq32b_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('qwq32b_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:qwq32b {error3}\n{error_traceback}')
@@ -10356,12 +10105,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('openrouter_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('openrouter_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:openrouter {error3}\n{error_traceback}')
@@ -10408,12 +10157,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('mistral_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('mistral_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:mistral {error3}\n{error_traceback}')
@@ -10461,12 +10210,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('llama4_maverick_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('llama4_maverick_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:llama4_maverick {error3}\n{error_traceback}')
@@ -10513,12 +10262,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('pixtral_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('pixtral_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:pixtral {error3}\n{error_traceback}')
@@ -10573,12 +10322,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('codestral_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('codestral_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:codestral {error3}\n{error_traceback}')
@@ -10635,12 +10384,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gpt-4o_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gpt-4o_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt-4o {error3}\n{error_traceback}')
@@ -10697,12 +10446,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gpt_41_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gpt_41_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt_41 {error3}\n{error_traceback}')
@@ -10759,12 +10508,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gpt_41_mini_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gpt_41_mini_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt_41_mini {error3}\n{error_traceback}')
@@ -10827,12 +10576,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('deepseek_r1_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('deepseek_r1_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:deepseek_r1 {error3}\n{error_traceback}')
@@ -10895,12 +10644,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('deepseek_v3_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('deepseek_v3_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:deepseek_v3 {error3}\n{error_traceback}')
@@ -10947,13 +10696,13 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                        reply_markup=get_keyboard('cohere_chat', message), not_log=True, allow_voice = True)
+                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                                 
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('cohere_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:cohere {error3}\n{error_traceback}')
@@ -10999,12 +10748,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('glm4plus_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('glm4plus_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:glm4plus {error3}\n{error_traceback}')
@@ -11045,12 +10794,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('o3_mini_ddg_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('o3_mini_ddg_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:o3_mini_ddg {error3}\n{error_traceback}')
@@ -11093,12 +10842,12 @@ def do_task(message, custom_prompt: str = ''):
                                 if command_in_answer(answer, message):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('gpt-4o-mini-ddg_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('gpt-4o-mini-ddg_chat', message), not_log=True, allow_voice = True)
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt-4o-mini-ddg {error3}\n{error_traceback}')

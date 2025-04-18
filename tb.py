@@ -445,15 +445,6 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
 
         translated = ''
 
-        # if help:
-        #     translated = my_groq.translate(text, to_lang=lang, help=help)
-        #     if not translated:
-        #         # time.sleep(1)
-        #         # try again and another ai engine
-        #         translated = my_gemini.translate(text, to_lang=lang, help=help, censored=True)
-        #         if not translated:
-        #             my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
-
         translated = my_gemini.translate(text, to_lang=lang, help=help, censored=True)
         if not translated:
             # time.sleep(1)
@@ -688,6 +679,10 @@ def img2txt(text,
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model
+                elif chat_mode == 'gemini25_flash':
+                    text = my_gemini.img2txt(data, query, model=cfg.gemini25_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model
                 elif chat_mode == 'gemini-exp':
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
@@ -761,6 +756,12 @@ def img2txt(text,
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
 
+            # флеш25 фолбек
+            if not text and model == cfg.gemini25_flash_model:
+                text = my_gemini.img2txt(data, query, model=cfg.gemini25_flash_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model_fallback
+
             # флеш фолбек
             if not text and model == cfg.gemini_flash_model:
                 text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
@@ -822,195 +823,6 @@ def img2txt(text,
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:img2txt2:{unexpected_error}\n\n{traceback_error}')
         return ''
-
-
-# def img2txt(text, lang: str,
-#             chat_id_full: str,
-#             query: str = '',
-#             model: str = '',
-#             temperature: float = 1
-#             ) -> str:
-#     """
-#     Generate the text description of an image.
-
-#     Args:
-#         text (str): The image file URL or downloaded data(bytes).
-#         lang (str): The language code for the image description.
-#         chat_id_full (str): The full chat ID.
-#         model (str): gemini model
-
-#     Returns:
-#         str: The text description of the image.
-#     """
-#     try:
-#         if isinstance(text, bytes):
-#             data = text
-#         else:
-#             data = utils.download_image_as_bytes(text)
-
-#         original_query = query or tr('Describe in detail what you see in the picture. If there is text, write it out in a separate block. If there is very little text, then write a prompt to generate this image.', lang)
-
-#         if not query:
-#             query = tr('Describe the image, what do you see here? Extract all text and show it preserving text formatting. Write a prompt to generate the same image - use markdown code with syntax highlighting ```prompt\n/img your prompt in english```', lang)
-#         if 'markdown' not in query.lower() and 'latex' not in query.lower():
-#             query = query + '\n\n' + my_init.get_img2txt_prompt(tr, lang)
-
-#         if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-#             my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
-
-#         text = ''
-#         time_to_answer_start = time.time()
-
-#         try:
-#             text = ''
-#             thinking_model_used = False
-
-#             # попробовать с помощью openrouter
-#             # кто по умолчанию отвечает
-#             if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-#                 my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
-#             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
-
-#             if not model:
-#                 if chat_mode == 'openrouter':
-#                     text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
-#                     if text:
-#                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
-#                 elif chat_mode == 'gemini-exp':
-#                     text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
-#                     if text:
-#                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
-#                 elif chat_mode == 'gemini-learn':
-#                     text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full)
-#                     if text:
-#                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
-#                 elif chat_mode == 'gemini':
-#                     text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
-#                     if text:
-#                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
-#                 elif chat_mode == 'gemini_2_flash_thinking':
-#                     text = my_gemini.img2txt(data, query, model=cfg.gemini_2_flash_thinking_exp_model, temp=temperature, chat_id=chat_id_full)
-#                     if text:
-#                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_2_flash_thinking_exp_model
-#                         thinking_model_used = True
-#                 elif chat_mode == 'pixtral':
-#                     text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
-#                     if text:
-#                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
-
-
-#             # if not model and not text:
-#             #     if check_vip_user_gemini(chat_id_full):
-#             #         model = cfg.gemini_pro_model
-#             #     else:
-#             #         model = cfg.img2_txt_model
-#             if not model and not text:
-#                 model = cfg.img2_txt_model
-
-#             # сначала попробовать с помощью джемини
-#             if not text:
-#                 text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + model
-#                     if 'thinking' in model:
-#                         thinking_model_used = True
-
-#             # если это была джемини про то пробуем ее фолбек
-#             if not text and model == cfg.gemini_pro_model:
-#                 text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
-#                     if 'thinking' in cfg.gemini_pro_model_fallback:
-#                         thinking_model_used = True
-
-#             # если это была думающая модель то пробуем вместо нее exp
-#             if not text and model == cfg.gemini_2_flash_thinking_exp_model:
-#                 text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
-#                     if 'thinking' in cfg.gemini_exp_model:
-#                         thinking_model_used = True
-
-#             # и еще раз флеш
-#             if not text:
-#                 text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
-#                     if 'thinking' in cfg.gemini_flash_model:
-#                         thinking_model_used = True
-
-#             # флеш фолбек
-#             if not text:
-#                 text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model_fallback
-#                     if 'thinking' in cfg.gemini_flash_model_fallback:
-#                         thinking_model_used = True
-
-#             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
-#             # передаем эстафету следующему претенденту
-#             if len(text) > 2000 and my_transcribe.detect_repetitiveness_with_tail(text):
-#                 text = ''
-
-
-#             # попробовать glm
-#             if not text:
-#                 text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'glm4plus'
-
-
-#             # если не ответил glm то попробовать Pixtral Large
-#             if not text:
-#                 text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
-
-
-#             # если не ответил pixtral то попробовать groq (llama-3.2-90b-vision-preview)
-#             if not text:
-#                 text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'llama-3.2-90b-vision-preview'
-
-#             # если не ответила llama то попробовать openrouter_free mistralai/pixtral-12b:free
-#             if not text:
-#                 text = my_openrouter_free.img2txt(data, query, model = 'mistralai/pixtral-12b:free', temperature=temperature, chat_id=chat_id_full)
-#                 if text:
-#                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'mistralai/pixtral-12b:free'
-
-#         except Exception as img_from_link_error:
-#             traceback_error = traceback.format_exc()
-#             my_log.log2(f'tb:img2txt1: {img_from_link_error}\n\n{traceback_error}')
-
-        
-#         if text:
-#             thinking = 'gemini' in chat_mode and 'thinking' in chat_mode
-#             not_thinking = ('gemini' in chat_mode) and not ('thinking' in chat_mode)
-
-#             if thinking and thinking_model_used:
-#                 pass
-
-#             # elif not_thinking and thinking_model_used:
-#             #     add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
-
-#             # elif thinking and not thinking_model_used:
-#             #     add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
-
-#             elif not_thinking and not thinking_model_used:
-#                 pass
-
-#             else:
-#                 add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
-
-#         if chat_id_full in WHO_ANSWERED:
-#             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-#         return text
-#     except Exception as unexpected_error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:img2txt2:{unexpected_error}\n\n{traceback_error}')
-#         return ''
 
 
 def get_lang(user_id: str, message: telebot.types.Message = None) -> str:
@@ -2075,10 +1887,16 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
             if chat_mode == 'gemini':
+                msg = '✅ Gemini 2.0 Flash'
+            else:
+                msg = 'Gemini 2.0 Flash'
+            button_gemini_flash20 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_flash')
+
+            if chat_mode == 'gemini25_flash':
                 msg = '✅ Gemini 2.5 Flash'
             else:
                 msg = 'Gemini 2.5 Flash'
-            button_gemini_flash20 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_flash')
+            button_gemini_flash25 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini25_flash')
 
             if chat_mode == 'gemini15':
                 msg = '✅ Gemini 2.5 Pro exp'
@@ -2223,22 +2041,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Llama 4 Maverick'
             button_llama4_maverick = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama4_maverick')
 
-            # markup.row(button_gemini_flash_thinking, button_gemini_flash20)
-            # markup.row(button_codestral, button_mistral)
-            markup.row(button_gemini_flash20, button_mistral)
+            markup.row(button_gemini_flash20, button_gemini_flash25)
 
             if hasattr(cfg, 'DDG_ENABLED') and cfg.DDG_ENABLED:
                 markup.row(button_gpt4o_mini, button_o3_mini_ddg)
 
-            markup.row(button_cohere, button_gemini_pro)
+            markup.row(button_cohere, button_mistral)
 
             markup.row(button_gpt_4o, button_deepseek_v3)
 
-            markup.row(button_gpt_41, button_gpt_41_mini)
+            markup.row(button_gpt_41, button_gemini_pro)
 
             markup.row(button_openrouter, button_llama4_maverick)
-
-            # markup.row(button_gemini_learnlm, button_gemini_lite)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -2405,15 +2219,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.add(button)
 
             return markup
-        elif kbd == 'chat_mode':
-            markup = telebot.types.InlineKeyboardMarkup(row_width=3)
-            b1 = telebot.types.InlineKeyboardButton('⚡️ Flash', callback_data='chat_mode_select_gemini')
-            b2 = telebot.types.InlineKeyboardButton('🤔 Thinking', callback_data='chat_mode_select_gemini_thinking')
-            b3 = telebot.types.InlineKeyboardButton('💻 Codestral', callback_data='chat_mode_select_codestral')
-            markup.row(b1, b2, b3)
-            return markup
         else:
-            raise Exception(f"Неизвестная клавиатура '{kbd}'")
+            traceback_error = traceback.format_exc()
+            raise Exception(f"Неизвестная клавиатура '{kbd}'\n\n{traceback_error}")
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:get_keyboard: {unknown}\n\n{traceback_error}')
@@ -2462,22 +2270,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_COPY_TEXT_TTS, lang)
             process_image_stage_2(image_prompt, chat_id_full, lang, message)
-
-        elif call.data == 'chat_mode_select_gemini':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
-            # set temp = 1 for regular mode
-            my_db.set_user_property(chat_id_full, 'temperature', 1)
-            bot.delete_message(message.chat.id, message.message_id)
-        elif call.data == 'chat_mode_select_gemini_thinking':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini_2_flash_thinking')
-            # set temp = 0.1 for thinking
-            my_db.set_user_property(chat_id_full, 'temperature', 0.1)
-            bot.delete_message(message.chat.id, message.message_id)
-        elif call.data == 'chat_mode_select_codestral':
-            # set temp = 0.1 for thinking
-            my_db.set_user_property(chat_id_full, 'temperature', 0.1)
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'codestral')
-            bot.delete_message(message.chat.id, message.message_id)
 
         elif call.data == 'image_prompt_text_tr':
             COMMAND_MODE[chat_id_full] = ''
@@ -2711,6 +2503,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o-mini-ddg')
         elif call.data == 'select_gemini_flash':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+        elif call.data == 'select_gemini25_flash':
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini25_flash')
         elif call.data == 'select_gemini_2_flash_thinking':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini_2_flash_thinking')
         elif call.data == 'select_gemini-lite':
@@ -2817,24 +2611,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        # elif call.data == 'switch_speech_to_text' and is_admin_member(call):
-        #     speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
-        #     if speech_to_text_engine == 'whisper':
-        #         speech_to_text_engine = 'gemini'
-        #     elif speech_to_text_engine == 'gemini':
-        #         speech_to_text_engine = 'google'
-        #     elif speech_to_text_engine == 'google':
-        #         speech_to_text_engine = 'assembly.ai'
-        #     elif speech_to_text_engine == 'assembly.ai':
-        #         speech_to_text_engine = 'deepgram_nova3'
-        #     elif 'deepgram_nova' in speech_to_text_engine:
-        #         speech_to_text_engine = 'whisper'
-        #     else: # в базе записно что то другое, то что было раньше а теперь нет
-        #         speech_to_text_engine = 'whisper'
-        #     my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
-        #     bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-        #                         text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
         elif call.data == 'disable_chat_kbd' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'disabled_kbd', False)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
@@ -6858,23 +6634,10 @@ def image_gen(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
-        # # если уже есть 10000 картинок и нет ключей то давай до свидания
-        # have_keys_10000 = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-        #             chat_id_full in my_genimg.USER_KEYS or \
-        #             message.from_user.id in cfg.admins or \
-        #             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
-        #             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 10000
-        # if not have_keys_10000:
-        #     msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
-        #     msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
-        #     bot_reply(message, msg2, disable_web_page_preview = True)
-        #     return
-
 
         if message.text.lower().startswith('/i'):
             if chat_id_full in IMG_MODE_FLAG:
                 del IMG_MODE_FLAG[chat_id_full]
-
 
 
         # в группе рисовать можно только тем у кого есть все ключи или подписка или админы
@@ -7082,21 +6845,8 @@ def image_gen(message: telebot.types.Message):
                         if pics_group and not NSFW_FLAG:
                             send_images_to_pic_group(chunks, message, chat_id_full, prompt)
 
-                        if BING_FLAG:
-                            IMG = '/bing'
-                        else:
-                            IMG = '/img'
-                        MSG = tr(f"user used {IMG} command to generate", lang)
                         add_to_bots_mem(message.text, f'The bot successfully generated images on the external services <service>bing, huggingface, fusion, flux, nebius, gemini</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
-                        # have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-                        #             chat_id_full in my_genimg.USER_KEYS or \
-                        #             message.from_user.id in cfg.admins or \
-                        #             (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100 or \
-                        #             (my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0) < 5000
-                        # if not have_keys:
-                        #     msg = tr('We need more tokens to generate free images. Please add your token from HuggingFace. You can find HuggingFace at', lang)
-                        #     msg2 = f'{msg}\n\nhttps://huggingface.co/\n\nhttps://github.com/theurs/tb1/tree/master/pics/hf'
-                        #     bot_reply(message, msg2, disable_web_page_preview = True)
+
                     else:
                         bot_reply_tr(message, 'Could not draw anything.')
 
@@ -7796,23 +7546,6 @@ def send_welcome_start(message: telebot.types.Message):
         if chat_id_full not in NEW_KEYBOARD:
             NEW_KEYBOARD[chat_id_full] = True
 
-#         # показать выбор моделей новому юзеру
-#         bot_reply_tr(
-#             message,
-#             f"""Выберите подходящую модель
-
-# Gemini Flash - стандартная модель
-
-# Gemini Thinking - модель для решения задач
-
-# Codestral - модель для программирования
-
-# /config - все остальные модели""",
-#             parse_mode='HTML',
-#             reply_markup=get_keyboard('chat_mode', message),
-#             send_message=True
-#         )
-
         # no language in user info, show language selector
         if not user_have_lang:
             language(message)
@@ -8082,6 +7815,7 @@ def id_cmd_handler(message: telebot.types.Message):
             user_model = my_db.get_user_property(group_id_full, 'chat_mode') if my_db.get_user_property(group_id_full, 'chat_mode') else cfg.chat_mode_default
         models = {
             'gemini': cfg.gemini_flash_model,
+            'gemini25_flash': cfg.gemini25_flash_model,
             'gemini15': cfg.gemini_pro_model,
             'gemini-lite': cfg.gemini_flash_light_model,
             'gemini-exp': cfg.gemini_exp_model,
@@ -9391,29 +9125,8 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя
-        if chat_mode_ in ('gemini15', 'gemini-exp') and my_db.count_msgs_last_24h(chat_id_full) > 300:
+        if chat_mode_ in ('gemini15', 'gemini-exp', 'gemini25_flash') and my_db.count_msgs_last_24h(chat_id_full) > 300:
             chat_mode_ = 'gemini'
-
-
-        # chat_modes = {
-        #     '/o3mini':     'o3_mini_ddg',
-        #     '/flash':     'gemini',
-        #     '/pro':       'gemini15',
-        #     '/llama':     'llama370',
-        #     '/gpt':       'gpt-4o-mini-ddg',
-        # }
-        # for command, mode in chat_modes.items():
-        #     if msg.startswith(command):
-        #         try:
-        #             l = len(command) + 1
-        #             message.text = message.text[l:]
-        #             msg = msg[l:]
-        #             chat_mode_ = mode
-        #         except IndexError:
-        #             pass
-        #         if not msg.strip():
-        #             return
-        #         break
 
 
         # обработка \image это неправильное /image
@@ -9632,25 +9345,12 @@ def do_task(message, custom_prompt: str = ''):
             # formatted_date = utils.get_full_time()
             user_role = my_db.get_user_property(chat_id_full, 'role') or ''
             hidden_text = f'{my_db.get_user_property(chat_id_full, "role") or ""}'
-            # max_last_messages = 20
-            # if 'gemini' in chat_mode_:
-            #     max_last_messages = 40
-            # if chat_mode_ == 'gemini':
-            #     # hidden_text = f'{my_init.BASIC_SYSTEM_PROMPT}\n\nYour role here: {my_db.get_user_property(chat_id_full, "role") or ""}'
-            #     hidden_text = f'{my_db.get_user_property(chat_id_full, "role") or ""}'
-            # else:
-            #     if is_private:
-            #         lang_of_user = get_lang(f'[{message.from_user.id}] [0]', message) or lang
-            #         hidden_text = my_init.get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang_of_user, formatted_date, max_last_messages)
-            #     else:
-            #         hidden_text = my_init.get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages)
 
             memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
             if memos:
                 hidden_text += '\n\nUser asked you to keep in mind this memos: '
                 hidden_text += '\n'.join(memos)
 
-            # hidden_text_for_llama370 = my_init.get_hidden_prompt_for_llama(tr, lang) + ', ' + user_role
             hidden_text_for_llama370 = hidden_text
 
             # for DDG who dont support system_prompt
@@ -9663,6 +9363,8 @@ def do_task(message, custom_prompt: str = ''):
                 gmodel = 'unknown'
                 if chat_mode_ == 'gemini':
                     gmodel = cfg.gemini_flash_model
+                if chat_mode_ == 'gemini25_flash':
+                    gmodel = cfg.gemini25_flash_model
                 elif chat_mode_ == 'gemini15':
                     gmodel = cfg.gemini_pro_model
                 elif chat_mode_ == 'gemini-lite':
@@ -9761,6 +9463,17 @@ def do_task(message, custom_prompt: str = ''):
 
                             if not answer and gmodel == cfg.gemini_flash_model:
                                 gmodel = cfg.gemini_flash_model_fallback
+                                answer = my_gemini.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temp,
+                                    model = gmodel,
+                                    system = hidden_text,
+                                    use_skills=True)
+                                WHO_ANSWERED[chat_id_full] = gmodel
+
+                            if not answer and gmodel == cfg.gemini25_flash_model:
+                                gmodel = cfg.gemini25_flash_model_fallback
                                 answer = my_gemini.chat(
                                     message.text,
                                     chat_id_full,

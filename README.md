@@ -206,22 +206,27 @@ default_bot_name = 'бот'
 
 
 # какой бот отвечает по умолчанию
-# 'gemini', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15', 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'o3-mini',
-# 'gpt-4o-mini-ddg', 'glm4plus', 'mistral', 'pixtral', 'cohere', 'deepseek_r1_distill_llama70b', 'qwq32b', 'gpt-4o', 'deepseek_r1', 'deepseek_v3', 'llama4_maverick'
-# 'gpt_41', 'gpt_41_mini'
-chat_mode_default = 'gemini15'
+# 'gemini', 'gemini25_flash', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15',
+# 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'o3_mini_ddg', 'gpt-4o-mini-ddg', 'glm4plus',
+# 'mistral', 'pixtral', 'cohere', 'deepseek_r1_distill_llama70b', 'qwq32b', 'gpt-4o', 'deepseek_r1',
+# 'deepseek_v3', 'llama4_maverick', 'gpt_41', 'gpt_41_mini'
 
-img2_txt_model = 'gemini-2.0-flash-001'
+chat_mode_default = 'gemini'
+
+img2_txt_model = 'gemini-2.0-flash'
 img2_txt_model_solve = 'gemini-2.5-flash-preview-04-17' # 'gemini-2.0-pro-exp-02-05'
 
-gemini_flash_model = 'gemini-2.5-flash-preview-04-17' # 'gemini-2.0-flash-001'
+gemini_flash_model = 'gemini-2.0-flash'
 gemini_flash_model_fallback = 'gemini-2.0-flash-exp'
+
+gemini25_flash_model = 'gemini-2.5-flash-preview-04-17'
+gemini25_flash_model_fallback = 'gemini-2.0-flash-exp'
 
 gemini_flash_light_model = 'gemini-2.0-flash-lite-preview-02-05'
 gemini_flash_light_model_fallback = 'gemini-2.0-flash-lite-001'
 
-gemini_pro_model = 'models/gemini-2.5-pro-exp-03-25' #'gemini-2.0-pro-exp-02-05'
-gemini_pro_model_fallback = 'gemini-2.0-pro-exp-02-05' #'gemini-1.5-pro-002'
+gemini_pro_model = 'gemini-2.5-pro-exp-03-25'
+gemini_pro_model_fallback = 'gemini-2.0-pro-exp-02-05'
 
 gemma3_27b_model = 'gemma-3-27b-it'
 gemma3_27b_model_fallback = 'gemini-2.0-flash-lite'
@@ -230,7 +235,7 @@ gemini_exp_model = 'gemini-exp-1206'
 gemini_exp_model_fallback = 'gemini-2.0-pro-exp-02-05'
 
 gemini_learn_model = 'learnlm-2.0-flash-experimental'
-gemini_learn_model_fallback = 'gemini-2.0-flash-001'
+gemini_learn_model_fallback = 'gemini-2.0-flash'
 
 gemini_2_flash_thinking_exp_model = 'gemini-2.0-flash-thinking-exp-01-21'
 gemini_2_flash_thinking_exp_model_fallback = 'gemini-2.0-flash-thinking-exp-1219'

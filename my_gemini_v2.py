@@ -16,21 +16,24 @@
 
 import io
 import random
-import re
 import time
 import threading
 import traceback
-from typing import Tuple
 from pprint import pprint
 
 import PIL
 from google import genai
 from google.genai.types import (
     GenerateContentConfig,
-    GoogleSearch,
     SafetySetting,
-    Tool,
     Part,
+    FunctionDeclaration,
+    GoogleSearch,
+    HarmBlockThreshold,
+    HarmCategory,
+    ThinkingConfig,
+    Tool,
+    ToolCodeExecution,
 )
 from sqlitedict import SqliteDict
 
@@ -38,7 +41,6 @@ import cfg
 import my_db
 import my_log
 import my_skills
-import utils
 import utils_llm
 
 
@@ -96,7 +98,7 @@ def get_client(chat_id: str = "") -> genai.Client:
 
         with CLIENTS_LOCK:
             if chat_id not in CLIENTS or not CLIENTS[chat_id]:
-                CLIENTS[chat_id] = random.choice(cfg.gemini_keys_v2)
+                CLIENTS[chat_id] = random.choice(cfg.gemini_keys)
             return genai.Client(api_key=CLIENTS[chat_id])
 
     except Exception as error:
@@ -148,7 +150,7 @@ def chat2(
                 elif isinstance(query[i], bytes): # image
                     image = io.BytesIO(query[i])
                     break
-            query = [x for x in query if isinstance(x, str)]
+            query = [x for x in query if isinstance(x, str) or isinstance(x, Part)]
 
         if temperature < 0:
             temperature = 0
@@ -165,7 +167,7 @@ def chat2(
         if not chat_id:
             chat_id = 'test'
 
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_v2')) or []
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
 
         if system == '':
             system = None
@@ -199,12 +201,12 @@ def chat2(
                     max_output_tokens=max_tokens,
                     temperature=temperature,
                     tools = SKILLS,
-                    )
                 )
+            )
             chat._curated_history = mem # можно так?
 
             try:
-                resp = chat.send_message(query)
+                resp = chat.send_message(message = query)
             except Exception as error:
                 traceback_error = traceback.format_exc()
                 my_log.log_gemini(f'my_gemini_v2:chat2:2: {error}\n{model}\n{CLIENTS[chat_id]}\n{query[:100]}\n\n{traceback_error}')
@@ -231,7 +233,7 @@ def chat2(
 
                 my_db.add_msg(chat_id, model)
 
-                my_db.set_user_property(chat_id, 'dialog_gemini_v2', my_db.obj_to_blob(chat._curated_history))
+                my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(chat._curated_history))
 
                 return result
 
@@ -257,7 +259,7 @@ def reset(chat_id: str, model: str = ''):
         None
     """
     mem = []
-    my_db.set_user_property(chat_id, 'dialog_gemini_v2', my_db.obj_to_blob(mem))
+    my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
 
 
 def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
@@ -275,7 +277,7 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     if not chat_id:
         chat_id = 'test'
 
-    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_v2')) or []
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
 
     result = ''
     for x in mem:
@@ -332,22 +334,51 @@ def chat_cli(user_id: str = '', model: str = ''):
         print(r)
 
 
+def test_url():
+    video = Part.from_uri(
+        file_uri="https://www.youtube.com/watch?v=3KtWfp0UopM",
+        mime_type="video/mp4",
+    )
+
+    thinking_config = ThinkingConfig(
+        include_thoughts=True,
+        thinking_budget=10000
+    )
+
+    client = get_client()
+    response = client.models.generate_content(
+        model = 'gemini-2.5-flash-preview-04-17',
+        contents=[
+            video,
+            "перескажи кратко что в видео",
+        ],
+        config=GenerateContentConfig(
+            thinking_config=thinking_config,
+        ),
+    )
+
+    print(response.text)
+
+
 if __name__ == "__main__":
     my_db.init(backup=False)
 
     # print(chat2('привет как дела'))
     # chat_cli()
 
-    q = [
-        'опиши картинку',
-        open(r"C:\Users\user\Downloads\samples for ai\мат задачи 2.jpg" , 'rb').read()
-    ]
-    print(chat2(q))
+    # q = [
+    #     'опиши картинку',
+    #     open(r"C:\Users\user\Downloads\samples for ai\мат задачи 2.jpg" , 'rb').read()
+    # ]
+    # print(chat2(q))
 
     # chat._curated_history = [Content[]]
     # Content.role = 'user'|'model'
     # Content.parts = [Part[]]
     # Part.text = 'напиши 1 слово в ответ. 2+2='
     # Part.thought = None
+
+    test_url()
+
     my_db.close()
 

@@ -9125,7 +9125,7 @@ def do_task(message, custom_prompt: str = ''):
             return
 
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя
-        if chat_mode_ in ('gemini15', 'gemini-exp', 'gemini25_flash') and my_db.count_msgs_last_24h(chat_id_full) > 300:
+        if chat_mode_ in ('gemini15', 'gemini-exp') and my_db.count_msgs_last_24h(chat_id_full) > 300:
             chat_mode_ = 'gemini'
 
 

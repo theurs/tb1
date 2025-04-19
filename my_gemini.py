@@ -271,7 +271,8 @@ def chat(query: str,
                 if '429 Quota exceeded for quota metric' in str(error) or 'API key expired. Please renew the API key.' in str(error):
                     pass
                     remove_key(key)
-                if 'MALFORMED_FUNCTION_CALL' in str(error):
+                if 'MALFORMED_FUNCTION_CALL' in str(error) or '400 Please ensure that function response turn comes immediately after a function call turn.' in str(error):
+                    my_log.log_gemini(f'my_gemini:chat2:2:1: {error}\n{model}\n{key}\n{str(chat_.history)}')
                     if use_skills:
                         return chat(
                             query,
@@ -289,13 +290,12 @@ def chat(query: str,
                             max_chat_mem_chars=max_chat_mem_chars,
                             timeout=timeout)
                     else:
-                        my_log.log_gemini(f'my_gemini:chat2:2:0: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')   
+                        my_log.log_gemini(f'my_gemini:chat2:2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')   
                 if 'list index out of range' in str(error):
                     return ''
                 else:
                     # traceback_error = traceback.format_exc()
-                    # my_log.log_gemini(f'my_gemini:chat2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}\n\n{traceback_error}')
-                    my_log.log_gemini(f'my_gemini:chat2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                    my_log.log_gemini(f'my_gemini:chat2:2:3: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
                    'reason: "API_KEY_INVALID"' in str(error):
                     remove_key(key)

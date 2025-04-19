@@ -6318,8 +6318,12 @@ def image_gemini_gen(message: telebot.types.Message):
                 return
 
             try:
-                num = parts[1].strip()
-                prompt = parts[2].strip()
+                if len(parts) == 2:
+                    num = 1
+                    prompt = parts[1].strip()
+                else:
+                    num = parts[1].strip()
+                    prompt = parts[2].strip()
             except IndexError:
                 bot_reply_tr(message, help_text)
                 return
@@ -6332,8 +6336,9 @@ def image_gemini_gen(message: telebot.types.Message):
             if num in ('1', '2', '3', '4'):
                 num = int(num)
             else:
-                prompt = f'{num} {prompt}'
-                num = 1  # Default to model 1
+                if num not in (1, 2, 3, 4):
+                    prompt = f'{num} {prompt}'
+                    num = 1  # Default to model 1
 
             with ShowAction(message, 'upload_photo'):
                 try:

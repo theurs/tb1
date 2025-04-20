@@ -297,54 +297,71 @@ def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str
 
     if subj == 'youtube_video':
         if len(text) > 2000:
-            qq = f'''Summarize the content of this YouTube video.
+            qq = f'''Summarize this YouTube video based on the subtitles.
 
-Answer in [{lang}] language.
+Start the output immediately with the brief summary.
+Output:
+Output language: [{lang}]
+Highlight the key points.
+Do not use any code blocks in the output text.
+Do not use tools.
 
-The answer should be similar to the following:
+Brief summary (2 sentences).
+Format it as quotes with > symbol.
+First block only text of the block, do not include words like Brief summary (2 sentences).
 
-Show a brief summary of the video in 2 sentences, which satisfies most people.
-Show a detail summary of the content of the video in your own words, 50-2000 words.
+Detailed summary (50-2000[hard limit] words).
+Second block only text of the block, do not include words like Detailed summary (50-2000 words).
 
-Extracted subtitles:
+Subtitles:
 '''
         else:
-            qq = f'''Summarize the content of this YouTube video.
+            qq = f'''Summarize this YouTube video based on the subtitles.
 
-Answer in [{lang}] language.
+Start the output immediately with the brief summary.
+Output:
+Output language: [{lang}]
+Highlight the key points.
+Do not use any code blocks in the output text.
+Do not use tools.
 
-The answer should be similar to the following:
+The brief summary only (up to 5 sentences).
+First block only text of the block, do not include words like Brief summary (up to 5 sentences).
 
-Show a brief summary of the video in 5 sentences, which satisfies most people.
-
-Extracted subtitles:
+Subtitles:
 '''
     else:
         if len(text) > 2000:
-            qq = f'''Summarize the content of this text.
+            qq = f'''Summarize this text.
 
-Answer in [{lang}] language.
+Start the output immediately with the brief summary.
+Output:
+Output language: [{lang}]
+Highlight the key points.
+Do not use any code blocks in the output text.
+Do not use tools.
 
-The answer should be similar to the following:
+Brief summary (2 sentences).
+Format it as quotes with > symbol.
+First block only text of the block, do not include words like Brief summary (2 sentences).
 
-Show a brief summary of the text in 2 sentences, which satisfies most people.
-
-Show a detail summary of the content of the text in your own words, 50-2000 words.
-
-Short human readable links if worth.
+Detailed summary (50-2000[hard limit] words). Include short human-readable links if applicable.
+Second block only text of the block, do not include words like Detailed summary (50-2000 words).
 
 Text:
 '''
         else:
-            qq = f'''Summarize the content of this text.
+            qq = f'''Summarize this text.
 
-Answer in [{lang}] language.
+Start the output immediately with the brief summary.
+Output:
+Output language: [{lang}]
+Highlight the key points.
+Do not use any code blocks in the output text.
+Do not use tools.
 
-The answer should be similar to the following:
-
-Show a brief summary of the text in 5 sentences, which satisfies most people.
-
-Short human readable links if worth.
+The brief summary only (up to 5 sentences). Include short human-readable links if applicable.
+First block only text of the block, do not include words like Brief summary (up to 5 sentences).
 
 Text:
 '''

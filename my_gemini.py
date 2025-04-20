@@ -870,9 +870,9 @@ def sum_big_text(text:str, query: str, temperature: float = 1, role: str = '') -
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    r = ai(query, temperature=temperature, model=cfg.gemini_flash_model, system=role)
+    r = ai(query, temperature=temperature, model=cfg.gemini25_flash_model, system=role)
     if not r:
-        r = ai(query, temperature=temperature, model=cfg.gemini_flash_model_fallback, system=role)
+        r = ai(query, temperature=temperature, model=cfg.gemini25_flash_model_fallback, system=role)
     return r.strip()
 
 

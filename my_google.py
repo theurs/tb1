@@ -81,12 +81,18 @@ def search_v3(query: str,
     q = f'''Answer to the user's search query.
 Guess what they were looking for and compose a good answer using search results and your own knowledge.
 
-The structure of the answer should be similar to the following: 
+Start the output immediately with the Brief answer.
+Output:
+Output language: [{lang}]
+Highlight the key points.
+Do not use any code blocks in the output text.
+Do not use tools, tool_code.
 
-Show a block with the user`s intention briefly.
-Show a block with a short and clear answer that satisfies most users.
-Show a block with a full answer and links, links should be formatted for easy reading, markdown in links is mandatory.
-Answer in "{lang}" language.
+Brief answer (50-800[hard limit] words). Include short human-readable links if applicable.
+Only text, do not include words like Brief answer (50-800 words). Fine readable.
+
+Links:
+markdown formatted links if any, otherwise no links.
 
 User`s query: "{query}"
 Current date: {utils.get_full_time()}
@@ -98,7 +104,7 @@ Search results:
     r = ''
 
     if not r:
-        r =  my_gemini.ai(q[:100000], model=cfg.gemini_flash_model, temperature=1, system=role)
+        r =  my_gemini.sum_big_text(q[:my_gemini.MAX_SUM_REQUEST], query, role=role)
         if r:
             r += '\n\n--\n[Gemini Flash]'
 

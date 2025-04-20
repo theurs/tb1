@@ -168,7 +168,8 @@ def chat(query: str,
                 temperature = temperature/2
 
         if not model:
-            model = cfg.gemini_flash_model
+            # model = cfg.gemini_flash_model
+            model = cfg.gemini25_flash_model
 
         if chat_id:
             if 'thinking' in model:
@@ -1252,7 +1253,7 @@ if __name__ == '__main__':
     # print(list_models(True))
     # chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
     # chat_cli(model=cfg.gemini_2_flash_thinking_exp_model)
-    chat_cli(model = 'gemini-2.0-flash')
+    # chat_cli(model = 'gemini-2.0-flash')
     # chat_cli(model = 'gemini-2.5-flash-preview-04-17')
     # chat_cli()
 
@@ -1272,3 +1273,5 @@ if __name__ == '__main__':
     #         p = 'Решите все задачи, представленные на изображении. Перепишите выражения LaTeX с использованием символов Unicode (без markdown), если таковые имеются. Не упоминайте переписывание в ответе.'
     #         r = img2txt(data, p, model = cfg.gemini_2_flash_thinking_exp_model, temp = 0)
     #         print(r)
+
+    t = translate('привет', to_lang='en', model=cfg.gemini25_flash_model)

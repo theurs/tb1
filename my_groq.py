@@ -35,8 +35,8 @@ USER_KEYS_LOCK = threading.Lock()
 
 # for ai func
 # DEFAULT_MODEL = 'llama-3.2-90b-vision-preview'
-DEFAULT_MODEL = 'llama-3.3-70b-versatile'
-FALLBACK_MODEL = 'llama-3.2-90b-vision-preview'
+DEFAULT_MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
+FALLBACK_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 
 
 # блокировка чатов что бы не испортить историю 
@@ -413,6 +413,7 @@ def chat(query: str, chat_id: str,
          model: str = '',
          style: str = '',
          timeout = 180,
+         max_tokens: int = 4000
          ) -> str:
     global LOCKS
     if chat_id in LOCKS:
@@ -423,9 +424,9 @@ def chat(query: str, chat_id: str,
     with lock:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_groq')) or []
         if style:
-            r = ai(query, system = style, mem_ = mem, temperature = temperature, model_ = model, timeout = timeout)
+            r = ai(query, system = style, mem_ = mem, temperature = temperature, model_ = model, timeout = timeout, max_tokens_=max_tokens)
         else:
-            r = ai(query, mem_ = mem, temperature = temperature, model_ = model, timeout = timeout)
+            r = ai(query, mem_ = mem, temperature = temperature, model_ = model, timeout = timeout, max_tokens_=max_tokens)
         if r:
             # if not model or model == 'llama3-70b-8192': model_ = 'llama3-70b-8192'
             if not model:

@@ -533,6 +533,80 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_log.log2(f'tb:add_to_bots_mem:{unexpected_error}\n\n{traceback_error}')
 
 
+def get_intention(query, chat_id_full) -> str:
+    '''
+    Попытка определить намерение юзера когда он отправляет картинку с инструкцией
+    Является ли этот запрос просьбой отредактировать или создать новое изображение
+    или это запрос на генерацию текста по картинке (вопрос или типа того)
+
+    Возвращает 'edit_image' - если пользователь хочет изменить предоставленное изображение,
+    'ask_image' - если пользователь задает вопрос об изображении
+    пустую строку если что то пошло не так
+    '''
+    q = f'''
+Твоя задача - проанализировать этот текст и определить, хочет ли пользователь изменить, сгенерировать новое изображение, или же он задает вопрос об изображении или просит сгенерировать текст, связанный с ним.
+
+Ответь ТОЛЬКО одним из двух ключевых слов:
+'edit_image' - если пользователь хочет изменить предоставленное изображение, сгенерировать новое изображение на его основе, добавить или удалить элементы, применить стиль, или создать любое другое ВИЗУАЛЬНОЕ ПРОИЗВЕДЕНИЕ, вдохновленное изображением или описанием в тексте.
+'ask_image' - если пользователь задает вопрос об изображении, просит его описать, анализировать его содержимое, или использует изображение как КОНТЕКСТ для текстового запроса (например, "что это за здание?", "какую породу собаки на фото?", "опиши атмосферу").
+
+Вот примеры для лучшего понимания:
+
+Примеры, когда нужно ответить 'edit_image':
+- "Сделай эту фотографию черно-белой."
+- "Добавь на передний план кота."
+- "Преврати этот пейзаж в картину Ван Гога."
+- "Сгенерируй персонажа в стиле Дисней по этому фото."
+- "Нарисуй мультяшную версию этой машины."
+- "Убери фон."
+- "Сгенерируй гиперреалистичную игрушку человека в оригинальной упаковке."
+
+Примеры, когда нужно ответить 'ask_image':
+- "Что это за место на фотографии?"
+- "Кто на этом фото?"
+- "Какая погода была, когда это снимали?"
+- "Опиши, что чувствуешь, глядя на это изображение."
+- "Найди информацию об этом памятнике."
+- "Расскажи историю, основанную на этой сцене."
+
+Запомни, твой ответ должен состоять ТОЛЬКО из одного слова: либо 'edit_image', либо 'ask_image'. Никакого другого текста, объяснений или знаков препинания.
+
+Теперь проанализируй следующий запрос пользователя:
+
+
+{query}
+'''
+
+    r = my_gemini.chat(
+        q,
+        chat_id = chat_id_full,
+        temperature=0.1,
+        # model=cfg.gemini_flash_light_model,
+        model = cfg.gemini25_flash_model,
+        max_tokens=10,
+        use_skills=False,
+        do_not_update_history=True,
+        timeout=20
+    )
+
+    if not r:
+        r = my_groq.chat(
+            q,
+            chat_id = chat_id_full,
+            temperature=0.1,
+            model=my_groq.DEFAULT_MODEL,
+            max_tokens=10,
+            update_memory=True,
+            timeout=20
+        )
+
+    if r and ('edit_image' in r.lower()):
+        return 'edit_image'
+    if r and ('ask_image' in r.lower()):
+        return 'ask_image'
+    return ''
+
+
 def img2img(text,
             lang: str,
             chat_id_full: str,
@@ -600,6 +674,8 @@ def img2txt(text,
     """
     try:
         query = query.strip()
+
+
         # если запрос начинается на ! то надо редактировать картинку а не отвечать на вопрос
         if query.startswith('!'):
             r = img2img(text, lang, chat_id_full, query[1:], model, temperature, system_message, timeout)
@@ -608,6 +684,16 @@ def img2txt(text,
             else:
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
             return r
+        elif len(query) > 10:
+            intention = get_intention(query, chat_id_full)
+            if intention == 'edit_image':
+                r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
+                if r:
+                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+                else:
+                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+                return r
+
 
         if temperature is None:
             temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1

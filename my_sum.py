@@ -310,8 +310,8 @@ Brief summary (2 sentences).
 Format it as quotes with > symbol.
 First block only text of the block, do not include words like Brief summary (2 sentences).
 
-Detailed summary (50-2000[hard limit] words).
-Second block only text of the block, do not include words like Detailed summary (50-2000 words).
+Detailed summary (50-800[hard limit] words).
+Second block only text of the block, do not include words like Detailed summary (50-800 words).
 
 Subtitles:
 '''
@@ -345,8 +345,8 @@ Brief summary (2 sentences).
 Format it as quotes with > symbol.
 First block only text of the block, do not include words like Brief summary (2 sentences).
 
-Detailed summary (50-2000[hard limit] words). Include short human-readable links if applicable.
-Second block only text of the block, do not include words like Detailed summary (50-2000 words).
+Detailed summary (50-800[hard limit] words). Include short human-readable links if applicable.
+Second block only text of the block, do not include words like Detailed summary (50-800 words).
 
 Text:
 '''

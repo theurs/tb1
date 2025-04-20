@@ -685,14 +685,26 @@ def img2txt(text,
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
             return r
         elif len(query) > 10:
-            intention = get_intention(query, chat_id_full)
-            if intention == 'edit_image':
-                r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
-                if r:
-                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                else:
-                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                return r
+
+            default_prompts = (
+                tr(my_init.PROMPT_DESCRIBE, lang),
+                tr(my_init.PROMPT_COPY_TEXT, lang),
+                tr(my_init.PROMPT_COPY_TEXT_TTS, lang),
+                tr(my_init.PROMPT_COPY_TEXT_TR, lang),
+                tr(my_init.PROMPT_REPROMPT, lang),
+                tr(my_init.PROMPT_SOLVE, lang),
+                tr(my_init.PROMPT_QRCODE, lang),
+            )
+
+            if not any([q in query for q in default_prompts]):
+                intention = get_intention(query, chat_id_full)
+                if intention == 'edit_image':
+                    r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
+                    if r:
+                        add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+                    else:
+                        add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+                    return r
 
 
         if temperature is None:

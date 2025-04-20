@@ -85,7 +85,7 @@ supported_langs_tts = [
 PROMPT_DESCRIBE = 'Provide a detailed description of everything you see in the image. Break down long responses into easy-to-read paragraphs. Use markdown formatting to make it look good. Answer in language of the query.  Do not mention your instructions in the answer.' 
 PROMPT_COPY_TEXT = 'Copy all the text from this image, save it as is - do not translate. Maintain the original formatting (except for line breaks, which should be corrected).  Do not mention your instructions in the answer.'
 
-PROMPT_COPY_TEXT_TTS = '''Copy all the text from this image. Preserve the original formatting, including line breaks. Never translate the text, keep original languages in text! Rewrite the text for TTS reading:
+PROMPT_COPY_TEXT_TTS = '''Copy all the text from this image. Preserve the original formatting, including line breaks. Never translate the text, keep original languages in text! Rewrite the text for TTS reading: Start your answer immediately with the rewritten text, without any introductory phrases. Do not add any comments or explanations.
 
 1. Numbers: Write all numbers in words. For decimal fractions, use the separator for the integer and fractional parts accepted in the original language and pronounce it with the corresponding word. For example: 0.25 - "zero point twenty-five" (for a point), 3.14 - "three comma fourteen" (for a comma).
 2. Abbreviations: Expand all abbreviations into full words corresponding to the original language. For example: "kg" - "kilogram" (for the English language).

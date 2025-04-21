@@ -275,7 +275,7 @@ def chat(query: str,
                     pass
                     remove_key(key)
                 elif 'MALFORMED_FUNCTION_CALL' in str(error):
-                    my_log.log_gemini(f'my_gemini:chat2:2:1: {error}\n{model}\n{key}\n{str(chat_.history)}')
+                    # my_log.log_gemini(f'my_gemini:chat2:2:1: {error}\n{model}\n{key}\n{str(chat_.history)}')
                     if use_skills:
                         return chat(
                             query,
@@ -301,6 +301,8 @@ def chat(query: str,
                 elif 'finish_reason: RECITATION' in str(error):
                     pass
                 elif 'block_reason: OTHER' in str(error):
+                    pass
+                elif '503 502:Bad Gateway' in str(error):
                     pass
                 else:
                     # traceback_error = traceback.format_exc()

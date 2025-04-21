@@ -2524,7 +2524,12 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                             images = my_tavily.search_images(query)
                         if not images:
                             images = my_ddg.get_images(query)
-                        medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
+
+                        medias = []
+
+                        if images:
+                            medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
+
                         if medias:
                             msgs_ids = send_media_group(
                                 message,
@@ -2533,7 +2538,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                 reply_to_message_id=message.message_id,
                             )
                             log_message(msgs_ids)
-
+                            return
+                        bot_reply_tr(message, 'Не смог найти картинки по этому запросу.')
         elif call.data == 'download_saved_text':
             # отдать юзеру его текст
             if my_db.get_user_property(chat_id_full, 'saved_file_name'):

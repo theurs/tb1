@@ -300,6 +300,8 @@ def chat(query: str,
                     pass
                 elif 'finish_reason: RECITATION' in str(error):
                     pass
+                elif 'finish_reason: OTHER' in str(error):
+                    pass
                 elif 'block_reason: OTHER' in str(error):
                     pass
                 elif '503 502:Bad Gateway' in str(error):

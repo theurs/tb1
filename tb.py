@@ -6733,6 +6733,8 @@ def send_images_to_pic_group(
 
 
     except Exception as unknown:
+        if 'A request to the Telegram API was unsuccessful. Error code: 429. Description: Too Many Requests: retry after' in str(unknown):
+            return
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:image:send_media_group_pics_group3: {unknown}\n\n{traceback_error}')
 

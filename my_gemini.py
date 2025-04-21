@@ -300,6 +300,8 @@ def chat(query: str,
                     pass
                 elif 'finish_reason: RECITATION' in str(error):
                     pass
+                elif 'block_reason: OTHER' in str(error):
+                    pass
                 else:
                     # traceback_error = traceback.format_exc()
                     my_log.log_gemini(f'my_gemini:chat2:2:4: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')

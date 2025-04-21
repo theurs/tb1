@@ -296,6 +296,10 @@ def chat(query: str,
                         my_log.log_gemini(f'my_gemini:chat2:2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')   
                 if 'list index out of range' in str(error):
                     return ''
+                if '500 An internal error has occurred. Please retry or report in https://developers.generativeai.google/guide/troubleshooting' in str(error):
+                    pass
+                if 'finish_reason: RECITATION' in str(error):
+                    pass
                 else:
                     # traceback_error = traceback.format_exc()
                     my_log.log_gemini(f'my_gemini:chat2:2:4: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')

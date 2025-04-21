@@ -471,6 +471,12 @@ COHERE_AI_KEYS = [
 # USE_FLUX_IF_EMPTY_IMAGES = False
 
 
+## https://app.tavily.com/home 1000 поисковых запросов в месяц на аккаунт бесплатно
+#TAVILY_KEYS = [
+#    'xxx',
+#    'yyy',
+#]
+
 # string for /donate command html parsing
 # DONATION_STRING = '<a href = "https://www.donationalerts.com/r/xxx">DonationAlerts</a>'
 

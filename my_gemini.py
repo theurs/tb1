@@ -271,10 +271,10 @@ def chat(query: str,
                     mem = chat_.history[2:]
                     # тут нет key_i += 1, но цикл закончится если история опустеет
                     continue
-                if '429 Quota exceeded for quota metric' in str(error) or 'API key expired. Please renew the API key.' in str(error):
+                elif '429 Quota exceeded for quota metric' in str(error) or 'API key expired. Please renew the API key.' in str(error):
                     pass
                     remove_key(key)
-                if 'MALFORMED_FUNCTION_CALL' in str(error):
+                elif 'MALFORMED_FUNCTION_CALL' in str(error):
                     my_log.log_gemini(f'my_gemini:chat2:2:1: {error}\n{model}\n{key}\n{str(chat_.history)}')
                     if use_skills:
                         return chat(
@@ -294,15 +294,16 @@ def chat(query: str,
                             timeout=timeout)
                     else:
                         my_log.log_gemini(f'my_gemini:chat2:2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')   
-                if 'list index out of range' in str(error):
+                elif 'list index out of range' in str(error):
                     return ''
-                if '500 An internal error has occurred. Please retry or report in https://developers.generativeai.google/guide/troubleshooting' in str(error):
+                elif '500 An internal error has occurred.' in str(error):
                     pass
-                if 'finish_reason: RECITATION' in str(error):
+                elif 'finish_reason: RECITATION' in str(error):
                     pass
                 else:
                     # traceback_error = traceback.format_exc()
                     my_log.log_gemini(f'my_gemini:chat2:2:4: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
                    'reason: "API_KEY_INVALID"' in str(error):
                     remove_key(key)

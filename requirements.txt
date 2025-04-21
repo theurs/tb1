@@ -14,6 +14,7 @@ deepgram-sdk
 duckduckgo_search[lxml]
 edge_tts
 fastapi
+ftfy
 
 Flask
 
@@ -82,6 +83,7 @@ sqlitedict
 SpeechRecognition
 simpleeval
 
+tavily-python
 trafilatura
 
 # требует установки vc++ tools

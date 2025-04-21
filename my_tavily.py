@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # To install: pip install tavily-python
+# pip install ftfy
 
 
 import cachetools.func
@@ -7,6 +8,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 
 from tavily import TavilyClient
+from ftfy import fix_text
 
 import cfg
 import my_log
@@ -56,6 +58,48 @@ def search(query: str, max_results: int = 5, search_depth: str = 'basic') -> dic
             max_results=max_results,
             search_depth=search_depth,
         )
+
+
+        # --- Начало блока удаления дубликатов ---
+        unique_results = []
+        seen_urls = set()
+
+        # Проходим по результатам после исправления кодировки
+        for result in response['results']:
+            # Проверяем наличие url и его тип
+            if isinstance(result, dict) and 'url' in result and isinstance(result['url'], str):
+                url = result['url']
+                # Если url еще не встречался
+                if url not in seen_urls:
+                    unique_results.append(result) # Добавляем результат в новый список
+                    seen_urls.add(url) # Отмечаем url как встреченный
+            else:
+                # Если результат не имеет url или url некорректен, просто добавляем его
+                # или обрабатываем как ошибку, в зависимости от нужды.
+                # Пока просто добавим, чтобы не потерять.
+                # print(f"Warning: Result without valid 'url': {result}") # Можно добавить лог
+                unique_results.append(result) # Можно пропустить, если url обязателен
+
+        # Заменяем старый список результатов на новый, уникальный
+        response['results'] = unique_results
+        # --- Конец блока удаления дубликатов ---
+
+
+        # Список ключей, в которых надо проверить и исправить кодировку
+        # Добавляем 'answer' из верхнего уровня и поля внутри 'results'
+        keys_to_check = ['title', 'content', 'raw_content']
+
+        # Применяем функцию к полю 'answer' на верхнем уровне
+        if 'answer' in response and isinstance(response['answer'], str):
+            response['answer'] = fix_text(response['answer'])
+
+        # Перебираем все результаты поиска в списке 'results'
+        for result in response.get('results', []):
+            # Перебираем нужные поля в каждом словаре результата
+            for key in keys_to_check:
+                if key in result and isinstance(result[key], str):
+                    result[key] = fix_text(result[key])
+
         return response
     except Exception as error:
         traceback_error = traceback.format_exc()
@@ -113,4 +157,4 @@ def search_text(query: str) -> str:
 
 
 if __name__ == '__main__':
-    print(search('Как прошло 30 часовое перемирие'))
+    print(search('где находится...'))

@@ -6,7 +6,6 @@ import traceback
 
 import googlesearch
 
-import cfg
 import my_log
 import my_cohere
 import my_gemini
@@ -14,6 +13,7 @@ import my_gemini_google
 import my_ddg
 import my_groq
 import my_sum
+import my_tavily
 import utils
 
 
@@ -51,29 +51,34 @@ def search_v3(query: str,
     # добавляем в список выдачу самого гугла, и она же первая и главная
     urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
-    try:
-        r = my_ddg.get_links(query, max_search)
-    except Exception as error:
-        my_log.log2(f'my_google:search_google_v3: {error}')
+
+    # но сначала пробуем сервис тавили
+    text = my_tavily.search_text(query)
+
+    if not text:
         try:
-            # r = my_ddg.get_links(query, max_search)
-            r = googlesearch.search(query, stop = max_search, lang=lang)
+            r = my_ddg.get_links(query, max_search)
         except Exception as error:
             my_log.log2(f'my_google:search_google_v3: {error}')
-            return ''
+            try:
+                # r = my_ddg.get_links(query, max_search)
+                r = googlesearch.search(query, stop = max_search, lang=lang)
+            except Exception as error:
+                my_log.log2(f'my_google:search_google_v3: {error}')
+                return ''
 
-    bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
+        bad_results = ('https://g.co/','.pdf','.docx','.xlsx', '.doc', '.xls')
 
-    try:
-        for url in r:
-            if any(s.lower() in url.lower() for s in bad_results):
-                continue
-            urls.append(url)
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
+        try:
+            for url in r:
+                if any(s.lower() in url.lower() for s in bad_results):
+                    continue
+                urls.append(url)
+        except Exception as error:
+            error_traceback = traceback.format_exc()
+            my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
 
-    text = my_sum.download_text(urls, my_gemini.MAX_SUM_REQUEST)
+        text = my_sum.download_text(urls, my_gemini.MAX_SUM_REQUEST)
 
     if download_only:
         return text

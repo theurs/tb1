@@ -271,7 +271,7 @@ def get_images(query: str, max_results: int = 16) -> list:
 
     Args:
         query (str): The search query.
-        max_results (int, optional): The maximum number of results to return. Defaults to 5.
+        max_results (int, optional): The maximum number of results to return. Defaults to 16.
 
     Returns:
         list: A list of image as [(downloaded bytes, title),...]

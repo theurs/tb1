@@ -58,6 +58,7 @@ import my_pandoc
 import my_stat
 import my_stt
 import my_sum
+import my_tavily
 import my_qrcode
 import my_trans
 import my_transcribe
@@ -2518,7 +2519,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if hash_ in SEARCH_PICS:
                     with ShowAction(message, 'upload_photo'):
                         query = SEARCH_PICS[hash_]
-                        images = my_ddg.get_images(query)
+                        images = []
+                        if hasattr(cfg, 'TAVILY_KEYS') and len(cfg.TAVILY_KEYS) > 0:
+                            images = my_tavily.search_images(query)
+                        if not images:
+                            images = my_ddg.get_images(query)
                         medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
                         if medias:
                             msgs_ids = send_media_group(

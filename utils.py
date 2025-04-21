@@ -1406,7 +1406,7 @@ def download_image_as_bytes(url_or_urls: str) -> bytes:
 
     if isinstance(url_or_urls, str):
         try:
-            response = requests.get(url_or_urls, timeout=30)
+            response = requests.get(url_or_urls, timeout=15)
         except Exception as error:
             return b''
         return response.content

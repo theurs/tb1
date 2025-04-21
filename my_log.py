@@ -294,6 +294,11 @@ def log_translate(text: str) -> None:
     log2(text, 'translate')
 
 
+def log_tavily(text: str) -> None:
+    """для дебага ошибок tavily"""
+    log2(text, 'tavily')
+
+
 def restore_message_text(s1: str, l) -> str:
     """
     Функция принимает строку s1 и список l с описанием форматирования,

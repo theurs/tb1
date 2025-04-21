@@ -520,82 +520,6 @@ def glm(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negati
     return []
 
 
-# def kandinski_old(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = ""):
-#     """
-#     Generates images based on a prompt using the KANDINSKI_API.
-
-#     Args:
-#         prompt (str): The prompt for generating the images.
-#         width (int, optional): The width of the images. Defaults to 1024.
-#         height (int, optional): The height of the images. Defaults to 1024.
-#         num (int, optional): The number of images to generate. Defaults to 1.
-
-#     Returns:
-#         list: A list of generated images in bytes format.
-#     """
-#     try:
-#         if not hasattr(cfg, 'KANDINSKI_API') or not cfg.KANDINSKI_API:
-#             return []
-#         keys = cfg.KANDINSKI_API[:]
-#         key = random.choice(keys)
-#         AUTH_HEADERS = {
-#             'X-Key': f'Key {key[0]}',
-#             'X-Secret': f'Secret {key[1]}',
-#         }
-#         params = {
-#             "type": "GENERATE",
-#             "numImages": num,
-#             "width": width,
-#             "height": height,
-#             "generateParams": {
-#             "query": f"{prompt}"
-# 		    }
-# 	    }
-#         def get_model():
-#             response = requests.get('https://api-key.fusionbrain.ai/key/api/v1/models', headers=AUTH_HEADERS)
-#             data = response.json()
-#             return data[0]['id']
-
-#         data = {
-#             'model_id': (None, get_model()),
-#             'params': (None, json.dumps(params), 'application/json')
-#         }
-#         response = requests.post('https://api-key.fusionbrain.ai/key/api/v1/text2image/run', headers=AUTH_HEADERS, files=data, timeout=120)
-#         data = response.json()
-#         try:
-#             uuid = data['uuid']
-#         except KeyError:
-#             return []
-
-#         def check_generation(request_id, attempts=10, delay=10):
-#             while attempts > 0:
-#                 response = requests.get('https://api-key.fusionbrain.ai/key/api/v1/text2image/status/' + request_id, headers=AUTH_HEADERS)
-#                 data = response.json()
-#                 if  data['censored']:
-#                     return []
-#                 if data['status'] == 'DONE':
-#                     return data['images']
-#                 attempts -= 1
-#                 time.sleep(delay)
-
-#         images = check_generation(uuid)
-#         if images:
-#             results = []
-#             for image in images:
-#                 data = base64.b64decode(image)
-#                 WHO_AUTOR[utils.fast_hash(data)] = 'fusionbrain.ai'
-#                 results.append(data)
-#             return results
-#         else:
-#             return []
-
-#     except Exception as error:
-#         error_traceback = traceback.format_exc()
-#         my_log.log_huggin_face_api(f'my_genimg:kandinski: {error}\n\n{error_traceback}')
-
-#     return []
-
-
 class FusionBrainAPI:
 
     def __init__(self, url, api_key, secret_key):
@@ -630,7 +554,7 @@ class FusionBrainAPI:
         }
         response = requests.post(self.URL + 'key/api/v1/pipeline/run', headers=self.AUTH_HEADERS, files=data)
         data = response.json()
-        return data['uuid']
+        return data.get('uuid', '')
 
     def check_generation(self, request_id, attempts=10, delay=10):
         while attempts > 0:
@@ -668,12 +592,12 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, 
 
     try:
         if not hasattr(cfg, 'KANDINSKI_API') or not cfg.KANDINSKI_API:
-            my_log.log_huggin_face_api('my_genimg:kandinski: KANDINSKI_API not configured in cfg.')
+            my_log.log_huggin_face_api('my_genimg:kandinski:1: KANDINSKI_API not configured in cfg.')
             return []
 
         keys = cfg.KANDINSKI_API[:]
         if not keys:
-             my_log.log_huggin_face_api('my_genimg:kandinski: No API keys found in cfg.KANDINSKI_API.')
+             my_log.log_huggin_face_api('my_genimg:kandinski:2: No API keys found in cfg.KANDINSKI_API.')
              return []
 
         key_pair = random.choice(keys)
@@ -690,6 +614,8 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, 
             height=height,
             negative_prompt=negative_prompt
             )
+        if not uuid:
+            return []
         data = api.check_generation(uuid)
         if not data:
             return []
@@ -702,7 +628,7 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, 
     except Exception as error:
         # Catch-all for unexpected errors
         error_traceback = traceback.format_exc()
-        my_log.log_huggin_face_api(f'my_genimg:kandinski: Unhandled exception: {error}\n\n{error_traceback}')
+        my_log.log_huggin_face_api(f'my_genimg:kandinski:3: Unhandled exception: {error}\n\n{error_traceback}')
         return []
 
 

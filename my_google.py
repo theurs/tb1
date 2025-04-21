@@ -88,8 +88,8 @@ Highlight the key points.
 Do not use any code blocks in the output text.
 Do not use tools, tool_code.
 
-Brief answer (50-800[hard limit] words). Include short human-readable links if applicable.
-Only text, do not include words like Brief answer (50-800 words). Fine readable.
+Brief answer (50-1000[hard limit] words). Include short human-readable links if applicable.
+Only text, do not include words like Brief answer (50-1000 words). Fine readable.
 
 Links:
 markdown formatted links if any, otherwise no links.

@@ -498,9 +498,6 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         resp = resp.strip()
         if not query or not resp:
             return
-        # # Checks if there is a chat mode for the given chat, if not, sets the default value.
-        # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         # Updates the memory of the selected bot based on the chat mode.
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -725,17 +722,12 @@ def img2txt(text,
         if 'markdown' not in query.lower() and 'latex' not in query.lower():
             query = query + '\n\n' + my_init.get_img2txt_prompt(tr, lang)
 
-        # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         text = ''
         time_to_answer_start = time.time()
 
         try:
             # попробовать с помощью openrouter
-            # # кто по умолчанию отвечает
-            # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-            #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
 
@@ -1990,15 +1982,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
                 voice_title = voices['tts_female']
 
-            # # кто по умолчанию
-            # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-            #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
             markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
 
             if chat_mode == 'gemini':
-                msg = '✅ Gemini 2.0 Flash'
+                msg = '✅ Gemini 2.0 Flash '
             else:
                 msg = 'Gemini 2.0 Flash'
             button_gemini_flash20 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_flash')
@@ -2013,11 +2002,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = '✅ Gemini 2.5 Pro exp'
             else:
                 msg = 'Gemini 2.5 Pro exp'
-            # have_gemini_keys = check_vip_user(chat_id_full)
-            # if have_gemini_keys:
-            #     button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
-            # else:
-            #     button_gemini_pro = telebot.types.InlineKeyboardButton('🔒 ' + msg, callback_data='select_gemini_pro')
             button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
 
             if chat_mode == 'gemini_2_flash_thinking':
@@ -2152,18 +2136,20 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Llama 4 Maverick'
             button_llama4_maverick = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama4_maverick')
 
+
             markup.row(button_gemini_flash20, button_gemini_flash25)
+
+            markup.row(button_gemini_pro, button_llama4_maverick)
 
             if hasattr(cfg, 'DDG_ENABLED') and cfg.DDG_ENABLED:
                 markup.row(button_gpt4o_mini, button_o3_mini_ddg)
 
+            markup.row(button_gpt_4o, button_gpt_41)
+
             markup.row(button_cohere, button_mistral)
 
-            markup.row(button_gpt_4o, button_deepseek_v3)
+            markup.row(button_deepseek_v3, button_openrouter)
 
-            markup.row(button_gpt_41, button_gemini_pro)
-
-            markup.row(button_openrouter, button_llama4_maverick)
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -9219,9 +9205,6 @@ def do_task(message, custom_prompt: str = ''):
         if custom_prompt:
             message.text = custom_prompt
 
-        # # кто по умолчанию отвечает
-        # if not my_db.get_user_property(chat_id_full, 'chat_mode'):
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'

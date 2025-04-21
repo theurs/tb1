@@ -304,6 +304,8 @@ def chat(query: str,
                     pass
                 elif 'block_reason: OTHER' in str(error):
                     pass
+                elif 'block_reason: PROHIBITED_CONTENT' in str(error):
+                    pass
                 elif '503 502:Bad Gateway' in str(error):
                     pass
                 elif '400 Please ensure that function response turn comes immediately after a function call turn.' in str(error):

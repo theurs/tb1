@@ -122,7 +122,8 @@ def chat(query: str,
          do_not_update_history=False,
          max_chat_lines: int = MAX_CHAT_LINES,
          max_chat_mem_chars: int = MAX_CHAT_MEM_CHARS,
-         timeout: int = TIMEOUT
+         timeout: int = TIMEOUT,
+         do_not_use_users_memory: bool = False
          ) -> str:
     """Interacts with a generative AI model (presumably Gemini) to process a user query.
 
@@ -145,6 +146,7 @@ def chat(query: str,
         max_chat_lines: The maximum number of conversation turns to store in history.
         max_chat_mem_chars: The maximum number of characters to store in the conversation history.
         timeout: The request timeout in seconds.
+        do_not_use_users_memory: A boolean flag indicating whether to use the user's memory.
 
     Returns:
         A string containing the model's response, or an empty string if an error occurs or the response is empty.
@@ -176,6 +178,9 @@ def chat(query: str,
             else:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
         else:
+            mem = []
+
+        if do_not_use_users_memory:
             mem = []
 
         if not mem and insert_mem:
@@ -290,7 +295,9 @@ def chat(query: str,
                             do_not_update_history=do_not_update_history,
                             max_chat_lines=max_chat_lines,
                             max_chat_mem_chars=max_chat_mem_chars,
-                            timeout=timeout)
+                            timeout=timeout,
+                            do_not_use_users_memory=do_not_use_users_memory
+                        )
                     else:
                         my_log.log_gemini(f'my_gemini:chat2:2:2: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')   
                 elif 'list index out of range' in str(error):
@@ -1068,7 +1075,8 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
                   json_output=True,
                   model=cfg.gemini25_flash_model,
                   chat_id=chat_id,
-                  do_not_update_history=True
+                  do_not_update_history=True,
+                  do_not_use_users_memory=True
                   )
     result_dict = utils.string_to_dict(result)
     if result_dict:

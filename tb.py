@@ -5605,16 +5605,17 @@ def save_history(message: telebot.types.Message):
             )
             log_message(m)
 
-            m = send_document(
-                message,
-                message.chat.id,
-                document=my_pandoc.convert_text_to_odt(prompt),
-                message_thread_id=message.message_thread_id,
-                caption='resp.odt',
-                visible_file_name = 'resp.odt',
-                reply_markup=get_keyboard('hide', message)
-            )
-            log_message(m)
+            # odt не нужен, либраофис умеет docx            
+            # m = send_document(
+            #     message,
+            #     message.chat.id,
+            #     document=my_pandoc.convert_text_to_odt(prompt),
+            #     message_thread_id=message.message_thread_id,
+            #     caption='resp.odt',
+            #     visible_file_name = 'resp.odt',
+            #     reply_markup=get_keyboard('hide', message)
+            # )
+            # log_message(m)
 
             m = send_document(
                 message,

@@ -168,7 +168,7 @@ def log_gemini(text: str) -> None:
     ]
     if any([x for x in a if x in text]):
         return
-    log2(text[:2000], 'gemini')
+    log2(text, 'gemini')
 
 def log_gemini_google(text: str) -> None:
     """для логов gemini_google"""

@@ -310,8 +310,11 @@ def chat(query: str,
                 elif '400 Please ensure that function response turn comes immediately after a function call turn.' in str(error):
                     my_log.log_gemini(f'my_gemini:chat2:2:4: {error}\n{model}\n\n{str(mem)}')
                 else:
-                    traceback_error = traceback.format_exc()
-                    my_log.log_gemini(f'my_gemini:chat2:2:5: {error}\n{model}\n{key}\n\n{str(mem)}\n\n{traceback_error}')
+                    if 'Deadline Exceeded' not in str(error) and 'stop after timeout' not in str(error):
+                        traceback_error = traceback.format_exc()
+                        my_log.log_gemini(f'my_gemini:chat2:2:5: {error}\n{model}\n{key}\n\n{str(mem)}\n\n{traceback_error}')
+                    else:
+                        my_log.log_gemini(f'my_gemini:chat2:2:6: {error}\n{model}\n{key}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
                    'reason: "API_KEY_INVALID"' in str(error):
                     remove_key(key)

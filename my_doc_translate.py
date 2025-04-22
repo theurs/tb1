@@ -76,7 +76,7 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
     r = my_gemini.chat(
         query=chunk,
         chat_id = chat_id,
-        model=cfg.gemini_flash_model,
+        model=cfg.gemini25_flash_model,
         system = help,
         temperature=0.3,
         max_tokens=int(len(chunk)/2),
@@ -88,7 +88,7 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
         r = my_gemini.chat(
             query=chunk,
             chat_id = chat_id,
-            model=cfg.gemini_flash_model_fallback,
+            model=cfg.gemini25_flash_model_fallback,
             system = help,
             temperature=0.3,
             max_tokens=int(len(chunk)/2),

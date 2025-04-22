@@ -132,7 +132,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                             text = stt_genai(input_file2, lang)
                             if text and not done_flag:
                                 done_flag = True
-                                my_db.add_msg(chat_id, cfg.gemini_flash_model)
+                                my_db.add_msg(chat_id, cfg.gemini25_flash_model)
                         except Exception as error:
                             my_log.log2(f'my_stt:stt:genai:{error}')
                     elif speech_to_text_engine == 'google':
@@ -169,7 +169,7 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
                         text = stt_genai(input_file2, lang)
                         if text and not done_flag:
                             done_flag = True
-                            my_db.add_msg(chat_id, cfg.gemini_flash_model)
+                            my_db.add_msg(chat_id, cfg.gemini25_flash_model)
                         if len(text) < 100: # failed?
                             done_flag = False
                             my_log.log2(f'my_stt:stt: stt_genai failed long file, trying groq')

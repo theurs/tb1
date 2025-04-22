@@ -134,7 +134,7 @@ def chat(query: str,
         query: The user's input query string.
         chat_id: An optional string identifier for the chat session.  Used for retrieving and updating conversation history.
         temperature:  A float controlling the randomness of the response.  Should be between 0 and 2.
-        model: The name of the generative model to use. If empty, defaults to `cfg.gemini_flash_model`.
+        model: The name of the generative model to use. If empty, defaults to `cfg.gemini25_flash_model`.
         system: An optional string representing the system prompt or instructions for the model.
         max_tokens: The maximum number of tokens allowed in the response.
         insert_mem:  An optional list representing a pre-existing conversation history to use.
@@ -168,7 +168,6 @@ def chat(query: str,
                 temperature = temperature/2
 
         if not model:
-            # model = cfg.gemini_flash_model
             model = cfg.gemini25_flash_model
 
         if chat_id:
@@ -370,7 +369,7 @@ def img2txt(
     data_: bytes,
     prompt: str = "Что на картинке?",
     temp: float = 1,
-    model: str = cfg.gemini_flash_model,
+    model: str = cfg.gemini25_flash_model,
     json_output: bool = False,
     chat_id: str = '',
     use_skills: str = False,
@@ -406,40 +405,6 @@ def img2txt(
         time.sleep(2)
     my_log.log_gemini('my_gemini:img2txt2: 4 tries done and no result')
     return ''
-
-
-# # @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-# def img2txt(data_: bytes,
-#             prompt: str = "Что на картинке, подробно?",
-#             temp: float = 1,
-#             model: str = cfg.gemini_flash_model,
-#             json_output: bool = False,
-#             chat_id: str = '',
-#             use_skills: str = False
-#             ) -> str:
-#     '''Convert image to text.
-#     '''
-#     for _ in range(4):
-#         try:
-
-#             # надо уменьшить или загружать через облако, или просто не делать слишком большое
-#             if len(data_) > 20000000:
-#                 data_ = utils.resize_image(data_, 20000000)
-
-#             data = io.BytesIO(data_)
-#             img = PIL.Image.open(data)
-#             q = [prompt, img]
-#             res = chat(q, temperature=temp, model = model, json_output = json_output, use_skills=use_skills, chat_id=chat_id)
-
-#             return res
-#         except Exception as error:
-#             if 'cannot identify image file' in str(error):
-#                 return ''
-#             traceback_error = traceback.format_exc()
-#             my_log.log_gemini(f'my_gemini:img2txt1: {error}\n\n{traceback_error}')
-#         time.sleep(2)
-#     my_log.log_gemini('my_gemini:img2txt2: 4 tries done and no result')
-#     return ''
 
 
 def ai(q: str,
@@ -898,7 +863,7 @@ answer = (ru)
 
 Text to be detected: {text[:100]}
 '''
-    result = ai(q, temperature=0, model=cfg.gemini_flash_model, tokens_limit=10)
+    result = ai(q, temperature=0, model=cfg.gemini25_flash_model, tokens_limit=10)
     result = result.replace('"', '').replace(' ', '').replace("'", '').replace('(', '').replace(')', '').strip()
     return result
 
@@ -909,7 +874,7 @@ def retranscribe(text: str, prompt: str = '') -> str:
         query = f'{prompt}:\n\n{text}'
     else:
         query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
-    result = ai(query, temperature=0.1, model=cfg.gemini_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
+    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 
 
@@ -963,7 +928,7 @@ def rebuild_subtitles(text: str, lang: str) -> str:
         return result
 
     query = f'Fix errors, make an easy to read text out of the subtitles, make a fine paragraphs and sentences, output language = [{lang}]:\n\n{text}'
-    result = ai(query, temperature=0.1, model=cfg.gemini_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
+    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 
 
@@ -1097,7 +1062,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
     result = chat(prompt,
                   temperature=1.5,
                   json_output=True,
-                  model=cfg.gemini_flash_model,
+                  model=cfg.gemini25_flash_model,
                   chat_id=chat_id,
                   do_not_update_history=True
                   )
@@ -1166,7 +1131,7 @@ Return a `reprompt`
     result = chat(query,
                   temperature=1.5,
                   json_output=True,
-                  model=cfg.gemini_flash_model,
+                  model=cfg.gemini25_flash_model,
                   chat_id=chat_id,
                   do_not_update_history=True
                   )
@@ -1206,9 +1171,9 @@ def ocr_page(data: bytes, prompt: str = None) -> str:
             "если текста на изображении нет то ответ должен быть EMPTY"
         )
 
-    text = img2txt(data, prompt, temp=0, model=cfg.gemini_flash_model)
+    text = img2txt(data, prompt, temp=0, model=cfg.gemini25_flash_model)
     if not text:
-        text = img2txt(data, prompt, temp=0.1, model=cfg.gemini_flash_model_fallback)
+        text = img2txt(data, prompt, temp=0.1, model=cfg.gemini25_flash_model_fallback)
 
     return text
 
@@ -1243,9 +1208,9 @@ Examples:
 * https://www.example.com/very/long/and/complex/url/with/many/parameters?param1=value1&param2=value2 - "There is a long link to the website example dot com in the text"
 * 2+2≠5 - "two plus two is not equal to five"'''
 
-    result = chat(text, system=PROMPT_REWRITE_TEXT_FOR_TTS, model = cfg.gemini_flash_model, chat_id=chat_id_full, do_not_update_history=True)
+    result = chat(text, system=PROMPT_REWRITE_TEXT_FOR_TTS, model = cfg.gemini25_flash_model, chat_id=chat_id_full, do_not_update_history=True)
     if not result:
-        result = chat(text, system=PROMPT_REWRITE_TEXT_FOR_TTS, model = cfg.gemini_flash_model_fallback, chat_id=chat_id_full, do_not_update_history=True)
+        result = chat(text, system=PROMPT_REWRITE_TEXT_FOR_TTS, model = cfg.gemini25_flash_model_fallback, chat_id=chat_id_full, do_not_update_history=True)
     
     return result or text
 

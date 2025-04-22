@@ -249,7 +249,7 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
                 if your_file == None:
                     your_file = genai.upload_file(audio_file)
                     genai.configure(api_key=key) # здесь может быть рейс кондишн?
-                model = genai.GenerativeModel(cfg.gemini_flash_model)
+                model = genai.GenerativeModel(cfg.gemini25_flash_model)
                 response = model.generate_content([prompt, your_file],
                                                   safety_settings={
                     HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,

@@ -312,7 +312,7 @@ def chat(query: str,
                 else:
                     if 'Deadline Exceeded' not in str(error) and 'stop after timeout' not in str(error):
                         traceback_error = traceback.format_exc()
-                        my_log.log_gemini(f'my_gemini:chat2:2:5: {error}\n{model}\n{key}\n\n{str(mem)}\n\n{traceback_error}')
+                        my_log.log_gemini(f'my_gemini:chat2:2:5: {error}\n{model}\n{key}\n\n{str(query)}\n{str(mem)}\n\n{traceback_error}')
                     else:
                         my_log.log_gemini(f'my_gemini:chat2:2:6: {error}\n{model}\n{key}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \

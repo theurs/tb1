@@ -311,7 +311,7 @@ def chat(query: str,
                     my_log.log_gemini(f'my_gemini:chat2:2:4: {error}\n{model}\n\n{str(mem)}')
                 else:
                     # traceback_error = traceback.format_exc()
-                    my_log.log_gemini(f'my_gemini:chat2:2:5: {error}\n{model}\n{key}\nRequest size: {sys.getsizeof(query) + sys.getsizeof(mem)} {query[:100]}')
+                    my_log.log_gemini(f'my_gemini:chat2:2:5: {error}\n{model}\n{key}\n\n{str(mem)}')
                 if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
                    'reason: "API_KEY_INVALID"' in str(error):
                     remove_key(key)

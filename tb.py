@@ -7347,7 +7347,9 @@ def ask_file(message: telebot.types.Message):
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
         '''
                 temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
-                result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
+                result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
+                if not result:
+                    result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
                 if not result:
                     result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
                 if not result:

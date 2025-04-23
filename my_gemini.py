@@ -317,7 +317,7 @@ def chat(query: str,
                 elif '400 Please ensure that function response turn comes immediately after a function call turn.' in str(error):
                     my_log.log_gemini(f'my_gemini:chat2:2:4: {error}\n{model}\n\n{str(mem)}')
                 elif '429 You exceeded your current quota, please check your plan and billing details.' in str(error):
-                    my_log.log_gemini(f'my_gemini:chat2:2:5: {error}\n{model}\n\n{key}')
+                    my_log.log_gemini(f'my_gemini:chat2:2:5: 429 You exceeded your current quota, please check your plan and billing details.\n{model}\n\n{key}')
                 else:
                     if 'Deadline Exceeded' not in str(error) and 'stop after timeout' not in str(error) \
                     and '503 failed to connect to all addresses; last error: UNAVAILABLE' not in str(error):

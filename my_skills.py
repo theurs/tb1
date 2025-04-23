@@ -190,6 +190,11 @@ def calc(expression: str) -> str:
         my_log.log_gemini_skills(f'Internal calc result: {result}')
         return result
     except Exception as error:
+        #first try groq
+        r = my_groq.calc(expression)
+        if r:
+            my_db.add_msg('groq-calc', 'compound-beta')
+            return r
         r1, r0 = my_gemini_google.calc(expression)
         result = f'{r0}\n\n{r1}'.strip()
         if result:

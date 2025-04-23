@@ -34,30 +34,45 @@ def get_next_key() -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=20, ttl=15*60)
-def search(query: str, max_results: int = 10, search_depth: str = 'basic') -> dict:
+def search(query: str, max_results: int = 10, search_depth: str = 'basic', fast: bool = False) -> dict:
     '''
     Делает максимальный запрос в Tavily
-    
-    query - поисковый запрос
+
+    query - поисковый запрос (не больше 400 символов??)
     max_results - максимальное количество результатов
     search_depth - глубина поиска ('basic', 'advanced')
+    fast - быстрый поиск
 
-    Возвращает ответ в виде словаря
+    Возвращает ответ в виде словаря (или строку с ответом если быстрый режим)
     '''
     try:
         key = get_next_key()
         if not key:
             return ''
         client = TavilyClient(key)
-        response = client.search(
-            query=query,
-            include_answer="advanced",
-            include_images=True,
-            include_image_descriptions=True,
-            include_raw_content=True,
-            max_results=max_results,
-            search_depth=search_depth,
-        )
+        if fast:
+            response = client.search(
+                query=query,
+                include_answer="advanced",
+                include_images=False,
+                include_image_descriptions=False,
+                include_raw_content=False,
+                max_results=max_results,
+                search_depth=search_depth,
+            )
+            if 'answer' in response:
+                response['answer'] = fix_text(response['answer'])
+                return response['answer']
+        else:
+            response = client.search(
+                query=query,
+                include_answer="advanced",
+                include_images=True,
+                include_image_descriptions=True,
+                include_raw_content=True,
+                max_results=max_results,
+                search_depth=search_depth,
+            )
 
 
         # --- Начало блока удаления дубликатов ---
@@ -144,10 +159,10 @@ def search_images(query: str) -> list:
 def search_text(query: str) -> str:
     '''
     Делает максимальный запрос в Tavily
-    
+
     query - поисковый запрос
-    
-    Возвращает ответ raw
+
+    Возвращает ответ raw (джейсон в виде строки)
     '''
     response = search(query)
     if response:
@@ -156,5 +171,23 @@ def search_text(query: str) -> str:
         return ''
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=1*60)
+def search_text_fast(query: str) -> str:
+    '''
+    Делает быстрый запрос в Tavily
+
+    query - поисковый запрос (не больше 400 символов)
+
+    Возвращает ответ строку
+    '''
+    if len(query) > 400:
+        return ''
+    response = search(query, max_results=5, search_depth='basic', fast = True)
+    if response:
+        return response
+    else:
+        return ''
+
+
 if __name__ == '__main__':
-    print(search('где находится...'))
+    print(search_text_fast('где находится...'))

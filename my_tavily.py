@@ -11,6 +11,7 @@ from tavily import TavilyClient
 from ftfy import fix_text
 
 import cfg
+import my_db
 import my_log
 import utils
 
@@ -172,17 +173,25 @@ def search_text(query: str) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=1*60)
-def search_text_fast(query: str) -> str:
+def search_text_fast(query: str, lang: str = '', user_id: str = '') -> str:
     '''
     Делает быстрый запрос в Tavily
 
     query - поисковый запрос (не больше 400 символов)
+    lang - язык
+    user_id - id пользователя
 
     Возвращает ответ строку
     '''
+    if lang:
+        query = f'Отвечай на языке *{lang}*\n\n{query}'
     if len(query) > 400:
         return ''
     response = search(query, max_results=5, search_depth='basic', fast = True)
+
+    if user_id:
+        my_db.add_msg(user_id, 'tavily')
+
     if response:
         return response
     else:
@@ -190,4 +199,8 @@ def search_text_fast(query: str) -> str:
 
 
 if __name__ == '__main__':
-    print(search_text_fast('где находится...'))
+    my_db.init(backup=False)
+
+    print(search_text_fast('how can i create a python project', lang = 'ru'))
+
+    my_db.close()

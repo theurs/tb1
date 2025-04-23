@@ -29,12 +29,21 @@ def search_v3(query: str,
 
     if not query.startswith('!'):
         # сначала пробуем спросить в гроке
-        groq_response = my_groq.search(query, lang, system = role, user_id = chat_id)
-        if groq_response:
+        response = my_groq.search(query, lang, system = role, user_id = chat_id)
+        if response:
             if download_only:
-                return groq_response
+                return response
             else:
-                return groq_response, groq_response
+                return response, response
+
+    if not query.startswith('!'):
+        # пробуем спросить в tavily
+        response = my_tavily.search_text_fast(query, lang=lang, user_id = chat_id)
+        if response:
+            if download_only:
+                return response
+            else:
+                return response, response
 
     if not query.startswith('!'):
         # сначала пробуем спросить в гугле

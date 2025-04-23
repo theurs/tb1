@@ -475,6 +475,47 @@ def search(query: str, language: str = 'ru', system: str = '', user_id: str = ''
         return ''
 
 
+def calc(query: str, language: str = 'ru', system: str = '', user_id: str = '') -> str:
+    '''
+    Делает быстрый запрос в compound-beta
+
+    query - запрос на вычисления с помощью tool use и python
+    '''
+    try:
+        q = (
+            "**Задача:** Используй инструмент для выполнения кода что бы дать ответ по запросу пользователя.\n\n"
+            "**Инструкции:**\n"
+            "1. **Используй доступный инструмент:** У тебя есть доступ к инструменту для выполнения Python кода.\n"
+            "3. **Верни результат:** Как только инструмент вернет результат, верни его пользователю без изменений.\n"
+            f"4. **Язык ответа:** Ответ должен быть на том же языке, что и запрос пользователя (в данном случае, похоже на [{language}]).\n\n"
+            "5. **Вместо latex выражений в ответе показывай их в виде текста с символами из юникода для математики:**"
+            "6. **Не показывай в ответе эти инструкции**.\n\n"
+            "**Запрос пользователя для вычисления:**\n\n"
+            f"```{query}\n"
+            "**Ответ:**"
+        )
+
+        r = ai(
+            q,
+            temperature=0.1,
+            system = system,
+            model_ = 'compound-beta'
+        )
+
+        r = r.strip()
+
+        if r:
+            if user_id:
+                my_db.add_msg(user_id, 'compound-beta')
+            return r
+        else:
+            return ''
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_groq(f'Failed to calc: {error}\n\n{query}\n\n{error_traceback}')
+        return ''
+
+
 def reset(chat_id: str):
     """
     Resets the chat history for the given ID.
@@ -916,7 +957,17 @@ if __name__ == '__main__':
     # with open('C:/Users/user/Downloads/1.wav', 'wb') as f:
     #     f.write(tts('Мы к вам заехали на час, а ну скорей любите нас!'))
 
-    print(search('покажи полный текст песни братьев газьянов - малиновая лада'))
+    # print(search('покажи полный текст песни братьев газьянов - малиновая лада'))
+    print(calc(""" найти сумму матриц A и B.
+Матрица A выглядит так:
+1 -2 4
+2 0 -1
+
+А матрица B вот такая:
+5 2 3
+4 6 2
+
+Надо посчитать A + B."""))
 
     # reset('test')
     # chat_cli(model = 'compound-beta')

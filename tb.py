@@ -1894,16 +1894,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             return markup
 
-        elif kbd == 'translate':
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                return None
-            markup  = telebot.types.InlineKeyboardMarkup()
-            button1 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
-            button2 = telebot.types.InlineKeyboardButton("📢", callback_data='tts')
-            button3 = telebot.types.InlineKeyboardButton(tr("Перевод", lang), callback_data='translate')
-            markup.add(button1, button2, button3)
-            return markup
-
         elif kbd == 'start':
             b_msg_draw = '/img'
             b_msg_search = '/google'
@@ -1923,7 +1913,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(button4, button5, button6)
             return markup
 
-        elif kbd == 'chat':
+        elif kbd in ('chat', 'translate'):
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 return None
             markup  = telebot.types.InlineKeyboardMarkup(row_width=5)

@@ -9189,6 +9189,10 @@ def do_task(message, custom_prompt: str = ''):
 
         msg = message.text.lower()
 
+        # проверка на подписку
+        if not check_donate(message, chat_id_full, lang):
+            return
+
         # detect /tts /t /tr /trans command
         if msg.startswith('/tts'):
             tts(message)
@@ -9200,9 +9204,6 @@ def do_task(message, custom_prompt: str = ''):
 
         chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')
 
-        # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
-            return
 
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя
         if chat_mode_ in ('gemini15', 'gemini-exp') and my_db.count_msgs_last_24h(chat_id_full) > 300:

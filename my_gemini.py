@@ -316,6 +316,26 @@ def chat(query: str,
                     pass
                 elif '400 Please ensure that function response turn comes immediately after a function call turn.' in str(error):
                     my_log.log_gemini(f'my_gemini:chat2:2:3: {error}\n{model}')
+
+                    new_mem = []
+                    i = 0
+                    while i < len(mem):
+                        # Проверяем, нужно ли удалить текущий элемент И следующий за ним
+                        # Условие: текущий элемент пустой И следующий элемент существует
+                        is_empty_current = hasattr(mem[i], 'parts') and mem[i].parts and hasattr(mem[i].parts[0], 'text') and not mem[i].parts[0].text
+
+                        if is_empty_current and i + 1 < len(mem):
+                            # Если текущий пустой И есть следующий, пропускаем оба
+                            i += 2
+                        else:
+                            # Иначе, добавляем текущий в новый список и идем к следующему
+                            new_mem.append(mem[i])
+                            i += 1
+
+                    my_log.log_gemini(f'my_gemini:chat2:2:3__: mem: {mem}\n\nnew_mem: {new_mem}')
+                    mem = new_mem # Переприсваиваем
+
+
                 elif '429 You exceeded your current quota, please check your plan and billing details.' in str(error):
                     my_log.log_gemini(f'my_gemini:chat2:2:4: 429 You exceeded your current quota, please check your plan and billing details.\n{model}\n\n{key}')
                 else:

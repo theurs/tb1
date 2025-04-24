@@ -2504,7 +2504,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         medias = []
 
                         if images:
-                            medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900]) for x in images]
+                            medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900] if x[1] is not None else '') for x in images]
 
                         if medias:
                             msgs_ids = send_media_group(

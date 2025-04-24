@@ -332,7 +332,7 @@ def chat(query: str,
                             new_mem.append(mem[i])
                             i += 1
 
-                    my_log.log_gemini(f'my_gemini:chat2:2:3__: mem: {mem}\n\nnew_mem: {new_mem}')
+                    # my_log.log_gemini(f'my_gemini:chat2:2:3__: mem: {mem}\n\nnew_mem: {new_mem}')
                     mem = new_mem # Переприсваиваем
 
 

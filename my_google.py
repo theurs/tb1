@@ -12,6 +12,7 @@ import my_gemini
 import my_gemini_google
 import my_ddg
 import my_groq
+import my_db
 import my_sum
 import my_tavily
 import utils
@@ -30,12 +31,17 @@ def search_v3(query: str,
 
     if not query.startswith('!'):
         # пробуем спросить в tavily
-        response = my_tavily.search_text_fast(query, lang=lang, user_id = chat_id)
+        if lang:
+            q = f'Отвечай на языке *{lang}*\n\n{query}'
+        response = my_tavily.search(q, max_results=5)
+        if chat_id:
+            my_db.add_msg(chat_id, 'tavily')
+
         if response:
             if download_only:
-                return response
+                return str(response)
             else:
-                return response, response
+                return response['answer'], str(response)
 
 
     if not query.startswith('!'):
@@ -144,6 +150,7 @@ Search results:
 
 if __name__ == "__main__":
     pass
+    my_db.init(backup=False)
     # lines = [
     #     # 'курс доллара',
     #     'что значит 42',
@@ -151,3 +158,4 @@ if __name__ == "__main__":
     #     ]
     # for x in lines:
     #     print(search_v3(x)[0], '\n\n')
+    my_db.close()

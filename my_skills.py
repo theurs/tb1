@@ -114,7 +114,8 @@ def search_google(query: str) -> str:
     query = decode_string(query)
     my_log.log_gemini_skills(f'Google: {query}')
     try:
-        r = my_google.search_v3(query, 'ru')[0]
+        # r = my_google.search_v3(query, 'ru')[0]
+        r = my_google.search_v3(query, lang = 'ru', download_only=True)
         my_log.log_gemini_skills(f'Google: {r}')
         return r
     except Exception as error:

@@ -280,7 +280,7 @@ def ai(prompt: str = '',
                 client = Groq(
                     api_key=key,
                     http_client = httpx.Client(proxy = random.choice(cfg.GROQ_PROXIES)),
-                    timeout = timeout,
+                    timeout = 5,
                 )
             else:
                 client = Groq(api_key=key, timeout = timeout)
@@ -296,6 +296,7 @@ def ai(prompt: str = '',
                     temperature=temperature,
                     max_tokens=max_tokens_,
                     response_format = ResponseFormat(type = resp_type),
+                    timeout=timeout
                 )
             except PermissionDeniedError:
                 my_log.log_groq(f'GROQ PermissionDeniedError: {key}')

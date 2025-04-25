@@ -28,8 +28,8 @@ def search_v3(query: str,
     query = query.strip()
 
     if not query.startswith('!'):
-        # сначала пробуем спросить в гроке
-        response = my_groq.search(query, lang, system = role, user_id = chat_id)
+        # пробуем спросить в tavily
+        response = my_tavily.search_text_fast(query, lang=lang, user_id = chat_id)
         if response:
             if download_only:
                 return response
@@ -37,8 +37,8 @@ def search_v3(query: str,
                 return response, response
 
     if not query.startswith('!'):
-        # пробуем спросить в tavily
-        response = my_tavily.search_text_fast(query, lang=lang, user_id = chat_id)
+        # сначала пробуем спросить в гроке
+        response = my_groq.search(query, lang, system = role, user_id = chat_id)
         if response:
             if download_only:
                 return response

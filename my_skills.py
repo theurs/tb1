@@ -99,13 +99,14 @@ def get_currency_rates(date: str = '') -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def search_google(query: str) -> str:
+def search_google(query: str, lang: str = 'ru') -> str:
     """
     Searches Google for the given query and returns the search results.
     You are able to mix this functions with other functions and your own ability to get best results for your needs.
 
     Args:
         query: The search query string.
+        lang: The language to use for the search.
 
     Returns:
         A string containing the search results.
@@ -115,7 +116,7 @@ def search_google(query: str) -> str:
     my_log.log_gemini_skills(f'Google: {query}')
     try:
         # r = my_google.search_v3(query, 'ru')[0]
-        r = my_google.search_v3(query, lang = 'ru', download_only=True)
+        r = my_google.search_v3(query, lang = lang, download_only=True)
         my_log.log_gemini_skills(f'Google: {r[:2000]}')
         return r
     except Exception as error:

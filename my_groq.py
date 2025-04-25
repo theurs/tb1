@@ -258,14 +258,24 @@ def ai(prompt: str = '',
             temperature = temperature / 2
 
         x = 0
+        start_time = time.time()
+        timeout_init = timeout
         while x < 4:
+
+            if time.time() - start_time > timeout_init:
+                return ''
+
             x += 1
             if key_:
                 key = key_
                 x = 4
             else:
                 key = get_next_key()
-                
+
+            timeout = timeout_init - (time.time() - start_time)
+            if timeout < 5:
+                return ''
+
             if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
                 client = Groq(
                     api_key=key,
@@ -298,6 +308,8 @@ def ai(prompt: str = '',
                     continue
             try:
                 resp = chat_completion.choices[0].message.content.strip()
+            except (IndexError, AttributeError):
+                continue
             except UnboundLocalError:
                 resp = ''
             if not resp and 'llama-3.1' in model_:
@@ -462,7 +474,8 @@ def search(query: str, language: str = 'ru', system: str = '', user_id: str = ''
         q,
         temperature=0.5,
         system = system,
-        model_ = 'compound-beta'
+        model_ = 'compound-beta',
+        timeout = 60,
         )
 
     r = r.strip()

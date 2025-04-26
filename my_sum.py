@@ -210,7 +210,7 @@ def get_subs_from_vk(url: str, proxy: bool = False) -> str:
         # my_log.log2(f"get_subs_from_vk: Successfully extracted and cleaned subtitles for {url}.") # Дебаг
 
     except subprocess.TimeoutExpired:
-         my_log.log2(f"get_subs_from_vk: yt-dlp command timed out after 300 seconds for {url}")
+         my_log.log2(f"get_subs_from_vk: yt-dlp command timed out after 60 seconds for {url}")
          result = '' # Ensure empty string on timeout
     except FileNotFoundError:
          # This might happen if the 'yt-dlp' executable is not found in the system's PATH

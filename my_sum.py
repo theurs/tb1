@@ -32,6 +32,42 @@ import my_transcribe
 import utils
 
 
+def extract_vk_video_id(url: str) -> str:
+    """
+    Извлекает идентификатор видео (video-ID_OWNER_ID) из URL VK и создает новый URL.
+
+    Args:
+        url (str): Входящий URL VK.
+
+    Returns:
+        str: Новый URL в формате https://vkvideo.ru/video-ID_OWNER_ID
+             или пустая строка, если идентификатор не найден.
+    """
+    try:
+        parsed_url = urlparse(url)
+        # Проверяем части пути URL
+        path_segments = parsed_url.path.split('/')
+
+        video_segment = None
+        for segment in path_segments:
+            if segment.startswith('video-'):
+                video_segment = segment
+                break # Нашли нужный сегмент, можно выйти из цикла
+
+        if video_segment:
+            # Собираем новый URL с базовым доменом vkvideo.ru
+            new_url = f"https://vkvideo.ru/{video_segment}"
+            return new_url
+        else:
+            # Идентификатор не найден в пути
+            return ""
+
+    except Exception as e:
+        # Обработка ошибок парсинга или других
+        print(f"Ошибка при обработке URL {url}: {e}")
+        return ""
+
+
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_subs_from_vk(url: str, proxy: bool = False) -> str:
     '''
@@ -44,6 +80,10 @@ def get_subs_from_vk(url: str, proxy: bool = False) -> str:
     Returns:
         str: The text of the subtitles, or an empty string if no subtitles are found or an error occurs.
     '''
+
+    # rebuild url, find section like video-220754053_456243093 from https://vkvideo.ru/playlist/-220754053_3/video-220754053_456243093?isLinkedPlaylist=1
+    url = extract_vk_video_id(url)
+
     result = ''
     tmpname = None
     subtitle_path = None
@@ -789,7 +829,7 @@ if __name__ == "__main__":
     # r = get_subs_from_rutube('https://vimeo.com/216790976')
     # r = get_subs_from_dzen_video('https://vimeo.com/channels/bestofstaffpicks/1024184564')
 
-    # r = get_subs_from_vk('https://vkvideo.ru/video-9695053_456241024')
-    r = get_subs_from_vk('https://vkvideo.ru/video-31038184_456243666')
+    r = get_subs_from_vk('https://vkvideo.ru/video-9695053_456241024')
+    # r = get_subs_from_vk('https://vkvideo.ru/playlist/-220754053_3/video-220754053_456243093?isLinkedPlaylist=1')
 
     print(r)

@@ -33,6 +33,213 @@ import utils
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+def get_subs_from_vk(url: str, proxy: bool = False) -> str:
+    '''
+    Downloads subtitles from vk video url using yt-dlp, extracts text, and returns it.
+
+    Args:
+        url (str): The URL of the video.
+        proxy (bool): Whether to use a proxy (requires utils.get_ytb_proxy implemented).
+
+    Returns:
+        str: The text of the subtitles, or an empty string if no subtitles are found or an error occurs.
+    '''
+    result = ''
+    tmpname = None
+    subtitle_path = None
+    cleaned_text = '' # Variable to hold the final cleaned text
+
+    try:
+        # Use utils to get a temporary file base name
+        tmpname = utils.get_tmp_fname()
+
+        # yt-dlp command to download Russian VTT subtitles.
+        # We download VTT or SRT, find the file, then parse.
+        # Using -o "basename" causes yt-dlp to name the file "basename.<lang>.<ext>"
+        cmd = [
+            'yt-dlp',
+            '--skip-download',
+            '--write-subs',
+            '--sub-langs', 'ru',
+            '-o', f'{tmpname}', # yt-dlp will add .ru.vtt or .ru.srt etc.
+            f'{url}'
+        ]
+
+        if proxy:
+            # Assuming utils.get_ytb_proxy() returns the full proxy argument string like '--proxy http://...'
+            proxy_arg = utils.get_ytb_proxy(url)
+            if proxy_arg:
+                 # Insert the proxy argument before the URL for clean separation
+                 # Find where the URL is in the list and insert before it
+                 try:
+                     url_index = cmd.index(f'{url}')
+                     cmd.insert(url_index, proxy_arg)
+                 except ValueError:
+                      # Should not happen if url is in cmd, but good practice
+                      my_log.log2(f"get_subs_from_vk: URL {url} not found in initial command list.")
+
+        # my_log.log2(f"get_subs_from_vk: Running command: {' '.join(cmd)}") # Дебаг команды
+
+        # Execute the command
+        # Using stderr=subprocess.PIPE to capture errors without printing directly
+        # Added timeout to prevent hanging
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            stdout, stderr = process.communicate(timeout=60) # 1 minute timeout
+        except subprocess.TimeoutExpired:
+             process.kill()
+             stdout, stderr = process.communicate()
+             raise subprocess.TimeoutExpired(process.args, 300) # Re-raise with info
+
+        stdout_str = stdout.decode('utf-8', errors='replace')
+        stderr_str = stderr.decode('utf-8', errors='replace')
+
+        # my_log.log2(f"get_subs_from_vk: stdout:\n{stdout_str}") # Можно раскомментировать для дебага
+        # my_log.log2(f"get_subs_from_vk: stderr:\n{stderr_str}") # Можно раскомментировать для дебага
+
+        # Check command return code and stderr/stdout for signs of no subtitles
+        # yt-dlp might return 0 even if no subs, but will print "No subtitles available"
+        if process.returncode != 0:
+             # Log specific error if yt-dlp failed
+             my_log.log2(f"get_subs_from_vk: yt-dlp exited with error code {process.returncode} for {url}. Stderr: {stderr_str}")
+             result = '' # Error occurred
+             return result # Exit try block early
+        elif "No subtitles available" in stdout_str or "No subtitles available" in stderr_str:
+             my_log.log2(f"get_subs_from_vk: yt-dlp reported no subtitles for {url}.")
+             result = '' # No subtitles found
+             return result # Exit try block early
+
+        # Look for the downloaded file(s) created by yt-dlp.
+        # It will follow the pattern tmpname.<lang>.<ext> (e.g., /tmp/tmpXYZ.ru.vtt)
+        # Search for both .vtt and .srt as VK might provide either.
+        subtitle_files = glob.glob(f"{tmpname}.*.vtt")
+        if not subtitle_files:
+             # If VTT not found, check for SRT
+             subtitle_files = glob.glob(f"{tmpname}.*.srt")
+
+        if not subtitle_files:
+            # No subtitle files found matching the expected patterns
+            my_log.log2(f"get_subs_from_vk: No subtitle files found matching {tmpname}.*.vtt or {tmpname}.*.srt for {url}.")
+            result = ''
+            return result # Exit try block early
+
+        # Assume the first found file is the correct one (usually there's only one for a language)
+        subtitle_path = subtitle_files[0]
+        # my_log.log2(f"get_subs_from_vk: Found subtitle file: {subtitle_path}") # Дебаг
+
+        # Read the subtitle file content
+        # Attempt reading with utf-8. Subtitles from web are usually utf-8.
+        try:
+            with open(subtitle_path, 'r', encoding='utf-8') as f:
+                raw_subs_text = f.read()
+        except Exception as file_read_error:
+             my_log.log2(f"get_subs_from_vk: Error reading subtitle file {subtitle_path}: {file_read_error}")
+             result = ''
+             return result # Exit try block early
+
+        # Process the raw subtitle text (either VTT or SRT)
+        if subtitle_path.endswith('.vtt'):
+            # my_log.log2("get_subs_from_vk: Parsing VTT subtitles.") # Дебаг
+            # Use webvtt library for parsing VTT and extracting text
+            try:
+                cleaned_text = clear_text_subs_from_dzen_video(raw_subs_text)
+            except Exception as parse_error:
+                 my_log.log2(f"get_subs_from_vk: Error parsing VTT subtitles from {subtitle_path}: {parse_error}")
+                 cleaned_text = '' # Ensure empty on parse error
+
+        elif subtitle_path.endswith('.srt'):
+             # my_log.log2("get_subs_from_vk: Parsing SRT subtitles.") # Дебаг
+             # Custom parsing logic for SRT format to extract text blocks
+             try:
+                lines = raw_subs_text.strip().split('\n')
+                text_blocks = []
+                current_block_lines = []
+                i = 0
+                while i < len(lines):
+                     line = lines[i].strip()
+                     if not line: # Blank line separates blocks
+                         if current_block_lines:
+                             # Join lines within a block with a space (as they represent a single utterance)
+                             block_text = ' '.join(current_block_lines).strip()
+                             if block_text: # Add to blocks if not empty
+                                 text_blocks.append(block_text)
+                             current_block_lines = [] # Reset for next block
+                         i += 1
+                         continue
+
+                     # Skip lines that look like SRT cue numbers or timecodes
+                     if re.match(r'^\d+$', line): # e.g., '1', '2', ...
+                          i += 1
+                          continue
+                     if '-->' in line: # e.g., '00:00:01,000 --> 00:00:03,000'
+                          i += 1
+                          continue
+
+                     # If it's not a blank line, number, or timecode, it's part of the text block
+                     current_block_lines.append(line)
+                     i += 1
+
+                # Handle the last block if the file doesn't end with a blank line
+                if current_block_lines:
+                    block_text = ' '.join(current_block_lines).strip()
+                    if block_text:
+                        text_blocks.append(block_text)
+
+                # Now remove consecutive duplicate text blocks
+                cleaned_blocks = []
+                prev_block = None
+                for block in text_blocks:
+                     if block != prev_block:
+                          cleaned_blocks.append(block)
+                          prev_block = block
+
+                # Join cleaned blocks with newline
+                cleaned_text = '\n'.join(cleaned_blocks).strip()
+             except Exception as parse_error:
+                  my_log.log2(f"get_subs_from_vk: Error parsing SRT subtitles from {subtitle_path}: {parse_error}")
+                  cleaned_text = '' # Ensure empty on parse error
+
+        else:
+             # This case should theoretically not be reached due to glob filtering
+             my_log.log2(f"get_subs_from_vk: Found file with unexpected extension {subtitle_path} for {url}. Expected .vtt or .srt.")
+             cleaned_text = '' # Unexpected file type
+
+        # The final result is the cleaned text
+        result = cleaned_text
+
+        # my_log.log2(f"get_subs_from_vk: Successfully extracted and cleaned subtitles for {url}.") # Дебаг
+
+    except subprocess.TimeoutExpired:
+         my_log.log2(f"get_subs_from_vk: yt-dlp command timed out after 300 seconds for {url}")
+         result = '' # Ensure empty string on timeout
+    except FileNotFoundError:
+         # This might happen if the 'yt-dlp' executable is not found in the system's PATH
+         my_log.log2(f"get_subs_from_vk: yt-dlp command not found. Please ensure yt-dlp is installed and accessible in the system's PATH.")
+         result = '' # Ensure empty string if command not found
+    except Exception as error:
+        # Catch any other unexpected errors during the process (e.g., issues with glob, utils, file operations not specifically handled)
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'get_subs_from_vk: An unexpected error occurred processing {url}\n\n{error}\n\n{traceback_error}')
+        result = '' # Ensure empty string on any error
+
+    finally:
+        # Clean up temporary file(s) created by yt-dlp starting with tmpname
+        # glob might return the original tmpname if no files were created, handle that.
+        if tmpname:
+            # Find all files that start with the tmpname base
+            files_to_remove = glob.glob(f"{tmpname}*")
+            for f in files_to_remove:
+                try:
+                    if os.path.exists(f): # Check if the file actually exists before trying to remove
+                        utils.remove_file(f) # Assuming utils.remove_file is safe and handles errors
+                except Exception as cleanup_error:
+                     # Log cleanup errors but don't re-raise as the main task is done or failed
+                     my_log.log2(f"get_subs_from_vk: Error cleaning up file {f}: {cleanup_error}")
+
+    return result
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_subs_from_rutube(url: str, proxy: bool = True) -> str:
     '''Downloads subtitles from rutube(any yt-dlp capable urls actually) video url, converts them to text and returns the text. 
     Returns None if no subtitles found.'''
@@ -214,8 +421,8 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             return get_subs_from_rutube(url)
         if 'tiktok.com' in url and 'video' in url:
             return get_subs_from_rutube(url)
-        # if 'vk.com' in url and '/video-' in url:
-        #     return get_subs_from_rutube(url)
+        if 'vk.com' in url and '/video-' in url or 'vkvideo.ru' in url:
+            return get_subs_from_vk(url)
         if '//my.mail.ru/v/' in url and '/video/' in url:
             return get_subs_from_rutube(url)
         if 'https://vimeo.com/' in url:
@@ -478,7 +685,8 @@ def summ_url(url:str,
        '//rutube.ru/video/' in url or 'pornhub.com/view_video.php?viewkey=' in url or \
        ('tiktok.com' in url and 'video' in url) or \
        ('vk.com' in url and '/video-' in url) or \
-        ('https://vimeo.com/' in url) or \
+       ('vkvideo.ru' in url and '/video-' in url) or \
+       ('https://vimeo.com/' in url) or \
        ('//my.mail.ru/v/' in url and '/video/' in url):
         text = get_text_from_youtube(url, language=lang)
         youtube = True
@@ -579,5 +787,9 @@ if __name__ == "__main__":
     # r = get_subs_from_dzen_video('https://www.youtube.com/watch?v=lyGvQn_clQM')
     # r = get_text_from_youtube('https://www.youtube.com/watch?v=qnvNkXs7NpY', transcribe=False)
     # r = get_subs_from_rutube('https://vimeo.com/216790976')
-    r = get_subs_from_dzen_video('https://vimeo.com/channels/bestofstaffpicks/1024184564')
+    # r = get_subs_from_dzen_video('https://vimeo.com/channels/bestofstaffpicks/1024184564')
+
+    # r = get_subs_from_vk('https://vkvideo.ru/video-9695053_456241024')
+    r = get_subs_from_vk('https://vkvideo.ru/video-31038184_456243666')
+
     print(r)

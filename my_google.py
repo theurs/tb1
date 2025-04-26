@@ -39,6 +39,7 @@ def search_v3(query: str,
 
         if response:
             if download_only:
+                response['answer'] = ''
                 return str(response)
             else:
                 return response['answer'], str(response)

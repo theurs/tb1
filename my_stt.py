@@ -78,7 +78,7 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
 
 def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '') -> str:
     """
-    Generate the function comment for the given function body in a markdown code block with the correct language syntax.
+    Transcribes an audio file to text using a speech-to-text engine.
 
     Args:
         input_file (str): The path to the input file.

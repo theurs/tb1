@@ -35,7 +35,12 @@ def get_next_key() -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=20, ttl=15*60)
-def search(query: str, max_results: int = 10, search_depth: str = 'basic', fast: bool = False) -> dict:
+def search(
+    query: str,
+    max_results: int = 10,
+    search_depth: str = 'basic',
+    fast: bool = False,
+    ) -> dict:
     '''
     Делает максимальный запрос в Tavily
 

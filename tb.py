@@ -3702,20 +3702,18 @@ def handle_photo(message: telebot.types.Message):
                 bot_name_was_used = True
                 message.caption = message.caption[len(f'{bot_name} '):].strip()
 
+            state = ''
             bot_name2 = f'@{_bot_name}'
             # убираем из запроса имя бота в телеграме
             if msglower.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
                 bot_name_was_used = True
                 message.caption = message.caption[len(f'{bot_name2} '):].strip()
-
-
             elif is_private or is_reply or bot_name_was_used:
                 state = 'describe'
             elif msglower.startswith('?'):
                 state = 'describe'
                 message.caption = message.caption[1:]
-            else:
-                state = ''
+
 
             if not is_private and not state == 'describe':
                 if not message.caption or not message.caption.startswith('?') or \

@@ -58,6 +58,7 @@ pendulum
 
 Pillow
 pillow-heif
+playwright
 prettytable
 psd-tools
 pyarrow

@@ -150,6 +150,8 @@ level 3 - блокировать всё включая логи
    cd tb1
 
    pip install -r requirements.txt
+
+   playwright install chromium
    ```
    
 5. Создайте файл cfg.py и добавьте в него строку

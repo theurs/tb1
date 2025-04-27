@@ -22,11 +22,12 @@ import trafilatura
 import webvtt
 
 import cfg
+import my_cohere
+import my_gemini
 import my_db
 import my_log
-import my_gemini
 import my_groq
-import my_cohere
+import my_playwright
 import my_stt
 import my_transcribe
 import utils
@@ -671,8 +672,12 @@ def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) 
     #max_req += 5000 # 5000 дополнительно под длинные ссылки с запасом
     result = ''
     for url in urls:
-        text = summ_url(url, download_only = True)
+        text = summ_url(url, download_only = True).strip()
         if text:
+            if len(text) < 300:
+                if 'java' in text.lower() or 'browser' in text.lower() or 'джава' in text.lower() or 'браузер' in text.lower() or not text:
+                    my_log.log_playwright(f'trying download text with playwright {url}\n\n{text}')
+                    text = my_playwright.gettext(url, 30) or text
             if no_links:
                 result += f'\n\n{text}\n\n'
             else:
@@ -790,6 +795,13 @@ def summ_url(url:str,
                                        )
             # if not text:
             #     text = content
+            if not text:
+                text = ''
+            if len(text) < 500:
+                if 'java' in text.lower() or 'browser' in text.lower() or 'джава' in text.lower() or 'браузер' in text.lower() or not text:
+                    my_log.log_playwright(f'trying download text with playwright (2) {url}\n\n{text}')
+                    text = my_playwright.gettext(url, 30) or text
+
 
     if download_only:
         if youtube:

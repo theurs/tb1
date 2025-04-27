@@ -559,6 +559,7 @@ Format it as quotes with > symbol.
 First block only text of the block, do not include words like Brief summary (2 sentences).
 
 Detailed summary (50-1000[hard limit] words).
+Format it as text, no quotes with > symbol.
 Second block only text of the block, do not include words like Detailed summary (50-1000 words).
 
 Subtitles:
@@ -594,6 +595,7 @@ Format it as quotes with > symbol.
 First block only text of the block, do not include words like Brief summary (2 sentences).
 
 Detailed summary (50-1000[hard limit] words). Include short human-readable links if applicable.
+Format it as text, no quotes with > symbol.
 Second block only text of the block, do not include words like Detailed summary (50-1000 words).
 
 Text:
@@ -839,9 +841,9 @@ if __name__ == "__main__":
     # r = get_subs_from_dzen_video('https://www.youtube.com/watch?v=lyGvQn_clQM')
     # r = get_text_from_youtube('https://www.youtube.com/watch?v=qnvNkXs7NpY', transcribe=False)
     # r = get_subs_from_rutube('https://vimeo.com/216790976')
-    # r = get_subs_from_dzen_video('https://vimeo.com/channels/bestofstaffpicks/1024184564')
+    r = get_subs_from_dzen_video('https://vimeo.com/33830000')
 
-    r = get_subs_from_vk('https://vkvideo.ru/video-9695053_456241024')
+    # r = get_subs_from_vk('https://vkvideo.ru/video-9695053_456241024')
     # r = get_subs_from_vk('https://vkvideo.ru/playlist/-220754053_3/video-220754053_456243093?isLinkedPlaylist=1')
 
     print(r)

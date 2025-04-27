@@ -7499,8 +7499,6 @@ def trans(message: telebot.types.Message):
 /trans uk hello world
 /trans was ist das
 
-{tr('Поддерживаемые языки:', lang)} {', '.join(my_init.supported_langs_trans)}
-
 {tr('Напишите что надо перевести', lang)}
 """
         if message.text.startswith('/t '):

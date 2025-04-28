@@ -948,10 +948,13 @@ def get_lang(user_id: str, message: telebot.types.Message = None) -> str:
                 lang = message.from_user.language_code or cfg.DEFAULT_LANGUAGE
             my_db.set_user_property(user_id, 'lang', lang)
 
-        if lang.lower() == 'pt-br':
+        lang = lang.lower()
+        if lang == 'pt-br':
             lang = 'pt'
-        if lang.lower().startswith('zh-'):
+        if lang.startswith('zh-'):
             lang = 'zh'
+        if lang == 'ka-ge':
+            lang = 'ka'
 
         return lang
     except Exception as unexpected_error:
@@ -3519,7 +3522,7 @@ def handle_document(message: telebot.types.Message):
                                 text = data__.decode(encoding)
                             except:
                                 pass
-                    if text.strip():
+                    if text and text.strip():
                         # если это группа файлов, то прибавляем этот файл к группе
                         if message.media_group_id:
 

@@ -53,7 +53,8 @@ def search(
     '''
     try:
         key = get_next_key()
-        if not key:
+        query = query.strip()
+        if not key or not query:
             return ''
         client = TavilyClient(key)
         if fast:

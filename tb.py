@@ -9061,8 +9061,9 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
             lock = CHECK_DONATE_LOCKS[message.from_user.id]
         with lock:
             try:
-                # если админ или это в группе происходит то пропустить
-                if message.from_user.id in cfg.admins or chat_id_full.startswith('[-') or message.from_user.id == BOT_ID:
+                chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+                # если админ или это в группе происходит то пропустить или режим чата = openrouter
+                if message.from_user.id in cfg.admins or chat_id_full.startswith('[-') or message.from_user.id == BOT_ID or chat_mode == 'openrouter':
                     return True
 
                 # если за сутки было меньше 10 запросов то пропустить
@@ -9206,7 +9207,7 @@ def do_task(message, custom_prompt: str = ''):
 
         # но даже если ключ есть всё равно больше 300 сообщений в день нельзя
         if chat_mode_ in ('gemini15', 'gemini-exp') and my_db.count_msgs_last_24h(chat_id_full) > 300:
-            chat_mode_ = 'gemini'
+            chat_mode_ = 'gemini25_flash'
 
 
         # обработка \image это неправильное /image

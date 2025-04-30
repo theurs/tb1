@@ -161,7 +161,7 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
     '''
     files = []
     client = None
-    
+
     try:
         if not api_key:
             api_key = my_gemini.get_next_key()
@@ -210,6 +210,7 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
             response_mime_type="text/plain",
         )
 
+        start_time = time.time()
         for _ in range(5):
             try:
                 for chunk in client.models.generate_content_stream(
@@ -217,6 +218,10 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
                     contents=contents,
                     config=generate_content_config,
                 ):
+
+                    if time.time() - start_time > 60:
+                        return None
+
                     if not chunk.candidates or not chunk.candidates[0].content or not chunk.candidates[0].content.parts:
                         continue
                     if chunk.candidates[0].content.parts[0].inline_data:
@@ -231,6 +236,7 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
                 my_log.log_gemini(f'my_gemini_genimg: [error regenimg] {str(e)}')
                 if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e):
                     time.sleep(20)
+                    start_time = time.time()
                     continue
                 else:
                     raise(e)

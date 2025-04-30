@@ -160,7 +160,7 @@ def get_subs_from_vk(url: str, proxy: bool = False) -> str:
 
         if not subtitle_files:
             # No subtitle files found matching the expected patterns
-            my_log.log2(f"get_subs_from_vk: No subtitle files found matching {tmpname}.*.vtt or {tmpname}.*.srt for {url}.")
+            # my_log.log2(f"get_subs_from_vk: No subtitle files found matching {tmpname}.*.vtt or {tmpname}.*.srt for {url}.")
             result = ''
             return result # Exit try block early
 

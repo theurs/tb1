@@ -3222,7 +3222,13 @@ def process_image_stage_2(
                 # Send the processed text to the user.
                 if text:
                     if isinstance(text, str):
-                        bot_reply(message, utils.bot_markdown_to_html(text), disable_web_page_preview=True, parse_mode='HTML')
+                        bot_reply(
+                            message,
+                            utils.bot_markdown_to_html(text),
+                            disable_web_page_preview=True,
+                            parse_mode='HTML',
+                            reply_markup=get_keyboard('chat', message),
+                        )
                         if image_prompt == tr(my_init.PROMPT_COPY_TEXT_TTS, lang):
                             message.text = f'/tts {my_gemini.detect_lang(text)} {text}'
                             tts(message)

@@ -29,6 +29,7 @@ SIMPLE_TEXT_LIST = (
     'application/x-perl',
     'application/x-php',
     'application/binary',
+    'application/sql',
     )
 
 PANDOC_SUPPORT_LIST = (

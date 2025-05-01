@@ -737,7 +737,7 @@ def stt(data: bytes = None,
             remove_key(key)
             return stt(data, lang, key_, prompt, last_try, model, retry-1)
         error_traceback = traceback.format_exc()
-        my_log.log_groq(f'my_groq:stt: {error}\n\n{error_traceback}\n\n{lang}\n{model}\n{key_}')
+        my_log.log_groq(f'my_groq:stt: {error}\n\n{error_traceback}\n\n{lang}\n{model}\n{key}')
         if not last_try and "'type': 'internal_server_error'" in str(error):
             time.sleep(4)
             return stt(data, lang, key_, prompt, True, model)

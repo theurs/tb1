@@ -1253,6 +1253,9 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
+    for k in cfg.gemini_keys[:] + ALL_KEYS[:]:
+        print(f'"{k}",')
+
     # test_all_keys()
 
     # print(test_new_key(''))
@@ -1285,4 +1288,4 @@ if __name__ == '__main__':
     #         r = img2txt(data, p, model = cfg.gemini_2_flash_thinking_exp_model, temp = 0)
     #         print(r)
 
-    t = translate('привет', to_lang='en', model=cfg.gemini25_flash_model)
+    # t = translate('привет', to_lang='en', model=cfg.gemini25_flash_model)

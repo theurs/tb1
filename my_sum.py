@@ -798,16 +798,12 @@ def summ_url(
                                     #    output_format='markdown'
                                        )
 
-            # качаем браузером по умолчанию, если он не справился то откатываемся к обычным реквестам
-            text = my_playwright.gettext(url, 30) or text
-
-            # if not text:
-            #     text = ''
-            # if len(text) < 500:
-            #     if 'java' in text.lower() or 'browser' in text.lower() or 'джава' in text.lower() or 'браузер' in text.lower() or not text:
-            #         my_log.log_playwright(f'trying download text with playwright (2) {url}\n\n{text}')
-            #         text = my_playwright.gettext(url, 30) or text
-
+            if not text:
+                text = ''
+            if len(text) < 500:
+                if 'java' in text.lower() or 'browser' in text.lower() or 'джава' in text.lower() or 'браузер' in text.lower() or not text:
+                    my_log.log_playwright(f'trying download text with playwright (2) {url}\n\n{text}')
+                    text = my_playwright.gettext(url, 30) or text
 
     if download_only:
         if youtube:

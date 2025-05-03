@@ -714,8 +714,10 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     result = ''
     for x in mem:
         role = x.role
-        if role == 'user': role = '𝐔𝐒𝐄𝐑'
-        if role == 'model': role = '𝐁𝐎𝐓'
+        if role == 'user':
+            role = '𝐔𝐒𝐄𝐑'
+        if role == 'model':
+            role = '𝐁𝐎𝐓'
         try:
             if len(x.parts) == 1:
                 text = x.parts[0].text.split(']: ', maxsplit=1)[1]

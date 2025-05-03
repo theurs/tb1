@@ -718,11 +718,13 @@ def get_urls_from_text(text):
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def summ_url(url:str,
-             download_only: bool = False,
-             lang: str = 'ru',
-             deep: bool = False,
-             role: str = ''):
+def summ_url(
+    url:str,
+    download_only: bool = False,
+    lang: str = 'ru',
+    deep: bool = False,
+    role: str = ''
+):
     """скачивает веб страницу, просит гптчат или бинг сделать краткое изложение текста, возвращает текст
     если в ссылке ютуб то скачивает субтитры к видео вместо текста
     может просто скачать текст без саммаризации, для другой обработки"""
@@ -795,14 +797,16 @@ def summ_url(url:str,
                                        include_tables=True,
                                     #    output_format='markdown'
                                        )
+
+            # качаем браузером по умолчанию, если он не справился то откатываемся к обычным реквестам
+            text = my_playwright.gettext(url, 30) or text
+
             # if not text:
-            #     text = content
-            if not text:
-                text = ''
-            if len(text) < 500:
-                if 'java' in text.lower() or 'browser' in text.lower() or 'джава' in text.lower() or 'браузер' in text.lower() or not text:
-                    my_log.log_playwright(f'trying download text with playwright (2) {url}\n\n{text}')
-                    text = my_playwright.gettext(url, 30) or text
+            #     text = ''
+            # if len(text) < 500:
+            #     if 'java' in text.lower() or 'browser' in text.lower() or 'джава' in text.lower() or 'браузер' in text.lower() or not text:
+            #         my_log.log_playwright(f'trying download text with playwright (2) {url}\n\n{text}')
+            #         text = my_playwright.gettext(url, 30) or text
 
 
     if download_only:

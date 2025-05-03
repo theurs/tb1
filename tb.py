@@ -7312,7 +7312,7 @@ def ask_file(message: telebot.types.Message):
                     message.text = message.text[:-13]
                     q = f"{message.text}\n\n{tr('URL/file:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file_name')}\n\n{tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}"
                 else:
-                    q = f'''{tr('Answer the user`s query using saved text and your own mind.', lang)}
+                    q = f'''{tr('Answer the user`s query using saved text and your own mind, answer plain text with fancy markdown formatting, do not use code block for answer.', lang)}
 
 {tr('User query:', lang)} {query}
 

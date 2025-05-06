@@ -733,7 +733,7 @@ def stt(data: bytes = None,
             )
         return remove_dimatorzok(transcription.text)
     except Exception as error:
-        if 'invalid_api_key' in str(error):
+        if 'invalid_api_key' in str(error) or 'Organization has been restricted. Please reach out to support if you believe this was in error.' in str(error):
             remove_key(key)
             return stt(data, lang, key_, prompt, last_try, model, retry-1)
         error_traceback = traceback.format_exc()

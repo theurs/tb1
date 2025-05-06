@@ -1,5 +1,6 @@
 import os
 import time
+import threading
 import traceback
 from io import BytesIO
 from PIL import Image
@@ -16,6 +17,10 @@ import utils
 
 # MODEL = "gemini-2.0-flash-exp"
 MODEL = "gemini-2.0-flash-exp-image-generation"
+
+
+# не давать одному юзеру больше одного потока в редактировании изображений
+REGEN_IMAGE_LOCKS = {}
 
 
 SAFETY_SETTINGS = [
@@ -162,113 +167,127 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
     files = []
     client = None
 
-    try:
-        if not api_key:
-            api_key = my_gemini.get_next_key()
+    if user_id == '':
+        if 0 in REGEN_IMAGE_LOCKS:
+            lock = REGEN_IMAGE_LOCKS[0]
+        else:
+            REGEN_IMAGE_LOCKS[0] = threading.Lock()
+            lock = REGEN_IMAGE_LOCKS[0]
+    else:
+        if user_id in REGEN_IMAGE_LOCKS:
+            lock = REGEN_IMAGE_LOCKS[user_id]
+        else:
+            REGEN_IMAGE_LOCKS[user_id] = threading.Lock()
+            lock = REGEN_IMAGE_LOCKS[user_id]
 
-        client = genai.Client(api_key=api_key)
+    with lock:
+        try:
+            if not api_key:
+                api_key = my_gemini.get_next_key()
 
-        model = MODEL
+            client = genai.Client(api_key=api_key)
 
-        for data in sources_images:
-            tmpfname = utils.get_tmp_fname() + '.jpg'
-            try:
-                save_binary_file(tmpfname, data)
-                uploaded_file = client.files.upload(file=tmpfname)
-                files.append(uploaded_file)
-            except Exception as error:
-                my_log.log_gemini(f"my_gemini_genimg: Error uploading image: {error}")
-                continue
-            finally:
-                utils.remove_file(tmpfname)
+            model = MODEL
 
-        if not files:
+            for data in sources_images:
+                tmpfname = utils.get_tmp_fname() + '.jpg'
+                try:
+                    save_binary_file(tmpfname, data)
+                    uploaded_file = client.files.upload(file=tmpfname)
+                    files.append(uploaded_file)
+                except Exception as error:
+                    my_log.log_gemini(f"my_gemini_genimg: Error uploading image: {error}")
+                    continue
+                finally:
+                    utils.remove_file(tmpfname)
+
+            if not files:
+                return None
+
+            IMG_PARTS = []
+            for IMG_PART in files:
+                IMG_PARTS += [types.Part.from_uri(file_uri=IMG_PART.uri, mime_type=IMG_PART.mime_type),]
+            IMG_PARTS += [types.Part.from_text(text=prompt),]
+
+            contents = [
+                    types.Content(
+                        role="user",
+                        parts=IMG_PARTS,
+                    ),
+                ]
+
+            generate_content_config = types.GenerateContentConfig(
+                temperature=1,
+                top_p=0.95,
+                top_k=40,
+                max_output_tokens=8192,
+                response_modalities=[
+                    "image",
+                    "text",
+                ],
+                safety_settings=SAFETY_SETTINGS,
+                response_mime_type="text/plain",
+            )
+
+            start_time = time.time()
+            for _ in range(5):
+                try:
+                    for chunk in client.models.generate_content_stream(
+                        model=model,
+                        contents=contents,
+                        config=generate_content_config,
+                    ):
+
+                        if time.time() - start_time > 60:
+                            return None
+
+                        if not chunk.candidates or not chunk.candidates[0].content or not chunk.candidates[0].content.parts:
+                            continue
+                        if chunk.candidates[0].content.parts[0].inline_data:
+                            image_data: bytes = chunk.candidates[0].content.parts[0].inline_data.data
+                            if user_id:
+                                my_db.add_msg(user_id, 'img ' + model)
+                            return convert_png_to_jpg(image_data)
+                        else:
+                            # my_log.log_gemini(text=chunk.text)
+                            pass
+                except Exception as e:
+                    my_log.log_gemini(f'my_gemini_genimg: [error regenimg] {str(e)}')
+                    if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e):
+                        time.sleep(20)
+                        start_time = time.time()
+                        continue
+                    else:
+                        raise(e)
+
             return None
 
-        IMG_PARTS = []
-        for IMG_PART in files:
-            IMG_PARTS += [types.Part.from_uri(file_uri=IMG_PART.uri, mime_type=IMG_PART.mime_type),]
-        IMG_PARTS += [types.Part.from_text(text=prompt),]
-
-        contents = [
-                types.Content(
-                    role="user",
-                    parts=IMG_PARTS,
-                ),
-            ]
-
-        generate_content_config = types.GenerateContentConfig(
-            temperature=1,
-            top_p=0.95,
-            top_k=40,
-            max_output_tokens=8192,
-            response_modalities=[
-                "image",
-                "text",
-            ],
-            safety_settings=SAFETY_SETTINGS,
-            response_mime_type="text/plain",
-        )
-
-        start_time = time.time()
-        for _ in range(5):
-            try:
-                for chunk in client.models.generate_content_stream(
-                    model=model,
-                    contents=contents,
-                    config=generate_content_config,
-                ):
-
-                    if time.time() - start_time > 60:
-                        return None
-
-                    if not chunk.candidates or not chunk.candidates[0].content or not chunk.candidates[0].content.parts:
-                        continue
-                    if chunk.candidates[0].content.parts[0].inline_data:
-                        image_data: bytes = chunk.candidates[0].content.parts[0].inline_data.data
-                        if user_id:
-                            my_db.add_msg(user_id, 'img ' + model)
-                        return convert_png_to_jpg(image_data)
-                    else:
-                        # my_log.log_gemini(text=chunk.text)
-                        pass
-            except Exception as e:
-                my_log.log_gemini(f'my_gemini_genimg: [error regenimg] {str(e)}')
-                if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e):
-                    time.sleep(20)
-                    start_time = time.time()
-                    continue
-                else:
-                    raise(e)
-
-        return None
-
-    except Exception as e:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini(text=f"my_gemini_genimg: Error generating image:2: {e}\n\n{traceback_error}")
-        return None
-    finally:
-        if client and files:
-            for _file in files:
-                try:
-                    client.files.delete(name = _file.name)
-                except Exception as error:
-                    my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error}")
-                    time.sleep(5)
+        except Exception as e:
+            traceback_error = traceback.format_exc()
+            my_log.log_gemini(text=f"my_gemini_genimg: Error generating image:2: {e}\n\n{traceback_error}")
+            return None
+        finally:
+            if client and files:
+                for _file in files:
                     try:
                         client.files.delete(name = _file.name)
-                    except Exception as error2: 
-                        my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error2}")
-                        time.sleep(10)
+                    except Exception as error:
+                        my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error}")
+                        time.sleep(5)
                         try:
                             client.files.delete(name = _file.name)
-                        except Exception as error3:
-                            my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error3}")
-                            time.sleep(20)
+                        except Exception as error2: 
+                            my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error2}")
+                            time.sleep(10)
                             try:
                                 client.files.delete(name = _file.name)
-                            except Exception as error4:
-                                my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error4}")
+                            except Exception as error3:
+                                my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error3}")
+                                time.sleep(20)
+                                try:
+                                    client.files.delete(name = _file.name)
+                                except Exception as error4:
+                                    my_log.log_gemini(f"my_gemini_genimg: Error deleting image: {error4}")
 
 
 def test_generate_image():

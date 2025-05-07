@@ -16,7 +16,7 @@ import utils
 
 
 # MODEL = "gemini-2.0-flash-exp"
-MODEL = "gemini-2.0-flash-exp-image-generation"
+MODEL = "gemini-2.0-flash-preview-image-generation" # "gemini-2.0-flash-exp-image-generation"
 
 
 # не давать одному юзеру больше одного потока в редактировании изображений

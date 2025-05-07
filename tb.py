@@ -6434,7 +6434,7 @@ def image_gemini_gen(message: telebot.types.Message):
 
                     images = my_genimg.gemini_flash(reprompt, num = num, user_id=chat_id_full)
                     if images:
-                        caption_model = 'Gemini 2.0 Flash Experimental'
+                        caption_model = my_gemini_genimg.MODEL
                     else:
                         bot_reply_tr(message, "Generation failed.")
                         return

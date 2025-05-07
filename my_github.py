@@ -196,7 +196,8 @@ def ai(prompt: str = '',
                     return ''
                 return ai(prompt, mem__, user_id, system, model, temperature, max_tokens, timeout, key_)
 
-            my_log.log_github(f'ai:1: {error_other}\n{key}')
+            if "The response was filtered due to the prompt triggering Azure OpenAI's content management policy. Please modify your prompt and retry." not in str(error_other)
+                my_log.log_github(f'ai:1: {error_other}\n{key}')
             return ''
 
         try:

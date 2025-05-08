@@ -180,6 +180,7 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
             REGEN_IMAGE_LOCKS[user_id] = threading.Lock()
             lock = REGEN_IMAGE_LOCKS[user_id]
 
+    api_key = ''
     with lock:
         try:
             if not api_key:
@@ -263,8 +264,11 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
             return None
 
         except Exception as e:
+            if '429 RESOURCE_EXHAUSTED.' in str(e):
+                my_log.log_gemini(text=f"my_gemini_genimg: Error generating image:2: {e}\n{api_key}")
+                return None
             traceback_error = traceback.format_exc()
-            my_log.log_gemini(text=f"my_gemini_genimg: Error generating image:2: {e}\n\n{traceback_error}")
+            my_log.log_gemini(text=f"my_gemini_genimg: Error generating image:3: {e}\n\n{traceback_error}")
             return None
         finally:
             if client and files:

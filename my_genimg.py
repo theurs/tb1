@@ -142,7 +142,7 @@ def gemini_flash(prompt: str, width: int = 1024, height: int = 1024, num: int = 
         data = my_gemini_genimg.generate_image(prompt, user_id=user_id)
         results = []
         if data:
-            WHO_AUTOR[utils.fast_hash(data)] = 'Gemini 2.0 Flash Experimental'
+            WHO_AUTOR[utils.fast_hash(data)] = my_gemini_genimg.MODEL
             results.append(data)
             return results
 

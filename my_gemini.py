@@ -173,7 +173,7 @@ def chat(query: str,
             model = cfg.gemini25_flash_model
 
         if chat_id:
-            if 'thinking' in model:
+            if 'gemini-2.0-flash-thinking' in model:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
             else:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -224,7 +224,7 @@ def chat(query: str,
             # use_skills = False
             calc_tool = my_skills.calc
 
-            if use_skills and '-8b' not in model and 'thinking' not in model and 'gemma-3' not in model:
+            if use_skills and '-8b' not in model and 'gemini-2.0-flash-thinking' not in model and 'gemma-3' not in model:
                 # id в системный промпт надо добавлять что бы бот мог юзать его в скилах
                 # в каких скилах?
                 # system = f'user_id: {chat_id}\n\n{str(system)}'
@@ -380,7 +380,7 @@ def chat(query: str,
                     mem = chat_.history[-max_chat_lines*2:]
                     while count_chars(mem) > max_chat_mem_chars:
                         mem = mem[2:]
-                    if 'thinking' in model:
+                    if 'gemini-2.0-flash-thinking' in model:
                         my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
                     else:
                         my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -504,7 +504,7 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
     chat_id = ''
     if isinstance(mem, str): # if mem - chat_id
         chat_id = mem
-        if 'thinking' in model:
+        if 'gemini-2.0-flash-thinking' in model:
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
         else:
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -520,7 +520,7 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
         mem = mem[2:]
 
     if chat_id:
-        if 'thinking' in model:
+        if 'gemini-2.0-flash-thinking' in model:
             my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
         else:
             my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -536,7 +536,7 @@ def force(chat_id: str, text: str, model: str = ''):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            if 'thinking' in model:
+            if 'gemini-2.0-flash-thinking' in model:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
             else:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -550,7 +550,7 @@ def force(chat_id: str, text: str, model: str = ''):
                         if p.text != mem[-1].parts[-1].text:
                             p.text = ''
                     mem[-1].parts[-1].text = text
-                if 'thinking' in model:
+                if 'gemini-2.0-flash-thinking' in model:
                     my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
                 else:
                     my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -580,14 +580,14 @@ def undo(chat_id: str, model: str = ''):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            if 'thinking' in model:
+            if 'gemini-2.0-flash-thinking' in model:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
             else:
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
             mem = transform_mem2(mem)
             # remove 2 last lines from mem
             mem = mem[:-2]
-            if 'thinking' in model:
+            if 'gemini-2.0-flash-thinking' in model:
                 my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
             else:
                 my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -608,7 +608,7 @@ def reset(chat_id: str, model: str = ''):
         None
     """
     mem = []
-    if model and 'thinking' in model:
+    if model and 'gemini-2.0-flash-thinking' in model:
         my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
     else:
         my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
@@ -629,7 +629,7 @@ def get_mem_for_llama(chat_id: str, lines_amount: int = 3, model: str = ''):
     res_mem = []
     lines_amount = lines_amount * 2
 
-    if 'thinking' in model:
+    if 'gemini-2.0-flash-thinking' in model:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
     else:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -674,7 +674,7 @@ def get_last_mem(chat_id: str, model: str = '') -> str:
     Returns:
         str:
     """
-    if 'thinking' in model:
+    if 'gemini-2.0-flash-thinking' in model:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
     else:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -704,7 +704,7 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     Returns:
         str: The chat history as a string.
     """
-    if 'thinking' in model:
+    if 'gemini-2.0-flash-thinking' in model:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
     else:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
@@ -1255,8 +1255,8 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
-    for k in cfg.gemini_keys[:] + ALL_KEYS[:]:
-        print(f'"{k}",')
+    # for k in cfg.gemini_keys[:] + ALL_KEYS[:]:
+    #     print(f'"{k}",')
 
     # test_all_keys()
 

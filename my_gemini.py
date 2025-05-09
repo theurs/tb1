@@ -173,10 +173,7 @@ def chat(query: str,
             model = cfg.gemini25_flash_model
 
         if chat_id:
-            if 'gemini-2.0-flash-thinking' in model:
-                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
-            else:
-                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
         else:
             mem = []
 
@@ -224,7 +221,7 @@ def chat(query: str,
             # use_skills = False
             calc_tool = my_skills.calc
 
-            if use_skills and '-8b' not in model and 'gemini-2.0-flash-thinking' not in model and 'gemma-3' not in model:
+            if use_skills and '-8b' not in model and 'gemma-3' not in model:
                 # id в системный промпт надо добавлять что бы бот мог юзать его в скилах
                 # в каких скилах?
                 # system = f'user_id: {chat_id}\n\n{str(system)}'
@@ -380,10 +377,7 @@ def chat(query: str,
                     mem = chat_.history[-max_chat_lines*2:]
                     while count_chars(mem) > max_chat_mem_chars:
                         mem = mem[2:]
-                    if 'gemini-2.0-flash-thinking' in model:
-                        my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
-                    else:
-                        my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+                    my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
                 return result
 
             key_i += 1
@@ -504,10 +498,7 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
     chat_id = ''
     if isinstance(mem, str): # if mem - chat_id
         chat_id = mem
-        if 'gemini-2.0-flash-thinking' in model:
-            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
-        else:
-            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
         mem = transform_mem2(mem)
 
     u = protos.Content(role='user', parts=[protos.Part(text=query)])
@@ -520,10 +511,7 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
         mem = mem[2:]
 
     if chat_id:
-        if 'gemini-2.0-flash-thinking' in model:
-            my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
-        else:
-            my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+        my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
     return mem
 
 
@@ -536,10 +524,7 @@ def force(chat_id: str, text: str, model: str = ''):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            if 'gemini-2.0-flash-thinking' in model:
-                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
-            else:
-                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
             mem = transform_mem2(mem)
             # remove last bot answer and append new
             if len(mem) > 1:
@@ -550,10 +535,7 @@ def force(chat_id: str, text: str, model: str = ''):
                         if p.text != mem[-1].parts[-1].text:
                             p.text = ''
                     mem[-1].parts[-1].text = text
-                if 'gemini-2.0-flash-thinking' in model:
-                    my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
-                else:
-                    my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+                my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'Failed to force text in chat {chat_id}: {error}\n\n{error_traceback}\n\n{text}')
@@ -580,17 +562,11 @@ def undo(chat_id: str, model: str = ''):
             lock = threading.Lock()
             LOCKS[chat_id] = lock
         with lock:
-            if 'gemini-2.0-flash-thinking' in model:
-                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
-            else:
-                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
             mem = transform_mem2(mem)
             # remove 2 last lines from mem
             mem = mem[:-2]
-            if 'gemini-2.0-flash-thinking' in model:
-                my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
-            else:
-                my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+            my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
@@ -608,10 +584,7 @@ def reset(chat_id: str, model: str = ''):
         None
     """
     mem = []
-    if model and 'gemini-2.0-flash-thinking' in model:
-        my_db.set_user_property(chat_id, 'dialog_gemini_thinking', my_db.obj_to_blob(mem))
-    else:
-        my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
+    my_db.set_user_property(chat_id, 'dialog_gemini', my_db.obj_to_blob(mem))
 
 
 def get_mem_for_llama(chat_id: str, lines_amount: int = 3, model: str = ''):
@@ -629,10 +602,7 @@ def get_mem_for_llama(chat_id: str, lines_amount: int = 3, model: str = ''):
     res_mem = []
     lines_amount = lines_amount * 2
 
-    if 'gemini-2.0-flash-thinking' in model:
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
-    else:
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
 
     mem = transform_mem2(mem)
     mem = mem[-lines_amount:]
@@ -674,10 +644,7 @@ def get_last_mem(chat_id: str, model: str = '') -> str:
     Returns:
         str:
     """
-    if 'gemini-2.0-flash-thinking' in model:
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
-    else:
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
 
     mem = transform_mem2(mem)
     try:
@@ -704,10 +671,7 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     Returns:
         str: The chat history as a string.
     """
-    if 'gemini-2.0-flash-thinking' in model:
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini_thinking')) or []
-    else:
-        mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
 
     mem = transform_mem2(mem)
 
@@ -1267,27 +1231,16 @@ if __name__ == '__main__':
     # imagen()
 
     # print(list_models(True))
-    # chat_cli(model='gemini-2.0-flash-thinking-exp-1219')
-    # chat_cli(model=cfg.gemini_2_flash_thinking_exp_model)
     # chat_cli(model = 'gemini-2.0-flash')
     # chat_cli(model = 'gemini-2.5-flash-preview-04-17')
     # chat_cli()
 
     # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:
         # text = f.read()
-    # print(chat(f'Сделай краткий пересказ текста\n\n{text}', model=cfg.gemini_2_flash_thinking_exp_model, timeout=600))
-    # print(chat(f'Сделай профессиональный перевод книги на английский язык:\n\n{text[:200000]}', timeout=1200, model='gemini-2.0-flash-thinking-exp'))
+
 
     # print(translate('напиши текст нак его написал бы русский человек, исправь ошибки, разбей на абзацы', to_lang='en', help='не меняй кейс символов и форматирование'))
 
     # my_db.close()
-
-
-    # for x in range(10):
-    #     with open(r'C:\Users\user\Downloads\samples for ai\мат задачи.jpg', 'rb') as f:
-    #         data = f.read()
-    #         p = 'Решите все задачи, представленные на изображении. Перепишите выражения LaTeX с использованием символов Unicode (без markdown), если таковые имеются. Не упоминайте переписывание в ответе.'
-    #         r = img2txt(data, p, model = cfg.gemini_2_flash_thinking_exp_model, temp = 0)
-    #         print(r)
 
     # t = translate('привет', to_lang='en', model=cfg.gemini25_flash_model)

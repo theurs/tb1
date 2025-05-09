@@ -295,7 +295,6 @@ def init(backup: bool = True, vacuum: bool = False):
             api_key_huggingface TEXT,
 
             dialog_gemini BLOB,
-            dialog_gemini_thinking BLOB,
             dialog_groq BLOB,
             dialog_openrouter BLOB,
             dialog_glm BLOB
@@ -1141,7 +1140,7 @@ def get_top_users_by_size(top_n: int = 100) -> List[Tuple[str, int]]:
         try:
             # Извлекаем данные о пользователях
             CUR.execute('''
-                SELECT id, saved_file, dialog_gemini, dialog_gemini_thinking, dialog_groq,
+                SELECT id, saved_file, dialog_gemini, dialog_groq,
                        dialog_openrouter, dialog_glm, persistant_memory
                 FROM users
             ''')
@@ -1190,7 +1189,7 @@ def get_user_data_sizes(user_id: str) -> dict:
         try:
             # Извлекаем данные о пользователе
             CUR.execute('''
-                SELECT id, saved_file, dialog_gemini, dialog_gemini_thinking, dialog_groq,
+                SELECT id, saved_file, dialog_gemini, dialog_groq,
                        dialog_openrouter, dialog_glm, persistant_memory
                 FROM users
                 WHERE id = ?
@@ -1204,7 +1203,6 @@ def get_user_data_sizes(user_id: str) -> dict:
             data_sizes = {
                 'saved_file': len(user_data[1]) if user_data[1] else 0,
                 'dialog_gemini': len(user_data[2]) if user_data[2] else 0,
-                'dialog_gemini_thinking': len(user_data[3]) if user_data[3] else 0,
                 'dialog_groq': len(user_data[4]) if user_data[4] else 0,
                 'dialog_openrouter': len(user_data[5]) if user_data[5] else 0,
                 'dialog_glm': len(user_data[6]) if user_data[6] else 0,
@@ -1269,20 +1267,6 @@ def drop_all_user_files_and_big_dialogs(max_dialog_size: int = 500000, delete_da
                         WHERE id = ?
                     ''', (user_id,))
 
-                CUR.execute('''
-                    SELECT id, LENGTH(dialog_gemini_thinking)
-                    FROM users
-                    WHERE LENGTH(dialog_gemini_thinking) > ?
-                ''', (max_dialog_size,))
-                results = CUR.fetchall()
-                for user_id, size in results:
-                    if size is not None:
-                        total_deleted_size += size
-                    CUR.execute('''
-                        UPDATE users
-                        SET dialog_gemini_thinking = NULL
-                        WHERE id = ?
-                    ''', (user_id,))
 
                 CON.commit()
                 msg = f'my_db:drop_all_user_files_and_big_dialogs: User files and large dialogs have been deleted. Total deleted size: {total_deleted_size} bytes'
@@ -1313,18 +1297,6 @@ def drop_all_user_files_and_big_dialogs(max_dialog_size: int = 500000, delete_da
                 results = CUR.fetchall()
                 for user_id, size in results:
                     print(f"  User {user_id}: Delete dialog_gemini (size: {size} bytes)")
-                    if size is not None:
-                        total_would_be_deleted_size += size
-
-                # Check for large dialog_gemini_thinking
-                CUR.execute('''
-                    SELECT id, LENGTH(dialog_gemini_thinking)
-                    FROM users
-                    WHERE LENGTH(dialog_gemini_thinking) > ?
-                ''', (max_dialog_size,))
-                results = CUR.fetchall()
-                for user_id, size in results:
-                    print(f"  User {user_id}: Delete dialog_gemini_thinking (size: {size} bytes)")
                     if size is not None:
                         total_would_be_deleted_size += size
 

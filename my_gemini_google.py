@@ -57,10 +57,6 @@ SAFETY_SETTINGS = [
 
 MODEL_ID = "gemini-2.0-flash-exp"
 MODEL_ID_FALLBACK = "gemini-1.5-flash"
-# MODEL_ID = 'gemini-1.5-flash-8b'
-# MODEL_ID = "gemini-2.0-flash-thinking-exp-1219"
-# MODEL_ID = 'gemini-1.5-flash'
-# MODEL_ID = "gemini-1.5-pro-002"
 
 
 def get_client():

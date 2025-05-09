@@ -209,7 +209,7 @@ default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
 # 'gemini', 'gemini25_flash', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15',
-# 'gemini_2_flash_thinking', 'llama370', 'openrouter', 'o3_mini_ddg', 'gpt-4o-mini-ddg', 'glm4plus',
+# 'llama370', 'openrouter', 'o3_mini_ddg', 'gpt-4o-mini-ddg', 'glm4plus',
 # 'mistral', 'pixtral', 'cohere', 'deepseek_r1_distill_llama70b', 'qwq32b', 'gpt-4o', 'deepseek_r1',
 # 'deepseek_v3', 'llama4_maverick', 'gpt_41', 'gpt_41_mini'
 
@@ -238,9 +238,6 @@ gemini_exp_model_fallback = 'gemini-2.0-pro-exp-02-05'
 
 gemini_learn_model = 'learnlm-2.0-flash-experimental'
 gemini_learn_model_fallback = 'gemini-2.0-flash'
-
-gemini_2_flash_thinking_exp_model = 'gemini-2.0-flash-thinking-exp-01-21'
-gemini_2_flash_thinking_exp_model_fallback = 'gemini-2.0-flash-thinking-exp-1219'
 
 
 # default locale, язык на который переводятся все сообщения

@@ -806,10 +806,6 @@ def img2txt(text,
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
-                elif chat_mode == 'gemini_2_flash_thinking':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_2_flash_thinking_exp_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_2_flash_thinking_exp_model
                 elif chat_mode == 'pixtral':
                     text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
@@ -853,11 +849,6 @@ def img2txt(text,
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
 
-            # если это была думающая модель то пробуем вместо нее exp
-            if not text and model == cfg.gemini_2_flash_thinking_exp_model:
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
 
             # флеш25 фолбек
             if not text and model == cfg.gemini25_flash_model:
@@ -1997,11 +1988,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Gemini 2.5 Pro exp'
             button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
 
-            if chat_mode == 'gemini_2_flash_thinking':
-                msg = '✅ Gemini Flash Thinking'
-            else:
-                msg = 'Gemini Flash Thinking'
-            button_gemini_flash_thinking = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_2_flash_thinking')
 
             if chat_mode == 'llama370':
                 msg = '✅ Llama-3.3 70b'
@@ -2605,8 +2591,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
         elif call.data == 'select_gemini25_flash':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini25_flash')
-        elif call.data == 'select_gemini_2_flash_thinking':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini_2_flash_thinking')
         elif call.data == 'select_gemini-lite':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-lite')
         elif call.data == 'select_gemini-exp':
@@ -7706,7 +7690,7 @@ def send_welcome_help2(message: telebot.types.Message):
 def set_chat_mode_command(message: telebot.types.Message):
     """
     Sets the chat mode for the specified user based on the command used.
-    /think, /th - gemini_2_flash_thinking
+    /think, /th - gemini25_flash
     /flash, /f - gemini
     /code, /c - codestral
     """
@@ -7725,7 +7709,7 @@ def set_chat_mode_command(message: telebot.types.Message):
             return
         # Determine the mode based on the command used
         if command in ['/think', '/th']:
-            mode = 'gemini_2_flash_thinking'
+            mode = 'gemini25_flash'
         elif command in ['/flash', '/f']:
             mode = 'gemini'
         elif command in ['/code', '/c']:
@@ -7910,7 +7894,6 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini-exp': cfg.gemini_exp_model,
             'gemini-learn': cfg.gemini_learn_model,
             'gemma3_27b': cfg.gemma3_27b_model,
-            'gemini_2_flash_thinking': cfg.gemini_2_flash_thinking_exp_model,
             'llama370': 'Llama 3.3 70b',
             'deepseek_r1_distill_llama70b': 'Deepseek R1 distill llama70b',
             'qwq32b': 'qwq32b',
@@ -9463,8 +9446,6 @@ def do_task(message, custom_prompt: str = ''):
                     gmodel = cfg.gemini_learn_model
                 elif chat_mode_ == 'gemma3_27b':
                     gmodel = cfg.gemma3_27b_model
-                elif chat_mode_ == 'gemini_2_flash_thinking':
-                    gmodel = cfg.gemini_2_flash_thinking_exp_model
 
                 WHO_ANSWERED[chat_id_full] = chat_mode_
                 if chat_mode_ == 'llama370':
@@ -9615,16 +9596,6 @@ def do_task(message, custom_prompt: str = ''):
                                     use_skills=True)
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
-                            if not answer and gmodel == cfg.gemini_2_flash_thinking_exp_model:
-                                gmodel = cfg.gemini_2_flash_thinking_exp_model_fallback
-                                answer = my_gemini.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temp,
-                                    model = gmodel,
-                                    system = hidden_text,
-                                    use_skills=True)
-                                WHO_ANSWERED[chat_id_full] = gmodel
 
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
@@ -10715,7 +10686,7 @@ def one_time_shot():
 
             queries = [
                 # '''ALTER TABLE users DROP COLUMN suggest_enabled;''',
-                '''ALTER TABLE users DROP COLUMN original_mode;''',
+                '''ALTER TABLE users DROP COLUMN dialog_gemini_thinking;''',
                 # '''DELETE FROM translations;''',
                 # '''DROP TABLE IF EXISTS im_suggests;''',
                 # '''UPDATE users SET saved_file = NULL, saved_file_name = NULL;''',

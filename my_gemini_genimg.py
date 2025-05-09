@@ -15,8 +15,8 @@ import my_log
 import utils
 
 
-# MODEL = "gemini-2.0-flash-exp"
-MODEL = "gemini-2.0-flash-preview-image-generation" # "gemini-2.0-flash-exp-image-generation"
+MODEL = "gemini-2.0-flash-preview-image-generation"
+MODEL_OLD = "gemini-2.0-flash-exp-image-generation"
 
 
 # не давать одному юзеру больше одного потока в редактировании изображений
@@ -152,7 +152,13 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
         return None
 
 
-def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_id: str = '') -> Optional[bytes]:
+def regenerate_image(
+    prompt: str,
+    sources_images: list,
+    api_key: str = '',
+    user_id: str = '',
+    model: str = MODEL,
+    ) -> Optional[bytes]:
     '''
     Generate new image based on the given prompt and sources images using the Gemini API.
 
@@ -188,7 +194,7 @@ def regenerate_image(prompt: str, sources_images: list, api_key: str = '', user_
 
             client = genai.Client(api_key=api_key)
 
-            model = MODEL
+            # model = MODEL
 
             for data in sources_images:
                 tmpfname = utils.get_tmp_fname() + '.jpg'
@@ -337,22 +343,30 @@ def test_regenerate_image2():
     '''
     Test the regenerate_image function.
     '''
-    prompt_text = "поставь этого человека в этот фон"
+    # prompt_text = "напиши вертикально кириллицей с правого края - Слава роботам!!"
+    prompt_text = 'напиши на спинах слова кириллицей: БОТЫ - СИЛА по одной букве на одной спине'
 
     source_images = []
-    with open(r'C:\Users\user\Downloads\samples for ai\студийное фото человека.png', 'rb') as f:
-        data = f.read()
-        source_images.append(data)
-    with open(r'C:\Users\user\Downloads\samples for ai\фотография улицы.png', 'rb') as f:
+    # with open(r'C:\Users\user\Downloads\samples for ai\картинки\студийное фото человека.png', 'rb') as f:
+    with open(r'C:\Users\user\Downloads\bb9f447f-834c-4d6d-9db8-e33e9435d28d_w1023_s.jpg', 'rb') as f:
         data = f.read()
         source_images.append(data)
 
-    image_bytes = regenerate_image(prompt_text, source_images)
+    image_bytes1 = regenerate_image(prompt_text, source_images, model=MODEL)
+    image_bytes2 = regenerate_image(prompt_text, source_images, model=MODEL_OLD)
 
-    if image_bytes:
+    if image_bytes1:
         file_extension = "jpg"
-        file_name = os.path.join(r"C:\Users\user\Downloads", f"test.{file_extension}")
-        save_binary_file(file_name, image_bytes)
+        file_name = os.path.join(r"C:\Users\user\Downloads", f"test1.{file_extension}")
+        save_binary_file(file_name, image_bytes1)
+        my_log.log_gemini(text=f"Image saved to: {file_name}")
+    else:
+        my_log.log_gemini(text="Failed to generate or save image.")
+
+    if image_bytes2:
+        file_extension = "jpg"
+        file_name = os.path.join(r"C:\Users\user\Downloads", f"test2.{file_extension}")
+        save_binary_file(file_name, image_bytes2)
         my_log.log_gemini(text=f"Image saved to: {file_name}")
     else:
         my_log.log_gemini(text="Failed to generate or save image.")

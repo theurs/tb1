@@ -10686,11 +10686,11 @@ def one_time_shot():
 
             queries = [
                 # '''ALTER TABLE users DROP COLUMN suggest_enabled;''',
-                '''ALTER TABLE users DROP COLUMN dialog_gemini_thinking;''',
-                # '''DELETE FROM translations;''',
+                # '''ALTER TABLE users DROP COLUMN dialog_gemini_thinking;''',
+                '''DELETE FROM translations;''',
                 # '''DROP TABLE IF EXISTS im_suggests;''',
                 # '''UPDATE users SET saved_file = NULL, saved_file_name = NULL;''',
-                 ]
+            ]
             for q in queries:
                 try:
                     my_db.CUR.execute(q)

@@ -6075,14 +6075,15 @@ def image_gemini_gen(message: telebot.types.Message):
             else:
                 return
 
+        help_text = f"""/gem <[1|2|3|4]> <prompt>
+
+{tr('Generate 1-4 images with the Gemini 2.0 Flash Experimental model', lang)}
+"""
+
         with lock:
             # Get prompt
             parts = message.text.split(maxsplit=2)  # Split into command, model number, and prompt
             if len(parts) < 2:
-                help_text = f"""/gem <[1|2|3|4]> <prompt>
-
-{tr('Generate 1-4 images with the Gemini 2.0 Flash Experimental model', lang)}
-"""
                 bot_reply(message, help_text)
                 COMMAND_MODE[chat_id_full] = 'gem'
                 return
@@ -6098,7 +6099,7 @@ def image_gemini_gen(message: telebot.types.Message):
                 bot_reply_tr(message, help_text)
                 return
 
-            if not prompt:
+            if not prompt or prompt in ('1', '2', '3', '4'):
                 bot_reply_tr(message, help_text)
                 return
 
@@ -6198,11 +6199,7 @@ def image_flux_gen(message: telebot.types.Message):
             else:
                 return
 
-        with lock:
-            # Get prompt
-            parts = message.text.split(maxsplit=2)  # Split into command, model number, and prompt
-            if len(parts) < 2:
-                help_text = f"""/flux [1|2|3] <prompt>
+        help_text = f"""/flux [1|2|3] <prompt>
 
 1 - black-forest-labs/flux-dev
 /flux 1 {tr('cat in space', lang)}
@@ -6215,6 +6212,11 @@ def image_flux_gen(message: telebot.types.Message):
 
 /flux {tr('cat in space', lang)} - {tr('same as /flux 1', lang)}
 """
+
+        with lock:
+            # Get prompt
+            parts = message.text.split(maxsplit=2)  # Split into command, model number, and prompt
+            if len(parts) < 2:
                 bot_reply(message, help_text)
                 return
 
@@ -6230,7 +6232,7 @@ def image_flux_gen(message: telebot.types.Message):
                 bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
                 return
 
-            if not prompt:
+            if not prompt or prompt in ('1', '2', '3'):
                 bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
                 return
 

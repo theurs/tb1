@@ -176,6 +176,10 @@ subscription_cache = {}
 MESSAGE_QUEUE = {}
 # так же ловим пачки картинок(медиагруппы), телеграм их отправляет по одной
 MESSAGE_QUEUE_IMG = {}
+# так же ловим пачки картинок(медиагруппы)+текст, после пересылки картинки с инструкцией от юзера
+# они разделяются на 2 части, отдельно подпись от юзера и отдельно картинки
+MESSAGE_QUEUE_GRP = {}
+
 
 GEMIMI_TEMP_DEFAULT = 1
 
@@ -3638,305 +3642,6 @@ def download_image_from_messages(MESSAGES: list) -> list:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:download_image_from_messages:{unexpected_error}\n\n{traceback_error}')
         return []
-
-
-@bot.message_handler(content_types = ['photo', 'sticker'], func=authorized)
-@async_run
-def handle_photo(message: telebot.types.Message):
-    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография
-    + много текста в подписи, и пересланные сообщения в том числе"""
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-
-        COMMAND_MODE[chat_id_full] = ''
-        # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
-            return
-
-        # catch groups of images
-        if chat_id_full not in MESSAGE_QUEUE_IMG:
-            MESSAGE_QUEUE_IMG[chat_id_full] = [message,]
-            last_state = MESSAGE_QUEUE_IMG[chat_id_full]
-            n = 10
-            while n > 0:
-                n -= 1
-                time.sleep(0.1)
-                new_state = MESSAGE_QUEUE_IMG[chat_id_full]
-                if last_state != new_state:
-                    last_state = new_state
-                    n = 10
-        else:
-            MESSAGE_QUEUE_IMG[chat_id_full].append(message)
-            return
-
-
-        if len(MESSAGE_QUEUE_IMG[chat_id_full]) > 1:
-            MESSAGES = MESSAGE_QUEUE_IMG[chat_id_full]
-        else:
-            MESSAGES = [message,]
-        del MESSAGE_QUEUE_IMG[chat_id_full]
-
-        message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
-
-        try:
-            is_private = message.chat.type == 'private'
-            supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-            is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
-            if supch == 1:
-                is_private = True
-
-            msglower = message.caption.lower() if message.caption else ''
-
-            bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-            bot_name_was_used = False
-            # убираем из запроса кодовое слово
-            if msglower.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
-                bot_name_was_used = True
-                message.caption = message.caption[len(f'{bot_name} '):].strip()
-
-            state = ''
-            bot_name2 = f'@{_bot_name}'
-            # убираем из запроса имя бота в телеграме
-            if msglower.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
-                bot_name_was_used = True
-                message.caption = message.caption[len(f'{bot_name2} '):].strip()
-            elif is_private or is_reply or bot_name_was_used:
-                state = 'describe'
-            elif msglower.startswith('?'):
-                state = 'describe'
-                message.caption = message.caption[1:]
-
-
-            if not is_private and not state == 'describe':
-                if not message.caption or not message.caption.startswith('?') or \
-                    not bot_name_was_used:
-                    return
-
-            if is_private:
-                # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку
-                # Если картинок больше 4 то вытаскиваем из каждой текст отдельно и пытаемся собрать в 1 большой текст
-                if len(MESSAGES) > 1:
-                    # найти сообщение у которого есть caption
-                    caption = ''
-                    for msg in MESSAGES:
-                        if msg.caption:
-                            caption = msg.caption
-                            break
-                    caption = caption.strip()
-                    with ShowAction(message, 'typing'):
-                        images = [download_image_from_message(msg) for msg in MESSAGES]
-
-                        # Если прислали группу картинок и запрос начинается на ! то перенаправляем запрос в редактирование картинок
-                        if caption.startswith('!'):
-                            caption = caption[1:]
-                            reprompt, m_sex, m_hate = my_gemini.get_reprompt_for_edit_image(
-                                caption,
-                                images,
-                                chat_id=chat_id_full
-                                )
-                            if not reprompt:
-                                reprompt = caption
-                            else:
-                                if m_sex or m_hate:
-                                    pass
-
-                            image = my_gemini_genimg.regenerate_image(
-                                prompt = reprompt,
-                                sources_images=images,
-                                user_id=chat_id_full)
-                            if image:
-                                m = send_photo(
-                                    message,
-                                    message.chat.id,
-                                    disable_notification=True,
-                                    photo=image,
-                                    reply_to_message_id=message.message_id,
-                                    reply_markup=get_keyboard('hide', message)
-                                )
-                                log_message(m)
-                                add_to_bots_mem(tr('User asked to edit images', lang) + f' <prompt>{caption}</prompt>', tr('Changed images successfully.', lang), chat_id_full)
-                                return
-                            else:
-                                bot_reply_tr(message, 'Failed to edit images.')
-                                add_to_bots_mem(tr('User asked to edit images', lang) + f' <prompt>{caption}</prompt>', tr('Failed to edit images.', lang), chat_id_full)
-                                return
-
-                        if len(images) > 4:
-                            big_text = ''
-                            for image in images:
-                                if image:
-                                    try:
-                                        text = img2txt(
-                                            text = image,
-                                            lang = lang,
-                                            chat_id_full = chat_id_full,
-                                            query=tr('text', lang),
-                                            model = cfg.gemini_flash_light_model,
-                                            temperature=0.1,
-                                            system_message=tr('Give me all text from image, no any other words but text from this image', lang),
-                                            timeout=60,
-                                            )
-                                        if text:
-                                            big_text += text + '\n\n'
-                                    except Exception as bunch_of_images_error1:
-                                        my_log.log2(f'tb:handle_photo1: {bunch_of_images_error1}')
-                            if big_text:
-                                try:
-                                    bot_reply(
-                                        message,
-                                        big_text,
-                                        disable_web_page_preview=True,
-                                        )
-                                    if caption:
-                                        message.text = f'{tr("User sent a bunch of images with text and caption:", lang)} {caption}\n\n{big_text}'
-                                        do_task(message)
-                                    else:
-                                        add_to_bots_mem(
-                                            query=tr('User sent images.', lang),
-                                            resp = f"{tr('Got text from images:', lang)}\n\n{big_text}",
-                                            chat_id_full=chat_id_full,
-                                        )
-                                except Exception as bunch_of_images_error2:
-                                    my_log.log2(f'tb:handle_photo2: {bunch_of_images_error2}')
-                            else:
-                                bot_reply_tr(message, 'No any text in images.')
-                            return
-                        else:
-                            if sys.getsizeof(images) > 10 * 1024 *1024:
-                                bot_reply_tr(message, 'Too big files.')
-                                return
-                            try:
-                                result_image_as_bytes = utils.make_collage(images)
-                            except Exception as make_collage_error:
-                                # my_log.log2(f'tb:handle_photo1: {make_collage_error}')
-                                bot_reply_tr(message, 'Too big files.')
-                                return
-                            if len(result_image_as_bytes) > 10 * 1024 *1024:
-                                result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
-                            try:
-                                m = send_photo(
-                                    message,
-                                    message.chat.id,
-                                    result_image_as_bytes,
-                                    reply_to_message_id=message.message_id,
-                                    reply_markup=get_keyboard('hide', message)
-                                )
-                                log_message(m)
-                            except Exception as send_img_error:
-                                my_log.log2(f'tb:handle_photo2: {send_img_error}')
-                            width, height = utils.get_image_size(result_image_as_bytes)
-                            if width >= 1280 or height >= 1280:
-                                try:
-                                    m = send_document(
-                                        message,
-                                        message.chat.id,
-                                        result_image_as_bytes,
-                                        # caption='images.jpg',
-                                        visible_file_name='images.jpg',
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message)
-                                    )
-                                    log_message(m)
-                                except Exception as send_doc_error:
-                                    my_log.log2(f'tb:handle_photo3: {send_doc_error}')
-                            my_log.log_echo(message, f'Made collage of {len(images)} images.')
-                            if not caption:
-                                proccess_image(chat_id_full, result_image_as_bytes, message)
-                                return
-                            text = img2txt(result_image_as_bytes, lang, chat_id_full, caption)
-                            if text:
-                                if isinstance(text, str):
-                                    text = utils.bot_markdown_to_html(text)
-                                    # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                                    bot_reply(message, text, parse_mode='HTML',
-                                                        reply_markup=get_keyboard('translate', message),
-                                                        disable_web_page_preview=True)
-                                elif isinstance(text, bytes):
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        text,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                    return
-                            else:
-                                bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                            return
-
-
-            if chat_id_full in IMG_LOCKS:
-                lock = IMG_LOCKS[chat_id_full]
-            else:
-                lock = threading.Lock()
-                IMG_LOCKS[chat_id_full] = lock
-
-            # если юзер хочет найти что то по картинке
-            if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'google':
-                with ShowAction(message, 'typing'):
-                    image = download_image_from_message(message)
-                    query = tr('The user wants to find something on Google, but he sent a picture as a query. Try to understand what he wanted to find and write one sentence that should be used in Google to search to fillfull his intention. Write just one sentence and I will submit it to Google, no extra words please.', lang)
-                    google_query = img2txt(image, lang, chat_id_full, query)
-                if google_query:
-                    message.text = f'/google {google_query}'
-                    bot_reply(message, tr('Googling:', lang) + f' {google_query}')
-                    google(message)
-                else:
-                    bot_reply_tr(message, 'No results.', lang)
-                return
-
-            with lock:
-                # распознаем что на картинке с помощью гугл джемини
-                if state == 'describe':
-                    with ShowAction(message, 'typing'):
-                        image = download_image_from_message(message)
-
-                        if not image:
-                            # my_log.log2(f'tb:handle_photo4: не удалось распознать документ или фото {str(message)}')
-                            return
-
-                        if len(image) > 10 * 1024 *1024:
-                            image = utils.resize_image(image, 10 * 1024 *1024)
-
-                        image = utils.heic2jpg(image)
-                        if not message.caption:
-                            proccess_image(chat_id_full, image, message)
-                            return
-                        # грязный хак, для решения задач надо использовать мощную модель
-                        if 'реши' in message.caption.lower() or 'solve' in message.caption.lower() \
-                            or 'задач' in message.caption.lower() or 'задан' in message.caption.lower():
-                            text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.img2_txt_model_solve, temperature=0)
-                        else:
-                            text = img2txt(image, lang, chat_id_full, message.caption)
-                        if text:
-                            if isinstance(text, str):
-                                text = utils.bot_markdown_to_html(text)
-                                # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                                bot_reply(message, text, parse_mode='HTML',
-                                                    reply_markup=get_keyboard('translate', message),
-                                                    disable_web_page_preview=True)
-                            elif isinstance(text, bytes):
-                                m = send_photo(
-                                    message,
-                                    message.chat.id,
-                                    text,
-                                    reply_to_message_id=message.message_id,
-                                    reply_markup=get_keyboard('hide', message)
-                                )
-                                log_message(m)
-                                return
-                        else:
-                            bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                    return
-        except Exception as error:
-            traceback_error = traceback.format_exc()
-            my_log.log2(f'tb:handle_photo6: {error}\n{traceback_error}')
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:handle_photo7: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['config', 'settings', 'setting', 'options'], func=authorized_owner)
@@ -9114,6 +8819,395 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
         my_log.log2(f'tb:check_donate: {unknown}\n{traceback_error}')
 
     return True
+
+
+@bot.message_handler(content_types = ['photo', "text"], func=authorized)
+@async_run
+def handle_photo_and_text(message: telebot.types.Message):
+    """
+    Обработчик текстовых сообщени и картинок, нужен что бы ловить пересланные картинки с подписью,
+    телеграм разделяет их на 2 сообщения, отдельно подпись которую делает юзер к пересылаемой картинке
+    и отдельно картинка.
+    Картинок может быть несколько, текстовых сообщений тоже, их надо склеивать и пересылать дальше.
+
+    Обработчик должен быть выше этих обработчиков но ниже чем все команды и пересылать в них.
+
+    Если сообщений несколько и они разного типа то приоритет должен быть у картинок, текст надо
+    добавлять им в caption, причем caption должен быть только у одной картинки
+    (надо пробежаться по ним и убрать у всех кроме одного а у одного сделать склейку)
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        COMMAND_MODE[chat_id_full] = ''
+        # проверка на подписку
+        if not check_donate(message, chat_id_full, lang):
+            return
+
+        # catch groups of messages
+        if chat_id_full not in MESSAGE_QUEUE_GRP:
+            MESSAGE_QUEUE_GRP[chat_id_full] = [message,]
+            last_state = MESSAGE_QUEUE_GRP[chat_id_full]
+            n = 10
+            while n > 0:
+                n -= 1
+                time.sleep(0.1)
+                new_state = MESSAGE_QUEUE_GRP[chat_id_full]
+                if last_state != new_state:
+                    last_state = new_state
+                    n = 10
+        else:
+            MESSAGE_QUEUE_GRP[chat_id_full].append(message)
+            return
+
+
+        if len(MESSAGE_QUEUE_GRP[chat_id_full]) > 1:
+            MESSAGES = MESSAGE_QUEUE_GRP[chat_id_full]
+        else:
+            MESSAGES = [message,]
+        del MESSAGE_QUEUE_GRP[chat_id_full]
+
+
+        is_image = False
+        combined_caption = ''
+
+        # проходим по всем сообщениям и если есть картинки то зачищаем их подписи
+        for MSG in MESSAGES:
+            is_private = MSG.chat.type == 'private'
+            if not is_private:
+                return
+            if MSG.photo:
+                is_image = True
+                combined_caption += my_log.restore_message_text(MSG.caption or '', MSG.caption_entities or []) + '\n\n'
+                MSG.caption = ''
+                MSG.caption_entities = []
+        combined_caption = combined_caption.strip()
+        # если есть картинки (в них уже зачищены подписи) тогда надо удалить текстовые соообщения
+        # (точнее добавить текстовые сообщения сверху к объединенной подписи) и отправить
+        # дальше только картинки но сначала в первую картинку надо добавить объединенную подпись
+        if is_image:
+            for MSG in MESSAGES[:]:
+                if not MSG.photo:
+                    text = my_log.restore_message_text(MSG.text or '', MSG.entities or [])
+                    if text.strip():
+                        combined_caption += text.strip() + '\n\n'
+                    MESSAGES.remove(MSG)
+
+            # в первое сообщение кладем общую подпись
+            MESSAGES[0].caption = combined_caption
+            MESSAGES[0].caption_entities = []
+
+            for MSG in MESSAGES:
+                handle_photo(MSG)
+
+        # если картинок нет то просто отправить все сообщения в текстовый обработчик
+        else:
+            for MSG in MESSAGES:
+                echo_all(MSG)
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:handle_photo_and_text_unknown: {unknown}\n{traceback_error}')
+
+
+@bot.message_handler(content_types = ['photo', 'sticker'], func=authorized)
+@async_run
+def handle_photo(message: telebot.types.Message):
+    """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография
+    + много текста в подписи, и пересланные сообщения в том числе"""
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        COMMAND_MODE[chat_id_full] = ''
+        # проверка на подписку
+        if not check_donate(message, chat_id_full, lang):
+            return
+
+        # catch groups of images
+        if chat_id_full not in MESSAGE_QUEUE_IMG:
+            MESSAGE_QUEUE_IMG[chat_id_full] = [message,]
+            last_state = MESSAGE_QUEUE_IMG[chat_id_full]
+            n = 10
+            while n > 0:
+                n -= 1
+                time.sleep(0.1)
+                new_state = MESSAGE_QUEUE_IMG[chat_id_full]
+                if last_state != new_state:
+                    last_state = new_state
+                    n = 10
+        else:
+            MESSAGE_QUEUE_IMG[chat_id_full].append(message)
+            return
+
+
+        if len(MESSAGE_QUEUE_IMG[chat_id_full]) > 1:
+            MESSAGES = MESSAGE_QUEUE_IMG[chat_id_full]
+        else:
+            MESSAGES = [message,]
+        del MESSAGE_QUEUE_IMG[chat_id_full]
+
+        message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
+
+        try:
+            is_private = message.chat.type == 'private'
+            supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+            is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
+            if supch == 1:
+                is_private = True
+
+            msglower = message.caption.lower() if message.caption else ''
+
+            bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+            bot_name_was_used = False
+            # убираем из запроса кодовое слово
+            if msglower.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
+                bot_name_was_used = True
+                message.caption = message.caption[len(f'{bot_name} '):].strip()
+
+            state = ''
+            bot_name2 = f'@{_bot_name}'
+            # убираем из запроса имя бота в телеграме
+            if msglower.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
+                bot_name_was_used = True
+                message.caption = message.caption[len(f'{bot_name2} '):].strip()
+            elif is_private or is_reply or bot_name_was_used:
+                state = 'describe'
+            elif msglower.startswith('?'):
+                state = 'describe'
+                message.caption = message.caption[1:]
+
+
+            if not is_private and not state == 'describe':
+                if not message.caption or not message.caption.startswith('?') or \
+                    not bot_name_was_used:
+                    return
+
+            if is_private:
+                # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку
+                # Если картинок больше 4 то вытаскиваем из каждой текст отдельно и пытаемся собрать в 1 большой текст
+                if len(MESSAGES) > 1:
+                    # найти сообщение у которого есть caption
+                    caption = ''
+                    for msg in MESSAGES:
+                        if msg.caption:
+                            caption = msg.caption
+                            break
+                    caption = caption.strip()
+                    with ShowAction(message, 'typing'):
+                        images = [download_image_from_message(msg) for msg in MESSAGES]
+
+                        # Если прислали группу картинок и запрос начинается на ! то перенаправляем запрос в редактирование картинок
+                        if caption.startswith('!'):
+                            caption = caption[1:]
+                            reprompt, m_sex, m_hate = my_gemini.get_reprompt_for_edit_image(
+                                caption,
+                                images,
+                                chat_id=chat_id_full
+                                )
+                            if not reprompt:
+                                reprompt = caption
+                            else:
+                                if m_sex or m_hate:
+                                    pass
+
+                            image = my_gemini_genimg.regenerate_image(
+                                prompt = reprompt,
+                                sources_images=images,
+                                user_id=chat_id_full)
+                            if image:
+                                m = send_photo(
+                                    message,
+                                    message.chat.id,
+                                    disable_notification=True,
+                                    photo=image,
+                                    reply_to_message_id=message.message_id,
+                                    reply_markup=get_keyboard('hide', message)
+                                )
+                                log_message(m)
+                                add_to_bots_mem(tr('User asked to edit images', lang) + f' <prompt>{caption}</prompt>', tr('Changed images successfully.', lang), chat_id_full)
+                                return
+                            else:
+                                bot_reply_tr(message, 'Failed to edit images.')
+                                add_to_bots_mem(tr('User asked to edit images', lang) + f' <prompt>{caption}</prompt>', tr('Failed to edit images.', lang), chat_id_full)
+                                return
+
+                        if len(images) > 4:
+                            big_text = ''
+                            for image in images:
+                                if image:
+                                    try:
+                                        text = img2txt(
+                                            text = image,
+                                            lang = lang,
+                                            chat_id_full = chat_id_full,
+                                            query=tr('text', lang),
+                                            model = cfg.gemini_flash_light_model,
+                                            temperature=0.1,
+                                            system_message=tr('Give me all text from image, no any other words but text from this image', lang),
+                                            timeout=60,
+                                            )
+                                        if text:
+                                            big_text += text + '\n\n'
+                                    except Exception as bunch_of_images_error1:
+                                        my_log.log2(f'tb:handle_photo1: {bunch_of_images_error1}')
+                            if big_text:
+                                try:
+                                    bot_reply(
+                                        message,
+                                        big_text,
+                                        disable_web_page_preview=True,
+                                        )
+                                    if caption:
+                                        message.text = f'{tr("User sent a bunch of images with text and caption:", lang)} {caption}\n\n{big_text}'
+                                        do_task(message)
+                                    else:
+                                        add_to_bots_mem(
+                                            query=tr('User sent images.', lang),
+                                            resp = f"{tr('Got text from images:', lang)}\n\n{big_text}",
+                                            chat_id_full=chat_id_full,
+                                        )
+                                except Exception as bunch_of_images_error2:
+                                    my_log.log2(f'tb:handle_photo2: {bunch_of_images_error2}')
+                            else:
+                                bot_reply_tr(message, 'No any text in images.')
+                            return
+                        else:
+                            if sys.getsizeof(images) > 10 * 1024 *1024:
+                                bot_reply_tr(message, 'Too big files.')
+                                return
+                            try:
+                                result_image_as_bytes = utils.make_collage(images)
+                            except Exception as make_collage_error:
+                                # my_log.log2(f'tb:handle_photo1: {make_collage_error}')
+                                bot_reply_tr(message, 'Too big files.')
+                                return
+                            if len(result_image_as_bytes) > 10 * 1024 *1024:
+                                result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
+                            try:
+                                m = send_photo(
+                                    message,
+                                    message.chat.id,
+                                    result_image_as_bytes,
+                                    reply_to_message_id=message.message_id,
+                                    reply_markup=get_keyboard('hide', message)
+                                )
+                                log_message(m)
+                            except Exception as send_img_error:
+                                my_log.log2(f'tb:handle_photo2: {send_img_error}')
+                            width, height = utils.get_image_size(result_image_as_bytes)
+                            if width >= 1280 or height >= 1280:
+                                try:
+                                    m = send_document(
+                                        message,
+                                        message.chat.id,
+                                        result_image_as_bytes,
+                                        # caption='images.jpg',
+                                        visible_file_name='images.jpg',
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message)
+                                    )
+                                    log_message(m)
+                                except Exception as send_doc_error:
+                                    my_log.log2(f'tb:handle_photo3: {send_doc_error}')
+                            my_log.log_echo(message, f'Made collage of {len(images)} images.')
+                            if not caption:
+                                proccess_image(chat_id_full, result_image_as_bytes, message)
+                                return
+                            text = img2txt(result_image_as_bytes, lang, chat_id_full, caption)
+                            if text:
+                                if isinstance(text, str):
+                                    text = utils.bot_markdown_to_html(text)
+                                    # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
+                                    bot_reply(message, text, parse_mode='HTML',
+                                                        reply_markup=get_keyboard('translate', message),
+                                                        disable_web_page_preview=True)
+                                elif isinstance(text, bytes):
+                                    m = send_photo(
+                                        message,
+                                        message.chat.id,
+                                        text,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message),
+                                    )
+                                    log_message(m)
+                                    return
+                            else:
+                                bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                            return
+
+
+            if chat_id_full in IMG_LOCKS:
+                lock = IMG_LOCKS[chat_id_full]
+            else:
+                lock = threading.Lock()
+                IMG_LOCKS[chat_id_full] = lock
+
+            # если юзер хочет найти что то по картинке
+            if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'google':
+                with ShowAction(message, 'typing'):
+                    image = download_image_from_message(message)
+                    query = tr('The user wants to find something on Google, but he sent a picture as a query. Try to understand what he wanted to find and write one sentence that should be used in Google to search to fillfull his intention. Write just one sentence and I will submit it to Google, no extra words please.', lang)
+                    google_query = img2txt(image, lang, chat_id_full, query)
+                if google_query:
+                    message.text = f'/google {google_query}'
+                    bot_reply(message, tr('Googling:', lang) + f' {google_query}')
+                    google(message)
+                else:
+                    bot_reply_tr(message, 'No results.', lang)
+                return
+
+            with lock:
+                # распознаем что на картинке с помощью гугл джемини
+                if state == 'describe':
+                    with ShowAction(message, 'typing'):
+                        image = download_image_from_message(message)
+
+                        if not image:
+                            # my_log.log2(f'tb:handle_photo4: не удалось распознать документ или фото {str(message)}')
+                            return
+
+                        if len(image) > 10 * 1024 *1024:
+                            image = utils.resize_image(image, 10 * 1024 *1024)
+
+                        image = utils.heic2jpg(image)
+                        if not message.caption:
+                            proccess_image(chat_id_full, image, message)
+                            return
+                        # грязный хак, для решения задач надо использовать мощную модель
+                        if 'реши' in message.caption.lower() or 'solve' in message.caption.lower() \
+                            or 'задач' in message.caption.lower() or 'задан' in message.caption.lower():
+                            text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.img2_txt_model_solve, temperature=0)
+                        else:
+                            text = img2txt(image, lang, chat_id_full, message.caption)
+                        if text:
+                            if isinstance(text, str):
+                                text = utils.bot_markdown_to_html(text)
+                                # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
+                                bot_reply(message, text, parse_mode='HTML',
+                                                    reply_markup=get_keyboard('translate', message),
+                                                    disable_web_page_preview=True)
+                            elif isinstance(text, bytes):
+                                m = send_photo(
+                                    message,
+                                    message.chat.id,
+                                    text,
+                                    reply_to_message_id=message.message_id,
+                                    reply_markup=get_keyboard('hide', message)
+                                )
+                                log_message(m)
+                                return
+                        else:
+                            bot_reply_tr(message, 'Sorry, I could not answer your question.')
+                    return
+        except Exception as error:
+            traceback_error = traceback.format_exc()
+            my_log.log2(f'tb:handle_photo6: {error}\n{traceback_error}')
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:handle_photo7: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(func=authorized)

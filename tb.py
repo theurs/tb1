@@ -8891,7 +8891,7 @@ def handle_photo_and_text(message: telebot.types.Message):
                 if not MSG.photo:
                     text = my_log.restore_message_text(MSG.text or '', MSG.entities or [])
                     if text.strip():
-                        combined_caption += text.strip() + '\n\n'
+                        combined_caption = text.strip() + '\n\n' + combined_caption
                     MESSAGES.remove(MSG)
 
             # в первое сообщение кладем общую подпись

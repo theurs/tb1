@@ -911,7 +911,9 @@ def img2txt(text,
             my_log.log2(f'tb:img2txt1: {img_from_link_error}\n\n{traceback_error}')
 
         if text:
-            add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
+            # если режим не джемини или ответил не джемини значит надо добавить в память ответ вручную
+            if 'gemini' not in chat_mode or 'gemini' not in WHO_ANSWERED[chat_id_full]:
+                add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
 
         if chat_id_full in WHO_ANSWERED:
             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'

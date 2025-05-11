@@ -9577,10 +9577,10 @@ def do_task(message, custom_prompt: str = ''):
 
                     if answer.startswith('```'):
                         answer = answer[3:]
-                    if answer.startswith(('/img ', '/bing', '/flux', '/gem', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc', '/ask')):
+                    if answer.startswith(('/img ', '/image ', '/bing ', '/flux ', '/gem ', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc ', '/ask ')):
                         cmd = answer.split(maxsplit=1)[0]
                         message.text = answer
-                        if cmd == '/img':
+                        if cmd == '/img' or cmd == '/image':
                             image_gen(message)
                         elif cmd == '/bing':
                             image_bing_gen(message)

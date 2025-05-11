@@ -8883,7 +8883,10 @@ def handle_photo_and_text(message: telebot.types.Message):
         bot_name2 = f'@{_bot_name}'
         bot_name_was_used = False
         # убираем из запроса имя бота в телеграме
-        if MSG.text.lower().startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
+        msglower = MSG.text.lower() if MSG.text else ''
+        if not msglower:
+            msglower = MSG.caption.lower() if MSG.caption else ''
+        if msglower.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
             bot_name_was_used = True
             message.caption = message.caption[len(f'{bot_name2} '):].strip()
         if supch == 1 or is_reply or bot_name_was_used:

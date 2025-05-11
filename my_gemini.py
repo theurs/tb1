@@ -109,17 +109,6 @@ def get_next_key():
     return ROUND_ROBIN_KEYS.pop(0)
 
 
-class ContentMessage: # Represents elements of the 'mem' list
-    """Mocks the top-level message in the 'mem' list (e.g., a Content object)."""
-    def __init__(self, parts: list[protos.Part], role: str):
-        self.parts = parts
-        self.role = role
-
-    def __repr__(self):
-        part_reprs = ", ".join(repr(p) for p in self.parts)
-        return f"ContentMessage(role='{self.role}', parts=[{part_reprs}])"
-
-
 def _has_actual_inline_data(part_obj: protos.Part) -> bool:
     return (hasattr(part_obj, 'inline_data') and
             part_obj.inline_data and
@@ -127,7 +116,7 @@ def _has_actual_inline_data(part_obj: protos.Part) -> bool:
             part_obj.inline_data.data)
 
 
-def remove_inline_data_parts_except_last_single_pass(mem: list[ContentMessage]):
+def remove_inline_data_parts_except_last_single_pass(mem):
     '''
     Модифицирует mem "на месте" за один проход с конца.
     Удаляет из каждого ContentMessage в mem все parts с inline_data,

@@ -8874,11 +8874,26 @@ def handle_photo_and_text(message: telebot.types.Message):
         is_image = False
         combined_caption = ''
 
+
+        # если не обращено к боту то нафиг
+        MSG = MESSAGES[0]
+        is_private = MSG.chat.type == 'private'
+        supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+        is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
+        bot_name2 = f'@{_bot_name}'
+        bot_name_was_used = False
+        # убираем из запроса имя бота в телеграме
+        if MSG.text.lower().startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
+            bot_name_was_used = True
+            message.caption = message.caption[len(f'{bot_name2} '):].strip()
+        if supch == 1 or is_reply or bot_name_was_used:
+            is_private = True
+        if not is_private:
+            return
+
+
         # проходим по всем сообщениям и если есть картинки то зачищаем их подписи
         for MSG in MESSAGES:
-            is_private = MSG.chat.type == 'private'
-            if not is_private:
-                return
             if MSG.photo:
                 is_image = True
                 combined_caption += my_log.restore_message_text(MSG.caption or '', MSG.caption_entities or []) + '\n\n'

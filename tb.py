@@ -8883,6 +8883,7 @@ def handle_photo_and_text(message: telebot.types.Message):
         supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
         is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
         bot_name2 = f'@{_bot_name}'
+        bot_name1 = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
         bot_name_was_used = False
         # убираем из запроса имя бота в телеграме
         msglower = MSG.text.lower() if MSG.text else ''
@@ -8890,7 +8891,16 @@ def handle_photo_and_text(message: telebot.types.Message):
             msglower = MSG.caption.lower() if MSG.caption else ''
         if msglower.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
             bot_name_was_used = True
-            message.caption = message.caption[len(f'{bot_name2} '):].strip()
+            # if MSG.caption:
+            #     MSG.caption = MSG.caption[len(f'{bot_name2} '):].strip()
+            # if MSG.text:
+            #     MSG.text = MSG.text[len(f'{bot_name2} '):].strip()
+        if not bot_name_was_used and msglower.startswith((f'{bot_name1} ', f'{bot_name1},', f'{bot_name1}\n')):
+            bot_name_was_used = True
+            # if MSG.caption:
+            #     MSG.caption = MSG.caption[len(f'{bot_name1} '):].strip()
+            # if MSG.text:
+            #     MSG.text = MSG.text[len(f'{bot_name1} '):].strip()
         if supch == 1 or is_reply or bot_name_was_used:
             is_private = True
         if not is_private:

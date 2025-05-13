@@ -33,9 +33,7 @@ def search_v3(query: str,
         # пробуем спросить в tavily
         if lang:
             q = f'Отвечай на языке *{lang}*\n\n{query}'
-        response = my_tavily.search(q, max_results=5)
-        if chat_id:
-            my_db.add_msg(chat_id, 'tavily')
+        response = my_tavily.search(q, max_results=5, user_id=chat_id)
 
         if response:
             if download_only:
@@ -72,7 +70,7 @@ def search_v3(query: str,
     # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
 
     # но сначала пробуем сервис тавили
-    text = my_tavily.search_text(query)
+    text = my_tavily.search_text(query, user_id = chat_id)
 
     if not text:
         try:

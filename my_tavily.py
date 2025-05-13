@@ -40,6 +40,7 @@ def search(
     max_results: int = 10,
     search_depth: str = 'basic',
     fast: bool = False,
+    user_id: str = '',
     ) -> dict:
     '''
     Делает максимальный запрос в Tavily
@@ -69,6 +70,8 @@ def search(
             )
             if 'answer' in response:
                 response['answer'] = fix_text(response['answer'])
+                if user_id:
+                    my_db.add_msg(user_id, 'tavily')
                 return response['answer']
         else:
             response = client.search(
@@ -122,6 +125,9 @@ def search(
                 if key in result and isinstance(result[key], str):
                     result[key] = fix_text(result[key])
 
+        if user_id:
+            my_db.add_msg(user_id, 'tavily')
+
         return response
     except Exception as error:
         traceback_error = traceback.format_exc()
@@ -130,12 +136,13 @@ def search(
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=1*60)
-def search_images(query: str) -> list:
+def search_images(query: str, user_id: str = '') -> list:
     '''
     Retrieves a list of images from the Tavily search engine based on the given query.
 
     Args:
         query (str): The search query.
+        user_id (str, optional): The user ID.
 
     Returns:
         list: A list of image as [(downloaded bytes, title),...]
@@ -146,7 +153,7 @@ def search_images(query: str) -> list:
             title = image[1]
             return (data, title)
 
-        response = search(query)
+        response = search(query, user_id=user_id)
 
         if 'images' in response:
             images_with_data = [(x['url'], x['description']) for x in response['images']]
@@ -163,15 +170,16 @@ def search_images(query: str) -> list:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=1*60)
-def search_text(query: str) -> str:
+def search_text(query: str, user_id: str = '') -> str:
     '''
     Делает максимальный запрос в Tavily
 
     query - поисковый запрос
+    user_id - id пользователя
 
     Возвращает ответ raw (джейсон в виде строки)
     '''
-    response = search(query)
+    response = search(query, user_id = user_id)
     if response:
         return str(response)
     else:
@@ -193,10 +201,7 @@ def search_text_fast(query: str, lang: str = '', user_id: str = '') -> str:
         query = f'Отвечай на языке *{lang}*\n\n{query}'
     if len(query) > 400:
         return ''
-    response = search(query, max_results=5, search_depth='basic', fast = True)
-
-    if user_id:
-        my_db.add_msg(user_id, 'tavily')
+    response = search(query, max_results=5, search_depth='basic', fast = True, user_id = user_id)
 
     if response:
         return response

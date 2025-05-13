@@ -2492,7 +2492,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                         query = SEARCH_PICS[hash_]
                         images = []
                         if hasattr(cfg, 'TAVILY_KEYS') and len(cfg.TAVILY_KEYS) > 0:
-                            images = my_tavily.search_images(query)
+                            images = my_tavily.search_images(query, user_id=chat_id_full)
                         if not images:
                             images = my_ddg.get_images(query)
 

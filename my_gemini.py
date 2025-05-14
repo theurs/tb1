@@ -99,6 +99,7 @@ def get_next_key():
     
     if not ROUND_ROBIN_KEYS:
         keys = cfg.gemini_keys[:] + ALL_KEYS[:]
+        random.shuffle(keys)
         badkeys = ['b3470eb3b2055346b76f2ce3b11aadf2f6fdccf5703ad853b4a5b0cf46f1cf16',]
         for key in keys[:]:
             if utils.fast_hash(key) in badkeys:

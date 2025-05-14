@@ -389,6 +389,7 @@ def chat(query: str,
 
                 elif '429 You exceeded your current quota, please check your plan and billing details.' in str(error):
                     my_log.log_gemini(f'my_gemini:chat2:2:4: 429 You exceeded your current quota, please check your plan and billing details.\n{model}\n\n{key}')
+                    # это надо будет удалить, потому что в логе отображается что ответила крупная модель а на самом деле маленькая
                     if model in ('gemini-2.5-pro-exp-03-25', 'gemini-2.0-pro-exp-02-05'):
                         return chat(
                             query,

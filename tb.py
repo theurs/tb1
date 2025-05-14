@@ -2606,6 +2606,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_gemma3_27b':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemma3_27b')
         elif call.data == 'select_gemini_pro':
+            if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full]:
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
+            else:
+                bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать PRO модель. Команда /keys')
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
         elif call.data == 'select_openrouter':
             if chat_id_full in my_openrouter.KEYS:

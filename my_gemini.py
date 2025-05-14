@@ -389,6 +389,25 @@ def chat(query: str,
 
                 elif '429 You exceeded your current quota, please check your plan and billing details.' in str(error):
                     my_log.log_gemini(f'my_gemini:chat2:2:4: 429 You exceeded your current quota, please check your plan and billing details.\n{model}\n\n{key}')
+                    if model in ('gemini-2.5-pro-exp-03-25', 'gemini-2.0-pro-exp-02-05'):
+                        return chat(
+                            query,
+                            chat_id, 
+                            temperature=temperature, 
+                            model = 'gemini-2.5-flash-preview-04-17-thinking', 
+                            system=system, 
+                            max_tokens=max_tokens, 
+                            insert_mem=mem, 
+                            key__=key__, 
+                            use_skills=use_skills, 
+                            json_output=json_output, 
+                            do_not_update_history=do_not_update_history,
+                            max_chat_lines=max_chat_lines,
+                            max_chat_mem_chars=max_chat_mem_chars,
+                            timeout=timeout,
+                            do_not_use_users_memory=do_not_use_users_memory
+                        )
+
                 else:
                     if 'Deadline Exceeded' not in str(error) and 'stop after timeout' not in str(error) \
                     and '503 failed to connect to all addresses; last error: UNAVAILABLE' not in str(error):

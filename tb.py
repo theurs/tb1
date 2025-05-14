@@ -2606,7 +2606,10 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_gemma3_27b':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemma3_27b')
         elif call.data == 'select_gemini_pro':
-            if chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full]:
+            SECONDS_IN_MONTH = 60 * 60 * 24 * 30
+            last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
+            donater = time.time() - last_donate_time < SECONDS_IN_MONTH
+            if (chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full]) or donater:
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
             else:
                 bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать PRO модель. Команда /keys')

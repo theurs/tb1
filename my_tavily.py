@@ -53,6 +53,9 @@ def search(
     Возвращает ответ в виде словаря (или строку с ответом если быстрый режим)
     '''
     try:
+        if not user_id:
+            user_id = 'noname'
+
         key = get_next_key()
         query = query.strip()
         if not key or not query or len(query) < 2 or len(query) > 400:

@@ -503,33 +503,37 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         if not query or not resp:
             return
 
+        chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode') or ''
+
         # Updates the memory of the selected bot based on the chat mode.
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_gemini.update_mem(query, resp, chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
+        if 'gemini' in chat_mode or 'gemma' in chat_mode:
+            my_gemini.update_mem(query, resp, chat_id_full, model=chat_mode)
+        elif chat_mode in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
             my_groq.update_mem(query, resp, chat_id_full)
-        elif 'openrouter' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'openrouter' in chat_mode:
             my_openrouter.update_mem(query, resp, chat_id_full)
 
-        elif 'llama4_maverick' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'llama4_maverick' in chat_mode:
             my_openrouter_free.update_mem(query, resp, chat_id_full)
 
-        elif 'mistral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'mistral' in chat_mode:
             my_mistral.update_mem(query, resp, chat_id_full)
-        elif 'pixtral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'pixtral' in chat_mode:
             my_mistral.update_mem(query, resp, chat_id_full)
-        elif 'codestral' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'codestral' in chat_mode:
             my_mistral.update_mem(query, resp, chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
+        elif chat_mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.update_mem(query, resp, chat_id_full)
-        elif 'cohere' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'cohere' in chat_mode:
             my_cohere.update_mem(query, resp, chat_id_full)
-        elif 'glm4plus' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'glm4plus' in chat_mode:
             my_glm.update_mem(query, resp, chat_id_full)
-        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'o3_mini_ddg' in chat_mode:
             my_ddg.update_mem(query, resp, chat_id_full)
-        elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
+        elif 'gpt-4o-mini-ddg' in chat_mode:
             my_ddg.update_mem(query, resp, chat_id_full)
+        else:
+            raise Exception(f'Unknown chat mode: {chat_mode}')
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:add_to_bots_mem:{unexpected_error}\n\n{traceback_error}')
@@ -614,8 +618,8 @@ def img2img(text,
             chat_id_full: str,
             query: str = '',
             model: str = '',
-            temperature: float = None,
-            system_message: str = None,
+            temperature: float = 0,
+            system_message: str = '',
             timeout: int = 120,
             ) -> Optional[bytes]:
     """
@@ -654,8 +658,8 @@ def img2txt(text,
             chat_id_full: str,
             query: str = '',
             model: str = '',
-            temperature: float = None,
-            system_message: str = None,
+            temperature: float = 0,
+            system_message: str = '',
             timeout: int = 120,
             ) -> str:
     """
@@ -1750,7 +1754,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
         elif kbd.startswith('pay_stars_'):
             amount = int(kbd.split('_')[-1])
             keyboard = telebot.types.InlineKeyboardMarkup()
-            button1 = telebot.types.InlineKeyboardButton(text=tr(f"Donate stars amount:", lang) + ' ' + str(amount), pay = True)
+            button1 = telebot.types.InlineKeyboardButton(text=tr("Donate stars amount:", lang) + ' ' + str(amount), pay = True)
             keyboard.add()
             return keyboard
         elif kbd == 'donate_stars':
@@ -2395,8 +2399,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             try:
                 bot.send_invoice(
                     call.message.chat.id,
-                    title=tr(f'Donate stars amount:', lang) + ' ' + str(amount),
-                    description = tr(f'Donate stars amount:', lang) + ' ' + str(amount),
+                    title=tr('Donate stars amount:', lang) + ' ' + str(amount),
+                    description = tr('Donate stars amount:', lang) + ' ' + str(amount),
                     invoice_payload="stars_donate_payload",
                     provider_token = "",  # Для XTR этот токен может быть пустым
                     currency = "XTR",

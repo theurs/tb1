@@ -8995,6 +8995,10 @@ def handle_photo(message: telebot.types.Message):
 
         message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
 
+        if message.caption.startswith(('/img ', '/image ', '/gem ', '/flux ', '/bing ')):
+            # заменить первое слово на !
+            message.caption = message.caption.replace('/img ', '!', 1).replace('/image ', '!', 1).replace('/gem ', '!', 1).replace('/flux ', '!', 1).replace('/bing ', '!', 1)
+
         try:
             is_private = message.chat.type == 'private'
             supch = my_db.get_user_property(chat_id_full, 'superchat') or 0

@@ -117,46 +117,118 @@ def _has_actual_inline_data(part_obj: protos.Part) -> bool:
             part_obj.inline_data.data)
 
 
-def remove_inline_data_parts_except_last_single_pass(mem):
+def remove_inline_data_parts_except_last_single_pass(mem, max_age_threshold: int = 10):
     '''
     Модифицирует mem "на месте" за один проход с конца.
     Удаляет из каждого ContentMessage в mem все parts с inline_data,
-    кроме самого последнего такого part во всем списке mem (первого встреченного при обратном проходе).
+    кроме самого последнего такого part во всем списке mem (первого встреченного при обратном проходе),
+    ЕСЛИ этот последний part не "слишком старый".
+    "Слишком старый" означает, что сообщение, содержащее этот part, находится на 8-й
+    позиции или дальше от конца списка mem.
     Если ContentMessage после удаления parts становится пустым, оно удаляется из mem.
     '''
     if not mem:
         return
 
-    last_image_part_found_and_kept = False # Флаг: нашли ли мы уже "последнюю" картинку
+    # Флаг: обработали ли мы уже позицию "последней" картинки.
+    # True, если мы либо нашли и оставили последнюю картинку (потому что она не старая),
+    # либо нашли последнюю картинку, но удалили ее (потому что она старая).
+    # В любом случае, все предыдущие (более старые) картинки после этого будут удаляться.
+    last_image_position_processed = False
 
-    # Итерируем по списку mem С КОНЦА, чтобы удаление элементов из mem было безопасным
+    # Итерируем по списку mem С КОНЦА
     for msg_idx in range(len(mem) - 1, -1, -1):
         current_message = mem[msg_idx]
 
+        # Проверяем, есть ли у сообщения атрибут 'parts' и не пустой ли он
         if not (hasattr(current_message, 'parts') and current_message.parts):
-            # Если у сообщения нет parts или они изначально пусты,
-            # и если такие "пустые" сообщения надо удалять, то:
-            if not (hasattr(current_message, 'parts') and current_message.parts):
-                 del mem[msg_idx] # Удаляем, если оно "пустое" по определению
-            continue # Переходим к следующему сообщению в mem
+            # Если parts нет или они пусты изначально, и такие сообщения нужно удалять
+            # (подразумевается, что сообщение без parts - "пустое")
+            # Однако, если сообщение не имеет 'parts', но имеет другие важные данные,
+            # возможно, его не следует удалять. В данном коде, если нет 'parts',
+            # оно не будет удалено здесь, а только если станет пустым ПОСЛЕ обработки parts.
+            # Если current_message.parts это None или [], то внутренний цикл не выполнится.
+            # Удаление пустого сообщения произойдет ниже, после цикла по parts.
+            pass # Продолжаем, чтобы проверить на удаление пустого сообщения ниже
 
-        # Итерируем по списку parts текущего сообщения С КОНЦА,
-        # чтобы удаление элементов из parts было безопасным
-        for part_idx in range(len(current_message.parts) - 1, -1, -1):
-            part_to_check = current_message.parts[part_idx]
+        parts_to_delete_indices = [] # Собираем индексы для удаления, чтобы не менять список во время итерации по нему
 
-            if _has_actual_inline_data(part_to_check):
-                if not last_image_part_found_and_kept:
-                    # Это первая картинка, встреченная при обратном проходе.
-                    # Она и есть "последняя" во всем mem. Оставляем ее.
-                    last_image_part_found_and_kept = True
-                else:
-                    # Эта картинка встречена ПОСЛЕ "последней". Удаляем ее.
-                    del current_message.parts[part_idx]
+        # Итерируем по списку parts текущего сообщения С КОНЦА
+        # (или можно собирать индексы и удалять потом, что безопаснее при сложной логике)
+        if hasattr(current_message, 'parts') and current_message.parts:
+            for part_idx in range(len(current_message.parts) - 1, -1, -1):
+                part_to_check = current_message.parts[part_idx]
+
+                if _has_actual_inline_data(part_to_check):
+                    if not last_image_position_processed:
+                        # Это первая картинка, встреченная при обратном проходе (т.е. последняя в mem).
+                        # Проверяем её "возраст".
+                        # msg_idx - это текущий индекс сообщения от НАЧАЛА списка.
+                        # Расстояние от конца = (индекс последнего сообщения) - (индекс текущего сообщения)
+                        distance_from_end = (len(mem) - 1) - msg_idx
+
+                        if distance_from_end < max_age_threshold:
+                            # Картинка достаточно "молодая", оставляем её.
+                            # И устанавливаем флаг, что последнюю картинку мы обработали (и оставили).
+                            last_image_position_processed = True
+                            # print(f"Kept image in msg {msg_idx} (dist {distance_from_end})")
+                        else:
+                            # Картинка - последняя, но "слишком старая". Удаляем её.
+                            # parts_to_delete_indices.append(part_idx) # Если собирать индексы
+                            del current_message.parts[part_idx]
+                            # Устанавливаем флаг, что последнюю картинку мы обработали (и удалили).
+                            last_image_position_processed = True
+                            # print(f"Deleted TOO OLD last image in msg {msg_idx} (dist {distance_from_end})")
+                    else:
+                        # Эта картинка встречена ПОСЛЕ обработки "последней" (т.е. она старше). Удаляем её.
+                        # parts_to_delete_indices.append(part_idx) # Если собирать индексы
+                        del current_message.parts[part_idx]
+                        # print(f"Deleted older image in msg {msg_idx}")
 
         # После обработки всех parts текущего сообщения, проверяем, не стал ли он пустым
-        if not current_message.parts: # Если список parts пуст
-            del mem[msg_idx] # Удаляем сообщение из списка mem "на месте"
+        # или если у него изначально не было атрибута parts или он был None/пуст
+        if not (hasattr(current_message, 'parts') and current_message.parts):
+            del mem[msg_idx]
+
+    # '''
+    # Модифицирует mem "на месте" за один проход с конца.
+    # Удаляет из каждого ContentMessage в mem все parts с inline_data,
+    # кроме самого последнего такого part во всем списке mem (первого встреченного при обратном проходе).
+    # Если ContentMessage после удаления parts становится пустым, оно удаляется из mem.
+    # '''
+    # if not mem:
+    #     return
+
+    # last_image_part_found_and_kept = False # Флаг: нашли ли мы уже "последнюю" картинку
+
+    # # Итерируем по списку mem С КОНЦА, чтобы удаление элементов из mem было безопасным
+    # for msg_idx in range(len(mem) - 1, -1, -1):
+    #     current_message = mem[msg_idx]
+
+    #     if not (hasattr(current_message, 'parts') and current_message.parts):
+    #         # Если у сообщения нет parts или они изначально пусты,
+    #         # и если такие "пустые" сообщения надо удалять, то:
+    #         if not (hasattr(current_message, 'parts') and current_message.parts):
+    #              del mem[msg_idx] # Удаляем, если оно "пустое" по определению
+    #         continue # Переходим к следующему сообщению в mem
+
+    #     # Итерируем по списку parts текущего сообщения С КОНЦА,
+    #     # чтобы удаление элементов из parts было безопасным
+    #     for part_idx in range(len(current_message.parts) - 1, -1, -1):
+    #         part_to_check = current_message.parts[part_idx]
+
+    #         if _has_actual_inline_data(part_to_check):
+    #             if not last_image_part_found_and_kept:
+    #                 # Это первая картинка, встреченная при обратном проходе.
+    #                 # Она и есть "последняя" во всем mem. Оставляем ее.
+    #                 last_image_part_found_and_kept = True
+    #             else:
+    #                 # Эта картинка встречена ПОСЛЕ "последней". Удаляем ее.
+    #                 del current_message.parts[part_idx]
+
+    #     # После обработки всех parts текущего сообщения, проверяем, не стал ли он пустым
+    #     if not current_message.parts: # Если список parts пуст
+    #         del mem[msg_idx] # Удаляем сообщение из списка mem "на месте"
 
 
 def chat(query: str,

@@ -1759,9 +1759,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             return keyboard
         elif kbd == 'donate_stars':
             keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
-            button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 100 stars", lang), callback_data = "buy_stars_100")
-            button2 = telebot.types.InlineKeyboardButton(text=tr("Donate 500 stars", lang), callback_data = "buy_stars_500")
-            button3 = telebot.types.InlineKeyboardButton(text=tr("Donate 1000 stars", lang), callback_data = "buy_stars_1000")
+            button1 = telebot.types.InlineKeyboardButton(text=tr("Donate 50 stars", lang), callback_data = "buy_stars_50")
+            button2 = telebot.types.InlineKeyboardButton(text=tr("Donate 100 stars", lang), callback_data = "buy_stars_100")
+            button3 = telebot.types.InlineKeyboardButton(text=tr("Donate 200 stars", lang), callback_data = "buy_stars_200")
             button4 = telebot.types.InlineKeyboardButton(text=tr("Donate custom amount of stars", lang), callback_data = "buy_stars_0")
             keyboard.add(button1, button2, button3, button4)
             return keyboard

@@ -8855,7 +8855,9 @@ def handle_photo_and_text(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
-        COMMAND_MODE[chat_id_full] = ''
+        # зачем тут сбрасывать? из за этого текстовый обработчик не получает команды
+        # COMMAND_MODE[chat_id_full] = ''
+
         # проверка на подписку
         if not check_donate(message, chat_id_full, lang):
             return

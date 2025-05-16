@@ -9507,6 +9507,10 @@ def do_task(message, custom_prompt: str = ''):
             return
 
 
+        # сбрасываем режим команды
+        COMMAND_MODE[chat_id_full] = ''
+
+
         # проверяем не начинается ли на вопросик и если да и в памяти есть файл то перенаправляем в команду /ask
         if msg.startswith('?') and my_db.get_user_property(chat_id_full, 'saved_file_name'):
             message.text = '/ask ' + message.text[1:]

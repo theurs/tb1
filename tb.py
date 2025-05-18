@@ -700,6 +700,8 @@ def img2txt(text,
                 tr(my_init.PROMPT_REPROMPT, lang),
                 tr(my_init.PROMPT_SOLVE, lang),
                 tr(my_init.PROMPT_QRCODE, lang),
+                'Правильный ответ',
+                'правильный ответ',
             )
 
             if not any([q in query for q in default_prompts]):

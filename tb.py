@@ -2121,12 +2121,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                     button = telebot.types.InlineKeyboardButton(button_text, callback_data=callback_data_value)
                     current_row_buttons.append(button)
 
-                    # Если в текущей строке 4 кнопки, добавляем их в разметку и очищаем список для следующей строки
-                    if len(current_row_buttons) == 4:
+                    # Если в текущей строке 3 кнопки, добавляем их в разметку и очищаем список для следующей строки
+                    if len(current_row_buttons) == 3:
                         markup.row(*current_row_buttons) # * распаковывает список в отдельные аргументы
                         current_row_buttons = []
 
-                # Добавляем оставшиеся кнопки, если их количество не кратно 4
+                # Добавляем оставшиеся кнопки, если их количество не кратно 3
                 if current_row_buttons:
                     markup.row(*current_row_buttons)
 

@@ -14,11 +14,11 @@ import my_log
 
 # --- Список известных голосов (может меняться, проверяйте документацию Gemini) ---
 POSSIBLE_VOICES = [
-    "Zephyr", "Puck", "Charon", "Kore", "Fenrir", "Leda", "Orus", "Aoede",
-    "Callirrhoe", "Autonoe", "Enceladus", "Iapetus", "Umbriel", "Algieba",
-    "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia", "Achernar",
-    "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird", "Zubenelgenubi",
-    "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafar"
+    'Achernar', 'Achird', 'Algenib', 'Algieba', 'Alnilam', 'Aoede', 'Autonoe',
+    'Callirrhoe', 'Charon', 'Despina', 'Enceladus', 'Erinome', 'Fenrir',
+    'Gacrux', 'Iapetus', 'Kore', 'Laomedeia', 'Leda', 'Orus', 'Puck',
+    'Pulcherrima', 'Rasalgethi', 'Sadachbia', 'Sadaltager', 'Schedar',
+    'Sulafar', 'Umbriel', 'Vindemiatrix', 'Zephyr', 'Zubenelgenubi',
 ]
 
 # --- Список известных моделей TTS (может меняться, проверяйте документацию Gemini) ---

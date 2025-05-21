@@ -55,7 +55,7 @@ SAFETY_SETTINGS = [
 ]
 
 
-MODEL_ID = "gemini-2.0-flash-exp"
+MODEL_ID = 'gemini-2.5-flash-preview-05-20' # "gemini-2.0-flash-exp"
 MODEL_ID_FALLBACK = "gemini-1.5-flash"
 
 

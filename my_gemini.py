@@ -496,8 +496,6 @@ def chat(query: str,
                 key_i += 1
                 continue
 
-            if not resp.text:
-                my_log.log_gemini(f'my_gemini:chat2:2:7: no any resp.text: {resp}')
             result = resp.text
 
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
@@ -534,6 +532,8 @@ def chat(query: str,
         return ''
     except Exception as error:
         traceback_error = traceback.format_exc()
+        if 'Invalid operation: The `response.text` quick accessor requires the response to contain a valid `Part`, but none were returned.' in str(error):
+            my_log.log_gemini(f'my_gemini:chat2:2:7: no any resp.text: {resp}')
         my_log.log_gemini(f'my_gemini:chat6: {error}\n\n{traceback_error}\n{model}')
         return ''
 

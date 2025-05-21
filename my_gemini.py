@@ -340,7 +340,9 @@ def chat(query: str,
                     max_output_tokens = max_tokens,
                 )
 
+            # перестали работать? принудительно отключено иначе Stop reason: OTHER
             use_skills = False
+
             calc_tool = my_skills.calc
 
             if use_skills and '-8b' not in model and 'gemma-3' not in model:
@@ -354,7 +356,7 @@ def chat(query: str,
                     my_skills.get_time_in_timezone,
                     my_skills.get_weather,
                     my_skills.get_currency_rates,
-                    ]
+                ]
 
                 model_ = genai.GenerativeModel(
                     model,
@@ -614,7 +616,7 @@ def chat_cli(user_id: str = 'test', model: str = ''):
             img = PIL.Image.open(open(q, 'rb'))
             q = ['опиши картинку', img]
         # r = chat(q, user_id, model=model, use_skills=True)
-        r = chat(q, user_id, model=model)
+        r = chat(q, user_id, model=model, use_skills=True)
         print(r)
 
 

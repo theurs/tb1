@@ -42,6 +42,7 @@ import my_doc_translate
 import my_github
 import my_google
 import my_gemini
+import my_gemini_tts
 import my_gemini_genimg
 import my_gemini_google
 import my_groq
@@ -1890,6 +1891,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             else:
                 voice = 'tts_female'
 
+            sorted_possible_voices = my_gemini_tts.POSSIBLE_VOICES
+            # Создаем словарь для голосов Gemini динамически
+            gemini_voices_dict = {f"tts_gemini_{voice}": "Gemini" for voice in sorted_possible_voices}
             voices = {
                 'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
                 'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
@@ -1907,14 +1911,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 'tts_openai_shimmer': 'OpenAI',
                 'tts_openai_verse': 'OpenAI',
 
-                'tts_gemini_Puck': 'Gemini',
-                'tts_gemini_Charon': 'Gemini',
-                'tts_gemini_Kore': 'Gemini',
-                'tts_gemini_Fenrir': 'Gemini',
-                'tts_gemini_Aoede': 'Gemini',
-                'tts_gemini_Leda': 'Gemini',
-                'tts_gemini_Orus': 'Gemini',
-                'tts_gemini_Zephyr': 'Gemini',
+                **gemini_voices_dict
             }
 
             if voice in voices:
@@ -2106,42 +2103,32 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 markup.row(button5, button6, button7, button8)
                 markup.row(button9, button10, button11)
 
-            if voice_title == 'Gemini':
-                if 'Puck' in voice:
-                    button1 = telebot.types.InlineKeyboardButton('📢 Puck', callback_data='switch_do_nothing')
-                else:
-                    button1 = telebot.types.InlineKeyboardButton('Puck', callback_data='switch_gemini_Puck')
-                if 'Charon' in voice:
-                    button2 = telebot.types.InlineKeyboardButton('📢 Charon', callback_data='switch_do_nothing')
-                else:
-                    button2 = telebot.types.InlineKeyboardButton('Charon', callback_data='switch_gemini_Charon')
-                if 'Kore' in voice:
-                    button3 = telebot.types.InlineKeyboardButton('📢 Kore', callback_data='switch_do_nothing')
-                else:
-                    button3 = telebot.types.InlineKeyboardButton('Kore', callback_data='switch_gemini_Kore')
-                if 'Fenrir' in voice:
-                    button4 = telebot.types.InlineKeyboardButton('📢 Fenrir', callback_data='switch_do_nothing')
-                else:
-                    button4 = telebot.types.InlineKeyboardButton('Fenrir', callback_data='switch_gemini_Fenrir')
-                if 'Aoede' in voice:
-                    button5 = telebot.types.InlineKeyboardButton('📢 Aoede', callback_data='switch_do_nothing')
-                else:
-                    button5 = telebot.types.InlineKeyboardButton('Aoede', callback_data='switch_gemini_Aoede')
-                if 'Leda' in voice:
-                    button6 = telebot.types.InlineKeyboardButton('📢 Leda', callback_data='switch_do_nothing')
-                else:
-                    button6 = telebot.types.InlineKeyboardButton('Leda', callback_data='switch_gemini_Leda')
-                if 'Orus' in voice:
-                    button7 = telebot.types.InlineKeyboardButton('📢 Orus', callback_data='switch_do_nothing')
-                else:
-                    button7 = telebot.types.InlineKeyboardButton('Orus', callback_data='switch_gemini_Orus')
-                if 'Zephyr' in voice:
-                    button8 = telebot.types.InlineKeyboardButton('📢 Zephyr', callback_data='switch_do_nothing')
-                else:
-                    button8 = telebot.types.InlineKeyboardButton('Zephyr', callback_data='switch_gemini_Zephyr')
 
-                markup.row(button1, button2, button3, button4)
-                markup.row(button5, button6, button7, button8)
+            if voice_title == 'Gemini':
+                # Список для хранения кнопок текущей строки
+                current_row_buttons = []
+
+                for voice_name in sorted_possible_voices:
+                    # Определяем текст кнопки: '📢 VoiceName' если выбран, иначе 'VoiceName'
+                    # Условие 'voice_name in voice' работает, если 'voice' - это 'tts_gemini_VoiceName'
+                    if voice_name in voice:
+                        button_text = f'📢 {voice_name}'
+                        callback_data_value = 'switch_do_nothing' # Ничего не делать, если уже выбран
+                    else:
+                        button_text = voice_name
+                        callback_data_value = f'switch_gemini_{voice_name}' # Переключиться на этот голос
+
+                    button = telebot.types.InlineKeyboardButton(button_text, callback_data=callback_data_value)
+                    current_row_buttons.append(button)
+
+                    # Если в текущей строке 4 кнопки, добавляем их в разметку и очищаем список для следующей строки
+                    if len(current_row_buttons) == 4:
+                        markup.row(*current_row_buttons) # * распаковывает список в отдельные аргументы
+                        current_row_buttons = []
+
+                # Добавляем оставшиеся кнопки, если их количество не кратно 4
+                if current_row_buttons:
+                    markup.row(*current_row_buttons)
 
 
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
@@ -5507,9 +5494,12 @@ def google(message: telebot.types.Message):
                     chat_id=chat_id_full,
                     role=role
                 )
-                if not r.strip():
+                if r:
+                    r = r.strip()
+                if not r:
                     bot_reply_tr(message, 'Search failed.')
                     return
+
                 my_db.set_user_property(chat_id_full, 'saved_file_name', 'google: ' + q + '.txt')
                 my_db.set_user_property(chat_id_full, 'saved_file', text)
 

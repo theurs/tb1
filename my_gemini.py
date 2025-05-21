@@ -533,7 +533,7 @@ def chat(query: str,
     except Exception as error:
         traceback_error = traceback.format_exc()
         if 'Invalid operation: The `response.text` quick accessor requires the response to contain a valid `Part`, but none were returned.' in str(error):
-            my_log.log_gemini(f'my_gemini:chat2:2:7: no any resp.text: {resp}')
+            my_log.log_gemini(f'my_gemini:chat2:2:7: no any resp.text: {resp}\n\nQuery:{query}\n\nSystem:{system}')
         my_log.log_gemini(f'my_gemini:chat6: {error}\n\n{traceback_error}\n{model}')
         return ''
 

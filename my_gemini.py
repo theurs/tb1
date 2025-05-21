@@ -70,7 +70,7 @@ CHATS = {}
 MAX_CHAT_LINES = 30 # 20
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
     MAX_CHAT_LINES = cfg.GEMINI_MAX_CHAT_LINES
-# MAX_CHAT_MEM_CHARS = 20000*3 # 20000 токенов по 3 символа на токен. +8192 токенов на ответ остается 4000 токенов на системный промпт и прочее
+# MAX_CHAT_MEM_CHARS = 20000*3 # 20000 токенов по 3 символа на токен. +8000 токенов на ответ остается 4000 токенов на системный промпт и прочее
 MAX_CHAT_MEM_CHARS = 60000 # 40000
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 40000 # 20000
@@ -236,7 +236,7 @@ def chat(query: str,
          temperature: float = 1,
          model: str = '',
          system: str = '',
-         max_tokens: int = 8192,
+         max_tokens: int = 8000,
          insert_mem = None,
          key__: str = '',
          use_skills: bool = False,
@@ -276,7 +276,6 @@ def chat(query: str,
     Raises:
         None: The function catches and logs exceptions internally, returning an empty string on failure.
     """
-    resp = ''
     try:
         query = query[:MAX_SUM_REQUEST]
         if temperature < 0:
@@ -285,8 +284,8 @@ def chat(query: str,
             temperature = 2
         if max_tokens < 10:
             max_tokens = 10
-        if max_tokens > 8192:
-            max_tokens = 8192
+        if max_tokens > 8000:
+            max_tokens = 8000
 
         if 'gemma-3' in model:
             if temperature:
@@ -341,7 +340,7 @@ def chat(query: str,
                     max_output_tokens = max_tokens,
                 )
 
-            # use_skills = False
+            use_skills = False
             calc_tool = my_skills.calc
 
             if use_skills and '-8b' not in model and 'gemma-3' not in model:
@@ -534,7 +533,7 @@ def chat(query: str,
     except Exception as error:
         traceback_error = traceback.format_exc()
         if 'Invalid operation: The `response.text` quick accessor requires the response to contain a valid `Part`, but none were returned.' in str(error):
-            my_log.log_gemini(f'my_gemini:chat2:2:7: no any resp.text: {resp}\n\nQuery:{query}\n\nSystem:{system}\n\nMax tokens: {max_tokens}')
+            my_log.log_gemini(f'my_gemini:chat2:2:7: no any resp.text: {resp}\n\nQuery:{query}\n\nSystem:{system}')
         my_log.log_gemini(f'my_gemini:chat6: {error}\n\n{traceback_error}\n{model}')
         return ''
 
@@ -592,7 +591,7 @@ def ai(q: str,
        mem = None,
        temperature: float = 1,
        model: str = '',
-       tokens_limit: int = 8192,
+       tokens_limit: int = 8000,
        chat_id: str = '',
        system: str = '') -> str:
     return chat(q,
@@ -1027,7 +1026,7 @@ def retranscribe(text: str, prompt: str = '') -> str:
         query = f'{prompt}:\n\n{text}'
     else:
         query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
-    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED)
+    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 
 
@@ -1081,7 +1080,7 @@ def rebuild_subtitles(text: str, lang: str) -> str:
         return result
 
     query = f'Fix errors, make an easy to read text out of the subtitles, make a fine paragraphs and sentences, output language = [{lang}]:\n\n{text}'
-    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED)
+    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 
 
@@ -1387,7 +1386,7 @@ if __name__ == '__main__':
 
     # print(list_models(True))
     # chat_cli(model = 'gemini-2.0-flash')
-    # chat_cli(model = 'gemini-2.5-flash-preview-04-17')
+    chat_cli(model = 'gemini-2.5-flash-preview-04-17')
     # chat_cli()
 
     # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:

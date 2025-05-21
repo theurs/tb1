@@ -561,9 +561,8 @@ def get_intention(query, chat_id_full) -> str:
 
 Теперь проанализируй следующий запрос пользователя:
 
-<user_query>
+
 {query}
-</user_query
 '''
 
     r = my_gemini.chat(
@@ -572,7 +571,7 @@ def get_intention(query, chat_id_full) -> str:
         temperature=0.1,
         # model=cfg.gemini_flash_light_model,
         model = cfg.gemini25_flash_model,
-        # max_tokens=10,
+        max_tokens=10,
         use_skills=False,
         do_not_update_history=True,
         timeout=20
@@ -584,14 +583,11 @@ def get_intention(query, chat_id_full) -> str:
             chat_id = chat_id_full,
             temperature=0.1,
             model=my_groq.DEFAULT_MODEL,
-            # max_tokens=10,
+            max_tokens=10,
             update_memory=True,
             timeout=20
         )
 
-    if r and len(r) > 20:
-        my_log.log_gemini('tb:get_intention: ' + r)
-        r = r[:20]
     if r and ('edit_image' in r.lower()):
         return 'edit_image'
     if r and ('ask_image' in r.lower()):

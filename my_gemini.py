@@ -70,7 +70,7 @@ CHATS = {}
 MAX_CHAT_LINES = 30 # 20
 if hasattr(cfg, 'GEMINI_MAX_CHAT_LINES'):
     MAX_CHAT_LINES = cfg.GEMINI_MAX_CHAT_LINES
-# MAX_CHAT_MEM_CHARS = 20000*3 # 20000 токенов по 3 символа на токен. +8000 токенов на ответ остается 4000 токенов на системный промпт и прочее
+# MAX_CHAT_MEM_CHARS = 20000*3 # 20000 токенов по 3 символа на токен. +8192 токенов на ответ остается 4000 токенов на системный промпт и прочее
 MAX_CHAT_MEM_CHARS = 60000 # 40000
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 40000 # 20000
@@ -236,7 +236,7 @@ def chat(query: str,
          temperature: float = 1,
          model: str = '',
          system: str = '',
-         max_tokens: int = 8000,
+         max_tokens: int = 8192,
          insert_mem = None,
          key__: str = '',
          use_skills: bool = False,
@@ -284,8 +284,8 @@ def chat(query: str,
             temperature = 2
         if max_tokens < 10:
             max_tokens = 10
-        if max_tokens > 8000:
-            max_tokens = 8000
+        if max_tokens > 8192:
+            max_tokens = 8192
 
         if 'gemma-3' in model:
             if temperature:
@@ -591,7 +591,7 @@ def ai(q: str,
        mem = None,
        temperature: float = 1,
        model: str = '',
-       tokens_limit: int = 8000,
+       tokens_limit: int = 8192,
        chat_id: str = '',
        system: str = '') -> str:
     return chat(q,
@@ -1026,7 +1026,7 @@ def retranscribe(text: str, prompt: str = '') -> str:
         query = f'{prompt}:\n\n{text}'
     else:
         query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
-    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
+    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED)
     return result
 
 
@@ -1080,7 +1080,7 @@ def rebuild_subtitles(text: str, lang: str) -> str:
         return result
 
     query = f'Fix errors, make an easy to read text out of the subtitles, make a fine paragraphs and sentences, output language = [{lang}]:\n\n{text}'
-    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
+    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED)
     return result
 
 

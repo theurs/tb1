@@ -561,8 +561,9 @@ def get_intention(query, chat_id_full) -> str:
 
 Теперь проанализируй следующий запрос пользователя:
 
-
+<user_query>
 {query}
+</user_query
 '''
 
     r = my_gemini.chat(

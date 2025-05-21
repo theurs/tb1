@@ -588,6 +588,9 @@ def get_intention(query, chat_id_full) -> str:
             timeout=20
         )
 
+    if r and len(r) > 20:
+        r = r[:20]
+
     if r and ('edit_image' in r.lower()):
         return 'edit_image'
     if r and ('ask_image' in r.lower()):

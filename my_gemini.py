@@ -533,7 +533,7 @@ def chat(query: str,
     except Exception as error:
         traceback_error = traceback.format_exc()
         if 'Invalid operation: The `response.text` quick accessor requires the response to contain a valid `Part`, but none were returned.' in str(error):
-            my_log.log_gemini(f'my_gemini:chat2:2:7: no any resp.text: {resp}\n\nQuery:{query}\n\nSystem:{system}')
+            my_log.log_gemini(f'my_gemini:chat2:2:7: no any resp.text: {resp}\n\nQuery:{query}\n\nSystem:{system}\n\nMax tokens: {max_tokens}')
         my_log.log_gemini(f'my_gemini:chat6: {error}\n\n{traceback_error}\n{model}')
         return ''
 
@@ -1386,7 +1386,7 @@ if __name__ == '__main__':
 
     # print(list_models(True))
     # chat_cli(model = 'gemini-2.0-flash')
-    chat_cli(model = 'gemini-2.5-flash-preview-04-17')
+    chat_cli(model = 'gemini-2.5-flash-preview-05-20')
     # chat_cli()
 
     # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:

@@ -388,10 +388,12 @@ def chat(query: str,
             chat_ = model_.start_chat(history=mem, enable_automatic_function_calling=True)
 
             try:
-                resp = chat_.send_message(query,
-                                    safety_settings=SAFETY_SETTINGS,
-                                    request_options=request_options,
-                                    )
+                resp = chat_.send_message(
+                    query,
+                    safety_settings=SAFETY_SETTINGS,
+                    request_options=request_options,
+                    # tools = 'google_search_retrieval', # это надо будет убрать если заработают функции
+                )
             except Exception as error:
                 if 'tokens, which is more than the max tokens limit allowed' in str(error) or 'exceeds the maximum number of tokens allowed' in str(error):
                     # убрать 2 первых сообщения

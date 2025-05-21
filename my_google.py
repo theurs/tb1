@@ -27,7 +27,7 @@ def search_v3(query: str,
               role: str = ''):
 
     query = query.strip()
-
+    text = ''
 
     if not query.startswith('!'):
         # пробуем спросить в tavily
@@ -40,37 +40,39 @@ def search_v3(query: str,
                 response['answer'] = ''
                 return str(response)
             else:
-                return response['answer'], str(response)
+                # return response['answer'], str(response)
+                text = str(response)
 
 
-    if not query.startswith('!'):
-        # сначала пробуем спросить в гроке
-        response = my_groq.search(query, lang, system = role, user_id = chat_id)
-        if response:
-            if download_only:
-                return response
-            else:
-                return response, response
+    if not text:
+        if not query.startswith('!'):
+            # сначала пробуем спросить в гроке
+            response = my_groq.search(query, lang, system = role, user_id = chat_id)
+            if response:
+                if download_only:
+                    return response
+                else:
+                    return response, response
 
 
-    if not query.startswith('!'):
-        # сначала пробуем спросить в гугле
-        google_response = my_gemini_google.google_search(query, chat_id, role=role, lang=lang)
-        if google_response:
-            if download_only:
-                return google_response
-            else:
-                return google_response, google_response
+        if not query.startswith('!'):
+            # сначала пробуем спросить в гугле
+            google_response = my_gemini_google.google_search(query, chat_id, role=role, lang=lang)
+            if google_response:
+                if download_only:
+                    return google_response
+                else:
+                    return google_response, google_response
 
-    query = query.lstrip('!')
+        query = query.lstrip('!')
 
-    ## Если гугол не ответил или был маркер ! в запросе то ищем самостоятельно
-    # добавляем в список выдачу самого гугла, и она же первая и главная
-    urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
-    # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
+        ## Если гугол не ответил или был маркер ! в запросе то ищем самостоятельно
+        # добавляем в список выдачу самого гугла, и она же первая и главная
+        urls = [f'https://www.google.com/search?q={urllib.parse.quote(query)}',]
+        # добавляем еще несколько ссылок, возможно что внутри будут пустышки, джаваскрипт заглушки итп
 
-    # но сначала пробуем сервис тавили
-    text = my_tavily.search_text(query, user_id = chat_id)
+        # но сначала пробуем сервис тавили
+        text = my_tavily.search_text(query, user_id = chat_id)
 
     if not text:
         try:

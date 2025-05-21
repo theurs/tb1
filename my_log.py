@@ -120,7 +120,7 @@ def log_bing_api(text: str) -> None:
     log2(text, 'bing_api')
 
 
-def log_reprompts(text: str) -> None:
+def log_reprompt_moderations(text: str) -> None:
     """для логов переводов промптов для рисования"""
     log2(text, 'reprompts')
 
@@ -217,10 +217,6 @@ def log_nebius(text: str) -> None:
     """для логов nebius"""
     log2(text[:2000], 'nebius')
 
-def log_glm(text: str) -> None:
-    """для логов glm"""
-    log2(text[:2000], 'glm')
-
 def log_deepgram(text: str) -> None:
     """для логов deepgram"""
     log2(text[:2000], 'deepgram')
@@ -249,29 +245,15 @@ def log_bing_success(text: str) -> None:
     """для логов удачных комбинаций бинга, когда ему удалось нарисовать что-нибудь"""
     log2(text, 'bing_success')
 
-def log_fish_speech(text: str) -> None:
-    """для логов fish_speech"""
-    log2(text, 'fish_speech')
 
 def log_bing_img(text: str) -> None:
     """для дебага ошибок bing_img с помощью ai"""
     log2(text, 'bing_img')
 
-def log_huggin_face_api(text: str) -> None:
-    """для логов от hugging_face_api"""
-    a = [
-        'Model too busy, unable to get response in less than 60 second',
-        'Rate limit reached. You reached free usage limit',
-        'HTTPSConnectionPool(host=',
-        'An error happened while trying to locate the file on the Hub and we cannot find the requested files in the local cache.',
-        'Task not found for this model',
-        'CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.',
-        'Remote end closed connection without response',
-        'Max requests total reached on image generation inference (3). Wait up to one minute before being able to process more Diffusion requests.',
-    ]
-    if any([x for x in a if x in text]):
-        return
-    log2(text, 'hugging_face_api')
+
+def log_reprompt_moderation(text: str) -> None:
+    """для логов от reprompt moderation"""
+    log2(text, 'reprompt_moderation')
 
 
 def log_parser_error(text: str) -> None:

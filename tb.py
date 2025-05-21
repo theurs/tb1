@@ -44,13 +44,11 @@ import my_google
 import my_gemini
 import my_gemini_genimg
 import my_gemini_google
-import my_glm
 import my_groq
 import my_log
 import my_mistral
 import my_nebius
 import my_pdf
-import my_fish_speech
 import my_psd
 import my_openrouter
 import my_openrouter_free
@@ -107,10 +105,9 @@ pics_group = cfg.pics_group if hasattr(cfg, 'pics_group') else None
 
 
 
-# {id: 'img'|'bing'|'hf'|None}
+# {id: 'img'|'bing'|None}
 # когда юзер нажимает на кнопку /img то ожидается ввод промпта для рисования всеми способами
 # но когда юзер вводит команду /bing то ожидается ввод промпта для рисования толлько бинга
-# /hf - только huggingface
 IMG_MODE_FLAG = {}
 
 # {user_id: (fail counter, datetime)}
@@ -163,9 +160,6 @@ DDOS_BLOCKED_USERS = {}
 
 # кешировать запросы типа кто звонил {number:(result, full text searched)}
 CACHE_CHECK_PHONE = {}
-
-# {user_id: last_used_model,}
-HF_LAST_USED_MODEL = SqliteDict('db/hf_last_used_model.db', autocommit=True)
 
 # Глобальный массив для хранения состояния подписки (user_id: timestamp)
 subscription_cache = {}
@@ -220,8 +214,6 @@ NEW_KEYBOARD = SqliteDict('db/new_keyboard_installed.db', autocommit=True)
 # {user_id: message_group_id}
 FILE_GROUPS = {}
 
-# {id:bytes} uploaded voices
-UPLOADED_VOICES = SqliteDict('db/uploaded_voice.db', autocommit=True)
 
 # {user_id:(date, image),} keep up to UNCAPTIONED_IMAGES_MAX images
 UNCAPTIONED_IMAGES_MAX = 100
@@ -508,26 +500,16 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         # Updates the memory of the selected bot based on the chat mode.
         if 'gemini' in chat_mode or 'gemma' in chat_mode:
             my_gemini.update_mem(query, resp, chat_id_full, model=chat_mode)
-        elif chat_mode in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
-            my_groq.update_mem(query, resp, chat_id_full)
         elif 'openrouter' in chat_mode:
             my_openrouter.update_mem(query, resp, chat_id_full)
-
         elif 'llama4_maverick' in chat_mode:
             my_openrouter_free.update_mem(query, resp, chat_id_full)
-
         elif 'mistral' in chat_mode:
-            my_mistral.update_mem(query, resp, chat_id_full)
-        elif 'pixtral' in chat_mode:
-            my_mistral.update_mem(query, resp, chat_id_full)
-        elif 'codestral' in chat_mode:
             my_mistral.update_mem(query, resp, chat_id_full)
         elif chat_mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.update_mem(query, resp, chat_id_full)
         elif 'cohere' in chat_mode:
             my_cohere.update_mem(query, resp, chat_id_full)
-        elif 'glm4plus' in chat_mode:
-            my_glm.update_mem(query, resp, chat_id_full)
         elif 'o3_mini_ddg' in chat_mode:
             my_ddg.update_mem(query, resp, chat_id_full)
         elif 'gpt-4o-mini-ddg' in chat_mode:
@@ -737,7 +719,6 @@ def img2txt(text,
         time_to_answer_start = time.time()
 
         try:
-            # попробовать с помощью openrouter
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
 
@@ -749,6 +730,7 @@ def img2txt(text,
                         WHO_ANSWERED[chat_id_full] = 'img2txt_mistral_ocr'
 
 
+            # попробовать с помощью openrouter
             # если модель не указана явно то определяем по режиму чата
             if not model and not text:
                 if chat_mode == 'openrouter':
@@ -816,14 +798,7 @@ def img2txt(text,
                     text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
-                elif chat_mode == 'pixtral':
-                    text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
-                elif chat_mode == 'glm4plus':
-                    text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'glm4plus'
+
 
             # если модель не указана явно и не был получен ответ в предыдущем блоке то используем
             # стандартную модель (возможно что еще раз)
@@ -884,33 +859,6 @@ def img2txt(text,
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'meta-llama/llama-4-maverick:free'
 
-
-            # попробовать openrouter qwen/qwen2.5-vl-32b-instruct:free
-            if not text:
-                text = my_openrouter.img2txt(data, query, model = 'qwen/qwen2.5-vl-32b-instruct:free', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter qwen/qwen2.5-vl-32b-instruct:free'
-
-
-            # попробовать glm
-            if not text:
-                text = my_glm.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'glm4plus'
-
-
-            # если не ответил glm то попробовать Pixtral Large
-            if not text:
-                text = my_mistral.img2txt(data, query, model=my_mistral.VISION_MODEL, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_mistral.VISION_MODEL
-
-
-            # если не ответил pixtral то попробовать groq (llama-3.2-90b-vision-preview)
-            if not text:
-                text = my_groq.img2txt(data, query, model='llama-3.2-90b-vision-preview', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'llama-3.2-90b-vision-preview'
 
         except Exception as img_from_link_error:
             traceback_error = traceback.format_exc()
@@ -1816,12 +1764,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                     markup.row(button6)
             return markup
 
-        elif kbd == 'remove_uploaded_voice':
-            markup  = telebot.types.InlineKeyboardMarkup()
-            button1 = telebot.types.InlineKeyboardButton(tr("Удалить", lang), callback_data='remove_uploaded_voice')
-            markup.add(button1)
-            return markup
-
         elif kbd == 'download_saved_text':
             markup  = telebot.types.InlineKeyboardMarkup(row_width=2)
             button1 = telebot.types.InlineKeyboardButton('⬇️ ' + tr("Скачать", lang), callback_data='download_saved_text')
@@ -2000,25 +1942,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Gemini 2.5 Pro exp'
             button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
 
-
-            if chat_mode == 'llama370':
-                msg = '✅ Llama-3.3 70b'
-            else:
-                msg = 'Llama-3.3 70b'
-            button_llama3_70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama370')
-
-            if chat_mode == 'deepseek_r1_distill_llama70b':
-                msg = '✅ Deepseek R1 llama70b'
-            else:
-                msg = 'Deepseek R1 llama70b'
-            button_deepseek_r1_distill_llama70b = telebot.types.InlineKeyboardButton(msg, callback_data='select_deepseek_r1_distill_llama70b')
-
-            if chat_mode == 'qwq32b':
-                msg = '✅ QwQ 32B'
-            else:
-                msg = 'QwQ 32B'
-            button_qwq32b = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwq32b')
-
             if chat_mode == 'gpt-4o-mini-ddg':
                 msg = '✅ GPT 4o mini'
             else:
@@ -2030,12 +1953,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             else:
                 msg = 'GPT o3 mini'
             button_o3_mini_ddg = telebot.types.InlineKeyboardButton(msg, callback_data='select_o3_mini_ddg')
-
-            if chat_mode == 'glm4plus':
-                msg = '✅ GLM 4 PLUS'
-            else:
-                msg = 'GLM 4 PLUS'
-            button_glm4plus = telebot.types.InlineKeyboardButton(msg, callback_data='select_glm4plus')
 
             if chat_mode == 'gemini-exp':
                 msg = '✅ Gemini exp'
@@ -2066,18 +1983,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             else:
                 msg = 'Mistral'
             button_mistral = telebot.types.InlineKeyboardButton(msg, callback_data='select_mistral')
-
-            if chat_mode == 'pixtral':
-                msg = '✅ Pixtral'
-            else:
-                msg = 'Pixtral'
-            button_pixtral = telebot.types.InlineKeyboardButton(msg, callback_data='select_pixtral')
-
-            if chat_mode == 'codestral':
-                msg = '✅ Codestral'
-            else:
-                msg = 'Codestral'
-            button_codestral = telebot.types.InlineKeyboardButton(msg, callback_data='select_codestral')
 
             if chat_mode == 'gpt-4o':
                 msg = '✅ GPT-4o'
@@ -2332,13 +2237,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             reset_(message)
             bot.delete_message(message.chat.id, message.message_id)
 
-        elif call.data == 'remove_uploaded_voice':
-            try:
-                del UPLOADED_VOICES[chat_id_full]
-                bot_reply_tr(message, 'Voice sample was removed.')
-            except:
-                bot_reply_tr(message, 'Voice sample was not found.')
-
         elif call.data == 'image_prompt_describe':
             COMMAND_MODE[chat_id_full] = ''
             image_prompt = tr(my_init.PROMPT_DESCRIBE, lang)
@@ -2560,18 +2458,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             else:
                 bot_reply_tr(message, 'No text was saved.')
 
-        elif call.data == 'select_llama370':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'llama370')
-        elif call.data == 'select_deepseek_r1_distill_llama70b':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1_distill_llama70b')
-        elif call.data == 'select_qwq32b':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'qwq32b')
         elif call.data == 'select_mistral':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')
-        elif call.data == 'select_pixtral':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'pixtral')
-        elif call.data == 'select_codestral':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'codestral')
         elif call.data == 'select_gpt-4o':
             if chat_id_full in my_github.USER_KEYS:
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o')
@@ -2593,8 +2481,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_v3')
         elif call.data == 'select_cohere':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'cohere')
-        elif call.data == 'select_glm4plus':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'glm4plus')
         elif call.data == 'select_o3_mini_ddg':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'o3_mini_ddg')
         elif call.data == 'select_gpt-4o-mini-ddg':
@@ -2988,52 +2874,6 @@ def handle_voice(message: telebot.types.Message):
                 file_path = temp_file.name + (utils.get_file_ext(file_info.file_path) or 'unknown')
 
             downloaded_file = bot.download_file(file_info.file_path)
-
-
-            ## /clone_voice ##################################################################################
-            # если идет загрузка голосового сэмпла для клонирования
-            if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'recieve_voice':
-                sample = my_fish_speech.cut_file(downloaded_file)
-                if sample:
-                    UPLOADED_VOICES[chat_id_full] = sample
-                    bot_reply_tr(message, 'Sample saved successfully.')
-                    COMMAND_MODE[chat_id_full] = ''
-                else:
-                    bot_reply_tr(message, 'Failed to save sample. Try again or cancel.', reply_markup=get_keyboard('command_mode',message))
-                return
-            # отправили голосовой семпл вместо текста после команды /clone_voice, значит нужно клонировать голосовой семпл
-            elif chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'clone_voice':
-                if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:
-                    with ShowAction(message, 'upload_audio'):
-                        source = UPLOADED_VOICES[chat_id_full]
-                        target = downloaded_file
-                        bot_reply_tr(message, 'Start cloning your audio, it may take a while...')
-                        COMMAND_MODE[chat_id_full] = ''
-                        result = my_fish_speech.clone_voice_sample(source, target)
-                        COMMAND_MODE[chat_id_full] = 'clone_voice'
-                        if result:
-                            kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
-                            m = send_audio(
-                                message,
-                                message.chat.id,
-                                result,
-                                caption= f'@{_bot_name}',
-                                title = 'Voice message',
-                                performer = 'XTTSv2',
-                                reply_markup=kbd,
-                                message_thread_id=message.message_thread_id
-                            )
-                            log_message(m)
-                            my_db.add_msg(chat_id_full, 'TTS xtts_clone_audio')
-                            COMMAND_MODE[chat_id_full] = ''
-                        else:
-                            bot_reply_tr(message, 'Failed to clone sample. Try again or cancel.', reply_markup=get_keyboard('command_mode',message))
-                            return
-                else:
-                    bot_reply_tr(message, 'Upload sample voice first. Use /upload_voice command.', reply_markup=get_keyboard('command_mode',message))
-                    COMMAND_MODE[chat_id_full] = ''
-                return
-            ## /clone_voice ##################################################################################
 
 
             ## /transcribe ###################################################################################
@@ -4060,93 +3900,6 @@ https://api.openai.com/v1 (ok)
         my_log.log2(f'tb:openrouter:{error}\n\n{error_tr}')
 
 
-@bot.message_handler(commands=['upload_voice', 'uv'], func=authorized_owner)
-@async_run
-def upload_voice(message: telebot.types.Message):
-    """
-    После этой команды ожидается загрузка аудио с голосом
-    который будет использован для клонирования
-    """
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-        COMMAND_MODE[chat_id_full] = 'recieve_voice'
-
-        if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:
-            m = send_voice(
-                message,
-                message.chat.id,
-                UPLOADED_VOICES[chat_id_full],
-                caption = tr('Current voice was uploaded', lang),
-                reply_markup=get_keyboard('remove_uploaded_voice', message),
-                message_thread_id=message.message_thread_id,
-            )
-            log_message(m)
-
-        bot_reply_tr(
-            message,
-            'Send audio for voice cloning, <b>audio should be clear and clean, without background noise, with clear articulation and pronunciation, 15+ seconds</b>.',
-            reply_markup=get_keyboard('command_mode', message), parse_mode='HTML')
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:upload_voice:{error}\n\n{traceback_error}')
-
-
-@bot.message_handler(commands=['clone_voice', 'clone', 'cv'], func=authorized_owner)
-@async_run
-def clone_voice(message: telebot.types.Message):
-    '''
-    Клонирование голоса
-    юзер должен предварительно загрузить образец, а тут
-    прислать текст для чтения голосом из образца
-    '''
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-        try:
-            prompt = message.text.split(maxsplit=1)[1].strip()
-        except IndexError:
-            prompt = ''
-
-        if not prompt:
-            COMMAND_MODE[chat_id_full] = 'clone_voice'
-            bot_reply(message, tr('Send the text or audio for voice cloning, audio should be clear and clean, without background noise, with clear articulation and pronunciation.', lang), reply_markup=get_keyboard('command_mode', message))
-            return
-
-        if chat_id_full in UPLOADED_VOICES and UPLOADED_VOICES[chat_id_full]:
-            with ShowAction(message, 'record_audio'):
-                bot_reply_tr(message, 'Start cloning your audio, it may take a while...')
-                audio_data = my_fish_speech.tts(prompt, voice_sample=UPLOADED_VOICES[chat_id_full])
-                if audio_data:
-                    try:
-                        kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
-                        m = send_audio(
-                            message,
-                            message.chat.id,
-                            audio_data,
-                            caption= f'@{_bot_name}',
-                            title = 'Voice message',
-                            performer = 'Fish speech',
-                            reply_markup=kbd,
-                            message_thread_id=message.message_thread_id
-                        )
-                        log_message(m)
-                        my_db.add_msg(chat_id_full, 'TTS fish_speech')
-                        if chat_id_full in COMMAND_MODE:
-                            del COMMAND_MODE[chat_id_full]
-                    except Exception as error:
-                        my_log.log2(f'tb:clone_voice:{error}')
-                        bot_reply_tr(message, 'Clone voice failed.', reply_markup=get_keyboard('command_mode', message))
-                else:
-                    bot_reply_tr(message, 'Clone voice failed.', reply_markup=get_keyboard('command_mode', message))
-        else:
-            bot_reply_tr(message, 'You have not uploaded a voice yet. Use /upload_voice command first.', reply_markup=get_keyboard('command_mode', message))
-            return        
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:clone_voice:{error}\n\n{traceback_error}')
-
-
 @bot.message_handler(commands=['tgui'], func=authorized_admin)
 @async_run
 def translation_gui(message: telebot.types.Message):
@@ -4299,24 +4052,6 @@ def users_keys_for_gemini(message: telebot.types.Message):
             keys_groq = [x for x in keys_groq if x not in my_groq.ALL_KEYS and x.startswith('gsk_')]
 
 
-            # huggingface keys len=37, starts with "hf_"
-            huggingface_keys = [x.strip() for x in args[1].split() if len(x.strip()) == 37]
-            if huggingface_keys and huggingface_keys[0] in my_genimg.ALL_KEYS:
-                huggingface_keys = []
-                bot_reply_tr(message, 'Huggingface API key already exists!')
-            huggingface_keys = [x for x in huggingface_keys if x not in my_genimg.ALL_KEYS and x.startswith('hf_')]
-
-
-            if huggingface_keys:
-                if my_genimg.test_hkey(huggingface_keys[0]):
-                    my_genimg.USER_KEYS[chat_id_full] = huggingface_keys[0]
-                    my_genimg.ALL_KEYS.append(huggingface_keys[0])
-                    my_log.log_keys(f'Added new API key for Huggingface: {chat_id_full} {huggingface_keys}')
-                    bot_reply_tr(message, 'Added API key for Huggingface successfully!')
-                else:
-                    msg = tr('API key for Huggingface failed, check if it has write permissions.', lang)
-                    bot_reply(message, msg)
-
             if keys_mistral:
                 my_mistral.USER_KEYS[chat_id_full] = keys_mistral[0]
                 my_mistral.ALL_KEYS.append(keys_mistral[0])
@@ -4367,14 +4102,13 @@ def users_keys_for_gemini(message: telebot.types.Message):
                     bot_reply_tr(message, 'Added keys successfully!')
                     return
 
-        msg = tr('Usage: /keys API KEYS space separated (gemini, groq, huggingface)', lang) + '\n\n' + \
+        msg = tr('Usage: /keys API KEYS space separated (gemini, groq)', lang) + '\n\n' + \
                  '<blockquote>/keys xxxxx yyyy zzz\n/keys xxxxx</blockquote>\n\n' + \
-                 tr('This bot requires free API keys. At least first 3 keys are required.', lang) + '\n\n' + \
+                 tr('This bot requires free API keys. At least first 2 keys are required.', lang) + '\n\n' + \
                  tr('Please <b>use only FREE keys</b>. Do not use paid accounts. If you have a paid account, please create a new one.', lang)+'\n\n'+\
                  '0️⃣ Free VPN: https://www.vpnjantit.com/\n\n' + \
                  '1️⃣ https://www.youtube.com/watch?v=6aj5a7qGcb4\nhttps://ai.google.dev/\nhttps://aistudio.google.com/apikey\n\n' + \
                  '2️⃣ https://github.com/theurs/tb1/tree/master/pics/groq\nhttps://console.groq.com/keys\n\n' + \
-                 '3️⃣ https://github.com/theurs/tb1/tree/master/pics/hf\nhttps://huggingface.co/settings/tokens' +\
                  '\n\nhttps://console.mistral.ai/api-keys/\n\nhttps://dashboard.cohere.com/api-keys\n\nhttps://github.com/settings/tokens (classic, unlimited time, empty rights)'
 
         bot_reply(message, msg, disable_web_page_preview = True, parse_mode='HTML', reply_markup = get_keyboard('donate_stars', message))
@@ -4386,12 +4120,8 @@ def users_keys_for_gemini(message: telebot.types.Message):
             cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
             github_keys = [my_github.USER_KEYS[chat_id_full],] if chat_id_full in my_github.USER_KEYS else []
             groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
-            huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
             openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
             msg = tr('Your keys:', lang) + '\n\n'
-            # keys = my_gemini.USER_KEYS[chat_id_full] + groq_keys + huggingface_keys + mistral_keys + cohere_keys + github_keys
-            # for key in keys:
-                # msg += f'<tg-spoiler>{key}</tg-spoiler>\n\n'
 
             if openrouter_keys:
                 msg += f'🔑️ Openrouter [...{openrouter_keys[0][-4:]}]\n'
@@ -4417,10 +4147,6 @@ def users_keys_for_gemini(message: telebot.types.Message):
                 msg += f'🔑️ Github [...{github_keys[0][-4:]}]\n'
             else:
                 msg += '🔒 Github\n'
-            if huggingface_keys:
-                msg += f'🔑️ Huggingface [...{huggingface_keys[0][-4:]}]\n'
-            else:
-                msg += '🔒 Huggingface\n'
 
             bot_reply(message, msg, parse_mode='HTML')
     except Exception as error:
@@ -5034,28 +4760,16 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
     try:
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.force(chat_id_full, text, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
-            my_groq.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.force(chat_id_full, text)
-
-
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
             my_openrouter_free.force(chat_id_full, text)
-
-
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
-            my_mistral.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
-            my_mistral.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             my_cohere.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
-            my_glm.force(chat_id_full, text)
         elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             bot_reply_tr(message, 'DuckDuckGo GPT o3 mini do not support /force command')
             return
@@ -5104,28 +4818,16 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
         COMMAND_MODE[chat_id_full] = ''
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_gemini.undo(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
-            my_groq.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.undo(chat_id_full)
-
-
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
             my_openrouter_free.undo(chat_id_full)
-
-
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
-            my_mistral.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
-            my_mistral.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             my_mistral.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             my_cohere.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm3plus':
-            my_glm.undo(chat_id_full)
         elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             bot_reply_tr(message, 'DuckDuckGo GPT o3 mini do not support /undo command')
         elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -5155,24 +4857,16 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
         if chat_mode_:
             if 'gemini' in chat_mode_ or 'gemma' in chat_mode_ or 'gemma' in chat_mode_ or 'gemma' in chat_mode_:
                 my_gemini.reset(chat_id_full, chat_mode_)
-            elif chat_mode_ in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
-                my_groq.reset(chat_id_full)
             elif chat_mode_ == 'openrouter':
                 my_openrouter.reset(chat_id_full)
             elif chat_mode_ == 'llama4_maverick':
                 my_openrouter_free.reset(chat_id_full)
             elif chat_mode_ == 'mistral':
                 my_mistral.reset(chat_id_full)
-            elif chat_mode_ == 'pixtral':
-                my_mistral.reset(chat_id_full)
-            elif chat_mode_ == 'codestral':
-                my_mistral.reset(chat_id_full)
             elif chat_mode_ in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
                 my_github.reset(chat_id_full)
             elif chat_mode_ == 'cohere':
                 my_cohere.reset(chat_id_full)
-            elif chat_mode_ == 'glm4plus':
-                my_glm.reset(chat_id_full)
             elif 'o3_mini_ddg' in chat_mode_:
                 my_ddg.reset(chat_id_full)
             elif 'gpt-4o-mini-ddg' in chat_mode_:
@@ -5269,26 +4963,16 @@ def save_history(message: telebot.types.Message):
         prompt = ''
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = my_gemini.get_mem_as_string(chat_id_full, md = True, model = my_db.get_user_property(chat_id_full, 'chat_mode')) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') in ('llama370', 'deepseek_r1_distill_llama70b', 'qwq32b'):
-            prompt = my_groq.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
-
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
             prompt = my_openrouter_free.get_mem_as_string(chat_id_full, md = True) or ''
-
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
-            prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
-            prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             prompt = my_github.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
-            prompt = my_glm.get_mem_as_string(chat_id_full, md = True) or ''
         if 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
         if 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
@@ -5343,43 +5027,24 @@ def send_debug_history(message: telebot.types.Message):
             else:
                 prompt = 'Gemini ' + my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
             prompt += my_gemini.get_mem_as_string(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode')) or tr('Empty', lang)
-        elif 'llama370' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = 'Groq llama 3.3 70b\n\n'
-            prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif 'deepseek_r1_distill_llama70b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = 'deepseek_r1_distill_llama70b\n\n'
-            prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif 'qwq32b' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = 'qwq32b\n\n'
-            prompt += my_groq.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             prompt = 'Openrouter\n\n'
             prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
             prompt = 'Llama4 Maverick\n\n'
             prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             prompt = 'Mistral Large\n\n'
-            prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'pixtral':
-            prompt = 'Pixtral Large\n\n'
-            prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'codestral':
-            prompt = 'Codestral\n\n'
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
             prompt = 'GPT-4o\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt_41':
             prompt = 'GPT 4.1\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt_41_mini':
             prompt = 'GPT 4.1 mini\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'deepseek_r1':
             prompt = 'DeepSeek R1\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -5389,9 +5054,6 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             prompt = 'Command A\n\n'
             prompt += my_cohere.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'glm4plus':
-            prompt = 'GLM 4 PLUS\n\n'
-            prompt += my_glm.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
             prompt = tr('DuckDuckGo GPT o3 mini do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
             prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -5890,7 +5552,6 @@ def check_vip_user(chat_id_full: str) -> bool:
     try:
         user_id = utils.extract_user_id(chat_id_full)
         have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
-                chat_id_full in my_genimg.USER_KEYS or \
                 user_id in cfg.admins or \
                 (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
         return have_keys
@@ -5932,132 +5593,6 @@ def downgrade_handler(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:downgrade: {unknown}\n{traceback_error}')
-
-
-@async_run
-def async_hf_get_one_image(prompt: str, user_id: str, url: str, container: list):
-    try:
-        try:
-            image_bytes = my_genimg.gen_one_image(prompt, user_id, url)
-        except:
-            image_bytes = None
-        if image_bytes:
-            container.append(image_bytes)
-        else:
-            container.append(b'1')
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:async_hf_get_one_image: {unknown}\n{traceback_error}')
-
-
-@bot.message_handler(commands=['hf',], func=authorized)
-@async_run
-def huggingface_image_gen(message: telebot.types.Message):
-    """Generates an image using the Hugging Face model."""
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-
-        # # забаненный в бинге юзер
-        # if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-        #     bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw', disable_web_page_preview=True)        
-        #     return
-
-        COMMAND_MODE[chat_id_full] = ''
-        # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
-            return
-
-        # Check if the user has provided a prompt and model.
-        try:
-            parts = message.text.split(maxsplit=2)  # Split into command, prompt, and optional model
-            model = parts[1].strip()
-            prompt = parts[2].strip()
-        except IndexError:
-            msg = f"/hf <model_name (full URL or part of it)> <prompt>\n\n{tr('Generates an image using the Hugging Face model. Provide a prompt and optionally specify a model name.', lang)}\n\nExamples:"
-            msg += '\n\n/hf FLUX.1-dev Anime style dog\n\n/hf black-forest-labs/FLUX.1-dev Anime style dog\n\n/hf https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev Anime style dog\n\n'
-            msg += tr('Use /hff <prompt> for repeat last used model.', lang)
-            bot_reply(message, msg, disable_web_page_preview=True)
-            return
-
-        HF_LAST_USED_MODEL[chat_id_full] = model
-
-        if chat_id_full in IMG_GEN_LOCKS:
-            lock = IMG_GEN_LOCKS[chat_id_full]
-        else:
-            lock = threading.Lock()
-            IMG_GEN_LOCKS[chat_id_full] = lock
-
-        with lock:
-            with ShowAction(message, 'upload_photo'):
-                try:
-                    images1 = []
-                    images2 = []
-                    images3 = []
-                    images4 = []
-                    images5 = []
-                    async_hf_get_one_image(prompt, chat_id_full, model, images1)
-                    async_hf_get_one_image(prompt, chat_id_full, model, images2)
-                    async_hf_get_one_image(prompt, chat_id_full, model, images3)
-                    async_hf_get_one_image(prompt, chat_id_full, model, images4)
-                    while not all([images1, images2, images3, images4]):
-                        time.sleep(1)
-
-                    images = images1 + images2 + images3 + images4
-                    images5 = [x for x in images if x != b'1']
-
-                    if images5:
-                        bot_addr = f'https://t.me/{_bot_name}'
-                        model_ = my_genimg.guess_hf_url(model)
-                        if model_.startswith('https://api-inference.huggingface.co/models/'):
-                            model_ = model_[44:]
-                        cap = (bot_addr + '\n\n' + model_ + '\n\n' + re.sub(r"(\s)\1+", r"\1\1", prompt))[:900]
-                        medias = [telebot.types.InputMediaPhoto(x, caption = cap) for x in images5]
-
-                        chunk_size = 10
-                        chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
-                        send_images_to_user(chunks, message, chat_id_full, medias, images)
-
-                        if pics_group:
-                            send_images_to_pic_group(chunks, message, chat_id_full, prompt)
-
-                        update_user_image_counter(chat_id_full, len(medias))
-                        add_to_bots_mem(message.text, f'The bot successfully generated images on the external service <service>HuggingFace</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
-                    else:
-                        bot_reply_tr(message, tr("Image generation failed.", lang))
-                except Exception as e:
-                    error_traceback = traceback.format_exc()
-                    my_log.log2(f"tb:huggingface_image_gen: Error generating image with Hugging Face model: {e}\n{error_traceback}")
-                    bot_reply_tr(message, tr("An error occurred during image generation.", lang))
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:huggingface_image_gen: {unknown}\n{traceback_error}')
-
-
-@bot.message_handler(commands=['hff',], func=authorized)
-@async_run
-def huggingface_image_gen_fast(message: telebot.types.Message):
-    """Generates an image using the last used Hugging Face model. Use /hf to set the model."""
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-        model = HF_LAST_USED_MODEL.get(chat_id_full) or ''
-
-        try:
-            prompt = message.text.split(maxsplit=1)[1].strip()
-        except IndexError:
-            bot_reply(message, tr("Please provide a prompt after /hff\n\nLast used model:", lang) + ' ' + model)
-            return
-
-        if not model:
-            bot_reply(message, tr("No previous model used. Use /hf <model> <prompt> first.", lang))
-            return
-
-        message.text = f"/hf {model} {prompt}"
-        huggingface_image_gen(message)
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:huggingface_image_gen_fast: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['gem'], func=authorized)
@@ -6438,8 +5973,7 @@ def image_gen(message: telebot.types.Message):
         if message.chat.id < 0:
             chat_id_full_from = f'[{message.from_user.id}] [0]'
             user_id = message.from_user.id
-            have_keys = (chat_id_full_from in my_gemini.USER_KEYS and chat_id_full_from in my_groq.USER_KEYS and \
-                    chat_id_full_from in my_genimg.USER_KEYS) or \
+            have_keys = (chat_id_full_from in my_gemini.USER_KEYS and chat_id_full_from in my_groq.USER_KEYS) or \
                     user_id in cfg.admins or \
                     (my_db.get_user_property(chat_id_full_from, 'telegram_stars') or 0) >= 50
             if not have_keys:
@@ -6639,7 +6173,7 @@ def image_gen(message: telebot.types.Message):
                         if pics_group and not NSFW_FLAG:
                             send_images_to_pic_group(chunks, message, chat_id_full, prompt)
 
-                        add_to_bots_mem(message.text, f'The bot successfully generated images on the external services <service>bing, huggingface, fusion, flux, nebius, gemini</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
+                        add_to_bots_mem(message.text, f'The bot successfully generated images on the external services <service>bing, fusion, flux, nebius, gemini</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
 
                     else:
                         bot_reply_tr(message, 'Could not draw anything.')
@@ -6698,7 +6232,6 @@ def stats(message: telebot.types.Message):
             msg += f'\nMistral keys: {len(my_mistral.ALL_KEYS)}'
             msg += f'\nCohere keys: {len(my_cohere.ALL_KEYS)}'
             msg += f'\nGithub keys: {len(my_github.ALL_KEYS)}'
-            msg += f'\nHuggingface keys: {len(my_genimg.ALL_KEYS)}'
             msg += f'\n\n Uptime: {get_uptime()}'
 
             usage_plots_image = my_stat.draw_user_activity(90)
@@ -7407,49 +6940,6 @@ def send_welcome_help2(message: telebot.types.Message):
         my_log.log2(f'tb:help: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['think', 'th', 'flash', 'f', 'code', 'c'], func=authorized_admin)
-@async_run
-def set_chat_mode_command(message: telebot.types.Message):
-    """
-    Sets the chat mode for the specified user based on the command used.
-    /think, /th - gemini25_flash
-    /flash, /f - gemini
-    /code, /c - codestral
-    """
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-
-        command = message.text.split()[0]  # Get the command without arguments
-
-        try:
-            user_id = message.text.split(maxsplit=1)[1].strip()
-            if not user_id.startswith('['):
-                user_id = f'[{user_id}] [0]'
-        except (IndexError, ValueError):
-            bot_reply_tr(message, "Usage: /<command> <user_id> (use /id to get it)")
-            return
-        # Determine the mode based on the command used
-        if command in ['/think', '/th']:
-            mode = 'gemini25_flash'
-        elif command in ['/flash', '/f']:
-            mode = 'gemini'
-        elif command in ['/code', '/c']:
-            mode = 'codestral'
-        else:
-            return  # Should not happen, but just in case
-
-        my_db.set_user_property(user_id, 'chat_mode', mode)
-
-        msg = f'{tr("Chat mode changed for", lang)} {user_id} {tr("to", lang)} {mode}.'
-        bot_reply(message, msg)
-
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:set_chat_mode: {unknown}\n{traceback_error}')
-        bot_reply_tr(message, "An error occurred while processing the command.")
-
-
 @bot.message_handler(commands=['report'], func = authorized_log)
 @async_run
 def report_cmd_handler(message: telebot.types.Message):
@@ -7509,7 +6999,6 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_openrouter_free.reset(chat_id_full)
             my_mistral.reset(chat_id_full)
             my_cohere.reset(chat_id_full)
-            my_glm.reset(chat_id_full)
             my_ddg.reset(chat_id_full)
             if my_doc_translate.TRANSLATE_CACHE:
                 my_doc_translate.TRANSLATE_CACHE.remove_by_owner(chat_id_full)
@@ -7616,12 +7105,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini-exp': cfg.gemini_exp_model,
             'gemini-learn': cfg.gemini_learn_model,
             'gemma3_27b': cfg.gemma3_27b_model,
-            'llama370': 'Llama 3.3 70b',
-            'deepseek_r1_distill_llama70b': 'Deepseek R1 distill llama70b',
-            'qwq32b': 'qwq32b',
             'mistral': my_mistral.DEFAULT_MODEL,
-            'pixtral': my_mistral.VISION_MODEL,
-            'codestral': my_mistral.CODE_MODEL,
             'gpt-4o': my_github.BIG_GPT_MODEL,
             'gpt_41': my_github.BIG_GPT_41_MODEL,
             'gpt_41_mini': my_github.DEFAULT_41_MINI_MODEL,
@@ -7631,7 +7115,6 @@ def id_cmd_handler(message: telebot.types.Message):
             'openrouter': 'openrouter.ai',
             'llama4_maverick': my_openrouter_free.DEFAULT_MODEL,
             'bothub': 'bothub.chat',
-            'glm4plus': my_glm.DEFAULT_MODEL,
             'o3_mini_ddg': 'GPT o3 mini',
             'gpt35': 'GPT 3.5',
             'gpt-4o-mini-ddg': 'GPT 4o mini',
@@ -7699,7 +7182,6 @@ def id_cmd_handler(message: telebot.types.Message):
         cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
         github_keys = [my_github.USER_KEYS[chat_id_full],] if chat_id_full in my_github.USER_KEYS else []
         openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
-        huggingface_keys = [my_genimg.USER_KEYS[chat_id_full],] if chat_id_full in my_genimg.USER_KEYS else []
 
         if openrouter_keys:
             msg += '\n\n🔑️ OpenRouter\n'
@@ -7725,10 +7207,6 @@ def id_cmd_handler(message: telebot.types.Message):
             msg += '🔑️ Github\n'
         else:
             msg += '🔒 Github\n'
-        if huggingface_keys:
-            msg += '🔑️ Huggingface\n'
-        else:
-            msg += '🔒 Huggingface\n'
 
         if my_db.get_user_property(chat_id_full, 'blocked'):
             msg += f'\n{tr("User was banned.", lang)}\n'
@@ -7795,8 +7273,6 @@ def reload_module(message: telebot.types.Message):
             my_gemini.load_users_keys()
         elif module_name == 'my_groq':
             my_groq.load_users_keys()
-        elif module_name == 'my_genimg':
-            my_genimg.load_users_keys()
         elif module_name == 'my_mistral':
             my_mistral.load_users_keys()
         elif module_name == 'my_github':
@@ -7830,8 +7306,7 @@ def enable_chat(message: telebot.types.Message):
             bot_reply_tr(message, "Use this command to activate bot in public chat.")
             return
         user_full_id = f'[{message.from_user.id}] [0]'
-        admin_have_keys = user_full_id in my_gemini.USER_KEYS and user_full_id in my_groq.USER_KEYS \
-                        and user_full_id in my_genimg.USER_KEYS or message.from_user.id in cfg.admins
+        admin_have_keys = (user_full_id in my_gemini.USER_KEYS and user_full_id in my_groq.USER_KEYS) or message.from_user.id in cfg.admins
 
         if admin_have_keys:
             chat_full_id = get_topic_id(message)
@@ -8784,14 +8259,12 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                 # if msgs24h <= max_per_day:
                 #     return True
 
-                # юзеры у которых есть 3 ключа не требуют подписки,
+                # юзеры у которых есть 2 ключа не требуют подписки,
                 # но если есть звезды то их надо снимать чтоб не копились
                 have_keys = 0
                 if chat_id_full in my_gemini.USER_KEYS:
                     have_keys += 1
                 if chat_id_full in my_groq.USER_KEYS:
-                    have_keys += 1
-                if chat_id_full in my_genimg.USER_KEYS:
                     have_keys += 1
                 if chat_id_full in my_mistral.USER_KEYS:
                     have_keys += 1
@@ -8799,13 +8272,11 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                     have_keys += 1
                 if chat_id_full in my_github.USER_KEYS:
                     have_keys += 1
-                have_keys = have_keys > 2
+                have_keys = have_keys > 1
 
                 total_messages = my_db.count_msgs_total_user(chat_id_full)
                 MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
                 DONATE_PRICE = cfg.DONATE_PRICE if hasattr(cfg, 'DONATE_PRICE') else 50
-
-                # my_log.log3(f'{chat_id_full} have keys: {have_keys}, total messages: {total_messages} max total messages: {MAX_TOTAL_MESSAGES} donate price: {DONATE_PRICE}')
 
                 if total_messages > MAX_TOTAL_MESSAGES:
                     last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
@@ -9430,9 +8901,6 @@ def do_task(message, custom_prompt: str = ''):
                 elif COMMAND_MODE[chat_id_full] == 'sum':
                     message.text = f'/sum {message.text}'
                     summ_text(message)
-                elif COMMAND_MODE[chat_id_full] == 'clone_voice':
-                    message.text = f'/clone_voice {message.text}'
-                    clone_voice(message)
                 elif COMMAND_MODE[chat_id_full] == 'image_prompt':
                     image_prompt = message.text
                     process_image_stage_2(image_prompt, chat_id_full, lang, message)
@@ -9571,7 +9039,6 @@ def do_task(message, custom_prompt: str = ''):
                 hidden_text += '\n\nUser asked you to keep in mind this memos: '
                 hidden_text += '\n'.join(memos)
 
-            hidden_text_for_llama370 = hidden_text
 
             # for DDG who dont support system_prompt
             helped_query = f'{hidden_text} {message.text}'
@@ -9597,8 +9064,7 @@ def do_task(message, custom_prompt: str = ''):
                     gmodel = cfg.gemma3_27b_model
 
                 WHO_ANSWERED[chat_id_full] = chat_mode_
-                if chat_mode_ == 'llama370':
-                    WHO_ANSWERED[chat_id_full] = 'groq llama 3.3 70b'
+
                 if chat_mode_.startswith(('gemini', 'gemma')):
                     WHO_ANSWERED[chat_id_full] = gmodel
                 time_to_answer_start = time.time()
@@ -9757,23 +9223,19 @@ def do_task(message, custom_prompt: str = ''):
 
                             flag_gpt_help = False
                             if not answer:
-                                # style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
                                 mem__ = my_gemini.get_mem_for_llama(chat_id_full, lines_amount = 10, model = gmodel)
-                                # if style_:
-                                #     answer = my_groq.ai(f'{message.text}', system=style_, mem_ = mem__, temperature=0.6)
-                                # else:
-                                #     answer = my_groq.ai(message.text, mem_ = mem__, temperature=0.6)
+
                                 answer = my_mistral.ai(
                                     message.text,
                                     mem = mem__,
                                     user_id=chat_id_full,
                                     system=hidden_text,
                                     temperature=temp)
-                                # my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)
+
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
-                                    # return
+
                                 my_gemini.update_mem(message.text, answer, chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
 
                             if answer.startswith('The bot successfully generated images on the external services'):
@@ -9805,174 +9267,6 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:{gmodel} {error3}\n{error_traceback}')
-                        return
-
-
-                # если активирован режим общения с groq llama 3.3 70b
-                if chat_mode_ == 'llama370':
-                    if len(msg) > my_groq.MAX_REQUEST_LLAMA31:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Groq llama 3.3 70b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_LLAMA31}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                            answer = my_groq.chat(
-                                message.text,
-                                chat_id_full,
-                                style = style_,
-                                temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                model = my_groq.DEFAULT_MODEL,
-                                )
-
-                            if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = 'groq-llama3.3-70b'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            if not answer:
-                                answer = 'Groq llama 3.3 70b ' + tr('did not answered, try to /reset and start again', lang)
-
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
-                                return
-
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
-
-                            my_log.log_echo(message, f'[groq-llama3.3-70] {answer}')
-                            try:
-                                if command_in_answer(answer, message):
-                                    return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:llama370-groq {error3}\n{error_traceback}')
-                        return
-
-
-                # если активирован режим общения с deepseek_r1_distill_llama70b
-                if chat_mode_ == 'deepseek_r1_distill_llama70b':
-                    if len(msg) > my_groq.MAX_REQUEST_deepseek_r1_distill_llama70b:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для deepseek_r1_distill_llama70b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_deepseek_r1_distill_llama70b}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                            answer = my_groq.chat(
-                                message.text,
-                                chat_id_full,
-                                model=my_groq.DEEPSEEK_LLAMA70_MODEL,
-                                style = style_,
-                                temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                )
-
-                            if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = my_groq.DEEPSEEK_LLAMA70_MODEL
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            if not answer:
-                                answer = f'{my_groq.DEEPSEEK_LLAMA70_MODEL} ' + tr('did not answered, try to /reset and start again', lang)
-
-                            thoughts, answer = utils_llm.split_thoughts(answer)
-                            thoughts = utils.bot_markdown_to_html(thoughts)
-
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
-                                return
-
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
-
-                            # answer = utils_llm.reconstruct_html_answer_with_thoughts(thoughts, answer)
-
-                            my_log.log_echo(message, f'[{my_groq.DEEPSEEK_LLAMA70_MODEL}] {answer}')
-                            try:
-                                if command_in_answer(answer, message):
-                                    return
-
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:deepseek_r1_distill_llama70b {error3}\n{error_traceback}')
-                        return
-
-
-                # если активирован режим общения с qwq32b
-                if chat_mode_ == 'qwq32b':
-                    if len(msg) > my_groq.MAX_REQUEST_qwq32b:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для qwq32b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_groq.MAX_REQUEST_qwq32b}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            style_ = my_db.get_user_property(chat_id_full, 'role') or hidden_text_for_llama370
-                            answer = my_groq.chat(
-                                message.text,
-                                chat_id_full,
-                                model=my_groq.DEEPSEEK_QWQ32B_MODEL,
-                                style = style_,
-                                temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                )
-
-                            if chat_id_full not in WHO_ANSWERED:
-                                WHO_ANSWERED[chat_id_full] = my_groq.DEEPSEEK_QWQ32B_MODEL
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            if not answer:
-                                answer = f'{my_groq.DEEPSEEK_QWQ32B_MODEL} ' + tr('did not answered, try to /reset and start again', lang)
-
-                            thoughts, answer = utils_llm.split_thoughts(answer)
-                            thoughts = utils.bot_markdown_to_html(thoughts)
-
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
-                                return
-
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
-
-                            # answer = utils_llm.reconstruct_html_answer_with_thoughts(thoughts, answer)
-
-                            my_log.log_echo(message, f'[{my_groq.DEEPSEEK_QWQ32B_MODEL}] {answer}')
-                            try:
-                                if command_in_answer(answer, message):
-                                    return
-
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:qwq32b {error3}\n{error_traceback}')
                         return
 
 
@@ -10142,118 +9436,6 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:llama4_maverick {error3}\n{error_traceback}')
-                        return
-
-
-                # если активирован режим общения с Pixtral Large
-                if chat_mode_ == 'pixtral':
-                    if len(msg) > my_mistral.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Pixtral Large, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_mistral.MAX_REQUEST}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            answer = my_mistral.chat(
-                                message.text,
-                                chat_id_full,
-                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                system=hidden_text,
-                                model = my_mistral.VISION_MODEL,
-                            )
-
-                            WHO_ANSWERED[chat_id_full] = 'Pixtral Large'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
-                                return
-
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
-
-                            answer = answer.strip()
-                            if not answer:
-                                answer = 'Pixtral Large ' + tr('did not answered, try to /reset and start again.', lang)
-
-                            my_log.log_echo(message, f'[Pixtral Large] {answer}')
-
-                            try:
-                                if command_in_answer(answer, message):
-                                    return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:pixtral {error3}\n{error_traceback}')
-                        return
-
-
-                # если активирован режим общения с Codestral
-                if chat_mode_ == 'codestral':
-                    if len(msg) > my_mistral.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Codestral, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_mistral.MAX_REQUEST}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            answer = my_mistral.chat(
-                                message.text,
-                                chat_id_full,
-                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                system=hidden_text,
-                                model = my_mistral.CODE_MODEL,
-                            )
-                            if not answer:
-                                answer = my_mistral.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                    system=hidden_text,
-                                    model = my_mistral.CODE_MODEL_FALLBACK,
-                                )
-
-                            WHO_ANSWERED[chat_id_full] = 'Codestral'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
-                                return
-
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
-
-                            answer = answer.strip()
-                            if not answer:
-                                answer = 'Codestral ' + tr('did not answered, try to /reset and start again.', lang)
-
-                            my_log.log_echo(message, f'[Codestral] {answer}')
-
-                            try:
-                                if command_in_answer(answer, message):
-                                    return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:codestral {error3}\n{error_traceback}')
                         return
 
 
@@ -10632,57 +9814,6 @@ def do_task(message, custom_prompt: str = ''):
                         return
 
 
-                # если активирован режим общения с glm4plus
-                if chat_mode_ == 'glm4plus':
-                    if len(msg) > my_glm.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для GLM 4 PLUS, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_glm.MAX_REQUEST}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            answer = my_glm.chat(
-                                message.text,
-                                chat_id_full,
-                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                system=hidden_text,
-                                model = my_glm.DEFAULT_MODEL,
-                            )
-
-                            WHO_ANSWERED[chat_id_full] = my_glm.DEFAULT_MODEL
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            if not answer:
-                                answer = 'GLM 4 PLUS ' + tr('did not answered, try to /reset and start again.', lang)
-
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
-                                return
-
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
-
-                            my_log.log_echo(message, f'[{my_glm.DEFAULT_MODEL}] {answer}')
-
-                            try:
-                                if command_in_answer(answer, message):
-                                    return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:glm4plus {error3}\n{error_traceback}')
-                        return
-
-
                 # если активирован режим общения с o3_mini_ddg (duckduckgo)
                 if chat_mode_ == 'o3_mini_ddg':
                     if len(msg) > my_ddg.MAX_REQUEST:
@@ -10834,9 +9965,9 @@ def one_time_shot():
             pass
 
             queries = [
-                # '''ALTER TABLE users DROP COLUMN suggest_enabled;''',
-                # '''ALTER TABLE users DROP COLUMN dialog_gemini_thinking;''',
-                '''DELETE FROM translations;''',
+                '''ALTER TABLE users DROP COLUMN api_key_huggingface;''',
+                '''ALTER TABLE users DROP COLUMN dialog_glm;''',
+                # '''DELETE FROM translations;''',
                 # '''DROP TABLE IF EXISTS im_suggests;''',
                 # '''UPDATE users SET saved_file = NULL, saved_file_name = NULL;''',
             ]
@@ -10862,19 +9993,6 @@ def one_time_shot():
 
 
 ## rest api #######################################################################
-
-
-@FLASK_APP.route('/ping', methods=['GET'])
-def ping_api_get() -> Tuple[Dict[str, str], int]:
-    """
-    API endpoint for checking service availability.
-
-    :return: A JSON response indicating the service is running and the HTTP status code.
-    """
-    # This endpoint is intentionally simple. If it responds, the service is up.
-    # No complex logic or external dependencies should be checked here.
-    return jsonify({"message": "pong"}), 200
-
 
 @FLASK_APP.route('/bing', methods=['POST'])
 def bing_api_post() -> Dict[str, Any]:
@@ -10972,7 +10090,6 @@ def main():
     Runs the main function, which sets default commands and starts polling the bot.
     """
     try:
-        bot.remove_webhook()
 
         db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
         db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
@@ -10981,7 +10098,6 @@ def main():
         load_msgs()
 
         my_gemini.load_users_keys()
-        my_genimg.load_users_keys()
         my_groq.load_users_keys()
         my_mistral.load_users_keys()
         my_cohere.load_users_keys()
@@ -10996,20 +10112,9 @@ def main():
             run_flask(addr='127.0.0.1', port=58796)
             # run_flask(addr='0.0.0.0', port=58796)
 
-        # Remove webhook, it fails sometimes the set if there is a previous webhook
-        bot.remove_webhook()
         time.sleep(1)
 
-        if hasattr(cfg, 'WEBHOOK_DOMAIN') and hasattr(cfg, 'WEBHOOK_PORT') and hasattr(cfg, 'WEBHOOK_SSL_CERT') and hasattr(cfg, 'WEBHOOK_SSL_PRIV'):
-            bot.run_webhooks(
-                listen=cfg.WEBHOOK_DOMAIN,
-                port = cfg.WEBHOOK_PORT,
-                certificate=cfg.WEBHOOK_SSL_CERT,
-                certificate_key=cfg.WEBHOOK_SSL_PRIV
-            )
-        else:
-            # bot.polling(timeout=90, long_polling_timeout=90)
-            bot.infinity_polling(timeout=90, long_polling_timeout=90)
+        bot.infinity_polling(timeout=90, long_polling_timeout=90)
 
         global LOG_GROUP_DAEMON_ENABLED
         LOG_GROUP_DAEMON_ENABLED = False

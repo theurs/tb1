@@ -292,12 +292,10 @@ def init(backup: bool = True, vacuum: bool = False):
 
             api_key_gemini TEXT,
             api_key_groq TEXT,
-            api_key_huggingface TEXT,
 
             dialog_gemini BLOB,
             dialog_groq BLOB,
-            dialog_openrouter BLOB,
-            dialog_glm BLOB
+            dialog_openrouter BLOB
         """
 
         # Проверяем существование таблицы
@@ -1141,7 +1139,7 @@ def get_top_users_by_size(top_n: int = 100) -> List[Tuple[str, int]]:
             # Извлекаем данные о пользователях
             CUR.execute('''
                 SELECT id, saved_file, dialog_gemini, dialog_groq,
-                       dialog_openrouter, dialog_glm, persistant_memory
+                       dialog_openrouter, persistant_memory
                 FROM users
             ''')
             users_data = CUR.fetchall()
@@ -1190,7 +1188,7 @@ def get_user_data_sizes(user_id: str) -> dict:
             # Извлекаем данные о пользователе
             CUR.execute('''
                 SELECT id, saved_file, dialog_gemini, dialog_groq,
-                       dialog_openrouter, dialog_glm, persistant_memory
+                       dialog_openrouter, persistant_memory
                 FROM users
                 WHERE id = ?
             ''', (user_id,))
@@ -1205,8 +1203,7 @@ def get_user_data_sizes(user_id: str) -> dict:
                 'dialog_gemini': len(user_data[2]) if user_data[2] else 0,
                 'dialog_groq': len(user_data[4]) if user_data[4] else 0,
                 'dialog_openrouter': len(user_data[5]) if user_data[5] else 0,
-                'dialog_glm': len(user_data[6]) if user_data[6] else 0,
-                'persistant_memory': len(user_data[7]) if user_data[7] else 0
+                'persistant_memory': len(user_data[6]) if user_data[6] else 0
             }
 
             return data_sizes

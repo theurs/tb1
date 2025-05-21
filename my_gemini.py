@@ -496,6 +496,8 @@ def chat(query: str,
                 key_i += 1
                 continue
 
+            if not resp.text:
+                my_log.log_gemini(f'my_gemini:chat2:2:7: no any resp.text: {resp}')
             result = resp.text
 
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
@@ -1232,11 +1234,11 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
         if 'moderation_sexual' in result_dict:
             moderation_sexual = result_dict['moderation_sexual']
             if moderation_sexual:
-                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
         if 'moderation_hate' in result_dict:
             moderation_hate = result_dict['moderation_hate']
             if moderation_hate:
-                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
 
         if reprompt and negative_prompt:
             return reprompt, negative_prompt, moderation_sexual, moderation_hate
@@ -1296,11 +1298,11 @@ Return a `reprompt`
         if 'moderation_sexual' in result_dict:
             moderation_sexual = result_dict['moderation_sexual']
             if moderation_sexual:
-                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
         if 'moderation_hate' in result_dict:
             moderation_hate = result_dict['moderation_hate']
             if moderation_hate:
-                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
 
         if reprompt:
             return reprompt, moderation_sexual, moderation_hate

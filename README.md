@@ -28,7 +28,7 @@
 
 ## Уникальные фичи бота
 
-* Может работать на бесплатных ключах от пользователей, gemini, groq, huggingface, и на платных openrouter (и bothub.chat) - любая модель, ключи от бинга мог бы брать но с ними мороки много и вроде не надо, своих хватает.
+* Может работать на бесплатных ключах от пользователей, gemini, groq, и на платных openrouter (и bothub.chat) - любая модель, ключи от бинга мог бы брать но с ними мороки много и вроде не надо, своих хватает.
 
 * В этого бота можно кидать тексты больше 4к символов. Телеграмм их режет на части а бот склеивает обратно и отвечает на них как на цельные сообщения большого размера.
 
@@ -156,18 +156,6 @@ level 3 - блокировать всё включая логи
    
 5. Создайте файл cfg.py и добавьте в него строку
 ```
-# Quick'n'dirty SSL certificate generation:
-#
-# openssl genrsa -out webhook_pkey.pem 2048
-# openssl req -new -x509 -days 3650 -key webhook_pkey.pem -out webhook_cert.pem
-#
-# When asked for "Common Name (e.g. server FQDN or YOUR name)" you should reply
-# with the same value in you put in WEBHOOK_HOST
-# WEBHOOK_DOMAIN = 'bot777.hostname.com'
-# WEBHOOK_PORT = xxxx  # 443, 80, 88 or 8443 (port need to be 'open')
-# WEBHOOK_SSL_CERT = './webhook_cert.pem'  # Path to the ssl certificate
-# WEBHOOK_SSL_PRIV = './webhook_pkey.pem'  # Path to the ssl private key
-
 
 # SKIP_PENDING = False
 # DB_BACKUP = True
@@ -209,20 +197,20 @@ default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
 # 'gemini', 'gemini25_flash', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15',
-# 'llama370', 'openrouter', 'o3_mini_ddg', 'gpt-4o-mini-ddg', 'glm4plus',
-# 'mistral', 'pixtral', 'cohere', 'deepseek_r1_distill_llama70b', 'qwq32b', 'gpt-4o', 'deepseek_r1',
+# 'openrouter', 'o3_mini_ddg', 'gpt-4o-mini-ddg',
+# 'mistral', 'cohere', 'gpt-4o', 'deepseek_r1',
 # 'deepseek_v3', 'llama4_maverick', 'gpt_41', 'gpt_41_mini'
 
 chat_mode_default = 'gemini'
 
-img2_txt_model = 'gemini-2.5-flash-preview-04-17-thinking' # 'gemini-2.0-flash'
-img2_txt_model_solve = 'gemini-2.5-flash-preview-04-17-thinking' # 'gemini-2.5-flash-preview-04-17' # 'gemini-2.0-pro-exp-02-05'
+img2_txt_model = 'gemini-2.5-flash-preview-05-20'
+img2_txt_model_solve = 'gemini-2.5-flash-preview-05-20'
 
 gemini_flash_model = 'gemini-2.0-flash'
 gemini_flash_model_fallback = 'gemini-2.0-flash-exp'
 
-gemini25_flash_model = 'gemini-2.5-flash-preview-04-17'
-gemini25_flash_model_fallback = 'gemini-2.0-flash-exp'
+gemini25_flash_model = 'gemini-2.5-flash-preview-05-20'
+gemini25_flash_model_fallback = 'gemini-2.5-flash-preview-04-17-thinking'
 
 gemini_flash_light_model = 'gemini-2.0-flash-lite-preview-02-05'
 gemini_flash_light_model_fallback = 'gemini-2.0-flash-lite-001'
@@ -330,8 +318,6 @@ gemini_keys = ['xxx', 'yyy']
 # напрямую а если не получится то будет постоянно искать открытые прокси
 # gemini_proxies = ['http://172.28.1.5:3128', 'socks5h://172.28.1.5:1080']
 
-# прокси для huggingface
-# hf_proxy = ['socks5://172.28.1.4:1080',]
 
 # запускать ли апи для бинга, для раздачи картинок другим ботам
 # на локалхосте
@@ -340,26 +326,6 @@ gemini_keys = ['xxx', 'yyy']
 # отлавливать ли номера телефонов для проверки по базе мошенников
 # если боту написать номер то он попробует проверить его на сайтах для проверки телефонов
 PHONE_CATCHER = True
-
-# https://huggingface.co/
-huggin_face_api = [
-    'xxx',
-    'yyy',
-]
-
-# huggin_face_models_urls = [
-#     #"https://api-inference.huggingface.co/models/thibaud/sdxl_dpo_turbo",
-#     #"https://api-inference.huggingface.co/models/thibaud/sdxl_dpo_turbo",
-
-#     "https://api-inference.huggingface.co/models/stablediffusionapi/juggernaut-xl-v8",
-#     "https://api-inference.huggingface.co/models/stablediffusionapi/juggernaut-xl-v8",
-
-#     "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
-#     "https://api-inference.huggingface.co/models/openskyml/dalle-3-xl",
-#     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-#     #"https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
-#     "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.0",
-#     ]
 
 
 # рисование кандинским, бесплатное
@@ -415,15 +381,6 @@ OPEN_ROUTER_FREE_KEYS = [
 # OPENEXCHANGER_KEY = 'xxx'
 
 
-# https://bigmodel.cn/ 100kk tokens per account for free?
-#GLM4_KEYS = [
-#    'xxx',
-#    'yyy',
-#]
-# use or no bigmodel.cn images
-#GLM_IMAGES = False
-
-
 # https://console.mistral.ai/api-keys/
 MISTRALAI_KEYS = [
     'xxx1',
@@ -435,12 +392,6 @@ COHERE_AI_KEYS = [
     'xxx',
     'yyy',
 ]
-
-# https://huggingface.co/ ключи с доступом к спейсу в котором запущено клонирование голоса
-#CLONE_VOICE_HF_API_KEYS = [
-#    'xxx',
-#    'yyy',
-#]
 
 # прокси для скачивания с ютуба, на случай если он забанил ип
 #YTB_PROXY = [

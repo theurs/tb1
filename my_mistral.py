@@ -242,7 +242,7 @@ def img2txt(
             if 'Unauthorized' in str(error):
                 remove_key(key)
                 my_log.log_mistral(f'img2txt: {error} {key}')
-            my_log.log_glm(f'img2txt: Failed to parse response: {error}')
+            my_log.log_mistral(f'img2txt: Failed to parse response: {error}')
             result = ''
             time.sleep(2)
 
@@ -664,11 +664,11 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
         if 'moderation_sexual' in result_dict:
             moderation_sexual = result_dict['moderation_sexual']
             if moderation_sexual:
-                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
         if 'moderation_hate' in result_dict:
             moderation_hate = result_dict['moderation_hate']
             if moderation_hate:
-                my_log.log_huggin_face_api(f'MODERATION image reprompt failed: {prompt}')
+                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
 
         if reprompt and negative_prompt:
             return reprompt, negative_prompt, moderation_sexual, moderation_hate

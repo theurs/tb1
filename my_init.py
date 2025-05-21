@@ -180,7 +180,7 @@ help_msg_file = 'msg_help.dat'
 
 help_msg2 = '''В этом боте есть 2 разных режима работы.
 
-1. В основном режиме все бесплатные ключи пользователей перемешаны и используются совместно. Доступны избранные модели через меню /config. Никаких лимитов в них нет, но работать они могут нестабильно. Что бы это могло нормально работать вам надо принести боту 3 ключа, один от gemini, второй от groq и третий от huggingface, смотрите инструкцию в команде /keys.
+1. В основном режиме все бесплатные ключи пользователей перемешаны и используются совместно. Доступны избранные модели через меню /config. Никаких лимитов в них нет, но работать они могут нестабильно. Что бы это могло нормально работать вам надо принести боту 3 ключа, один от gemini, второй от groq и третий от чего-нибудь еще, смотрите инструкцию в команде /keys.
 
 2. Второй режим тут называется "openrouter", в меню его кнопка появляется только если вы дадите боту свой персональный ключ от какого то конкретного сервиса, предполагается что платного, но не обязательно, это может быть и бесплатный сервис из тех что нет в основном режиме. Если это платный сервис типа openrouter.ai то он будет работать намного стабильнее и только для вас.
 
@@ -226,9 +226,6 @@ ADMIN_HELP = '''
 /drop_subscription - drop user subscription
 /memo_admin - manage user`s memos
 
-/think, /th - `gemini_2_flash_thinking`
-/flash, /f - `gemini`
-/code, /c - `codestral`
 Usage: /<command> <user_id>
 
 /downgrade - downgrade llm model for free users mandatory
@@ -275,62 +272,6 @@ BASIC_SYSTEM_PROMPT = (
     'them to it with the /config command. The Telegram bot has commands: /id - show the user '
     'their info and which AI model is being used, /config - settings and AI model selection.'
 )
-
-
-def get_hidden_prompt_for_group(message, chat_id_full, bot_name, lang_of_user, formatted_date, max_last_messages):
-    hidden_text = (
-                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
-                    f'you are working in chat named "{message.chat.title}", your memory limited to last {max_last_messages} messages, you can receive and send files up to 20mb, '
-                    'you need a user`s api keys or telegram stars for working (/keys for more info), '
-                    'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /ask - query with saved file, /reset - clear chat context, '
-                    '/trans - translate, /sum - summarize, /google - search, /ytb - download mp3 from youtube, you can answer voice messages, '
-                    'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
-                    'you can OCR image, transcribe audio, read and answer many types document files, translate documents, read text from url, '
-                    'you are using different neural networks for work and the user can configure these networks with the /config command and see details with the /id command, '
-                    f'user name is "{message.from_user.full_name}", user language code is "{lang_of_user}" '
-                    f'but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    "no emoji unless it is required, rewrite LaTeX expressions with Unicode symbols (no markdown), if any, don't mention the rewrite in the answer, "
-                    'you can generate images with the /img command, answer "/img prompt" to generate an images for user, '
-                    'you can google search with the /google command, answer "/google query" and user will receive answer from AI Google service, '
-                    'you can summarize text with the /sum command, answer "/sum URL" and user will receive summary, '
-                    'you can request assistance from a mathematician with /calc command, answer "/calc expression" and user will receive answer for mathematician, '
-                    'you can say your answer with voice message with the /tts command, answer "/tts <2 letter language code ru|pl|en|etc> TEXT" and user will receive TEXT with voice message, '
-                    'you have buttons below your messages (don`t mention it in your answer): ➡️: Continue the conversation. ♻️: Clear the chat and start over. 🙈: Hide or delete the message. 📢: TTS the text of message. ru/etc. (Language Code): Translate the message to your language, '
-                    "provide the best possible answer to the user's request, improvising if needed, "
-                    f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
-                )
-
-    return hidden_text
-
-
-def get_hidden_prompt_for_user(message, chat_id_full, bot_name, lang, formatted_date, max_last_messages):
-    hidden_text = (
-                    f'[Info to help you answer. You are a telegram chatbot named "{bot_name}", '
-                    f'you are working in private for user named "{message.from_user.full_name}", your memory limited to last {max_last_messages} messages, you can receive and send files up to 20mb, '
-                    'you need a user`s api keys or telegram stars for working (/keys for more info), '
-                    'user have telegram commands (/img - image generator, /bing - bing image creator, /hf - huggingface image generator, /tts - text to speech, /ask - query with saved file, /reset - clear chat context, '
-                    '/trans - translate, /sum - summarize, /google - search, /ytb - download mp3 from youtube, you can answer voice messages, '
-                    'images, documents, urls(any text and youtube subs)) and you can use it yourself, you cannot do anything in the background, '
-                    'you can OCR image, transcribe audio, read and answer many types document files, translate documents, read text from url, '
-                    'you are using different neural networks for work and the user can configure these networks with the /config command and see details with the /id command, '
-                    f'user language code is "{lang}" but it`s not important, your current date is "{formatted_date}", do not address the user by name and '
-                    "no emoji unless it is required, rewrite LaTeX expressions with Unicode symbols (no markdown), if any, don't mention the rewrite in the answer, "
-                    'you can generate images with the /img command, answer "/img prompt" to generate an images for user, '
-                    'you can google search with the /google command, answer "/google query" and user will receive answer from AI Google service, '
-                    'you can summarize text with the /sum command, answer "/sum URL" and user will receive summary, '
-                    'you can request assistance from a mathematician with /calc command, answer "/calc expression" and user will receive answer for mathematician, '
-                    'you can say your answer with voice message with the /tts command, answer "/tts <2 letter language code ru|pl|en|etc> TEXT" and user will receive TEXT with voice message, '
-                    'you have buttons below your messages (don`t mention it in your answer): ➡️: Continue the conversation. ♻️: Clear the chat and start over. 🙈: Hide or delete the message. 📢: TTS the text of message. ru/etc. (Language Code): Translate the message to your language, '
-                    "provide the best possible answer to the user's request, improvising if needed, "
-                    f'{"your special role here is " + my_db.get_user_property(chat_id_full, "role") + ", " if my_db.get_user_property(chat_id_full, "role") else ""}'
-                )
-
-    return hidden_text
-
-
-def get_hidden_prompt_for_llama(tr, lang):
-    return tr(f"Answer in '{lang}' language, do not address the user by name and no emoji unless it is required. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
-    # return tr(f"Answer in '{lang}' language, do not address the user by name and no emoji unless it is required.", lang)
 
 
 def get_img2txt_prompt(tr, lang):

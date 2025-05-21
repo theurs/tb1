@@ -8979,7 +8979,7 @@ def do_task(message, custom_prompt: str = ''):
 
 
         # проверяем не начинается ли на вопросик и если да и в памяти есть файл то перенаправляем в команду /ask
-        if msg.startswith('?') and my_db.get_user_property(chat_id_full, 'saved_file_name'):
+        if msg.startswith('?') and my_db.get_user_property(chat_id_full, 'saved_file_name') and msg != '?':
             message.text = '/ask ' + message.text[1:]
             ask_file(message)
             return

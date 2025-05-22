@@ -791,32 +791,6 @@ def get_mem_for_llama(chat_id: str, lines_amount: int = 3, model: str = ''):
     return res_mem
 
 
-def get_last_mem(chat_id: str, model: str = '') -> str:
-    """
-    Returns the last answer for the given ID.
-
-    Parameters:
-        chat_id (str): The ID of the chat to get the history for.
-        model (str, optional): The name of the model.
-
-    Returns:
-        str:
-    """
-    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini')) or []
-
-    mem = transform_mem2(mem)
-    try:
-        last = mem[-1]
-    except IndexError:
-        return ''
-
-    if last:
-        if len(last.parts) == 1:
-            return last.parts[0].text
-        else:
-            return last.parts[-1].text
-
-
 def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     """
     Returns the chat history as a string for the given ID.
@@ -1247,7 +1221,6 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
         if reprompt and negative_prompt:
             return reprompt, negative_prompt, moderation_sexual, moderation_hate
     return None
-
 
 
 def get_reprompt_for_edit_image(prompt: str, images: list, chat_id: str = '') -> tuple[str, bool, bool] | None:

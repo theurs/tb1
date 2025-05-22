@@ -8,20 +8,19 @@ import time
 import threading
 import traceback
 
-from typing import List, Optional, Any, Dict, Union
+from typing import List, Dict, Union
 
 from google import genai
 from google.genai.types import (
+    Content,
     GenerateContentConfig,
     GoogleSearch,
-    ToolCodeExecution,
-    UserContent,
+    HttpOptions,
     ModelContent,
-    Content,
-    Part,
-    UserContent,
+    SafetySetting,
     Tool,
-    SafetySetting
+    ToolCodeExecution,
+    UserContent
 )
 
 import cfg
@@ -29,9 +28,6 @@ import my_db
 import my_gemini
 import my_log
 import utils
-
-
-MODEL_ID = "gemini-2.0-flash"
 
 
 SAFETY_SETTINGS = [
@@ -59,23 +55,24 @@ def get_config(
     max_output_tokens: int = 8000,
     temperature: float = 1,
     tools: list = [],
+    use_skills: bool = False,
     ):
     google_search_tool = Tool(google_search=GoogleSearch())
     toolcodeexecution = Tool(code_execution=ToolCodeExecution())
-    gen_config = GenerateContentConfig(
-        temperature=temperature,
-        # top_p=0.95,
-        # top_k=20,
-        # candidate_count=1,
-        # seed=5,
-        max_output_tokens=max_output_tokens,
-        system_instruction=system_instruction or None,
-        safety_settings=SAFETY_SETTINGS,
-        # tools = tools,
-        tools = [google_search_tool, toolcodeexecution],
-        # stop_sequences=["STOP!"],
-        # presence_penalty=0.0,
-        # frequency_penalty=0.0,
+    if use_skills:
+        gen_config = GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            system_instruction=system_instruction or None,
+            safety_settings=SAFETY_SETTINGS,
+            tools = [google_search_tool, toolcodeexecution]
+        )
+    else:
+        gen_config = GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            system_instruction=system_instruction or None,
+            safety_settings=SAFETY_SETTINGS
         )
 
     return gen_config
@@ -126,8 +123,110 @@ def img2txt(
     return ''
 
 
-# надо будет чистить память от картинок, удалять все кроме последней
-# надо будет учитывать таймаут хотя бы в повторных запросах в цикле
+def remove_old_pics(mem: List[Union['Content', 'UserContent']], turns_cutoff: int = 5):
+    """
+    Cleans a list of memory entries by selectively stripping 'image' parts
+    based on specific heuristics and recency rules. This function modifies
+    the input `mem` list directly (in-place).
+
+    An 'image' entry is now identified more strictly:
+    1. The entry has more than one 'part'.
+    2. At least one of its 'parts' contains a 'Blob' object in its `inline_data`
+       attribute AND its `text` attribute is None. This distinguishes image
+       Blobs from other non-textual parts (e.g., function calls).
+
+    Rules applied for stripping 'image' parts (i.e., parts identified as image Blobs):
+    1. Remove image Blob parts from all entries matching the 'image' heuristic,
+       *except* the absolute last one found in the entire memory list.
+    2. If the absolute last 'image' entry (after rule 1 consideration) is located
+       further back than `turns_cutoff` conversational turns (where one turn
+       is a user message + a model response, so `turns_cutoff * 2` messages)
+       from the end of the memory list, then its image Blob parts are also removed.
+
+    Args:
+        mem (List[Union[Content, UserContent]]): The raw list of memory entries.
+                                                   Each entry is expected to be
+                                                   a Content or UserContent object.
+                                                   This list will be modified in place.
+        turns_cutoff (int, optional): The number of conversational turns from the
+                                      end of the list used as the cutoff point for
+                                      keeping the last image. Defaults to 5.
+
+    """
+    if not mem:
+        return
+
+    def _is_image_entry_heuristic(entry: Union['Content', 'UserContent']) -> bool:
+        """
+        Helper function (nested) to determine if a memory entry contains an 'image'
+        based on the stricter heuristic: more than one part AND at least one part
+        where text is None AND inline_data is a Blob object.
+        """
+        if not hasattr(entry, 'parts') or not isinstance(entry.parts, list) or not entry.parts:
+            return False
+
+        has_multiple_parts = len(entry.parts) > 1
+
+        # Check if there is at least one part that specifically represents an image Blob.
+        has_image_blob_part = False
+        for p in entry.parts:
+            # An 'image part' must have inline_data as a Blob AND its text must be None.
+            if hasattr(p, 'inline_data') and hasattr(p.inline_data, '__class__') and p.inline_data.__class__.__name__ == 'Blob' and \
+               hasattr(p, 'text') and p.text is None:
+                has_image_blob_part = True
+                break # Found one, no need to check other parts
+
+        return has_multiple_parts and has_image_blob_part
+
+    def _strip_image_blob_parts_from_entry(entry: Union['Content', 'UserContent']) -> None:
+        """
+        Helper function (nested) to modify a memory entry in place by removing
+        only parts that are identified as image Blobs (text is None AND inline_data is a Blob).
+        Other parts (even if text is None, like function calls) are explicitly kept.
+        """
+        if hasattr(entry, 'parts') and isinstance(entry.parts, list) and entry.parts:
+            # Keep only parts that are NOT identified as image Blobs.
+            entry.parts = [
+                p for p in entry.parts
+                if not (hasattr(p, 'inline_data') and hasattr(p.inline_data, '__class__') and p.inline_data.__class__.__name__ == 'Blob' and
+                        hasattr(p, 'text') and p.text is None)
+            ]
+
+    # 1. Identify all entries that match the 'image' heuristic.
+    image_heuristic_indices: List[int] = []
+    for i, entry in enumerate(mem):
+        if _is_image_entry_heuristic(entry):
+            image_heuristic_indices.append(i)
+
+    # Determine the index of the absolute last entry matching the 'image' heuristic.
+    last_image_index: int | None = image_heuristic_indices[-1] if image_heuristic_indices else None
+
+    # 2. Apply Rule 1: Strip image Blob parts from all 'image' heuristic entries EXCEPT the last one.
+    if last_image_index is not None:
+        for idx in image_heuristic_indices:
+            # If the current entry is NOT the last one found, strip its image Blob parts.
+            if idx != last_image_index:
+                current_entry = mem[idx] # Get the entry from the original list (modifies in-place)
+                _strip_image_blob_parts_from_entry(current_entry)
+
+    # 3. Apply Rule 2: Check the recency of the last 'image' entry and potentially strip it too.
+    if last_image_index is not None:
+        # Calculate how many messages away the last image entry is from the end of the list.
+        # Example: if list length is 10 and last_image_index is 7,
+        # then num_messages_from_end = 10 - 7 = 3 (meaning entries at indices 7, 8, 9 are at or after it).
+        num_messages_from_end = len(mem) - last_image_index
+
+        # The cutoff is `turns_cutoff` conversational turns, which translates to
+        # `turns_cutoff * 2` individual messages (one user, one model per turn).
+        # If the image is further back than this cutoff (strictly greater), strip its image Blob parts.
+        if num_messages_from_end > turns_cutoff * 2:
+            current_entry = mem[last_image_index] # Get the entry from the original list (modifies in-place)
+            _strip_image_blob_parts_from_entry(current_entry)
+
+    # Return the modified input list.
+    return mem
+
+
 def chat(
     query: str,
     chat_id: str = '',
@@ -138,6 +237,7 @@ def chat(
     max_chat_lines: int = my_gemini.MAX_CHAT_LINES,
     max_chat_mem_chars: int = my_gemini.MAX_CHAT_MEM_CHARS,
     timeout: int = my_gemini.TIMEOUT,
+    use_skills: bool = False,
     ) -> str:
     """Interacts with a generative AI model (presumably Gemini) to process a user query.
 
@@ -191,19 +291,29 @@ def chat(
         else:
             mem = []
 
-        client = genai.Client(api_key=my_gemini.get_next_key())
+        # Удаляем старые картинки, остается только последняя если она не была дольше чем 5 запросов назад
+        remove_old_pics(mem)
+
+        client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'timeout': timeout * 1000})
 
         chat = client.chats.create(
             model=model,
             config=get_config(
                 system_instruction=system,
+                use_skills=use_skills,
             ),
             history=mem,
         )
 
         resp = ''
 
+        start_time = time.monotonic() # Начало отсчета времени
+
         for _ in range(3):
+            elapsed_time = time.monotonic() - start_time
+            if elapsed_time >= timeout: # Если общее время истекло
+                my_log.log_gemini(f'my_gemini3:chat:timeout_exceeded - overall timeout of {timeout}s reached.')
+                break # Выходим из цикла
             response = chat.send_message(query,)
             resp = response.text or ''
             if not resp:

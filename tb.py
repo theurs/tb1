@@ -42,6 +42,7 @@ import my_doc_translate
 import my_github
 import my_google
 import my_gemini
+import my_gemini3
 import my_gemini_tts
 import my_gemini_genimg
 import my_gemini_google
@@ -500,7 +501,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
 
         # Updates the memory of the selected bot based on the chat mode.
         if 'gemini' in chat_mode or 'gemma' in chat_mode:
-            my_gemini.update_mem(query, resp, chat_id_full, model=chat_mode)
+            my_gemini3.update_mem(query, resp, chat_id_full, model=chat_mode)
         elif 'openrouter' in chat_mode:
             my_openrouter.update_mem(query, resp, chat_id_full)
         elif 'llama4_maverick' in chat_mode:
@@ -775,31 +776,31 @@ def img2txt(text,
                             WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
                 elif chat_mode == 'gemini15':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model
                 elif chat_mode == 'gemini25_flash':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini25_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model
                 elif chat_mode == 'gemini-exp':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
                 elif chat_mode == 'gemini-learn':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
                 elif chat_mode == 'gemma3_27b':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemma3_27b_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemma3_27b_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemma3_27b_model
                 elif chat_mode == 'gemini-lite':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
                 elif chat_mode == 'gemini':
-                    text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
 
@@ -814,9 +815,9 @@ def img2txt(text,
                 if 'gpt' in model:
                     text = my_github.img2txt(data, query, chat_id=chat_id_full, model=model, temperature=temperature, system=system_message, timeout=timeout)
                     if not text:
-                        text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                        text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                 else:
-                    text = my_gemini.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + model
 
@@ -828,26 +829,26 @@ def img2txt(text,
 
             # если это была джемини про то пробуем ее фолбек
             if not text and model == cfg.gemini_pro_model:
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
 
             # если это была не джемини лайт то пробуем ее
             if not text and model != cfg.gemini_flash_light_model:
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
 
 
             # флеш25 фолбек
             if not text and model == cfg.gemini25_flash_model:
-                text = my_gemini.img2txt(data, query, model=cfg.gemini25_flash_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model_fallback
 
             # флеш фолбек
             if not text and model == cfg.gemini_flash_model:
-                text = my_gemini.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model_fallback
 
@@ -4749,7 +4750,7 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
     '''изменяет последний ответ от бота на text'''
     try:
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_gemini.force(chat_id_full, text, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
+            my_gemini3.force(chat_id_full, text, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
@@ -4807,7 +4808,7 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_gemini.undo(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
+            my_gemini3.undo(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             my_openrouter.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
@@ -4846,7 +4847,7 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
 
         if chat_mode_:
             if 'gemini' in chat_mode_ or 'gemma' in chat_mode_ or 'gemma' in chat_mode_ or 'gemma' in chat_mode_:
-                my_gemini.reset(chat_id_full, chat_mode_)
+                my_gemini3.reset(chat_id_full, chat_mode_)
             elif chat_mode_ == 'openrouter':
                 my_openrouter.reset(chat_id_full)
             elif chat_mode_ == 'llama4_maverick':
@@ -4952,7 +4953,7 @@ def save_history(message: telebot.types.Message):
 
         prompt = ''
         if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = my_gemini.get_mem_as_string(chat_id_full, md = True, model = my_db.get_user_property(chat_id_full, 'chat_mode')) or ''
+            prompt = my_gemini3.get_mem_as_string(chat_id_full, md = True, model = my_db.get_user_property(chat_id_full, 'chat_mode')) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
@@ -5016,7 +5017,7 @@ def send_debug_history(message: telebot.types.Message):
                 prompt = my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
             else:
                 prompt = 'Gemini ' + my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
-            prompt += my_gemini.get_mem_as_string(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode')) or tr('Empty', lang)
+            prompt += my_gemini3.get_mem_as_string(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode')) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             prompt = 'Openrouter\n\n'
             prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -6071,8 +6072,7 @@ def image_gen(message: telebot.types.Message):
                             BING_FLAG = 1
 
                 # get chat history for content
-                conversation_history = ''
-                conversation_history = my_gemini.get_mem_as_string(chat_id_full) or ''
+                conversation_history = my_gemini3.get_mem_as_string(chat_id_full) or ''
 
                 conversation_history = conversation_history[-8000:]
                 # как то он совсем плохо стал работать с историей, отключил пока что
@@ -6985,8 +6985,8 @@ def purge_cmd_handler(message: telebot.types.Message):
                     if data[2] == chat_id_full:
                         del LOG_GROUP_MESSAGES[k]
 
-            my_gemini.reset(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
-            my_gemini.reset(chat_id_full)
+            # my_gemini3.reset(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
+            my_gemini3.reset(chat_id_full)
             my_groq.reset(chat_id_full)
             my_openrouter.reset(chat_id_full)
             my_openrouter_free.reset(chat_id_full)
@@ -9119,89 +9119,97 @@ def do_task(message, custom_prompt: str = ''):
                     with ShowAction(message, action):
                         try:
                             temp = my_db.get_user_property(chat_id_full, 'temperature') or 1
-                            answer = my_gemini.chat(
+                            answer = my_gemini3.chat(
                                 message.text,
                                 chat_id_full,
                                 temp,
                                 model = gmodel,
                                 system = hidden_text,
-                                use_skills=True)
+                                use_skills=True
+                            )
 
                             if not answer and gmodel == cfg.gemini_pro_model:
                                 gmodel = cfg.gemini_pro_model_fallback
-                                answer = my_gemini.chat(
+                                answer = my_gemini3.chat(
                                     message.text,
                                     chat_id_full,
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
-                                    use_skills=True)
+                                    use_skills=True
+                                )
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
                             if not answer and gmodel == cfg.gemini_flash_model:
                                 gmodel = cfg.gemini_flash_model_fallback
-                                answer = my_gemini.chat(
+                                answer = my_gemini3.chat(
                                     message.text,
                                     chat_id_full,
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
-                                    use_skills=True)
+                                    use_skills=True
+                                )
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
                             if not answer and gmodel == cfg.gemini25_flash_model:
                                 gmodel = cfg.gemini25_flash_model_fallback
-                                answer = my_gemini.chat(
+                                answer = my_gemini3.chat(
                                     message.text,
                                     chat_id_full,
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
-                                    use_skills=True)
+                                    use_skills=True
+                                )
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
                             if not answer and gmodel == cfg.gemini_flash_light_model:
                                 gmodel = cfg.gemini_flash_light_model_fallback
-                                answer = my_gemini.chat(
+                                answer = my_gemini3.chat(
                                     message.text,
                                     chat_id_full,
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
-                                    use_skills=True)
+                                    use_skills=True
+                                )
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
                             if not answer and gmodel == cfg.gemini_learn_model:
                                 gmodel = cfg.gemini_learn_model_fallback
-                                answer = my_gemini.chat(
+                                answer = my_gemini3.chat(
                                     message.text,
                                     chat_id_full,
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
-                                    use_skills=True)
+                                    use_skills=True
+                                )
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
                             if not answer and gmodel == cfg.gemini_exp_model:
                                 gmodel = cfg.gemini_exp_model_fallback
-                                answer = my_gemini.chat(
+                                answer = my_gemini3.chat(
                                     message.text,
                                     chat_id_full,
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
-                                    use_skills=True)
+                                    use_skills=True
+                                )
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
                             if not answer and gmodel == cfg.gemma3_27b_model:
                                 gmodel = cfg.gemma3_27b_model_fallback
-                                answer = my_gemini.chat(
+                                answer = my_gemini3.chat(
                                     message.text,
                                     chat_id_full,
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
-                                    use_skills=True)
+                                    use_skills=True
+                                )
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
 
@@ -9216,7 +9224,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             flag_gpt_help = False
                             if not answer:
-                                mem__ = my_gemini.get_mem_for_llama(chat_id_full, lines_amount = 10, model = gmodel)
+                                mem__ = my_gemini3.get_mem_for_llama(chat_id_full, lines_amount = 10, model = gmodel)
 
                                 answer = my_mistral.ai(
                                     message.text,
@@ -9229,7 +9237,7 @@ def do_task(message, custom_prompt: str = ''):
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
 
-                                my_gemini.update_mem(message.text, answer, chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
+                                my_gemini3.update_mem(message.text, answer, chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
 
                             if answer.startswith('The bot successfully generated images on the external services'):
                                 undo_cmd(message, show_message=False)

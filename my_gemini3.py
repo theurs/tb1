@@ -296,6 +296,10 @@ def chat(
 
         client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'timeout': timeout * 1000})
 
+        # 2.0 не поддерживает встроенные скилы?
+        if model.startswith('gemini-2.0'):
+            use_skills = False
+
         chat = client.chats.create(
             model=model,
             config=get_config(

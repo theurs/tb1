@@ -9970,8 +9970,8 @@ def one_time_shot():
             queries = [
                 # '''ALTER TABLE users DROP COLUMN api_key_huggingface;''',
 
-                '''ALTER TABLE users DROP COLUMN dialog_gemini;''',
-                '''ALTER TABLE users ADD COLUMN dialog_gemini BLOB;''',
+                # '''ALTER TABLE users DROP COLUMN dialog_gemini;''',
+                # '''ALTER TABLE users ADD COLUMN dialog_gemini BLOB;''',
 
                 # '''DELETE FROM translations;''',
                 # '''DROP TABLE IF EXISTS im_suggests;''',

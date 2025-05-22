@@ -346,7 +346,7 @@ def chat(
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'my_gemini3:chat:unknown_error {error}\n\n{traceback_error}\n{model}')
+        my_log.log_gemini(f'my_gemini3:chat:unknown_error {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}')
         return ''
 
 

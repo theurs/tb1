@@ -18,7 +18,7 @@ POSSIBLE_VOICES = [
     'Callirrhoe', 'Charon', 'Despina', 'Enceladus', 'Erinome', 'Fenrir',
     'Gacrux', 'Iapetus', 'Kore', 'Laomedeia', 'Leda', 'Orus', 'Puck',
     'Pulcherrima', 'Rasalgethi', 'Sadachbia', 'Sadaltager', 'Schedar',
-    'Sulafar', 'Umbriel', 'Vindemiatrix', 'Zephyr', 'Zubenelgenubi',
+    'Sulafat', 'Umbriel', 'Vindemiatrix', 'Zephyr', 'Zubenelgenubi',
 ]
 
 # --- Список известных моделей TTS (может меняться, проверяйте документацию Gemini) ---

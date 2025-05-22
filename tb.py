@@ -9965,9 +9965,12 @@ def one_time_shot():
         if not os.path.exists('one_time_flag.txt'):
             pass
 
+            my_gemini3.converts_all_mems()
+
             queries = [
-                '''ALTER TABLE users DROP COLUMN api_key_huggingface;''',
-                '''ALTER TABLE users DROP COLUMN dialog_glm;''',
+                # '''ALTER TABLE users DROP COLUMN api_key_huggingface;''',
+                '''ALTER TABLE users DROP COLUMN dialog_gemini;''',
+                '''ALTER TABLE users ADD COLUMN dialog_gemini BLOB;''',
                 # '''DELETE FROM translations;''',
                 # '''DROP TABLE IF EXISTS im_suggests;''',
                 # '''UPDATE users SET saved_file = NULL, saved_file_name = NULL;''',

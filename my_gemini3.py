@@ -608,41 +608,85 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     return result_string.strip()
 
 
-def chat_cli():
+def chat_cli(chat_id: str = 'test'):
     while 1:
         q = input('>')
         if q == 'mem':
-            print(get_mem_as_string('test'))
+            print(get_mem_as_string(chat_id))
             continue
         if q == 'llama':
-            print(get_mem_for_llama('test'))
+            print(get_mem_for_llama(chat_id))
             continue
         if q == 'jpg':
             r = img2txt(
                 open(r'C:\Users\user\Downloads\samples for ai\картинки\фотография улицы.png', 'rb').read(),
                 'что там',
-                chat_id='test',
+                chat_id=chat_id,
             )
         elif q == 'upd':
             r = 'ok'
-            update_mem('2+2', '4', 'test')
+            update_mem('2+2', '4', chat_id)
         elif q == 'force':
             r = 'ok'
-            force('test', 'изменено')
+            force(chat_id, 'изменено')
         elif q == 'undo':
             r = 'ok'
-            undo('test')
+            undo(chat_id)
         elif q == 'reset':
             r = 'ok'
-            reset('test')
+            reset(chat_id)
         else:
-            r = chat(q, 'test')
+            r = chat(q, chat_id)
         print(r)
+
+
+def convert_mem(chat_id: str):
+    '''
+    Конвертирует память из старой таблицы dialog_gemini в новую dialog_gemini3
+    Берет из базы память в формате для лламы, реконструирует для dialog_gemini3 и сохраняет
+    '''
+    try:
+        mem = my_gemini.get_mem_for_llama(chat_id, lines_amount=10)
+        new_mem = []
+
+        # проходим по памяти берем по 2 элемента - запрос и ответ
+        if len(mem) > 1 and len(mem) % 2 == 0:
+            for i in range(0, len(mem), 2):
+                e_user = mem[i]
+                e_model = mem[i+1]
+                u = UserContent(e_user['content'])
+                c = ModelContent(e_model['content'])
+                new_mem.append(u)
+                new_mem.append(c)
+
+            if new_mem:
+                my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(new_mem))        
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini(f'my_gemini3:convert_mem:Failed to convert mem: {error}\n\n{error_traceback}')
+
+
+def converts_all_mems():
+    '''
+    Конвертирует все записи из старой таблицы dialog_gemini в новую dialog_gemini3
+    '''
+    try:
+        all_users = my_db.get_all_users_ids()
+        my_log.log_gemini(f'my_gemini3:converts_all_mems: Converting {len(all_users)} mems')
+        for chat_id in all_users:
+            convert_mem(chat_id)
+        my_log.log_gemini(f'my_gemini3:converts_all_mems: Done')
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini(f'my_gemini3:converts_all_mems:Failed to convert all mems: {error}\n\n{error_traceback}')
 
 
 if __name__ == "__main__":
     my_db.init(backup=False)
     my_gemini.load_users_keys()
+
+    # один раз запустить надо
+    # converts_all_mems()
 
     chat_cli()
 

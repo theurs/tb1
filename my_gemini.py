@@ -190,46 +190,6 @@ def remove_inline_data_parts_except_last_single_pass(mem, max_age_threshold: int
         if not (hasattr(current_message, 'parts') and current_message.parts):
             del mem[msg_idx]
 
-    # '''
-    # Модифицирует mem "на месте" за один проход с конца.
-    # Удаляет из каждого ContentMessage в mem все parts с inline_data,
-    # кроме самого последнего такого part во всем списке mem (первого встреченного при обратном проходе).
-    # Если ContentMessage после удаления parts становится пустым, оно удаляется из mem.
-    # '''
-    # if not mem:
-    #     return
-
-    # last_image_part_found_and_kept = False # Флаг: нашли ли мы уже "последнюю" картинку
-
-    # # Итерируем по списку mem С КОНЦА, чтобы удаление элементов из mem было безопасным
-    # for msg_idx in range(len(mem) - 1, -1, -1):
-    #     current_message = mem[msg_idx]
-
-    #     if not (hasattr(current_message, 'parts') and current_message.parts):
-    #         # Если у сообщения нет parts или они изначально пусты,
-    #         # и если такие "пустые" сообщения надо удалять, то:
-    #         if not (hasattr(current_message, 'parts') and current_message.parts):
-    #              del mem[msg_idx] # Удаляем, если оно "пустое" по определению
-    #         continue # Переходим к следующему сообщению в mem
-
-    #     # Итерируем по списку parts текущего сообщения С КОНЦА,
-    #     # чтобы удаление элементов из parts было безопасным
-    #     for part_idx in range(len(current_message.parts) - 1, -1, -1):
-    #         part_to_check = current_message.parts[part_idx]
-
-    #         if _has_actual_inline_data(part_to_check):
-    #             if not last_image_part_found_and_kept:
-    #                 # Это первая картинка, встреченная при обратном проходе.
-    #                 # Она и есть "последняя" во всем mem. Оставляем ее.
-    #                 last_image_part_found_and_kept = True
-    #             else:
-    #                 # Эта картинка встречена ПОСЛЕ "последней". Удаляем ее.
-    #                 del current_message.parts[part_idx]
-
-    #     # После обработки всех parts текущего сообщения, проверяем, не стал ли он пустым
-    #     if not current_message.parts: # Если список parts пуст
-    #         del mem[msg_idx] # Удаляем сообщение из списка mem "на месте"
-
 
 def chat(query: str,
          chat_id: str = '',

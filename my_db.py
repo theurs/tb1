@@ -839,7 +839,6 @@ def vacuum(lock_db: bool = True):
             my_log.log2(f'my_db:vacuum {error}')
 
 
-
 def drop_long_translations():
     '''Drop long translations from cache'''
     with LOCK:

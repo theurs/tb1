@@ -9969,17 +9969,20 @@ def one_time_shot():
 
             queries = [
                 # '''ALTER TABLE users DROP COLUMN api_key_huggingface;''',
-                '''ALTER TABLE users DROP COLUMN dialog_gemini;''',
-                '''ALTER TABLE users ADD COLUMN dialog_gemini BLOB;''',
+
+                # '''ALTER TABLE users DROP COLUMN dialog_gemini;''',
+                # '''ALTER TABLE users ADD COLUMN dialog_gemini BLOB;''',
+
                 # '''DELETE FROM translations;''',
                 # '''DROP TABLE IF EXISTS im_suggests;''',
                 # '''UPDATE users SET saved_file = NULL, saved_file_name = NULL;''',
             ]
-            for q in queries:
-                try:
-                    my_db.CUR.execute(q)
-                except Exception as error:
-                    my_log.log2(f'tb:one_time_shot: {error}')
+            if queries:
+                for q in queries:
+                    try:
+                        my_db.CUR.execute(q)
+                    except Exception as error:
+                        my_log.log2(f'tb:one_time_shot: {error}')
             my_db.CON.commit()
 
             # Выполняем VACUUM вне транзакции

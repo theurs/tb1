@@ -27,6 +27,7 @@ import cfg
 import my_db
 import my_gemini
 import my_log
+import my_skills
 import utils
 
 
@@ -54,26 +55,19 @@ def get_config(
     system_instruction: str = "",
     max_output_tokens: int = 8000,
     temperature: float = 1,
-    tools: list = [],
-    use_skills: bool = False,
+    tools: list = None,
     ):
-    google_search_tool = Tool(google_search=GoogleSearch())
-    toolcodeexecution = Tool(code_execution=ToolCodeExecution())
-    if use_skills:
-        gen_config = GenerateContentConfig(
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-            system_instruction=system_instruction or None,
-            safety_settings=SAFETY_SETTINGS,
-            tools = [google_search_tool, toolcodeexecution]
-        )
-    else:
-        gen_config = GenerateContentConfig(
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-            system_instruction=system_instruction or None,
-            safety_settings=SAFETY_SETTINGS
-        )
+    # google_search_tool = Tool(google_search=GoogleSearch())
+    # toolcodeexecution = Tool(code_execution=ToolCodeExecution())
+    gen_config = GenerateContentConfig(
+        temperature=temperature,
+        max_output_tokens=max_output_tokens,
+        system_instruction=system_instruction or None,
+        safety_settings=SAFETY_SETTINGS,
+        # tools = [google_search_tool, toolcodeexecution]
+        # tools = [my_skills.calc, my_skills.search_google]
+        tools = tools,
+    )
 
     return gen_config
 
@@ -296,18 +290,31 @@ def chat(
 
         client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'timeout': timeout * 1000})
 
-        # 2.0 не поддерживает встроенные скилы?
-        if model.startswith('gemini-2.0'):
-            use_skills = False
-
-        chat = client.chats.create(
-            model=model,
-            config=get_config(
-                system_instruction=system,
-                use_skills=use_skills,
-            ),
-            history=mem,
-        )
+        if use_skills:
+            SKILLS = [
+                my_skills.calc,
+                my_skills.search_google,
+                my_skills.download_text_from_url,
+                my_skills.get_time_in_timezone,
+                my_skills.get_weather,
+                my_skills.get_currency_rates,
+            ]
+            chat = client.chats.create(
+                model=model,
+                config=get_config(
+                    system_instruction=system,
+                    tools=SKILLS,
+                ),
+                history=mem,
+            )
+        else:
+            chat = client.chats.create(
+                model=model,
+                config=get_config(
+                    system_instruction=system,
+                ),
+                history=mem,
+            )
 
         resp = ''
 
@@ -612,7 +619,7 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     return result_string.strip()
 
 
-def chat_cli(chat_id: str = 'test'):
+def chat_cli(chat_id: str = 'test', model: str = cfg.gemini25_flash_model):
     while 1:
         q = input('>')
         if q == 'mem':
@@ -640,7 +647,7 @@ def chat_cli(chat_id: str = 'test'):
             r = 'ok'
             reset(chat_id)
         else:
-            r = chat(q, chat_id)
+            r = chat(q, chat_id, use_skills=True, model = model)
         print(r)
 
 
@@ -692,6 +699,6 @@ if __name__ == "__main__":
     # один раз запустить надо
     # converts_all_mems()
 
-    chat_cli()
+    chat_cli(model = cfg.gemini_flash_light_model)
 
     my_db.close()

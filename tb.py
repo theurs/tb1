@@ -7262,7 +7262,7 @@ def reload_module(message: telebot.types.Message):
         importlib.reload(module)
 
         # реинициализация модуля
-        if module_name == 'my_gemini':
+        if module_name in ('my_gemini', 'my_gemini3'):
             my_gemini.load_users_keys()
         elif module_name == 'my_groq':
             my_groq.load_users_keys()

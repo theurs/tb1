@@ -294,6 +294,7 @@ def init(backup: bool = True, vacuum: bool = False):
             api_key_groq TEXT,
 
             dialog_gemini BLOB,
+            dialog_gemini3 BLOB,
             dialog_groq BLOB,
             dialog_openrouter BLOB
         """

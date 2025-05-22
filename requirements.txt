@@ -28,8 +28,7 @@ fuzzywuzzy
 
 google
 
-google-generativeai
-# это другая версия
+google-generativeai # удалить потом
 google-genai
 
 gradio_client

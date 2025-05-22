@@ -698,7 +698,7 @@ def force(chat_id: str, text: str, model: str = ''):
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'Failed to force text in chat {chat_id}: {error}\n\n{error_traceback}\n\n{text}')
 
-    
+
 def undo(chat_id: str, model: str = ''):
     """
     Undo the last two lines of chat history for a given chat ID.
@@ -878,7 +878,7 @@ def count_chars(mem) -> int:
         for i in x.parts:
             total += len(i.text)
     return total
-    
+
 
 def translate(text: str,
               from_lang: str = '',

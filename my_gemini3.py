@@ -18,6 +18,7 @@ from google.genai.types import (
     HttpOptions,
     ModelContent,
     SafetySetting,
+    ThinkingConfig,
     Tool,
     ToolCodeExecution,
     UserContent
@@ -56,9 +57,18 @@ def get_config(
     max_output_tokens: int = 8000,
     temperature: float = 1,
     tools: list = None,
+    THINKING_BUDGET: int = -1,
     ):
     # google_search_tool = Tool(google_search=GoogleSearch())
     # toolcodeexecution = Tool(code_execution=ToolCodeExecution())
+
+    # if THINKING_BUDGET == -1:
+    #     THINKING_BUDGET = None
+    # thinking_config = ThinkingConfig(
+    #     thinking_budget=THINKING_BUDGET,
+    #     include_thoughts=True,
+    # )
+
     gen_config = GenerateContentConfig(
         temperature=temperature,
         max_output_tokens=max_output_tokens,
@@ -67,6 +77,7 @@ def get_config(
         # tools = [google_search_tool, toolcodeexecution]
         # tools = [my_skills.calc, my_skills.search_google]
         tools = tools,
+        # thinking_config=thinking_config,
     )
 
     return gen_config
@@ -245,6 +256,7 @@ def chat(
     max_chat_mem_chars: int = my_gemini.MAX_CHAT_MEM_CHARS,
     timeout: int = my_gemini.TIMEOUT,
     use_skills: bool = False,
+    THINKING_BUDGET: int = -1,
     ) -> str:
     """Interacts with a generative AI model (presumably Gemini) to process a user query.
 
@@ -263,6 +275,7 @@ def chat(
         max_chat_lines: The maximum number of conversation turns to store in history.
         max_chat_mem_chars: The maximum number of characters to store in the conversation history.
         timeout: The request timeout in seconds.
+        THINKING_BUDGET: The maximum number of tokens to spend on thinking. -1 = AUTO
 
     Returns:
         A string containing the model's response, or an empty string if an error occurs or the response is empty.
@@ -308,35 +321,8 @@ def chat(
 
         validate_mem(mem)
 
-        client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'timeout': timeout * 1000})
-
-        if use_skills:
-            SKILLS = [
-                my_skills.calc,
-                my_skills.search_google,
-                my_skills.download_text_from_url,
-                my_skills.get_time_in_timezone,
-                my_skills.get_weather,
-                my_skills.get_currency_rates,
-            ]
-            chat = client.chats.create(
-                model=model,
-                config=get_config(
-                    system_instruction=system,
-                    tools=SKILLS,
-                ),
-                history=mem,
-            )
-        else:
-            chat = client.chats.create(
-                model=model,
-                config=get_config(
-                    system_instruction=system,
-                ),
-                history=mem,
-            )
-
         resp = ''
+        key = ''
 
         start_time = time.monotonic() # Начало отсчета времени
 
@@ -345,7 +331,44 @@ def chat(
             if elapsed_time >= timeout: # Если общее время истекло
                 my_log.log_gemini(f'my_gemini3:chat:timeout_exceeded - overall timeout of {timeout}s reached.')
                 break # Выходим из цикла
-            response = chat.send_message(query,)
+            try:
+                key = my_gemini.get_next_key()
+                client = genai.Client(api_key=key, http_options={'timeout': timeout * 1000})
+                if use_skills:
+                    SKILLS = [
+                        my_skills.calc,
+                        my_skills.search_google,
+                        my_skills.download_text_from_url,
+                        my_skills.get_time_in_timezone,
+                        my_skills.get_weather,
+                        my_skills.get_currency_rates,
+                    ]
+                    chat = client.chats.create(
+                        model=model,
+                        config=get_config(
+                            system_instruction=system,
+                            tools=SKILLS,
+                            THINKING_BUDGET=THINKING_BUDGET,
+                        ),
+                        history=mem,
+                    )
+                else:
+                    chat = client.chats.create(
+                        model=model,
+                        config=get_config(
+                            system_instruction=system,
+                            THINKING_BUDGET=THINKING_BUDGET,
+                        ),
+                        history=mem,
+                    )
+                response = chat.send_message(query,)
+            except Exception as error:
+                if '429 RESOURCE_EXHAUSTED' in str(error):
+                    my_log.log_gemini(f'my_gemini3:chat:2: {str(error)} {key}')
+                    time.sleep(2)
+                    continue
+                else:
+                    raise error
             resp = response.text or ''
             if not resp:
                 if "finish_reason=<FinishReason.STOP: 'STOP'>" in str(response): # модель ответила молчанием (по просьбе юзера)

@@ -691,7 +691,7 @@ def img2txt(text,
                 'правильный ответ',
             )
 
-            if not any([q in query for q in default_prompts]):
+            if not any([q in query for q in default_prompts]) and not query.lower().startswith('реши '):
                 intention = get_intention(query, chat_id_full)
                 if intention == 'edit_image':
                     r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)

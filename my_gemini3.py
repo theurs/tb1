@@ -288,6 +288,9 @@ def chat(
         # Удаляем старые картинки, остается только последняя если она не была дольше чем 5 запросов назад
         remove_old_pics(mem)
 
+        if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:
+            mem = mem[2:]
+
         client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'timeout': timeout * 1000})
 
         if use_skills:
